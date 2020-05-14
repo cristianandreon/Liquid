@@ -1,0 +1,228 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package com.liquid;
+
+import java.lang.management.ManagementFactory;
+import javax.servlet.http.HttpServletRequest;
+
+/**
+ *
+ * @author Cristitan
+ */
+public class Info {
+    
+    public static String getVersion() {
+        return "1.9";
+    }
+    public static String getInfo( HttpServletRequest request) {
+        String out_string = "";
+        
+        out_string += "<div style=\"padding-top:70px; width:calc( 100% - 20px );\">";
+        out_string += "<table class=\"liquidFoundTable liquidMenuXLeft\" border=0 cellspacing=0 cellpadding=10 style=\"display:block; padding: 3; border: 1px solid darkolivegreen; width:calc( 100% - 10px )\">";
+        
+        out_string += "<tr style=\"background-color:Gray\">";
+        out_string += "<td style=\"font-size: 150%;\">Liquid framework</td>";
+        out_string += "<td>version <b>"+getVersion()+"</b></td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>General Info</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr>";
+        out_string += "<td>"+"Written by"+"</td>";
+        out_string += "<td>"+"Cristian Andreon, via Roma 194, 31040 Chiarano (TV), Italy"+"</td>";
+        out_string += "<td>"+"cristianandreon.eu<br/>info@cristianandreon.eu"+"</td>";
+        out_string += "</tr>";
+        
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Max retrieve rows</td>";
+        out_string += "<td>"+workspace.maxRows+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+        
+        out_string += "<tr>";
+        out_string += "<td>Default page size</td>";
+        out_string += "<td>"+workspace.pageSize+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>No. active workspace</td>";
+        out_string += "<td>"+workspace.glTblWorkspaces.size()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr>";
+        out_string += "<td>No. cache items</td>";
+        out_string += "<td>"+db.glIdsCaches.size()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Genesis token</td>";
+        out_string += "<td>"+workspace.genesisToken+"</td>";
+        out_string += "<td>"+"(project mode)"+"</td>";
+        out_string += "</tr>";
+
+
+        /*
+        String LiquidDatabase = (String)request.getSession().getAttribute("GLLiquidDatabase");
+        out_string += "<tr>";
+        out_string += "<td>Current database</td>";
+        out_string += "<td>"+(LiquidDatabase != null ? LiquidDatabase : "[N/D]")+"</td>";
+        out_string += "<td>"+"(user session)"+"</td>";
+        out_string += "</tr>";
+
+        String LiquidSchema = (String)request.getSession().getAttribute("GLLiquidSchema");
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Current schema</td>";
+        out_string += "<td>"+(LiquidSchema != null ? LiquidSchema : "[N/D]")+"</td>";
+        out_string += "<td>"+"(user session)"+"</td>";
+        out_string += "</tr>";
+        */
+
+        String LiquidDriver = (String)request.getSession().getAttribute("GLLiquidDriver");
+        out_string += "<tr>";
+        out_string += "<td>DB Driver</td>";
+        out_string += "<td>"+(LiquidDriver != null ? LiquidDriver : "[N/D]")+"</td>";
+        out_string += "<td>"+"(user session)"+"</td>";
+        out_string += "</tr>";
+
+        String LiquidConnectionURL = (String)request.getSession().getAttribute("GLLiquidConnectionURL");
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Connection URL</td>";
+        out_string += "<td>"+(LiquidConnectionURL != null ? LiquidConnectionURL : "[N/D]")+"</td>";
+        out_string += "<td>"+"(user session)"+"</td>";
+        out_string += "</tr>";
+
+
+        out_string += "<tr>";
+        out_string += "<td>Black list</td>";
+        out_string += "<td>"+BlackWhiteList.getBlackListHTML()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>White list</td>";
+        out_string += "<td>"+BlackWhiteList.getWhiteListHTML()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+
+        out_string += "<tr>";
+        out_string += "<td>Metadata Cache Enabled</td>";
+        out_string += "<td>"+metadata.IsMetadataCacheEnabled+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>No. MetaData Tables</td>";
+        out_string += "<td>"+metadata.metaDataTable.size()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+     
+        int bytecodeVer = 0;
+        String s = null;
+        try { 
+            s = javassist.CtClass.version; 
+            bytecodeVer = javassist.bytecode.ClassFile.MAJOR_VERSION; 
+            if(bytecodeVer == 53) {
+                if(s==null) s = "";
+                s += "</br><span style=\"color:red\">Java 9 is unsupported</span>]";
+            }
+        } catch(Throwable th) {}
+        out_string += "<tr>";
+        out_string += "<td>Java version</td>";
+        out_string += "<td>"+System.getProperty("java.version")+"</td>";
+        out_string += "<td>"+"(bytecode ver.:"+bytecodeVer+")"+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td style=\"font-size: 70%;\">Arguments</td>";
+        out_string += "<td style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getInputArguments()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr>";
+        out_string += "<td>Library path</td>";
+        out_string += "<td style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+        
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>class path</td>";
+        out_string += "<td style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getClassPath()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr>";
+        out_string += "<td>Library path</td>";
+        out_string += "<td style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+        
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Specific name</td>";
+        out_string += "<td>"+ManagementFactory.getRuntimeMXBean().getSpecName() + " - " + ManagementFactory.getRuntimeMXBean().getSpecVersion() + " - " + ManagementFactory.getRuntimeMXBean().getSpecVendor()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr>";
+        out_string += "<td>VM name</td>";
+        out_string += "<td>"+ManagementFactory.getRuntimeMXBean().getVmName() + " - " + ManagementFactory.getRuntimeMXBean().getVmVersion()+ " - " + ManagementFactory.getRuntimeMXBean().getVmVersion()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Domain</td>";
+        out_string += "<td>"+ManagementFactory.getPlatformMBeanServer().getDomains()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Memory usage</td>";
+        out_string += "<td>"+ManagementFactory.getMemoryMXBean().getHeapMemoryUsage() + " - " + ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+        out_string += "<tr>";
+        out_string += "<td>Threads</td>";
+        out_string += "<td>"+ManagementFactory.getThreadMXBean().getThreadCount() + " - " + ManagementFactory.getThreadMXBean().getPeakThreadCount()+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+
+        
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Python path</td>";
+        out_string += "<td>"+(workspace.pythonPath != null ? workspace.pythonPath : "[N/D]")+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+        
+        out_string += "<tr>";
+        out_string += "<td>Python executable</td>";
+        out_string += "<td>"+(workspace.pythonExecutable != null ? workspace.pythonExecutable : "python3")+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+        
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Python env path</td>";
+        out_string += "<td>"+workspace.arrayToString( workspace.getPythonPath().toArray(), "\"", "\"", ",")+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+        
+        out_string += "</table>";
+        out_string += "</div>";
+        
+                
+        return  out_string;
+    }    
+}

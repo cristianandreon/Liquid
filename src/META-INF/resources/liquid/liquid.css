@@ -1,0 +1,204 @@
+/* N.B.: overlay: non-standard value only supported by the WebKit-browsers that does the same as auto */
+.liquidContainer { position: relative; display:block; }
+.liquidTheme { z-index: 120; position:inherit; background-color: whitesmoke; box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02);
+                -webkit-touch-callout: none;  -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+.liquidGridTheme {  z-index: 120; position: relative; background-color: whitesmoke; }
+.liquidPopupCaption { height:26px; display: flow-root; overflow: hidden; cursor: move; z-index: 150; background-color: rgb(169, 186, 199); color: #fff;
+                        border-bottom:1px solid white; border-top:1px solid lightgrey; border-right: 1px solid lightgrey; border-left: 1px solid lightgrey; z-index: 130; position: relative; 
+                        border-top-right-radius: 5px; border-top-left-radius: 5px; -webkit-box-shadow: -1px -1px 2px #636363; }
+.liquidPopupCaptionUnselected { background-color: rgb(170, 170, 170); }
+.liquidPopupCaption tr td:last-child { width:2%; }
+.liquidCaptionBt { float:right; z-index: 110; position: relative; cursor: pointer; }
+.liquidPopupTitle { float: left; color: black; font-family: verdana; font-size: 15px; padding-left: 5px }
+.liquidCaptionSearch { height:100%; width:125px; color: black; font-family: verdana; font-size: 11px; }
+.liquidPopupBt { width:16px; height: 16px; float:right; z-index: 110; position: relative; }
+.liquidNav { height:29px; overflow: hidden; position: relative; font-family: verdana; font-size: 11px; background-color: whitesmoke; border-bottom: 1px solid lightgrey; border-left: 1px solid lightgray; border-right: 1px solid lightgray; }
+.liquidMultiPanelsContent { width:100%; position: relative; font-family: verdana; font-size: 11px; background-color: whitesmoke; border:1px solid lightyellow; }
+.liquidMultiPanelsTitle { width:100%; height:20px; position: relative; font-family: verdana; font-size: 10px; background-color: whitesmoke; border:1px solid lightyellow; margin:-1px; }
+.liquidNavLabel { font-family: verdana; font-size: 10px; color: rgba(28, 31, 32, 0.85); }
+.liquidNavInfo { margin-left: 5px; margin-top:1px; float:right; }
+.liquidNavPages { margin-left: 5px; margin-right: 10px; float:right; font-size: 17px; margin-top:0px; text-align:center; }
+.liquidNavPages a { text-decoration: none }
+.liquidNavCurPage { width:40px; height:16px; text-align:right; border: 1px solid lightsteelblue; background-color: ghostwhite; padding-right: 3px; -webkit-box-shadow: -3px -3px 3px #dedede; top:0px; position:relative; }
+.liquidNavFound { font-family: verdana; font-size: 10px; color: rgba(50, 60, 60, 0.85); }
+.liquidLabel { padding-left: 5px; padding-right: 5px; font-family: verdana; font-size: 10px; color: rgba(28, 31, 32, 0.85);  }
+.liquidValue { font-family: verdana; font-size: 11px; color: rgba(20, 30, 30, 1.0); }
+.liquidLookup { z-index: 10; position: relative; font-family: verdana; font-size: 12px; border:1px solid gray; width:calc(100% - 2px); height:27px; }
+.liquidCommandBar { width:100%; height:32px; overflow: hidden; background-color: whitesmoke; z-index: 111; position: relative; font-family: verdana; font-size: 12px; color: rgba(90, 30, 30, 1.0); border-top:1px solid lightGray; border-bottom:1px solid lightGray; }
+.liquidCommandBarButton  { border:1px solid transparent; }
+.liquidCommandBarImg { margin-top: 2px; margin-left:5px; margin-right:7px; }
+.liquidCommandBarText { display:inline-block; font-size: 10px; margin-right:25px; position: relative; top: -2px; }
+.liquidCommandDisabled { pointer-events: none; opacity: 0.4; }
+.liquidGridContainer { width:100%; display:block; overflow: auto; }
+.liquidGridContainer::-webkit-scrollbar { width: 8px; height: 8px; }
+.liquidGridContainer::-webkit-scrollbar-track { border-radius: 8px; }
+.liquidGridContainer::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+.liquidGridTableContainer {  width:100%; height:100%; table-layout: fixed; background-color: whitesmoke; z-index: 121; position: relative; text-decoration: none; font-family: verdana; font-size: 12px; color: rgba(90, 30, 30, 1.0); border-top:1px solid white; border-bottom:1px solid lightGray; border-left:1px solid lightgray; border-right:1px solid lightgray }
+.liquidGridTables { width:100%; font-family: verdana; font-size: 12px; color: rgba(30, 30, 30, 1.0); display:block; background-color: whitesmoke; z-index: 111; position: relative;}
+.liquidGridTables ul { list-style: none; margin: 0px; }
+.liquidGridTablesTabs { border-bottom: 1px solid white; float:left; width:100%; text-align:center; }
+.liquidGridControl { height:30px; width:calc(100% - 2px); overflow:auto; padding-left: 3px; }
+.liquidGridControl readonly {  border:0px; color:darkgray; background-color: transparent; }
+.liquidGridControl::-webkit-scrollbar { width: 8px; height: 8px; }
+.liquidGridControl::-webkit-scrollbar-track { border-radius: 8px; }
+.liquidGridControl::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+.liquidGridControl readonly {  border:0px; color:darkgray; background-color: transparent; }
+.liquidGridControlZoomable:hover { transform: scale(2.5); font-size:4px; z-index: 90000; position: relative; background-color: whitesmoke; border: 1px solid lightsalmon; transition: all 0.3s ease-Out; }
+.liquidGridControlNumber { text-align:left; }
+.liquidGridControlRW { font-weight: bold; border:1px solid lightgray; background-color: white; }
+.liquidGridControlRO { overflow: auto; color:darkslategrey; padding-left:5px; border: 0px; background-color: transparent; -webkit-text-stroke-width: thin; }
+.liquidGridControlDel { color:red !important; text-decoration: line-through !important; background-color: transparent !important; }
+.liquidGridControlMod { color:darkRed; }
+.liquidGridRowOdd{ }
+.liquidGridRowEven{ background-color: rgba(211, 211, 211, 0.2) }
+.liquidGridLabel { color:darkgray; font-size:90%; font-style: italic; background-color: transparent; text-align:right; }
+.liquidFilterControl { height:27px; width:calc(100% - 2px); overflow:auto; padding-left: 3px; }
+.liquidFiltersTable { table-layout: fixed; width: 100%; z-index:130; position:relative; background:rgb(234, 234, 234); }
+.liquidFiltersTable tr:hover { background-color:rgba(220, 241, 255, 70) !important; }
+.liquidFilterTbl { table-layout: fixed; background-color: whitesmoke; z-index: 121; position: relative; text-decoration: none; font-family: verdana; font-size: 12px; color: rgba(90, 30, 30, 1.0); border-top:1px solid white; border-bottom:1px solid lightGray; width:100%; }
+.liquidFilterTbl td:hover { background-color:rgba(220, 241, 255, 40) !important; }
+.liquidFilterLabel { font-family: verdana; font-size: 10px; color: rgba(30, 30, 30, 1.0); text-align: right; padding-right:5px; width:25%; overflow: hidden; background-color: transparent; }
+.liquidFilterInput { font-family: verdana; font-size: 12px; color: rgba(30, 30, 90, 1.0); height:23px; width: 97%; }
+.liquidFilterInputTd { width:calc(70% - 20px); }
+.liquidFiltersLabel { width:80px; font-family: verdana; font-size: 10px; }
+.liquidFiltersSelector { width:auto; }
+.liquidFiltersSpacer { width:auto; }
+.liquidFilterButton { width:100px; }
+.liquidFilterButtonTd { width:120px; }
+.liquidFilterImg { width:20px; overflow: hidden; }
+.liquidTab { float: left; text-align: center; text-decoration: none; color:darkgray;
+            background-color: lightgrey; border: 1px solid gray; padding-left: 10px; padding-right: 10px; padding-top: 5px; padding-bottom: 5px;
+            border-top-left-radius: 0px; border-bottom: 1px solid goldenrod; margin-left: 0; margin-top: 5px; margin-left: -1px; -webkit-box-shadow: -3px -3px 3px #dedede }
+.liquidForeignTables { width:calc(100% - 10px); font-family: verdana; font-size: 12px; color: rgba(30, 30, 30, 1.0); display: block; background-color: whitesmoke; z-index: 111; position: relative; overflow-y: auto;; }
+.liquidForeignTables ul { list-style: none; margin: 0px; }
+.liquidForeignTableEnabled { background-color: white; }
+.liquidForeignTableDisabled { overflow: auto; color: #9c9c9c; padding-left: 5px; background-color: lightgrey; }
+.liquidTab li { float: left; border: 1px solid #bbb; border-bottom-width: 0; margin: 0; }
+.liquidTab a:hover { background: #ddf; text-decoration: none; transition: all 1s ease-Out; }
+.liquidTabSel { font-weight:normal; border-color:black; }
+.liquidTabSel a { text-decoration: none; display: block; color: black; background: whitesmoke; border-bottom: 3px solid whitesmoke; z-index: 150; position: relative; margin-top: 3px; }
+.liquidTabSel a select { text-decoration: none; display: block; color: black; font-weight: bold; color: rgba(30, 30, 90, 1.0); }
+.liquidForeignTablesContent { width:100%; z-index: 110; position: relative; }
+.liquidError { color: darkred; z-index: 111; position: relative; overflow: auto; height: 29px; }
+.liquidShow {-webkit-transition: opacity 0.5s linear; -o-transition: opacity 0.5s linear; transition: opacity 0.5s linear; opacity: 1; border-right: 1px solid lightgray; border-bottom: 1px solid lightgray }
+.liquidHide {opacity: 0; -webkit-transition: opacity 0.5s linear; -o-transition: opacity 0.5s linear; transition: opacity 0.5s linear;}
+.liquidActionBar { width: 100%; pointer-events: none; float: right; height: 50px; overflow: hidden; background-color: rgb(234, 234, 234); border-top:1px solid white; border-bottom:1px solid lightgrey; border-right: 1px solid lightgrey; border-left: 1px solid lightgrey; }
+.liquidActionBarContent { width:100%; text-align:center; vertical-align: middle; margin-top: 3px; z-index: 112; position: relative; }
+.liquidActionImg { margin-left:5px; margin-right:7px; }
+.liquidActionBt { border: darkgray; width: 150px; padding: 5px; height: 37px; text-align: left; display: inline-flex; }
+.liquidActionBt:hover { background-color:rgba(3, 169, 244, 0.20) !important; border:1px solid rgba(3, 169, 244, 0.75) !important; transition: all 1s ease-Out; color: white; }
+.liquidActionText { font-size: 12px; color:black; font-weight:500; }
+.liquidNavigatiorBar { width:100%; height:100%; overflow:hidden; background-color:rgba(251, 250, 250, 0.3); }
+.liquidNavigatiorBarButton { display:flex; height:24px; border: 1px solid transparent; }
+.liquidNavigatiorBarText { font-family:verdana; font-size: 12px; }
+.liquidNavigatiorBarImg { display:block; height:24px; }
+
+.liquidRichEditorContainer { width:100%; height:100%; top:0; left:0; position:fixed; display:block; background-color:rgba(220,220,220,0.6); }
+.liquidRichEditor { width:74%; height:74%; top:8%; left:8%; position:absolute; display:block; background-color: transparent; }
+.liquidSelect { font-size:10pt; font-family:verdana; height: 23px; background-color: #eaeaea; }    
+.liquidFiltersSelect { font-size:9pt; font-family:verdana; height: 27px; background-color: #eaeaea; }
+.liquidButtonHOver{ background-color:rgba(3, 169, 244, 0.20) !important; border:1px solid rgba(3, 169, 244, 0.75) !important; transition: all 1s ease-Out; }
+
+.ag-body-viewport::-webkit-scrollbar { width: 8px; height: 8px; }
+.ag-body-viewport::-webkit-scrollbar-track { border-radius: 6px; }
+.ag-body-viewport::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+.ag-body-horizontal-scroll-viewport::-webkit-scrollbar { width:8px; height:8px; }
+.ag-body-horizontal-scroll-viewport::-webkit-scrollbar-track { box-shadow:inset 0 0 10px #d0d0d0; border-radius:6px; }
+.ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb { border-radius:5px; background: #eeeeee; box-shadow:inset 0 0 6px rgba(0,0,0,0.5); }
+.ag-theme-balham .ag-column_hover { background-color:rgb(220, 241, 255) !important; }
+.ag-theme-balham .ag-row-selected { background-color: #4abbff !important; }
+.ag-theme-balham .ag-ltr .ag-cell-focus { border: 1px solid darkred !important;  }
+.ag-theme-balham .ag-row-odd { /*background-color:rgba(224, 243, 255, 0.27)*/ }
+.ag-theme-balham .ag-row-even {  }
+
+.liquidContextMenu { position: fixed; z-index: 99000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.50); -webkit-transition: background-color 1000ms linear; -ms-transition: background-color 1000ms linear; transition-duration: 2s; transition: background-color 1000ms linear; }
+.liquidContextMenu-content { width:auto; text-decoration: none; cursor: pointer; font-family: verdana; font-size: 13px; background-image: linear-gradient(to right, #ffffff, #e5e5e5); background-color: #fefefe; padding:20px; border:1px solid #888; width:fit-content; box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02) }
+.liquidContextMenu-content a { text-decoration: none; cursor: pointer; color : black; }
+.liquidContextMenu-content a:hover { text-decoration: none; cursor: pointer; color : navy; }
+.liquidContextMenu-item { margin:0px; padding-left:3px; padding-right:3px; padding-top:5px; padding-bottom:5px; width:200px; border:1px solid transparent; }
+.liquidContextMenu-close:hover, .liquidContextMenu-close:focus { background-color:rgba(20, 20, 20, 0.2); border:1px solid cyan; color: black; text-decoration: none; cursor: pointer; }
+.liquidContextMenu-item:hover { background-color:rgba(11, 164, 253, 0.34); border:1px solid blue; }
+.liquidEditorDialog { position: fixed; z-index: 70000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.50); -webkit-transition: background-color 1000ms linear; -ms-transition: background-color 1000ms linear; transition-duration: 2s; transition: background-color 1000ms linear; }
+.liquidEditorDialog-content { text-decoration: none; cursor: pointer; font-family: verdana; font-size: 13px; background-image: linear-gradient(to right, #ffffff, #e5e5e5); background-color: #fefefe; padding:20px; border:1px solid #888; width:80%; box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02) }
+.liquidSystemDialogInput { width:calc(100% - 50px); height:30px; }
+
+.liquidWinXContainer { position: relative; background-color:rgba(251, 250, 250, 0.3); }
+.liquidWinXContainer::-webkit-scrollbar { width: 8px; height: 8px; }
+.liquidWinXContainer::-webkit-scrollbar-track { border-radius: 8px; }
+.liquidWinXContainer::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+
+.customHeaderMenuButton { float: left; margin: 0 0 0 3px; font-size:8px; }
+.customHeaderLabel { float: left; margin: 0 0 0 3px; }
+.customSortDownLabel { float: left; margin: 0 0 0 3px;}
+.customSortUpLabel { float: left; margin: 0; }
+.customSortRemoveLabel { float: left; margin: 0 0 0 3px; font-size: 11px;}
+.liquidOptionsMenu { font-size:10pt; font-family:verdana; }
+.liquidGeneralOptionsMenu { font-size:10pt; font-family:verdana; }
+.liquidOptionsButtonMenu { font-size:12pt; font-family:verdana; width:120px; height:27px; }
+
+.liquidMenuX { z-index:30000; font-family:verdana; font-size:13px; border:1px solid lightGray; background-color:rgba(251, 250, 250, 0.3); overflow:auto; }
+.liquidMenuX::-webkit-scrollbar { width: 8px; height: 8px; }
+.liquidMenuX::-webkit-scrollbar-track { border-radius: 8px; }
+.liquidMenuX::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+.liquidMenuXLeft { padding-top:0px; padding-bottom: 0px;  box-shadow:1px 1px 5px 0px black; }
+.liquidMenuXRight { padding-top:5px; padding-bottom: 5px; box-shadow:-1px 1px 5px 0px black; }
+.liquidMenuXTop { display:inline-flex; overflow: visible !important; padding-left:0px; padding-top:2px !important; padding-bottom:2px !important; padding-right:0px; box-shadow:1px 1px 5px 0px black; width:calc(100% - 2px) !important;  }
+.liquidMenuXBottom { display:inline-flex; padding-left:10px; padding-right: 10px; box-shadow:1px -1px 5px 0px black; }
+.liquidMenuXButton { padding:10px; border:1px solid transparent; color:navy; }
+.liquidMenuXPopup { left:25px; width: max-content; z-index:90000; padding:10px; background-color: white; border: 1px solid lightgray; box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); position:absolute; }
+    
+.ui-accordion-header { color:navy !important; }
+.ui-state-active { color:white !important; border: 1px solid rgb(33, 150, 243) !important; background: rgb(169, 186, 199) !important; }
+.ui-state-default { color:navy !important; }
+.ui-accordion-content::-webkit-scrollbar { width: 8px; height: 8px; }
+.ui-accordion-content::-webkit-scrollbar-track { border-radius: 8px; }
+.ui-accordion-content::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+
+.liquidMenuXIcon { background-color: transparent; border: 1px solid transparent; padding:5px; cursor: pointer; }
+.liquidMenuXIcon:hover { transform:scale(1.2); transition: all .5s ease-Out; }
+.liquidMenuXImg { display: block; }
+.liquidMenuXbar1, .liquidMenuXbar2, .liquidMenuXbar3 { width: 15px; height:2px; background-color: #333; margin: 2px 0; transition: 0.4s; }
+.liquidMenuXchange .liquidMenuXbar1 { -webkit-transform: rotate(-45deg) translate(-3px, 1px); transform: rotate(-45deg) translate(-5px, 2px); }
+.liquidMenuXchange .liquidMenuXbar2 { opacity: 0; }
+.liquidMenuXchange .liquidMenuXbar3 { -webkit-transform: rotate(45deg) translate(-3px, -1px); transform: rotate(45deg) translate(-3px, -1px); }
+.liquidMenuXClosed { box-shadow:0px 0px 0px 0px black !important; }
+
+.liquidLayoutContainer { width:100%; display:block; overflow: auto; border:0px solid transparent; border-left:1px solid lightgray; border-right:1px solid lightgray }
+.liquidLayoutContainer::-webkit-scrollbar { width: 8px; height: 8px; }
+.liquidLayoutContainer::-webkit-scrollbar-track { border-radius: 8px; }
+.liquidLayoutContainer::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+
+.liquidDocumentContainer { width:100%; display:block; overflow: auto; border:0px solid transparent; }
+.liquidDocumentContainer::-webkit-scrollbar { width: 8px; height: 8px; }
+.liquidDocumentContainer::-webkit-scrollbar-track { border-radius: 8px; }
+.liquidDocumentContainer::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+
+.liquidLayoutRowContainer::-webkit-scrollbar { width: 8px; height: 8px; }
+.liquidLayoutRowContainer::-webkit-scrollbar-track { border-radius: 8px; }
+.liquidLayoutRowContainer::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+
+.liquidDocumentsX { font-family:verdana; font-size: 12px; width:100%; border:0px solid transparent; padding:0px; }
+tr.liquidDocumentsXHeader td { height:30px; background-color: lightgray; padding:5px; border-bottom:1px solid lightgray; }
+tr.liquidDocumentsXRows td { height:30px; background-color: transparent; padding:5px; border-bottom:1px solid lightgray; }
+.liquidDocumentsXCmdIcon { padding:5px; }
+.liquidDocumentsXDocIcon { width:20px; height:20px; }
+.liquidDocumentsXTable { font-family:verdana; font-size: 12px; width:100%; table-layout: auto; }
+
+.liquidFoundTable { table-layout:auto; width:100%; z-index:99999; position:relative; background:rgb(234, 234, 234); }
+.liquidFoundTable tr:nth-child(even) { background-color: #e2dfdf; }
+
+.liquidChartContainer { width:100%; display:block; overflow: auto; border:0px solid transparent; }
+.liquidChartsX { width:100%; height:100%; background-color: whitesmoke; border: 0px solid transparent; padding:5px; }
+.liquidloader { position:relative; margin:auto; top:calc(50% - 60px);  border:8px solid #f3f3f3; border-radius:50%;  border-top:8px solid #3498db; width:120px; height: 120px; -webkit-animation: spin 2s linear infinite; /* Safari */  animation: spin 2s linear infinite; }
+@-webkit-keyframes spin {  0% { -webkit-transform: rotate(0deg); }  100% { -webkit-transform: rotate(360deg); } }
+@keyframes spin {  0% { transform: rotate(0deg); }  100% { transform: rotate(360deg); } }
+
+.ui-widget-overlay { opacity: 0.5; }
+.ui-dialog { z-index: 100000 !important; }
+.ui-draggable .ui-dialog-titlebar { background-color: #a9bac7 !important; }
+.lds-ring {  display:inline-block; position:relative; width:0px; height:12px; right:15px; top:-3px; }
+.lds-ring div {  box-sizing: border-box;  display: block;  position: absolute;  width: 14px;  height: 14px; margin: 2px;  border: 2px solid #73b3f7;  border-radius: 50%;  animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;  border-color: #73b3f7 transparent transparent transparent;}
+.lds-ring div:nth-child(1) { animation-delay: -0.45s; }
+.lds-ring div:nth-child(2) { animation-delay: -0.3s; }
+.lds-ring div:nth-child(3) { animation-delay: -0.15s; }
+@keyframes lds-ring {  0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

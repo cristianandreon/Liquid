@@ -1,0 +1,174 @@
+$jquery-datepicker--cellwidth: 30px;
+$jquery-datepicker--mobilecellwidth: 8vw;
+
+@function calculateRem($size) {
+    $remSize: $size / 16px;
+    @return $remSize * 1rem;
+}
+
+@mixin font-size($size) {
+    font-size: $size;
+    font-size: calculateRem($size);
+}
+
+@mixin circle($circle-value) {
+    width: $circle-value;
+    height: $circle-value;
+    -webkit-border-radius: $circle-value/2;
+    -moz-border-radius: $circle-value/2;
+    -ms-border-radius: $circle-value/2;
+    -o-border-radius: $circle-value/2;
+    border-radius: $circle-value/2;
+}
+
+@mixin border-radius($radius) {
+    -webkit-border-radius: $radius;
+    -moz-border-radius: $radius;
+    -ms-border-radius: $radius;
+    -o-border-radius: $radius;
+    border-radius: $radius;
+}
+
+@mixin box-shadow($args) {
+    -webkit-box-shadow: $args;
+    -moz-box-shadow: $args;
+    -o-box-shadow: $args;
+    box-shadow: $args;
+}
+
+@mixin transform($val) {
+    -webkit-transform: $val;
+    -moz-transform: $val;
+    -ms-transform: $val;
+    -o-transform: $val;
+    transform: $val;
+}
+
+.jquery-datepicker {
+  position: relative;
+
+  &__input {
+    position: relative;
+
+    &:focus {
+      /* overwrite border style to avoid blinking on click */
+      border: 0.0625rem solid #a5a6a8;
+    }
+  }
+
+  &__panel {
+    @include font-size(12px);
+    @include border-radius(2px);
+    @include box-shadow(0 1px 2px 0 #2f3133);
+    position: absolute;
+    padding: $jquery-datepicker--cellwidth*2/3 $jquery-datepicker--cellwidth/2;
+    border-width: 0;
+    text-align: center;
+    background-color: #fff;
+    cursor: default;
+    z-index: 100;
+
+    &.-is--hidden{
+      display: none;
+    }
+    &.-position--above {
+      margin-bottom: 5px;
+    }
+    &.-position--below {
+      margin-top: 5px;
+    }
+
+    span {
+      display: inline-block;
+      width: $jquery-datepicker--cellwidth;
+      line-height: $jquery-datepicker--cellwidth;
+      color: #63666a;
+    }
+
+    .jquery-datepicker__title span {
+      @include font-size(16px);
+      width: 100%;
+      color: #2f3133;
+      text-align: center;
+    }
+
+    .jquery-datepicker__prev, .jquery-datepicker__next {
+      text-align: center;
+
+      span:hover {
+        color: #2f3133;
+        background-color: #63666a;
+        @include circle($jquery-datepicker--cellwidth);
+      }
+    }
+
+    .jquery-datepicker__dayName span {
+      font-weight: bold;
+    }
+
+    .jquery-datepicker__day {
+      border: 1px solid #63666a;
+
+      &:not(.-is--disabled):not(.-is--selected):hover {
+        background-color: #63666a;
+        span {
+          color: #fff;
+        }
+      }
+
+      &.-is--selected {
+        background-color: #005eb8;
+
+        span {
+          color: #fff;
+        }
+      }
+
+      &.-is--disabled span {
+        color: #63666a;
+      }
+    }
+
+    /* styles for mobile browsers */
+    &.-device--mobile {
+      padding: $jquery-datepicker--mobilecellwidth*2/3 $jquery-datepicker--mobilecellwidth/2;
+      font-size: 3.2vw;
+      margin: auto;
+
+      .jquery-datepicker__title span {
+        font-size: 4.3vw;
+      }
+
+      .jquery-datepicker__prev, .jquery-datepicker__next, .jquery-datepicker__day, .jquery-datepicker__dayName {
+        span {
+          width: $jquery-datepicker--mobilecellwidth;
+          line-height: $jquery-datepicker--mobilecellwidth;
+
+          &:hover {
+            @include circle($jquery-datepicker--mobilecellwidth);
+          }
+        }
+      }
+    }
+  }
+
+  &__container {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+
+    &.-is--hidden {
+      display: none;
+    }
+
+    /* place datepicker panel at the centre of viewport */
+    .jquery-datepicker__panel {
+      top: 50%;
+      left: 50%;
+      @include transform(translate(-50%, -50%));
+    }
+  }
+}
