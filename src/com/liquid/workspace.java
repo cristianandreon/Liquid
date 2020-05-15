@@ -1267,7 +1267,11 @@ public class workspace {
             if(localFileName.charAt(0) == File.separatorChar || localFileName.charAt(0) == '/') 
                 localFileName = localFileName.substring(1);
 
-            fullFileName = path + localFileName;
+            if(utility.fileExist(fileName)) { // full file name
+                fullFileName = fileName;
+            } else {
+                fullFileName = path + localFileName;
+            }
             try { br = new BufferedReader(new FileReader(fullFileName));} catch (FileNotFoundException ex) {}
             
             if(br == null) {

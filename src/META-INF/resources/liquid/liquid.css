@@ -140,6 +140,7 @@
 .liquidMenuX::-webkit-scrollbar { width: 8px; height: 8px; }
 .liquidMenuX::-webkit-scrollbar-track { border-radius: 8px; }
 .liquidMenuX::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+.liquidMenuXText { font-family:verdana; font-size:13px; }
 .liquidMenuXLeft { padding-top:0px; padding-bottom: 0px;  box-shadow:1px 1px 5px 0px black; }
 .liquidMenuXRight { padding-top:5px; padding-bottom: 5px; box-shadow:-1px 1px 5px 0px black; }
 .liquidMenuXTop { display:inline-flex; overflow: visible !important; padding-left:0px; padding-top:2px !important; padding-bottom:2px !important; padding-right:0px; box-shadow:1px 1px 5px 0px black; width:calc(100% - 2px) !important;  }

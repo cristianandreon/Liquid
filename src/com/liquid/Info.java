@@ -181,9 +181,13 @@ public class Info {
         out_string += "<td>"+""+"</td>";
         out_string += "</tr>";
 
+        String domains = "";
+        for (String domain : ManagementFactory.getPlatformMBeanServer().getDomains() ) {
+            domains += "["+domain+"]";
+        }
         out_string += "<tr style=\"background-color:lightGray\">";
         out_string += "<td>Domain</td>";
-        out_string += "<td>"+ManagementFactory.getPlatformMBeanServer().getDomains()+"</td>";
+        out_string += "<td>"+domains+"</td>";
         out_string += "<td>"+""+"</td>";
         out_string += "</tr>";
 
