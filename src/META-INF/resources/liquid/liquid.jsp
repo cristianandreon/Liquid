@@ -101,6 +101,10 @@
             // Servizio Login : login
             out.print( login.login(request, response, out) );
 
+        } else if (operation != null && operation.equalsIgnoreCase("logout")) {
+            // Servizio Login : logout
+            out.print( login.logout(request, response, out) );
+
         } else if (operation != null && operation.equalsIgnoreCase("register")) {
             // Servizio Login : register user
             out.print( login.register(request, response, out) );
