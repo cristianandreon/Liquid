@@ -110,7 +110,7 @@ public class Messagebox {
     static int show( String message, String title, int buttons, float autoCloseTimeSec, int autoCloseButton ) {
         int retVal = 0;
         ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
-        if(threadSession.out != null) {
+        if(threadSession != null && threadSession.out != null) {
             try {
                 String messageJson = "<Liquid>serverMessage:{"
                         + "\"title\":\""+utility.base64Encode(title)+"\""

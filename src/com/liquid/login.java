@@ -95,35 +95,40 @@ public class login {
     }
 
     
+    //
+    // Please Note : to define custon connection you need to define driver, database, and schema
+    //              user and or password may be null
+    //
     static public Connection getConnection() throws ClassNotFoundException, SQLException {
         Connection conn = null;
         Class driverClass = null;
-        if(driver != null && database != null && !driver.isEmpty() && !database.isEmpty()) {
+        if( driver != null && database != null && schema != null && !driver.isEmpty() && !database.isEmpty() && !schema.isEmpty() ) {
+            // defined by driver/database/user
             if(host == null || host.isEmpty()) host = "localhost";
             if("oracle".equalsIgnoreCase(driver)) {
                 if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
-                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":1521:xe",database, password);
+                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":1521:xe",database, (password != null ? password : "") );
             } else if("postgres".equalsIgnoreCase(driver)) {
                 if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
-                conn = DriverManager.getConnection("jdbc:postgresql://"+host+":5432/"+database, user, password);
+                conn = DriverManager.getConnection("jdbc:postgresql://"+host+":5432/"+database, (user != null ? user : ""), (password != null ? password : ""));
             } else if("mysql".equalsIgnoreCase(driver)) {
                 if(driverClass == null) driverClass = Class.forName("org.mysql.Driver");
-                conn = DriverManager.getConnection("jdbc:mysql://"+host+":3306/"+database, user, password);
+                conn = DriverManager.getConnection("jdbc:mysql://"+host+":3306/"+database, (user != null ? user : ""), (password != null ? password : ""));
             } else if("sqlserver".equalsIgnoreCase(driver)) {
                 if(driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-                conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":1433;DatabaseName="+database, user, password);
+                conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":1433;DatabaseName="+database, (user != null ? user : ""), (password != null ? password : ""));
             } else {
                 Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, "drive not recognized");
             }
 
         } else {
-            // host/driver/database defined
+            // host/driver/database NOT defined : use app.liquid.dbx
             conn = connection.getDBConnection();
         }
         if(table == null || table.isEmpty())
             table = "users";
 
-        if(driver == null || driver.isEmpty()) {
+        if(driver == null || driver.isEmpty()) { // read driver from connection
             driver = db.getDriver(conn);
         }
         
@@ -797,16 +802,25 @@ public class login {
         String error = "";
         try {
             if (session != null) {
+                Object loggedUseId = session.getAttribute("GLLiquidUserID");
+                String result  = null;
+                if(loggedUseId != null) {
+                    result = "{ \"result\":1, \"message\":\"" +utility.base64Encode("User "+ (int)loggedUseId+" logged out") + "\"}";
+                } else {
+                    result = "{ \"result\":0, \"message\":\"" +utility.base64Encode("Not yet logged") + "\"}";
+                }
                 session.setAttribute("GLLiquidUserID", null);
                 session.setAttribute("GLLiquidAdmin", null);
                 session.setAttribute("GLLiquidToken", null);
-            }                    
+                return result;
+            } else {
+                return "{ \"result\":-666, \"error\":\"" + utility.base64Encode("undetected case : no session") + "\"}";
+            }
         } catch (Throwable e) {
             error += "Error:" + e.getLocalizedMessage();
             System.err.println("// logout() Error:" + utility.base64Encode(e.getLocalizedMessage()));
             return "{ \"result\":-60, \"error\":\"" + utility.base64Encode(e.getLocalizedMessage()) + "\"}";
         }            
-        return "{ \"result\":-666, \"error\":\"" + utility.base64Encode("undetected case") + "\"}";
     }
     
     static public boolean isLogged( HttpServletRequest request) {

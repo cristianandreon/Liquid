@@ -1609,6 +1609,29 @@ public class event {
     }
     
     
+    
+    static public Object longTimeTaskMessageTest (Object owner, Object params, Object clientData, Object freeParam ) {
+        try {
+            Thread.sleep(3000);
+            String selectedAction = "";
+            int revVal = Messagebox.show( " Test QUESTION message .. select an action : ", "Liquid", Messagebox.IGNORE+Messagebox.ABORT+Messagebox.RETRY+Messagebox.QUESTION);
+            if(revVal == Messagebox.RETRY) {
+                selectedAction = "RETRY";
+            } else if(revVal == Messagebox.IGNORE) {
+                selectedAction = "IGNORE";
+            } else if(revVal == Messagebox.ABORT) {
+                selectedAction = "ABORT";
+            } else {
+                selectedAction = "TIMEOUT";
+            }
+            return "{ \"client\":\"\", \"message\":\""+utility.base64Encode("longTimeTaskMessageTest Done. Selected action:"+selectedAction)+"\" }";
+        } catch (InterruptedException ex) {
+            Logger.getLogger(event.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+            
+    
     static public JSONArray getJSONArray (Object params, String paramName ) {
         if(params != null) {
             try {

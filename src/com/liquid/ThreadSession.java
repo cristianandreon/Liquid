@@ -33,6 +33,7 @@ public class ThreadSession {
     public Thread thread = null;
     public String threadName = "";
     public long threadId = 0;
+    private ArrayList<Long> childThreadIds = null;
     public String incoming = null;
     
     static ArrayList<ThreadSession> threadSessionList = new ArrayList<ThreadSession>();
@@ -57,8 +58,29 @@ public class ThreadSession {
             bLocked = false;
         }
     }    
+    
+    static public boolean addChildThread ( long childThreadId ) {
+        ThreadSession threadSession = getThreadSessionInfo ();
+        if(threadSession != null) {
+            if(threadSession.childThreadIds == null) threadSession.childThreadIds = new ArrayList<Long>();
+            threadSession.childThreadIds.add(childThreadId);
+            return true;
+        }
+        return false;
+    }
+    
     static public ThreadSession getThreadSessionInfo ( ) {
-        return (ThreadSession)TLRequests.get();
+        long threadId = Thread.currentThread().getId();
+        // return (ThreadSession)TLRequests.get();
+        for(ThreadSession threadSession : threadSessionList) {
+            if(threadSession.threadId == threadId) return threadSession;
+            if(threadSession.childThreadIds != null) {
+                for(long childThreadId : threadSession.childThreadIds) {
+                    if(childThreadId == threadId) return threadSession;
+                }
+            }
+        }
+        return null;
     }
     static public void removeThreadSessionInfo () throws InterruptedException {
         while(bLocked) { Thread.sleep(100); }

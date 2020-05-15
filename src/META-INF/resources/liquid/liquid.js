@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////
-// Liquid ver.1.094   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.095   Copyright 2020 Cristian Andreon - cristianandreon.eu
 // 8.1.2020 - 15-5-2020
 // TODO : see trello.com
 
@@ -1689,9 +1689,10 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.094,
+    version: 1.095,
     controlid:"Liquid framework",
     debug:false,
+    debugWorker:false,
     curDriver:"",
     curConnectionURL:"",
     curDatabase:"",
@@ -9756,7 +9757,7 @@ var Liquid = {
         Liquid.createNavigatorsBar();
         
         // Test long time task
-        if(Liquid.debug) {
+        if(Liquid.debugWorker) {
             Liquid.startWorker(null, { name:"longTimeTask", client:"alert('Long task done')", server:"com.liquid.event.longTimeTaskTest", param:"" }, 777);
             Liquid.startReadWorkers(Liquid.defaultIntervalReadWorkers);
         }
@@ -10185,9 +10186,10 @@ var Liquid = {
      * @param {liquid} the calling control
      * @param {command} the command to execute
      * @param {userId} the id for handle the work
+     * @param {async} true if you wanto to wait for server to finish (or need to stay connected to get message from server)
      * @return {} n/d
      */
-    startWorker:function(liquid, command, userId) {
+    startWorker:function(liquid, command, userId, async) {
         if(command) {
             if(command.server) {
                 if(userId) {
@@ -10196,7 +10198,15 @@ var Liquid = {
                     xhr.open('POST', glLiquidServlet + '?operation=startWorker'
                             +'&userId=' + userId
                             +'&className=' + command.server
+                            +'&async=' + (typeof async !== 'undefined' ? async : true)
                             );
+                    
+                    xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "startWorker", e); }, false);
+                    xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "startWorker", e); }, false);
+                    xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "startWorker", e); }, false);
+                    xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "startWorker", e); }, false);
+                    xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "startWorker", e); }, false);
+                    
                     xhr.send(JSON.stringify(liquidCommandParams));
                     xhr.onreadystatechange = function() {
                         if(xhr.readyState === 4) {
@@ -10332,17 +10342,28 @@ var Liquid = {
             }
         }
     },
+    /**
+     * Check all long operations in the server
+     * @return {} n/d
+     */
     startReadWorkers:function(interval) {
-        if(glWorkReaderLooper) {
-            clearInterval(glWorkReaderLooper);
-            glWorkReaderLooper = null;
-        }
+        Liquid.stopReadWorkers();
         if(interval > Liquid.minIntervalReadWorkers) {
-            glWorkReaderLooper = setInterval(function() { Liquid.readWorkers(); }, interval );
+            glWorkReaderLooper = setInterval(function() { Liquid.readWorkers(); }, (typeof interval !== 'undefined' && interval > 1 ? interval : 5000) );
         }
     },
     /**
-     * Check all long operations in the server
+     * Stop Checking long operations in the server
+     * @return {} n/d
+     */
+    stopReadWorkers:function() {
+        if(glWorkReaderLooper) {
+            clearInterval(glWorkReaderLooper);
+            glWorkReaderLooper = null;
+        }            
+    },
+    /**
+     * Start long operations in the server
      * @return {} n/d
      */
     readWorkers:function() {

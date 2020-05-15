@@ -33,7 +33,7 @@ public class worker {
     static public String start_worker(HttpServletRequest request, String operation, JspWriter out) {
         String out_string = "", error = "", errorJson = "", className = "", clientData = "", params = "";
         JSONObject requestJson = null;
-        String userId = null, tblWrk = null, columnsResolved = null;            
+        String userId = null, tblWrk = null, columnsResolved = null, async = "";
         String sRequest = workspace.get_request_content(request);
 
         try {
@@ -46,6 +46,10 @@ public class worker {
         }
         try {
             userId = (String) request.getParameter("userId");
+        } catch (Exception e) {
+        }            
+        try {
+            async = (String) request.getParameter("async");
         } catch (Exception e) {
         }            
 
@@ -91,7 +95,19 @@ public class worker {
 
                     workers.add( wrk );
                     
-                    return "{ \"userId\":\"" + userId +"\",\"status\":\""+wrk.status+"\"}";
+                    // Add child thread to make message work fine
+                    if(!ThreadSession.addChildThread ( wrk.thread.getId() )) {
+                        error = "Error appending child thread";
+                        System.err.println(" start_worker() ["+userId+"] "+error);
+                    }
+                    
+                    if("true".equalsIgnoreCase(async) || "true".equalsIgnoreCase(async)) {
+                        while(wrk.status == RUNNING && wrk.thread.isAlive() && !wrk.thread.isInterrupted()) {
+                            Thread.sleep(100);
+                        }
+                    }
+                    
+                    return "{ \"userId\":\"" + userId +"\",\"status\":\""+wrk.status+"\",\"isInterrupted\":\""+wrk.thread.isInterrupted()+"\" }";
                 }
             }
 
