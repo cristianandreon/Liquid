@@ -2141,7 +2141,7 @@ var Liquid = {
             }
         }
     },
-    onTransferDownloadingProgress:function(e, liquid, lastResponseLen, outDiv) {
+    onTransferDownloadingProgress:function(e, liquid, lastResponseLen, outDiv, commandOrEvent, userCallback, userCallbackParam) {
         try {
             var bShowMessageToStatusBar = false;
             var this_response, response = e.currentTarget.response;
@@ -2173,6 +2173,7 @@ var Liquid = {
                     try {
                         var keyMessageIndex = this_response.indexOf("serverMessage:");
                         var keyScriptIndex = this_response.indexOf("serverScript:");
+                        var keyCallbackIndex = this_response.indexOf("serverCallback:");
                         if(keyMessageIndex >=0) {
                             bShowMessageToStatusBar = false;
                             var sMessageJson = this_response.substring(keyMessageIndex+14);
@@ -2203,12 +2204,27 @@ var Liquid = {
                                     }
                                 }
                             } catch (e) { 
-                                console.error("ERROR on onTransferDownloadingProgress() : "+e); 
+                                console.error("ERROR : "+e+" on javascript code : "+script); 
+                                if(commandOrEvent) console.error("Please check server side code on command or event : "+commandOrEvent.name); 
                                 if(curMessageInfo) {
                                     try {
                                         Liquid.setServerMessageResponse("ERROR:"+e, curMessageInfo);
                                     } catch (e2) { console.error("ERROR on onTransferDownloadingProgress() : "+e2); }
                                 }
+                            }
+                            
+                        } else if(keyCallbackIndex >=0) {
+                            if(typeof userCallback !== 'undefined' && userCallback) {
+                                var sCallbackJson = this_response.substring(keyScriptIndex+16);
+                                var callbackJson = sCallbackJson ? JSON.parse(sCallbackJson) : null;
+                                try {
+                                    var userCallbackFunc = Liquid.getProperty(userCallback);
+                                    if(userCallbackFunc && typeof userCallbackFunc === "function") {
+                                        var data = "";
+                                        try { data = callbackJson ? atob(callbackJson.data) : ""; } catch(e) { data = callbackJson.data; }
+                                        userCallbackFunc(liquid, data, commandOrEvent, userCallbackParam, e);
+                                    }
+                                } catch (e3) { console.error("ERROR on onTransferDownloadingProgress() : "+e3); }
                             }
 
                         } else {
@@ -2249,14 +2265,21 @@ var Liquid = {
     getCommandOrEventName:function(commandOrEvent) {
         return (commandOrEvent ? (typeof commandOrEvent.name !== 'undefined' ? commandOrEvent.name : "") : "");
     },
-    onTransferUploading:function(liquid, commandOrEvent, handlerName, event) {
+    onTransferUploading:function(liquid, commandOrEvent, handlerName, event, userCallback, userCallbackParam) {
         var outDiv = Liquid.getStatusDiv(liquid);
         var runningImg = "<img src=\""+Liquid.getImagePath("red.png")+"\" width=\"16\" height=\"16\"/>";
         if(outDiv) outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent) + "...";
         liquid.lastResponseLen = 0;
         if(typeof liquid.stackDownloading === 'undefined') liquid.stackDownloading = null;
+        if(typeof userCallback !== 'undefined' && userCallback) {
+            var userCallbackFunc = Liquid.getProperty(userCallback);
+            if(userCallbackFunc && typeof userCallbackFunc === "function") {
+                var data = handlerName;
+                retVal = userCallbackFunc(liquid, data, commandOrEvent, userCallbackParam, event);
+            }
+        }
     },    
-    onTransferDownloading:function(liquid, commandOrEvent, handlerName, event) {
+    onTransferDownloading:function(liquid, commandOrEvent, handlerName, event, userCallback, userCallbackParam) {
         var outDiv = Liquid.getStatusDiv(liquid);
         if(outDiv) {
             var runningImg = "<img src=\""+Liquid.getImagePath("yellow.png")+"\" width=\"16\" height=\"16\"/>";
@@ -2276,25 +2299,43 @@ var Liquid = {
             }
             liquid.stackDownloading = { lastResponseLen:liquid.lastResponseLen, loaded:event.loaded, total:event.total, timeStamp:event.timeStamp, eventPhase:event.eventPhase };
         }
-        liquid.lastResponseLen = Liquid.onTransferDownloadingProgress(event, liquid, liquid.lastResponseLen, outDiv);
+        liquid.lastResponseLen = Liquid.onTransferDownloadingProgress(event, liquid, liquid.lastResponseLen, outDiv, commandOrEvent, userCallback, userCallbackParam);
     },    
-    onTransferLoaded:function(liquid, commandOrEvent, handlerName, event) {
+    onTransferLoaded:function(liquid, commandOrEvent, handlerName, event, userCallback, userCallbackParam) {
         var outDiv = Liquid.getStatusDiv(liquid);
         var runningImg = "<img src=\""+Liquid.getImagePath("green.png")+"\" width=\"16\" height=\"16\"/>";
         if(outDiv) {
             outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent) + " done...";
         }
         setTimeout( function(){ Liquid.resetStatusDiv(liquid); }, Liquid.statusMessagePersistMsec );
+        if(typeof userCallback !== 'undefined' && userCallback) {
+            var userCallbackFunc = Liquid.getProperty(userCallback);
+            if(userCallbackFunc && typeof userCallbackFunc === "function") {
+                retVal = userCallbackFunc(liquid, event, commandOrEvent, userCallbackParam);
+            }
+        }
     },    
-    onTransferFailed:function(liquid, commandOrEvent, handlerName, event) {
+    onTransferFailed:function(liquid, commandOrEvent, handlerName, event, userCallback, userCallbackParam) {
         var outDiv = Liquid.getStatusDiv(liquid);
         var runningImg = "<img src=\""+Liquid.getImagePath("red.png")+"\" width=\"16\" height=\"16\"/>";
         if(outDiv) outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent) + " Failed ";
+        if(typeof userCallback !== 'undefined' && userCallback) {
+            var userCallbackFunc = Liquid.getProperty(userCallback);
+            if(userCallbackFunc && typeof userCallbackFunc === "function") {
+                retVal = userCallbackFunc(liquid, event, commandOrEvent, userCallbackParam);
+            }
+        }
     },    
-    onTransferAbort:function(liquid, commandOrEvent, handlerName, event) {
+    onTransferAbort:function(liquid, commandOrEvent, handlerName, event, userCallback, userCallbackParam) {
         var outDiv = Liquid.getStatusDiv(liquid);
         var runningImg = "<img src=\""+Liquid.getImagePath("gray.png")+"\" width=\"16\" height=\"16\"/>";
         if(outDiv) outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent) + " Aborted";
+        if(typeof userCallback !== 'undefined' && userCallback) {
+            var userCallbackFunc = Liquid.getProperty(userCallback);
+            if(userCallbackFunc && typeof userCallbackFunc === "function") {
+                retVal = userCallbackFunc(liquid, event, commandOrEvent, userCallbackParam);
+            }
+        }
     },
     getXHRResponse(responseText) {
         if(responseText) {
@@ -2347,11 +2388,11 @@ var Liquid = {
                                         , false
                                         );
                                 
-                                liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "Validate", e); }, false);
-                                liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "Validate", e); }, false);
-                                liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "Validate", e); }, false);
-                                liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "Validate", e); }, false);
-                                liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "Validate", e); }, false);
+                                liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "Validate", e, command.onUploading, command.onUploadingParam); }, false);
+                                liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "Validate", e, command.onDownloading, command.onDownloadingParam); }, false);
+                                liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "Validate", e, command.onLoad, command.onLoadParam); }, false);
+                                liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "Validate", e, command.onError, command.onErrorParam); }, false);
+                                liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "Validate", e, command.onAbort, command.onAbortParam); }, false);
                 
                                 liquid.xhr.send("{"
                                         + "\"params\":" + (command.params ? JSON.stringify(command.params) : "[]")
@@ -4995,11 +5036,11 @@ var Liquid = {
                             (event.sync === true ? false : true)
                             );
                     
-                    event.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, event, "Event", e); }, false);
-                    event.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, event, "Event", e); }, false);
-                    event.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, event, "Event", e); }, false);
-                    event.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, event, "Event", e); }, false);
-                    event.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, event, "Event", e); }, false);
+                    event.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, event, "Event", e, event.onUploading, event.onUploadingParam); }, false);
+                    event.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, event, "Event", e, event.onDownloading, event.onDownloadingParam); }, false);
+                    event.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, event, "Event", e, event.onLoad, event.onLoadParam); }, false);
+                    event.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, event, "Event", e, event.onError, event.onErrorParam); }, false);
+                    event.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, event, "Event", e, event.onAbort, event.onAbortParam); }, false);
                     
                     var onreadystatechange = function() {
                         if(event.xhr.readyState === 4) {
@@ -5212,11 +5253,11 @@ var Liquid = {
                             + '&controlId=' + liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : "")
                             );
                     
-                    liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "Command", e); }, false);
-                    liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "Command", e); }, false);
-                    liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "Command", e); }, false);
-                    liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "Command", e); }, false);
-                    liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "Command", e); }, false);
+                    liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "Command", e, command.onUploading, command.onUploadingParam); }, false);
+                    liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "Command", e, command.onDownloading, command.onDownloadingParam); }, false);
+                    liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "Command", e, command.onLoad, command.onLoadParam); }, false);
+                    liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "Command", e, command.onError, command.onErrorParam); }, false);
+                    liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "Command", e, command.onAbort, command.onAbortParam); }, false);
                     
                     liquid.xhr.onreadystatechange = function() {
                         if(liquid.xhr.readyState === 4) {
@@ -10245,11 +10286,11 @@ var Liquid = {
                             +'&async=' + syncParam
                             );
                     
-                    xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "startWorker", e); }, false);
-                    xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "startWorker", e); }, false);
-                    xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "startWorker", e); }, false);
-                    xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "startWorker", e); }, false);
-                    xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "startWorker", e); }, false);
+                    xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "startWorker", e, command.onUploading, command.onUploadingParam); }, false);
+                    xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "startWorker", e, command.onDownloading, command.onDownloadingParam); }, false);
+                    xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "startWorker", e, command.onLoad, command.onLoadParam); }, false);
+                    xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "startWorker", e, command.onError, command.onErrorParam); }, false);
+                    xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "startWorker", e, command.onAbort, command.onAbortParam); }, false);
                     
                     xhr.send(JSON.stringify(liquidCommandParams));
                     xhr.onreadystatechange = function() {

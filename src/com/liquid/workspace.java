@@ -1141,33 +1141,105 @@ public class workspace {
      * @param  name  the http request (HttpServletRequest)
      * @param  style the Id of the control (String)
      * @param  className the configuration the control (String in JSON format)
+     * @return      the html definition of the button
+     * @see         workspace
+     */
+    static public String get_button_control(String name, String style, String className) {
+        return get_button_control(name, style, className, null, null, false, null );
+    }
+    /**
+     * <h3>Register a button in order to use it in the browser</h3>
+     * The name argument must specify an absolute button name {@link controlId}.
+     * <p>
+     * This method returns validate and formattated json for to be rendered in the browser
+     *
+     * @param  name  the http request (HttpServletRequest)
+     * @param  style the Id of the control (String)
+     * @param  className the configuration the control (String in JSON format)
      * @param  Objects used to overwrite table definition in sTableJson (String)
-     * @return      the image at the specified URL
+     * @return      the html definition of the button
      * @see         workspace
      */
     static public String get_button_control(String name, String style, String className, String [] Objects ) {
-        return get_button_control(name, style, className, Objects, null, false );
+        return get_button_control(name, style, className, Objects, null, false, null );
     }
+    /**
+     * <h3>Register a button in order to use it in the browser</h3>
+     * The name argument must specify an absolute button name {@link controlId}.
+     * <p>
+     * This method returns validate and formattated json for to be rendered in the browser
+     *
+     * @param  name  the http request (HttpServletRequest)
+     * @param  style the Id of the control (String)
+     * @param  className the configuration the control (String in JSON format)
+     * @param  Objects used to overwrite table definition in sTableJson (String)
+     * @param  clientSideCode define the client side code (String)
+     * @return      the html definition of the button
+     * @see         workspace
+     */
     static public String get_button_control(String name, String style, String className, String [] Objects, String clientSideCode ) {
-        return get_button_control(name, style, className, Objects, clientSideCode, false );
+        return get_button_control(name, style, className, Objects, clientSideCode, false, null );
+    }
+    /**
+     * <h3>Register a button in order to use it in the browser</h3>
+     * The name argument must specify an absolute button name {@link controlId}.
+     * <p>
+     * This method returns validate and formattated json for to be rendered in the browser
+     *
+     * @param  name  the http request (HttpServletRequest)
+     * @param  style the Id of the control (String)
+     * @param  className the configuration the control (String in JSON format)
+     * @param  Objects used to overwrite table definition in sTableJson (String)
+     * @param  clientSideCode define the client side code (String)
+     * @param  clientAfter if true execute the client code after the server side code (boolean)
+     * @return      the html definition of the button
+     * @see         workspace
+     */
+    static public String get_button_control(String name, String style, String className, String [] Objects, String clientSideCode, boolean clientAfter ) {
+        return get_button_control(name, style, className, Objects, clientSideCode, false, null );
     }
     
     // Aggiunge un oggetto botton_control, raffinando il Json e ritornando l' html per il client
-    static public String get_button_control(String name, String style, String className, String [] Objects, String clientSideCode, boolean clientAfter ) {
+    /**
+     * <h3>Register a button in order to use it in the browser</h3>
+     * The name argument must specify an absolute button name {@link controlId}.
+     * <p>
+     * This method returns validate and formattated json for to be rendered in the browser
+     *
+     * @param  name  the http request (HttpServletRequest)
+     * @param  style the Id of the control (String)
+     * @param  className the configuration the control (String in JSON format)
+     * @param  Objects used as list of controls to pass as parameter to server side (String)
+     * @param  clientSideCode define the client side code (String)
+     * @param  clientAfter if true execute the client code after the server side code (boolean)
+     * @param  additionParams define additional parameter to add to the command (ex.: onUploading, onDownloading ...) (String in JSON format)
+     * @return      the html definition of the button
+     * @see         workspace
+     */
+    static public String get_button_control(String name, String style, String className, String [] Objects, String clientSideCode, boolean clientAfter, String additionParams ) {
         try {
-            String params = "";
+            String params = "", additionParamsPrepared = "";
             if(Objects != null) {
                 for (String Object : Objects) {
                     params += (params.length()>0?",":"") + "'" + (String)Object + "'";
                 }
             }
-            String result = "<button onclick=\"Liquid.onButton(this, { "+
-                    "name:'"+(name != null ? name : "") + "'"
-                    +",server:'"+(className != null ? className : "") + "'"
-                    +",params:["+(params != null ? params : "")+"]"
-                    +",client:'"+(clientSideCode != null ? clientSideCode : "") +"'"
-                    +",clientAfter:"+clientAfter
-                    +"})\">"+name+"</button>";
+            
+            String sCommandJson = "{ "
+                    + "name:'"+(name != null ? name : "") + "'"
+                    + ",client:'"+(clientSideCode != null ? clientSideCode : "") +"'"
+                    + ",server:'"+(className != null ? className : "") + "'"
+                    + ",params:["+(params != null ? params : "")+"]"
+                    + ",clientAfter:"+clientAfter
+                    + (!additionParamsPrepared.isEmpty() ? ","+additionParamsPrepared : "")
+                    + "}";
+            
+            JSONObject commandJson = new JSONObject(sCommandJson);
+            if(additionParams != null && !additionParams.isEmpty()) {
+                JSONObject additionParamsJson = new JSONObject(additionParams);
+                utility.mergeJsonObject(additionParamsJson, commandJson);
+            }
+            String result = "<button onclick=\"Liquid.onButton(this, "+commandJson.toString()+")\">"+name+"</button>";
             return result;    
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);

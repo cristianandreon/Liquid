@@ -1597,7 +1597,9 @@ public class event {
         return null;
     }
     
-    
+    //
+    // event for tests    
+    //
     static public Object longTimeTaskTest (Object owner, Object params, Object clientData, Object freeParam ) {
         try {
             Thread.sleep(30000);
@@ -1607,9 +1609,6 @@ public class event {
         }
         return null;
     }
-    
-    
-    
     static public Object longTimeTaskMessageTest (Object owner, Object params, Object clientData, Object freeParam ) {
         try {
             Thread.sleep(1000);
@@ -1629,6 +1628,28 @@ public class event {
             Logger.getLogger(event.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
+    }
+    
+    static public Object longTimeTaskJavascriptTest (Object owner, Object params, Object clientData, Object freeParam ) {
+        try {
+            Thread.sleep(1000);
+            String revVal = JSScript.script("prompt('Type any data','')", JSScript.SYNC);
+            JSScript.script("alert('You typed:"+revVal+"')", JSScript.ASYNC);
+            Thread.sleep(3000);            
+            return "{ \"client\":\"\", \"message\":\""+utility.base64Encode("longTimeTaskJavascriptTest Done. result:"+revVal)+"\" }";
+        } catch (InterruptedException ex) {
+            Logger.getLogger(event.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+    
+    static public Object longTimeTaskCallbackTest (Object owner, Object params, Object clientData, Object freeParam ) throws InterruptedException {
+        int n = 10;
+        for (int i=0; i<n; i++) {
+            Thread.sleep(1000);
+            Callback.send("Phase "+(i+1)+"/"+n+" done... [ time tick: "+System.currentTimeMillis()+"]");
+        }
+        return "{ \"client\":\"\", \"message\":\""+utility.base64Encode("longTimeTaskCallbackTest Done")+"\" }";
     }
             
     
