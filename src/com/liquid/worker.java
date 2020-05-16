@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspWriter;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 
@@ -107,7 +108,25 @@ public class worker {
                         }
                     }
                     
-                    return "{ \"userId\":\"" + userId +"\",\"status\":\""+wrk.status+"\",\"isInterrupted\":\""+wrk.thread.isInterrupted()+"\" }";
+                    String resultString = "{ \"userId\":\"" + userId +"\",\"status\":\""+wrk.status+"\",\"isInterrupted\":\""+wrk.thread.isInterrupted()+"\" }";
+                    if(wrk.result != null) {
+                        // merging result
+                        JSONObject resultJson = new JSONObject(resultString);                    
+                        if(wrk.result instanceof String) {                            
+                            JSONObject resultJSON = new JSONObject((String)wrk.result);
+                            utility.mergeJsonObject(resultJSON, resultJson);
+                        } else if(wrk.result instanceof Integer || wrk.result instanceof Boolean || wrk.result instanceof Long) {
+                        } else if(wrk.result instanceof JSONObject) {
+                            utility.mergeJsonObject((JSONObject)wrk.result, resultJson);
+                        } else if(wrk.result instanceof JSONArray) {
+                            JSONObject resultJSON = new JSONObject();
+                            resultJSON.put("result", wrk.result);
+                            utility.mergeJsonObject((JSONObject)resultJSON, resultJson);
+                        }
+                        return resultJson.toString();
+                    } else {
+                        return resultString;
+                    }                         
                 }
             }
 

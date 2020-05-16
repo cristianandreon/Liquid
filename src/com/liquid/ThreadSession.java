@@ -19,9 +19,8 @@ public class ThreadSession {
     //
     // Dati sessione per thread
     //
-    // N.B.: Di fatto TLRequests potrebbe essere sostituito dal threadId
     //
-    static ThreadLocal<Object> TLRequests = new ThreadLocal<Object>();    
+
     static public boolean bLocked = false;
     
     public String browser = "";
@@ -52,7 +51,6 @@ public class ThreadSession {
             threadSessionInfo.threadName = threadSessionInfo.thread.getName();
             threadSessionInfo.threadId = threadSessionInfo.thread.getId();
             threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
-            TLRequests.set(threadSessionInfo);
             threadSessionList.add(threadSessionInfo);
         } finally {
             bLocked = false;
@@ -71,7 +69,6 @@ public class ThreadSession {
     
     static public ThreadSession getThreadSessionInfo ( ) {
         long threadId = Thread.currentThread().getId();
-        // return (ThreadSession)TLRequests.get();
         for(ThreadSession threadSession : threadSessionList) {
             if(threadSession.threadId == threadId) return threadSession;
             if(threadSession.childThreadIds != null) {
@@ -87,7 +84,6 @@ public class ThreadSession {
         try {
             bLocked = true;
             threadSessionList.remove(getThreadSessionInfo());
-            TLRequests.remove();
         } finally {
             bLocked = false;
         }
@@ -124,7 +120,7 @@ public class ThreadSession {
     }
 
     static public String getIncomingMessage () {        
-        ThreadSession threadSession = (ThreadSession)TLRequests.get();
+        ThreadSession threadSession = getThreadSessionInfo ();
         if(threadSession != null) {
             if(threadSession.incoming != null) {
                 return threadSession.incoming;
@@ -133,7 +129,7 @@ public class ThreadSession {
         return null;
     }
     static public String resetIncomingMessage () {        
-        ThreadSession threadSession = (ThreadSession)TLRequests.get();
+        ThreadSession threadSession = getThreadSessionInfo ();
         if(threadSession != null) {
             threadSession.incoming = null;
         }

@@ -1612,7 +1612,7 @@ public class event {
     
     static public Object longTimeTaskMessageTest (Object owner, Object params, Object clientData, Object freeParam ) {
         try {
-            Thread.sleep(3000);
+            Thread.sleep(1000);
             String selectedAction = "";
             int revVal = Messagebox.show( " Test QUESTION message .. select an action : ", "Liquid", Messagebox.IGNORE+Messagebox.ABORT+Messagebox.RETRY+Messagebox.QUESTION);
             if(revVal == Messagebox.RETRY) {

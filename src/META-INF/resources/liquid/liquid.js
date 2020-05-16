@@ -293,7 +293,7 @@ class LiquidCtrl {
                 Liquid.registerOnUnloadPage();
                 if(!this.xhr)
                     this.xhr = new XMLHttpRequest();
-                if(Liquid.whait_for_xhr_ready(this, "register control")) {
+                if(Liquid.wait_for_xhr_ready(this, "register control")) {
                     try {
                         if(typeof this.tableJson.schema === 'undefined')
                             if(this.tableJson.isSystem !== true) debugger;
@@ -2334,7 +2334,7 @@ var Liquid = {
                         Liquid.registerOnUnloadPage();
                         if(!liquid.xhr)
                             liquid.xhr = new XMLHttpRequest();
-                        if(Liquid.whait_for_xhr_ready(liquid, "validate field")) {
+                        if(Liquid.wait_for_xhr_ready(liquid, "validate field")) {
                             try {
                                 Liquid.startWaiting(liquid);                                
                                 command.params.push( { value: (value !== null ? btoa(value) : "") } );            
@@ -2362,7 +2362,6 @@ var Liquid = {
                                     Liquid.release_xhr(liquid);
                                     if(liquid.xhr.status === 200) {
                                         var httpResultJson = null;
-
                                         if(command.client) {
                                             if(command.clientAfter === true || command.clientBefore === false) {
                                                 validateResult[1] = Liquid.executeClientSide(liquid, "command:" + command.name, command.client, liquidCommandParams, command.isNative);
@@ -2371,7 +2370,8 @@ var Liquid = {
 
                                         try {
                                             // \b \f \n \r \t
-                                            var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                                            var responseText = Liquid.getXHRResponse(liquid.xhr.responseText);
+                                            responseText = responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
                                             httpResultJson = JSON.parse(responseText);
                                             command.response = httpResultJson;
                                             if(httpResultJson) {
@@ -2831,7 +2831,7 @@ var Liquid = {
                 Liquid.registerOnUnloadPage();
                 if(!liquid.xhr)
                     liquid.xhr = new XMLHttpRequest();
-                if(Liquid.whait_for_xhr_ready(liquid, "loading data")) {
+                if(Liquid.wait_for_xhr_ready(liquid, "loading data")) {
                         liquid.xhr.addEventListener("progress", function(){ Liquid.updateProgress(event, liquid); }, false);
                         liquid.xhr.addEventListener("load", function(){ Liquid.transferComplete(event, liquid); }, false);
                         liquid.xhr.addEventListener("error", function(){ Liquid.transferFailed(event, liquid); }, false);
@@ -3098,7 +3098,7 @@ var Liquid = {
             }
         }
     },
-    whait_for_xhr_ready:function(liquid, description) {
+    wait_for_xhr_ready:function(liquid, description) {
         if(liquid.xhrBusy) {
             console.warn("WARNING : on control "+liquid.controlId+" waiting for request \""+liquid.xhrDescription+"\"..");
             var timeout_msec = 3000;
@@ -5011,12 +5011,13 @@ var Liquid = {
                                     var httpResultJson = null;
                                     if(event.xhr.responseText !== null && event.xhr.responseText !== 'null') {
                                         try {
-                                            httpResultJson = JSON.parse(event.xhr.responseText);
-                                            } catch (e) {
-                                                httpResultJson = null;
-                                                console.error("response:"+event.xhr.responseText);
-                                                console.error("ERROR : onEventProcess() : errore in response process:" + e  + " on event "+event.name+" on control "+liquid.controlId);
-                                            }
+                                            var responseText = Liquid.getXHRResponse(event.xhr.responseText);
+                                            httpResultJson = JSON.parse(responseText);
+                                        } catch (e) {
+                                            httpResultJson = null;
+                                            console.error("response:"+responseText);
+                                            console.error("ERROR : onEventProcess() : errore in response process:" + e  + " on event "+event.name+" on control "+liquid.controlId);
+                                        }
                                         
                                         event.response = httpResultJson;
                                         if(httpResultJson) {
@@ -5189,7 +5190,7 @@ var Liquid = {
             Liquid.registerOnUnloadPage();
             if(!liquid.xhr)
                 liquid.xhr = new XMLHttpRequest();
-            if(Liquid.whait_for_xhr_ready(liquid, "command "+(command ? command.name : "?"))) {
+            if(Liquid.wait_for_xhr_ready(liquid, "command "+(command ? command.name : "?"))) {
                 try {
                     Liquid.startWaiting(liquid);
                     if(command.client) {
@@ -10181,6 +10182,47 @@ var Liquid = {
             menuX.stateMoving = false;
         }
     },
+    handleResponse:function(liquid, title, resultJson, bShowMessage, hShowConsole, bHandleClientSite) {
+        var retVal = true;
+        if(resultJson.error) {
+            var err = null;
+            try { err = atob(resultJson.error); } catch(e) { err = resultJson.error; }
+            if(bShowMessage) {
+                Liquid.dialogBox(null, resultJson.title ? resultJson.title : "ERROR", err, { text:"OK", func:function() { } }, null);
+            }
+            if(hShowConsole) {
+                console.error("[SERVER] ERROR:" + err);
+            }
+        } else if(resultJson.warning) {
+            var warn = null; 
+            try { warn = atob(resultJson.warning); } catch(e) { warn = resultJson.warning; }
+            if(bShowMessage) {
+                Liquid.dialogBox(null, resultJson.title ? resultJson.title : "WARNING", warn, { text:"OK", func:function() { } }, null);
+            }
+            if(hShowConsole) {
+                console.warn("[SERVER] WSRNING:" + warn);
+            }
+        } else if(resultJson.message) {
+            var msg = null; 
+            try { msg = atob(resultJson.message); } catch(e) { msg = resultJson.message; }
+            if(bShowMessage) {
+                Liquid.dialogBox(null, resultJson.title ? resultJson.title : "MESSAGE", msg, { text:"OK", func:function() { } }, null);
+            }
+            if(hShowConsole) {
+                console.info("[SERVER] MESSAGE:" + msg);
+            }
+        }
+        if(bHandleClientSite) {
+            try {
+                if(resultJson.client) {
+                    retVal = Liquid.executeClientSide(liquid, title, resultJson.client, resultJson.params, true);
+                }
+            } catch(e) {
+                console.error("ERROR:"+e);
+            }
+        }
+        return retVal;
+    },            
     /**
      * Start a command al long operation in the server
      * @param {liquid} the calling control
@@ -10189,16 +10231,18 @@ var Liquid = {
      * @param {async} true if you wanto to wait for server to finish (or need to stay connected to get message from server)
      * @return {} n/d
      */
-    startWorker:function(liquid, command, userId, async) {
+    startWorker:function(liquid, command, userId, sync) {
         if(command) {
+            if(!liquid) liquid = {};
             if(command.server) {
                 if(userId) {
+                    var syncParam = (typeof sync !== 'undefined' ? sync : true);
                     var liquidCommandParams = Liquid.buildCommandParams(liquid, command);
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', glLiquidServlet + '?operation=startWorker'
                             +'&userId=' + userId
                             +'&className=' + command.server
-                            +'&async=' + (typeof async !== 'undefined' ? async : true)
+                            +'&async=' + syncParam
                             );
                     
                     xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "startWorker", e); }, false);
@@ -10213,20 +10257,21 @@ var Liquid = {
                             if(xhr.status === 200) {
                                 try {
                                     var status = "0";
-                                    if(xhr.responseText) {
+                                    var responseText = Liquid.getXHRResponse(xhr.responseText);
+                                    if(responseText) {
                                         try {
-                                            var resultJson = JSON.parse(xhr.responseText);
+                                            var resultJson = JSON.parse(responseText);
                                             if(resultJson) {
                                                 if(resultJson.userId) {
-                                                    // register worker by userId
-                                                    Liquid.addWorker(liquid, command, resultJson.userId, resultJson.status);
+                                                    if(syncParam !== true) {
+                                                        // register worker by userId
+                                                        Liquid.addWorker(liquid, command, resultJson.userId, resultJson.status);
+                                                    }
                                                 }
-                                                if(resultJson.error) {
-                                                    console.error("[SERVER] ERROR:" + atob(resultJson.error));
-                                                }
+                                                Liquid.handleResponse(liquid, "startWorker", resultJson, true, true, true);
                                             }
                                         } catch(e) {
-                                            console.error("ERROR:"+e+" on:"+xhr.responseText);
+                                            console.error("ERROR:"+e+" on:"+responseText);
                                         }
                                     }
                                 } catch (e) {
@@ -10256,19 +10301,7 @@ var Liquid = {
                                         try {
                                             if(resultJson.result) {
                                                 if(resultJson.status === "200") {
-                                                    if(resultJson.result.error) {
-                                                        var err = null;
-                                                        try { err = atob(resultJson.result.error); } catch(e) { err = resultJson.result.error; }
-                                                        Liquid.dialogBox(null, resultJson.title ? resultJson.result.title : "ERROR", err, { text:"OK", func:function() { } }, null);
-                                                    } else if(resultJson.result.warning) {
-                                                        var warn = null; 
-                                                        try { warn = atob(resultJson.result.warning); } catch(e) { warn = resultJson.result.warning; }
-                                                        Liquid.dialogBox(null, resultJson.result.title ? resultJson.result.title : "WARNING", warn, { text:"OK", func:function() { } }, null);
-                                                    } else if(resultJson.result.message) {
-                                                        var msg = null; 
-                                                        try { msg = atob(resultJson.result.message); img=resultJson.result.img; } catch(e) { msg = resultJson.result.message; }
-                                                        Liquid.dialogBox(null, resultJson.result.title ? resultJson.result.title : "MESSAGE", msg, { text:"OK", func:function() { } }, null);
-                                                    }
+                                                    Liquid.handleResponse(liquid, "getWorker result", resultJson, true, true, true);
                                                     if(glLiquidDBEnable) {
                                                         Liquid.getDB();
                                                         if(glLiquidDB) {
@@ -10288,15 +10321,6 @@ var Liquid = {
                                         } catch(e) {
                                             console.error("ERROR:"+e);
                                         }
-                                        try {
-                                            if(resultJson.result) {
-                                                if(resultJson.result.client) {
-                                                    Liquid.executeClientSide(liquid, "getWorkerResult", resultJson.result.client, resultJson.result.params, true);
-                                                }
-                                            }
-                                        } catch(e) {
-                                            console.error("ERROR:"+e);
-                                        }
                                     } catch(e) {
                                         console.error("ERROR:"+e+" on:"+xhr.responseText);
                                     }
@@ -10310,36 +10334,71 @@ var Liquid = {
             }
         }
     },    
-    addWorker:function(liquid, command, userId, status) {
-        if(glLiquidDBEnable) {
+    addWorker: function (liquid, command, userId, status) {
+        if (glLiquidDBEnable) {
             Liquid.getDB();
-            if(glLiquidDB) {
-                glLiquidDB.transaction(function (tx) {   
-                    tx.executeSql("SELECT * FROM WORKERS WHERE userId='"+userId+"'", [], function (tx, results) { 
-                        var len = results.rows.length; 
-                        if(len<=0) {
+            if (glLiquidDB) {
+                glLiquidDB.transaction(function (tx) {
+                    tx.executeSql("SELECT * FROM WORKERS WHERE userId='" + userId + "'", [], function (tx, results) {
+                        var len = results.rows.length;
+                        if (len <= 0) {
                             var date = new Date();
-                            tx.executeSql("INSERT INTO WORKERS (userId,status,controlId,command,date) VALUES ('"+userId+"','"+status+"','"+(liquid?liquid.controlId:"")+"','"+(command?command.name:"")+"','"+date.toISOString()+"')"); 
+                            tx.executeSql("INSERT INTO WORKERS (userId,status,controlId,command,date) VALUES ('" + userId + "','" + status + "','" + (liquid ? liquid.controlId : "") + "','" + (command ? command.name : "") + "','" + date.toISOString() + "')");
                         }
-                    }, null); 
+                    }, null);
                 });
-            } else if(glLiquidIDB) {
-                var transaction = glLiquidDB.transaction(["WORKERS"], "readwrite");
-                var objectStore = transaction.objectStore("data");
-                var request = objectStore.get(userId);
-                request.onerror = function(event) {
-                    var transaction = glLiquidDB.transaction(["WORKERS"], "readwrite");
-                    var objectStore = transaction.objectStore("data");
-                    var date = new Date();
-                    var data = { userId:userId, status:status, controlId:(liquid?liquid.controlId:""), command:(command?command.name:""), date:date };
-                    var request = objectStore.add(data);
-                    request.onsuccess = function(event) {
-                        Liquid.copyToClipBoradDone();
+            } else if (glLiquidIDB) {
+                var transaction = glLiquidIDB.transaction(["WORKERS"], "readwrite");
+                var objectStore = transaction.objectStore("WORKERS");
+                var request = objectStore.getAll();
+                if (request.readyState === 'done') {
+                    Liquid.addWorkerToIndexDB(request.result, liquid, userId, status, command);
+                } else {
+                    request.onerror = function (event) {
+                        console.error("IndexedDB error:" + event.target.error.message);
                     };
-                };
-                request.onsuccess = function(event) {
-                };                
+                    request.onsuccess = function (event) {
+                        event.target.readyState = 'done';
+                    };
+                    if (Liquid.wait_for_indexdb_ready(request, "")) {
+                        Liquid.addWorkerToIndexDB(request.result, liquid, command, userId, status);
+                    }
+                }
+            } else {
+                console.error("addWorker() no localDB media");
             }
+        }
+    },
+    addWorkerToIndexDB:function(result, liquid, command, userId, status ) {
+        try {
+            var bFoundWorker = false;
+            var cursors = result;
+            for(var ic=0; ic<cursors.length; ic++) {
+                cursor = cursors[ic];
+                if (cursor) {
+                    if(cursor.userId == userId) {
+                        bFoundWorker = true;
+                        break;
+                    }
+                }
+            }
+            if(!bFoundWorker) {
+                var date = new Date();
+                var data = { userId:userId, status:status, controlId:(liquid?(liquid.controlId?liquid.controlId:""):""), command:(command?command.name:""), date:date.toISOString() };
+                transaction = glLiquidIDB.transaction(["WORKERS"], "readwrite");
+                objectStore = transaction.objectStore("WORKERS");
+                request = objectStore.add(data);
+                if(request.readyState === 'done') {
+                } else {
+                    request.onerror = function(event) {
+                        console.error("IndexedDB error:"+event.target.error.message);
+                    };
+                    request.onsuccess = function(event) {
+                    };
+                }
+            }
+        } catch(e) {
+            console.error("addWorkerToIndexDB() error:"+e);
         }
     },
     /**
@@ -10382,22 +10441,29 @@ var Liquid = {
                 });
             }
         } else if(glLiquidIDB) {
-            var transaction = glLiquidDB.transaction(["WORKERS"], "readwrite");
-            var objectStore = transaction.objectStore("data");
+            var transaction = glLiquidIDB.transaction(["WORKERS"], "readwrite");
+            var objectStore = transaction.objectStore("WORKERS");
             var request = objectStore.getAll();
-            request.onerror = function(event) {
-                console.error("ERROR: readWorkers() : "+event);
-            };
-            request.onsuccess = function(event) {
-                var cursor = event.target.result;
-                if (cursor) {
-                    var key = cursor.primaryKey;
-                    if(cursor.userId) {
-                        Liquid.getWorker(cursor.liquid, cursor.command, cursor.userId);
+            if(request.readyState === 'done') {
+                Liquid.copyToClipBoradInternal(liquid);
+            } else {
+                request.onerror = function(event) {
+                    console.error("ERROR: readWorkers() : "+event);
+                };
+                request.onsuccess = function(event) {
+                    var cursors = event.target.result;
+                    if (cursors) {
+                        for(var ic=0; ic<cursors.length; ic++) {
+                            cursor = cursors[ic];
+                            if (cursor) {
+                                if(cursor.userId) {
+                                    Liquid.getWorker(cursor.liquid, cursor.command, cursor.userId);
+                                }
+                            }
+                        }
                     }
-                    cursor.continue();                        
-                }
-            };                
+                };                
+            }
         }
     },
     copyToClipBorad:function(liquid) {
@@ -10443,7 +10509,7 @@ var Liquid = {
                 } else if(glLiquidIDB) {                    
                     var transaction = glLiquidIDB.transaction(["CLIPBOARD"], "readwrite");
                     var objectStore = transaction.objectStore("CLIPBOARD");
-                    var data = { controlId:liquid.controlId, columns:JSON.stringify(liquid.tableJson.columns), rows:(Liquid.serializedRow(liquid, true)), date:date.toISOString() };                    
+                    var data = { controlId:liquid.controlId, columns:JSON.stringify(liquid.tableJson.columns), rows:(Liquid.serializedRow(liquid, true)), date:date.toISOString() };
                     var request = objectStore.add(data);
                     if(request.readyState === 'done') {
                         Liquid.copyToClipBoradDone(liquid);
@@ -10594,41 +10660,47 @@ var Liquid = {
                             // var idbCallback = function (e) { console.load("idbCallback():"+e); }
                             // var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion, idbCallback);
                             var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion);
-                            if(request.readyState === 'done') { // they mixed async with sync ... never seen a such shit
-                                glLiquidIDB = request.result;
-                            } else {
-                                request.onerror = function(event) {
-                                    console.error("IndexedDB not enabled! error:"+event.target.error.message);
-                                };
-                                request.onsuccess = function(event) { 
+                            request.onerror = function(event) {
+                                console.error("IndexedDB not enabled! error:"+event.target.error.message);
+                                event.target.readyState = 'done';
+                            };
+                            request.onsuccess = function(event) { 
+                                glLiquidIDB = event.target.result;
+                                event.target.readyState = 'done';
+                            };
+                            request.onupgradeneeded = function(event) {
+                                try {
                                     glLiquidIDB = event.target.result;
-                                };
-                                request.onupgradeneeded = function(event) {
-                                    try {
-                                        glLiquidIDB = event.target.result;
-                                        // var transaction = glLiquidIDB.transaction([],  IDBTransaction.READ_WRITE, 2000);
-                                        // transaction.oncomplete = function(){}
-                                        if (!glLiquidIDB.objectStoreNames.contains('WORKERS')) {
-                                            var objStoreWorker = glLiquidIDB.createObjectStore("WORKERS");
-                                            objStoreWorker.createIndex('id', 'id', {keyPath: 'id', autoIncrement:true});
-                                            objStoreWorker.createIndex("userId", "userId", { unique: false });
-                                            objStoreWorker.createIndex("status", "status", { unique: false });
-                                            objStoreWorker.createIndex("controlId", "controlId", { unique: false });
-                                            objStoreWorker.createIndex("command", "command", { unique: false });
-                                            objStoreWorker.createIndex("date", "date", { unique: false });
-                                        }
-                                        if (!glLiquidIDB.objectStoreNames.contains('CLIPBOARD')) {
-                                            var objStoreClipboard = glLiquidIDB.createObjectStore("CLIPBOARD", { autoIncrement : true });
-                                            objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement:true});
-                                            objStoreClipboard.createIndex("controlId", "controlId", { unique: false });
-                                            objStoreClipboard.createIndex("columns", "command", { unique: false });
-                                            objStoreClipboard.createIndex("rows", "rows", { unique: false });
-                                            objStoreClipboard.createIndex("date", "date", { unique: false });
-                                        }
-                                    } catch(e) {
-                                        console.error("IndexedDB not enabled! error:"+e);                                
+                                    // var transaction = glLiquidIDB.transaction([],  IDBTransaction.READ_WRITE, 2000);
+                                    // transaction.oncomplete = function(){}
+                                    if (!glLiquidIDB.objectStoreNames.contains('WORKERS')) {
+                                        var objStoreWorker = glLiquidIDB.createObjectStore("WORKERS", { autoIncrement : true } );
+                                        objStoreWorker.createIndex('id', 'id', {keyPath: 'id', autoIncrement:true});
+                                        objStoreWorker.createIndex("userId", "userId", { unique: false });
+                                        objStoreWorker.createIndex("status", "status", { unique: false });
+                                        objStoreWorker.createIndex("controlId", "controlId", { unique: false });
+                                        objStoreWorker.createIndex("command", "command", { unique: false });
+                                        objStoreWorker.createIndex("date", "date", { unique: false });
                                     }
-                                };
+                                    if (!glLiquidIDB.objectStoreNames.contains('CLIPBOARD')) {
+                                        var objStoreClipboard = glLiquidIDB.createObjectStore("CLIPBOARD", { autoIncrement : true } );
+                                        objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement:true});
+                                        objStoreClipboard.createIndex("controlId", "controlId", { unique: false });
+                                        objStoreClipboard.createIndex("columns", "command", { unique: false });
+                                        objStoreClipboard.createIndex("rows", "rows", { unique: false });
+                                        objStoreClipboard.createIndex("date", "date", { unique: false });
+                                    }
+                                } catch(e) {
+                                    console.error("IndexedDB not enabled! error:"+e);                                
+                                }
+                                event.target.readyState = 'done';
+                            };
+                            
+                            request.onblocked = function(event) {
+                                console.log("Please close all other tabs with this site open!");
+                            };
+                            if(Liquid.wait_for_indexdb_ready(request, "")) {
+                                glLiquidIDB = request.result;
                             }
                         } else {
                             alert("This browser desn't support HTML WebDB\n\nUnable to use local database");
@@ -10640,6 +10712,23 @@ var Liquid = {
                 }
             }
         }
+    },
+    wait_for_indexdb_ready:function(request, title) {
+        if(request.readyState !== 'done') {
+            console.log("wait_for_indexdb_ready:"+request.readyState);
+            var timeout_msec = 10000;
+            const date = Date.now();
+            var currentDate = null;
+            do {
+                currentDate = Date.now();
+            } while (request.readyState != 'done' && currentDate - date < timeout_msec)
+            if(request.readyState === 'done') {
+                return true;
+            }
+        } else {
+            return true;
+        }
+        return false;
     },
     getHTMLElementOffset:function offset(element) {
         var top = 0, left = 0;
@@ -11560,7 +11649,7 @@ var Liquid = {
                     Liquid.registerOnUnloadPage();
                     if(!liquid.xhr)
                         liquid.xhr = new XMLHttpRequest();
-                    if(Liquid.whait_for_xhr_ready(liquid), "save to server") {
+                    if(Liquid.wait_for_xhr_ready(liquid), "save to server") {
                         try {
                             Liquid.startWaiting(liquid);
                             liquid.xhr.open('POST', glLiquidServlet + '?operation=setJson'

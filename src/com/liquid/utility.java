@@ -1082,5 +1082,18 @@ public class utility {
         outStream.close();
         
         return new Object [] { true };
-    }    
+    }
+    
+    
+    public static int mergeJsonObject( JSONObject source, JSONObject target ) throws Exception {
+        int insertCount = 0;
+        for (Object keyObject : JSONObject.getNames(source)) {
+            String key = (String)keyObject;
+            Object obj = source.get(key);
+            target.put(key, obj);
+            insertCount++;
+        }
+        return insertCount;
+    }
+    
 }
