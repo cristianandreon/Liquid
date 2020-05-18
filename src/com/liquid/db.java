@@ -178,7 +178,7 @@ public class db {
     }
 
     static public String get_table_recordset(ParamsUtil.get_recordset_params recordset_params, JspWriter out) {
-        Connection conn = null;
+        Connection conn = null, connToDB = null, connToUse = null;
         String executingQuery = null, executingQueryForCache = null;
         String countQuery = null;
         String out_string = "", out_values_string = "", out_codes_string = "", error = "", warning = "", message = "", title = "";
@@ -234,10 +234,7 @@ public class db {
             ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap> ();           
             workspace tbl_wrk = workspace.get_tbl_manager_workspace( tblWrk != null ? tblWrk : controlId );
             String tblWrkDesc = (tblWrk!=null?tblWrk+".":"")+(controlId!=null?controlId:"");
-            boolean isOracle = false;
-            boolean isMySQL = false;
-            boolean isPostgres = false;
-            boolean isSqlServer = false;
+            boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
             
             
             if(tbl_wrk != null) {
@@ -289,11 +286,28 @@ public class db {
                     return "{\"error\":\""+"Error: invalid token on :"+controlId+"\"}";
                 }
 
-                        
-                // Controllo definizione database / database richiesto
-                if(!check_database_definition(conn, database)) {
-                    System.out.println("LIQUID WARNING : database defined by driver :"+conn.getCatalog()+" requesting database:"+database);                
+                // set the connection
+                connToUse = conn;
+                if(database == null || database.isEmpty()) {
+                    database = conn.getCatalog();
+                } else {
+                    conn.setCatalog(database);
+                    String db = conn.getCatalog();
+                    if(!db.equalsIgnoreCase(database)) {
+                        // set catalog not supported : connect to different DB
+                        conn.close();
+                        conn = null;
+                        connToUse = connToDB = connection.getDBConnection(database);
+                    }
                 }
+                
+                // Controllo definizione database / database richiesto
+                if(!check_database_definition(connToUse, database)) {
+                    String warn = "database defined by driver :"+connToUse.getCatalog()+" requesting database:"+database;
+                    System.out.println("LIQUID WARNING : "+warn);
+                    warning += "["+warn+"]\n";
+                }
+
                 
                 
                 // System calls
@@ -322,12 +336,9 @@ public class db {
                 }
 
                 if(isSystemLiquid != null) {
-                    try { 
-                        if(conn==null) conn = (Connection)(tbl_wrk.get_connection != null ? tbl_wrk.get_connection.invoke(null) : null); 
-                    } catch (Exception ex) { Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex); }
                     
                     if("selectDatabases".equalsIgnoreCase(isSystemLiquid)) {
-                        Object [] result = metadata.getAllDatabases(targetDatabase, conn, bUserFieldIdentificator);
+                        Object [] result = metadata.getAllDatabases(targetDatabase, connToUse, bUserFieldIdentificator);
                         out_string = "{\"resultSet\":" + result[0];
                         out_string += ",\"startRow\":" + "0";
                         out_string += ",\"endRow\":" + result[1];
@@ -335,7 +346,7 @@ public class db {
                         out_string += "}";
                         return out_string;
                     } else if("selectSchemas".equalsIgnoreCase(isSystemLiquid)) {
-                        Object [] result = metadata.getAllSchemas(targetDatabase!=null?targetDatabase:database, targetSchema!=null?targetSchema:schema, conn, bUserFieldIdentificator);
+                        Object [] result = metadata.getAllSchemas(targetDatabase!=null?targetDatabase:database, targetSchema!=null?targetSchema:schema, connToUse, bUserFieldIdentificator);
                         out_string = "{\"resultSet\":" + result[0];
                         out_string += ",\"startRow\":" + "0";
                         out_string += ",\"endRow\":" + result[1];
@@ -343,7 +354,7 @@ public class db {
                         out_string += "}";
                         return out_string;
                     } else if("selectTables".equalsIgnoreCase(isSystemLiquid) || "selectViews".equalsIgnoreCase(isSystemLiquid)) {
-                        Object [] result = metadata.getAllTables(targetDatabase!=null?targetDatabase:database, targetSchema!=null?targetSchema:schema, targetTable, targetView, conn, bUserFieldIdentificator);
+                        Object [] result = metadata.getAllTables(targetDatabase!=null?targetDatabase:database, targetSchema!=null?targetSchema:schema, targetTable, targetView, connToUse, bUserFieldIdentificator);
                         out_string = "{\"resultSet\":" + result[0];
                         out_string += ",\"startRow\":" + "0";
                         out_string += ",\"endRow\":" + result[1];
@@ -352,7 +363,7 @@ public class db {
                         return out_string;
                     } else if("selectColumns".equalsIgnoreCase(isSystemLiquid)) {
                         if(targetTable != null && !targetTable.isEmpty()) {
-                            Object [] result = metadata.getAllColumns(targetDatabase!=null?targetDatabase:database, targetSchema!=null?targetSchema:schema, targetTable, conn, bUserFieldIdentificator);
+                            Object [] result = metadata.getAllColumns(targetDatabase!=null?targetDatabase:database, targetSchema!=null?targetSchema:schema, targetTable, connToUse, bUserFieldIdentificator);
                             out_string = "{\"resultSet\":" + result[0];
                             out_string += ",\"startRow\":" + "0";
                             out_string += ",\"endRow\":" + result[1];
@@ -364,7 +375,7 @@ public class db {
                         return out_string;
                     } else if("selectForeignKeys".equalsIgnoreCase(isSystemLiquid)) {
                         if(targetTable != null && !targetTable.isEmpty()) {
-                            Object [] result = metadata.getAllForeignKeys(targetDatabase!=null?targetDatabase:database, targetSchema!=null?targetSchema:schema, targetTable, conn, bUserFieldIdentificator);
+                            Object [] result = metadata.getAllForeignKeys(targetDatabase!=null?targetDatabase:database, targetSchema!=null?targetSchema:schema, targetTable, connToUse, bUserFieldIdentificator);
                             out_string = "{\"resultSet\":" + result[0];
                             out_string += ",\"startRow\":" + "0";
                             out_string += ",\"endRow\":" + result[1];
@@ -416,7 +427,7 @@ public class db {
                         if(!targetTable.equalsIgnoreCase(table)) System.err.println("// ERROR: cannot access to table outside its definition:"+database+"."+schema+"."+targetTable+"");
                     }
                     
-                    foreignKeys = metadata.getForeignKeyData(database, schema, table, conn);
+                    foreignKeys = metadata.getForeignKeyData(database, schema, table, connToUse);
 
                     for(int ic=0; ic<cols.length(); ic++) {
                         JSONObject col = cols.getJSONObject(ic);
@@ -601,9 +612,9 @@ public class db {
                 for(int i=0; i<usingDatabase.size(); i++) {
                     String stmt = usingDatabase.get(i);
                     if(stmt != null && !stmt.isEmpty()) {
-                        if(conn != null) {
+                        if(connToUse != null) {
                             try {
-                                psdo = conn.prepareStatement(stmt);
+                                psdo = connToUse.prepareStatement(stmt);
                                 psdo.executeUpdate();
                                 psdo.close();
                             } catch(Exception e) {
@@ -1082,9 +1093,9 @@ public class db {
             //
             if(!isCrossTableService) {
                 try {                
-                    if(conn != null) {
+                    if(connToUse != null) {
                         countQuery = "SELECT COUNT(*) AS nRows FROM "+schemaTable + " " + leftJoinList +" " + sWhere;
-                        psdo = conn.prepareStatement(countQuery);
+                        psdo = connToUse.prepareStatement(countQuery);
                         rsdo = psdo.executeQuery();
                         if(rsdo != null) {
                             if(rsdo.next()) {
@@ -1225,8 +1236,8 @@ public class db {
 
             lStartTime = System.currentTimeMillis();
             try {
-                if(conn != null) {
-                    psdo = conn.prepareStatement(executingQuery);
+                if(connToUse != null) {
+                    psdo = connToUse.prepareStatement(executingQuery);
                     rsdo = psdo.executeQuery();
                 }
             } catch(Exception e) {
@@ -1333,7 +1344,13 @@ public class db {
                     conn.close();
             } catch (SQLException ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            }            
+            if(connToDB != null) 
+                try {
+                    connToDB.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+            }            
         }
 
         try {
@@ -1640,15 +1657,25 @@ public class db {
         HttpServletRequest request = (HttpServletRequest)requestParam;
         Object result = null;
         String controlId = null, tblWrk = null, errors = "";
+        if(request != null) {
+            try { controlId = (String) request.getParameter("controlId"); } catch (Exception e) { }            
+            try { tblWrk = (String) request.getParameter("tblWrk"); } catch (Exception e) { }  
+            return get_bean(requestParam, (tblWrk != null ? tblWrk : controlId), ids, format, fields, foreignTables, maxRows);
+        }
+        return null;
+    }
+    static public Object get_bean(Object requestParam, String controlId, String ids, String format, String fields, String foreignTables, long maxRows) {
+        HttpServletRequest request = (HttpServletRequest)requestParam;
+        Object result = null;
+        String errors = "";
         String executingQuery = null;
         Connection conn = null;
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
         
         if(request != null) {
-            try { controlId = (String) request.getParameter("controlId"); } catch (Exception e) { }            
-            try { tblWrk = (String) request.getParameter("tblWrk"); } catch (Exception e) { }  
-            workspace tbl_wrk = workspace.get_tbl_manager_workspace( tblWrk != null ? tblWrk : controlId );
+
+            workspace tbl_wrk = workspace.get_tbl_manager_workspace( controlId );
             
             if(format == null || format.isEmpty())
                 format = "json";
@@ -1658,6 +1685,10 @@ public class db {
                 
             if(tbl_wrk != null) {
                 Object [] queryInfo = get_query_info(request, tbl_wrk);
+                if(queryInfo != null) {
+                    // TODO : create a query with all fields
+                }
+                
                 if(queryInfo != null) {
                     // Esegue la query e crea il bean
                     executingQuery = "";
@@ -2354,7 +2385,31 @@ public class db {
                     return null;
                 }
             }
-        
+
+            boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
+            String itemIdString = "\"", tableIdString = "\"";
+
+            if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("postgres.")) || tbl_wrk.dbProductName.toLowerCase().contains("postgres")) {
+                isPostgres = true;
+            }
+            if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
+                isMySQL = true;
+            }
+            if((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("oracle.")) || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("oracle"))) {
+                isOracle = true;
+            }
+            if((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("sqlserver.")) || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("sqlserver"))) {
+                isSqlServer = true;
+            }
+            
+            if(isMySQL) {
+                itemIdString = "`";
+                tableIdString = "";
+            } else {
+                itemIdString = "\"";
+                tableIdString = "\"";
+            }
+            
             cols = tbl_wrk.tableJson.getJSONArray("columns");
             if(keyColumn == null || keyColumn.isEmpty()) {
                 if(tbl_wrk.tableJson.has("primaryKey")) {
@@ -2377,7 +2432,7 @@ public class db {
                 column_alias_list += colName;
             }
 
-            String executingQuery = "SELECT * FROM " + schema + "." + table + " WHERE " + keyColumn + "='" + key + "'";
+            String executingQuery = "SELECT * FROM " + (tableIdString+schema+tableIdString) + "." + (tableIdString+table+tableIdString) + " WHERE " + keyColumn + "='" + key + "'";
 
 
             if(tbl_wrk != null) {
@@ -2436,6 +2491,10 @@ public class db {
                                                     -1
                                                     );
 
+                // Freee connection as soon as possible
+                if(conn != null) conn.close();
+                conn = null;
+                
                 if(recordset != null) {
                     // Agginta eventuali errori 
                     // out_values_string += (String)recordset[1];

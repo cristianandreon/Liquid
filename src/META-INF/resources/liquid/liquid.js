@@ -7657,8 +7657,9 @@ var Liquid = {
                             layout.rowsContainer[ir].containerObj.style.filter = "";
                             layout.rowsContainer[ir].containerObj.disabled = false;
                             layout.rowsContainer[ir].containerObj.style.pointerEvents = '';
-                            
+                            //
                             // Firing event onRowRendering
+                            //
                             Liquid.onEvent(layout.rowsContainer[ir].containerObj, "onRowRendering", { 
                                 layout:layout, 
                                 layoutRow:(ir+1), 
@@ -8014,13 +8015,15 @@ var Liquid = {
                 } else {
                     if(bSetup) {
                         if(linkCount) {
-                            if(Liquid.debug)
-                                value = "[COLUMN '" + objLinkerDesc + "'NOT FOUND]";
-                            if(obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
-                                obj.value = value;
-                            } else if(obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
-                                obj.innerHTML = value;
-                            }
+                            try {
+                                if(Liquid.debug)
+                                    value = "[COLUMN '" + objLinkerDesc + "'NOT FOUND]";
+                                if(obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
+                                    obj.value = value;
+                                } else if(obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
+                                    obj.innerHTML = value;
+                                }
+                            } catch (e) {}
                         }
                     }
                 }

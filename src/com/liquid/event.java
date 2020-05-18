@@ -22,7 +22,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
 public class event {
     
 
@@ -50,6 +49,7 @@ public class event {
         String params = "";
         String clientData = "";
         String controlId = "";
+        String owner = "";
         String tblWrk = "";
         
         
@@ -67,6 +67,10 @@ public class event {
             	controlId = (String) request.getParameter("controlId");
             } catch (Exception e) {
             }            
+            try {
+                owner = (String) request.getParameter("owner");
+            } catch (Exception e) {
+            }  
             try {
                 tblWrk = (String) request.getParameter("tblWrk");
             } catch (Exception e) {
@@ -86,7 +90,7 @@ public class event {
             try {
 
                 // get instance and method
-                Object [] result = get_method_by_class_name(className, tbl_wrk);
+                Object [] result = get_method_by_class_name(className, tbl_wrk, owner);
                 Object classInstance = result[0];
                 Method method = (Method)result[1];
                 
@@ -120,7 +124,7 @@ public class event {
         return errorJson;
     }
     
-    static public Object [] get_method_by_class_name(String className, workspace tbl_wrk) throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException {
+    static public Object [] get_method_by_class_name(String className, workspace tbl_wrk, String owner) throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException {
         if(className != null && !className.isEmpty()) {
             String objectClassName = className;
             String sMethod = "";
@@ -134,6 +138,10 @@ public class event {
                     sMethod = className;
                     cls = classInstance.getClass();
                 }
+            } else if(owner != null && !owner.isEmpty()) {
+                cls = Class.forName(owner);
+                classInstance = (Object) cls.newInstance(); 
+                sMethod = className;
             }
             if(classInstance == null || classParts.length > 1) {
                 if(classParts.length > 1) {
@@ -186,7 +194,7 @@ public class event {
                                                     String uRetVal = null;
                                                     if(uServer != null && !uServer.isEmpty()) {
                                                         // get instance and method
-                                                        Object [] result = get_method_by_class_name(uServer, liquid);
+                                                        Object [] result = get_method_by_class_name(uServer, liquid, null);
                                                         Object classInstance = result[0];
                                                         Method method = (Method)result[1];
                                                         

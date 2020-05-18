@@ -231,12 +231,16 @@ public class metadata {
                 }
                 
                 metaDataTable.add(new MetaDataTable(tableName, tableSchema, metaDataCols));
-                System.err.println("Read meatadata on table: " + tableSchema + "." + tableName + " recCount:" + recCount + " Tempo lettura :" + (System.currentTimeMillis() - msTrace));
+                System.out.println("Read meatadata on table: " + tableSchema + "." + tableName + " recCount:" + recCount + " Tempo lettura :" + (System.currentTimeMillis() - msTrace));
 
                 if (tableColumnName != null) {
                     Object foundMcol = getTableMetadata(conn, tableSchema, tableName, tableColumnName);
                     if(foundMcol == null) {
-                        System.err.println("readTableMetadata() error: on table:" + tableSchema + "." + tableName + " Column just added not found!!!");
+                        System.err.println("readTableMetadata() error: on table:" + tableSchema + "." + tableName + " Column just added not found...maybe you are adding not exiasting column");
+                        // Add dummy data to avoid adding loop
+                        MetaDataCol metaDataCol = new MetaDataCol(tableColumnName, "", "", "", "", "", "", "", "", "", "", "", "", "");
+                        metaDataCols.add(metaDataCol);
+                        metaDataTable.add(new MetaDataTable(tableName, tableSchema, metaDataCols));
                     }
                     return foundMcol;
                 }

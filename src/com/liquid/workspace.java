@@ -1354,16 +1354,20 @@ public class workspace {
                 URLClassLoader urlClassLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
                 for (URL url : urlClassLoader.getURLs() ) {
                     if (url.getPath().contains("Liquid.jar")) {
-                        fullFileName = "jar:file:" + url.getPath() + "!/META-INF/resources"+fileName;
-                        URL inputURL = null;
-                        inputURL = new URL(fullFileName);
-                        JarURLConnection conn = (JarURLConnection)inputURL.openConnection();
-                        InputStream in = conn.getInputStream();
-                        // InputStream in = workspace.class.getClassLoader().getResourceAsStream(inputFile); 
-                        // in = workspace.class.getResourceAsStream(inputFile); 
-                        if(in != null) {
-                            br = new BufferedReader(new InputStreamReader(in));
-                            if(br != null) break;
+                        try {
+                            fullFileName = "jar:file:" + url.getPath() + "!/META-INF/resources"+fileName;
+                            URL inputURL = null;
+                            inputURL = new URL(fullFileName);
+                            JarURLConnection conn = (JarURLConnection)inputURL.openConnection();
+                            InputStream in = conn.getInputStream();
+                            // InputStream in = workspace.class.getClassLoader().getResourceAsStream(inputFile); 
+                            // in = workspace.class.getResourceAsStream(inputFile); 
+                            if(in != null) {
+                                br = new BufferedReader(new InputStreamReader(in));
+                                if(br != null) break;
+                            }
+                        } catch (Throwable ex) {
+                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
                 }
@@ -1738,13 +1742,17 @@ public class workspace {
  
     static boolean check_database_definition( Connection conn, String database ) {
         if(database != null && !database.isEmpty()) {
-            String driverDatabase;
+            String driverDatabase = null;
             try {
-                driverDatabase = conn.getCatalog();
-                if(driverDatabase != null && !driverDatabase.isEmpty()) {
-                    if(!driverDatabase.equalsIgnoreCase(database)) {
-                        return false;
+                if(conn != null) {
+                    driverDatabase = conn.getCatalog();
+                    if(driverDatabase != null && !driverDatabase.isEmpty()) {
+                        if(!driverDatabase.equalsIgnoreCase(database)) {
+                            return false;
+                        }
                     }
+                } else {
+                    return false;
                 }
             } catch (SQLException ex) {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);

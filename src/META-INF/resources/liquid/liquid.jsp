@@ -12,6 +12,7 @@
     import="com.liquid.utility"
     import="com.liquid.login"
     import="com.liquid.ThreadSession"
+    import="com.liquid.ColumnsManager"
     errorPage="" 
     %><%!
     %><%
@@ -85,11 +86,11 @@
 
         } else if (operation != null && operation.equalsIgnoreCase("getColumnsManager")) {
             // Ritorna una WinX Liquid per la gestione delle colonne
-            out.print( utility.get_table_column_windowx_json(request, operation, out) );
+            out.print( ColumnsManager.get_table_column_windowx_json(request, operation, out) );
 
         } else if (operation != null && operation.equalsIgnoreCase("setColumnsManager")) {
             // Salvataggio dalla gestione delle colonne
-            out.print( utility.set_table_column_windowx_json(request, operation, out) );
+            out.print( ColumnsManager.set_table_column_windowx_json(request, operation, out) );
 
 
         } else if (operation != null && operation.equalsIgnoreCase("countOccurences")) {

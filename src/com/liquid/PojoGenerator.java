@@ -9,11 +9,19 @@ package com.liquid;
  *
  * @author Cristitan
  */
+import java.io.File;
 import java.io.Serializable;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.Map.Entry;
+import javassist.CannotCompileException;
 
-import javassist.*;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtField;
+import javassist.CtMethod;
+import javassist.NotFoundException;
 
 
 public class PojoGenerator {
@@ -32,10 +40,10 @@ public class PojoGenerator {
             System.out.println("javassist ver.: "+javassist.CtClass.version);
 
             try {
-                pool = ClassPool.getDefault();
-            } catch(Throwable th) {
+                pool = javassist.ClassPool.getDefault();
+            } catch(Throwable th) {                
                 error += th.getMessage() +" "+ th.getCause();
-                System.err.println("// PojoGenerator.generate() Error:" + th.getLocalizedMessage()+"..make sure to include javassist.jar in your project");
+                System.err.println("// PojoGenerator.generate() Error:" + th.getLocalizedMessage()+"..make sure to include javassist.jar in your project, or add fat version of Liquid.jar");
                 return null;
             }        
             
