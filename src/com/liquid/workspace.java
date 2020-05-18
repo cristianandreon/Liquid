@@ -1196,7 +1196,7 @@ public class workspace {
      * @see         workspace
      */
     static public String get_button_control(String name, String style, String className, String [] Objects, String clientSideCode, boolean clientAfter ) {
-        return get_button_control(name, style, className, Objects, clientSideCode, false, null );
+        return get_button_control(name, style, className, Objects, clientSideCode, clientAfter, null );
     }
     
     // Aggiunge un oggetto botton_control, raffinando il Json e ritornando l' html per il client
@@ -1218,7 +1218,7 @@ public class workspace {
      */
     static public String get_button_control(String name, String style, String className, String [] Objects, String clientSideCode, boolean clientAfter, String additionParams ) {
         try {
-            String params = "", additionParamsPrepared = "";
+            String params = "";
             if(Objects != null) {
                 for (String Object : Objects) {
                     params += (params.length()>0?",":"") + "'" + (String)Object + "'";
@@ -1231,7 +1231,6 @@ public class workspace {
                     + ",server:'"+(className != null ? className : "") + "'"
                     + ",params:["+(params != null ? params : "")+"]"
                     + ",clientAfter:"+clientAfter
-                    + (!additionParamsPrepared.isEmpty() ? ","+additionParamsPrepared : "")
                     + "}";
             
             JSONObject commandJson = new JSONObject(sCommandJson);
@@ -1239,8 +1238,11 @@ public class workspace {
                 JSONObject additionParamsJson = new JSONObject(additionParams);
                 utility.mergeJsonObject(additionParamsJson, commandJson);
             }
-            String result = "<button onclick=\"Liquid.onButton(this, "+commandJson.toString()+")\">"+name+"</button>";
-            return result;    
+            return "<button onclick='Liquid.onButtonFromString(this, \""
+                    +(commandJson.toString().replace("\"", "\\\""))
+                    +"\");'>"
+                    +name
+                    +"</button>";            
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
         }
