@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 // Liquid ver.1.095   Copyright 2020 Cristian Andreon - cristianandreon.eu
-// 8.1.2020 - 15-5-2020
+// 8.1.2020 - 19-5-2020
 // TODO : see trello.com
 
 // Automatic event firing: 
@@ -623,6 +623,7 @@ class LiquidCtrl {
                                 this.outDivObj.style.top = '10px';
                             } else if(isFormX) {
                             	this.outDivObj.style.position = 'absolute';
+                                this.outDivObj.className += " liquidFormX";
                             }
                             this.outDivObjCreated = true;
                             document.body.insertBefore(this.outDivObj, document.body.firstChild);
@@ -1689,7 +1690,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.095,
+    version: 1.096,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -1783,6 +1784,13 @@ var Liquid = {
         } catch (e) { console.error(e); }
         return null;
     },    
+    getLiquidByFullScan:function(obj) {
+        while(obj) {
+            liquid = Liquid.getLiquid(obj);
+            if(liquid) return liquid;
+            obj = obj.parentNode;
+        }
+    },
     buildCommandParams:function(liquid, command) {
         if(liquid || command) {
             // command.name, command.params, command.server, command.client, command.isNative
@@ -1791,9 +1799,9 @@ var Liquid = {
             var liquidCommandParams = {
                 liquid: ( liquid ? liquid : { xhr: null, controlId: "", command: {} } ),
                 obj: null, 
-                command: command
+                command: command,
+                params: []
             };
-            liquidCommandParams.command.params = [];
             if(controlIdList) {
                 for(var io = 0; io < controlIdList.length; io++) {
                     var paramObj = document.getElementById(controlIdList[io]);
@@ -1804,7 +1812,7 @@ var Liquid = {
                         var idsSelected = selectionData[0];
                         var idsUnselected = selectionData[1];
                         try {
-                            liquidCommandParams.command.params.push(
+                            liquidCommandParams.params.push(
                                     JSON.parse(
                                         "{\"name\":\"" + pLiquid.controlId + "\"" 
                                         + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "" )
@@ -1845,6 +1853,9 @@ var Liquid = {
                                                 case "select-multi":
                                                     field_value = frm_elements[i].selectedIndex;
                                                     break;
+                                                case "file":
+                                                    field_value = frm_elements[i].files;
+                                                    break;
                                                 default:
                                                     break;
                                             }
@@ -1856,7 +1867,7 @@ var Liquid = {
                                     $(document).on('submit', '#'+paramObj.id, function() { // avoid page reload
                                         return false;
                                     });                            
-                                    liquidCommandParams.command.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" +",\"data\":{" + dataList + "}" + "}"));
+                                    liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" +",\"data\":{" + dataList + "}" + "}"));
                                 }
                             }
                         }
@@ -1867,10 +1878,10 @@ var Liquid = {
                 var isFormX = Liquid.isFormX(liquid);
                 if(isFormX) {
                     var formX = isFormX ? Liquid.getAddingRowAsString(liquid, liquid.addingRow) : "";
-                    liquidCommandParams.command.params.push(JSON.parse("{\"formX\":[" + formX + "] }"));
+                    liquidCommandParams.params.push(JSON.parse("{\"formX\":[" + formX + "] }"));
                     }            
                 if(liquid.modifications) {
-                    liquidCommandParams.command.params.push({modifications: liquid.modifications});
+                    liquidCommandParams.params.push({modifications: liquid.modifications});
                 }
                 if(!liquidProcessed) {
                     // add selection of this liquid
@@ -1879,7 +1890,7 @@ var Liquid = {
                         var idsSelected = selectionData[0];
                         var idsUnselected = selectionData[1];
                         try {
-                            liquidCommandParams.command.params.push(
+                            liquidCommandParams.params.push(
                                     JSON.parse(
                                         "{\"name\":\"" + liquid.controlId + "\"" 
                                         + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "" )
@@ -1894,12 +1905,12 @@ var Liquid = {
                             while(curLiquid) {
                                 if(typeof curLiquid.srcLiquidControlId !== 'undefined' && curLiquid.srcLiquidControlId) {
                                     try {
-                                        curLiquid = Liquid.getLiquid(curLiquid.srcLiquidControlId)
+                                        curLiquid = Liquid.getLiquid(curLiquid.srcLiquidControlId);
                                         if(curLiquid instanceof LiquidCtrl) {
                                             var selectionData = Liquid.getSelectedPrimaryKeys(curLiquid);
                                             var idsSelected = selectionData[0];
                                             var idsUnselected = selectionData[1];
-                                            liquidCommandParams.command.params.push(
+                                            liquidCommandParams.params.push(
                                                     JSON.parse(
                                                         "{\"name\":\"" + curLiquid.controlId + "\"" 
                                                         + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "" )
@@ -2061,13 +2072,24 @@ var Liquid = {
                         }
                     }
                 }
-                if(!recFound)
-                    liquid.modifications.push({ nodeId:nodeId, rowId: rowId, fields: [{field: field, value: newValue}]});
-                else
-                if(!fieldFound)
-                    recFound.fields.push({field: field, value: newValue});
-                else
-                    fieldFound.value = newValue;
+                if(!recFound) {
+                    var primaryKeyFound = true;
+                    if(rowId !== null && rowId !== '') { // Verify primary key exist
+                        if(!Liquid.getNodeIndexByPrimaryKey(liquid, rowId)) {
+                            primaryKeyFound = false;
+                        }
+                    }
+                    if(primaryKeyFound) {
+                        liquid.modifications.push({ nodeId:nodeId, rowId:rowId, fields:[{field: field, value: newValue}]});
+                    } else {
+                        console.error("ERROR: unable to modify node by primary key:"+rowId);
+                    }
+                } else {
+                    if(!fieldFound)
+                        recFound.fields.push({field: field, value: newValue});
+                    else
+                        fieldFound.value = newValue;
+                }
                 
                 if(Liquid.debug) {
                     console.warn(liquid.tableJson.table + " n.modifications:" + liquid.modifications.length);
@@ -2091,7 +2113,7 @@ var Liquid = {
                 }
             }
         }
-    },
+    },   
     createStatusDiv:function(parentObj, parentObjId) {
         var div = null;
         if(parentObj) {
@@ -2269,7 +2291,7 @@ var Liquid = {
         var outDiv = Liquid.getStatusDiv(liquid);
         var runningImg = "<img src=\""+Liquid.getImagePath("red.png")+"\" width=\"16\" height=\"16\"/>";
         if(outDiv) outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent) + "...";
-        liquid.lastResponseLen = 0;
+        liquid.lastResponseLen = null;
         if(typeof liquid.stackDownloading === 'undefined') liquid.stackDownloading = null;
         if(typeof userCallback !== 'undefined' && userCallback) {
             var userCallbackFunc = Liquid.getProperty(userCallback);
@@ -3233,8 +3255,8 @@ var Liquid = {
             // NO if(window.addEventListener) { window.addEventListener('unload ', (event) => { return Liquid.onUnloadPage(event); } ); } else { window.attachEvent('onunload', (event) => { return Liquid.onUnloadPage(event); } ); };
             // 
             // OK : BUG on CHROME : ask only after press F5, then when close or reload
-            window.onbeforeunload = function(e) { e.returnValue = Liquid.onUnloadPage(); return e.returnValue; }; 
-            window.onunload = function(e) { e.returnValue = Liquid.onUnloadPage(); return e.returnValue; }; 
+            window.onbeforeunload = function(e) { e.returnValue = Liquid.onUnloadPage(e); return e.returnValue; }; 
+            window.onunload = function(e) { e.returnValue = Liquid.onUnloadPage(e); return e.returnValue; }; 
         }
     },    
     onUnloadPage:function(event) {
@@ -3249,10 +3271,10 @@ var Liquid = {
             }
         }
         if(Liquid.onClosePageReturn) {
-            event.returnValue = Liquid.onClosePageReturn;
+            if(event) event.returnValue = Liquid.onClosePageReturn;
             return Liquid.onClosePageReturn; 
         } else {
-            event.returnValue = undefined;
+            if(event) event.returnValue = undefined;
         }
     },
     disableUnloadPagePrompt:function() {
@@ -3684,17 +3706,44 @@ var Liquid = {
                     var itemObj = document.getElementById(liquid.controlId + ".lookup.input");
                     itemObj.value = newValue;
                     var gridLink = (itemObj.dataset !== 'undefined' ? itemObj.dataset.gridLink : null);
-                    var nameItems = gridLink ? gridLink.id.split(".") : null;
-                    if(nameItems && nameItems.length > 2) {
-                        var gdIndex = nameItems[2] - 1;
-                        if(nameItems.length > 4) {
-                            var gItemIndex = nameItems[4] - 1;
-                            var grid = liquid.tableJson.grids[gdIndex];
-                            var gridControl = grid.columns[gItemIndex];
-                            if(typeof gridControl.isReflected === 'undefined' || gridControl.isReflected !== true) {
-                                Liquid.onGridFieldModify(event, itemObj);
+                    var layoutLink = (itemObj.dataset !== 'undefined' ? itemObj.dataset.layoutlink : null);
+                    var links = [ gridLink, layoutLink ];
+                    for(var il=0; il<links.length; il++) {
+                        var link = links[il];
+                        if(typeof link !== 'undefined' && link) {
+                            var linkedItemId = typeof link === 'object' ? link.id : link;
+                            var nameItems = linkedItemId.split(".");
+                            if(nameItems && nameItems.length > 2) {
+                                var containerIndex = nameItems[2] - 1;
+                                var tartgetLiquid = Liquid.getLiquid(nameItems[0]);
+                                if(tartgetLiquid) {
+                                    if(nameItems.length > 4) {
+                                        var itemIndex = nameItems[4] - 1;
+                                        if(il === 0) {
+                                            if(tartgetLiquid.tableJson.grids) {
+                                                var grid = tartgetLiquid.tableJson.grids[containerIndex];
+                                                var gridControl = grid.columns[itemIndex];
+                                                if(typeof gridControl.isReflected === 'undefined' || gridControl.isReflected !== true) {
+                                                    Liquid.onGridFieldModify(event, itemObj);
+                                                }
+                                                Liquid.setGridFieldAsChanged(liquid, gridControl, true);
+                                            }
+                                        } else {
+                                            if(tartgetLiquid.tableJson.layouts) {
+                                                var lay = tartgetLiquid.tableJson.layouts[containerIndex];
+                                                // var layControl = lay.columns[itemIndex];
+                                                // if(typeof layControl.isReflected === 'undefined' || layControl.isReflected !== true) {
+                                                var linkedItemObj = document.getElementById(linkedItemId);
+                                                if(linkedItemObj) {
+                                                    // event fitting
+                                                    event.target = linkedItemObj;
+                                                    Liquid.onLayoutFieldChange(event);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                            Liquid.setGridFieldAsChanged(liquid, gridControl, true);
                         }
                     }
                 } catch (e) {
@@ -3719,8 +3768,15 @@ var Liquid = {
                             var field = liquid.tableJson.idColumnLinkedFields[i].field;
                             var targetLiquid = Liquid.getLiquid(liquid.tableJson.idColumnLinkedFields[i].controlId);
                             var col = targetLiquid.tableJson.columns[Number(field) - 1];
-                            if(typeof col.isReflected === 'undefined' || col.isReflected !== true) {
+                            if(typeof col.isReflected === 'undefined' || col.isReflected !== true || col.isReflected === true) { // yes column is reflected, we must write it
                                 var selNodes = targetLiquid.gridOptions.api.getSelectedNodes();
+                                var isFormX = Liquid.isFormX(targetLiquid);
+                                var isAutoInsert = Liquid.isAutoInsert(targetLiquid, null); // TODO : current layout
+                                if(isFormX || isAutoInsert) {
+                                    if(targetLiquid.addingRow) {
+                                        selNodes = [ targetLiquid.addingNode ? targetLiquid.addingNode : { data:targetLiquid.addingRow } ];
+                                    }
+                                }
                                 for(var node=0; node<selNodes.length; node++) {
                                     var data = selNodes[node].data;
                                     var validateResult = Liquid.validateField(targetLiquid, col, newValueId);
@@ -4876,7 +4932,7 @@ var Liquid = {
                         } else if(obj.childNodes[j].type === 'checkbox'){
                             propValue = obj.childNodes[j].checked ? true : false;
                         } else if(obj.childNodes[j].type === 'file') {
-                            var queue = { obj:obj, targetObj:targetObj, files:obj.childNodes[j].files, iFile:0, propName:propName, propValue:null };
+                            var queue = { obj:obj, targetObj:targetObj, files:obj.childNodes[j].files, iFile:0, propName:propName, propValue:null, linkToFile:null };
                             Liquid.formFilesToObjectExchange(queue);
                         } else if(obj.childNodes[j].type === 'number') {
                             propValue = Number(obj.childNodes[j].value);
@@ -4912,9 +4968,12 @@ var Liquid = {
                 var file = queue.files[queue.iFile];
                 if(file) {
                     var reader = new FileReader();
-                    reader.readAsDataURL (file);
+                    reader.readAsDataURL(file);
                     reader.onload = function(evt) {
                         try { 
+                            if(queue.linkToFile === true) { 
+                                // For security reason canno get file path... only update file content
+                            }
                             if(queue.files.length === 1) {
                                 queue.propValue = evt.target.result;
                             } else {
@@ -5225,6 +5284,7 @@ var Liquid = {
         var liquid = liquidCommandParams.liquid;
         var obj = liquidCommandParams.obj;
         var command = liquidCommandParams.command;
+        var params = liquidCommandParams.params;
         var retVal = true;
 
         if(command.server) {
@@ -5250,7 +5310,8 @@ var Liquid = {
                             + '?operation=exec'
                             + '&className=' + encodeURI(command.server)
                             + '&clientData=' + encodeURI(clientData)
-                            + '&controlId=' + liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : "")
+                            + '&controlId=' + (liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : ""))
+                            + '&owner=' + (typeof liquid !== 'undefined' && liquid ? (typeof liquid.tableJson !== 'undefined' && liquid.tableJson ? liquid.tableJson.owner : "" ) : "")
                             );
                     
                     liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "Command", e, command.onUploading, command.onUploadingParam); }, false);
@@ -5315,7 +5376,7 @@ var Liquid = {
                             retVal = Liquid.onCommandDone(liquidCommandParams);
                         }
                     };
-                    liquid.xhr.send("{\"params\":" + (command.params ? JSON.stringify(command.params) : "[]") + "}");
+                    liquid.xhr.send("{\"params\":" + (params ? JSON.stringify(params) : "[]") + "}");
                     
                 } catch (e) {
                     console.error(e);
@@ -5339,11 +5400,12 @@ var Liquid = {
         }
         return retVal;
     },
-    onCommandDone:function(params) {
-        var liquid = params.liquid;
+    onCommandDone:function(liquidCommandParams) {
+        var liquid = liquidCommandParams.liquid;
         var ids = null;
-        var obj = params.obj;
-        var command = params.command;
+        var obj = liquidCommandParams.obj;
+        var command = liquidCommandParams.command;
+        var params = liquidCommandParams.params;
         if(command.name) {
             var eventName = "after" + command.name + "";
             try {
@@ -5973,6 +6035,15 @@ var Liquid = {
             }
         }
     },
+    onButtonFromString:function(obj, commandJsonString) {
+        if(commandJsonString) {
+            try {
+                Liquid.onButton(obj, JSON.parse(commandJsonString));
+            } catch(e) {
+                console.error("ERROR: onButtonFromString() : "+ e);
+            }
+        }
+    },
     onButton:function(obj, command) {
         if(command) {
             if((command.confirm ? confirm(command.confirm) : true)) {
@@ -6248,6 +6319,16 @@ var Liquid = {
     },
     getItemObj:function(column) {
         var itemObj = column.linkedObj;
+        if(itemObj) {
+            if(itemObj.dataset) {
+                if(typeof itemObj.dataset.linkedInputId !== 'undefined')
+                    itemObj = document.getElementById(itemObj.dataset.linkedInputId);
+            }
+            return itemObj;
+        }
+    },
+    getItemObjFromHTMLElement:function(element) {
+        var itemObj = element;
         if(itemObj) {
             if(itemObj.dataset) {
                 if(typeof itemObj.dataset.linkedInputId !== 'undefined')
@@ -7380,7 +7461,7 @@ var Liquid = {
             if(nameItems && nameItems.length > 2) {
                 var layoutIndex = nameItems[2] - 1;
                 if(nameItems.length > 2) {
-                    return { layout: liquid.tableJson.layouts[layoutIndex], itemIndex:nameItems[4] - 1 };
+                    return { layout: liquid.tableJson.layouts[layoutIndex], itemIndex:nameItems[4] - 1, layoutIndex:layoutIndex, col:nameItems[4]-1, row:nameItems[6] - 1  };
                 }
             }
         }
@@ -7657,9 +7738,8 @@ var Liquid = {
                             layout.rowsContainer[ir].containerObj.style.filter = "";
                             layout.rowsContainer[ir].containerObj.disabled = false;
                             layout.rowsContainer[ir].containerObj.style.pointerEvents = '';
-                            //
+                            
                             // Firing event onRowRendering
-                            //
                             Liquid.onEvent(layout.rowsContainer[ir].containerObj, "onRowRendering", { 
                                 layout:layout, 
                                 layoutRow:(ir+1), 
@@ -7705,8 +7785,8 @@ var Liquid = {
     },
     isAutoInsert:function(liquid, layout) {
         var autoInsert = false;
-        if(typeof liquid !== 'undefined') if (typeof liquid.tableJson.autoInsert !== 'undefined') autoInsert = liquid.tableJson.autoInsert;
-        if(typeof layout !== 'undefined') if (typeof layout.autoInsert !== 'undefined') autoInsert = layout.autoInsert;
+        if(typeof liquid !== 'undefined' && liquid) if (typeof liquid.tableJson.autoInsert !== 'undefined') autoInsert = liquid.tableJson.autoInsert;
+        if(typeof layout !== 'undefined' && layout) if (typeof layout.autoInsert !== 'undefined') autoInsert = layout.autoInsert;
         return autoInsert;
     },            
     getItemsMaxHeight:function(containerObj) {
@@ -7906,8 +7986,9 @@ var Liquid = {
                                     });
                                 }
                             }
-                            
+                            //
                             // Lookup ?
+                            //
                             if(typeof linkeCol.lookup !== 'undefined' && linkeCol.lookup) {
                                 if(obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
                                     var parentNode = obj.parentNode;
@@ -7917,14 +7998,17 @@ var Liquid = {
                                     newObj.style.width = obj.offsetWidth + 'px';
                                     newObj.style.height = obj.offsetHeight + 'px';
                                     newObj.style.display = obj.style.display;
-                                    newObj.style.position = "absolute";
+                                    // newObj.style.position = "absolute";
                                     newObj.style.overflow = "";
                                     newObj.style.left = obj.style.left;
                                     newObj.style.top = obj.style.top;
                                     newObj.id = obj.id;
                                     newObj.innertHTML = obj.value;
                                     newObj.style.padding = "0px";
+                                    newObj.onchange = obj.onchange;
+                                    obj.onchange = null;
                                     parentNode.removeChild(obj);
+                                    delete obj;
                                     parentNode.appendChild(newObj);
                                     obj = newObj;
                                     obj.setAttribute('linkedField', linkeCol.field);
@@ -7998,17 +8082,10 @@ var Liquid = {
                             }
                         }
                         if(targetObj) {
-                            if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
-                                targetObj.value = value; // "@"+linkedField + "<=>" + value;
-                                targetObj.disabled = disabled;
-                                if(typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
-                                    layout.firstObjId = targetObj.id;
-                                    targetObj.focus();
-                                }
-                            } else if(obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
-                                targetObj.innertHTML = value; // "@"+linkedField + "<=>" + value;
-                                targetObj.innerText = String(value);
-                                targetObj.disabled = disabled;
+                            Liquid.setHTMLElementValue(targetObj, value, disabled);
+                            if(typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
+                                layout.firstObjId = targetObj.id;
+                                targetObj.focus();
                             }
                         }
                     }
@@ -8072,14 +8149,27 @@ var Liquid = {
         }
         return 0;
     },
+    getNodeIndexByPrimaryKey:function(liquid, key) {
+        var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+        if(typeof nodes !== 'undefined' && nodes !== null && nodes.length > 0) {
+            for(var ind = 0; ind < nodes.length; ind++) {
+                var data = nodes[ind].data;
+                var id = data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
+                if(id) 
+                    if(key === id) 
+                        return ind+1;
+            }
+        }
+        return 0;
+    },
     onLayoutFieldChange:function(event) {
         if(event) {
             var liquid = Liquid.getLiquid(event.target);
             if(liquid) {
                 var lay_coord = Liquid.getLayoutCoords(liquid, event.target);
                 if(lay_coord.layout) {
-                    var obj = event.target;
                     var newValue = null;
+                    var obj = event.target;                    
                     var linkedField = obj.getAttribute('linkedField');
                     var linkedName = obj.getAttribute('linkedName');
                     var linkedRow1B = obj.getAttribute('linkedRow1B');
@@ -8095,15 +8185,40 @@ var Liquid = {
                                     nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                                 }
                             }
+                            obj = Liquid.getItemObjFromHTMLElement(obj);
                             var doUpdate = true;
                             if(obj.nodeName.toUpperCase()==='INPUT' || obj.nodeName.toUpperCase()==='TEXTAREA') {
                                 if(obj.type === 'checkbox') {
                                     newValue = obj.checked ? true : false;
                                 } else if(obj.type === 'file') {
-                                    // update asyncromously
+                                    // look to column definition of control
+                                    linkToFile = false;
+                                    if(typeof lay_coord.col !== 'undefined' && lay_coord.col !== null) {
+                                        if(liquid.tableJson.columns) {
+                                            if(lay_coord.col < liquid.tableJson.columns.length) {
+                                                var col = liquid.tableJson.columns[lay_coord.col];
+                                                if(col) {
+                                                    if(typeof col.link !== 'undefined') linkToFile = col.link;
+                                                    if(typeof col.fileLink !== 'undefined') linkToFile = col.fileLink;
+                                                }
+                                            }
+                                        }
+                                    }
                                     var isFormX = Liquid.isFormX(liquid);
                                     if(isFormX) {
-                                        var queue = { liquid:liquid, obj:obj, targetObj:null, targetRow:liquid.addingRow, targetCol:col, files:obj.files, iFile:0, propName:null, propValue:null };
+                                        var queue = { liquid:liquid, obj:obj, targetObj:null, targetRow:liquid.addingRow, targetCol:col, files:obj.files, iFile:0, propName:null, propValue:null, linkToFile:linkToFile };
+                                        // update by file content asyncromously
+                                        var filesName = "", filesSize = "";
+                                        for(var iF=0; iF<obj.files.length; iF++) {
+                                            filesName += (filesName.length ? ",":"") + obj.files[iF].name;
+                                            filesSize += (filesSize.length ? ",":"") + obj.files[iF].size;
+                                        }
+                                        obj.dataset.filesName = filesName;
+                                        obj.dataset.filesSize = filesSize;
+                                        var additionFileInfo = col.name+".filesName";
+                                        liquid.addingRow[additionFileInfo] = filesName;
+                                        additionFileInfo = col.name+".filesSize";
+                                        liquid.addingRow[additionFileInfo] = filesSize;
                                         Liquid.formFilesToObjectExchange(queue);
                                         doUpdate = false;
                                     } else {
@@ -8151,6 +8266,19 @@ var Liquid = {
             }
         }
     },
+    // return 0 in non Input or TEXTAREA
+    setHTMLElementValue:function(targetObj, value, disabled) {
+        if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
+            targetObj.value = value; // "@"+linkedField + "<=>" + value;
+            if(typeof disabled !== 'undefined') targetObj.disabled = disabled;
+            return 1;
+        } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P') {
+            targetObj.innertHTML = value; // "@"+linkedField + "<=>" + value;
+            targetObj.innerText = String(value);
+            if(typeof disabled !== 'undefined') targetObj.disabled = disabled;
+            return 0;
+        }
+    },            
     loadDocumentsContent:function(liquid) {        
         if(typeof liquid.tableJson.documents !== 'undefined' && liquid.tableJson.documents) {
             for(var id=0; id<liquid.tableJson.documents.length; id++) {
@@ -9808,6 +9936,19 @@ var Liquid = {
         }
     },
     /**
+     * Start a control as Fixed control
+     * @param {controlId} the control id
+     * @param {jsonString} the control definition json (string)
+     * @return {} n/d
+     */
+    startControl:function(controlId, jsonString) {
+        if(!document.body) {
+            glLiquidStartupTables.push( { controlId:controlId, json:jsonString } );
+            return;
+        }
+        new LiquidCtrl(controlId, controlId, jsonString);
+    },
+    /**
      * Start a control as popup
      * @param {controlId} the control id
      * @param {jsonString} the control definition json (string)
@@ -9977,7 +10118,18 @@ var Liquid = {
                                     }
                                 }
                             }
-                            if(!lookupJson) {// by var or object
+                            if(!lookupJson) { // by var or object
+                                if(typeof lookupObj === 'string') {
+                                    if(document.getElementById(lookupObj)) {                                        
+                                        console.error("ERROR : cannot create lookup by HTMLElement ... is should be a liquid control\n Make sure control "+json+" exist and is just registered at this time");
+                                        if(containerObj) containerObj.title = containerObj.placeholder = "Lookup error : control " + json + " not found";
+                                    }
+                                } else {
+                                    if(lookupObj instanceof HTMLElement) {
+                                        console.error("ERROR : cannot create lookup by HTMLElement ... is should be a liquid control\n Make sure control "+json+" exist and is just registered at this time");
+                                         if(containerObj) containerObj.title = containerObj.placeholder = "Lookup error : control " + json + " not found";
+                                    }
+                                }
                                 lookupJson = typeof lookupObj === 'string' ? JSON.parse(lookupObj) : lookupObj;
                                 registerControlId = controlId + "_lookup_" + containerName.replace(/\./g, "_");
                             }
@@ -11032,6 +11184,8 @@ var Liquid = {
     },
     createOnTabContextMenu:function( obj ) {
         var liquid = Liquid.getLiquid(obj);
+        if(!liquid)
+            liquid = Liquid.getLiquidByFullScan(obj);
         var menu = Liquid.createContextMenu();
         var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
         var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
@@ -11043,10 +11197,12 @@ var Liquid = {
         var onOkCode = "";
         var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
         
-        menu.innerHTML = "<div class=\"liquidContextMenu-content\">"
+        var innerHTML = "<div class=\"liquidContextMenu-content\">"
                 +"<span class=\"liquidContextMenu-close\"></span>"
                 +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
-                +"<p><hr size=1></p>"
+                +"<p><hr size=1></p>";
+        if(liquid && liquid.controlId) {
+            innerHTML += ""
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewGrid('"+liquid.controlId+".newGrid')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Grid"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewForeignTable('"+liquid.controlId+".newForeignTable','')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Foreign Table"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewForeignTable('"+liquid.controlId+".newForeignTable','multipanel')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Multipanel"+"</a></p>"
@@ -11064,7 +11220,9 @@ var Liquid = {
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Save to server"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as json"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as csv"+"</a></p>"        
-                +"</div>";        
+                +"</div>";
+        }
+        menu.innerHTML = innerHTML;
     },
     createOnCommandBarContextMenu:function( obj ) {
         var liquid = Liquid.getLiquid(obj);
@@ -11122,7 +11280,28 @@ var Liquid = {
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLiquidOptions()\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
                 +"</div>";        
     },
-    
+    createOnFormXContextMenu:function( obj ) {
+        var liquid = Liquid.getLiquid(obj);
+        var menu = Liquid.createContextMenu();
+        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
+        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
+        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
+
+        var onCancelCode = "Liquid.onContextMenuClose();";
+        var onOkCode = "";
+        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
+        
+        menu.innerHTML = "<div class=\"liquidContextMenu-content\">"
+                +"<span class=\"liquidContextMenu-close\"></span>"
+                +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
+                +"<p><hr size=1></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
+                +"<p><hr size=1></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"        
+                +"</div>";                
+    },
     getCheckedAttr:function( obj, def ) {
         if(typeof obj === 'undefined') { if(def === true) return "checked"; } else { if(obj === true) return "checked"; }
         return "";
@@ -11290,6 +11469,7 @@ var Liquid = {
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"owner:"+"<input id=\"owner\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.owner !== 'undefined' ? tagetLiquid.tableJson.owner : "com.liquid.event")+"\" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
                 +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Create table if missing:"+"<input id=\"createTableIfMissing\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.createTableIfMissing, false)+" "+onKeyPressCode+"/></p>"
                 +"</td></tr>"
 
                 +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
@@ -11550,7 +11730,7 @@ var Liquid = {
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as json"+"</a></p>"
                 +"</div>";        
     },
-    onContextMenu(e) {
+    onContextMenu:function(e) {
         if(e) {
             if(e.target.classList.contains('liquidPopupCaption')
             || e.target.classList.contains('liquidGridTablesTabs')
@@ -11563,6 +11743,7 @@ var Liquid = {
             || e.target.classList.contains('liquidNavPage')
             || e.target.classList.contains('liquidLayoutRowContainer')
             || e.target.classList.contains('liquidLayoutRowContainerDiv')
+            || e.target.classList.contains('ag-center-cols-viewport')
             ) {
                 Liquid.createOnTabContextMenu(e.target);
             } else if(e.target.classList.contains('liquidMenuX') || e.target.classList.contains('liquidMenuXContainer')) {
@@ -11593,6 +11774,8 @@ var Liquid = {
                 Liquid.createOnTabContextMenu(e.target);
             } else if(e.target.classList.contains('liquidFiltersSpacer')) {
                 Liquid.createOnTabContextMenu(e.target);
+            } else if(e.target.classList.contains('liquidFormX')) {
+                Liquid.createOnFormXContextMenu(e.target);
             } else return;            
             var modal = document.getElementById('liquidContextMenu');
             modal.style.display = "block";
@@ -11628,27 +11811,37 @@ var Liquid = {
         });
     },    
     removeRuntimeProps(liquid) {
-        // liquid.tableJson.parentObjId = null;
-        for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
-            delete liquid.tableJson.columns[ic].default;
-            delete liquid.tableJson.columns[ic].field;
-            delete liquid.tableJson.columns[ic].size;
-            delete liquid.tableJson.columns[ic].nullable;
-            delete liquid.tableJson.columns[ic].autoIncString;
-            delete liquid.tableJson.columns[ic].type;
-            delete liquid.tableJson.columns[ic].typeName;
-            delete liquid.tableJson.columns[ic].digits;
+        return Liquid.removeRuntimeTableJsonProps(liquid.tableJson);
+    },
+    removeRuntimeTableJsonProps(tableJson) {
+        if(typeof tableJson.columns !== 'undefined' && tableJson.columns) {
+            for(var ic=0; ic<tableJson.columns.length; ic++) {
+                delete tableJson.columns[ic].field;
+                if(tableJson.createTableIfMissing !== true) {
+                    delete tableJson.columns[ic].default;
+                    delete tableJson.columns[ic].size;
+                    delete tableJson.columns[ic].nullable;
+                    delete tableJson.columns[ic].autoIncString;
+                    delete tableJson.columns[ic].type;
+                    delete tableJson.columns[ic].typeName;
+                    delete tableJson.columns[ic].digits;
+                } else {
+                    if(typeof tableJson.columns[ic].default !== 'undefined' && tableJson.columns[ic].default)
+                        tableJson.columns[ic].default = tableJson.columns[ic].default.replace(/\"/g, "\\\"");
+                }
+            }
         }
-        delete liquid.tableJson.askForSave;
-        delete liquid.tableJson.token;
-        delete liquid.tableJson.idColumnField;
-        delete liquid.tableJson.primaryKeyField;
-        delete liquid.tableJson.columnsResolved;
-        delete liquid.tableJson.columnsResolvedBy;
-        delete liquid.tableJson.tableJsonVariableName;
-        delete liquid.tableJson.selection;
-        delete liquid.tableJson.selections;
-        delete liquid.tableJson.sourceFileName;
+        delete tableJson.askForSave;
+        delete tableJson.token;
+        delete tableJson.idColumnField;
+        delete tableJson.primaryKeyField;
+        delete tableJson.columnsResolved;
+        delete tableJson.columnsResolvedBy;
+        delete tableJson.tableJsonVariableName;
+        delete tableJson.selection;
+        delete tableJson.selections;
+        delete tableJson.sourceFileName;
+        return true;
     },
     onSaveToServer(obj) {
         return Liquid.onSaveTo(obj, false, true);
@@ -11662,12 +11855,12 @@ var Liquid = {
         if(liquid) {
             var json = null;
             if(liquid instanceof LiquidCtrl) {
-                json = liquid.tableJsonSource;
+                json = JSON.parse(JSON.stringify(liquid.tableJsonSource));
             } else if(liquid instanceof LiquidMenuXCtrl) {
-                json = liquid.menuJsonSource;
+                json = JSON.parse(JSON.stringify(liquid.menuJsonSource));
             }
             if(json) {
-                Liquid.removeRuntimeProps(liquid);
+                Liquid.removeRuntimeTableJsonProps(json);
                 if(bSaveToServer) {
                     // controllo presenza file, set se fila nuovo
                     if(typeof liquid.controlId === 'undefined' || !liquid.controlId) {
