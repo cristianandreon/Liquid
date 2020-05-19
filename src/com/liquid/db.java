@@ -2502,7 +2502,10 @@ public class db {
                     // ids = (ArrayList<Long>)recordset[3];
                     errors += (String)recordset[4];
 
-                    JSONArray rowsJson = new JSONArray("["+(String)recordset[0]+"]");
+                    String fieldSets = (String)recordset[0];                                                            
+                    fieldSets = fieldSets != null ? fieldSets.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t").replace("\f", "\\f").replace("\b", "\\b") : "";
+                                                            
+                    JSONArray rowsJson = new JSONArray("["+fieldSets+"]");
                     int resultBean = 0, level = 0;
 
                     // Array foreign tables di partenza

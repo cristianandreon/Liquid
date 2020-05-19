@@ -7,6 +7,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspWriter;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class metadata {
 
@@ -1191,7 +1194,107 @@ public class metadata {
         }
         return tblHtml;
     }
+
     
+    static boolean table_exist(Connection conn, String db, String scm, String table) throws SQLException {
+        DatabaseMetaData dm = conn.getMetaData();
+        ResultSet rs = dm.getCatalogs();
+        try {
+            if(rs != null) {
+                String[] types = { "TABLE", "VIEW" };
+                rs = dm.getTables(db, scm, table, types );
+                if(rs != null) {
+                    if (rs.next()) return true;
+                }
+                rs = dm.getTables(db, scm, table.toLowerCase(), types );
+                if(rs != null) {
+                    if (rs.next()) return true;
+                }
+                if(rs != null) rs.close();
+                rs = dm.getTables(db, scm, table.toUpperCase(), types );
+                if(rs != null) {
+                    if(rs.next()) return true;
+                }
+                if(rs != null) rs.close();
+                rs = dm.getTables(db, scm, null, null );
+                if(rs != null) {
+                    while (rs.next()) {
+                        String resultTable = rs.getString("TABLE_NAME");
+                        if(resultTable != null && table.equalsIgnoreCase(resultTable))
+                            return true;
+                    }
+                }
+            }
+        } finally {
+            if(rs != null) rs.close();
+        }
+        return false;
+    }
+    
+    static boolean create_table(Connection conn, String database, String schema, String table, JSONObject tableJson) throws SQLException, JSONException {
+        boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
+        String itemIdString = "\"", tableIdString = "\"";
+        PreparedStatement psdo = null;
+        ResultSet rsdo = null;
+        
+        try {
+
+            String driver = db.getDriver(conn);
+            if("mysql".equalsIgnoreCase(driver)) {
+                isMySQL = true;
+            } else if("postgres".equalsIgnoreCase(driver)) {
+                isPostgres = true;
+            } else if("oracle".equalsIgnoreCase(driver)) {
+                isOracle = true;
+            } else if("sqlserver".equalsIgnoreCase(driver)) {
+                isSqlServer = true;
+            }
+            
+            if(isMySQL) {
+                itemIdString = "`";
+                tableIdString = "";
+            }
+            
+            String sql = "CREATE TABLE "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ";
+            
+            JSONArray cols = tableJson.getJSONArray("columns");            
+            for(int ic=0; ic<cols.length(); ic++) {
+                JSONObject col = cols.getJSONObject(ic);
+                String name = col.getString("name");
+                String type = col.getString("type");
+                String typeName = col.getString("typeName");
+                sql += name + " " + typeName + "\n";
+            }
+            
+            String primaryKey = tableJson.getString("primaryKey");
+            sql += "PRIMARY KEY " + primaryKey + "\n";
+        
+            psdo = conn.prepareStatement(sql);
+            rsdo = psdo.executeQuery();
+            
+            if(!table_exist(conn, 
+                    database,
+                    schema,
+                    table)) {
+                // Fail
+                return false;
+            } else {
+                return true;
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+            
+        } finally {
+            if(psdo != null) psdo.close();
+            if(rsdo != null) rsdo.close();
+        }
+        return false;
+    }
+
+    
+    //
+    // search  in db utility func
+    //
     static String append_to_found_record(String type, String database, String schema, String table, String column, String data, String searchString) {
         String recHtml = "";
         if(searchString == null) {

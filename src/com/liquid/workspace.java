@@ -1,6 +1,7 @@
 package com.liquid;
 
 import com.google.gson.Gson;
+import static com.liquid.metadata.table_exist;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -306,9 +307,9 @@ public class workspace {
         String connectionDriver = null, connectionURL = null, database = null, table = null, schema = null, primaryKey = null;
         int primaryKeyIndex1B = 0;
         boolean bAllColumns = false;
-        String result = "json".equalsIgnoreCase(returnType) ? "{\"error\":\""+controlId+"\"}" : "<script> console.error(\""+controlId+" not created in server\");</script>";
-        Connection conn = null;
+        String result = "json".equalsIgnoreCase(returnType) ? "{\"error\":\""+controlId+"\"}" : "<script> console.error(\""+controlId+" not created in server\");</script>";        
         long metadataTime = 0;
+        Connection conn = null, connToDB = null, connToUse = null;
         
         try {
 
@@ -409,6 +410,22 @@ public class workspace {
                 db.set_current_database(conn, database, driver, tableIdString);
             }
 
+            // set the connection
+            connToUse = conn;
+            if(database == null || database.isEmpty()) {
+                database = conn.getCatalog();
+            } else {
+                conn.setCatalog(database);
+                String db = conn.getCatalog();
+                if(!db.equalsIgnoreCase(database)) {
+                    // set catalog not supported : connect to different DB
+                    conn.close();
+                    conn = null;
+                    connToUse = connToDB = connection.getDBConnection(database);
+                }
+            }
+            
+            
             if("quotes_extended".equalsIgnoreCase(table)) {
                 int lb = 1;
             }
@@ -447,13 +464,29 @@ public class workspace {
                     try { foreignTablesJson = tableJson.getJSONArray("foreignTables"); } catch(Exception e) {}
                 }
                 
+                if(table != null && !table.isEmpty()) {
+                    boolean createTableIfMissing = false;
+                    try { createTableIfMissing = tableJson.getBoolean("createTableIfMissing"); } catch(Exception e) {}
+                    // verifica se esiste la tabella
+                    if(!metadata.table_exist(connToUse, database, schema, table)) {
+                        if(createTableIfMissing) {
+                            if(!metadata.create_table(connToUse, database, schema, table, tableJson)) {
+                                // Fail
+                            }
+                        } else {
+                            String err = "database:"+database + " schema:"+schema + " table "+table+" not exist";
+                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+err+"\"}" : "<script> console.error(\""+err+"\");</script>" );
+                        }
+                    }
+                }
+                
                 if(bAllColumns) {
                     // tutte le colonne di controlId
                     if("utenti".equalsIgnoreCase(table)) {
                         int lb = 1;
                     }
                     
-                    ArrayList<String> allColumns = metadata.getAllColumnsAsArray(database, schema, table, conn);
+                    ArrayList<String> allColumns = metadata.getAllColumnsAsArray(database, schema, table, connToUse);
                     if(allColumns.size()==0) {
                         String err = "LIQUID WARNING : No columns on database:"+database+" schema:"+schema+" table:"+table+" control:"+controlId;
                         System.out.println(err);
@@ -523,7 +556,7 @@ public class workspace {
                             if(foreignTable == null || foreignColumn == null || column == null) {
                                 if(foreignKeysOnTable == null) {
                                     try {
-                                        foreignKeysOnTable = metadata.getForeignKeyData(database, schema, table, conn);
+                                        foreignKeysOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
                                     } catch (Exception ex) {
                                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                                     }
@@ -574,12 +607,12 @@ public class workspace {
                 if("*".equalsIgnoreCase(foreignTables) || foreignTablesJson != null) {
                     if(foreignKeysOnTable == null) {
                         try {
-                            foreignKeysOnTable = metadata.getForeignKeyData(database, schema, table, conn);
+                            foreignKeysOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
                         } catch (Exception ex) {
                             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
-                    if(conn != null) {
+                    if(connToUse != null) {
                         if(foreignKeysOnTable != null) {
                             if(foreignKeysOnTable.size() > 0) {
                                 for(metadata.ForeignKey foreignKey : foreignKeysOnTable) {                                    
@@ -655,13 +688,13 @@ public class workspace {
 
                 // Aggiunta Metadati
                 try {
-                    if(conn==null) {
+                    if(connToUse==null) {
                         return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+controlId+" : no DB connection\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection\");</script>" );
                     }
                 } catch (Exception ex) {
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                if(conn != null) {
+                if(connToUse != null) {
                     long msTrace = System.currentTimeMillis();
                     cols = tableJson.getJSONArray("columns");
                     for(int ic=0; ic<cols.length(); ic++) {
@@ -677,7 +710,7 @@ public class workspace {
                             if(colName != null && !colName.isEmpty()) {
                                 
                                 if(!isSystem) {
-                                    metadata.MetaDataCol mdCol = (metadata.MetaDataCol)metadata.readTableMetadata(conn, database, schema, colTable, colName);
+                                    metadata.MetaDataCol mdCol = (metadata.MetaDataCol)metadata.readTableMetadata(connToUse, database, schema, colTable, colName);
                                     if(mdCol != null) {
                                         // Handle sensitive case mismath
                                         if(!colName.equals(mdCol.name)) {
@@ -742,7 +775,7 @@ public class workspace {
 
                 // chiave primaria
                 if(primaryKey == null || primaryKey.isEmpty()) {
-                    primaryKey = metadata.getPrimaryKeyData(database, schema, table, conn);                    
+                    primaryKey = metadata.getPrimaryKeyData(database, schema, table, connToUse);                    
                     tableJson.put("primaryKey", primaryKey);
                 }               
 
@@ -941,8 +974,8 @@ public class workspace {
             
             // Product name
             String dbProductName = "unknown";
-            if(conn != null) {
-                dbProductName = conn.getMetaData().getDatabaseProductName();
+            if(connToUse != null) {
+                dbProductName = connToUse.getMetaData().getDatabaseProductName();
             }
 
             // Instanzia la classe owner
@@ -1009,7 +1042,7 @@ public class workspace {
                         tblWorkspace.owner = owner;
                     }
                     
-                    tblWorkspace.driverClass = conn != null ? conn.getClass().getName() : null;
+                    tblWorkspace.driverClass = connToUse != null ? connToUse.getClass().getName() : null;
                     tblWorkspace.defaultDatabase = defaultDatabase;
                     tblWorkspace.defaultSchema = defaultSchema;
                     tblWorkspace.dbProductName = dbProductName;
@@ -1025,7 +1058,7 @@ public class workspace {
             tblWorkspace.dbProductName = dbProductName;
             tblWorkspace.defaultDatabase = defaultDatabase;
             tblWorkspace.defaultSchema = defaultSchema;
-            tblWorkspace.driverClass = conn != null ? conn.getClass().getName() : null;
+            tblWorkspace.driverClass = connToUse != null ? connToUse.getClass().getName() : null;
             tblWorkspace.token = token;
             // tblWorkspace.get_connection assegnato a default_connection
             System.out.println("/* LIQUID INFO : new control : "+controlId + " driverClass:"+tblWorkspace.driverClass + " dbProductName:"+dbProductName+"*/");
@@ -1043,6 +1076,12 @@ public class workspace {
             } catch (SQLException ex) {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, "ERROR on control:"+controlId+" : "+ex);
             }
+            if(connToDB != null) 
+                try {
+                    connToDB.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+            }            
         }
     }
 
@@ -1223,21 +1262,19 @@ public class workspace {
                 for (String Object : Objects) {
                     params += (params.length()>0?",":"") + "'" + (String)Object + "'";
                 }
-            }
-            
+            }            
             String sCommandJson = "{ "
                     + "name:'"+(name != null ? name : "") + "'"
                     + ",client:'"+(clientSideCode != null ? clientSideCode : "") +"'"
                     + ",server:'"+(className != null ? className : "") + "'"
                     + ",params:["+(params != null ? params : "")+"]"
                     + ",clientAfter:"+clientAfter
-                    + "}";
-            
+                    + "}";            
             JSONObject commandJson = new JSONObject(sCommandJson);
             if(additionParams != null && !additionParams.isEmpty()) {
                 JSONObject additionParamsJson = new JSONObject(additionParams);
                 utility.mergeJsonObject(additionParamsJson, commandJson);
-            }
+            }            
             return "<button onclick='Liquid.onButtonFromString(this, \""
                     +(commandJson.toString().replace("\"", "\\\""))
                     +"\");'>"
