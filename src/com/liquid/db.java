@@ -3781,7 +3781,7 @@ public class db {
                 } else if("postgres".equalsIgnoreCase(driver)) {
                     sql = "SET search_path TO \""+database+"\",public";
                 } else if("oracle".equalsIgnoreCase(driver)) {
-                    // Only schema cha be changed (ALTER SESSION SET current_schema = other_user;)
+                    // Only schema can be changed (ALTER SESSION SET current_schema = other_user;) database = oracle instance
                     // Database is the oracle instance, so different process
                 } else if("sqlserver".equalsIgnoreCase(driver)) {
                     sql = "USE " + tableIdString + database + tableIdString + "";
@@ -3798,5 +3798,19 @@ public class db {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
         }
         return false;
-    }    
+    }
+    
+    static public boolean create_database_schema(String driver, String host, String database, String schema, String user, String password) throws Exception {
+		return metadata.create_database_schema(driver, host, database, database, user, password);
+    }
+    static public boolean create_database_schema(String driver, String database, String schema, String user, String password) throws Exception {
+		return metadata.create_database_schema(driver, database, database, user, password);
+    }
+	static public boolean create_database(Connection conn, String database) {
+		return metadata.create_schema(conn, database);
+	}
+	static public boolean create_schema(Connection conn, String schema) {
+		return metadata.create_schema(conn, schema);
+	}
+    
 }

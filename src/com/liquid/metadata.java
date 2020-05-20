@@ -1291,6 +1291,126 @@ public class metadata {
         return false;
     }
 
+    static boolean create_database_schema(String driver, String database, String schema, String user, String password) throws SQLException {
+        return create_database_schema(driver, "localhost", database, schema, user, password);
+        }    
+    static boolean create_database_schema(String driver, String host, String database, String schema, String user, String password) throws SQLException {
+    	Connection conn = null;
+        boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
+        String itemIdString = "\"", tableIdString = "\"";
+        Class driverClass = null;
+        PreparedStatement psdo = null;
+        ResultSet rsdo = null;
+        
+        try {
+
+            if("oracle".equalsIgnoreCase(driver)) {
+                isOracle = true;
+                if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
+                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":1521:xe",user, password);
+                
+            } else if("postgres".equalsIgnoreCase(driver)) {
+                isPostgres = true;
+                if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
+                conn = DriverManager.getConnection("jdbc:postgresql://"+host+":5432/", user, password);
+
+            } else if("mysql".equalsIgnoreCase(driver)) {
+                isMySQL = true;
+                if(driverClass == null) driverClass = Class.forName("com.mysql.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mysql://"+host+":3306/", user, password);
+            
+            } else if("sqlserver".equalsIgnoreCase(driver)) {
+                isSqlServer = true;
+                if(driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+                conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":1433", user, password);
+                
+            } else {
+                Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, "driver not recognized");
+            }
+        	
+
+
+            
+            if(isMySQL) {
+                itemIdString = "`";
+                tableIdString = "";
+            }
+            
+            create_database(conn, database);
+            
+            create_database(conn, schema);
+
+            return true;
+
+        } catch (Exception ex) {
+            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+            
+        } finally {
+            if(psdo != null) psdo.close();
+            if(rsdo != null) rsdo.close();
+        }
+        return false;
+    }
+    
+	static public boolean create_database(Connection conn, String database) {
+	    String sql = null;
+	    if(conn != null) {
+	    	if(database != null && !database.isEmpty()) {
+			    try {
+			    	String driver = db.getDriver(conn); 
+			        if("mysql".equalsIgnoreCase(driver)) {
+			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
+			        } else if("postgres".equalsIgnoreCase(driver)) {
+			            sql = "CREATE DATABASE "+database;
+			        } else if("oracle".equalsIgnoreCase(driver)) {
+			        	// N.B. database = oracle instance
+			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
+			        } else if("sqlserver".equalsIgnoreCase(driver)) {
+			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
+			        }
+			        if(sql != null) {
+			        	PreparedStatement psdo = conn.prepareStatement(sql);
+			        	psdo.executeUpdate();
+			        	psdo.close();
+			        	return true;
+			        }
+			    } catch (Throwable th) {
+			    	Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
+			    }
+	    	}
+	    }
+    	return false;
+	}
+	
+	static public boolean create_schema(Connection conn, String schema) {
+	    String sql = null;
+	    if(conn != null) {
+	    	if(schema != null && !schema.isEmpty()) {
+			    try {
+			    	String driver = db.getDriver(conn); 
+			        if("mysql".equalsIgnoreCase(driver)) {
+			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
+			        } else if("postgres".equalsIgnoreCase(driver)) {
+			            sql = "CREATE SCHEMA "+schema;
+			        } else if("oracle".equalsIgnoreCase(driver)) {
+			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
+			        } else if("sqlserver".equalsIgnoreCase(driver)) {
+			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
+			        }
+			        if(sql != null) {
+			        	PreparedStatement psdo = conn.prepareStatement(sql);
+			        	psdo.executeUpdate();
+			        	psdo.close();
+			            return true;
+			        }
+			    } catch (Throwable th) {
+			    	Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
+			    }
+	    	}
+	    }
+    	return false;
+	}	
+	
     
     //
     // search  in db utility func

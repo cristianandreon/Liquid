@@ -511,30 +511,7 @@ public class login {
                 }
                 res.close();
                 if(!databaseExist) {
-                    String sql = null;
-                    try {
-                        if("mysql".equalsIgnoreCase(driver)) {
-                            sql = "CREATE DATABASE IF NOT EXISTS "+database;
-                        } else if("postgres".equalsIgnoreCase(driver)) {
-                            sql = "CREATE DATABASE "+database;
-                        } else if("oracle".equalsIgnoreCase(driver)) {
-                            sql = "CREATE DATABASE IF NOT EXISTS "+database;
-                        } else if("sqlserver".equalsIgnoreCase(driver)) {
-                            sql = "CREATE DATABASE IF NOT EXISTS "+database;
-                        }
-                        if(sql != null) {
-                            psdoLogin = conn.prepareStatement(sql);
-                            psdoLogin.executeUpdate();
-                            psdoLogin.close();
-                            psdoLogin = null;
-                        } else {
-                            message = "create database error";
-                            return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
-                        }
-                    } catch (Throwable e) {
-                        error += "Error:" + e.getLocalizedMessage();
-                    }                            
-
+                	db.create_database(conn, database);
                 }
                 
                 
@@ -554,26 +531,7 @@ public class login {
                 res.close();
                 if(!schemaExist) {
                     if(schema != null && !schema.isEmpty()) {
-                        String sql = null;
-                        try {
-                            sql = "CREATE SCHEMA "+schema;
-                            if("mysql".equalsIgnoreCase(driver)) {
-                            } else if("postgres".equalsIgnoreCase(driver)) {
-                            } else if("oracle".equalsIgnoreCase(driver)) {
-                            } else if("sqlserver".equalsIgnoreCase(driver)) {
-                            }
-                            if(sql != null) {
-                                psdoLogin = conn.prepareStatement(sql);
-                                psdoLogin.executeUpdate();
-                                psdoLogin.close();
-                                psdoLogin = null;
-                            } else {
-                                message = "create schema error";
-                                return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
-                            }
-                        } catch (Throwable e) {
-                            error += "Error:" + e.getLocalizedMessage();
-                        }
+                    	db.create_schema(conn, schema);
                     }
                 }
 
