@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Base64;
+// import java.util.Base64;
 import javax.servlet.ServletContext;
 
 import javax.servlet.http.HttpServletRequest;
@@ -51,8 +51,8 @@ public class utility {
             return DatatypeConverter.printBase64Binary(data);
         } catch(Throwable th) {
             try {
-                return new String(Base64.getEncoder().encode(data));
-                // throw new Throwable();  // x java 7
+                // return new String(Base64.getEncoder().encode(data));
+                throw new Throwable();  // x java 7
             } catch(Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.encodeBase64(data));
@@ -76,8 +76,8 @@ public class utility {
             return new String(DatatypeConverter.parseBase64Binary(new String(data)));
         } catch(Throwable th) {            
             try {
-                return new String(Base64.getDecoder().decode(data));
-                // throw new Throwable(); // x java 7
+                // return new String(Base64.getDecoder().decode(data));
+                throw new Throwable(); // x java 7
             } catch(Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.decodeBase64(data));

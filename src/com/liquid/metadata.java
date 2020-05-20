@@ -1254,8 +1254,31 @@ public class metadata {
                 itemIdString = "`";
                 tableIdString = "";
             }
+
+            create_database(conn, database);
             
-            String sql = "CREATE TABLE "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ";
+            create_schema(conn, schema);
+            
+            String sql = "";
+            
+
+            if(isOracle) {
+        	} else if(isPostgres) {
+        		if("deploysCfg".equalsIgnoreCase(table))
+        			sql += "CREATE SEQUENCE IF NOT EXISTS \"liquidx\".\"deploysCfg_seq\";\nCOMMIT;\n";
+        	}
+
+    		sql += "CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ";
+            
+
+            if(isOracle) {
+        	} else if(isPostgres) {
+        		sql += "(\n";
+        	}
+            
+            
+            String primaryKey = null;
+            try { primaryKey = tableJson.getString("primaryKey"); } catch (Exception e) {}
             
             JSONArray cols = tableJson.getJSONArray("columns");            
             for(int ic=0; ic<cols.length(); ic++) {
@@ -1263,12 +1286,66 @@ public class metadata {
                 String name = col.getString("name");
                 String type = col.getString("type");
                 String typeName = col.getString("typeName");
-                sql += name + " " + typeName + "\n";
+                int size = col.getInt("size");
+
+                String sDefault = "";
+                try { sDefault = col.getString("default"); } catch (Exception e) {}
+
+                if(ic>0)
+                	sql += ",";
+                
+                if(isOracle) {
+            		if(size <= 0) {
+            			sql += (itemIdString+name+itemIdString) + " " + typeName + "\n";
+            		} else {
+                		sql += (itemIdString+name+itemIdString) + " " + typeName + "("+ size +")" + "\n";
+            		}
+            		if(sDefault != null && !sDefault.isEmpty()) {
+            			sDefault = sDefault.replace("`", "'");
+            			sql += " DEFAULT " + sDefault;
+            		}
+
+                } else if(isPostgres) {
+                    // code        char(5) CONSTRAINT firstkey PRIMARY KEY,
+                    // title       varchar(40) NOT NULL,
+                    // did         integer NOT NULL,
+
+                	if("serial".equalsIgnoreCase(typeName)) {
+                		typeName = "integer";
+                		size = -2;
+                	}
+                	
+        			if("int4".equalsIgnoreCase(typeName)) size = -1;
+            		if(size <= 0) {
+            			sql += (itemIdString+name+itemIdString) + " " + typeName;
+            		} else {
+        				sql += (itemIdString+name+itemIdString) + " " + typeName + "("+ size +")";
+            		}
+            		if(name.equals(primaryKey)) {
+            			sql += " PRIMARY KEY "; // "("+(itemIdString+name+itemIdString) +")";
+            		}
+            		if(sDefault != null && !sDefault.isEmpty()) {
+            			sDefault = sDefault.replace("`", "'");
+            			sql += " DEFAULT " + sDefault;
+            		}
+            		
+            		sql += "\n";
+            	}
             }
             
-            String primaryKey = tableJson.getString("primaryKey");
-            sql += "PRIMARY KEY " + primaryKey + "\n";
-        
+            
+            if(primaryKey != null && !primaryKey.isEmpty()) {
+	        	if(isOracle) {
+	        		sql += "PRIMARY KEY " + primaryKey + "\n";
+	        	}
+            }
+
+            
+            if(isOracle) {
+        	} else if(isPostgres) {
+        		sql += ");\nCOMMIT;\n";
+        	}
+            
             psdo = conn.prepareStatement(sql);
             rsdo = psdo.executeQuery();
             

@@ -1770,9 +1770,25 @@ public class workspace {
         try {
             StringBuilder buffer = new StringBuilder();
             BufferedReader reader = request.getReader();
-            String line;
-            while ((line = reader.readLine()) != null) buffer.append(line);
-            return buffer.toString();
+            int offset = 0, read = 0;
+            int size = 8192;
+            char [] chunk = new char [size];
+            try {
+	            while (read >= 0) {
+	            	read = reader.read(chunk, 0, size);
+	            	if(read > 0) {
+	            		buffer.append(chunk, 0, read);
+	            		offset += read;
+	            	}
+	            }
+	            return buffer.toString();
+            } catch (Throwable t) {
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, t);                
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Try to increase \"-Xmx\" \"-XX:MaxPermSize\" JVM parameters");
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Current \"-Xmx\":"+Runtime.getRuntime().maxMemory() /1024/1024+"Mb, totalMemory:"+Runtime.getRuntime().totalMemory() /1024/1024+"Mb");
+                 
+            }
+	            
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
         }

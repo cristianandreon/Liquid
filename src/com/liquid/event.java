@@ -120,6 +120,7 @@ public class event {
         } catch (Throwable e) {
             error += "Error:" + e.getLocalizedMessage();
             System.err.println(" execute() ["+controlId+"] Error:" + e.getLocalizedMessage());
+            errorJson = "{ \"error\":\"" + utility.base64Encode(error.getBytes())+"\"}";
         }
         return errorJson;
     }
