@@ -1338,7 +1338,7 @@ public class metadata {
             
             create_database(conn, database);
             
-            create_database(conn, schema);
+            create_schema(conn, schema);
 
             return true;
 
