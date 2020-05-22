@@ -295,10 +295,10 @@ public class workspace {
 
 
 
-    
+    //
     // Aggiunge e registra un oggetto table_control, raffinando il Json e ritornando il js per il client
     //
-    // N.B.:controlId può essere diverso da tableKey, per uso interno (es. foreignTable dallo stesso controlId accede ad altre tabelle )
+    // N.B.:controlId può essere diverso da tableKey, per uso interno (es. la foreignTable dallo stesso controlId accede ad altre tabelle )
     //
     static public String get_table_control(HttpServletRequest request, String controlId, String sTableJson, String tableKey, Object owner, String returnType) {
         workspace tblWorkspace = null;

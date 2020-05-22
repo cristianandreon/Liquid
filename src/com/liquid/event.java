@@ -249,6 +249,10 @@ public class event {
         return retVal;        
     }
     
+    
+    //
+    // Transfer client param to parameter for next event process
+    // 
     static private String transfer_client_to_result( Object clientToTransfer, String result) throws JSONException {
         JSONObject retValJSON = new JSONObject(result);
         if(clientToTransfer != null) {
@@ -287,7 +291,7 @@ public class event {
     }
 
     //
-    // Transfer result to parameter for next event process
+    // Transfer result to parameter of next event process
     //  ex.: 
     //      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
     //          to 
@@ -327,7 +331,7 @@ public class event {
     }
     
     //
-    // Transfer result to result for next event process
+    // Transfer current result to result for next event process
     //  ex.: 
     //      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
     //          to 

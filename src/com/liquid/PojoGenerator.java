@@ -33,9 +33,9 @@ public class PojoGenerator {
     public String classBody = "";
     
     
-	static void removeFinal(CtClass clazz) throws Exception {
+    static void removeFinal(CtClass clazz) throws Exception {
         int modifiers = clazz.getModifiers();
-        if(Modifier.isFinal(modifiers)) {
+        if (Modifier.isFinal(modifiers)) {
             System.out.println("Removing Final");
             int notFinalModifier = Modifier.clear(modifiers, Modifier.FINAL);
             clazz.setModifiers(notFinalModifier);

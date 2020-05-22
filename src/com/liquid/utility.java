@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,28 +32,29 @@ import javax.xml.bind.DatatypeConverter;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
-import static org.apache.commons.codec.binary.Base64.decodeBase64;
-import static org.apache.commons.codec.binary.Base64.encodeBase64;
+import org.apache.commons.codec.*;
 
 
 
 public class utility {
     
     static public String base64Encode(String data) {
+        if(data == null || data.isEmpty()) return "";
         try {
             return base64Encode(data.getBytes());
         } catch(Throwable th) {
             System.err.println("Error:"+th.getLocalizedMessage()+"Please try adding apache commons-codes.jar to your project");
         }
-        return null;
+        return "";
     }
     static public String base64Encode(byte [] data) {
+        if(data == null) return "";
         try {
             return DatatypeConverter.printBase64Binary(data);
         } catch(Throwable th) {
             try {
-                // return new String(Base64.getEncoder().encode(data));
-                throw new Throwable();  // x java 7
+                return new String(Base64.getEncoder().encode(data));
+                // throw new Throwable();  // x java 7
             } catch(Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.encodeBase64(data));
@@ -61,7 +63,7 @@ public class utility {
                 }
             }
         }
-        return null;
+        return "";
     }
     static public String base64Decode(String data) {
         try {
@@ -76,8 +78,8 @@ public class utility {
             return new String(DatatypeConverter.parseBase64Binary(new String(data)));
         } catch(Throwable th) {            
             try {
-                // return new String(Base64.getDecoder().decode(data));
-                throw new Throwable(); // x java 7
+                return new String(Base64.getDecoder().decode(data));
+                // throw new Throwable(); // x java 7
             } catch(Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.decodeBase64(data));

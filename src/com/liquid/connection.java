@@ -68,7 +68,7 @@ public class connection {
         return result;
     }
     
-        // Servizio lettura della connessione
+            // Servizio lettura della connessione dalla request
     static public String getConnectionString( HttpServletRequest request, JspWriter out ) {
         String result = "";
         try {
@@ -223,8 +223,28 @@ public class connection {
             }
     	}
         return null;
-    }    
-
+    }
+    
+    static public String getConnectionURL( String driver, String host, String database, String user, String password) {
+    	try {            
+            if("oracle".equalsIgnoreCase(driver)) {
+                return "jdbc:oracle:thin:@"+host+":1521:xe"+","+user+","+password;
+            } else if("postgres".equalsIgnoreCase(driver)) {
+                return "jdbc:postgresql://"+host+":5432/"+database+","+user+","+password;
+            } else if("mysql".equalsIgnoreCase(driver)) {
+                return "jdbc:mysql://"+host+":3306/"+database+","+user+","+password;
+            } else if("sqlserver".equalsIgnoreCase(driver)) {
+                return "jdbc:sqlserver://"+host+":1433;databaseName="+database+","+user+","+password;
+            } else {
+                return null;
+            }
+            
+            
+    	} catch(Throwable th) {
+            Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, th);
+    	}
+        return null;
+    }
 }
 
 
