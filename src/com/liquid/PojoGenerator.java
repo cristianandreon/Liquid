@@ -21,6 +21,7 @@ import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
 import javassist.CtMethod;
+import javassist.Modifier;
 import javassist.NotFoundException;
 
 
@@ -31,6 +32,17 @@ public class PojoGenerator {
     public String attributes = "";
     public String classBody = "";
     
+    
+	static void removeFinal(CtClass clazz) throws Exception {
+        int modifiers = clazz.getModifiers();
+        if(Modifier.isFinal(modifiers)) {
+            System.out.println("Removing Final");
+            int notFinalModifier = Modifier.clear(modifiers, Modifier.FINAL);
+            clazz.setModifiers(notFinalModifier);
+        }
+    }
+        
+        
     public Class generate(String className, Map<String, Class<?>> properties, Map<String, Class<?>> attributes) throws Throwable {
         CtClass cc = null;
         ClassPool pool = null;
@@ -45,7 +57,16 @@ public class PojoGenerator {
                 error += th.getMessage() +" "+ th.getCause();
                 System.err.println("// PojoGenerator.generate() Error:" + th.getLocalizedMessage()+"..make sure to include javassist.jar in your project, or add fat version of Liquid.jar");
                 return null;
-            }        
+            }
+            
+            try {
+	            CtClass ctClass = pool.get(className);
+	            if(ctClass != null) {
+	            	ctClass.defrost();
+	            	removeFinal(ctClass);
+	            }
+            } catch(Throwable th) {                
+            }            
             
             pool.importPackage("java.util");
             pool.importPackage("java.math");

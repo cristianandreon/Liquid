@@ -108,6 +108,7 @@ public class event {
 
             } catch (InvocationTargetException ite) {
     	        final Throwable cause = ite.getTargetException();
+    	        error = ite.getCause().getLocalizedMessage();
     	        System.err.println("nested exception - " + cause + " "+ite.getCause() );		
     		                
             } catch (Throwable th) {

@@ -2085,11 +2085,26 @@ public class db {
                     }
                 }
             }
+
+            
+            boolean projectMode = false;
+            if(workspace.genesisToken != null && !workspace.genesisToken.isEmpty()) {
+            	projectMode = true;
+            }
+            
             
             className = className.replaceAll("@", "0");
             // .replaceAll("-", "_")
             // className = className.replace("$", "_");
             try { clazz = Class.forName(className); } catch (Throwable e) { }
+            
+            if(projectMode) {
+            	if(clazz != null) {
+    				className += "__rev$"+workspace.classMakeIndex++;
+    				clazz = null;
+            	}
+            }
+            
             if(clazz == null) {
                 pojoGenerator = new PojoGenerator();
                 clazz = pojoGenerator.generate(className, props, attributes);

@@ -33,6 +33,7 @@ public class workspace {
 
     static public String GLLang = "EN";
     static public String genesisToken = "";
+    static public int classMakeIndex = 1;
     static public Method default_connection = null;
     public Method get_connection = null;
     
