@@ -3,6 +3,7 @@ package com.liquid;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.Properties;
 import javax.mail.*;
 import javax.mail.internet.*;
@@ -92,6 +93,53 @@ public class emailer {
         return false;
     }
 
+    
+    // nees papercut or local smtp server
+    public static boolean postMail(String recipients[], String subject, String message, String from) throws MessagingException {
+    	
+    	try {
+
+		    // Assuming you are sending email from localhost
+		    String host = "localhost";
+		    
+		    // Set the host smtp address
+		    Properties props = new Properties();
+		    props.put("mail.smtp.host", host);
+		    props.put("mail.smtp.port", "25");    
+	    
+	  	  
+		    Session session = Session.getDefaultInstance(props, null);
+		    session.setDebug(false);
+	
+		    // create a message
+		    Message msg = new MimeMessage(session);
+	
+		    // set the from and to address
+		    InternetAddress addressFrom = new InternetAddress(from);
+		    msg.setFrom(addressFrom);
+	
+		    InternetAddress[] addressTo = new InternetAddress[recipients.length]; 
+		    for (int i = 0; i < recipients.length; i++) {
+		        addressTo[i] = new InternetAddress(recipients[i]);
+		    }
+		    msg.setRecipients(Message.RecipientType.TO, addressTo);
+	
+		    // msg.addHeader("MyHeaderName", "myHeaderValue");
+	
+		    msg.setSubject(subject);
+		    msg.setContent(message, "text/html");
+		    msg.setSentDate(new Date());
+		    Transport.send(msg);
+		    return true;
+		    
+    	} catch(Throwable th) {
+    		System.err.print("Error:"+th.getLocalizedMessage());
+    	}
+	    return false;
+	}    
+    
+    
+    
     private class SMTPAuthenticator extends javax.mail.Authenticator {
         public javax.mail.PasswordAuthentication getPasswordAuthentication() {
             return new javax.mail.PasswordAuthentication(Username, Password);

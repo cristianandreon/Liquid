@@ -9,33 +9,175 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-// import java.util.Base64;
-import javax.servlet.ServletContext;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspWriter;
 import javax.xml.bind.DatatypeConverter;
-import org.json.JSONObject;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.apache.commons.codec.*;
+import org.json.JSONObject;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+
+
+import sun.security.provider.SecureRandom;
 
 
 
+import java.security.cert.CertificateException; 
+import java.security.cert.X509Certificate; 
+import javax.net.ssl.TrustManager; 
+import javax.net.ssl.X509TrustManager;   
+
+
+//import java.util.Base64;
+// import java.util.Base64;
+// return new String(Base64.getEncoder().encode(data));
+// x java 7
+// return new String(Base64.getDecoder().decode(data));
+// x java 7
+// { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, ids:nodeKeys };
+/**
+     * <h3>Search for the property in the bean</h3>
+     * <p>
+     * This method return a Field of the property from a bean
+     *
+     * @param  bean  the bean (Object)
+     * @param  property the Field of the property to get (Field)
+     * @param  exaclyMatch if false strip by $ and check only the parts defined in the param property (boolean)
+     *                      ex.: searching for 'foreigntTable' the property named 'foreigntTable$foreignColumn$column' is returned as found
+     * @see         utility
+     */
+// wrap to bean
+// JAVA MERDA : se la libreria non è presente ANCHE sul progetto principale si solleva la throwable
+/*
+    APACHE MERDA : devo tirarmi dentro un pianete per usare un solo metodo ...
+    static public boolean set(Object bean, String propName, Object propValue) throws IllegalAccessException, InvocationTargetException {
+        try {
+            BeanUtils.setProperty(bean, propName, propValue);
+            return true;
+        } catch (Throwable e) {
+            System.err.println("ERROR : com.liquid.utility.set() " + e.getLocalizedMessage()+" .. make sure to include commons-beanutils-1.9.4.jar and commons-logging-1.2.jar in your project");
+        }
+        return false;
+    }
+    static public Object get(Object bean, String propName) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        try {
+            return (Object)BeanUtils.getProperty(bean, propName);
+        } catch (Throwable e) {
+            System.err.println("ERROR: com.liquid.utility.get() " + e.getLocalizedMessage()+" .. make sure to include commons-beanutils-1.9.4.jar and commons-logging-1.2.jar in your project");
+        }
+        return null;
+    }
+    */
+/**
+     * <h3>Set the property of a bean</h3>
+     * <p>
+     * This method set a property from a bean
+     *
+     * @param  bean  the bean (Object)
+     * @param  property the name of the property to get (String)
+
+     * @see         utility
+     */
+// Ricerca nei beans per similitudine
+// debug
+// set changed, avoiding mirrored events
+// Ricerca nel bean corrispondenza esatta
+/*
+                    OBSOLETO
+                    try {
+                        bean.getClass().getMethod("setChanged", String.class, boolean.class).invoke(bean, property, true);
+                    } catch (Throwable th) {
+                        Method[] methods = bean.getClass().getMethods();
+                        for(int i=0; i<methods.length; i++) {
+                            if(methods[i].getName().equalsIgnoreCase(property)) {
+                                System.err.println("{"+bean.getClass()+"}.Method #"+(i+1)+":" + methods[i].toString());
+                            }
+                        }
+                        try {
+                            // Ricerca nel bean corrispondenza esatta
+                            field = searchProperty(bean, property+"$Changed", true, false);
+                            if(field != null)
+                                field.set(bean, value);
+                        } catch (Throwable th2) {
+                            Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th2);
+                        }
+                    }
+                    */
+/**
+     * <h3>Get the property of a bean</h3>
+     * <p>
+     * This method get a property from a bean
+     *
+     * @param  bean  the bean (Object)
+     * @param  property the name of the property to get (String)
+
+     * @return      property value (Object)
+     * @see         utility
+     */
+// wrap to bean
+// Ricerca nel bean per similitudine
+// Codice Obsoleto
+// Ricerca nei beans
+// let the process run for 3 seconds
+// give it a chance to stop
+// the process is now dead
+// log.debug(("Exited with error code "+exitVal));
+// log.error(e.getMessage());
+// checks if two given strings match. The first string  may contain wildcard characters 
+// If we reach at the end of both strings,  // we are done 
+// Make sure that the characters after '*'  
+// are present in second string.  
+// This function assumes that the first 
+// string will not contain two consecutive '*' 
+// If the first string contains '?',  
+// or current characters of both strings match 
+// If there is *, then there are two possibilities 
+// a) We consider current character of second string 
+// b) We ignore current character of second string. 
+// gets MIME type of the file
+// obtains response's output stream
 public class utility {
     
     static public String base64Encode(String data) {
@@ -53,8 +195,8 @@ public class utility {
             return DatatypeConverter.printBase64Binary(data);
         } catch(Throwable th) {
             try {
-                return new String(Base64.getEncoder().encode(data));
-                // throw new Throwable();  // x java 7
+                // return new String(Base64.getEncoder().encode(data));
+                throw new Throwable();  // x java 7
             } catch(Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.encodeBase64(data));
@@ -78,8 +220,8 @@ public class utility {
             return new String(DatatypeConverter.parseBase64Binary(new String(data)));
         } catch(Throwable th) {            
             try {
-                return new String(Base64.getDecoder().decode(data));
-                // throw new Throwable(); // x java 7
+                // return new String(Base64.getDecoder().decode(data));
+            	throw new Throwable(); // x java 7
             } catch(Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.decodeBase64(data));
@@ -677,4 +819,152 @@ public class utility {
         return insertCount;
     }
     
+    
+    
+    
+    static javax.net.ssl.TrustManager[] trustAllCerts = null;
+    
+	public static void disableCertificateValidation() {
+		// Create a trust manager that does not validate certificate chains
+		trustAllCerts = new TrustManager[] { 
+			new X509TrustManager() {
+				public X509Certificate[] getAcceptedIssuers() {
+					return new X509Certificate[0];
+				}
+				public void checkClientTrusted(X509Certificate[] certs, String authType) {
+				}
+	
+				public void checkServerTrusted(X509Certificate[] certs, String authType) {
+				}
+			} 
+		};
+	}
+    
+    public static Object [] readURL( String curUrl, String method, String post ) throws Exception {
+    	// Install the all-trusting trust manager
+    	try	{
+    	    SSLContext sc = SSLContext.getInstance("SSL");
+    	    sc.init(null, (TrustManager[]) trustAllCerts, new java.security.SecureRandom());
+    	    HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+    	} catch (Exception e) {
+    	    System.err.println(e);
+    	}
+    	
+		HttpURLConnection connection = null;
+		int code = 0;
+		while(true) {
+	        URL url = new URL(curUrl);
+	    	try {
+	    		connection = (HttpURLConnection)url.openConnection();
+	            connection.setInstanceFollowRedirects(true);
+	            HttpURLConnection.setFollowRedirects(true);
+	            connection.setReadTimeout(15000);
+	            connection.setRequestMethod("GET");
+	            connection.connect();
+	            code = connection.getResponseCode();
+	            connection.disconnect();
+	    	} catch (Throwable th) {
+	    		String err = "Error:"+th.getLocalizedMessage();
+	    		System.err.print(err);
+	    		break;
+	    	}
+	        if(code == HttpURLConnection.HTTP_NOT_FOUND) {
+	            return new Object [] { HttpURLConnection.HTTP_NOT_FOUND, null };
+	        } else if(code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP) {
+	              String location = connection.getHeaderField("Location");
+	              location = URLDecoder.decode(location, "UTF-8");
+	              URL base = new URL(curUrl);               
+	              URL next = new URL(base, location);
+	              curUrl = next.toExternalForm();
+	        } else {	                                    	
+	            return new Object [] { code, null };
+	    	}
+		}
+		return new Object [] { 0, null };
+    }
+    
+ 
+	static String getTimeString(float timeLeft) {		
+		String sTimeLeft = "";
+		int days = (int) Math.ceil(timeLeft / 3600.0f / 24.0f)-1;
+		String timeLeftDays = days > 0.0f ? String.valueOf(days)+"days " : "";
+		timeLeft -= days * 3600.0f * 24.0f;
+		int hours = (int) Math.ceil(timeLeft / 3600.0f)-1;
+		String timeLeftHours = hours > 0.0f ? String.valueOf(hours)+"h " : "";
+		timeLeft -= hours * 3600.0f;
+		int minutes = (int) Math.ceil(timeLeft  / 60.0f)-1;
+		String timeLeftMinutes = minutes > 0.0f ? String.valueOf(minutes)+"m " : "";
+		timeLeft -= minutes*60.0f;
+		int seconds = (int) Math.ceil(timeLeft);
+		String timeLeftSeconds = minutes > 0.0f ? String.valueOf(seconds)+"s" : "0s";
+		sTimeLeft = timeLeftDays + timeLeftHours + timeLeftMinutes + timeLeftSeconds;		
+		return sTimeLeft;
+	}
+ 
+	
+	static class MyErrorHandler implements ErrorHandler {
+		public void warning(SAXParseException e) throws SAXException {
+			show("Warning", e);
+			throw (e);
+		}
+
+		public void error(SAXParseException e) throws SAXException {
+			show("Error", e);
+			throw (e);
+		}
+
+		public void fatalError(SAXParseException e) throws SAXException {
+			show("Fatal Error", e);
+			throw (e);
+		}
+
+		private void show(String type, SAXParseException e) {
+			System.out.println(type + ": " + e.getMessage());
+			System.out.println("Line " + e.getLineNumber() + " Column "	+ e.getColumnNumber());
+			System.out.println("System ID: " + e.getSystemId());
+		}
+	}
+	
+    public static Object getArchiveXMLTag(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
+    	java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
+    	java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
+    	if(r != null) {
+	    	InputStream is = zipFile.getInputStream(r);	    	
+	    	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+	        // dbf.setNamespaceAware(false);
+	    	DocumentBuilder parser = dbf.newDocumentBuilder();
+	    	MyErrorHandler myErrorHandler = new MyErrorHandler();
+			parser.setErrorHandler(myErrorHandler);
+	    	Document doc = (Document) parser.parse(is);
+	        XPathFactory xPathfactory = XPathFactory.newInstance();
+	        XPath xpath = xPathfactory.newXPath();
+	        Element userElement = (Element) xpath.evaluate(attribute, doc, XPathConstants.NODE);
+	        if(userElement != null) {
+	        	// <version major="2" minor="0" build="0" revision="022" date="19-05-2020">
+	        	return (Object)(userElement.getAttribute("major")+"."+userElement.getAttribute("minor")+"."+userElement.getAttribute("build")+"."+userElement.getAttribute("revision")+" - date:"+userElement.getAttribute("date"));
+	        }
+    	}
+		return "";    	
+    }
+    
+    public static String getArchiveFile(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
+    	java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
+    	java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
+    	if(r != null) {
+	    	InputStream is = zipFile.getInputStream(r);
+	    	if(is.available()>0) {
+		    	BufferedReader br = new BufferedReader(new InputStreamReader(is));
+		    	StringBuffer sb = new StringBuffer();
+		    	while(true) {
+		    		String line = br.readLine();
+		    		if(line != null)
+		    			sb.append(line);
+		    		else
+		    			break;
+		    	}
+	        	return sb.toString();
+	    	}
+    	}
+		return null;    	
+    }    
 }
