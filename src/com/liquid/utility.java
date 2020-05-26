@@ -896,7 +896,7 @@ public class utility {
 		String timeLeftMinutes = minutes > 0.0f ? String.valueOf(minutes)+"m " : "";
 		timeLeft -= minutes*60.0f;
 		int seconds = (int) Math.ceil(timeLeft);
-		String timeLeftSeconds = minutes > 0.0f ? String.valueOf(seconds)+"s" : "0s";
+		String timeLeftSeconds = seconds > 0.0f ? String.valueOf(seconds)+"s" : "0s";
 		sTimeLeft = timeLeftDays + timeLeftHours + timeLeftMinutes + timeLeftSeconds;		
 		return sTimeLeft;
 	}

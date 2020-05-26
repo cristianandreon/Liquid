@@ -26,6 +26,7 @@ public class sftpManager implements SftpProgressMonitor {
 	
     long uploadingTotal = 0;
     long uploadingCurrent = 0;
+    long uploadingLastCurrent = 0;
     long lastCurrentTimeMillis = 0;
     
     String glSourceFile = null;
@@ -72,7 +73,7 @@ public class sftpManager implements SftpProgressMonitor {
 	        	
 	            try {
 			        SftpATTRS attrs = sftpChannel.lstat(targetFile);
-			        attrs.getSize();
+			        long remoteSize = attrs.getSize();
 			        int rt = attrs.getATime();
 			        String rts = attrs.getAtimeString();
 			        
@@ -90,7 +91,7 @@ public class sftpManager implements SftpProgressMonitor {
 		                       creationDate.getHours() + ":"+creationDate.getMinutes() + ":" + creationDate.getSeconds()
 		                       );	               
 			        
-			        if(ct > (long)rt) {
+			        if(ct > (long)rt || remoteSize != glFileSize) {
 			        	// file changed
 			        } else {
 			        	return fileSize;
@@ -188,19 +189,20 @@ public class sftpManager implements SftpProgressMonitor {
     public boolean count(long sentBytes) {
     	long bytes = this.uploadingCurrent + sentBytes;
     	if(this.uploadingCurrent/1024/1024 != bytes /1024/1024) {
-    		float ds = bytes - this.uploadingCurrent;
-    		float dt = System.currentTimeMillis() - lastCurrentTimeMillis;
+    		float ds = bytes - this.uploadingLastCurrent;
+    		this.uploadingLastCurrent = bytes; 
+    		float dt = (System.currentTimeMillis() - lastCurrentTimeMillis) / 1000;
     		this.lastCurrentTimeMillis = System.currentTimeMillis();
     		String pec = String.format("%1.2f",  (float)((float)this.uploadingCurrent / (float)glFileSize * 100.0f));
-    		float fSpeed = (ds / dt * 8.0f);
+    		float fSpeed = (ds / dt / 1024.0f);
 			if(fSpeed > maxSpeed) maxSpeed = fSpeed; 
 			if(fSpeed < minSpeed) minSpeed = fSpeed;
 			mediaSpeed = (mediaSpeed * count + fSpeed) / (count + 1);
 			count++;
-			timeLeft = mediaSpeed > 0.0f ? (glFileSize - uploadingCurrent ) / (mediaSpeed/8.0f * 1024.0f) : 0.0f;
-    		String speed = String.format("%1.2f", fSpeed);
+			timeLeft = mediaSpeed > 0.0f ? (glFileSize - uploadingCurrent ) / (mediaSpeed * 1024.0f) : 0.0f;
+    		String speed = String.format("%1.2f", mediaSpeed);
     		String sTimeLeft = utility.getTimeString(timeLeft);   		
-    		Callback.send("Uploading "+glSourceFile+" to " +glTtargetFile + "<br/>" + String.format("%1.2f", (float)bytes/1024.0f/1024.0f)+" / "+ String.format("%1.2f", (float)glFileSize/1024.0f/1024.0f) + " MB .. "+pec+"% done, Transfer rate:" +speed+" Kb/sec .. "+sTimeLeft);
+    		Callback.send("Uploading "+glSourceFile+" to " +glTtargetFile + "<br/>" + String.format("%1.2f", (float)bytes/1024.0f/1024.0f)+" / "+ String.format("%1.2f", (float)glFileSize/1024.0f/1024.0f) + " MB .. "+pec+"% done, Transfer rate:" +speed+" KB/sec .. "+sTimeLeft);
     	}
 		this.uploadingCurrent = bytes;
         return(true);
