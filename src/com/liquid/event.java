@@ -1702,5 +1702,22 @@ public class event {
         }
         return null;
     }
+    static public Object getObject (Object params, String paramName ) {
+        if(params != null) {
+            try {
+                JSONObject rootJSON = new JSONObject((String)params);
+                JSONArray paramsJSON = rootJSON.getJSONArray("params");
+                for(int ip=0; ip<paramsJSON.length(); ip++) {
+                    JSONObject paramJSON = paramsJSON.getJSONObject(ip);
+                    if(paramJSON.has(paramName)) {
+                        return paramJSON.get(paramName);
+                    }
+                }
+            } catch (JSONException ex) {
+                Logger.getLogger(event.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return null;
+    }    
     
 }

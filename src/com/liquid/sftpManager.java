@@ -94,10 +94,10 @@ public class sftpManager implements SftpProgressMonitor {
 		                       creationDate.getHours() + ":"+creationDate.getMinutes() + ":" + creationDate.getSeconds()
 		                       );	               
 			        
-			        if(ct > (long)rt || remoteSize != glFileSize) {
+			        if(ct > (long)rt || remoteSize != fileSize) {
 			        	// file changed
 			        } else {
-			        	return new Object [] { retVal, false };
+			        	return new Object [] { fileSize, false };
 			        }
 	            } catch (Exception e) {
 	            	System.err.print("Error:"+e.getLocalizedMessage());
