@@ -39,7 +39,7 @@ public class sftpManager implements SftpProgressMonitor {
     float timeLeft = 0.0f;
     float count = 0;
 
-    public long upload ( String host, String user, String password, String sourceFile, InputStream sourceFileIS, String targetFile ) throws JSchException, SftpException, IOException {
+    public Object [] upload ( String host, String user, String password, String sourceFile, InputStream sourceFileIS, String targetFile ) throws JSchException, SftpException, IOException {
         long retVal = 0, fileSize = 0;
         int port = 22;
         String knownHostsFilename = "/home/world/.ssh/known_hosts";        
@@ -67,6 +67,9 @@ public class sftpManager implements SftpProgressMonitor {
 	            BasicFileAttributeView attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
 	            BasicFileAttributes latt = attributes.readAttributes();
 	            glFileSize = fileSize = latt.size();
+	            glSourceFile = sourceFile;
+	            glTtargetFile = targetFile;
+	            
 	            
 	            FileTime ctf = latt.creationTime();
 	            long ct = ctf.toMillis() / 1000;
@@ -94,7 +97,7 @@ public class sftpManager implements SftpProgressMonitor {
 			        if(ct > (long)rt || remoteSize != glFileSize) {
 			        	// file changed
 			        } else {
-			        	return fileSize;
+			        	return new Object [] { retVal, false };
 			        }
 	            } catch (Exception e) {
 	            	System.err.print("Error:"+e.getLocalizedMessage());
@@ -112,7 +115,7 @@ public class sftpManager implements SftpProgressMonitor {
         	session.disconnect();
         }
 
-        return retVal;        
+        return new Object [] { retVal, true };        
     }
     
     public long getRemoteFileSize ( String host, String user, String password, String targetFile ) throws JSchException, SftpException, IOException {

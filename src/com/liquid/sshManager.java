@@ -25,21 +25,24 @@ import java.io.IOException;
  */
 public class sshManager {
 
+	public long delayTimeMs = 500;
+
     private Connection conn = null;
     private Session sess = null;
-    OutputStreamWriter writer  = null;
-    PrintWriter pw = null;
-    InputStream stdout = null;
-    InputStream stderr = null;
-    InputStreamReader isOut = null;
-    InputStreamReader isErr = null;
-    BufferedReader br = null;
-    BufferedReader brErr = null;
+    public OutputStreamWriter writer  = null;
+    public PrintWriter pw = null;
+    public InputStream stdout = null;
+    public InputStream stderr = null;
+    public InputStreamReader isOut = null;
+    public InputStreamReader isErr = null;
+    public BufferedReader br = null;
+    public BufferedReader brErr = null;
     
-    private String ip = null;
+    public String ip = null;
     public String usr = null;
-    private String psw = null;
-    ArrayList<String> errors = new ArrayList<String> ();
+    public String psw = null;
+    
+    public ArrayList<String> errors = new ArrayList<String> ();
 
     // ...
     public boolean connect(String ip, String usr, String psw) throws InterruptedException {
@@ -61,9 +64,14 @@ public class sshManager {
                 }
                 
                 sess = conn.openSession();
-                sess.requestPTY("bash");
-                sess.startShell();
                 
+                try {
+	                sess.requestPTY("xterm");
+	                sess.startShell();
+                } catch (Exception e) {
+	                sess.requestPTY("bash");
+	                sess.startShell();
+                }
                 writer = new OutputStreamWriter(sess.getStdin(), "utf-8");
                 // pw = new PrintWriter(sess.getStdin());
 
@@ -206,25 +214,21 @@ public class sshManager {
         if(command != null) {
             try {
             	
-            	if(command.lastIndexOf("\r\n") != command.length()-2) {
-            		command += "\r\n";
-            	}
+            	if(command.lastIndexOf("\n") != command.length()-1) command += "\n";
             	
-                while (stdout.available()>0) {
-                    System.out.print(br.readLine());
-            	}
-                while (stderr.available()>0) {
-                    System.err.print(brErr.readLine());
-            	}
+                while (stdout.available()>0) System.out.print(br.readLine());
+                while (stderr.available()>0) System.err.print(brErr.readLine());
             	
-                if(param != null)
-                	sess.getStdin().write(param.getBytes());
-                
                 writer.write(command);
                 writer.flush();
                 
+                Thread.sleep(delayTimeMs);
                 
-                Thread.sleep(500);
+                if(param != null) {
+                	if(param.lastIndexOf("\n") != command.length()-1) param += "\n";
+                	sess.getStdin().write(param.getBytes());
+                }
+                
                 long timeout = 10000L;
                 // sess.waitForCondition(ChannelCondition.TIMEOUT | ChannelCondition.CLOSED | ChannelCondition.EOF | ChannelCondition.EXIT_STATUS, timeout);
                 // int r = sess.waitUntilDataAvailable(timeout);
