@@ -25,6 +25,8 @@ public class system_command {
     //      user : utente connessione al db
     //      password : password connessione al db
     //
+    // TODO : Dialogo lato client per il set dei parametri
+    //
     // TODO : test and debug
     //
     static public String importRemoteRows (Object tbl_wrk, Object params, Object clientData, Object requestParam ) throws JSONException, Exception {
