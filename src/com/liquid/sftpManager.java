@@ -144,7 +144,9 @@ public class sftpManager implements SftpProgressMonitor {
 		        long size = attrs.getSize();
 	        	return size;
 	        }
-	        
+        } catch (SftpException se) {
+        	return 0;
+        	
         } finally {        
         	sftpChannel.exit();
         	session.disconnect();
