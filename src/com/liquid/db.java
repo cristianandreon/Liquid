@@ -2377,7 +2377,7 @@ public class db {
     //
     //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseShemaTable, String columns, String keyColumn, String key, long maxRows ) {
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) {
         String controlId = databaseShemaTable.replace(".", "_");
         return load_beans( request, controlId, databaseShemaTable, columns, keyColumn, key, maxRows );
     }
@@ -2389,7 +2389,7 @@ public class db {
     //
     //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String keyColumn, String key, long maxRows ) {
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) {
         // crea un controllo sulla tabella
         String [] tableParts = databaseShemaTable.split("\\.");
         String database = "";
@@ -2487,7 +2487,17 @@ public class db {
                 column_alias_list += colName;
             }
 
-            String executingQuery = "SELECT * FROM " + (tableIdString+schema+tableIdString) + "." + (tableIdString+table+tableIdString) + " WHERE " + keyColumn + "='" + key + "'";
+            String sWhere = "";
+            if(key instanceof String) {
+                sWhere = " WHERE " + keyColumn + "='" + key + "'";
+            } else if(key instanceof JSONArray) {
+            } else if(key instanceof ArrayList<?>) {
+                String keyList = workspace.arrayToString(((ArrayList<String>)key).toArray(), null, null, ",");
+                sWhere = " WHERE " + keyColumn + " IN ('" + keyList + "'";
+                sWhere+= ")";
+            }
+            
+            String executingQuery = "SELECT * FROM " + (tableIdString+schema+tableIdString) + "." + (tableIdString+table+tableIdString) + sWhere;
 
 
             if(tbl_wrk != null) {

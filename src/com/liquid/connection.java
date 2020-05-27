@@ -166,6 +166,9 @@ public class connection {
                                 }
                             }
                             conn = DriverManager.getConnection(curConnectionURL);
+                            if(conn == null) {
+                                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() error: failed to get connection from url");
+                            }
                         }
                     }
                 }

@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -21,19 +20,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +38,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
@@ -53,19 +46,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 
-import sun.security.provider.SecureRandom;
-
-
-
-import java.security.cert.CertificateException; 
 import java.security.cert.X509Certificate; 
+import java.util.Base64;
 import javax.net.ssl.TrustManager; 
 import javax.net.ssl.X509TrustManager;   
 
@@ -179,6 +166,18 @@ import javax.net.ssl.X509TrustManager;
 // gets MIME type of the file
 // obtains response's output stream
 public class utility {
+
+    public static int javaVersion = getVersion();
+    
+    private static int getVersion() {
+        String version = System.getProperty("java.version");
+        if(version.startsWith("1.")) {
+            version = version.substring(2, 3);
+        } else {
+            int dot = version.indexOf(".");
+            if(dot != -1) { version = version.substring(0, dot); }
+        } return Integer.parseInt(version);
+    }
     
     static public String base64Encode(String data) {
         if(data == null || data.isEmpty()) return "";
@@ -195,8 +194,10 @@ public class utility {
             return DatatypeConverter.printBase64Binary(data);
         } catch(Throwable th) {
             try {
-                // return new String(Base64.getEncoder().encode(data));
-                throw new Throwable();  // x java 7
+                if(javaVersion >= 8) 
+                    return new String(Base64.getEncoder().encode(data));
+                else 
+                    throw new Throwable();  // x java 7
             } catch(Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.encodeBase64(data));

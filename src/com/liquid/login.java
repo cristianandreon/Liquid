@@ -41,6 +41,7 @@ public class login {
     static public String database = null;
     static public String user = null;
     static public String password = null;
+    static public String connectionURL = null;
 
     // coordinate tabella utenti
     static public String schema = null;
@@ -106,20 +107,27 @@ public class login {
             // defined by driver/database/user
             if(host == null || host.isEmpty()) host = "localhost";
             if("oracle".equalsIgnoreCase(driver)) {
+                // TODO : check user and password definition for connection url
+                connectionURL = "jdbc:oracle:thin:@"+host+":1521:xe"+",user="+database+",password="+password;
                 if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
                 conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":1521:xe",database, (password != null ? password : "") );
             } else if("postgres".equalsIgnoreCase(driver)) {
+                connectionURL = "postgresql://"+user+":"+password+"@"+host+":5432/"+database;
                 if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
                 conn = DriverManager.getConnection("jdbc:postgresql://"+host+":5432/"+database, (user != null ? user : ""), (password != null ? password : ""));
             } else if("mysql".equalsIgnoreCase(driver)) {
+                connectionURL = "jdbc:mysql://"+host+":3306/"+database+",user="+user+",password="+password;
                 if(driverClass == null) driverClass = Class.forName("org.mysql.Driver");
                 conn = DriverManager.getConnection("jdbc:mysql://"+host+":3306/"+database, (user != null ? user : ""), (password != null ? password : ""));
             } else if("sqlserver".equalsIgnoreCase(driver)) {
+                // TODO : check user and password definition for connection url
+                connectionURL = "jdbc:sqlserver://"+host+":1433;DatabaseName="+database+",user="+user+",password="+password;
                 if(driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
                 conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":1433;DatabaseName="+database, (user != null ? user : ""), (password != null ? password : ""));
             } else {
                 Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, "drive not recognized");
             }
+            
 
         } else {
             // host/driver/database NOT defined : use app.liquid.dbx
@@ -181,7 +189,7 @@ public class login {
         return true;
     }
 
-    static private boolean check_login_table_exist( Connection conn, String schemaTable ) throws SQLException {
+    static private boolean check_login_table_exist( Connection conn, String schema, String table ) throws SQLException {
         if(conn != null) {
             boolean tableExist = false;
             DatabaseMetaData meta = conn.getMetaData();
@@ -197,7 +205,7 @@ public class login {
                
                 if("mysql".equalsIgnoreCase(driver)) {
                     // CREATE users ADD id, user VARCHAR(256), email VARCHAR(256), password VARCHAR(256), status VARCHAR(16), domain_id VARCHAR(256), application_id VARCHAR(64), token VARCHAR(32), expire TIMESTAMP, naccess INT, nfails INT)
-                    sql.add("CREATE TABLE IF NOT EXISTS "+schemaTable+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`user` VARCHAR(256) NOT NULL"
                         +",`email` VARCHAR(256) NOT NULL"
@@ -218,7 +226,7 @@ public class login {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+table+"_id_seq";
                     sql.add("CREATE SEQUENCE "+seqName+"");
 
-                    sql.add("CREATE TABLE IF NOT EXISTS "+schemaTable+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"user\" VARCHAR(256) NOT NULL"
                         +",\"email\" VARCHAR(256) NOT NULL"
@@ -236,7 +244,7 @@ public class login {
                         +",\"emailToken\" VARCHAR(32) NOT NULL"
                         +")");
 
-                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+schemaTable+".\"id\"");
+                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+schema+table+".\"id\"");
 
                 } else if("oracle".equalsIgnoreCase(driver)) {
                 } else if("sqlserver".equalsIgnoreCase(driver)) {
@@ -535,7 +543,7 @@ public class login {
                     }
                 }
 
-                if(!check_login_table_exist(conn, schemaTable)) {
+                if(!check_login_table_exist(conn, schema, table)) {
                     message = "login table error";
                     return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
                 }
@@ -653,13 +661,17 @@ public class login {
                             }
 
                             if (isLoginPassed) {
+                                
                                 if (session != null) {
                                     session.setAttribute("GLLiquidUserID", iUserId);
                                     session.setAttribute("GLLiquidAdmin", iIsAddmin);
                                     session.setAttribute("GLLiquidUserToken", token);
                                 }
 
-
+                                try {
+                                    assets.read_user_assets_roles ( request, iUserId );
+                                } catch (Exception e) {
+                                }
                                 add_event(conn, request, sUserID + "@" + domain_id + ":LOGIN", 0);
 
                                 return "{ \"result\":1, \"token\":\""+token+"\", \"addmin\":"+iIsAddmin+",\"message\":\""+utility.base64Encode("LoggedIn")+"\"}";
@@ -716,7 +728,7 @@ public class login {
         } catch (Throwable e) {
             String err = e.getLocalizedMessage();
             error += "Error:" + err;
-            System.err.println("// login() Error:" + err);
+            System.err.println("// login() Error interno:" + err);
             return "{ \"result\":-60, \"error\":\""+utility.base64Encode(error)+"\"}";
 
         } finally {
@@ -1166,7 +1178,7 @@ public class login {
                             }
 
                             
-                            if(!check_login_table_exist(conn, schemaTable)) {
+                            if(!check_login_table_exist(conn, schema, table)) {
                                 message = "login table error";
                                 return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
                             }
