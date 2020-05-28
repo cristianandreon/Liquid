@@ -6,6 +6,10 @@
 package com.liquid;
 
 import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -222,6 +226,18 @@ public class Info {
         out_string += "<td>"+workspace.arrayToString( workspace.getPythonPath().toArray(), "\"", "\"", ",")+"</td>";
         out_string += "<td>"+""+"</td>";
         out_string += "</tr>";
+        
+        String hostName = "";
+        try {
+            hostName = InetAddress.getLocalHost().getHostName();
+            out_string += "<tr style=\"background-color:lightGray\">";
+            out_string += "<td>Host</td>";
+            out_string += "<td>"+hostName+"</td>";
+            out_string += "<td>"+""+"</td>";
+            out_string += "</tr>";
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Info.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         out_string += "</table>";
         out_string += "</div>";
