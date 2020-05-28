@@ -7,6 +7,7 @@ import static com.liquid.workspace.check_database_definition;
 import java.beans.IntrospectionException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -239,7 +240,7 @@ public class db {
             
             if(tbl_wrk != null) {
                 // Connessione al DB ( da predefinita, da JSON o da sessione )
-                conn = connection.getConnection(workspace.default_connection, recordset_params.request, tbl_wrk.tableJson);
+                conn = connection.getConnection(null, recordset_params.request, tbl_wrk.tableJson);
             }
 
             String itemIdString = "\"", tableIdString = "\"";
@@ -1470,22 +1471,21 @@ public class db {
                                 } else if(colTypes[ic] == 91) { //date
                                     try {
                                         java.sql.Date dbSqlDate = rsdo.getDate("columnName");                                        
-                                        fieldValue = dateFormat.format(dbSqlDate);
+                                        fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
                                     } catch (Exception e) { 
                                         fieldValue = "00-00-0000";
                                     }                                                
                                 } else if(colTypes[ic] == 92) { //time
                                     try {
                                         java.sql.Time dbSqlTime = rsdo.getTime("columnName");
-                                        fieldValue = dateFormat.format(dbSqlTime);
+                                        fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
                                     } catch (Exception e) { 
                                         fieldValue = "00:00:00";
                                     }                                                
                                 } else if(colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
                                     try {
                                         java.sql.Time dbSqlDateTime = rsdo.getTime("columnName");
-                                        fieldValue = dateTimeFormat.format(dbSqlDateTime);
-                                        // fieldValue = getLocalDateFromDB(rsdo.getString(columns_alias[0]), colTypes[ic], colNullable[ic]);                                        
+                                        fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
                                     } catch (Exception e) { 
                                         fieldValue = "00-00-0000 00:00:00";
                                     }                                                
@@ -1521,21 +1521,21 @@ public class db {
                                         } else if(colTypes[ic] == 91) { //date
                                             try {
                                                 java.sql.Date dbSqlDate = columnAlias != null ? rsdo.getDate(columnAlias) : rsdo.getDate(ic+1);
-                                                fieldValue = dateFormat.format(dbSqlDate);
+                                                fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
                                             } catch (Exception e) { 
                                                 fieldValue = "00-00-0000";
                                             }                                                
                                         } else if(colTypes[ic] == 92) { //time
                                             try {
                                                 java.sql.Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic+1);
-                                                fieldValue = dateFormat.format(dbSqlTime);
+                                                fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
                                             } catch (Exception e) { 
                                                 fieldValue = "00:00:00";
                                             }                                                
                                         } else if(colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
                                             try {
                                                 java.sql.Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic+1);
-                                                fieldValue = dateTimeFormat.format(dbSqlDateTime);
+                                                fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
                                             } catch (Exception e) { 
                                                 fieldValue = "00-00-0000 00:00:00";
                                             }                                                
@@ -1698,7 +1698,7 @@ public class db {
                         // Connessione al DB ( da pr4edefinita, da JSON o da sessione )
                         try {
 
-                            conn = connection.getConnection(workspace.default_connection,request, tbl_wrk.tableJson);                            
+                            conn = connection.getConnection(null, request, tbl_wrk.tableJson);                            
                             if(conn != null) {                                
                                 String columnsList = (String)queryInfo[0];
                                 String primaryKey = (String)queryInfo[1];
@@ -2387,14 +2387,14 @@ public class db {
     //
     //  ControlId is automatically created if not exist (from controlId)
     //
-    //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+    //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+    //
+    //  TODO : defined columns not still supported... read always all columns
     //
     static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) {
         // crea un controllo sulla tabella
         String [] tableParts = databaseShemaTable.split("\\.");
-        String database = "";
-        String schema = "";
-        String table = "";
+        String database = null, table = null, schema = null, primaryKey = null;
         String primaryKeyColumn = "";
         JSONArray cols = null;
         String column_alias_list = "";
@@ -2422,8 +2422,11 @@ public class db {
             }
 
             String [] columnsList = null;
-            if("*".equalsIgnoreCase(columns)) {
-                columnsList = columns.split(",");
+            if("*".equalsIgnoreCase(columns) || "all".equalsIgnoreCase(columns)) {
+            } else {
+                // TODO : not supported, should review get_recordset ()
+                columnsList = null;
+                // columnsList = columns.split(",");
             }
 
             // cerca il controllo
@@ -2480,11 +2483,25 @@ public class db {
             for(int ic=0; ic<cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
                 String colName = null;
+                boolean bAddColumn = false;
                 try { colName = col.getString("name"); } catch (Exception e) { colName = null; }
                 
-                if(column_alias_list.length()>0)
-                    column_alias_list += ",";
-                column_alias_list += colName;
+                if(columnsList != null) {
+                    for(int icl=0; icl<columnsList.length; icl++) {
+                        if(columnsList[icl].equalsIgnoreCase(colName)) {
+                            bAddColumn = true;
+                            break;
+                        }
+                    }
+                } else {
+                    bAddColumn = true;
+                }
+                
+                if(bAddColumn) {
+                    if(column_alias_list.length()>0)
+                        column_alias_list += ",";
+                    column_alias_list += colName;
+                }
             }
 
             String sWhere = "";
@@ -2493,17 +2510,12 @@ public class db {
             } else if(key instanceof JSONArray) {
             } else if(key instanceof ArrayList<?>) {
                 String keyList = workspace.arrayToString(((ArrayList<String>)key).toArray(), null, null, ",");
-                sWhere = " WHERE " + keyColumn + " IN ('" + keyList + "'";
-                sWhere+= ")";
+                sWhere = " WHERE " + keyColumn + " IN (" + keyList + ")";
             }
             
             String executingQuery = "SELECT * FROM " + (tableIdString+schema+tableIdString) + "." + (tableIdString+table+tableIdString) + sWhere;
 
-
-            if(tbl_wrk != null) {
-                // Connessione al DB ( da pr4edefinita, da JSON o da sessione )
-                conn = connection.getDBConnection(database);
-            }
+            conn = connection.getConnection( null, request, tbl_wrk.tableJson );
 
             long lStartTime = System.currentTimeMillis();
             try {
@@ -2751,6 +2763,61 @@ public class db {
         return new Object [] { beans, nBeans, nBeansLoaded, errors, warnings };
     }
     
+    interface beansCondition {
+        /**
+         *
+         * @param Bean
+         * @return
+         */
+        public boolean is_valid ( Object Bean );
+    }
+    
+    
+    static public Object []  beansToArray( ArrayList<Object>beans, String propName, ArrayList<Object>targetArray) {
+        return beansToArray( beans, propName, targetArray, false, null );
+    }    
+    static public Object []  beansToArray( ArrayList<Object>beans, String propName, ArrayList<Object>targetArray, boolean bDinstinct) {
+        return beansToArray( beans, propName, targetArray, bDinstinct, null );
+    }    
+    static public Object [] beansToArray( ArrayList<Object>beans, String propName, ArrayList<Object>targetArray, boolean bDinstinct, beansCondition cond ) {
+        int nAdded = 0;
+        ArrayList<Object> skipperList = new ArrayList<Object>();
+        if(beans != null && propName != null && targetArray != null) {
+            for(int ib=0; ib<beans.size(); ib++) {
+                Object bean = beans.get(ib);
+                Object obj = utility.get(bean, propName);
+                boolean bAdd = true;
+                if(cond != null) {
+                    try {
+                        bAdd = ((db.beansCondition)cond).is_valid(bean);
+                    } catch (Throwable th) {                                            
+                    }
+                }
+                if(bAdd) {
+                    if(bDinstinct) {
+                        boolean bFound = false;
+                        for(int it=0; it<targetArray.size(); it++) {
+                            if(obj.equals(targetArray.get(it))) {
+                                bFound = true;
+                                break;
+                            }
+                        }
+                        if(!bFound) {
+                            targetArray.add(obj);
+                            nAdded++;
+                        }
+                    } else {
+                        targetArray.add(obj);
+                        nAdded++;
+                    }
+                } else {
+                    if(skipperList != null) 
+                        skipperList.add(obj);
+                }
+            }            
+        }
+        return new Object [] { nAdded, skipperList };
+    }
     
     // Chiamata del client per impostare i prefiltri in sessione
     static public String set_prefilters(HttpServletRequest request, JspWriter out) {
@@ -3103,7 +3170,7 @@ public class db {
     
     // servizio aggiornamento o inserimento
     static public String processModification(Object p1, Object p2, Object p3, Object p4, Object p5, String type) {
-        Connection conn = null;
+        Connection conn = null, connToDB = null, connToUse = null;
         String retVal = "";
         int nForeignUpdates = 0, nUpdates = 0;
         ArrayList<String> foreignTableUpdates = new ArrayList<>();
@@ -3299,7 +3366,7 @@ public class db {
                 if(tableTransactList.transactionList != null || foreignTableTransactList.transactionList != null) {
                     try {
                         // Connessione al DB ( da predefinita, da JSON o da sessione )
-                        conn = connection.getConnection(workspace.default_connection, request, liquid.tableJson);
+                        conn = connection.getConnection(null, request, liquid.tableJson);
                         // conn = (Connection)(liquid.get_connection != null ? liquid.get_connection.invoke(null) : null);
                     } catch (Exception ex) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
@@ -3308,11 +3375,27 @@ public class db {
                         String executingQuery = null;
                         int i = 0;
 
+                        // set the connection
+                        connToUse = conn;
+                        if(database == null || database.isEmpty()) {
+                            database = conn.getCatalog();
+                        } else {
+                            conn.setCatalog(database);
+                            String db = conn.getCatalog();
+                            if(!db.equalsIgnoreCase(database)) {
+                                // set catalog not supported : connect to different DB
+                                conn.close();
+                                conn = null;
+                                connToUse = connToDB = connection.getDBConnection(database);
+                            }
+                        }
+
+                
                         if(!bUseAutoCommit)
-                            conn.setAutoCommit(false);
+                            connToUse.setAutoCommit(false);
                         
                         try {
-                            Statement updStmt = conn.createStatement();
+                            Statement updStmt = connToUse.createStatement();
                             if(updStmt != null) {
                                 if(foreignTableTransactList.transactionList != null) {
                                     for(i=0; i<foreignTableTransactList.transactionList.size(); i++) {
@@ -3381,7 +3464,7 @@ public class db {
                                 }
                                 
                                 if(!bUseAutoCommit)
-                                    conn.commit();
+                                    connToUse.commit();
                                 
                                 updStmt.close();
                             }
@@ -3398,7 +3481,7 @@ public class db {
 
                         } catch (Throwable th) {
                             if(!bUseAutoCommit)
-                                conn.rollback();
+                                connToUse.rollback();
                             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
                             Logger.getLogger(db.class.getName()).log(Level.SEVERE, executingQuery);
                             retVal = "{\"error\":\""+utility.base64Encode("Fatal error:"+th.getLocalizedMessage())+"\"}";
@@ -3419,6 +3502,12 @@ public class db {
             } catch (SQLException ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
+            if(connToDB != null) 
+                try {
+                    connToDB.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+            }            
         }
         return retVal;
     }    
@@ -3587,7 +3676,7 @@ public class db {
             
             if(tbl_wrk != null) {
                 try {
-                    conn = (Connection)(tbl_wrk.get_connection != null ? tbl_wrk.get_connection.invoke(null) : null);
+                    conn =  connection.getConnection( null, request, tbl_wrk.tableJson );
                 } catch (Exception ex) {
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                 }

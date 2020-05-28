@@ -1,12 +1,11 @@
 package com.liquid;
 
+import com.liquid.db.beansCondition;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -401,7 +400,7 @@ public class assets {
             ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
             if(threadSession != null) {                
                 HttpServletRequest request = threadSession.request;
-                ArrayList<Object> user_all_assets_name = (ArrayList<Object> )request.getSession().getAttribute("GLLiquidUsertAssetsName");
+                ArrayList<Object> user_all_assets_name = (ArrayList<Object> )request.getSession().getAttribute("GLLiquidUserAssetsName");
                 int index = user_all_assets_name.indexOf(asset);
             }            
         } catch (Throwable e) {
@@ -423,8 +422,42 @@ public class assets {
         return null;
     }
 
+    // TODO:
+    static public String get_assets ( ) {
+        try {            
+            ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
+            if(threadSession != null) {                
+                HttpServletRequest request = threadSession.request;
+                ArrayList<Object> user_all_assets_name = (ArrayList<Object> )request.getSession().getAttribute("GLLiquidUserAssetsName");
+                return workspace.arrayToString(user_all_assets_name.toArray(), null, null, ",");
+            }
+        } catch (Throwable e) {
+            if(!(e instanceof java.lang.NoSuchMethodException)) {
+                System.err.println("// get_assets() Error:" + e.getLocalizedMessage());
+            }
+        }        
+        return null;
+    }
     
-
+    
+    static public boolean is_valid_asset_or_role ( Object bean ) {
+        if(bean != null) {
+            String status = (String)utility.get(bean, "status");
+            if(!"D".equalsIgnoreCase(status) && !"S".equalsIgnoreCase(status)) {
+                java.sql.Timestamp expireDate = (java.sql.Timestamp)utility.get(bean, "expire_date");
+                if(expireDate != null) {
+                    java.sql.Timestamp currentDate = new java.sql.Timestamp(System.currentTimeMillis());
+                    if(currentDate.before(expireDate)) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
     // Load all roles and asset for userId, typically onLogin
     static public boolean read_user_assets_roles ( HttpServletRequest request, int userId ) {
         boolean retVal = true;
@@ -445,8 +478,10 @@ public class assets {
             if(!check_role_assets_table_exist( conn, login.schema, role_assets_table )) {
             }
             
-            ArrayList<Object> user_all_assets = new ArrayList<Object>();
+            ArrayList<Object> user_all_assets_id = new ArrayList<Object>();
             ArrayList<Object> user_all_assets_name = new ArrayList<Object>();
+            ArrayList<Object> user_all_inactive_assets_id = new ArrayList<Object>();
+            ArrayList<Object> user_all_inactive_assets_name = new ArrayList<Object>();
 
 
             String curDriver = (String)request.getSession().getAttribute("GLLiquidDriver");
@@ -454,29 +489,71 @@ public class assets {
 
             try {
                 
+                // Reset in session
+                request.getSession().setAttribute("GLLiquidUserAssetsID", user_all_assets_id);
+                request.getSession().setAttribute("GLLiquidUserAssetsName", user_all_assets_name);
+                
                 request.getSession().setAttribute("GLLiquidDriver", login.driver);
                 request.getSession().setAttribute("GLLiquidConnectionURL", login.connectionURL);
 
-                // assets per user
-                ArrayList<Object> user_asset_ids = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_assets_table, "asset_id", "user_id", String.valueOf(userId), 1000 );
-                if(user_asset_ids != null)
-                    user_all_assets.addAll(user_asset_ids);
+                // assets for user
+                ArrayList<Object> user_asset_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_assets_table, "*", "user_id", String.valueOf(userId), 1000 );
+                if(user_asset_beans != null) {
+                    // put asset_id of all beans in ArryList
+                    Object [] res = db.beansToArray(user_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
+                    user_all_inactive_assets_id.addAll((ArrayList<Object>)res[1]);
+                }
 
-                // assets per roles per user
-                ArrayList<Object> user_role_ids = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+roles_table, "role_id", "user_id", String.valueOf(userId), 1000 );
-                if(user_role_ids != null) {
-                    for(Object roleId : user_role_ids) {
-                        ArrayList<Object> user_role_asset_ids = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+role_assets_table, "asset_id", "role_id", String.valueOf(roleId), 1000 );
-                        if(user_role_asset_ids != null)
-                            user_all_assets.addAll(user_role_asset_ids);
+                // assets per roles for user
+                ArrayList<Object> user_role_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_roles_table, "*", "user_id", String.valueOf(userId), 1000 );
+                if(user_role_beans != null) {
+                    for(Object role_bean : user_role_beans) {
+                        Object roleId = utility.get(role_bean, "role_id");
+                        String status = (String)utility.get(role_bean, "status");
+                        boolean bProcessRole = false;
+                        if(!"D".equalsIgnoreCase(status) && !"S".equalsIgnoreCase(status)) {
+                            java.sql.Timestamp expireDate = (java.sql.Timestamp)utility.get(role_bean, "expire_date");
+                            if(expireDate != null) {
+                                java.sql.Timestamp currentDate = new java.sql.Timestamp(System.currentTimeMillis());
+                                if(currentDate.before(expireDate)) {
+                                    bProcessRole = true;
+                                }
+                            } else {
+                                bProcessRole = true;
+                            }
+                        }
+                        ArrayList<Object> user_role_asset_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+role_assets_table, "*", "role_id", String.valueOf(roleId), 1000 );
+                        if(user_role_asset_beans != null) {
+                            if(bProcessRole) {
+                                // put asset_id of all beans in ArryList
+                                Object [] res = db.beansToArray(user_role_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
+                                user_all_inactive_assets_id.addAll((ArrayList<Object>)res[1]);
+                            } else {
+                                // all assets inactive due to role inactive
+                                db.beansToArray(user_role_asset_beans, "asset_id", user_all_inactive_assets_id, true, null);
+                            }
+                        }
                     }
                 }
                 
-                // all assets name
-                user_all_assets_name = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_assets_table, "asset", "asset_id", (Object)user_all_assets, 1000 );
+                // all assets of the userId by name in ArrayList
+                ArrayList<Object> user_all_assets_beans = db.load_beans((HttpServletRequest)request, login.database+"."+login.schema+"."+assets_table, "*", "id", (Object)user_all_assets_id, 1000 );
+                if(user_all_assets_beans != null) {
+                    // put asset of all beans in ArryList
+                    db.beansToArray(user_all_assets_beans, "asset", user_all_assets_name, true);
+                }
+
+                // all expired assets of the userId by name in ArrayList
+                ArrayList<Object> user_all_inactive_assets_beans = db.load_beans((HttpServletRequest)request, login.database+"."+login.schema+"."+assets_table, "*", "id", (Object)user_all_inactive_assets_id, 1000 );
+                if(user_all_inactive_assets_beans != null) {
+                    // put inactive asset of all beans in ArryList
+                    db.beansToArray(user_all_inactive_assets_beans, "asset", user_all_inactive_assets_name, true);
+                }
                 
-                request.getSession().setAttribute("GLLiquidUsertAssetsID", user_all_assets);
-                request.getSession().setAttribute("GLLiquidUsertAssetsName", user_all_assets_name);
+                // Save in session
+                request.getSession().setAttribute("GLLiquidUserAssetsID", user_all_assets_id);
+                request.getSession().setAttribute("GLLiquidUserAssetsName", user_all_assets_name);
+                request.getSession().setAttribute("GLLiquidUserInactiveAssetsName", user_all_inactive_assets_name);
             
             } finally {
                 request.getSession().setAttribute("GLLiquidDriver", curDriver);
@@ -495,5 +572,5 @@ public class assets {
     
     return retVal;
     }
-    
+       
 }

@@ -541,8 +541,12 @@ public class metadata {
             return Float.class;
         } else if(type == 8) {
             return Double.class;
-        } else if(type == 6 || type == 91 || type == 92 || type == 93) {
-            return Date.class;
+        } else if(type == 92) {
+            return java.sql.Time.class;
+        } else if(type == 6 || type == 93) {
+            return java.sql.Timestamp.class;
+        } else if(type == 91) {
+            return java.sql.Date.class;
         }
         return String.class;
     }

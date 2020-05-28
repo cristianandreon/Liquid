@@ -29,14 +29,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+
+// TODO : support for jump database when using connectioURL
+
 public class workspace {
 
     static public String GLLang = "EN";
     static public String genesisToken = "";
     static public int classMakeIndex = 1;
-    static public Method default_connection = null;
-    public Method get_connection = null;
-    
+
+   
     static public String sourceSpecialToken = login.getSaltString(32);
 
     static public String pythonPath = null;
@@ -44,10 +46,7 @@ public class workspace {
         
     public workspace() {
         try {
-            if(default_connection == null) 
-                default_connection = (Method)com.liquid.connection.class.getMethod("getDBConnection");
-            get_connection = default_connection;
-        } catch (Throwable ex) {
+            } catch (Throwable ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -105,6 +104,9 @@ public class workspace {
         return false;
     }
 
+    
+    
+    
     // Abilita la modalità progettazione
     static public String enableProjectMode() {
         genesisToken = login.getSaltString(32);
@@ -377,8 +379,8 @@ public class workspace {
             try { table = tableJson.getString("table"); } catch(Exception e) {}
 
             
-            // Connessione al DB ( da pr4edefinita, da JSON o da sessione )
-            conn = connection.getConnection(workspace.default_connection, request, connectionDriver, connectionURL);
+            // Connessione al DB
+            conn = connection.getConnection(null, request, connectionDriver, connectionURL, null);
             if(conn==null)
                 return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+controlId+" : no DB connection\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection\");</script>" );
             
@@ -411,6 +413,7 @@ public class workspace {
                 db.set_current_database(conn, database, driver, tableIdString);
             }
 
+            
             // set the connection
             connToUse = conn;
             if(database == null || database.isEmpty()) {
@@ -420,6 +423,13 @@ public class workspace {
                 String db = conn.getCatalog();
                 if(!db.equalsIgnoreCase(database)) {
                     // set catalog not supported : connect to different DB
+                    if(connectionURL != null && !connectionURL.isEmpty()) {
+                        // TODO : support for jump database in connectioURL
+                        // Jump to database not supported if connection defined by connectioURL
+                        String err = "Cannot jump to database "+database+" .. the connection is defined by connectionURL on control:"+controlId;
+                        System.out.println(err);
+                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+err+"\"}" : "<script> console.error(\""+err+"\");</script>" );
+                    }                    
                     conn.close();
                     conn = null;
                     connToUse = connToDB = connection.getDBConnection(database);
@@ -1985,7 +1995,7 @@ public class workspace {
      * <p>
      * This method search and remove the database.schema.table from the white list
      * </p>
-     * @param  database  the databaseto of the table to remove (String)
+     * @param  database  the database to of the table to remove (String)
      * @param  schema  the schema of the table to remove (String)
      * @param  table  the table to remove (String)
      * 
@@ -1997,4 +2007,6 @@ public class workspace {
     static public boolean removeFromWhiteList(String database, String schema, String table) {
         return BlackWhiteList.removeFromWhiteList(database, schema, table);
     }    
+
+    
 }

@@ -50,12 +50,10 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-
-import java.security.cert.X509Certificate; 
+import java.security.cert.X509Certificate;
 import java.util.Base64;
-import javax.net.ssl.TrustManager; 
-import javax.net.ssl.X509TrustManager;   
-
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 //import java.util.Base64;
 // import java.util.Base64;
@@ -65,16 +63,17 @@ import javax.net.ssl.X509TrustManager;
 // x java 7
 // { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, ids:nodeKeys };
 /**
-     * <h3>Search for the property in the bean</h3>
-     * <p>
-     * This method return a Field of the property from a bean
-     *
-     * @param  bean  the bean (Object)
-     * @param  property the Field of the property to get (Field)
-     * @param  exaclyMatch if false strip by $ and check only the parts defined in the param property (boolean)
-     *                      ex.: searching for 'foreigntTable' the property named 'foreigntTable$foreignColumn$column' is returned as found
-     * @see         utility
-     */
+ * <h3>Search for the property in the bean</h3>
+ * <p>
+ * This method return a Field of the property from a bean
+ *
+ * @param bean the bean (Object)
+ * @param property the Field of the property to get (Field)
+ * @param exaclyMatch if false strip by $ and check only the parts defined in
+ * the param property (boolean) ex.: searching for 'foreigntTable' the property
+ * named 'foreigntTable$foreignColumn$column' is returned as found
+ * @see utility
+ */
 // wrap to bean
 // JAVA MERDA : se la libreria non è presente ANCHE sul progetto principale si solleva la throwable
 /*
@@ -96,17 +95,17 @@ import javax.net.ssl.X509TrustManager;
         }
         return null;
     }
-    */
+ */
 /**
-     * <h3>Set the property of a bean</h3>
-     * <p>
-     * This method set a property from a bean
-     *
-     * @param  bean  the bean (Object)
-     * @param  property the name of the property to get (String)
-
-     * @see         utility
-     */
+ * <h3>Set the property of a bean</h3>
+ * <p>
+ * This method set a property from a bean
+ *
+ * @param bean the bean (Object)
+ * @param property the name of the property to get (String)
+ *
+ * @see utility
+ */
 // Ricerca nei beans per similitudine
 // debug
 // set changed, avoiding mirrored events
@@ -131,18 +130,18 @@ import javax.net.ssl.X509TrustManager;
                             Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th2);
                         }
                     }
-                    */
+ */
 /**
-     * <h3>Get the property of a bean</h3>
-     * <p>
-     * This method get a property from a bean
-     *
-     * @param  bean  the bean (Object)
-     * @param  property the name of the property to get (String)
-
-     * @return      property value (Object)
-     * @see         utility
-     */
+ * <h3>Get the property of a bean</h3>
+ * <p>
+ * This method get a property from a bean
+ *
+ * @param bean the bean (Object)
+ * @param property the name of the property to get (String)
+ *
+ * @return property value (Object)
+ * @see utility
+ */
 // wrap to bean
 // Ricerca nel bean per similitudine
 // Codice Obsoleto
@@ -168,101 +167,149 @@ import javax.net.ssl.X509TrustManager;
 public class utility {
 
     public static int javaVersion = getVersion();
-    
+
     private static int getVersion() {
         String version = System.getProperty("java.version");
-        if(version.startsWith("1.")) {
+        if (version.startsWith("1.")) {
             version = version.substring(2, 3);
         } else {
             int dot = version.indexOf(".");
-            if(dot != -1) { version = version.substring(0, dot); }
-        } return Integer.parseInt(version);
+            if (dot != -1) {
+                version = version.substring(0, dot);
+            }
+        }
+        return Integer.parseInt(version);
     }
-    
+
     static public String base64Encode(String data) {
-        if(data == null || data.isEmpty()) return "";
+        if (data == null || data.isEmpty()) {
+            return "";
+        }
         try {
             return base64Encode(data.getBytes());
-        } catch(Throwable th) {
-            System.err.println("Error:"+th.getLocalizedMessage()+"Please try adding apache commons-codes.jar to your project");
+        } catch (Throwable th) {
+            System.err.println("Error:" + th.getLocalizedMessage() + "Please try adding apache commons-codes.jar to your project");
         }
         return "";
     }
-    static public String base64Encode(byte [] data) {
-        if(data == null) return "";
+
+    static public String base64Encode(byte[] data) {
+        if (data == null) {
+            return "";
+        }
         try {
             return DatatypeConverter.printBase64Binary(data);
-        } catch(Throwable th) {
+        } catch (Throwable th) {
             try {
-                if(javaVersion >= 8) 
+                if (javaVersion >= 8) {
                     return new String(Base64.getEncoder().encode(data));
-                else 
+                } else {
                     throw new Throwable();  // x java 7
-            } catch(Throwable th2) {
+                }
+            } catch (Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.encodeBase64(data));
-                } catch(Throwable th3) {
-                    System.err.println("Error:"+th3.getLocalizedMessage()+"Please try adding apache commons-codes.jar to your project");
+                } catch (Throwable th3) {
+                    System.err.println("Error:" + th3.getLocalizedMessage() + "Please try adding apache commons-codes.jar to your project");
                 }
             }
         }
         return "";
     }
+
     static public String base64Decode(String data) {
         try {
             return base64Decode(data.getBytes());
-        } catch(Throwable th) {
-            System.err.println("Error:"+th.getLocalizedMessage()+"Please try adding apache commons-codes.jar to your project");
+        } catch (Throwable th) {
+            System.err.println("Error:" + th.getLocalizedMessage() + "Please try adding apache commons-codes.jar to your project");
         }
         return null;
     }
-    static public String base64Decode(byte [] data) {
+
+    static public String base64Decode(byte[] data) {
         try {
             return new String(DatatypeConverter.parseBase64Binary(new String(data)));
-        } catch(Throwable th) {            
+        } catch (Throwable th) {
             try {
                 // return new String(Base64.getDecoder().decode(data));
-            	throw new Throwable(); // x java 7
-            } catch(Throwable th2) {
+                throw new Throwable(); // x java 7
+            } catch (Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.decodeBase64(data));
-                } catch(Throwable th3) {
-                    System.err.println("Error:"+th3.getLocalizedMessage());
+                } catch (Throwable th3) {
+                    System.err.println("Error:" + th3.getLocalizedMessage());
                 }
             }
         }
         return null;
     }
 
-    
-    static public ArrayList<String> get_dms_keys ( workspace tblWrk, String params ) {
+    static public ArrayList<String> get_dms_keys(workspace tblWrk, String params) {
         ArrayList<String> keyList = null;
         try {
-            if(tblWrk != null) {
-                JSONObject paramsJson = new JSONObject((String)params);
+            if (tblWrk != null) {
+                JSONObject paramsJson = new JSONObject((String) params);
                 JSONObject paramJson = paramsJson.getJSONObject("params");
-                if(paramJson != null) {
+                if (paramJson != null) {
                     JSONArray ids = paramJson.getJSONArray("ids");
                     String database = null, schema = null, table = null, name = null;
-                    try { database = paramJson.getString("database"); } catch(Exception e) {}
-                    try { schema = paramJson.getString("schema"); } catch(Exception e) {}
-                    try { table = paramJson.getString("table"); } catch(Exception e) {}
-                    try { name = paramJson.getString("name"); } catch(Exception e) {}
+                    try {
+                        database = paramJson.getString("database");
+                    } catch (Exception e) {
+                    }
+                    try {
+                        schema = paramJson.getString("schema");
+                    } catch (Exception e) {
+                    }
+                    try {
+                        table = paramJson.getString("table");
+                    } catch (Exception e) {
+                    }
+                    try {
+                        name = paramJson.getString("name");
+                    } catch (Exception e) {
+                    }
                     // { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, ids:nodeKeys };
-                    if(database==null || database.isEmpty()) try { database = tblWrk.tableJson.getString("database");  } catch(Exception e) {}
-                    if(schema==null || schema.isEmpty()) try { schema = tblWrk.tableJson.getString("schema");  } catch(Exception e) {}
-                    if(table==null || table.isEmpty()) try { table = tblWrk.tableJson.getString("table");  } catch(Exception e) {}
+                    if (database == null || database.isEmpty()) {
+                        try {
+                            database = tblWrk.tableJson.getString("database");
+                        } catch (Exception e) {
+                        }
+                    }
+                    if (schema == null || schema.isEmpty()) {
+                        try {
+                            schema = tblWrk.tableJson.getString("schema");
+                        } catch (Exception e) {
+                        }
+                    }
+                    if (table == null || table.isEmpty()) {
+                        try {
+                            table = tblWrk.tableJson.getString("table");
+                        } catch (Exception e) {
+                        }
+                    }
 
-                    if(database==null || database.isEmpty()) database = tblWrk.defaultDatabase;
-                    if(schema==null || schema.isEmpty()) schema = "";
-                    if(table==null || table.isEmpty()) table = "";
-                    if(name==null || name.isEmpty()) try { name = "default"; } catch(Exception e) {}
+                    if (database == null || database.isEmpty()) {
+                        database = tblWrk.defaultDatabase;
+                    }
+                    if (schema == null || schema.isEmpty()) {
+                        schema = "";
+                    }
+                    if (table == null || table.isEmpty()) {
+                        table = "";
+                    }
+                    if (name == null || name.isEmpty()) {
+                        try {
+                            name = "default";
+                        } catch (Exception e) {
+                        }
+                    }
 
                     keyList = new ArrayList<String>();
                     String id;
-                    for(int i=0; i<ids.length(); i++) {
+                    for (int i = 0; i < ids.length(); i++) {
                         id = ids.getString(i);
-                        keyList.add(database+"."+schema+"."+table+"."+name+"."+id);
+                        keyList.add(database + "." + schema + "." + table + "." + name + "." + id);
                     }
                 }
             }
@@ -271,54 +318,54 @@ public class utility {
         }
         return keyList;
     }
- 
-
-
 
     /**
      * <h3>Search for the property in the bean</h3>
      * <p>
      * This method return a Field of the property from a bean
      *
-     * @param  bean  the bean (Object)
-     * @param  property the Field of the property to get (Field)
-     * @param  exaclyMatch if false strip by $ and check only the parts defined in the param property (boolean)
-     *                      ex.: searching for 'foreigntTable' the property named 'foreigntTable$foreignColumn$column' is returned as found
-     * @see         utility
+     * @param bean the bean (Object)
+     * @param property the Field of the property to get (Field)
+     * @param exaclyMatch if false strip by $ and check only the parts defined
+     * in the param property (boolean) ex.: searching for 'foreigntTable' the
+     * property named 'foreigntTable$foreignColumn$column' is returned as found
+     * @see utility
      */
-    static public Field searchProperty( Object bean, String property, boolean exaclyMatch, boolean onlyObject ) {
-        if(bean != null) {
+    static public Field searchProperty(Object bean, String property, boolean exaclyMatch, boolean onlyObject) {
+        if (bean != null) {
             String clasName = bean.getClass().getName();
-            if(clasName.equalsIgnoreCase("java.util.ArrayList") || clasName.equalsIgnoreCase("java.util.List")) {
+            if (clasName.equalsIgnoreCase("java.util.ArrayList") || clasName.equalsIgnoreCase("java.util.List")) {
                 // wrap to bean
-                List<?>list = (List<?>)bean;
-                if(list.size()>0) bean = (Object)list.get(0);
+                List<?> list = (List<?>) bean;
+                if (list.size() > 0) {
+                    bean = (Object) list.get(0);
+                }
             }
-            String [] searchParts = property.split("\\$");
+            String[] searchParts = property.split("\\$");
             Field[] fields = bean.getClass().getDeclaredFields();
             Field fieldFound = null;
             int propLen = property.length();
-            for(int istp=0; istp<2; istp++) {
+            for (int istp = 0; istp < 2; istp++) {
                 int bestMatch = 999999999;
-                for(Field f : fields) {
+                for (Field f : fields) {
                     String fieldName = f.getName();
-                    if(!exaclyMatch) {
-                        String [] colParts = fieldName.split("\\$");
-                        if(colParts.length > 1) {
+                    if (!exaclyMatch) {
+                        String[] colParts = fieldName.split("\\$");
+                        if (colParts.length > 1) {
                             fieldName = "";
-                            for(int ip=0; ip<searchParts.length && ip<colParts.length; ip++) {
-                                fieldName += (fieldName.length()>0?"$":"") + colParts[ip];
+                            for (int ip = 0; ip < searchParts.length && ip < colParts.length; ip++) {
+                                fieldName += (fieldName.length() > 0 ? "$" : "") + colParts[ip];
                             }
                         }
                     }
-                    if( istp==0 ? fieldName.equals(property) : fieldName.toUpperCase().equalsIgnoreCase(property.toUpperCase()) ) {
-                        if(!exaclyMatch) {                        
+                    if (istp == 0 ? fieldName.equals(property) : fieldName.toUpperCase().equalsIgnoreCase(property.toUpperCase())) {
+                        if (!exaclyMatch) {
                             int dSize = f.getName().length() - propLen;
-                            if(dSize <= bestMatch) {
-                                if(onlyObject) {
-                                    if(f.getType().equals(Object.class)) {
+                            if (dSize <= bestMatch) {
+                                if (onlyObject) {
+                                    if (f.getType().equals(Object.class)) {
                                         bestMatch = dSize;
-                                        fieldFound = f;                                    
+                                        fieldFound = f;
                                     }
                                 } else {
                                     bestMatch = dSize;
@@ -326,26 +373,25 @@ public class utility {
                                 }
                             }
                         } else {
-                            if(onlyObject) {
-                                if(f.getType().equals(Object.class))
+                            if (onlyObject) {
+                                if (f.getType().equals(Object.class)) {
                                     return f;
+                                }
                             } else {
                                 return f;
                             }
                         }
                     }
                 }
-                if(fieldFound != null)
+                if (fieldFound != null) {
                     return fieldFound;
+                }
             }
         }
         return null;
     }
-            
 
-    
     // JAVA MERDA : se la libreria non è presente ANCHE sul progetto principale si solleva la throwable
-    
     /*
     APACHE MERDA : devo tirarmi dentro un pianete per usare un solo metodo ...
     static public boolean set(Object bean, String propName, Object propValue) throws IllegalAccessException, InvocationTargetException {
@@ -365,127 +411,136 @@ public class utility {
         }
         return null;
     }
-    */
-    
+     */
     /**
      * <h3>Set the property of a bean</h3>
      * <p>
      * This method set a property from a bean
      *
-     * @param  bean  the bean (Object)
-     * @param  property the name of the property to get (String)
-
-     * @see         utility
+     * @param bean the bean (Object)
+     * @param property the name of the property to get (String)
+     *
+     * @see utility
      */
-    static public void set(Object bean, String property, Object value) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {        
+    static public void set(Object bean, String property, Object value) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
         Field field = bean.getClass().getDeclaredField(property);
-        if(field==null) {
+        if (field == null) {
             // Ricerca nei beans per similitudine
             field = searchProperty(bean, property, false, false);
         }
         // debug
-        if("bool".equalsIgnoreCase(property)) {
+        if ("bool".equalsIgnoreCase(property)) {
             int lb = 1;
         }
-        if(field != null) {
+        if (field != null) {
             field.setAccessible(true);
             Class<?> propType = field.getType();
             try {
-                if(propType.equals(Boolean.class) || propType.equals(boolean.class)) {
-                    if(value instanceof String) {
-                        if(value == null || ((String) value).isEmpty() 
-                                || "0".equalsIgnoreCase((String)value) || "false".equalsIgnoreCase((String)value) 
-                                || "N".equalsIgnoreCase((String)value) || "no".equalsIgnoreCase((String)value) 
-                                || "zero".equalsIgnoreCase((String)value)|| "empty".equalsIgnoreCase((String)value))
-                            if(propType.equals(Boolean.class)) {
+                if (propType.equals(Boolean.class) || propType.equals(boolean.class)) {
+                    if (value instanceof String) {
+                        if (value == null || ((String) value).isEmpty()
+                                || "0".equalsIgnoreCase((String) value) || "false".equalsIgnoreCase((String) value)
+                                || "N".equalsIgnoreCase((String) value) || "no".equalsIgnoreCase((String) value)
+                                || "zero".equalsIgnoreCase((String) value) || "empty".equalsIgnoreCase((String) value)) {
+                            if (propType.equals(Boolean.class)) {
                                 field.set(bean, new Boolean(false));
                             } else {
                                 field.set(bean, false);
                             }
-                        else
-                            if(propType.equals(Boolean.class)) {
-                                field.set(bean, new Boolean(true));
-                            } else {
-                                field.set(bean, true);
-                            }
-                    } else if(value instanceof Object) {
-                        field.set(bean, (Boolean)value);
+                        } else if (propType.equals(Boolean.class)) {
+                            field.set(bean, new Boolean(true));
+                        } else {
+                            field.set(bean, true);
+                        }
+                    } else if (value instanceof Object) {
+                        field.set(bean, (Boolean) value);
                     }
-                } else if(propType.equals(Integer.class)) {
-                    if(value instanceof String) {
-                        if(value == null || ((String) value).isEmpty())
+                } else if (propType.equals(Integer.class)) {
+                    if (value instanceof String) {
+                        if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Integer(0));
-                        else
+                        } else {
                             field.set(bean, Integer.parseInt((String) value));
-                    } else if(value instanceof Object) {
-                        field.set(bean, (Integer)value);
+                        }
+                    } else if (value instanceof Object) {
+                        field.set(bean, (Integer) value);
                     }
-                } else if(propType.equals(Long.class)) {
-                    if(value instanceof String) {
-                        if(value == null || ((String) value).isEmpty())
+                } else if (propType.equals(Long.class)) {
+                    if (value instanceof String) {
+                        if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Long(0));
-                        else
+                        } else {
                             field.set(bean, Long.parseLong((String) value));
-                    } else if(value instanceof Object) {
-                        field.set(bean, (Long)value);
+                        }
+                    } else if (value instanceof Object) {
+                        field.set(bean, (Long) value);
                     }
-                } else if(propType.equals(Float.class)) {
-                    if(value instanceof String) {
-                        if(value == null || ((String) value).isEmpty())
+                } else if (propType.equals(Float.class)) {
+                    if (value instanceof String) {
+                        if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Float(0.0f));
-                        else
+                        } else {
                             field.set(bean, Float.valueOf(((String) value).replaceAll(",", ".")));
-                    } else if(value instanceof Object) {
-                        field.set(bean, (Float)value);
+                        }
+                    } else if (value instanceof Object) {
+                        field.set(bean, (Float) value);
                     }
-                } else if(propType.equals(java.lang.Double.class)) {
-                    if(value instanceof String) {
-                        if(value == null || ((String) value).isEmpty())
+                } else if (propType.equals(java.lang.Double.class)) {
+                    if (value instanceof String) {
+                        if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Double(0.0));
-                        else
-                            field.set(bean, Double.valueOf(((String)value).replaceAll(",", ".")));
-                    } else if(value instanceof Object) {
-                        field.set(bean, (Double)value);
+                        } else {
+                            field.set(bean, Double.valueOf(((String) value).replaceAll(",", ".")));
+                        }
+                    } else if (value instanceof Object) {
+                        field.set(bean, (Double) value);
                     }
-                } else if(propType.equals(java.lang.String.class)) {
-                    if(value instanceof String) {
-                        field.set(bean, (String)value);
-                    } else if(value instanceof Object) {
+                } else if (propType.equals(java.lang.String.class)) {
+                    if (value instanceof String) {
+                        field.set(bean, (String) value);
+                    } else if (value instanceof Object) {
                         field.set(bean, String.valueOf(value));
                     }
-                } else if(propType.equals(java.util.Date.class)) {
+                } else if (propType.equals(java.util.Date.class)) {
+                    field.set(bean, DateUtil.toDate(value));                    
+                } else if (propType.equals(java.sql.Date.class)) {
                     field.set(bean, DateUtil.toDate(value));
-                } else if(propType.equals(java.sql.Date.class)) {
-                    field.set(bean, DateUtil.toDate(value));
-                } else if(propType.equals(java.sql.Timestamp.class)) {
-                    field.set(bean, DateUtil.toTimestamp(value));
-                } else if(propType.equals(java.sql.Time.class)) {
-                    field.set(bean, DateUtil.toTime(value));
+                } else if (propType.equals(java.sql.Timestamp.class)) {
+                    field.set(bean, DateUtil.toTimestamp(value)); 
+                    // dbSqlDateTime = (java.sql.Timestamp) 2020-05-27 10:41:53.149992
+                    // value = (java.lang.String) "27-05-2020 10:35:47.788"
+                } else if (propType.equals(java.sql.Time.class)) {
+                    if (value instanceof java.sql.Time) {
+                        field.set(bean, value);
+                    } else {
+                        field.set(bean, DateUtil.toTime(value));
+                    }
                 } else {
                     field.set(bean, value);
                 }
-                
+
                 // set changed, avoiding mirrored events
-                if("&Parent".equals(property)) {
-                } else if(property.indexOf("$Read") > 0) {
-                } else if(property.indexOf("$Changed") > 0) {
-                } else if(property.indexOf("$controlId") > 0) {
-                } else if(property.indexOf("$className") > 0) {
+                if ("&Parent".equals(property)) {
+                } else if (property.indexOf("$Read") > 0) {
+                } else if (property.indexOf("$Changed") > 0) {
+                } else if (property.indexOf("$controlId") > 0) {
+                } else if (property.indexOf("$className") > 0) {
                 } else {
                     try {
                         // Ricerca nel bean corrispondenza esatta
-                        field = searchProperty(bean, property+"$Changed", true, false);
-                        if(field != null)
+                        field = searchProperty(bean, property + "$Changed", true, false);
+                        if (field != null) {
                             field.setAccessible(true);
-                            field.set(bean, true);
+                        }
+                        field.set(bean, true);
                     } catch (Throwable th2) {
                         try {
                             bean.getClass().getMethod("setChanged", String.class, Boolean.class).invoke(bean, property, true);
                         } catch (Throwable th) {
                             Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th2);
                             Method[] methods = bean.getClass().getMethods();
-                            for(int i=0; i<methods.length; i++) {
-                                System.err.println("{"+bean.getClass()+"}.Method #"+(i+1)+":" + methods[i].toString());
+                            for (int i = 0; i < methods.length; i++) {
+                                System.err.println("{" + bean.getClass() + "}.Method #" + (i + 1) + ":" + methods[i].toString());
                             }
                         }
                     }
@@ -509,50 +564,52 @@ public class utility {
                             Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th2);
                         }
                     }
-                    */
+                     */
                 }
-                
+
             } catch (ParseException ex) {
                 Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         return;
     }
-    
-    
+
     /**
      * <h3>Get the property of a bean</h3>
      * <p>
      * This method get a property from a bean
      *
-     * @param  bean  the bean (Object)
-     * @param  property the name of the property to get (String)
-
-     * @return      property value (Object)
-     * @see         utility
+     * @param bean the bean (Object)
+     * @param property the name of the property to get (String)
+     *
+     * @return property value (Object)
+     * @see utility
      */
     static public Object get(Object bean, String property) {
         try {
             String clasName = bean.getClass().getName();
-            if(clasName.equalsIgnoreCase("java.util.ArrayList") || clasName.equalsIgnoreCase("java.util.List")) {
+            if (clasName.equalsIgnoreCase("java.util.ArrayList") || clasName.equalsIgnoreCase("java.util.List")) {
                 // wrap to bean
-                List<?>list = (List<?>)bean;
-                if(list.size()>0) bean = (Object)list.get(0);
+                List<?> list = (List<?>) bean;
+                if (list.size() > 0) {
+                    bean = (Object) list.get(0);
+                }
             }
             String searchingProperty = property.replaceAll("\\.", "\\$");
-            if(bean != null) {
+            if (bean != null) {
                 Field field = null;
                 try {
                     field = bean.getClass().getDeclaredField(searchingProperty);
-                    if(field!=null) {
+                    if (field != null) {
                         field.setAccessible(true);
                         return field.get(bean);
                     }
-                } catch (Throwable th) { }
-                
+                } catch (Throwable th) {
+                }
+
                 // Ricerca nel bean per similitudine
                 field = searchProperty(bean, searchingProperty, false, false);
-                if(field != null) {
+                if (field != null) {
                     field.setAccessible(true);
                     return field.get(bean);
                 }
@@ -563,7 +620,7 @@ public class utility {
                 }
                 Method readMethod = propertyDescriptor.getReadMethod();
                 if (readMethod == null) {
-                    throw new IllegalStateException("No getter available for property "+ property + " on " + bean);
+                    throw new IllegalStateException("No getter available for property " + property + " on " + bean);
                 }
                 return readMethod.invoke(bean);
             }
@@ -572,65 +629,69 @@ public class utility {
         }
         return null;
     }
-    
-    
+
     static public boolean isChanged(Object bean, String property) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-        if(bean != null) {
-            Field field = bean.getClass().getDeclaredField(property+"$Changed");
-            if(field!=null) {
+        if (bean != null) {
+            Field field = bean.getClass().getDeclaredField(property + "$Changed");
+            if (field != null) {
                 field.setAccessible(true);
-                return (boolean)field.get(bean);
+                return (boolean) field.get(bean);
             }
             // Ricerca nei beans
             field = searchProperty(bean, property, false, false);
-            if(field != null) {
-                return (boolean)field.get(bean);
+            if (field != null) {
+                return (boolean) field.get(bean);
             }
         }
         return false;
     }
 
-    
     static private PropertyDescriptor getPropertyDescriptor(Class<?> bean, String propertyname) throws IntrospectionException {
         BeanInfo beanInfo = Introspector.getBeanInfo(bean);
         PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
         PropertyDescriptor propertyDescriptor = null;
-        for (int i=0; i<propertyDescriptors.length; i++) {
+        for (int i = 0; i < propertyDescriptors.length; i++) {
             PropertyDescriptor currentPropertyDescriptor = propertyDescriptors[i];
             if (currentPropertyDescriptor.getName().equals(propertyname)) {
                 propertyDescriptor = currentPropertyDescriptor;
             }
         }
         return propertyDescriptor;
-    }    
-    
-    static Object removeCommas( Object key ) {
-        return removeString( key, "\"" );        
     }
-    static Object removeString( Object key, String removing ) {
-        if(key != null) {
-            String skey = (String)key;
+
+    static Object removeCommas(Object key) {
+        return removeString(key, "\"");
+    }
+
+    static Object removeString(Object key, String removing) {
+        if (key != null) {
+            String skey = (String) key;
             int index = skey.indexOf(removing);
-            if(index >= 0) skey = skey.substring(index+removing.length());
+            if (index >= 0) {
+                skey = skey.substring(index + removing.length());
+            }
             int lastIndex = skey.lastIndexOf(removing);
-            if(lastIndex >= 0) skey = skey.substring(0, lastIndex);
+            if (lastIndex >= 0) {
+                skey = skey.substring(0, lastIndex);
+            }
             return skey;
         } else {
             return null;
         }
     }
 
-    static public boolean folderExist( String folder ) {
-        if(folder != null && !folder.isEmpty()) {
-            File file = new File(folder); 
+    static public boolean folderExist(String folder) {
+        if (folder != null && !folder.isEmpty()) {
+            File file = new File(folder);
             return file.isDirectory();
         } else {
             return false;
         }
     }
-    static public boolean fileExist( String folder ) {
-        if(folder != null && !folder.isEmpty()) {
-            File file = new File(folder); 
+
+    static public boolean fileExist(String folder) {
+        if (folder != null && !folder.isEmpty()) {
+            File file = new File(folder);
             return file.isFile();
         } else {
             return false;
@@ -643,32 +704,38 @@ public class utility {
         }
         return str;
     }
-    
+
     static public String strip_last_char(String str, char char_to_strip) {
-        if(str==null) return "";
-        if(str.isEmpty()) return "";
-        if (str.charAt(str.length()-1)==char_to_strip){
-            str = str.replace(str.substring(str.length()-1), "");
+        if (str == null) {
+            return "";
+        }
+        if (str.isEmpty()) {
+            return "";
+        }
+        if (str.charAt(str.length() - 1) == char_to_strip) {
+            str = str.replace(str.substring(str.length() - 1), "");
             return str;
-        } else{
+        } else {
             return str;
         }
-    }    
+    }
 
-    public static void close_process( Process process ) {
+    public static void close_process(Process process) {
         try {
             process.wait(3000); // let the process run for 3 seconds
-        } catch (Throwable th) {}
-        process.destroy();        
+        } catch (Throwable th) {
+        }
+        process.destroy();
         try {
             process.wait(5000); // give it a chance to stop
-        } catch (Throwable th) {}
+        } catch (Throwable th) {
+        }
         process.destroy();
         try {
             process.waitFor(); // the process is now dead
-        } catch (Throwable th) {}
+        } catch (Throwable th) {
+        }
     }
-
 
     public static void execute_process(String script) {
 
@@ -695,44 +762,46 @@ public class utility {
             // log.error(e.getMessage());
         }
     }
-    
+
     static public String appendSeparator(String path) {
-         if(path != null && !path.isEmpty()) {
-            Character c = path.charAt(path.length()-1);
-            if(c != File.separatorChar && !c.equals("\\")) {
-                return ""+File.separatorChar;
+        if (path != null && !path.isEmpty()) {
+            Character c = path.charAt(path.length() - 1);
+            if (c != File.separatorChar && !c.equals("\\")) {
+                return "" + File.separatorChar;
             }
         }
         return "";
     }
+
     static public String appendURLSeparator(String path) {
-         if(path != null && !path.isEmpty()) {
-            Character c = path.charAt(path.length()-1);
-            if(c != '/' && !c.equals("/")) {
+        if (path != null && !path.isEmpty()) {
+            Character c = path.charAt(path.length() - 1);
+            if (c != '/' && !c.equals("/")) {
                 return "/";
             }
         }
         return "";
     }
- 
-   static public String get_parent_path(String fullFileName) throws IOException {
+
+    static public String get_parent_path(String fullFileName) throws IOException {
         File relativePath = new File(fullFileName).getParentFile();
         return relativePath.getCanonicalPath();
-    }       
+    }
+
     static public String get_absolute_path(HttpServletRequest request, String fileName) throws IOException {
         String fullFileName = "";
         ServletContext servletContext = request.getSession().getServletContext();
         String absoluteFilePathRoot = strip_last_slash(servletContext.getRealPath("/"));
         File relativePath = new File(absoluteFilePathRoot);
-        String absolutePath = relativePath.getCanonicalPath();        
+        String absolutePath = relativePath.getCanonicalPath();
         File pyFilePath = new File(absolutePath + utility.appendSeparator(absolutePath) + fileName);
         fullFileName = pyFilePath.getCanonicalPath();
-        if(!utility.fileExist(fullFileName)) {
-            throw new IOException("ERROR : file "+fullFileName+" not found");
+        if (!utility.fileExist(fullFileName)) {
+            throw new IOException("ERROR : file " + fullFileName + " not found");
         }
         return fullFileName;
-    }   
-    
+    }
+
     // checks if two given strings match. The first string  may contain wildcard characters 
     static boolean match(String first, String second) {
 
@@ -767,205 +836,215 @@ public class utility {
         }
         return false;
     }
-    
+
     public static String getDomainName(String url) throws URISyntaxException {
         URI uri = new URI(url);
         String domain = uri.getHost();
         return domain.startsWith("www.") ? domain.substring(4) : domain;
-    }    
-    
-    
-    public static Object [] downloadFile( HttpServletRequest request, HttpServletResponse response, String fileToDownload ) throws FileNotFoundException, IOException {
-        response.setHeader("Content-Disposition", "attachment; filename=\""+fileToDownload+"\"");
-        
+    }
+
+    public static Object[] downloadFile(HttpServletRequest request, HttpServletResponse response, String fileToDownload) throws FileNotFoundException, IOException {
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileToDownload + "\"");
+
         ServletContext context = request.getSession().getServletContext();
         String relativePath = context.getRealPath("");
-        String filePath = relativePath + "LiquidX/download/"+fileToDownload;
+        String filePath = relativePath + "LiquidX/download/" + fileToDownload;
         File downloadFile = new File(filePath);
         FileInputStream inStream = new FileInputStream(downloadFile);
-         
+
         // gets MIME type of the file
         String mimeType = context.getMimeType(filePath);
-        if (mimeType == null) {        
+        if (mimeType == null) {
             mimeType = "application/octet-stream";
         }
-         
+
         response.setContentType(mimeType);
         response.setContentLength((int) downloadFile.length());
-         
+
         // obtains response's output stream
         OutputStream outStream = response.getOutputStream();
-         
+
         byte[] buffer = new byte[4096];
-        int bytesRead = -1;         
+        int bytesRead = -1;
         while ((bytesRead = inStream.read(buffer)) != -1) {
             outStream.write(buffer, 0, bytesRead);
         }
-         
+
         inStream.close();
         outStream.close();
-        
-        return new Object [] { true };
+
+        return new Object[]{true};
     }
-    
-    
-    public static int mergeJsonObject( JSONObject source, JSONObject target ) throws Exception {
+
+    public static int mergeJsonObject(JSONObject source, JSONObject target) throws Exception {
         int insertCount = 0;
         for (Object keyObject : JSONObject.getNames(source)) {
-            String key = (String)keyObject;
+            String key = (String) keyObject;
             Object obj = source.get(key);
             target.put(key, obj);
             insertCount++;
         }
         return insertCount;
     }
-    
-    
-    
-    
+
     static javax.net.ssl.TrustManager[] trustAllCerts = null;
-    
-	public static void disableCertificateValidation() {
-		// Create a trust manager that does not validate certificate chains
-		trustAllCerts = new TrustManager[] { 
-			new X509TrustManager() {
-				public X509Certificate[] getAcceptedIssuers() {
-					return new X509Certificate[0];
-				}
-				public void checkClientTrusted(X509Certificate[] certs, String authType) {
-				}
-	
-				public void checkServerTrusted(X509Certificate[] certs, String authType) {
-				}
-			} 
-		};
-	}
-    
-    public static Object [] readURL( String curUrl, String method, String post ) throws Exception {
-    	// Install the all-trusting trust manager
-    	try	{
-    	    SSLContext sc = SSLContext.getInstance("SSL");
-    	    sc.init(null, (TrustManager[]) trustAllCerts, new java.security.SecureRandom());
-    	    HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-    	} catch (Exception e) {
-    	    System.err.println(e);
-    	}
-    	
-		HttpURLConnection connection = null;
-		int code = 0;
-		while(true) {
-	        URL url = new URL(curUrl);
-	    	try {
-	    		connection = (HttpURLConnection)url.openConnection();
-	            connection.setInstanceFollowRedirects(true);
-	            HttpURLConnection.setFollowRedirects(true);
-	            connection.setReadTimeout(15000);
-	            connection.setRequestMethod("GET");
-	            connection.connect();
-	            code = connection.getResponseCode();
-	            connection.disconnect();
-	    	} catch (Throwable th) {
-	    		String err = "Error:"+th.getLocalizedMessage();
-	    		System.err.print(err);
-	    		break;
-	    	}
-	        if(code == HttpURLConnection.HTTP_NOT_FOUND) {
-	            return new Object [] { HttpURLConnection.HTTP_NOT_FOUND, null };
-	        } else if(code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP) {
-	              String location = connection.getHeaderField("Location");
-	              location = URLDecoder.decode(location, "UTF-8");
-	              URL base = new URL(curUrl);               
-	              URL next = new URL(base, location);
-	              curUrl = next.toExternalForm();
-	        } else {	                                    	
-	            return new Object [] { code, null };
-	    	}
-		}
-		return new Object [] { 0, null };
+
+    public static void disableCertificateValidation() {
+        // Create a trust manager that does not validate certificate chains
+        trustAllCerts = new TrustManager[]{
+            new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                }
+
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                }
+            }
+        };
     }
-    
- 
-	static String getTimeString(float timeLeft) {		
-		String sTimeLeft = "";
-		int days = (int) Math.ceil(timeLeft / 3600.0f / 24.0f)-1;
-		String timeLeftDays = days > 0.0f ? String.valueOf(days)+"days " : "";
-		timeLeft -= days * 3600.0f * 24.0f;
-		int hours = (int) Math.ceil(timeLeft / 3600.0f)-1;
-		String timeLeftHours = hours > 0.0f ? String.valueOf(hours)+"h " : "";
-		timeLeft -= hours * 3600.0f;
-		int minutes = (int) Math.ceil(timeLeft  / 60.0f)-1;
-		String timeLeftMinutes = minutes > 0.0f ? String.valueOf(minutes)+"m " : "";
-		timeLeft -= minutes*60.0f;
-		int seconds = (int) Math.ceil(timeLeft);
-		String timeLeftSeconds = seconds > 0.0f ? String.valueOf(seconds)+"s" : "0s";
-		sTimeLeft = timeLeftDays + timeLeftHours + timeLeftMinutes + timeLeftSeconds;		
-		return sTimeLeft;
-	}
- 
-	
-	static class MyErrorHandler implements ErrorHandler {
-		public void warning(SAXParseException e) throws SAXException {
-			show("Warning", e);
-			throw (e);
-		}
 
-		public void error(SAXParseException e) throws SAXException {
-			show("Error", e);
-			throw (e);
-		}
+    public static Object[] readURL(String curUrl, String method, String post) throws Exception {
+        // Install the all-trusting trust manager
+        try {
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, (TrustManager[]) trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        } catch (Exception e) {
+            System.err.println(e);
+        }
 
-		public void fatalError(SAXParseException e) throws SAXException {
-			show("Fatal Error", e);
-			throw (e);
-		}
+        HttpURLConnection connection = null;
+        int code = 0;
+        while (true) {
+            URL url = new URL(curUrl);
+            try {
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setInstanceFollowRedirects(true);
+                HttpURLConnection.setFollowRedirects(true);
+                connection.setReadTimeout(15000);
+                connection.setRequestMethod("GET");
+                connection.connect();
+                code = connection.getResponseCode();
+                connection.disconnect();
+            } catch (Throwable th) {
+                String err = "Error:" + th.getLocalizedMessage();
+                System.err.print(err);
+                break;
+            }
+            if (code == HttpURLConnection.HTTP_NOT_FOUND) {
+                return new Object[]{HttpURLConnection.HTTP_NOT_FOUND, null};
+            } else if (code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP) {
+                String location = connection.getHeaderField("Location");
+                location = URLDecoder.decode(location, "UTF-8");
+                URL base = new URL(curUrl);
+                URL next = new URL(base, location);
+                curUrl = next.toExternalForm();
+            } else {
+                return new Object[]{code, null};
+            }
+        }
+        return new Object[]{0, null};
+    }
 
-		private void show(String type, SAXParseException e) {
-			System.out.println(type + ": " + e.getMessage());
-			System.out.println("Line " + e.getLineNumber() + " Column "	+ e.getColumnNumber());
-			System.out.println("System ID: " + e.getSystemId());
-		}
-	}
-	
+    static String getTimeString(float timeLeft) {
+        String sTimeLeft = "";
+        int days = (int) Math.ceil(timeLeft / 3600.0f / 24.0f) - 1;
+        String timeLeftDays = days > 0.0f ? String.valueOf(days) + "days " : "";
+        timeLeft -= days * 3600.0f * 24.0f;
+        int hours = (int) Math.ceil(timeLeft / 3600.0f) - 1;
+        String timeLeftHours = hours > 0.0f ? String.valueOf(hours) + "h " : "";
+        timeLeft -= hours * 3600.0f;
+        int minutes = (int) Math.ceil(timeLeft / 60.0f) - 1;
+        String timeLeftMinutes = minutes > 0.0f ? String.valueOf(minutes) + "m " : "";
+        timeLeft -= minutes * 60.0f;
+        int seconds = (int) Math.ceil(timeLeft);
+        String timeLeftSeconds = seconds > 0.0f ? String.valueOf(seconds) + "s" : "0s";
+        sTimeLeft = timeLeftDays + timeLeftHours + timeLeftMinutes + timeLeftSeconds;
+        return sTimeLeft;
+    }
+
+    static class MyErrorHandler implements ErrorHandler {
+
+        public void warning(SAXParseException e) throws SAXException {
+            show("Warning", e);
+            throw (e);
+        }
+
+        public void error(SAXParseException e) throws SAXException {
+            show("Error", e);
+            throw (e);
+        }
+
+        public void fatalError(SAXParseException e) throws SAXException {
+            show("Fatal Error", e);
+            throw (e);
+        }
+
+        private void show(String type, SAXParseException e) {
+            System.out.println(type + ": " + e.getMessage());
+            System.out.println("Line " + e.getLineNumber() + " Column " + e.getColumnNumber());
+            System.out.println("System ID: " + e.getSystemId());
+        }
+    }
+
     public static Object getArchiveXMLTag(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
-    	java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
-    	java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
-    	if(r != null) {
-	    	InputStream is = zipFile.getInputStream(r);	    	
-	    	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-	        // dbf.setNamespaceAware(false);
-	    	DocumentBuilder parser = dbf.newDocumentBuilder();
-	    	MyErrorHandler myErrorHandler = new MyErrorHandler();
-			parser.setErrorHandler(myErrorHandler);
-	    	Document doc = (Document) parser.parse(is);
-	        XPathFactory xPathfactory = XPathFactory.newInstance();
-	        XPath xpath = xPathfactory.newXPath();
-	        Element userElement = (Element) xpath.evaluate(attribute, doc, XPathConstants.NODE);
-	        if(userElement != null) {
-	        	// <version major="2" minor="0" build="0" revision="022" date="19-05-2020">
-	        	return (Object)(userElement.getAttribute("major")+"."+userElement.getAttribute("minor")+"."+userElement.getAttribute("build")+"."+userElement.getAttribute("revision")+" - date:"+userElement.getAttribute("date"));
-	        }
-    	}
-		return "";    	
+        java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
+        java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
+        if (r != null) {
+            InputStream is = zipFile.getInputStream(r);
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            // dbf.setNamespaceAware(false);
+            DocumentBuilder parser = dbf.newDocumentBuilder();
+            MyErrorHandler myErrorHandler = new MyErrorHandler();
+            parser.setErrorHandler(myErrorHandler);
+            Document doc = (Document) parser.parse(is);
+            XPathFactory xPathfactory = XPathFactory.newInstance();
+            XPath xpath = xPathfactory.newXPath();
+            Element userElement = (Element) xpath.evaluate(attribute, doc, XPathConstants.NODE);
+            if (userElement != null) {
+                // <version major="2" minor="0" build="0" revision="022" date="19-05-2020">
+                return (Object) (userElement.getAttribute("major") + "." + userElement.getAttribute("minor") + "." + userElement.getAttribute("build") + "." + userElement.getAttribute("revision") + " - date:" + userElement.getAttribute("date"));
+            }
+        }
+        return "";
+    }
+
+    public static String getArchiveFile(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
+        java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
+        java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
+        if (r != null) {
+            InputStream is = zipFile.getInputStream(r);
+            if (is.available() > 0) {
+                BufferedReader br = new BufferedReader(new InputStreamReader(is));
+                StringBuffer sb = new StringBuffer();
+                while (true) {
+                    String line = br.readLine();
+                    if (line != null) {
+                        sb.append(line);
+                    } else {
+                        break;
+                    }
+                }
+                return sb.toString();
+            }
+        }
+        return null;
     }
     
-    public static String getArchiveFile(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
-    	java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
-    	java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
-    	if(r != null) {
-	    	InputStream is = zipFile.getInputStream(r);
-	    	if(is.available()>0) {
-		    	BufferedReader br = new BufferedReader(new InputStreamReader(is));
-		    	StringBuffer sb = new StringBuffer();
-		    	while(true) {
-		    		String line = br.readLine();
-		    		if(line != null)
-		    			sb.append(line);
-		    		else
-		    			break;
-		    	}
-	        	return sb.toString();
-	    	}
-    	}
-		return null;    	
+    
+    //
+    // Wrappers
+    //
+    public static String arrayToString(Object[] objs, String prefix, String postfix, String separator) {
+        return workspace.arrayToString(objs, prefix, postfix, separator);
+    }    
+    public static String jsonArrayToString(JSONArray objs, String prefix, String postfix, String separator) {
+        return jsonArrayToString(objs, prefix, postfix, separator);
+    }
+    public static ArrayList<String> jsonArrayToArrayList(JSONArray objs, String prefix, String postfix) {
+        return jsonArrayToArrayList(objs, prefix, postfix);
     }    
 }

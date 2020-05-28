@@ -961,7 +961,7 @@ public class event {
                     }                    
                 }
                 
-                conn = connection.getConnection(workspace.default_connection, request, ((workspace)tbl_wrk).tableJson);
+                conn = connection.getConnection(null, request, ((workspace)tbl_wrk).tableJson);
                 if(conn!=null) {                
                     long cRow = 0;
                     long lStartTime = 0;
@@ -1087,7 +1087,7 @@ public class event {
                 try { schema = liquid.tableJson.getString("schema");  } catch (Exception e) {}
                 try { table = liquid.tableJson.getString("table");  } catch (Exception e) {}
 
-                conn = (Connection)(liquid.get_connection != null ? liquid.get_connection.invoke(null) : null);
+                conn = connection.getConnection(null, (HttpServletRequest)freeParam, ((workspace)tbl_wrk).tableJson);
                 if(conn!=null) {                
                     long cRow = 0;
                     long lStartTime = 0;

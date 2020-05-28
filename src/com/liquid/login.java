@@ -41,7 +41,7 @@ public class login {
     static public String database = null;
     static public String user = null;
     static public String password = null;
-    static public String connectionURL = null;
+    static public ArrayList<String> connectionURL = null;
 
     // coordinate tabella utenti
     static public String schema = null;
@@ -105,23 +105,36 @@ public class login {
         Class driverClass = null;
         if( driver != null && database != null && schema != null && !driver.isEmpty() && !database.isEmpty() && !schema.isEmpty() ) {
             // defined by driver/database/user
+            connectionURL = new ArrayList<String>();
             if(host == null || host.isEmpty()) host = "localhost";
             if("oracle".equalsIgnoreCase(driver)) {
                 // TODO : check user and password definition for connection url
-                connectionURL = "jdbc:oracle:thin:@"+host+":1521:xe"+",user="+database+",password="+password;
+                connectionURL.add("jdbc:oracle:thin:@"+host+":1521:xe"+",user="+database);
+                connectionURL.add(user);
+                connectionURL.add(password);
                 if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
                 conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":1521:xe",database, (password != null ? password : "") );
-            } else if("postgres".equalsIgnoreCase(driver)) {
-                connectionURL = "postgresql://"+user+":"+password+"@"+host+":5432/"+database;
+            } else if("postgres".equalsIgnoreCase(driver)) {                
+                // connectionURL = "jdbc:postgresql://"+host+":5432/"+database+"?user="+user+"&password="+password+"&ssl=true";
+                // connectionURL = "jdbc:postgresql://"+user+":"+password+"@"+host+":5432/"+database;
+                connectionURL.add("jdbc:postgresql://"+host+":5432/"+database);
+                connectionURL.add(user);
+                connectionURL.add(password);
                 if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
                 conn = DriverManager.getConnection("jdbc:postgresql://"+host+":5432/"+database, (user != null ? user : ""), (password != null ? password : ""));
             } else if("mysql".equalsIgnoreCase(driver)) {
-                connectionURL = "jdbc:mysql://"+host+":3306/"+database+",user="+user+",password="+password;
+                // connectionURL = "jdbc:mysql://"+host+":3306/"+database+",user="+user+",password="+password;
+                connectionURL.add("jdbc:mysql://"+host+":3306/"+database);
+                connectionURL.add(user);
+                connectionURL.add(password);
                 if(driverClass == null) driverClass = Class.forName("org.mysql.Driver");
                 conn = DriverManager.getConnection("jdbc:mysql://"+host+":3306/"+database, (user != null ? user : ""), (password != null ? password : ""));
             } else if("sqlserver".equalsIgnoreCase(driver)) {
                 // TODO : check user and password definition for connection url
-                connectionURL = "jdbc:sqlserver://"+host+":1433;DatabaseName="+database+",user="+user+",password="+password;
+                // connectionURL = "jdbc:sqlserver://"+host+":1433;DatabaseName="+database+",user="+user+",password="+password;
+                connectionURL.add("jdbc:sqlserver://"+host+":1433;DatabaseName="+database);
+                connectionURL.add(user);
+                connectionURL.add(password);
                 if(driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
                 conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":1433;DatabaseName="+database, (user != null ? user : ""), (password != null ? password : ""));
             } else {
@@ -162,18 +175,17 @@ public class login {
             } else if("postgres".equalsIgnoreCase(driver)) {
                 try {
                     PreparedStatement psdoLogin = conn.prepareStatement("CREATE EXTENSION pgcrypto");
-                    ResultSet rsdoLogin = psdoLogin.executeQuery();
-                    if (rsdoLogin != null) {
-                        String error = "";
-                        while(rsdoLogin.next()) {
-                            error += "\n" + rsdoLogin.getString(1);
+                    if(psdoLogin != null) {
+                        ResultSet rsdoLogin = psdoLogin.executeQuery();
+                        if (rsdoLogin != null) {
+                            String error = "";
+                            while(rsdoLogin.next()) {
+                                error += "\n" + rsdoLogin.getString(1);
+                            }
+                            rsdoLogin.close();
                         }
-                        rsdoLogin.close();
-                        rsdoLogin = null;
+                        psdoLogin.close();
                     }
-                    
-                    rsdoLogin.close();
-                    psdoLogin.close();
                 } catch (Exception e) { }
 
                 try {
@@ -661,6 +673,7 @@ public class login {
                             }
 
                             if (isLoginPassed) {
+                                String assets_id = "", assets_name = "", assets_inactive_name = "";
                                 
                                 if (session != null) {
                                     session.setAttribute("GLLiquidUserID", iUserId);
@@ -669,12 +682,27 @@ public class login {
                                 }
 
                                 try {
-                                    assets.read_user_assets_roles ( request, iUserId );
+                                    
+                                    if(assets.read_user_assets_roles ( request, iUserId )) {
+                                        assets_id = utility.arrayToString( ((ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserAssetsID")).toArray(), null, null, ",");
+                                        assets_name = utility.arrayToString( ((ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserAssetsName")).toArray(), null, null, ",");
+                                        assets_inactive_name = utility.arrayToString( ((ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserInactiveAssetsName")).toArray(), null, null, ",");
+                                    }
+                                    
                                 } catch (Exception e) {
+                                    System.err.println("// login() Error reading assets :" + e.getLocalizedMessage());
+                                    return "{ \"result\":-31, \"error\":\""+utility.base64Encode(error)+"\"}";
                                 }
+                                
                                 add_event(conn, request, sUserID + "@" + domain_id + ":LOGIN", 0);
 
-                                return "{ \"result\":1, \"token\":\""+token+"\", \"addmin\":"+iIsAddmin+",\"message\":\""+utility.base64Encode("LoggedIn")+"\"}";
+                                return "{ \"result\":1, \"token\":\""+token+"\""
+                                        +",\"addmin\":"+iIsAddmin+""
+                                        +",\"message\":\""+utility.base64Encode("LoggedIn")+"\""
+                                        +",\"assets_id\":\""+utility.base64Encode(assets_id)+"\""
+                                        +",\"assets_name\":\""+utility.base64Encode(assets_name)+"\""
+                                        +",\"assets_inactive_name\":\""+utility.base64Encode(assets_inactive_name)+"\""
+                                        +"}";
                             }
 
                         } catch (Throwable e) {

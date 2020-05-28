@@ -40,6 +40,7 @@ public class DateUtil {
     public static DateFormat IN_TIME_FORMAT = new SimpleDateFormat("H:mm:ss");
     public static DateFormat IN_DATETIME_FORMAT = new SimpleDateFormat("d/M/yy H:mm:ss");
     public static DateFormat IN_TIMESTAMP_FORMAT = new SimpleDateFormat("d/M/yy H:mm:ss.SSS");
+    public static DateFormat IN_TIMESTAMP_FORMAT2 = new SimpleDateFormat("dd/MM/yyyy H:mm:ss.SSS");
 
     public static DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyyMMddkkmmss");
 
@@ -394,10 +395,24 @@ public class DateUtil {
             if ("".equals((String) value)) {
                 return null;
             }
-            return new java.sql.Timestamp(IN_TIMESTAMP_FORMAT.parse((String) value).getTime());
+            String v = (String)value;
+            int index = v.lastIndexOf(".");
+            if(index < 0) {
+                value = v+".000";
+            } else if(v.length() - index > 4) {
+                value = v.substring(0, index+4);
+            } else if(v.length() - index < 4) {
+                for(int c=0; c<3-(v.length() - index); c++) v += "0";
+                value = v;
+            }
+        } else {
+            value = value.toString();
         }
-
-        return new java.sql.Timestamp(IN_TIMESTAMP_FORMAT.parse(value.toString()).getTime());
+        try {
+            return new java.sql.Timestamp(IN_TIMESTAMP_FORMAT.parse(((String)value).replace("-", "/")).getTime());
+        } catch(Exception e) {
+            return new java.sql.Timestamp(IN_TIMESTAMP_FORMAT2.parse(((String)value).replace("-", "/")).getTime());
+        }
     }
 
     /**

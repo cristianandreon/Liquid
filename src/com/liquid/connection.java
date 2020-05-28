@@ -4,6 +4,7 @@ package com.liquid;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
@@ -49,7 +50,7 @@ public class connection {
     }
     
     
-        // Servizio impostazione della connessione
+    // Servizio impostazione della connessione
     static public String setConnectionString( HttpServletRequest request, JspWriter out ) {
         String result = "", curDriver = null, curConnectionURL = null;
         try {
@@ -68,7 +69,7 @@ public class connection {
         return result;
     }
     
-            // Servizio lettura della connessione dalla request
+    // Servizio lettura della connessione dalla request
     static public String getConnectionString( HttpServletRequest request, JspWriter out ) {
         String result = "";
         try {
@@ -94,29 +95,29 @@ public class connection {
         return result;
     }
     
-    // Connessione specificata su JSON o sulla sessione
+    
+    //
+    // Connectin to DB, 1° defined by control's JSON, 2° in the session (request) or 3° by default source of the web app
+    //
     static public Connection getConnection( Method get_connection, HttpServletRequest request, JSONObject tableJson )  {
-        String driver = null, connectionURL = null;
+        String driver = null, connectionURL = null, database = null;
         try { driver = tableJson.getString("driver"); } catch(Exception e) {}
         try { connectionURL = tableJson.getString("connectionURL"); } catch(Exception e) {}        
-        return getConnection( get_connection, request, driver, connectionURL );
+        try { database = tableJson.getString("database"); } catch(Exception e) {}
+        return getConnection(get_connection, request, driver, connectionURL, database );
     }
     
-    
-    // Connessione specificata su JSON o sulla sessione
+
+    //    
+    // Connectin to DB , defined by control's JSON, in the session (request) or by default source of the web app
     //
     // Test :   jdbc:mysql://localhost:3306/Liquid,liquid,liquid
     //          jdbc:mysql://cnconline:3306/Liquid"
     //          jdbc:postgresql://cnconline:5432/LiquidX?user=liquid&password=liquid
     //
-    static public Connection getConnection( Method get_connection, HttpServletRequest request, String driver, String connectionURL )  {
+    static public Connection getConnection( Method get_connection, HttpServletRequest request, String driver, String connectionURL, String database )  {
         Connection conn = null;
         try {
-            
-            if(workspace.default_connection == null) 
-                workspace.default_connection = (Method)com.liquid.connection.class.getMethod("getDBConnection");
-            
-            get_connection = workspace.default_connection;
 
             // Connessione specificata su JSON
             if(connectionURL != null) {
@@ -132,9 +133,9 @@ public class connection {
                 // Connessione specificata su sessione utente
                 if(request != null) {
                     String curDriver = (String)request.getSession().getAttribute("GLLiquidDriver");
-                    String curConnectionURL = (String)request.getSession().getAttribute("GLLiquidConnectionURL");
+                    Object curConnectionURL = request.getSession().getAttribute("GLLiquidConnectionURL");
                     if(curDriver != null && !curDriver.isEmpty()) {
-                        if(curConnectionURL != null && !curConnectionURL.isEmpty()) {
+                        if(curConnectionURL != null) {
                             Class driverClass = null;
                             try {
                                 driverClass = Class.forName(curDriver);
@@ -165,17 +166,35 @@ public class connection {
                                     }
                                 }
                             }
-                            conn = DriverManager.getConnection(curConnectionURL);
-                            if(conn == null) {
-                                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() error: failed to get connection from url");
+                            try {
+                                if(curConnectionURL instanceof ArrayList<?>) {
+                                    conn = DriverManager.getConnection( ((ArrayList<String>)curConnectionURL).get(0), ((ArrayList<String>)curConnectionURL).get(1), ((ArrayList<String>)curConnectionURL).get(2) );
+                                } else if(curConnectionURL instanceof String) {
+                                    conn = DriverManager.getConnection((String)curConnectionURL);
+                                }
+                                if(conn == null) {
+                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() error: failed to get connection from url");
+                                }
+                            } catch(Throwable th2) {
+                                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() error: failed to get connection from url : "+th2.getLocalizedMessage());
+                                throw new Throwable(th2);
                             }
                         }
                     }
                 }
-            }            
+            }
+            // Default connection : defined in app with possible jump of database
             try {
                 if(conn==null) {
-                    conn = (Connection)(get_connection != null ? get_connection.invoke(null) : null);
+                    if(get_connection == null) {
+                        conn = getDBConnection(database);
+                    } else {
+                        try {
+                            conn = (Connection)get_connection.invoke(database);
+                        } catch(Throwable th) {
+                            conn = (Connection)get_connection.invoke(null);
+                        }
+                    }
                 }
             } catch (Exception ex) {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
@@ -188,30 +207,31 @@ public class connection {
     
     
     // Servizio lettura della descrizione della connessione
-	static public String getConnectionDesc( HttpServletRequest request, JspWriter out ) {
-            String connectionDesc = null;
-	    String result = "";
-	    try {
-                String driver = (String)request.getSession().getAttribute("GLLiquidDriver");
-                String connectionURL = (String)request.getSession().getAttribute("GLLiquidConnectionURL");
-                if(connectionURL != null && !connectionURL.isEmpty()) {
-                    // Forzata da stringa
-                    connectionDesc = "[ *** driver:"+driver+" "+"{SERVER SIDE DEFINED}" + " *** ]";
-                } else {
-                    // da package app.liquid.dbx.connection
-                    connectionDesc = (String)getConnectionDesc();
-                }
-	        result = "{ \"result\":1"
-	                +",\"connectionDesc\":\""+utility.base64Encode(connectionDesc != null ? connectionDesc : "")+"\" "
-	                +"}";
-	    } catch (Throwable th) {
-	        System.err.println(" setConnection() Error:" + th.getLocalizedMessage());
-	        result = "{ \"result\":0"
-	                +",\"error\":\""+utility.base64Encode(th.getLocalizedMessage())+"\" "
-	                +"}";
-	    }
-	    return result;
-	}
+    static public String getConnectionDesc( HttpServletRequest request, JspWriter out ) {
+        String connectionDesc = null;
+        String result = "";
+        try {
+            String driver = (String)request.getSession().getAttribute("GLLiquidDriver");
+            Object connectionURL = (String)request.getSession().getAttribute("GLLiquidConnectionURL");
+            if(connectionURL != null) {
+                // Forzata da stringa
+                connectionDesc = "[ *** driver:"+driver+" "+"{ *** SERVER SIDE DEFINED *** }" + " *** ]";
+            } else {
+                // da package app.liquid.dbx.connection
+                connectionDesc = (String)getConnectionDesc();
+            }
+            result = "{ \"result\":1"
+                    +",\"connectionDesc\":\""+utility.base64Encode(connectionDesc != null ? connectionDesc : "")+"\" "
+                    +"}";
+        } catch (Throwable th) {
+            System.err.println(" setConnection() Error:" + th.getLocalizedMessage());
+            result = "{ \"result\":0"
+                    +",\"error\":\""+utility.base64Encode(th.getLocalizedMessage())+"\" "
+                    +"}";
+        }
+        return result;
+    }
+    
     static public String getConnectionDesc() {
         Class cls = null;
     	try {

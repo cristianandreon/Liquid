@@ -1,0 +1,23 @@
+{   "database":"LiquidX"
+    ,"schema":"liquidx"
+    ,"table":"roles"
+    ,"columns":[
+         {"name":"id","width":"!auto","label":"id","visible":false}
+        ,{"name":"role","width":"!auto","label":"role","required":true}
+        ,{"name":"status","width":"!auto","label":"status","required":true}
+        ,{"name":"date","width":"!auto","label":"date"}
+        ,{"name":"expire_date","width":"!auto","label":"expire_date"}
+        ,{"name":"expired","width":"!auto","label":"expired"}
+    ]
+    ,"caption":"roles"
+    ,"mode":"winX"
+    ,"parentObjId":"WinXContainer"
+    ,"autoFitColumns":true
+    ,"width":650
+    ,"height":580
+    ,"resize":"both"
+    ,"primaryKey":"id"
+    ,"editable":true
+    ,"commands":[ {"name":"insert"},{"name":"update"},{"name":"delete"},{"name":"copy"},{"name":"paste"},{"name":"next"},{"name":"previous"} ]
+    ,"events":[]
+}
