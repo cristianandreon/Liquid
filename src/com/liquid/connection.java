@@ -187,7 +187,11 @@ public class connection {
             try {
                 if(conn==null) {
                     if(get_connection == null) {
-                        conn = getDBConnection(database);
+                        if(database != null && !database.isEmpty()) {
+                            conn = getDBConnection(database);
+                        } else {
+                            conn = getDBConnection();
+                        }
                     } else {
                         try {
                             conn = (Connection)get_connection.invoke(database);
