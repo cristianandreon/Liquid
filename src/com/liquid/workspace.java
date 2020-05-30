@@ -1,14 +1,12 @@
 package com.liquid;
 
 import com.google.gson.Gson;
-import static com.liquid.metadata.table_exist;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -380,7 +378,7 @@ public class workspace {
 
             
             // Connessione al DB
-            conn = connection.getConnection(null, request, connectionDriver, connectionURL, null);
+            conn = connection.getConnection(null, request, connectionDriver, connectionURL, database);
             if(conn==null)
                 return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+controlId+" : no DB connection\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection\");</script>" );
             
