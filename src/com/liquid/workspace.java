@@ -108,6 +108,8 @@ public class workspace {
     // Abilita la modalità progettazione
     static public String enableProjectMode() {
         genesisToken = login.getSaltString(32);
+        // reset metadata cache
+        metadata.invalidateMetadata();
         return genesisToken;
     }
 

@@ -1958,8 +1958,12 @@ public class db {
                         colName = colName.replaceAll("\\.", "\\$");
                     }
                 }
-                props.put(colName, metadata.getJavaClass(cols.getJSONObject(ic).getInt("type")));
-                props.put(colName+"$Changed", boolean.class);
+                try {
+                    props.put(colName, metadata.getJavaClass(cols.getJSONObject(ic).getInt("type")));
+                    props.put(colName+"$Changed", boolean.class);
+                } catch(Throwable th) {
+                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
+                }
             }
             // proprietà Parent
             props.put("$Parent", Object.class);

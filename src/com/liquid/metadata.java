@@ -73,6 +73,16 @@ public class metadata {
     public static ArrayList<MetaDataTable> metaDataTable = new ArrayList<MetaDataTable>();
 
     
+    public static boolean invalidateMetadata() {
+    	if(metaDataTable != null) {
+            if(metaDataTable.size() > 0) {
+                metaDataTable.clear();;
+                return true;
+            }
+        }
+        return false;
+    }
+
     
     public static Object readTableMetadata(Connection conn, String tableDatabase, String tableSchema, String tableName, String tableColumnName) {
     	return readTableMetadata(conn, tableDatabase, tableSchema, tableName, tableColumnName, true);    	

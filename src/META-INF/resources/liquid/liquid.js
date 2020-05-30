@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////
-// Liquid ver.1.098   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.099   Copyright 2020 Cristian Andreon - cristianandreon.eu
 // First update 8.1.2020 - Last update  30-5-2020
 // TODO : see trello.com
 //
@@ -21,7 +21,7 @@
 //  in other words add "before" / "after" and then make toCamelCase()
 //
 
-// mnemocis flags 
+// mnemonics flags 
 // requireSelected selection of row is required, don't consider caret as current row
 
 // N.B.: Link to external control by : @controlId o url( controlId )
@@ -1045,14 +1045,14 @@ class LiquidCtrl {
                                             grid.columns[ic].field = this.tableJson.columns[iField1B-1].field;
                                             grid.columns[ic].colLink1B = iField1B;
                                         } else {
-                                            console.warn("Unlinked grid at:" + this.controlId + " field:" + grid.columns[ic].name);
+                                            console.error("[LIQUID] Unlinked grid at:" + this.controlId + " field:" + grid.columns[ic].name);
                                         }
                                     } else {
                                         var iCol1B = number(grid.columns[ic].field);
                                         if(iCol1B > 0) {
                                             grid.columns[ic].colLink1B = iCol1B + 1;
                                         } else {
-                                            console.warn("Unlinked grid at:" + this.controlId + " field:" + grid.columns[ic].name);
+                                            console.error("[LIQUID] Unlinked grid at:" + this.controlId + " field:" + grid.columns[ic].name);
                                         }
                                     }
                                 }
@@ -1708,7 +1708,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.098,
+    version: 1.099,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -2652,8 +2652,7 @@ var Liquid = {
                             ,cache: liquid.tableJson.columns[ic].editor.cache
                             ,values: values 
                         };
-                } else if(liquid.tableJson.columns[ic].editor === 'sun' || liquid.tableJson.columns[ic].editor === 'richEdit' ||
-                        liquid.tableJson.columns[ic].editor.type === 'sun' || liquid.tableJson.columns[ic].editor.type === 'richEdit') {
+                } else if(Liquid.isSunEditor(liquid.tableJson.columns[ic])) {
                     cellEditor = SunEditor;
                     cellEditorParams = {liquid: liquid, options: liquid.tableJson.columns[ic].editor.options, maxLength: Liquid.richText.maxLength, cols: Liquid.richText.cols, rows: Liquid.richText.rows, column: liquid.tableJson.columns[ic], iCol:ic};
                     cellRenderer = function(params) {
@@ -7268,6 +7267,22 @@ var Liquid = {
             }
         }
     },
+    isSunEditor:function(col) {
+        if(    (isDef(col.editor) && typeof col.editor === "string" && (col.editor.toLowerCase() === 'sun' || col.editor.toLowerCase() === 'suneditor' || col.editor.toLowerCase() === 'richedit'))
+            || (isDef(col.editor) && isDef(col.editor.type) && typeof col.editor.type === "string" && (col.editor.type.toLowerCase() === 'sun' || col.editor.type.toLowerCase() === 'suneditor' || col.editor.type.toLowerCase() === 'richedit'))
+            ) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+    isCodeEditor:function(col) {
+        if( isDef(col.editor) && isDef(col.editor.code) && col.editor.code === true ) {
+            return true;
+        } else {
+            return false;
+        }
+    },
     createGridObject:function(liquid, parentNode, grid, gridObj) {
         if(gridObj) {
             var div = document.createElement("div");
@@ -7305,8 +7320,7 @@ var Liquid = {
                 if((col && typeof col.lookup !== 'undefined' && col.lookup) || (typeof gridObj.lookup !== 'undefined' && gridObj.lookup)) {
                     innerHTML += "<div id=\"" + itemId + "\" title=\""+toolTip+"\"></div>";
 
-                } else if((typeof col.editor !== 'undefined' && (col.editor === 'sun' || col.editor === 'richEdit'))
-                        || (typeof col.editor !== 'undefined' && typeof col.editor.type !== 'undefined' && (col.editor.type === 'sun' || col.editor.type === 'richEdit'))) {
+                } else if(Liquid.isSunEditor(col) || Liquid.isSunEditor(gridObj)) {
                     innerHTML += "<div"
                             + " id=\"" + itemId + "\""
                             + " class=\"liquidGridControl "+(gridObj.zoomable===true ? "liquidGridControlZoomable":"") + "\""
@@ -8684,8 +8698,6 @@ var Liquid = {
             var gridControl = grid_coords.control;
             var col = grid_coords.column;
             if(col) {
-                if(col.type === "") {
-                }
                 if(gridControl.linkedObj.classList.contains("liquidGridControlRW")) {
                     if(!liquid.suneditorTextArea) {
                         liquid.suneditorDiv = document.createElement('div');
@@ -8704,9 +8716,6 @@ var Liquid = {
                         liquid.suneditorTextArea.className = "liquidRichEditor";
                         liquid.suneditorCen.appendChild(liquid.suneditorTextArea);
                         document.body.appendChild(liquid.suneditorDiv);
-
-                        liquid.suneditorNodes = Liquid.getCurNodes(liquid);
-                        liquid.suneditorGridControl = gridControl;
 
                         var classStyle = getComputedStyle(document.querySelector('.liquidRichEditor'));
                         const controlWidth = classStyle.width.replace("px", "");
@@ -8728,8 +8737,8 @@ var Liquid = {
                                 ['fontColor', 'hiliteColor', 'outdent', 'indent', 'align', 'horizontalRule', 'list', 'table'],
                                 ['link', 'image', 'video', 'fullScreen', 'showBlocks', 'codeView', 'preview', 'print', 'save']
                             ],
-                            callBackSave:function(contents) {
-                                Liquid.onSaveRichField(liquid, contents);
+                            callBackSave:function(content) {
+                                Liquid.onSaveRichField(liquid, content);
                             }
                         });
                         var classStyle = document.querySelector('.sun-editor');
@@ -8739,8 +8748,11 @@ var Liquid = {
                         classStyle.style.backgroundColor = controlbackgroundColor;
                         classStyle.addEventListener('click', e => e.stopPropagation() );
                         classStyle.style.boxShadow = "rgb(167, 167, 167) 5px 5px 7px 1px";
-
                     }
+                    liquid.suneditorNodes = Liquid.getCurNodes(liquid);
+                    liquid.suneditorGridControl = gridControl;
+                    liquid.suneditorCol = col;
+                    
                     liquid.suneditor.setContents(gridControl.linkedObj.innerHTML);
                     liquid.suneditorDiv.style.display = "";
                 }
@@ -8750,21 +8762,31 @@ var Liquid = {
     onCloseRichField:function(obj) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
-            var content = liquid.suneditor.getContents();
-            if(liquid.suneditorGridControl.linkedObj.innerHTML !== content) {
-                if(!confirm("Content was changed ... Discharge it?")) {
+            var content = null;
+            if(Liquid.isCodeEditor(liquid.suneditorCol)) {
+                var div = document.createElement("div");
+                div.innerHTML = liquid.suneditor.getContents();
+                content = div.textContent || div.innerText || "";
+                curContent = liquid.suneditorGridControl.linkedObj.innerText;
+                delete div;
+            } else {
+                content = liquid.suneditor.getContents();
+                curContent = liquid.suneditorGridControl.linkedObj.innerHTML;
+            }            
+            if(curContent !== content) {
+                if(!confirm("Content was changed ... discharge it?")) {
                     return;
                 }
             }
             liquid.suneditorDiv.style.display = "none";
         }
     },
-    onSaveRichField:function(obj, contents) {
+    onSaveRichField:function(obj, content) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             liquid.suneditorDiv.style.display = "none";
             if(liquid.suneditorGridControl.linkedObj)
-                liquid.suneditorGridControl.linkedObj.innerHTML = contents;
+                liquid.suneditorGridControl.linkedObj.innerHTML = content;
             if(liquid.suneditorGridControl.colLink1B > 0) {
                 var iCol = liquid.suneditorGridControl.colLink1B - 1;
                 var col = liquid.tableJson.columns[iCol];
@@ -8772,11 +8794,18 @@ var Liquid = {
                     // register modifications
                     if(typeof col.isReflected === 'undefined' || col.isReflected !== true) {
                         for(var iN = 0; iN < liquid.suneditorNodes.length; iN++) {
-                            var validateResult = Liquid.validateField(liquid, col, contents);
+                            var validateResult = Liquid.validateField(liquid, col, content);
                             if(validateResult !== null) {
-                                if(validateResult[0] >= 0) {
-                                    contents = validateResult[1];
-                                    Liquid.registerFieldChange(liquid, null, liquid.suneditorNodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], col.field, null, contents);
+                                if(validateResult[0] >= 0) {                                    
+                                    if(Liquid.isCodeEditor(col)) {
+                                        var div = document.createElement("div");
+                                        div.innerHTML = validateResult[1];
+                                        content = div.textContent || div.innerText || "";
+                                        delete div;
+                                    } else {
+                                        content = validateResult[1];
+                                    }
+                                    Liquid.registerFieldChange(liquid, null, liquid.suneditorNodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], col.field, null, content);
                                     Liquid.updateDependencies(liquid, col, null, null);
                                 }
                             }
@@ -11144,6 +11173,7 @@ var Liquid = {
         var editorRich = { editor:{type:"richEdit",options:"" } };
         var editorDate = { editor:{type:"date",options:"" } };
         var editorDateTime = { editor:{type:"datetime",options:"" } };
+        var editorCode = { editor:{type:"sunEditor",options:"", code:true} };
         var dlg = document.getElementById("liquidEditorDialog");
         if(!dlg) {
             dlg = document.createElement('div');
@@ -11163,6 +11193,7 @@ var Liquid = {
                     +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt4"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Rich text editor:<input readonly=readonly; id=\"opt4\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorRich)+"'/></p>"
                     +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt5"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Date editor:<input readonly=readonly; id=\"opt5\" type=\"text\" class=\"liquidSystemDialogInput\" value='"+JSON.stringify(editorDate)+"'/></p>"
                     +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt6"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Date/time editor:<input readonly=readonly; id=\"opt6\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorDateTime)+"'/></p>"
+                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt7"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Date/time editor:<input readonly=readonly; id=\"opt6\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorCode)+"'/></p>"
                     ;
         }
         return dlg;

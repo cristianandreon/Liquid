@@ -1,17 +1,33 @@
 //////////////////////////////////////////////////////////////////////////
 // Liquid ver.1.098   Copyright 2020 Cristian Andreon - cristianandreon.eu
-// 8.1.2020 - 30-5-2020
+// First update 8.1.2020 - Last update  30-5-2020
 // TODO : see trello.com
+//
+// *** File internal priority *** 
+// 
+//  1°  project LiquidX
+//  2°  project Liquid
+//  3°  project LiquidD
+// 
+// 
+// 
+// *** Automatic event firing *** 
+// 
+//      suppose a command named "my_command" event strip underline and make first char to uppercase :
+//      
+//      call beforeMyCommand() event before executing "my_command"
+//      call afterMyCommand()  event after executed "my_command"
+//     
+//  in other words add "before" / "after" and then make toCamelCase()
+//
 
-// Automatic event firing: 
-//  my_command :
-//      beforeMyCommand
-//      afterMyCommand
+// mnemonics flags 
+// requireSelected selection of row is required, don't consider caret as current row
 
-// requireSelected richiede la riga seleionata non accatta la riga corrente come selezionata
+// N.B.: Link to external control by : @controlId o url( controlId )
+// N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
 
-// N.B.: Link a costrolli esterni : @controlId o url( controlId )
-// N.B.: Nome controlli foreigTable : ForeignTable$ForeignColumn@controlId
+
 
 var glLiquidStartupTables = [];
 var glLiquidStartupMenuX = [];
@@ -33,17 +49,19 @@ var glLiquidIDB = null;
 var glLiquidDBEnable = true;
 var glWorkReaderLooper = null;
 
-
+//
+// start point of servlet ... the bridge to server
+//
 if(typeof glLiquidRoot === "undefined")
     var glLiquidRoot = ".";
-
 if(typeof glLiquidServlet === "undefined")
-    var glLiquidServlet = glLiquidRoot+"/liquid/liquid.jsp";
+    var glLiquidServlet = glLiquidRoot+"/liquid/liquid.jsp";    // look inside framework : need servlet 3
+
 
 class LiquidCtrl {
-
-    
-    // sourceData = { liquidOrId:... , srcForeignWrk:... , srcForeignTable:... , srcForeignColumn:... , srcColumn:..., rootControlId:... }
+   
+    // sourceData format : 
+    //  { liquidOrId:... , srcForeignWrk:... , srcForeignTable:... , srcForeignColumn:... , srcColumn:..., rootControlId:... }
 
     constructor(controlId, outDivObjOrId, tableJsonString, sourceData, mode, parentObjId) {
 
@@ -1027,14 +1045,14 @@ class LiquidCtrl {
                                             grid.columns[ic].field = this.tableJson.columns[iField1B-1].field;
                                             grid.columns[ic].colLink1B = iField1B;
                                         } else {
-                                            console.warn("Unlinked grid at:" + this.controlId + " field:" + grid.columns[ic].name);
+                                            console.error("[LIQUID] Unlinked grid at:" + this.controlId + " field:" + grid.columns[ic].name);
                                         }
                                     } else {
                                         var iCol1B = number(grid.columns[ic].field);
                                         if(iCol1B > 0) {
                                             grid.columns[ic].colLink1B = iCol1B + 1;
                                         } else {
-                                            console.warn("Unlinked grid at:" + this.controlId + " field:" + grid.columns[ic].name);
+                                            console.error("[LIQUID] Unlinked grid at:" + this.controlId + " field:" + grid.columns[ic].name);
                                         }
                                     }
                                 }
@@ -2634,8 +2652,7 @@ var Liquid = {
                             ,cache: liquid.tableJson.columns[ic].editor.cache
                             ,values: values 
                         };
-                } else if(liquid.tableJson.columns[ic].editor === 'sun' || liquid.tableJson.columns[ic].editor === 'richEdit' ||
-                        liquid.tableJson.columns[ic].editor.type === 'sun' || liquid.tableJson.columns[ic].editor.type === 'richEdit') {
+                } else if(Liquid.isSunEditor(liquid.tableJson.columns[ic])) {
                     cellEditor = SunEditor;
                     cellEditorParams = {liquid: liquid, options: liquid.tableJson.columns[ic].editor.options, maxLength: Liquid.richText.maxLength, cols: Liquid.richText.cols, rows: Liquid.richText.rows, column: liquid.tableJson.columns[ic], iCol:ic};
                     cellRenderer = function(params) {
@@ -7250,6 +7267,15 @@ var Liquid = {
             }
         }
     },
+    isSunEditor:function(col) {
+        if(    (isDef(col.editor) && (col.editor.toLowerCase() === 'sun' || col.editor.toLowerCase() === 'suneditor' || col.editor.toLowerCase() === 'richEdit'))
+            || (isDef(col.editor) && isDef(col.editor.type) && (col.editor.type.toLowerCase() === 'sun' || col.editor.type.toLowerCase() === 'suneditor' || col.editor.toLowerCase() === 'richEdit'))
+            ) {
+            return true;
+        } else {
+            return false;
+        }
+    },
     createGridObject:function(liquid, parentNode, grid, gridObj) {
         if(gridObj) {
             var div = document.createElement("div");
@@ -7287,8 +7313,7 @@ var Liquid = {
                 if((col && typeof col.lookup !== 'undefined' && col.lookup) || (typeof gridObj.lookup !== 'undefined' && gridObj.lookup)) {
                     innerHTML += "<div id=\"" + itemId + "\" title=\""+toolTip+"\"></div>";
 
-                } else if((typeof col.editor !== 'undefined' && (col.editor === 'sun' || col.editor === 'richEdit'))
-                        || (typeof col.editor !== 'undefined' && typeof col.editor.type !== 'undefined' && (col.editor.type === 'sun' || col.editor.type === 'richEdit'))) {
+                } else if(Liquid.isSunEditor(col) || isSunEditor(gridObj)) {
                     innerHTML += "<div"
                             + " id=\"" + itemId + "\""
                             + " class=\"liquidGridControl "+(gridObj.zoomable===true ? "liquidGridControlZoomable":"") + "\""
