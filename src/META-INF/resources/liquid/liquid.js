@@ -1,17 +1,33 @@
 //////////////////////////////////////////////////////////////////////////
 // Liquid ver.1.098   Copyright 2020 Cristian Andreon - cristianandreon.eu
-// 8.1.2020 - 30-5-2020
+// First update 8.1.2020 - Last update  30-5-2020
 // TODO : see trello.com
+//
+// *** File internal priority *** 
+// 
+//  1°  project LiquidX
+//  2°  project Liquid
+//  3°  project LiquidD
+// 
+// 
+// 
+// *** Automatic event firing *** 
+// 
+//      suppose a command named "my_command" event strip underline and make first char to uppercase :
+//      
+//      call beforeMyCommand() event before executing "my_command"
+//      call afterMyCommand()  event after executed "my_command"
+//     
+//  in other words add "before" / "after" and then make toCamelCase()
+//
 
-// Automatic event firing: 
-//  my_command :
-//      beforeMyCommand
-//      afterMyCommand
+// mnemocis flags 
+// requireSelected selection of row is required, don't consider caret as current row
 
-// requireSelected richiede la riga seleionata non accatta la riga corrente come selezionata
+// N.B.: Link to external control by : @controlId o url( controlId )
+// N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
 
-// N.B.: Link a costrolli esterni : @controlId o url( controlId )
-// N.B.: Nome controlli foreigTable : ForeignTable$ForeignColumn@controlId
+
 
 var glLiquidStartupTables = [];
 var glLiquidStartupMenuX = [];
@@ -33,17 +49,19 @@ var glLiquidIDB = null;
 var glLiquidDBEnable = true;
 var glWorkReaderLooper = null;
 
-
+//
+// start point of servlet ... the bridge to server
+//
 if(typeof glLiquidRoot === "undefined")
     var glLiquidRoot = ".";
-
 if(typeof glLiquidServlet === "undefined")
-    var glLiquidServlet = glLiquidRoot+"/liquid/liquid.jsp";
+    var glLiquidServlet = glLiquidRoot+"/liquid/liquid.jsp";    // look inside framework : need servlet 3
+
 
 class LiquidCtrl {
-
-    
-    // sourceData = { liquidOrId:... , srcForeignWrk:... , srcForeignTable:... , srcForeignColumn:... , srcColumn:..., rootControlId:... }
+   
+    // sourceData format : 
+    //  { liquidOrId:... , srcForeignWrk:... , srcForeignTable:... , srcForeignColumn:... , srcColumn:..., rootControlId:... }
 
     constructor(controlId, outDivObjOrId, tableJsonString, sourceData, mode, parentObjId) {
 
