@@ -33,6 +33,7 @@ import javax.servlet.http.HttpSession;
 
 
 
+// TODO : set dei parametri nella prepare statement
 // TODO : Cursore nel DB aperto per non leggere le modifiche concorrenti
 // TODO : Delete cascade
 
@@ -201,6 +202,9 @@ public class db {
         int targetColumnIndex = 0, aliasIndex = 1, columnMaxLength = 0;
         boolean isCrossTableService = false;
         long lStartTime = 0, lQueryTime = 0, lRetrieveTime = 0;
+        
+        // New columns definition, for queryX mode
+        String newColsJson = null;
             
         try {
             
@@ -216,6 +220,7 @@ public class db {
                 out_string += "{\"resultSet\":[";
             }
             
+            String query = "";
             String token = "";
             String table = "";
             String view = "";
@@ -279,6 +284,7 @@ public class db {
                 try { view = tbl_wrk.tableJson.getString("view"); } catch (Exception e) {  }
                 JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                 try { primaryKey = tbl_wrk.tableJson.getString("primaryKey"); } catch (Exception e) {  }
+                try { query = tbl_wrk.tableJson.getString("query"); } catch (Exception e) {  }
                 try { token = tbl_wrk.tableJson.getString("token"); } catch (Exception e) {  }
 
                 // Verifica tel token : almeno un controllo deve avere il token assegnato (foreign table, lockuo etc hanno il token ereditato
@@ -336,6 +342,10 @@ public class db {
                     bUserFieldIdentificator = false;
                 }
 
+                if(query != null && !query.isEmpty()) {
+                    int lb = 1;
+                }
+        
                 if(isSystemLiquid != null) {
                     
                     if("selectDatabases".equalsIgnoreCase(isSystemLiquid)) {
@@ -644,105 +654,241 @@ public class db {
                     + "\n" + leftJoinList
                     ;
 
-            //
-            // Filtri dalla richiesta
-            //
-            try {
-                if(!isCrossTableService) {
-                    if(tbl_wrk != null && requestJson != null) {                    
-                        JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
-                        if(requestJson.has("filtersJson")) {
-                            JSONArray filtersCols = requestJson.getJSONArray("filtersJson");
+            
+            if(query != null && !query.isEmpty()) {
+            } else {
+                //
+                // Filtri dalla richiesta
+                //
+                try {
+                    if(!isCrossTableService) {
+                        if(tbl_wrk != null && requestJson != null) {                    
+                            JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+                            if(requestJson.has("filtersJson")) {
+                                JSONArray filtersCols = requestJson.getJSONArray("filtersJson");
 
-                            for(int i = 0; i < filtersCols.length(); i++) {
-                                JSONObject filtersCol = filtersCols.getJSONObject(i);
-                                JSONObject col = null;                            
-                                int type = 0;
-                                try {
-                                    String filterTable = null;
-                                    String filterName = null;
-                                    String filterValue = null;
-                                    String filterOp = null;
-                                    String filterLogic = null;
-                                    boolean filterSensitiveCase = false;
+                                for(int i = 0; i < filtersCols.length(); i++) {
+                                    JSONObject filtersCol = filtersCols.getJSONObject(i);
+                                    JSONObject col = null;                            
+                                    int type = 0;
+                                    try {
+                                        String filterTable = null;
+                                        String filterName = null;
+                                        String filterValue = null;
+                                        String filterOp = null;
+                                        String filterLogic = null;
+                                        boolean filterSensitiveCase = false;
 
-                                    try { filterTable = filtersCol.getString("table"); } catch (JSONException e) {}
-                                    try { filterName = filtersCol.getString("name"); } catch (JSONException e) {}
-                                    try { if(!filtersCol.isNull("value")) { filterValue = filtersCol.getString("value"); } } catch (JSONException e) {}
-                                    try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
-                                    try { filterLogic = filtersCol.getString("logic"); } catch (JSONException e) {}
-                                    try { filterSensitiveCase = filtersCol.getBoolean("sensitiveCase"); } catch (JSONException e) {}
+                                        try { filterTable = filtersCol.getString("table"); } catch (JSONException e) {}
+                                        try { filterName = filtersCol.getString("name"); } catch (JSONException e) {}
+                                        try { if(!filtersCol.isNull("value")) { filterValue = filtersCol.getString("value"); } } catch (JSONException e) {}
+                                        try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
+                                        try { filterLogic = filtersCol.getString("logic"); } catch (JSONException e) {}
+                                        try { filterSensitiveCase = filtersCol.getBoolean("sensitiveCase"); } catch (JSONException e) {}
 
-                                    if(filterName != null && filterValue != null) {
-                                        String preFix = "'";
-                                        String postFix = "'";                            
-                                        String [] colParts = filterName.split("\\.");
-                                        boolean bFoundCol = false;
+                                        if(filterName != null && filterValue != null) {
+                                            String preFix = "'";
+                                            String postFix = "'";                            
+                                            String [] colParts = filterName.split("\\.");
+                                            boolean bFoundCol = false;
 
-                                        // risolve l'ambiguita'
-                                        if(colParts.length==1 && (filterTable == null || filterTable.isEmpty())) {
-                                            for(int ic = 0; ic < cols.length(); ic++) {
-                                                col = cols.getJSONObject(ic);
-                                                String colName = null;
-                                                String colTable = null;                                   
-                                                try { colTable = col.getString("foreignTable"); } catch (Exception e) {}
-                                                try { colName = col.getString("name"); } catch (Exception e) {}
-                                                String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
-                                                try { colAlias = col.getString("alias"); } catch (Exception e) {}
+                                            // risolve l'ambiguita'
+                                            if(colParts.length==1 && (filterTable == null || filterTable.isEmpty())) {
+                                                for(int ic = 0; ic < cols.length(); ic++) {
+                                                    col = cols.getJSONObject(ic);
+                                                    String colName = null;
+                                                    String colTable = null;                                   
+                                                    try { colTable = col.getString("foreignTable"); } catch (Exception e) {}
+                                                    try { colName = col.getString("name"); } catch (Exception e) {}
+                                                    String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
+                                                    try { colAlias = col.getString("alias"); } catch (Exception e) {}
 
-                                                // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
-                                                // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
-                                                colAlias = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;        
+                                                    // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
+                                                    // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
+                                                    colAlias = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;        
 
-                                                if(filterName.equalsIgnoreCase(colName)) {
-                                                    // filterName = colAlias != null ? colAlias : filterName;
-                                                    bFoundCol = true;
-                                                    break;
-                                                }
-                                            }
-                                            if(!bFoundCol) {
-                                                filterName = schemaTable+"."+itemIdString+filterName+itemIdString;
-                                                // error += "[Filters Error: field : "+filterName+" not resolved]";
-                                                // System.err.println("Filters Error: field : "+filterName+" not resolved");
-                                            }
-                                        } else if(colParts.length>1) {
-                                            filterTable = colParts[0];
-                                            if(filterTable != null) {
-                                                filterName = colParts[1];
-                                                if (!filterTable.equalsIgnoreCase(table)) {
-                                                    if(isPostgres || isOracle) {
-                                                        // mette l'alias
-                                                        String colAlias = (filterTable != null ? LeftJoinMap.getAlias(leftJoinsMap, filterTable) : table)+"." +itemIdString+colParts[1]+itemIdString;
-                                                        filterName = colAlias != null ? colAlias : filterName;
-                                                    } else {
+                                                    if(filterName.equalsIgnoreCase(colName)) {
+                                                        // filterName = colAlias != null ? colAlias : filterName;
+                                                        bFoundCol = true;
+                                                        break;
                                                     }
-                                                    filterTable = "";
-                                                } else {
-                                                    // OK con postgres
-                                                    filterTable = table;
+                                                }
+                                                if(!bFoundCol) {
+                                                    filterName = schemaTable+"."+itemIdString+filterName+itemIdString;
+                                                    // error += "[Filters Error: field : "+filterName+" not resolved]";
+                                                    // System.err.println("Filters Error: field : "+filterName+" not resolved");
+                                                }
+                                            } else if(colParts.length>1) {
+                                                filterTable = colParts[0];
+                                                if(filterTable != null) {
+                                                    filterName = colParts[1];
+                                                    if (!filterTable.equalsIgnoreCase(table)) {
+                                                        if(isPostgres || isOracle) {
+                                                            // mette l'alias
+                                                            String colAlias = (filterTable != null ? LeftJoinMap.getAlias(leftJoinsMap, filterTable) : table)+"." +itemIdString+colParts[1]+itemIdString;
+                                                            filterName = colAlias != null ? colAlias : filterName;
+                                                        } else {
+                                                        }
+                                                        filterTable = "";
+                                                    } else {
+                                                        // OK con postgres
+                                                        filterTable = table;
+                                                    }
+                                                }
+                                                for(int ic = 0; ic < cols.length(); ic++) {
+                                                    col = cols.getJSONObject(ic);
+                                                    String colName = null;
+                                                    try { colName = col.getString("name"); } catch (Exception e) {}
+                                                    if(filterName.equalsIgnoreCase(colName)) {
+                                                        bFoundCol = true;
+                                                        break;
+                                                    }
                                                 }
                                             }
-                                            for(int ic = 0; ic < cols.length(); ic++) {
-                                                col = cols.getJSONObject(ic);
-                                                String colName = null;
-                                                try { colName = col.getString("name"); } catch (Exception e) {}
-                                                if(filterName.equalsIgnoreCase(colName)) {
-                                                    bFoundCol = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
 
-                                        if(col != null) {
-                                            try { type = col.getInt("type"); } catch (Exception e) {}
-                                        } else {
-                                            String err = " Filters Error: column '"+filterName+"' not defined" + "]";
-                                            error += err;
-                                            System.err.println(err);
+                                            if(col != null) {
+                                                try { type = col.getInt("type"); } catch (Exception e) {}
+                                            } else {
+                                                String err = " Filters Error: column '"+filterName+"' not defined" + "]";
+                                                error += err;
+                                                System.err.println(err);
+                                            }
+
+                                            if(sWhere.length() > 0) {
+                                                if("OR".equalsIgnoreCase(filterLogic))
+                                                    sWhere += " OR ";
+                                                else
+                                                    sWhere += " AND ";
+                                            } else {
+                                                sWhere += "\nWHERE ";
+                                            }
+
+                                            int ich = 0, nch = filterValue.length();
+                                            while(ich < nch && filterValue.charAt(ich) == ' ') ich++;
+                                            int ichs = ich;
+                                            boolean bScan = true;
+                                            if(ich < nch) {
+                                                while(bScan) {
+                                                    if(filterValue.charAt(ich) == '<' || filterValue.charAt(ich) == '>' || filterValue.charAt(ich) == '=' || filterValue.charAt(ich) == '%' || filterValue.charAt(ich) == '!') ich++;
+                                                    else if(filterValue.startsWith("IN")) ich += 2;
+                                                    else if(filterValue.startsWith("LIKE")) ich += 4;
+                                                    else bScan = false;
+                                                }
+                                            }
+                                            if(ich > ichs) {
+                                                filterOp = filterValue.substring(ichs, ich);
+                                                filterValue = filterValue.substring(ich);
+                                            } else {                                        
+                                                int commaIndex = filterValue.indexOf(",");
+                                                if(commaIndex == 0 || commaIndex > 0 && filterValue.charAt(commaIndex-1)!= '\\') {
+                                                    filterOp = "IN";
+                                                }
+                                            }
+
+                                            if(filterValue.indexOf("*") >= 0) {
+                                                if(filterOp == null || filterOp.isEmpty()) {
+                                                    filterOp = " LIKE ";
+                                                    filterValue = filterValue.replaceAll("\\*", "%");
+                                                }
+                                            }
+                                            if("IN".equalsIgnoreCase(filterOp)) {
+                                                preFix = "(";	
+                                                postFix = ")";
+                                                if(filterValue == null || filterValue.isEmpty()) filterValue = "''";
+                                            }
+                                            if("LIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
+                                                if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                                                    // numeric : like unsupported
+                                                    filterOp = "=";
+                                                } else {
+                                                    filterOp = "LIKE";
+                                                    preFix = (filterValue.charAt(0) != '%' ? "'%" : "'");
+                                                    postFix = (filterValue.length()>0 ? (filterValue.charAt(filterValue.length()-1) != '%' ? "%'" : "'") : "'");
+                                                }
+                                            }
+                                            if(">".equalsIgnoreCase(filterOp)) {
+                                                if(col != null) {
+                                                    if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                                                        // numeric
+                                                    } else {
+                                                        // > 0 applicato alle stringhe -> NOT null
+                                                        filterOp = "NOT";
+                                                        filterValue = "NULL";
+                                                    }
+                                                }                                        
+                                            }
+
+                                            String sensitiveCasePreOp = "";
+                                            String sensitiveCasePostOp = "";
+                                            if(!filterSensitiveCase) {
+                                                if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                                                    // numeric                                                
+                                                } else {
+                                                    filterValue = filterValue.toLowerCase();
+                                                    sensitiveCasePreOp = "lower(";
+                                                    sensitiveCasePostOp = ")";
+                                                }
+                                            }
+
+                                            sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (tableIdString + filterTable + tableIdString  + "." + itemIdString + filterName +itemIdString) : (itemIdString+filterName+itemIdString) ) + sensitiveCasePostOp
+                                                    + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp : "=")
+                                                    + preFix + (filterValue != null ? filterValue : "") + postFix;
                                         }
-                                        
+                                    } catch (Exception e) {
+                                        error += " Filters Error:"+e.getLocalizedMessage() + "]";
+                                        System.err.println("// "+e.getLocalizedMessage());
+                                    }
+                                }
+                            }
+
+                            try { filtersIds = requestJson.getJSONArray("ids"); } catch (Exception e) {}
+                            if(filtersIds != null) {
+                                String sIdsList = "";
+                                for(int iF=0; iF<filtersIds.length(); iF++) {
+                                    sIdsList += (sIdsList.length()>0?",":"") + String.valueOf(filtersIds.get(iF));
+                                }
+                                if(sWhere.length() > 0) {
+                                    sWhere += " AND ";
+                                } else {
+                                    sWhere += "\nWHERE ";
+                                }
+
+                                sWhere += (tbl_wrk.schemaTable)+"."+(itemIdString+primaryKey+itemIdString)+" IN (" + sIdsList + ")";
+                                // Azzera la paginazione
+                                startRow = 0;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    error += "[Filters Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+tbl_wrk.driverClass+"]";
+                    System.err.println("// Filters Error:" + e.getLocalizedMessage());
+                }
+
+                //
+                // Filtri permanenti
+                //
+                // N.B.: I fintri permenaneti sono decisi dal server ma possono essere impostati sessione per sessione
+                //       Ad esempio accesso per dominio
+                if(!isCrossTableService) {
+                    JSONArray preFilters = null;
+                    try { preFilters = (tbl_wrk != null ? tbl_wrk.tableJson.getJSONArray("preFilters") : null); } catch (Exception e) { }
+
+                    // Filtri sovrascritti in sessione
+                    if(recordset_params.session != null) {
+                        Object sPrefilters = recordset_params.session.getAttribute(tbl_wrk.controlId+".preFilters");
+                        if(sPrefilters != null)
+                            preFilters = (JSONArray)sPrefilters;
+
+                        if(preFilters != null) {
+                            for(int i = 0; i < preFilters.length(); i++) {
+                                JSONObject preFilter = preFilters.getJSONObject(i);
+                                String preFilterTable = null, preFilterValue = null, preFilterOp = null, preFilterLogic = null;
+
+                                try { preFilterLogic = preFilter.getString("logic"); } catch (Exception e) {}                    
+                                try {                        
+                                    if(preFilter.getString("name") != null) {
                                         if(sWhere.length() > 0) {
-                                            if("OR".equalsIgnoreCase(filterLogic))
+                                            if("OR".equalsIgnoreCase(preFilterLogic))
                                                 sWhere += " OR ";
                                             else
                                                 sWhere += " AND ";
@@ -750,249 +896,121 @@ public class db {
                                             sWhere += "\nWHERE ";
                                         }
 
-                                        int ich = 0, nch = filterValue.length();
-                                        while(ich < nch && filterValue.charAt(ich) == ' ') ich++;
-                                        int ichs = ich;
-                                        boolean bScan = true;
-                                        if(ich < nch) {
-                                            while(bScan) {
-                                                if(filterValue.charAt(ich) == '<' || filterValue.charAt(ich) == '>' || filterValue.charAt(ich) == '=' || filterValue.charAt(ich) == '%' || filterValue.charAt(ich) == '!') ich++;
-                                                else if(filterValue.startsWith("IN")) ich += 2;
-                                                else if(filterValue.startsWith("LIKE")) ich += 4;
-                                                else bScan = false;
-                                            }
-                                        }
-                                        if(ich > ichs) {
-                                            filterOp = filterValue.substring(ichs, ich);
-                                            filterValue = filterValue.substring(ich);
-                                        } else {                                        
-                                            int commaIndex = filterValue.indexOf(",");
-                                            if(commaIndex == 0 || commaIndex > 0 && filterValue.charAt(commaIndex-1)!= '\\') {
-                                                filterOp = "IN";
-                                            }
-                                        }
+                                        try { preFilterTable = preFilter.getString("table"); } catch (Exception e) { }
+                                        try { preFilterOp = preFilter.getString("op"); } catch (Exception e) { }
+                                        try { preFilterValue = preFilter.getString("value"); } catch (Exception e) { }
 
-                                        if(filterValue.indexOf("*") >= 0) {
-                                            if(filterOp == null || filterOp.isEmpty()) {
-                                                filterOp = " LIKE ";
-                                                filterValue = filterValue.replaceAll("\\*", "%");
-                                            }
-                                        }
-                                        if("IN".equalsIgnoreCase(filterOp)) {
-                                            preFix = "(";	
-                                            postFix = ")";
-                                            if(filterValue == null || filterValue.isEmpty()) filterValue = "''";
-                                        }
-                                        if("LIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
-                                            if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                // numeric : like unsupported
-                                                filterOp = "=";
-                                            } else {
-                                                filterOp = "LIKE";
-                                                preFix = (filterValue.charAt(0) != '%' ? "'%" : "'");
-                                                postFix = (filterValue.length()>0 ? (filterValue.charAt(filterValue.length()-1) != '%' ? "%'" : "'") : "'");
-                                            }
-                                        }
-                                        if(">".equalsIgnoreCase(filterOp)) {
-                                            if(col != null) {
-                                                if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                    // numeric
-                                                } else {
-                                                    // > 0 applicato alle stringhe -> NOT null
-                                                    filterOp = "NOT";
-                                                    filterValue = "NULL";
+                                        String preFix = "'";
+                                        String postFix = "'";                            
+                                        if(!preFilterValue.isEmpty()) {
+                                            int ich = 0, nch = preFilterValue.length();
+                                            while(ich < nch && preFilterValue.charAt(ich) == ' ') ich++;
+                                            int ichs = ich;
+                                            boolean bScan = true;
+                                            if(ich < nch) {
+                                                while(bScan) {
+                                                    if(preFilterValue.charAt(ich) == '<' || preFilterValue.charAt(ich) == '>' || preFilterValue.charAt(ich) == '=' || preFilterValue.charAt(ich) == '%' || preFilterValue.charAt(ich) == '!') ich++;
+                                                    else if(preFilterValue.startsWith("IN")) ich += 2;
+                                                    else if(preFilterValue.startsWith("LIKE")) ich += 4;
+                                                    else bScan = false;
                                                 }
-                                            }                                        
-                                        }
-                                        
-                                        String sensitiveCasePreOp = "";
-                                        String sensitiveCasePostOp = "";
-                                        if(!filterSensitiveCase) {
-                                            if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                // numeric                                                
-                                            } else {
-                                                filterValue = filterValue.toLowerCase();
-                                                sensitiveCasePreOp = "lower(";
-                                                sensitiveCasePostOp = ")";
+                                            }
+                                            if(ich > ichs) {
+                                                preFilterOp = preFilterValue.substring(ichs, ich);
+                                                preFilterValue = preFilterValue.substring(ich);
+                                            } else {                                        
+                                                int commaIndex = preFilterValue.indexOf(",");
+                                                if(commaIndex == 0 || commaIndex > 0 && preFilterValue.charAt(commaIndex-1)!= '\\') {
+                                                    preFilterOp = "IN";
+                                                }
                                             }
                                         }
+                                        if("IN".equalsIgnoreCase(preFilterOp)) {
+                                            preFix = "(";	
+                                            postFix = ")";	
+                                        }
+                                        if("LIKE".equalsIgnoreCase(preFilterOp) || "%".equalsIgnoreCase(preFilterOp)) {
+                                            preFilterOp = "LIKE";
+                                            preFix = (preFilterValue.charAt(0) != '%' ? "'%" : "'");
+                                            postFix = (preFilterValue.length()>0 ? (preFilterValue.charAt(preFilterValue.length()-1) != '%' ? "'%" : "'") : "'");	
+                                        }
 
-                                        sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (tableIdString + filterTable + tableIdString  + "." + itemIdString + filterName +itemIdString) : (itemIdString+filterName+itemIdString) ) + sensitiveCasePostOp
-                                                + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp : "=")
-                                                + preFix + (filterValue != null ? filterValue : "") + postFix;
+
+                                        /*
+                                        String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
+                                        try { colAlias = col.getString("alias"); } catch (Exception e) {}
+                                        */
+                                        // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
+                                        // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
+
+                                        String colName = tableIdString+(preFilterTable != null && !preFilterTable.isEmpty() ? preFilterTable : table) + tableIdString + "." + itemIdString + preFilter.getString("name") + itemIdString;
+
+                                        sWhere += colName
+                                                + " "+(preFilterOp != null && !preFilterOp.isEmpty() ? preFilterOp : "=") + " "
+                                                + preFix + (preFilterValue != null ? preFilterValue : "") + postFix;
                                     }
                                 } catch (Exception e) {
-                                    error += " Filters Error:"+e.getLocalizedMessage() + "]";
-                                    System.err.println("// "+e.getLocalizedMessage());
+                                    error += " [ PreFilters #"+i+" Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+tbl_wrk.driverClass+"]";
+                                    System.err.println("// PreFilters #"+i+" error:" + e.getLocalizedMessage() + " preFilters:"+preFilters.toString() );
                                 }
                             }
                         }
-                        
-                        try { filtersIds = requestJson.getJSONArray("ids"); } catch (Exception e) {}
-                        if(filtersIds != null) {
-                            String sIdsList = "";
-                            for(int iF=0; iF<filtersIds.length(); iF++) {
-                                sIdsList += (sIdsList.length()>0?",":"") + String.valueOf(filtersIds.get(iF));
-                            }
-                            if(sWhere.length() > 0) {
-                                sWhere += " AND ";
-                            } else {
-                                sWhere += "\nWHERE ";
-                            }
-                            
-                            sWhere += (tbl_wrk.schemaTable)+"."+(itemIdString+primaryKey+itemIdString)+" IN (" + sIdsList + ")";
-                            // Azzera la paginazione
-                            startRow = 0;
-                        }
                     }
                 }
-            } catch (Exception e) {
-                error += "[Filters Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+tbl_wrk.driverClass+"]";
-                System.err.println("// Filters Error:" + e.getLocalizedMessage());
-            }
 
-            //
-            // Filtri permanenti
-            //
-            // N.B.: I fintri permenaneti sono decisi dal server ma possono essere impostati sessione per sessione
-            //       Ad esempio accesso per dominio
-            if(!isCrossTableService) {
-                JSONArray preFilters = null;
-                try { preFilters = (tbl_wrk != null ? tbl_wrk.tableJson.getJSONArray("preFilters") : null); } catch (Exception e) { }
+                //
+                // Ordinamenti dalla richiesta
+                //
+                try {
+                    if(tbl_wrk != null && requestJson != null) {
+                        if(requestJson.has("sortColumns")) {
+                            JSONArray sortColumns = requestJson.getJSONArray("sortColumns");
+                            String sortColumnsMode = "asc";
+                            if(requestJson.has("sortColumnsMode")) sortColumnsMode = requestJson.getString("sortColumnsMode");
+                            if(sortColumns != null) {
+                                // JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+                                // for(int i = 0; i < cols.length(); i++) {
+                                    // JSONObject col = cols.getJSONObject(i);
+                                for(int i=0; i<sortColumns.length(); i++) {
+                                    String sortColumn = sortColumns.getString(i);
 
-                // Filtri sovrascritti in sessione
-                if(recordset_params.session != null) {
-                    Object sPrefilters = recordset_params.session.getAttribute(tbl_wrk.controlId+".preFilters");
-                    if(sPrefilters != null)
-                        preFilters = (JSONArray)sPrefilters;
-
-                    if(preFilters != null) {
-                        for(int i = 0; i < preFilters.length(); i++) {
-                            JSONObject preFilter = preFilters.getJSONObject(i);
-                            String preFilterTable = null, preFilterValue = null, preFilterOp = null, preFilterLogic = null;
-
-                            try { preFilterLogic = preFilter.getString("logic"); } catch (Exception e) {}                    
-                            try {                        
-                                if(preFilter.getString("name") != null) {
-                                    if(sWhere.length() > 0) {
-                                        if("OR".equalsIgnoreCase(preFilterLogic))
-                                            sWhere += " OR ";
-                                        else
-                                            sWhere += " AND ";
-                                    } else {
-                                        sWhere += "\nWHERE ";
-                                    }
-
-                                    try { preFilterTable = preFilter.getString("table"); } catch (Exception e) { }
-                                    try { preFilterOp = preFilter.getString("op"); } catch (Exception e) { }
-                                    try { preFilterValue = preFilter.getString("value"); } catch (Exception e) { }
-
-                                    String preFix = "'";
-                                    String postFix = "'";                            
-                                    if(!preFilterValue.isEmpty()) {
-                                        int ich = 0, nch = preFilterValue.length();
-                                        while(ich < nch && preFilterValue.charAt(ich) == ' ') ich++;
-                                        int ichs = ich;
-                                        boolean bScan = true;
-                                        if(ich < nch) {
-                                            while(bScan) {
-                                                if(preFilterValue.charAt(ich) == '<' || preFilterValue.charAt(ich) == '>' || preFilterValue.charAt(ich) == '=' || preFilterValue.charAt(ich) == '%' || preFilterValue.charAt(ich) == '!') ich++;
-                                                else if(preFilterValue.startsWith("IN")) ich += 2;
-                                                else if(preFilterValue.startsWith("LIKE")) ich += 4;
-                                                else bScan = false;
-                                            }
+                                    if(sortColumn != null && !sortColumn.isEmpty()) {
+                                        if(sSort.length() == 0) {
+                                            sSort += " ORDER BY (";
+                                        } else {
+                                            sSort += ",";
                                         }
-                                        if(ich > ichs) {
-                                            preFilterOp = preFilterValue.substring(ichs, ich);
-                                            preFilterValue = preFilterValue.substring(ich);
-                                        } else {                                        
-                                            int commaIndex = preFilterValue.indexOf(",");
-                                            if(commaIndex == 0 || commaIndex > 0 && preFilterValue.charAt(commaIndex-1)!= '\\') {
-                                                preFilterOp = "IN";
-                                            }
-                                        }
+                                        sSort += itemIdString+sortColumn+itemIdString;
                                     }
-                                    if("IN".equalsIgnoreCase(preFilterOp)) {
-                                        preFix = "(";	
-                                        postFix = ")";	
-                                    }
-                                    if("LIKE".equalsIgnoreCase(preFilterOp) || "%".equalsIgnoreCase(preFilterOp)) {
-                                        preFilterOp = "LIKE";
-                                        preFix = (preFilterValue.charAt(0) != '%' ? "'%" : "'");
-                                        postFix = (preFilterValue.length()>0 ? (preFilterValue.charAt(preFilterValue.length()-1) != '%' ? "'%" : "'") : "'");	
-                                    }
-
-
-                                    /*
-                                    String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
-                                    try { colAlias = col.getString("alias"); } catch (Exception e) {}
-                                    */
-                                    // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
-                                    // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
-
-                                    String colName = tableIdString+(preFilterTable != null && !preFilterTable.isEmpty() ? preFilterTable : table) + tableIdString + "." + itemIdString + preFilter.getString("name") + itemIdString;
-
-                                    sWhere += colName
-                                            + " "+(preFilterOp != null && !preFilterOp.isEmpty() ? preFilterOp : "=") + " "
-                                            + preFix + (preFilterValue != null ? preFilterValue : "") + postFix;
                                 }
-                            } catch (Exception e) {
-                                error += " [ PreFilters #"+i+" Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+tbl_wrk.driverClass+"]";
-                                System.err.println("// PreFilters #"+i+" error:" + e.getLocalizedMessage() + " preFilters:"+preFilters.toString() );
+                                if(sSort.length() > 0) {
+                                    sSort += ")";
+                                    sSort += " " +sortColumnsMode;
+                                }                            
                             }
                         }
                     }
+                } catch (Exception e) {
+                    error += " [ sortColumns error:"+e.getLocalizedMessage() + "]" + "[Driver:"+tbl_wrk.driverClass+"]";
+                    System.err.println("// sortColumns error:" + e.getLocalizedMessage() + " request:"+recordset_params.sRequest );
                 }
-            }
-            
-            //
-            // Ordinamenti dalla richiesta
-            //
-            try {
-                if(tbl_wrk != null && requestJson != null) {
-                    if(requestJson.has("sortColumns")) {
-                        JSONArray sortColumns = requestJson.getJSONArray("sortColumns");
-                        String sortColumnsMode = "asc";
-                        if(requestJson.has("sortColumnsMode")) sortColumnsMode = requestJson.getString("sortColumnsMode");
-                        if(sortColumns != null) {
-                            // JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
-                            // for(int i = 0; i < cols.length(); i++) {
-                                // JSONObject col = cols.getJSONObject(i);
-                            for(int i=0; i<sortColumns.length(); i++) {
-                                String sortColumn = sortColumns.getString(i);
-
-                                if(sortColumn != null && !sortColumn.isEmpty()) {
-                                    if(sSort.length() == 0) {
-                                        sSort += " ORDER BY (";
-                                    } else {
-                                        sSort += ",";
-                                    }
-                                    sSort += itemIdString+sortColumn+itemIdString;
-                                }
-                            }
-                            if(sSort.length() > 0) {
-                                sSort += ")";
-                                sSort += " " +sortColumnsMode;
-                            }                            
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                error += " [ sortColumns error:"+e.getLocalizedMessage() + "]" + "[Driver:"+tbl_wrk.driverClass+"]";
-                System.err.println("// sortColumns error:" + e.getLocalizedMessage() + " request:"+recordset_params.sRequest );
             }
             
                     
-            
-            executingQuery = baseQuery + sWhere + sSort;
-            executingQueryForCache = executingQuery;
+            if(query != null && !query.isEmpty()) {
+                executingQuery = query;
+                executingQueryForCache = null;
+            } else {
+                executingQuery = baseQuery + sWhere + sSort;
+                executingQueryForCache = executingQuery;
+            }
 
             //
             // Utilizzo cache degli ids (delle primary keys)
             //
             if(tbl_wrk != null) {
                 if(cacheIds > 0) {
-                    if(filtersIds == null) { 
+                    if(filtersIds == null && executingQueryForCache != null) { 
                         // Il filtro sugli ID pprevale sulla chache (es. lettura record appena creato)
                         if((ids = IdsCache.getIds(executingQueryForCache)) != null) {
                             // cache id presente
@@ -1025,66 +1043,73 @@ public class db {
             // Applicazione Limitazione recordset
             //
             String limitString = "";
-            if(!bCacheIdsInAvailable) {
-                if(!isCrossTableService) {
-                    if(filtersIds == null) {
-                        // Il filtro sugli ID pprevale sulla paginazione
-                        if(cacheIds < 1 || (cacheIds == 2 && !bCacheIdsInAvailable)) {
-                            // no cache : read data now
-                            if(endRow > 0) {
-                                cRow = startRow;
-                                if(isOracle) {
-                                    limitString = "";
-                                    if(sWhere == null || sWhere.isEmpty()) {
-                                        limitString += "\nWHERE ";
+            boolean canApplyLimit = true;
+            if(query != null && !query.isEmpty()) {
+                if(query.endsWith(";") || query.lastIndexOf(";") >= query.length()-2) {
+                    canApplyLimit = false;
+                }
+            }
+            if(canApplyLimit) {
+                if(!bCacheIdsInAvailable) {
+                    if(!isCrossTableService) {
+                        if(filtersIds == null) {
+                            // Il filtro sugli ID pprevale sulla paginazione
+                            if(cacheIds < 1 || (cacheIds == 2 && !bCacheIdsInAvailable)) {
+                                // no cache : read data now
+                                if(endRow > 0) {
+                                    cRow = startRow;
+                                    if(isOracle) {
+                                        limitString = "";
+                                        if(sWhere == null || sWhere.isEmpty()) {
+                                            limitString += "\nWHERE ";
+                                        } else {
+                                            limitString += " AND ";
+                                        }
+                                        // limitString += " OFFSET "+startRow+" ROWS FETCH NEXT "+(endRow-startRow)+" ROWS ONLY";
+                                        limitString += "ROWNUM < "+(endRow);
+                                        executingQuery += limitString;
+                                        executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUMBER > "+startRow+"";
+                                        limitString = "";
+                                    } else if(isSqlServer) {
+                                        if(sSort == null || sSort.isEmpty()) {
+                                            sSort += "ORDER BY 1";
+                                        }
+                                        limitString += "\nOFFSET "+startRow+" ROWS";
+                                        limitString += "\nFETCH NEXT "+(endRow-startRow)+" ROWS ONLY";
                                     } else {
-                                        limitString += " AND ";
+                                        limitString = " LIMIT " + (endRow-startRow) + " OFFSET " + startRow + "";
                                     }
-                                    // limitString += " OFFSET "+startRow+" ROWS FETCH NEXT "+(endRow-startRow)+" ROWS ONLY";
-                                    limitString += "ROWNUM < "+(endRow);
-                                    executingQuery += limitString;
-                                    executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUMBER > "+startRow+"";
-                                    limitString = "";
-                                } else if(isSqlServer) {
-                                    if(sSort == null || sSort.isEmpty()) {
-                                        sSort += "ORDER BY 1";
-                                    }
-                                    limitString += "\nOFFSET "+startRow+" ROWS";
-                                    limitString += "\nFETCH NEXT "+(endRow-startRow)+" ROWS ONLY";
-                                } else {
-                                    limitString = " LIMIT " + (endRow-startRow) + " OFFSET " + startRow + "";
                                 }
-                            }
-                        } else {
-                            // N.B : alla prima esecuzione non può essere eseguita la limitazione perchè impedirebbe la lettura degli indici (limitazione cmw a workspace.maxRows)
-                            //      alla sucessiva escuzione il codice non passa di qua'
-                            // read now and store the cache, limit to workspace.maxRow
-                            cRow = startRow;
-                            if(workspace.maxRows > 0) {
-                                if(isOracle) {
-                                    limitString = "";
-                                    if(sWhere == null || sWhere.isEmpty()) {
-                                        limitString += "\nWHERE ";
+                            } else {
+                                // N.B : alla prima esecuzione non può essere eseguita la limitazione perchè impedirebbe la lettura degli indici (limitazione cmw a workspace.maxRows)
+                                //      alla sucessiva escuzione il codice non passa di qua'
+                                // read now and store the cache, limit to workspace.maxRow
+                                cRow = startRow;
+                                if(workspace.maxRows > 0) {
+                                    if(isOracle) {
+                                        limitString = "";
+                                        if(sWhere == null || sWhere.isEmpty()) {
+                                            limitString += "\nWHERE ";
+                                        } else {
+                                            limitString += " AND ";
+                                        }
+                                        // limitString += " OFFSET "+startRow+" ROWS FETCH NEXT "+(workspace.maxRows-startRow)+" ROWS ONLY";
+                                        limitString += "ROWNUM <= "+(startRow+workspace.maxRows);
+                                        executingQuery += limitString;
+                                        executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUMBER > "+startRow+"";
+                                        limitString = "";
                                     } else {
-                                        limitString += " AND ";
+                                        limitString = " LIMIT " + (workspace.maxRows) + " OFFSET " + startRow + "";
                                     }
-                                    // limitString += " OFFSET "+startRow+" ROWS FETCH NEXT "+(workspace.maxRows-startRow)+" ROWS ONLY";
-                                    limitString += "ROWNUM <= "+(startRow+workspace.maxRows);
-                                    executingQuery += limitString;
-                                    executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUMBER > "+startRow+"";
-                                    limitString = "";
-                                } else {
-                                    limitString = " LIMIT " + (workspace.maxRows) + " OFFSET " + startRow + "";
                                 }
                             }
                         }
+                        executingQuery += limitString;
                     }
-                    executingQuery += limitString;
+                } else {
+                    // walk the cache : no limit
                 }
-            } else {
-                // walk the cache : no limit
             }
-
             
             
             long maxRow = endRow - startRow;
@@ -1093,25 +1118,29 @@ public class db {
             //  Conteggio righe risultato ed esecuzione evento onRetrieve dell'owner
             //
             if(!isCrossTableService) {
-                try {                
-                    if(connToUse != null) {
-                        countQuery = "SELECT COUNT(*) AS nRows FROM "+schemaTable + " " + leftJoinList +" " + sWhere;
-                        psdo = connToUse.prepareStatement(countQuery);
-                        rsdo = psdo.executeQuery();
-                        if(rsdo != null) {
-                            if(rsdo.next()) {
-                                nRows = rsdo.getInt(1);
+                
+                if(query != null && !query.isEmpty()) {
+                } else {
+                    try {
+                        if(table != null && !table.isEmpty()) {
+                            if(connToUse != null) {
+                                countQuery = "SELECT COUNT(*) AS nRows FROM "+schemaTable + " " + leftJoinList +" " + sWhere;
+                                psdo = connToUse.prepareStatement(countQuery);
+                                rsdo = psdo.executeQuery();
+                                if(rsdo != null) {
+                                    if(rsdo.next()) {
+                                        nRows = rsdo.getInt(1);
+                                    }
+                                }
                             }
                         }
+                    } catch (Throwable e) {
+                        error += "Count Error:" + e.getLocalizedMessage() + countQuery + "[Driver:"+tbl_wrk.driverClass+"] controlId:"+controlId;
+                        System.err.println("// Count Error:" + e.getLocalizedMessage() + countQuery);
                     }
-                } catch (Throwable e) {
-                    error += "Count Error:" + e.getLocalizedMessage() + countQuery + "[Driver:"+tbl_wrk.driverClass+"]";
-                    System.err.println("// Count Error:" + e.getLocalizedMessage() + countQuery);
-                }
-
-                if(rsdo != null) rsdo.close();
-                if(psdo != null) psdo.close();
-                
+                    if(rsdo != null) rsdo.close();
+                    if(psdo != null) psdo.close();
+                }                
                 
                 //
                 //  Esecuzione evento on Retrieve
@@ -1225,10 +1254,7 @@ public class db {
                 }                
             }
 
-
-            
-            
-            
+        
             // salvataggio in sessione
             if(recordset_params.bSaveQueryInfo) {
                 set_query_info( recordset_params.request, tbl_wrk, column_list, column_alias_list, primaryKey, dbPrimaryKey, workingTable, leftJoinList, sWhere, sSort, limitString, itemIdString );
@@ -1254,17 +1280,19 @@ public class db {
             if(tbl_wrk != null) {
                 if(cacheIds == 1 || (cacheIds == 2 && lQueryTime - lStartTime > maxQueryTimeMs)) { // Cache activating
                     if(filtersIds == null) {
-                        // Il filtro sugli ID pprevale sulla paginazione
+                        // Il filtro sugli ID prevale sulla paginazione
                         if(ids == null) {
-                            if((ids = IdsCache.getIds(executingQueryForCache)) == null) {
-                                if(!isCrossTableService) {
-                                    if(startRow == 0) {
-                                        ids = new ArrayList<Long>();
-                                        bStoreIds = true;
-                                        if(ids == null) {
-                                            System.err.println("// Fatal error: no memory");
-                                        } else {
-                                            System.err.println("/* IDS CACHE: ativating on " + executingQuery+" */");
+                            if(executingQueryForCache != null && !executingQueryForCache.isEmpty()) {
+                                if((ids = IdsCache.getIds(executingQueryForCache)) == null) {
+                                    if(!isCrossTableService) {
+                                        if(startRow == 0) {
+                                            ids = new ArrayList<Long>();
+                                            bStoreIds = true;
+                                            if(ids == null) {
+                                                System.err.println("// Fatal error: no memory");
+                                            } else {
+                                                System.err.println("/* IDS CACHE: ativating on " + executingQuery+" */");
+                                            }
                                         }
                                     }
                                 }
@@ -1276,13 +1304,45 @@ public class db {
             
 
             if(rsdo != null) {
+                JSONArray cols = null;
+                
+                try { cols = tbl_wrk.tableJson.getJSONArray("columns"); } catch (Exception e) {}
+                
+                // create columns just in time for queryX mode
+                if(query != null && !query.isEmpty()) {
+                    if(rsdo != null) {                        
+                        ResultSetMetaData rsmd = rsdo.getMetaData();
+                        int nCols = rsmd.getColumnCount();
+                        JSONArray newCols = new JSONArray();
+                        for(int ic=1; ic<=nCols; ic++) {
+                            String cName = rsmd.getColumnName(ic);
+                            String cLabel = rsmd.getColumnLabel(ic);
+                            int cType = rsmd.getColumnType(ic);
+                            JSONObject newCol = new JSONObject();                            
+                            if(tbl_wrk.tableJson.has("columnsResolved") && tbl_wrk.tableJson.getBoolean("columnsResolved")) {
+                                newCol.put("field", String.valueOf(ic));
+                            } else {                                
+                                newCol.put("field", cName);
+                            }
+                            newCol.put("name", cName);
+                            newCol.put("label", cLabel);
+                            newCol.put("type", cType);
+                            newCols.put(newCol);
+                        }
+                        tbl_wrk.tableJson.put("columns", newCols);
+                        newColsJson = tbl_wrk.tableJson.get("columns").toString();
+                        column_alias_list = null;
+                        column_json_list = null;
+                    }
+                }
+                
                 String fieldValue = null;
                 
-                String [] columns_alias = column_alias_list.split(",");
-                String [] columns_json = column_json_list.split(",");
+                String [] columns_alias = column_alias_list != null ? column_alias_list.split(",") : null;
+                String [] columns_json = column_json_list != null ? column_json_list.split(",") : null;
                 boolean bColumnsResolved = false;
                 try { bColumnsResolved = ("false".equalsIgnoreCase(columnsResolved) ? false : tbl_wrk.tableJson.getBoolean("columnsResolved") ); } catch(Exception e) {}
-                JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+                try { cols = tbl_wrk.tableJson.getJSONArray("columns"); } catch (Exception e) {}
                 int [] colTypes = new int[cols.length()];
                 int [] colPrecs = new int[cols.length()];
                 boolean [] colNullable = new boolean[cols.length()];
@@ -1386,6 +1446,7 @@ public class db {
                 out_string += ",\"warning\":\"" + base64Warning + "\"";
                 out_string += ",\"message\":\"" + base64Message + "\"";
                 out_string += ",\"title\":\"" + base64Title + "\"";
+                out_string += (newColsJson != null ? ",\"columns\":" + newColsJson + "" : "");
                 out_string += ",\"debug\":1";
                 out_string += "}";
             }

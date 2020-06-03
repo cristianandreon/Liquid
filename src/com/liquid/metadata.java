@@ -797,19 +797,21 @@ public class metadata {
             if(schema == null || schema.isEmpty())
                 schema = connToUse.getMetaData().getUserName();
             
-            DatabaseMetaData dm = connToUse.getMetaData();
-            ResultSet rs = dm.getColumns(database, schema, tableName, null);
-            if(rs != null) {
-                while(rs.next()) {
-                    String resultShcema = rs.getString("TABLE_SCHEM");
-                    if(     (schema == null && !"information_schema".equalsIgnoreCase(resultShcema))
-                        ||  (schema != null && resultShcema == null)
-                        ||  (schema != null && schema.equalsIgnoreCase(resultShcema))
-                        ) {
-                        result.add(rs.getString("COLUMN_NAME"));
+            if(tableName != null && !tableName.isEmpty()) {
+                DatabaseMetaData dm = connToUse.getMetaData();
+                ResultSet rs = dm.getColumns(database, schema, tableName, null);
+                if(rs != null) {
+                    while(rs.next()) {
+                        String resultShcema = rs.getString("TABLE_SCHEM");
+                        if(     (schema == null && !"information_schema".equalsIgnoreCase(resultShcema))
+                            ||  (schema != null && resultShcema == null)
+                            ||  (schema != null && schema.equalsIgnoreCase(resultShcema))
+                            ) {
+                            result.add(rs.getString("COLUMN_NAME"));
+                        }
                     }
+                    rs.close();
                 }
-                rs.close();
             }
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);

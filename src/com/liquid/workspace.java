@@ -41,7 +41,12 @@ public class workspace {
 
     static public String pythonPath = null;
     static public String pythonExecutable = null;
-        
+
+    // key persistent on server but hidden on the client
+    static String [] serverPriorityKeys = { "connectionURL", "query" };
+    static String kDefinedAtServerSide = "[definedAtServerSide]";
+
+    
     public workspace() {
         try {
             } catch (Throwable ex) {
@@ -307,7 +312,7 @@ public class workspace {
         JSONObject tableJson = null;
         JSONArray foreignTablesJson = null;
         String foreignKeysJson = null, foreignTables = null, foreignTable = null;        
-        String connectionDriver = null, connectionURL = null, database = null, table = null, schema = null, primaryKey = null;
+        String connectionDriver = null, connectionURL = null, database = null, table = null, schema = null, primaryKey = null, query = null;
         int primaryKeyIndex1B = 0;
         boolean bAllColumns = false;
         String result = "json".equalsIgnoreCase(returnType) ? "{\"error\":\""+controlId+"\"}" : "<script> console.error(\""+controlId+" not created in server\");</script>";        
@@ -377,6 +382,7 @@ public class workspace {
             try { database = tableJson.getString("database"); } catch(Exception e) {}
             try { schema = tableJson.getString("schema"); } catch(Exception e) {}
             try { table = tableJson.getString("table"); } catch(Exception e) {}
+            try { query = tableJson.getString("query"); } catch(Exception e) {}
 
             
             // Connessione al DB
@@ -443,7 +449,10 @@ public class workspace {
             if("utenti".equalsIgnoreCase(table)) {
                 int lb = 1;
             }
-            
+
+            if(query != null && !query.isEmpty()) {
+                int lb = 1;
+            }
             
             // System calls
             String isSystemLiquid = workspace.isSystemLiquid(tableJson);
@@ -493,56 +502,60 @@ public class workspace {
                 
                 if(bAllColumns) {
                     // tutte le colonne di controlId
-                    if("utenti".equalsIgnoreCase(table)) {
-                        int lb = 1;
+                    if(table != null && !table.isEmpty()) {
+                        if("utenti".equalsIgnoreCase(table)) {
+                            int lb = 1;
+                        }
+
+                        ArrayList<String> allColumns = metadata.getAllColumnsAsArray(database, schema, table, connToUse);
+                        if(allColumns.size()==0) {
+                            String err = "LIQUID WARNING : No columns on database:"+database+" schema:"+schema+" table:"+table+" control:"+controlId;
+                            System.out.println(err);
+                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+err+"\"}" : "<script> console.error(\""+err+"\");</script>" );
+                        }
+                        cols = new JSONArray();
+                        int ic = 0;
+                        for(String col : allColumns) {
+                            JSONObject colJson = new JSONObject("{\"name\":\""+col+"\",\"field\":\""+String.valueOf(ic+1)+"\"}");
+                            cols.put(colJson);
+                            ic++;
+                        }
+                        tableJson.remove("columns");                    
+                        tableJson.put("columns", cols);
+                        tableJson.put("columnsResolved", true);
+                        tableJson.put("columnsResolvedBy", controlId);
+                    } else {
+                        // tutte le colonne, ma tabella non definita
+                        tableJson.put("columns", new JSONArray());
                     }
-                    
-                    ArrayList<String> allColumns = metadata.getAllColumnsAsArray(database, schema, table, connToUse);
-                    if(allColumns.size()==0) {
-                        String err = "LIQUID WARNING : No columns on database:"+database+" schema:"+schema+" table:"+table+" control:"+controlId;
-                        System.out.println(err);
-                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+err+"\"}" : "<script> console.error(\""+err+"\");</script>" );
-                    }
-                    cols = new JSONArray();
-                    int ic = 0;
-                    for(String col : allColumns) {
-                        JSONObject colJson = new JSONObject("{\"name\":\""+col+"\",\"field\":\""+String.valueOf(ic+1)+"\"}");
-                        cols.put(colJson);
-                        ic++;
-                    }
-                    
-                    // Ricerca della primary key
-                    
-                    tableJson.remove("columns");                    
-                    tableJson.put("columns", cols);
-                    tableJson.put("columnsResolved", true);
-                    tableJson.put("columnsResolvedBy", controlId);
                     
                 } else {
                     
                     if(sTableJson != null && !sTableJson.isEmpty()) {
                         // rename delle colonne table.column : il punto non e' supportato da ag grid
-                        cols = tableJson.getJSONArray("columns");
-                        for(int ic=0; ic<cols.length(); ic++) {
-                            JSONObject col = cols.getJSONObject(ic);
-                            col.put("field", String.valueOf(ic+1));
-                            cols.put(ic, col);
-                            String colName = "";
-                            try { colName = col.getString("name"); } catch(Exception e) {}
-                            String [] colParts = colName.split("\\.");
-                            if(colParts.length > 1) {
-                                if(table.equalsIgnoreCase(colParts[0]) && colParts[1].equals(primaryKey)) {
-                                   primaryKeyIndex1B = ic+1;
-                                }
-                            } else {
-                                if(colName.equals(primaryKey)) {
-                                   primaryKeyIndex1B = ic+1;
+                        try { cols = tableJson.getJSONArray("columns"); } catch(Exception e) {}
+                        if(cols != null) {
+                            for(int ic=0; ic<cols.length(); ic++) {
+                                JSONObject col = cols.getJSONObject(ic);
+                                col.put("field", String.valueOf(ic+1));
+                                cols.put(ic, col);
+                                String colName = "";
+                                try { colName = col.getString("name"); } catch(Exception e) {}
+                                String [] colParts = colName.split("\\.");
+                                if(colParts.length > 1) {
+                                    if(table.equalsIgnoreCase(colParts[0]) && colParts[1].equals(primaryKey)) {
+                                       primaryKeyIndex1B = ic+1;
+                                    }
+                                } else {
+                                    if(colName.equals(primaryKey)) {
+                                       primaryKeyIndex1B = ic+1;
+                                    }
                                 }
                             }
+                            tableJson.put("columns", cols);
+                            tableJson.put("columnsResolved", true);
+                            tableJson.put("columnsResolvedBy", controlId);
                         }
-                        tableJson.put("columns", cols);
-                        tableJson.put("columnsResolved", true);
-                        tableJson.put("columnsResolvedBy", controlId);
                     }
                 } 
 
@@ -551,65 +564,67 @@ public class workspace {
 
                 // foreign columns
                 ArrayList<metadata.ForeignKey> foreignKeysOnTable = null;
-                for(int ic=0; ic<cols.length(); ic++) {
-                    JSONObject col = cols.getJSONObject(ic);
-                    String [] colParts = col.getString("name").split("\\.");
+                if(cols != null) {
+                    for(int ic=0; ic<cols.length(); ic++) {
+                        JSONObject col = cols.getJSONObject(ic);
+                        String [] colParts = col.getString("name").split("\\.");
 
-                    String foreignColumn = null, column = null;
+                        String foreignColumn = null, column = null;
 
-                    try { foreignTable = col.getString("foreignTable"); } catch (Exception e) { foreignTable = null; }
-                    try { foreignColumn = col.getString("foreignColumn"); } catch (Exception e) { foreignColumn = null; }
-                    try { column = col.getString("column"); } catch (Exception e) { column = null; }
+                        try { foreignTable = col.getString("foreignTable"); } catch (Exception e) { foreignTable = null; }
+                        try { foreignColumn = col.getString("foreignColumn"); } catch (Exception e) { foreignColumn = null; }
+                        try { column = col.getString("column"); } catch (Exception e) { column = null; }
 
-                    if(colParts.length > 1) { // campo esterno ...
-                        if(!colParts[0].equalsIgnoreCase(table)) {
-                            int foreignIndex = -1;
-                            if(foreignTable == null || foreignColumn == null || column == null) {
-                                if(foreignKeysOnTable == null) {
-                                    try {
-                                        foreignKeysOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
-                                    } catch (Exception ex) {
-                                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-                                    }
-                                }                                
-                                if(foreignKeysOnTable != null) {
-                                    for(int ifk=0; ifk<foreignKeysOnTable.size(); ifk++) {
-                                       metadata.ForeignKey foreignKey = foreignKeysOnTable.get(ifk);
-                                       if(foreignKey != null) {
-                                           if(foreignKey.foreignTable.equalsIgnoreCase(colParts[0])) {
-                                                if(foreignTable == null) { col.put("foreignTable", foreignKey.foreignTable); foreignTable = foreignKey.foreignTable; }
-                                                if(foreignColumn == null) { col.put("foreignColumn", foreignKey.foreignColumn); foreignColumn = foreignKey.foreignColumn; }
-                                                if(column == null) { col.put("column", foreignKey.column); column = foreignKey.column; }
-                                                break;
+                        if(colParts.length > 1) { // campo esterno ...
+                            if(!colParts[0].equalsIgnoreCase(table)) {
+                                int foreignIndex = -1;
+                                if(foreignTable == null || foreignColumn == null || column == null) {
+                                    if(foreignKeysOnTable == null) {
+                                        try {
+                                            foreignKeysOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
+                                        } catch (Exception ex) {
+                                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
+                                    }                                
+                                    if(foreignKeysOnTable != null) {
+                                        for(int ifk=0; ifk<foreignKeysOnTable.size(); ifk++) {
+                                           metadata.ForeignKey foreignKey = foreignKeysOnTable.get(ifk);
+                                           if(foreignKey != null) {
+                                               if(foreignKey.foreignTable.equalsIgnoreCase(colParts[0])) {
+                                                    if(foreignTable == null) { col.put("foreignTable", foreignKey.foreignTable); foreignTable = foreignKey.foreignTable; }
+                                                    if(foreignColumn == null) { col.put("foreignColumn", foreignKey.foreignColumn); foreignColumn = foreignKey.foreignColumn; }
+                                                    if(column == null) { col.put("column", foreignKey.column); column = foreignKey.column; }
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            if(foreignTable != null && foreignColumn != null && column != null) {
-                                if(foreignKeysOnTable != null) {
-                                    if(foreignTable != null && foreignColumn != null && column != null) {
-                                        for(int ifk=0; ifk<foreignKeysOnTable.size(); ifk++) {
-                                           metadata.ForeignKey foreignKey = foreignKeysOnTable.get(ifk);
-                                           if(foreignKey != null) {
-                                               if(foreignKey.foreignTable.equalsIgnoreCase(foreignTable)) {
-                                                   if(foreignKey.foreignColumn.equalsIgnoreCase(foreignColumn)) {
-                                                       if(foreignKey.column.equalsIgnoreCase(column)) {
-                                                           foreignIndex = ifk;
-                                                           break;
+                                if(foreignTable != null && foreignColumn != null && column != null) {
+                                    if(foreignKeysOnTable != null) {
+                                        if(foreignTable != null && foreignColumn != null && column != null) {
+                                            for(int ifk=0; ifk<foreignKeysOnTable.size(); ifk++) {
+                                               metadata.ForeignKey foreignKey = foreignKeysOnTable.get(ifk);
+                                               if(foreignKey != null) {
+                                                   if(foreignKey.foreignTable.equalsIgnoreCase(foreignTable)) {
+                                                       if(foreignKey.foreignColumn.equalsIgnoreCase(foreignColumn)) {
+                                                           if(foreignKey.column.equalsIgnoreCase(column)) {
+                                                               foreignIndex = ifk;
+                                                               break;
+                                                            }
                                                         }
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                                if(foreignIndex < 0) {
-                                    if (foreignKeysOnTable == null) foreignKeysOnTable = new ArrayList<metadata.ForeignKey>();
-                                    foreignIndex = foreignKeysOnTable.size();
-                                    foreignKeysOnTable.add(new metadata.ForeignKey(foreignTable, foreignColumn, column, null) );
-                                }
-                            }                        
+                                    if(foreignIndex < 0) {
+                                        if (foreignKeysOnTable == null) foreignKeysOnTable = new ArrayList<metadata.ForeignKey>();
+                                        foreignIndex = foreignKeysOnTable.size();
+                                        foreignKeysOnTable.add(new metadata.ForeignKey(foreignTable, foreignColumn, column, null) );
+                                    }
+                                }                        
+                            }
                         }
                     }
                 }
@@ -687,9 +702,13 @@ public class workspace {
                 // Aggiunta primary key
                 if(primaryKeyIndex1B<=0) {
                     if(primaryKey != null) {
-                        JSONObject colJson = new JSONObject("{\"name\":\""+table+"."+primaryKey+"\",\"field\":\""+String.valueOf(cols.length()+1)+"\",\"visible\":false}");
-                        cols.put(colJson);
-                        tableJson.put("columns", cols);                        
+                        if(table != null && !table.isEmpty()) {
+                            if(cols != null) {
+                                JSONObject colJson = new JSONObject("{\"name\":\""+table+"."+primaryKey+"\",\"field\":\""+String.valueOf(cols.length()+1)+"\",\"visible\":false}");
+                                cols.put(colJson);
+                                tableJson.put("columns", cols);
+                            }
+                        }
                     }
                 }
                 
@@ -707,62 +726,64 @@ public class workspace {
                 }
                 if(connToUse != null) {
                     long msTrace = System.currentTimeMillis();
-                    cols = tableJson.getJSONArray("columns");
-                    for(int ic=0; ic<cols.length(); ic++) {
-                        JSONObject col = cols.getJSONObject(ic);
-                        String colName = null, colTable = null, colForeignTable = null;
-                        try { colName = col.getString("name");  } catch (Exception ex) {}
-                        try { colForeignTable = col.getString("foreignTable");  } catch (Exception ex) {}
+                    try { cols = tableJson.getJSONArray("columns"); } catch (Exception ex) {}
+                    if(cols != null) {
+                        for(int ic=0; ic<cols.length(); ic++) {
+                            JSONObject col = cols.getJSONObject(ic);
+                            String colName = null, colTable = null, colForeignTable = null;
+                            try { colName = col.getString("name");  } catch (Exception ex) {}
+                            try { colForeignTable = col.getString("foreignTable");  } catch (Exception ex) {}
 
-                        if(colName != null && !colName.isEmpty()) { 
-                            String [] colParts = colName.split("\\.");
-                            colTable = (colParts.length > 1 ? colParts[0] : ( colForeignTable != null ? colForeignTable : table ) );
-                            colName = (colParts.length > 1 ? colParts[1] : colName);
-                            if(colName != null && !colName.isEmpty()) {
-                                
-                                if(!isSystem) {
-                                    metadata.MetaDataCol mdCol = (metadata.MetaDataCol)metadata.readTableMetadata(connToUse, database, schema, colTable, colName);
-                                    if(mdCol != null) {
-                                        // Handle sensitive case mismath
-                                        if(!colName.equals(mdCol.name)) {
-                                            if(colParts.length > 1) {
-                                                col.put("name", colParts[0]+"."+mdCol.name);
-                                            } else {
-                                                col.put("name", mdCol.name);
+                            if(colName != null && !colName.isEmpty()) { 
+                                String [] colParts = colName.split("\\.");
+                                colTable = (colParts.length > 1 ? colParts[0] : ( colForeignTable != null ? colForeignTable : table ) );
+                                colName = (colParts.length > 1 ? colParts[1] : colName);
+                                if(colName != null && !colName.isEmpty()) {
+
+                                    if(!isSystem) {
+                                        metadata.MetaDataCol mdCol = (metadata.MetaDataCol)metadata.readTableMetadata(connToUse, database, schema, colTable, colName);
+                                        if(mdCol != null) {
+                                            // Handle sensitive case mismath
+                                            if(!colName.equals(mdCol.name)) {
+                                                if(colParts.length > 1) {
+                                                    col.put("name", colParts[0]+"."+mdCol.name);
+                                                } else {
+                                                    col.put("name", mdCol.name);
+                                                }
                                             }
-                                        }
-                                        col.put("type", mdCol.datatype);
-                                        col.put("typeName", mdCol.typeName);
-                                        col.put("size", mdCol.size);
-                                        col.put("digits", mdCol.digits);
-                                        col.put("nullable", mdCol.isNullable);
-                                        col.put("default", (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null));
-                                        col.put("autoIncString", mdCol.autoIncString);
-                                        col.put("remarks", mdCol.remarks);
-                                        if(colForeignTable != null && !colForeignTable.isEmpty()) { // campo esterno
-                                            col.put("default", "");
-                                            col.put("isReflected", true);
-                                        }
+                                            col.put("type", mdCol.datatype);
+                                            col.put("typeName", mdCol.typeName);
+                                            col.put("size", mdCol.size);
+                                            col.put("digits", mdCol.digits);
+                                            col.put("nullable", mdCol.isNullable);
+                                            col.put("default", (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null));
+                                            col.put("autoIncString", mdCol.autoIncString);
+                                            col.put("remarks", mdCol.remarks);
+                                            if(colForeignTable != null && !colForeignTable.isEmpty()) { // campo esterno
+                                                col.put("default", "");
+                                                col.put("isReflected", true);
+                                            }
 
-                                        if(!mdCol.isNullable) {
-                                            if(mdCol.columnDef==null || mdCol.columnDef.isEmpty()) {
-                                                if(!mdCol.autoIncString) {
-                                                    if(colForeignTable == null || colForeignTable.isEmpty()) { // NON campo esterno
-                                                        col.put("required", true);
+                                            if(!mdCol.isNullable) {
+                                                if(mdCol.columnDef==null || mdCol.columnDef.isEmpty()) {
+                                                    if(!mdCol.autoIncString) {
+                                                        if(colForeignTable == null || colForeignTable.isEmpty()) { // NON campo esterno
+                                                            col.put("required", true);
+                                                        }
                                                     }
                                                 }
                                             }
-                                        }
 
-                                        cols.put(ic, col);
+                                            cols.put(ic, col);
+                                        }
                                     }
                                 }
                             }
                         }
+                        metadataTime = System.currentTimeMillis() - msTrace;
+
+                        tableJson.put("columns", cols);
                     }
-                    metadataTime = System.currentTimeMillis() - msTrace;
-                    
-                    tableJson.put("columns", cols);
                 }
 
 
@@ -771,17 +792,19 @@ public class workspace {
                 try { lookupField = tableJson.getString("lookupField"); } catch(Exception e) {}
                 if(lookupField != null) {
                     String resLookupField = "1"; 
-                    cols = tableJson.getJSONArray("columns");
-                    for(int ic=0; ic<cols.length(); ic++) {
-                        JSONObject col = cols.getJSONObject(ic);
-                        String name = col.has("name") ? col.getString("name") : "";
-                        String label = col.has("label") ? col.getString("label") : "";
-                        if(lookupField.equalsIgnoreCase(name) || lookupField.equalsIgnoreCase(label)) {
-                            resLookupField = String.valueOf(ic+1);
-                            break;
+                    try { cols = tableJson.getJSONArray("columns"); } catch (Exception ex) {}
+                    if(cols != null) {
+                        for(int ic=0; ic<cols.length(); ic++) {
+                            JSONObject col = cols.getJSONObject(ic);
+                            String name = col.has("name") ? col.getString("name") : "";
+                            String label = col.has("label") ? col.getString("label") : "";
+                            if(lookupField.equalsIgnoreCase(name) || lookupField.equalsIgnoreCase(label)) {
+                                resLookupField = String.valueOf(ic+1);
+                                break;
+                            }
                         }
+                        tableJson.put("lookupField", resLookupField);
                     }
-                    tableJson.put("lookupField", resLookupField);
                 }
 
                 // chiave primaria
@@ -792,22 +815,23 @@ public class workspace {
 
                 // cerca nei campi ...
                 if(primaryKey != null && !primaryKey.isEmpty()) {
-                    cols = tableJson.getJSONArray("columns");
-                    for(int ic=0; ic<cols.length(); ic++) {
-                        JSONObject col = cols.getJSONObject(ic);
-                        String colName = null, colTable = null, colForeignTable = null;
-                        try { colName = col.getString("name");  } catch (Exception ex) {}
-                        String [] colParts = colName.split("\\.");
-                        colTable = (colParts.length > 1 ? colParts[0] : ( colForeignTable != null ? colForeignTable : table ) );
-                        colName = (colParts.length > 1 ? colParts[1] : colName);
-                        if(colName != null && !colName.isEmpty()) {
-                            if(primaryKey.equalsIgnoreCase(colName) && colTable.equalsIgnoreCase(table)) {
-                                tableJson.put("primaryKeyField", String.valueOf(ic+1));
+                    try { cols = tableJson.getJSONArray("columns"); } catch (Exception ex) {}
+                    if(cols != null) {
+                        for(int ic=0; ic<cols.length(); ic++) {
+                            JSONObject col = cols.getJSONObject(ic);
+                            String colName = null, colTable = null, colForeignTable = null;
+                            try { colName = col.getString("name");  } catch (Exception ex) {}
+                            String [] colParts = colName.split("\\.");
+                            colTable = (colParts.length > 1 ? colParts[0] : ( colForeignTable != null ? colForeignTable : table ) );
+                            colName = (colParts.length > 1 ? colParts[1] : colName);
+                            if(colName != null && !colName.isEmpty()) {
+                                if(primaryKey.equalsIgnoreCase(colName) && colTable.equalsIgnoreCase(table)) {
+                                    tableJson.put("primaryKeyField", String.valueOf(ic+1));
+                                }
                             }
-                        }
-                    }                
+                        }                
+                    }
                 }
-
 
                 // Comandi Predefiniti : risoluzione campi default
                 boolean bInsertActive = false;
@@ -1004,7 +1028,10 @@ public class workspace {
             }
             
 
-
+            if(!tableJson.has("mode")) {
+                tableJson.put("mode", "auto");
+            }
+            
             if(database == null || database.isEmpty()) {
                 database = defaultDatabase;
             }
@@ -1014,15 +1041,26 @@ public class workspace {
             
             String token = login.getSaltString(32);
             tableJson.put("token", token);
-            
+    
+            // In query mode set parentControlId / rootControlId to self
+            if(query != null && !query.isEmpty()) {
+                if(!tableJson.has("parentControlId")) {
+                    tableJson.put("parentControlId", controlId);
+                }
+                if(!tableJson.has("rootControlId")) {
+                    tableJson.put("rootControlId", controlId);
+                }
+            }
             
             tableJson.put("metadataTime", metadataTime);
 
             
             JSONObject tableJsonForClient = new JSONObject(tableJson.toString());
             // ConnectionURL è gestito lato server, può avere l'account di accesso e non va passato al client
-            if(tableJsonForClient.has("connectionURL")) {
-                tableJsonForClient.put("connectionURL", "[definedAtServerSide]");
+            for(String serverPriorityKey : serverPriorityKeys) {
+                if(tableJsonForClient.has(serverPriorityKey)) {
+                    tableJsonForClient.put(serverPriorityKey, kDefinedAtServerSide);                    
+                }
             }
             sTableJson = tableJsonForClient.toString();
 
@@ -1043,6 +1081,8 @@ public class workspace {
                         if(tblWorkspace.tableJson != null)
                             if(!tblWorkspace.tableJson.equals(tableJson))
                                 System.out.println("WARNING : Overwrited Configuration of control : "+controlId);
+                        // Keep server side define (es.: query / connectionURL)
+                        recoveryKeyFromServer(tblWorkspace.tableJson, tableJson);
                         tblWorkspace.tableJson = tableJson;
                     }
                     if(    (tblWorkspace.owner == null && owner != null)
@@ -1095,7 +1135,25 @@ public class workspace {
             }            
         }
     }
-
+            
+    static public void recoveryKeyFromServer(JSONObject serverTableJson, JSONObject clientTableJson) {
+        if(serverTableJson != null) {
+            if(serverTableJson != null) {
+                try {
+                    for(String serverPriorityKey : serverPriorityKeys) {
+                        if(serverTableJson.has(serverPriorityKey)) {
+                            if(!serverTableJson.get(serverPriorityKey).equals(kDefinedAtServerSide)) {
+                                clientTableJson.put(serverPriorityKey, serverTableJson.get(serverPriorityKey));
+                            }
+                        }
+                    }
+                } catch (JSONException ex) {
+                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
+                        
     
     //
     // Ottiene il JSON del controllo generato automaticamentte per accedere ad una tabella
@@ -1122,8 +1180,7 @@ public class workspace {
         
     static public String get_default_json(HttpServletRequest request, String controlId, String tblWrk, String table, String schema, String database, String parentControlId, String sourceToken, String sRequest, JspWriter out) {
         try {
-            String result = "";
-            
+            String result = "";            
             // Verifica della sorgente source : il client non può leggere un controllo in modalità auto se il padre non è autorizzato
             if( (parentControlId != null && !parentControlId.isEmpty()) || (sourceToken != null && !sourceToken.isEmpty()) ) {
                 workspace source_tbl_wrk = workspace.get_tbl_manager_workspace(parentControlId);
