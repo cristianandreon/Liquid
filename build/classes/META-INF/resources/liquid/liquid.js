@@ -194,6 +194,11 @@ class LiquidCtrl {
                 this.tableJson.askForSave = false;
             }
             
+            if(!isDef(this.rootControlId)) { // overlay rootControlId from server (typically for queryX
+                if(isDef(this.tableJson.rootControlId)) {
+                    this.rootControlId = this.tableJson.rootControlId;
+                }
+            }
             
             
             this.status = this.tableJson.status;
@@ -957,12 +962,10 @@ class LiquidCtrl {
                                         var waiterId = this.foreignTables[ic].tabId+".waiter";
                                         this.foreignTables[ic].controlNameJson.waitersId = [ waiterId ];
 
-
                                         // this.foreignTables[ic].liquid = ... Need sync exec
                                         new LiquidCtrl( this.foreignTables[ic].controlId, this.foreignTables[ic].controlObjectId, JSON.stringify(this.foreignTables[ic].controlNameJson)
                                                         ,{ liquidOrId:srcLiquidOrId, foreignWrk:this.foreignTables[ic].foreignWrk, foreignTable:this.foreignTables[ic].foreignTable, foreignColumn:this.foreignTables[ic].foreignColumn, column:this.foreignTables[ic].column, rootControlId:(this.rootControlId ? this.rootControlId : this.controlId) }
                                                         ,this.foreignTables[ic].controlNameJson.mode, null);
-                                                        
                                     }
                                 }
                             }
@@ -1415,7 +1418,11 @@ class LiquidCtrl {
                     
                     if(this.tableJson) {
                         if(this.tableJson.autoLoad !== false || isRebuilding === true) {
+                            if(isFormX) { 
+                                // no data to load
+                            } else {
                             Liquid.loadData(this, null);
+                            }
                         } else if(Liquid.cleanData) { this.gridOptions.api.setRowData(null); this.gridOptions.api.clearFocusedCell(); this.lastSelectedId = null; }
                     }
                     
@@ -2598,9 +2605,11 @@ var Liquid = {
         liquid.onPostClosed = null;
         liquid.pageSize = (typeof liquid.tableJson.pageSize !== "undefined" ? (liquid.tableJson.pageSize) : Liquid.pageSize);
         liquid.cache = liquid.tableJson.cache;
+        Liquid.initializeLiquidColumns(liquid);
+    },
+    initializeLiquidColumns:function(liquid) {
         liquid.columnDefs = new Array();
         liquid.columnList = new Array();
-
         for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
             try {
                 var cellStyle = (liquid.tableJson.columns[ic].cellStyle ? JSON.parse(liquid.tableJson.columns[ic].cellStyle.replace(/'/g, "\"")) : null);
@@ -2677,11 +2686,9 @@ var Liquid = {
                     cellEditorParams = { liquid:liquid, type:"systemOptions", iCol:ic+1, column:liquid.tableJson.columns[ic] };
                 }
             }
-
             var editable = (liquid.tableJson.columns[ic].foreignTable ? (liquid.tableJson.columns[ic].foreignEdit === true ? true : false) : (liquid.tableJson.columns[ic].readonly === true ? false : true));
             editable = (editable & ( (liquid.tableJson.editable === true ? true : false) || (liquid.tableJson.editable === 'true' ? true : false) )) ? true : false;
             var col = liquid.tableJson.columns[ic];
-
             var sortComparator = null;
             var typeColumn = null;
             if(Liquid.isFloat(col.type)) {
@@ -2698,7 +2705,7 @@ var Liquid = {
                 typeColumn = "stringColumn";
             }
 
-            var colData = {headerName: liquid.tableJson.columns[ic].label ? liquid.tableJson.columns[ic].label : liquid.tableJson.columns[ic].name
+            var colData = {headerName: isDef(liquid.tableJson.columns[ic].label) ? liquid.tableJson.columns[ic].label : liquid.tableJson.columns[ic].name
                 ,field: (liquid.tableJson.columns[ic].field ? liquid.tableJson.columns[ic].field : liquid.tableJson.columns[ic].name.replace(/\./g, "_"))
                 ,type: typeColumn
                 ,width: Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0)
@@ -2801,6 +2808,10 @@ var Liquid = {
         var allFilterJson = [];
         var doFilter = true;
         
+        if(liquid.controlId === 'testGrid7') {
+            debugger;
+        }
+        
         if(typeof liquid === 'undefined') return;
         if(typeof liquid === 'string') liquid = Liquid.getLiquid(liquid);
         if(typeof liquid.tableJson !== 'undefined') {
@@ -2897,12 +2908,14 @@ var Liquid = {
         }
         if(doFilter) {
             try {
-                if((typeof liquid.tableJson.table !== 'undefined' && liquid.tableJson.table) 
-                || (typeof liquid.tableJson.selectDatabases !== 'undefined' && liquid.tableJson.selectDatabases === '*')
-                || (typeof liquid.tableJson.selectSchemas !== 'undefined' && liquid.tableJson.selectSchemas === '*')
-                || (typeof liquid.tableJson.selectTables !== 'undefined' && liquid.tableJson.selectTables === '*')
-                || (typeof liquid.tableJson.selectViews !== 'undefined' && liquid.tableJson.selectViews === '*')
-                || (typeof liquid.tableJson.selectColumns !== 'undefined' && liquid.tableJson.selectColumns === '*')
+                if( isDef(liquid.tableJson.table) 
+                || (isDef(liquid.tableJson.selectDatabases) && liquid.tableJson.selectDatabases === '*')
+                || (isDef(liquid.tableJson.selectSchemas) && liquid.tableJson.selectSchemas === '*')
+                || (isDef(liquid.tableJson.selectTables) && liquid.tableJson.selectTables === '*')
+                || (isDef(liquid.tableJson.selectViews) && liquid.tableJson.selectViews === '*')
+                || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
+                || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
+                ||  isDef(liquid.tableJson.query)
                 ) {
                 // if(liquid.controlId === 'quotes_detail$quoteid$id@testGrid4') debugger;
                 // if(liquid.controlId === "utenti$id$user_id@testGrid4") debugger;
@@ -2956,6 +2969,13 @@ var Liquid = {
                                             if(!ids) { // set data as partial
                                                 liquid.nRows = httpResultJson.nRows;
                                                 liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(httpResultJson.nRows / liquid.gridOptions.paginationPageSize)) : 1;
+                                            }
+
+                                            // columns redifined by server
+                                            if(isDef(httpResultJson.columns)) {
+                                                if(Liquid.compareColumns(liquid, httpResultJson.columns)) {
+                                                    Liquid.updateColumns(liquid, httpResultJson.columns, true, true)
+                                                }
                                             }
 
                                             // current selection
@@ -3104,6 +3124,51 @@ var Liquid = {
                 }
             } catch (e) { console.error("ERROR: loadData(): "+e); }
         }
+    },
+    updateColumns:function(liquid, columns, bUpdate, bUIUpdate) {    
+        if(liquid != null) {
+            for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                var column = liquid.tableJson.columns[ic];
+                var bFound = false;
+                for(var jc=0; jc<columns.length; jc++) {
+                    if(columns[jc].name === column.name) {
+                        columns[jc].rtFound = true;
+                        bFound = true;
+                        break;
+                    }
+                }
+                if(!bFound) {
+                    if(!bUpdate) {
+                        return true;
+                    } else {
+                        column.deleted = true;
+                    }
+                }
+            }
+            if(!bUpdate) {
+                for(var jc=0; jc<columns.length; jc++) {
+                    if(!isDef(columns[jc].rtFound)) return true;
+                }
+            }
+            var newColumns = [];
+            for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                var column = liquid.tableJson.columns[ic];
+                if(!isDef(column.deleted) || column.deleted !== true)
+                    newColumns.push(column);
+            }
+            for(var jc=0; jc<columns.length; jc++)
+                if(!isDef(columns[jc].rtFound)) 
+                    newColumns.push(columns[jc]);
+            liquid.tableJson.columns = newColumns;
+            if(bUIUpdate) {
+                Liquid.initializeLiquidColumns(liquid);
+                liquid.gridOptions.api.setColumnDefs(liquid.columnDefs);
+            }
+        }
+    },
+    compareColumns:function(liquid, columns) {
+        return Liquid.updateColumns(liquid, columns, false, false);
+        
     },
     getCSSDim:function(size) {
         if(typeof size === 'undefined') return '';
@@ -6457,7 +6522,7 @@ var Liquid = {
                     for(var ic=0; ic<liquid.tableJson.columns.length; ic++)
                         if(liquid.tableJson.columns[ic].name.toUpperCase() === name || liquid.tableJson.columns[ic].name.toUpperCase() === fullName)
                             return liquid.tableJson.columns[ic];
-                        else if(liquid.tableJson.table.toUpperCase() + "." + liquid.tableJson.columns[ic].name.toUpperCase() === name)
+                        else if(isDef(liquid.tableJson.table) && liquid.tableJson.table.toUpperCase() + "." + liquid.tableJson.columns[ic].name.toUpperCase() === name)
                             return liquid.tableJson.columns[ic];
                 }
 

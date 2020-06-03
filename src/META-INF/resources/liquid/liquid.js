@@ -2914,7 +2914,6 @@ var Liquid = {
                 || (isDef(liquid.tableJson.selectTables) && liquid.tableJson.selectTables === '*')
                 || (isDef(liquid.tableJson.selectViews) && liquid.tableJson.selectViews === '*')
                 || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
-                || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
                 ||  isDef(liquid.tableJson.query)
                 ) {
                 // if(liquid.controlId === 'quotes_detail$quoteid$id@testGrid4') debugger;
