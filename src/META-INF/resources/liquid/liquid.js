@@ -2340,7 +2340,7 @@ var Liquid = {
             }
         }
         if(isDef(liquid.stackDownloading)) {
-            if(liquid.stackDownloading.lastResponseLen === liquid.lastResponseLen && liquid.stackDownloading.responseLen === vent.currentTarget.response.length) {
+            if(liquid.stackDownloading.lastResponseLen === liquid.lastResponseLen && liquid.stackDownloading.responseLen === event.currentTarget.response.length) {
                 // duplicate callback
                 return;
             }
