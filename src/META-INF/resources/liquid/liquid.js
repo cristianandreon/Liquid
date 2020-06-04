@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
-// Liquid ver.1.10   Copyright 2020 Cristian Andreon - cristianandreon.eu
-// First update 8.1.2020 - Last update  1-6-2020
+// Liquid ver.1.11   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// First update 8.1.2020 - Last update  4-6-2020
 // TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -965,7 +965,7 @@ class LiquidCtrl {
                                         // this.foreignTables[ic].liquid = ... Need sync exec
                                         new LiquidCtrl( this.foreignTables[ic].controlId, this.foreignTables[ic].controlObjectId, JSON.stringify(this.foreignTables[ic].controlNameJson)
                                                         ,{ liquidOrId:srcLiquidOrId, foreignWrk:this.foreignTables[ic].foreignWrk, foreignTable:this.foreignTables[ic].foreignTable, foreignColumn:this.foreignTables[ic].foreignColumn, column:this.foreignTables[ic].column, rootControlId:(this.rootControlId ? this.rootControlId : this.controlId) }
-                                                        ,this.foreignTables[ic].controlNameJson.mode, null);
+                                                        ,this.foreignTables[ic].controlNameJson.mode, null);                                                        
                                     }
                                 }
                             }
@@ -1421,7 +1421,7 @@ class LiquidCtrl {
                             if(isFormX) { 
                                 // no data to load
                             } else {
-                            Liquid.loadData(this, null);
+                                Liquid.loadData(this, null);
                             }
                         } else if(Liquid.cleanData) { this.gridOptions.api.setRowData(null); this.gridOptions.api.clearFocusedCell(); this.lastSelectedId = null; }
                     }
@@ -2340,7 +2340,7 @@ var Liquid = {
             }
         }
         if(isDef(liquid.stackDownloading)) {
-            if(liquid.stackDownloading.lastResponseLen === liquid.lastResponseLen) {
+            if(liquid.stackDownloading.lastResponseLen === liquid.lastResponseLen && liquid.stackDownloading.responseLen === vent.currentTarget.response.length) {
                 // duplicate callback
                 return;
             }
@@ -2807,7 +2807,7 @@ var Liquid = {
         var sFiltersJson = "";
         var allFilterJson = [];
         var doFilter = true;
-        
+
         if(liquid.controlId === 'testGrid7') {
             debugger;
         }
@@ -2914,6 +2914,7 @@ var Liquid = {
                 || (isDef(liquid.tableJson.selectTables) && liquid.tableJson.selectTables === '*')
                 || (isDef(liquid.tableJson.selectViews) && liquid.tableJson.selectViews === '*')
                 || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
+                || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
                 ||  isDef(liquid.tableJson.query)
                 ) {
                 // if(liquid.controlId === 'quotes_detail$quoteid$id@testGrid4') debugger;
@@ -2969,7 +2970,7 @@ var Liquid = {
                                                 liquid.nRows = httpResultJson.nRows;
                                                 liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(httpResultJson.nRows / liquid.gridOptions.paginationPageSize)) : 1;
                                             }
-
+                                            
                                             // columns redifined by server
                                             if(isDef(httpResultJson.columns)) {
                                                 if(Liquid.compareColumns(liquid, httpResultJson.columns)) {
