@@ -273,12 +273,12 @@ public class workspace {
             for(String s : result) {
                 Path path = Paths.get(s);
                 Path fileName = path.getFileName();         
-                String [] sParts = fileName.toString().split("\\.");
                 String sTableJsonFile = s;
-                String controlId = "";
-                for(int ip=0; ip<sParts.length-1; ip++) controlId += sParts[ip];
+                String controlId = getControlIdFromFile(fileName.toString());
                 String controlScript = get_table_control(request, controlId, sTableJsonFile, replaceApex, owner, returnType);
-                out_string += (out_string.length() > 0 ? "\n\n" : "") + controlScript;
+                out_string += "<!-- ControlId: "+controlId+" File:"+s+" -->\n";
+                out_string += controlScript;
+                out_string += "\n\n";
             }
             return out_string;
         } catch (Exception ex) {
@@ -756,9 +756,25 @@ public class workspace {
                                             col.put("size", mdCol.size);
                                             col.put("digits", mdCol.digits);
                                             col.put("nullable", mdCol.isNullable);
-                                            col.put("default", (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null));
                                             col.put("autoIncString", mdCol.autoIncString);
                                             col.put("remarks", mdCol.remarks);
+                                            
+                                            //
+                                            // Save default in the database if not overwrited by json
+                                            //
+                                            boolean bStoreDefualt = false;
+                                            if(col.has("default")) {
+                                                String sDefault = col.getString("default");
+                                                if(sDefault == null || sDefault.isEmpty()) {
+                                                    bStoreDefualt = true;
+                                                }
+                                            } else {
+                                                bStoreDefualt = true;
+                                            }
+                                            if(bStoreDefualt) {
+                                                col.put("default", (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null));
+                                            }
+                                            
                                             if(colForeignTable != null && !colForeignTable.isEmpty()) { // campo esterno
                                                 col.put("default", "");
                                                 col.put("isReflected", true);
@@ -858,6 +874,7 @@ public class workspace {
                             try { bServerDefined = cmd.has("server");  } catch (Exception ex) { }
                             if("insert".equalsIgnoreCase(cmdName) || "create".equalsIgnoreCase(cmdName)) {
                                 if(!bServerDefined) cmd.put("server", "com.liquid.event.insertRow");
+                                cmd.put("name", "insert");
                                 cmd.put("isNative", true);
                                 if(img==null) cmd.put("img", "add.png");
                                 if(size==0) cmd.put("size", 20);
@@ -866,8 +883,9 @@ public class workspace {
                                 if(rollback==null || rollback.isEmpty()) cmd.put("rollback", "Annulla");
                                 if(rollbackImg==null || rollbackImg.isEmpty()) cmd.put("rollbackImg", "cancel.png");
                                 bInsertActive = true;
-                            } else if("update".equalsIgnoreCase(cmdName)) {
+                            } else if("update".equalsIgnoreCase(cmdName) || "modify".equalsIgnoreCase(cmdName)) {
                                 if(!bServerDefined) cmd.put("server", "com.liquid.event.updateRow");
+                                cmd.put("name", "update");
                                 cmd.put("isNative", true);
                                 if(img==null) cmd.put("img", "update.png");
                                 if(size==0) cmd.put("size", 20);
@@ -876,8 +894,9 @@ public class workspace {
                                 if(rollback==null || rollback.isEmpty()) cmd.put("rollback", "Annulla");
                                 if(rollbackImg==null || rollbackImg.isEmpty()) cmd.put("rollbackImg", "cancel.png");
                                 bUpdateActive = true;
-                            } else if("delete".equalsIgnoreCase(cmdName)) {                           
+                            } else if("delete".equalsIgnoreCase(cmdName) || "erase".equalsIgnoreCase(cmdName)) {
                                 if(!bServerDefined) cmd.put("server", "com.liquid.event.deleteRow");
+                                cmd.put("name", "delete");
                                 cmd.put("isNative", true);
                                 if(img==null) cmd.put("img", "delete.png");
                                 if(size==0) cmd.put("size", 20);
@@ -1069,7 +1088,7 @@ public class workspace {
             if("json".equalsIgnoreCase(returnType)) {
                 result = sTableJson;
             } else if("js".equalsIgnoreCase(returnType)) {
-                result = "<script>"+controlIdToJSVariable(controlId)+"JSON={controlId:\""+controlId+"\",json:'"+sTableJson+"'};</script>";
+                result = "<script>"+getJSVariableFromControlId(controlId)+"={controlId:\""+controlId+"\",json:'"+sTableJson+"'};</script>";
             } else {
                 result = "<script>glLiquidStartupTables.push({controlId:\""+controlId+"\",json:'"+sTableJson+"'});</script>";
             }
@@ -1617,19 +1636,26 @@ public class workspace {
                                     // salvataggio file nella cartella del progetto
                                     String insideProjectFileName = liquidJsonsProjectFolder+File.separatorChar+fileName;
                                     if(!insideProjectFileName.equalsIgnoreCase(fullFileName)) {
+                                        controlId = getControlIdFromFile(fileName);
+                                        String jsVarName = getJSVariableFromControlId(controlId);
+                                        boolean bProceed = true;
                                         try {
-                                            Files.write( Paths.get(insideProjectFileName), fileContent.getBytes());
+                                            if(utility.fileExist(insideProjectFileName)) {
+                                                bProceed = (Messagebox.show( " File <b>"+insideProjectFileName+"</b> already exist<br/><br/> Do you want to overwrite it ?", "Liquid", Messagebox.YES+Messagebox.NO+Messagebox.WARNING) == Messagebox.YES);
+                                            }
+                                            if(bProceed) 
+                                                Files.write( Paths.get(insideProjectFileName), fileContent.getBytes());
                                         } catch (Exception ex) {
                                             return "{\"result\":-1,\"error\":\""+utility.base64Encode(ex.getLocalizedMessage()+" - writing:"+insideProjectFileName)+"\"}";
                                         }
-                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "file in project "+insideProjectFileName+" saved by client request");
-                                        return "{\"result\":1,\"message\":\""+utility.base64Encode("file in project "+insideProjectFileName+" saved")+"\"}";
+                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "File in project as <b>"+insideProjectFileName+"</b>");
+                                        return "{\"result\":1,\"message\":\""+utility.base64Encode("file in project "+insideProjectFileName+" saved<br/><br/>javascript global var name : <b>"+jsVarName+"</b>")+"\"}";
                                     } else {
                                         Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "file "+insideProjectFileName+" saved by client request");
                                         return "{\"result\":1,\"message\":\""+utility.base64Encode("file "+fullFileName+" saved")+"\"}";
                                     }
                                 } else {
-                                    return "{\"result\":0,\"message\":\""+utility.base64Encode("liquidJsonsProjectFolder is empty... you should set it in server site")+"\"}";
+                                    return "{\"result\":0,\"message\":\""+utility.base64Encode("liquidJsonsProjectFolder is empty... you should set it (and check exists) in server site")+"\"}";
                                 }
                             } else {
                                 return "{\"result\":0,\"message\":\""+utility.base64Encode("file name is empty")+"\"}";
@@ -1884,9 +1910,32 @@ public class workspace {
         return true;
     }
 
-    static String controlIdToJSVariable(String controlId) {
+    static String getControlIdFromFile(String fileName) {
+        String controlId = "";
+        if(fileName != null) {
+            String [] sParts = fileName.toString().split("\\.");
+            for(int ip=0; ip<sParts.length-1; ip++) {
+                String [] sSubParts =  sParts[ip].split("_");
+                for(int ips=0; ips<sSubParts.length; ips++) {
+                    controlId += sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length()).toLowerCase();
+                }
+            }
+        }
+        return controlId;
+    }
+
+    static String getJSVariableFromControlId(String controlId) {
         if(controlId != null && !controlId.isEmpty()) {
-            return "gl"+(controlId.substring(0,1).toUpperCase()+controlId.substring(1).toLowerCase());
+            String [] sSubParts = controlId.split("_");
+            String result = "";
+            if(sSubParts.length > 1) {
+                for(int ips=0; ips<sSubParts.length; ips++) {
+                    result += "gl"+(sSubParts[ips].substring(0,1).toUpperCase()+sSubParts[ips].substring(1).toLowerCase())+"JSON";
+                }
+            } else {
+                result += "gl"+(controlId.substring(0,1).toUpperCase()+controlId.substring(1))+"JSON";
+            }
+            return result;
         }
         return null;
     }

@@ -238,7 +238,7 @@ public class login {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+table+"_id_seq";
                     sql.add("CREATE SEQUENCE "+seqName+"");
 
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"user\" VARCHAR(256) NOT NULL"
                         +",\"email\" VARCHAR(256) NOT NULL"
@@ -256,7 +256,7 @@ public class login {
                         +",\"emailToken\" VARCHAR(32) NOT NULL"
                         +")");
 
-                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+schema+table+".\"id\"");
+                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
 
                 } else if("oracle".equalsIgnoreCase(driver)) {
                 } else if("sqlserver".equalsIgnoreCase(driver)) {
@@ -321,6 +321,7 @@ public class login {
     static public String logout (Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
         try {            
             if(params != null) {
+                HttpServletRequest request = (HttpServletRequest)freeParam;
                 JSONObject rootJson = new JSONObject((String)params);
                 if(rootJson != null) {
                     JSONArray paramsJson  = rootJson.getJSONArray("params");
@@ -331,13 +332,14 @@ public class login {
                                 JSONObject dataJson = paramJson.getJSONObject("data");
                                 if(dataJson != null) {
                                     String sRedirect = dataJson.has("redirect") ? dataJson.getString("redirect") : "";
-                                    HttpServletRequest request = (HttpServletRequest)freeParam;
                                     return logout( sRedirect, request );
                                 }
                             }
                         }
                     }
                 }
+                // No params .. still to logout ...
+                return logout( null, request );
             }            
         } catch (Throwable e) {
             if(!(e instanceof java.lang.NoSuchMethodException)) {

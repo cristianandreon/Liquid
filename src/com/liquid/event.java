@@ -865,7 +865,7 @@ public class event {
     }
     
     
-    static public String setFieldAsDefault( Connection conn, JSONObject col, int colTypes, int colPrecs, String defaultVlaue ) throws Exception {
+    static public String setFieldAsDefault( Connection conn, JSONObject col, int colTypes, int colPrecs, String defaultVlaue, HttpServletRequest request ) throws Exception {
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
         String colDefault = defaultVlaue, out_string = "";
@@ -878,7 +878,27 @@ public class event {
             String fieldName = null, fieldValue = null;
             NumberFormat nf = NumberFormat.getInstance();
             
-            try { autoIncString = col.getBoolean("autoIncString"); } catch (JSONException e) {}            
+            try { autoIncString = col.getBoolean("autoIncString"); } catch (JSONException e) {}
+            
+            String bkColDefault = colDefault;
+            colDefault = "";
+            for(int i=0; i<bkColDefault.length(); i++) {
+                if (bkColDefault.charAt(i) == '$' && bkColDefault.charAt(i+1) == '{') {
+                    i+= 2;
+                    int s = i;
+                    while(bkColDefault.charAt(i) != '}' && i<bkColDefault.length()) {
+                        i++;
+                    }
+                    String cVar = bkColDefault.substring(s, i);
+                    if(!cVar.isEmpty()) {
+                        Object oVar = request.getSession().getAttribute(cVar);
+                        String cVarValue = (String)String.valueOf(oVar);
+                        colDefault += (cVarValue != null ? cVarValue : "");
+                    }
+                } else {
+                    colDefault += bkColDefault.charAt(i);
+                }
+            }
 
             if (!colDefault.startsWith("\"")) {
                 boolean isNumeric = false;
@@ -998,7 +1018,7 @@ public class event {
                                     
                                     // N.B.: defaultVlaues, ovvero il dato elaborato e passato dal client, prevale sulla definizione di default del DB
                                     String colDefault = defaultVlaues != null ? defaultVlaues.get(ic) : null;
-                                    colDefault = setFieldAsDefault(conn, col, colTypes[ic], colPrecs[ic], colDefault);
+                                    colDefault = setFieldAsDefault(conn, col, colTypes[ic], colPrecs[ic], colDefault, request);
 
                                     try { fieldName = col.getString("field"); } catch(Exception e) {}
                                     if(fieldName == null || fieldName.isEmpty()) {
@@ -1074,21 +1094,21 @@ public class event {
     
     // Evento di SISTEMA Risoluzione dei campi rimasti al default e inserimento del record nel DB
     // Per Test con "owner":"com.liquid.event"
-    static public String onPastedRow (Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
+    static public String onPastedRow (Object tbl_wrk, Object params, Object clientData, Object requestParam ) {
         String retVal = "", out_string = "", error = "";
         Connection conn = null;
         try {
             if(tbl_wrk != null) {
                 // System.out.println(" onPasted() Raised");
-
+                HttpServletRequest request = (HttpServletRequest)requestParam;
                 workspace liquid = (workspace)tbl_wrk;
                 String schema = null;
                 String table = null;
                 try { schema = liquid.tableJson.getString("schema");  } catch (Exception e) {}
                 try { table = liquid.tableJson.getString("table");  } catch (Exception e) {}
 
-                conn = connection.getConnection(null, (HttpServletRequest)freeParam, ((workspace)tbl_wrk).tableJson);
-                if(conn!=null) {                
+                conn = connection.getConnection(null, request, ((workspace)tbl_wrk).tableJson);
+                if(conn!=null) {
                     long cRow = 0;
                     long lStartTime = 0;
                     long lQueryTime = 0;
@@ -1127,7 +1147,7 @@ public class event {
                                             boolean autoIncString = false;
                                             try { autoIncString = col.getBoolean("autoIncString"); } catch (JSONException e) {}
                                             if(!autoIncString) {
-                                                fieldData = setFieldAsDefault(conn, col, colTypes[ic], colPrecs[ic], null);
+                                                fieldData = setFieldAsDefault(conn, col, colTypes[ic], colPrecs[ic], null, request);
                                                 rowData.put( String.valueOf(ic+1), fieldData );
                                             }
                                         }
@@ -1157,7 +1177,7 @@ public class event {
 
                             // JSONObject insertingParamsJson = new JSONObject( insertingParams );
 
-                            return db.insertFields(tbl_wrk, insertingParams, clientData, freeParam, null);
+                            return db.insertFields(tbl_wrk, insertingParams, clientData, requestParam, null);
                         }
                     }
                 }

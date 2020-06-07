@@ -70,10 +70,12 @@ public class ThreadSession {
     static public ThreadSession getThreadSessionInfo ( ) {
         long threadId = Thread.currentThread().getId();
         for(ThreadSession threadSession : threadSessionList) {
-            if(threadSession.threadId == threadId) return threadSession;
-            if(threadSession.childThreadIds != null) {
-                for(long childThreadId : threadSession.childThreadIds) {
-                    if(childThreadId == threadId) return threadSession;
+            if(threadSession != null) {
+                if(threadSession.threadId == threadId) return threadSession;
+                if(threadSession.childThreadIds != null) {
+                    for(long childThreadId : threadSession.childThreadIds) {
+                        if(childThreadId == threadId) return threadSession;
+                    }
                 }
             }
         }

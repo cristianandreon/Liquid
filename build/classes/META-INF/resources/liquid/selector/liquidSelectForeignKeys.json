@@ -6,7 +6,7 @@
 ,"columns":[
  { "name":"ID", "label":"Id", "field":"1", "width":"50", "readonly":true, "visible":true }
 ,{ "name":"TABLE", "label":"Table", "field":"2", "width":"100", "readonly":true, "visible":true, "default":"@liquidSelectForeignKeys.table" }
-,{ "name":"COLUMN", "label":"Column", "field":"3", "width":"150", "readonly":false, "visible":true, 
+,{ "name":"COLUMN", "label":"Column", "field":"3", "width":"150", "readonly":false, "visible":true, "default":"@liquidSelectForeignKeys.column",
     "editor":{"type":"allColumns","table":"@liquidSelectForeignKeys.table","column":"COLUMN","cache":false }
     }
 ,{ "name":"FOREIGN_TABLE", "label":"Foreign Table", "field":"4", "width":"150", "readonly":false, "visible":true,
@@ -39,6 +39,8 @@
 ,"resize":"both"
 ,"autoSizeColumns":true
 ,"autoLoad":false
+,"autoInsert":true
+,"autoSelect":true
 ,"pageSize":0
 ,"width":"600"
 ,"height":"500"

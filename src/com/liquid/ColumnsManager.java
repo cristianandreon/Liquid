@@ -118,9 +118,9 @@ public class ColumnsManager {
                     rowData += ",\""+(cField++)+"\":\""+column+"\"";
                     rowData += ",\""+(cField++)+"\":\""+foreignEdit+"\"";
                     rowData += ",\""+(cField++)+"\":"+autocomplete+"";
-                    rowData += ",\""+(cField++)+"\":\""+(lookupJson != null ? lookupJson.toString() : lookup)+"\"";
-                    rowData += ",\""+(cField++)+"\":\""+(optionsJson != null ? optionsJson.toString() : options)+"\"";
-                    rowData += ",\""+(cField++)+"\":\""+(editorJson != null ? editorJson.toString() : editor)+"\"";
+                    rowData += ",\""+(cField++)+"\":\""+(lookupJson != null ? lookupJson.toString().replace("\"", "\\\"") : lookup != null ? lookup.replace("\"", "\\\"") : "" )+"\"";
+                    rowData += ",\""+(cField++)+"\":\""+(optionsJson != null ? optionsJson.toString().replace("\"", "\\\"") : options != null ? options.replace("\"", "\\\"") : "" )+"\"";
+                    rowData += ",\""+(cField++)+"\":\""+(editorJson != null ? editorJson.toString().replace("\"", "\\\"") : editor != null ? editor.replace("\"", "\\\"") : "" )+"\"";
                     rowData += "}";
                     nRecs++;
                 }                
@@ -377,7 +377,7 @@ public class ColumnsManager {
             }
             cField++;
             String sEditorValue = fieldSet.getString(String.valueOf(cField));
-            JSONObject jEditorValue = new JSONObject(sEditorValue != null && !sOptionsValue.isEmpty());
+            JSONObject jEditorValue = new JSONObject(sEditorValue != null && !sEditorValue.isEmpty());
             if(update_table_json_column_field(col, "editor", jEditorValue, newColumn, "", infos)) {
                 bColumnChanged = true;
             }
@@ -414,13 +414,19 @@ public class ColumnsManager {
                                 if(((Boolean)newValue).equals(defaultValue))
                                     return false;
                         } else if(newValue instanceof JSONObject) {
-                            if(defaultValue != null)
-                                if(((JSONArray)newValue).equals(new JSONObject(defaultValue)))
+                            if(defaultValue != null) {
+                                String sDefaultValue = (String)defaultValue;
+                                sDefaultValue = sDefaultValue != null && !sDefaultValue.isEmpty() ? sDefaultValue : "{}";
+                                if(((JSONObject)newValue).toString().equals(sDefaultValue))
                                     return false;
+                            }
                         } else if(newValue instanceof JSONArray) {
-                            if(defaultValue != null)
-                                if(((JSONArray)newValue).equals(new JSONArray(defaultValue)))
+                            if(defaultValue != null) {
+                                String sDefaultValue = (String)defaultValue;
+                                sDefaultValue = sDefaultValue != null && !sDefaultValue.isEmpty() ? sDefaultValue : "[]";
+                                if(((JSONArray)newValue).toString().equals(sDefaultValue))
                                     return false;
+                            }
                         }
                         if(outColumn != null) outColumn.put(key, newValue);
                         retVal = true;
