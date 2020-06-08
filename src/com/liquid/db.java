@@ -1616,6 +1616,8 @@ public class db {
                         } catch(Exception e) {
                             error += "[ Retrieve Error:" + e.getLocalizedMessage() + executingQuery + " ]" + "[Driver:"+tbl_wrk.driverClass+"]";
                             System.err.println("// Retrieve Error at cRow:"+cRow+" fieldName:"+fieldName+" fieldValue:"+fieldValue+" Error:" + e.getLocalizedMessage() + executingQuery);
+                            fieldValue = "";
+                            out_string.append( "\""+fieldName+"\":\"" + fieldValue + "\"" );
                         }
 
                         if(!isCrossTableService) {

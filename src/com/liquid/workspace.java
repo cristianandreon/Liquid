@@ -501,12 +501,10 @@ public class workspace {
                 }
                 
                 if(bAllColumns) {
+                    //
                     // tutte le colonne di controlId
+                    //
                     if(table != null && !table.isEmpty()) {
-                        if("utenti".equalsIgnoreCase(table)) {
-                            int lb = 1;
-                        }
-
                         ArrayList<String> allColumns = metadata.getAllColumnsAsArray(database, schema, table, connToUse);
                         if(allColumns.size()==0) {
                             String err = "LIQUID WARNING : No columns on database:"+database+" schema:"+schema+" table:"+table+" control:"+controlId;
@@ -514,11 +512,10 @@ public class workspace {
                             return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+err+"\"}" : "<script> console.error(\""+err+"\");</script>" );
                         }
                         cols = new JSONArray();
-                        int ic = 0;
+                        int icn = 1;
                         for(String col : allColumns) {
-                            JSONObject colJson = new JSONObject("{\"name\":\""+col+"\",\"field\":\""+String.valueOf(ic+1)+"\"}");
+                            JSONObject colJson = new JSONObject("{\"name\":\""+col+"\",\"field\":\""+String.valueOf(icn++)+"\"}");
                             cols.put(colJson);
-                            ic++;
                         }
                         tableJson.remove("columns");                    
                         tableJson.put("columns", cols);
@@ -558,6 +555,20 @@ public class workspace {
                         }
                     }
                 } 
+                
+                //
+                // Adding additional columns
+                //
+                JSONArray additionalCols = null;
+                int icn = cols.length()+1;
+                try { additionalCols = tableJson.getJSONArray("additionalColumns"); } catch (Exception ex) {}
+                if(additionalCols != null) {
+                    for(int ic=0; ic<additionalCols.length(); ic++) {
+                        JSONObject additionalCol = additionalCols.getJSONObject(ic);
+                        additionalCol.put("field", String.valueOf(icn++));
+                        cols.put( additionalCol );
+                    }
+                }                        
 
 
 
@@ -716,7 +727,13 @@ public class workspace {
                 try { isSystem = tableJson.getBoolean("isSystem"); } catch (Exception ex) {}
                 
 
+                
+                
+                
+
+                //
                 // Aggiunta Metadati
+                //
                 try {
                     if(connToUse==null) {
                         return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+controlId+" : no DB connection\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection\");</script>" );
