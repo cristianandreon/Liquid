@@ -51,7 +51,7 @@
 .liquidGridControlMod { color:darkRed; }
 .liquidGridRowOdd{ }
 .liquidGridRowEven{ background-color: rgba(211, 211, 211, 0.2) }
-.liquidGridLabel { color:darkgray; font-size:90%; font-style: italic; background-color: transparent; text-align:right; }
+.liquidGridLabel { color:#423e3e; font-size:90%; font-style: italic; background-color: transparent; text-align:right; text-overflow: ellipsis; overflow: hidden; }
 .liquidFilterControl { height:27px; width:calc(100% - 2px); overflow:auto; padding-left: 3px; }
 .liquidFiltersTable { table-layout: fixed; width: 100%; z-index:130; position:relative; background:rgb(234, 234, 234); }
 .liquidFiltersTable tr:hover { background-color:rgba(220, 241, 255, 70) !important; }
@@ -154,6 +154,7 @@
 .ui-accordion-content::-webkit-scrollbar { width: 8px; height: 8px; }
 .ui-accordion-content::-webkit-scrollbar-track { border-radius: 8px; }
 .ui-accordion-content::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+.ui-accordion-content { padding: 5px !important; }
 
 .liquidMenuXIcon { background-color: transparent; border: 1px solid transparent; padding:5px; cursor: pointer; }
 .liquidMenuXIcon:hover { transform:scale(1.2); transition: all .5s ease-Out; }
@@ -164,7 +165,7 @@
 .liquidMenuXchange .liquidMenuXbar3 { -webkit-transform: rotate(45deg) translate(-3px, -1px); transform: rotate(45deg) translate(-3px, -1px); }
 .liquidMenuXClosed { box-shadow:0px 0px 0px 0px black !important; }
 
-.liquidLayoutContainer { width:100%; display:block; overflow: auto; border:0px solid transparent; border-left:1px solid lightgray; border-right:1px solid lightgray }
+.liquidLayoutContainer { width: calc(100% - 2px); display:block; overflow: auto; border:0px solid transparent; border-left:1px solid lightgray; border-right:1px solid lightgray }
 .liquidLayoutContainer::-webkit-scrollbar { width: 8px; height: 8px; }
 .liquidLayoutContainer::-webkit-scrollbar-track { border-radius: 8px; }
 .liquidLayoutContainer::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
@@ -199,7 +200,7 @@ tr.liquidDocumentsXRows td { height:30px; background-color: transparent; padding
 .ui-draggable .ui-dialog-titlebar { background-color: #a9bac7 !important; }
 .lds-ring {  display:inline-block; position:relative; width:0px; height:12px; right:15px; top:-3px; }
 .lds-ring div {  box-sizing: border-box;  display: block;  position: absolute;  width: 14px;  height: 14px; margin: 2px;  border: 2px solid #73b3f7;  border-radius: 50%;  animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;  border-color: #73b3f7 transparent transparent transparent;}
-.lds-ring div:nth-child(1) { animation-delay: 0.45s; }
-.lds-ring div:nth-child(2) { animation-delay: 0.3s; }
-.lds-ring div:nth-child(3) { animation-delay: 0.15s; }
+.lds-ring div:nth-child(1) { animation-delay: -0.45s; }
+.lds-ring div:nth-child(2) { animation-delay: -0.3s; }
+.lds-ring div:nth-child(3) { animation-delay: -0.15s; }
 @keyframes lds-ring {  0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
