@@ -1,6 +1,7 @@
 package com.liquid;
 
 import com.google.gson.Gson;
+import static com.liquid.liquidize.liquidizeJSONContnet;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -559,8 +560,9 @@ public class workspace {
                 //
                 // Adding additional columns
                 //
+                try { cols = tableJson.getJSONArray("columns"); } catch(Exception e) {}
                 JSONArray additionalCols = null;
-                int icn = cols.length()+1;
+                int icn = cols != null ? cols.length()+1 : 1;
                 try { additionalCols = tableJson.getJSONArray("additionalColumns"); } catch (Exception ex) {}
                 if(additionalCols != null) {
                     for(int ic=0; ic<additionalCols.length(); ic++) {
@@ -570,6 +572,37 @@ public class workspace {
                     }
                 }                        
 
+
+                //
+                // check duplicate columns, set alias
+                //
+                try { cols = tableJson.getJSONArray("columns"); } catch(Exception e) {}
+                for(int ic=0; ic<cols.length(); ic++) {
+                    JSONObject col = cols.getJSONObject(ic);
+                    String colName = col.getString("name");
+                    String colLabel = col.has("label") ? col.getString("label") : "";
+                    for(int jc=ic+1; jc<cols.length(); jc++) {
+                        boolean duplicateFound = false;
+                        JSONObject jcol = cols.getJSONObject(jc);
+                        String jcolName = jcol.getString("name");
+                        String jcolLabel = jcol.has("label") ? jcol.getString("label") : "";
+                        if(colName.equalsIgnoreCase(jcolName)) {
+                            String aliasName = colName;
+                            String jaliasName = jcolName;
+                            if(!colLabel.isEmpty() && !jcolLabel.isEmpty() && colLabel.equalsIgnoreCase(jcolLabel)) {
+                                aliasName = colLabel+"_1";
+                                jaliasName = jcolLabel+"_2";
+                            } else {
+                                aliasName = colLabel.replaceAll(" ", "_");
+                                jaliasName = jcolLabel.replaceAll(" ", "_");
+                            }
+                            col.put("runtimeName", aliasName);
+                            cols.put(ic, col);
+                            jcol.put("runtimeName", jaliasName);
+                            cols.put(jc, jcol);
+                        }
+                    }
+                }
 
 
 
@@ -1656,17 +1689,23 @@ public class workspace {
                                         controlId = getControlIdFromFile(fileName);
                                         String jsVarName = getJSVariableFromControlId(controlId);
                                         boolean bProceed = true;
+                                        
+                                        // DEBUG : liquidizeJSONContnet(fileContent); return "{\"result\":-1,\"error\":\"\"}";
+                                        
                                         try {
                                             if(utility.fileExist(insideProjectFileName)) {
                                                 bProceed = (Messagebox.show( " File <b>"+insideProjectFileName+"</b> already exist<br/><br/> Do you want to overwrite it ?", "Liquid", Messagebox.YES+Messagebox.NO+Messagebox.WARNING) == Messagebox.YES);
                                             }
                                             if(bProceed) 
-                                                Files.write( Paths.get(insideProjectFileName), fileContent.getBytes());
+                                                Files.write( Paths.get(insideProjectFileName), liquidizeJSONContnet(fileContent).getBytes());
+                                            else 
+                                                return "{\"result\":0,\"message\":\"\"}";
                                         } catch (Exception ex) {
                                             return "{\"result\":-1,\"error\":\""+utility.base64Encode(ex.getLocalizedMessage()+" - writing:"+insideProjectFileName)+"\"}";
                                         }
                                         Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "File in project as <b>"+insideProjectFileName+"</b>");
                                         return "{\"result\":1,\"message\":\""+utility.base64Encode("file in project "+insideProjectFileName+" saved<br/><br/>javascript global var name : <b>"+jsVarName+"</b>")+"\"}";
+
                                     } else {
                                         Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "file "+insideProjectFileName+" saved by client request");
                                         return "{\"result\":1,\"message\":\""+utility.base64Encode("file "+fullFileName+" saved")+"\"}";
@@ -1930,6 +1969,7 @@ public class workspace {
     static String getControlIdFromFile(String fileName) {
         String controlId = "";
         if(fileName != null) {
+            fileName = fileName.replaceAll("@", "0");
             String [] sParts = fileName.toString().split("\\.");
             for(int ip=0; ip<sParts.length-1; ip++) {
                 String [] sSubParts =  sParts[ip].split("_");
@@ -2130,6 +2170,4 @@ public class workspace {
     static public boolean removeFromWhiteList(String database, String schema, String table) {
         return BlackWhiteList.removeFromWhiteList(database, schema, table);
     }    
-
-    
 }

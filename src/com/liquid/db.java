@@ -794,7 +794,15 @@ public class db {
                                             if("IN".equalsIgnoreCase(filterOp)) {
                                                 preFix = "(";	
                                                 postFix = ")";
-                                                if(filterValue == null || filterValue.isEmpty()) filterValue = "''";
+                                                if(filterValue == null || filterValue.isEmpty()) {
+                                                    filterValue = "''";
+                                                } else {
+                                                    if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                                                        // numeric
+                                                    } else {
+                                                        filterValue = "'" + filterValue + "'";
+                                                    }
+                                                }
                                             }
                                             if("LIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
                                                 if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
@@ -1568,7 +1576,7 @@ public class db {
                                             if(columns_json != null) {
                                                 fieldName = columns_json[ic];
                                             } else {
-                                                fieldName = col.getString("name");
+                                                fieldName = col.has("runtimeName") ? col.getString("runtimeName") : col.getString("name");
                                             }
                                         }
                                         if(colTypes[ic] == 8) {
@@ -2380,7 +2388,7 @@ public class db {
                     if(cols != null) {
                         bResult = true;
                         for(int ic=0; ic<cols.length(); ic++) {
-                            String colName = cols.getJSONObject(ic).getString("name");
+                            String colName = cols.getJSONObject(ic).has("runtimeName") ? cols.getJSONObject(ic).getString("runtimeName") : cols.getJSONObject(ic).getString("name");
                             String field = null, value = null;
                             
                             try { field = cols.getJSONObject(ic).getString("field"); } catch (Exception e) { /* value = String.valueOf(ic+1); */ }
@@ -2421,11 +2429,11 @@ public class db {
     
     
     //
-    //  Create single bean for primaryKey
+    //  Load single bean for given database.schema.table + primaryKey
     //
     //  ControlId is automatically created if not exist (from databaseShemaTable)
     //
-    //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+    //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
     static public Object load_bean( HttpServletRequest request, String databaseShemaTable, String columns, String primaryKey) {
         ArrayList<Object> beans = load_beans(request, databaseShemaTable, columns, null, primaryKey, 1);
@@ -2684,11 +2692,11 @@ public class db {
     }
 
 
-    
-    //  Carica solo i beans figli (la selezione non viene passata) della foreign Table nella proprientà beanName, valorizzandolo i campi sulla base del controllo tbl_wrk
-    //  Aggiunge i beans figli se specificati in foreignTables (elenco di stringhe separate da ,)
     //
-    //  Ritorna { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
+    //  Load child bean (beanName) from the Object bean (the children are the foreignTables)
+    //
+    //  Return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
+    //
     static public Object [] load_bean( Object bean, String beanName, long maxRows ) {
         return load_bean( bean, beanName, null, maxRows );
     }
@@ -3352,7 +3360,8 @@ public class db {
 
                                                                     if(colTypes[ic] == 8) { // float
                                                                         value = value.replace(",", ".");
-                                                                    } else if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
+                                                                    }
+                                                                    if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
                                                                         value = getLocalDate(value, colTypes[ic], nullable);
                                                                     } else if(colTypes[ic] == 8 || colTypes[ic] == 7  || colTypes[ic] == 6 || colTypes[ic] == 4 || colTypes[ic] == 3 || colTypes[ic] == -5 || colTypes[ic] == -6 || colTypes[ic] == -7) {
                                                                         // numeric
@@ -3497,7 +3506,7 @@ public class db {
                                                 }
                                             }
                                         } catch (Throwable th) {
-                                            foreignTableUpdates.add("{\"table\":\""+foreignTableTransactList.transactionList.get(i).table.replace(itemIdString, "")+"\",\"ids\":[], \"error\":\""+utility.base64Encode(th.getLocalizedMessage())+"\"}");
+                                            foreignTableUpdates.add("{\"table\":\""+foreignTableTransactList.transactionList.get(i).table.replace(itemIdString, "")+"\",\"ids\":[], \"error\":\""+utility.base64Encode(th.getLocalizedMessage())+"\", \"query\":\""+utility.base64Encode(executingQuery)+"\" }");
                                             modificationsFaild.add("{\"rowId\":\""+foreignTableTransactList.transactionList.get(i).rowId+"\",\"nodeId\":\""+tableTransactList.transactionList.get(i).nodeId+"\"}");
                                         }
                                     }
@@ -3524,7 +3533,7 @@ public class db {
                                                 }
                                             }
                                         } catch (Throwable th) {
-                                            tableUpdates.add("{\"table\":\""+liquid.schemaTable.replace(tableIdString, "")+"\",\"ids\":[], \"error\":\""+utility.base64Encode(th.getLocalizedMessage())+"\"}");
+                                            tableUpdates.add("{\"table\":\""+liquid.schemaTable.replace(tableIdString, "")+"\",\"ids\":[], \"error\":\""+utility.base64Encode(th.getLocalizedMessage())+"\", \"query\":\""+utility.base64Encode(executingQuery)+"\" }");
                                             modificationsFaild.add("{\"rowId\":\""+tableTransactList.transactionList.get(i).rowId+"\",\"nodeId\":\""+tableTransactList.transactionList.get(i).nodeId+"\"}");
                                         }
                                     }

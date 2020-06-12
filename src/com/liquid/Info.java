@@ -19,7 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 public class Info {
     
     public static String getVersion() {
-        return "1.9";
+        return "1.11";
     }
     public static String getInfo( HttpServletRequest request) {
         String out_string = "";

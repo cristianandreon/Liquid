@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Liquid ver.1.12   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  6-6-2020
+//  First update 8.1.2020 - Last update  8-6-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -165,7 +165,7 @@ class LiquidCtrl {
                                         var responseJSON = xhr.responseText;
                                         if(responseJSON) {
                                             var restOfTableSON = JSON.parse(restOfTableJson);
-                                            Liquid.transferFeatures(responseJSON, restOfTableSON);
+                                            Liquid.transferFeatures(this, responseJSON, restOfTableSON);
                                             responseText = JSON.stringify(responseJSON);
                                         }
                                     } catch (e) {
@@ -968,7 +968,7 @@ class LiquidCtrl {
                             if(this.foreignTables[ic].foreignTable) {
                                 if(this.foreignTables[ic].foreignColumn) {
                                     if(this.foreignTables[ic].column) {
-                                        Liquid.transferFeatures(this.foreignTables[ic], this.foreignTables[ic].json);
+                                        Liquid.transferFeatures(this, this.foreignTables[ic], this.foreignTables[ic].json);
                                         var srcLiquidOrId = this;
                                         var srcControlId = this.controlId;
                                         if(this.foreignTables[ic].sourceLiquidControlId !== 'undefined' && this.foreignTables[ic].sourceLiquidControlId)
@@ -984,6 +984,7 @@ class LiquidCtrl {
                                             this.foreignTables[ic].json['resize'] = 'linked';
                                         
                                         this.foreignTables[ic].json['token'] = this.tableJson.token;
+                                        
 
                                         var waiterId = this.foreignTables[ic].tabId+".waiter";
                                         this.foreignTables[ic].json.waitersId = [ waiterId ];
@@ -1340,7 +1341,7 @@ class LiquidCtrl {
                                     if(this.tableJson.multipanels[ic].foreignColumn) {
                                         if(this.tableJson.multipanels[ic].column) {
                                             // options transfer
-                                            Liquid.transferFeatures(this.tableJson.multipanels[ic], this.tableJson.multipanels[ic].json);
+                                            Liquid.transferFeatures(this, this.tableJson.multipanels[ic], this.tableJson.multipanels[ic].json);
                                             
                                             if(typeof this.tableJson.multipanels[ic].json['driver'] === 'undefined' || !this.tableJson.multipanels[ic].json['driver']) {
                                                 this.tableJson.multipanels[ic].json['driver'] = this.tableJson.driver;
@@ -1949,14 +1950,14 @@ var Liquid = {
         }
         return retVal;
     },    
-    buildCommandParams:function(liquid, command) {
+    buildCommandParams:function(liquid, command, obj) {
         if(liquid || command) {
             // command.name, command.params, command.server, command.client, command.isNative
             var controlIdList = command.params;
             var liquidProcessed = false;
             var liquidCommandParams = {
                 liquid: ( liquid ? liquid : { xhr: null, controlId: "", command: {} } ),
-                obj: null, 
+                obj: obj,
                 command: command,
                 params: []
             };
@@ -2184,6 +2185,16 @@ var Liquid = {
                     } catch (e) {
                         console.error(e);
                     }
+                }
+            }
+        }
+        for(var i=1; i<nameItems.length; i++) {
+            targetObj = isDef(targetObj[nameItems[i]]) ? targetObj[nameItems[i]] : targetObj;
+            if(typeof targetObj === 'string') {
+                try {
+                    targetObj = JSON.parse(targetObj);
+                } catch (e) {
+                    console.error(e);
                 }
             }
         }
@@ -2536,7 +2547,7 @@ var Liquid = {
             if(col) {
                 if(isDef(col.validate)) {
                     var command = col.validate;                    
-                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command);
+                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command, null);
                     if(command.client) {
                         if(command.clientAfter !== true || command.clientBefore === true) {
                             validateResult = Liquid.executeClientSide(liquid, "validate:" + command.name, command.client, liquidCommandParams, command.isNative);
@@ -4541,6 +4552,26 @@ var Liquid = {
             }
         }
     },
+    onServerCallbackTemplate:function(event) {
+        var obj = typeof event === 'object' ? event.target : null;
+        var obj_id = typeof event === 'object' ? obj.id : event;
+        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
+        Liquid.onContextMenuClose();
+        if(liquid) {
+            var funcName = prompt("Enter server side method name", "myCommand");
+            var funcCode = Liquid.getServerCallbackTemplateCode(liquid, funcName);
+            var dlg = Liquid.createServerCallbackTemplate(liquid, "ServerCallbackTemplateCode");
+            document.body.appendChild(dlg);
+            dlg.style.display = "";
+            var dlgContent = document.querySelector(".liquidEditorDialog-content");
+            if(dlgContent) {
+                dlgContent.style.top = dlg.parentNode.offsetTop + dlg.parentNode.clientHeight/2 - (dlgContent.clientHeight > 0 ? dlgContent.clientHeight:250)/2;
+                dlgContent.style.left = dlg.parentNode.offsetLeft + dlg.parentNode.clientWidth/2 - (dlgContent.clientWidth > 0 ? dlgContent.clientWidth:200)/2;
+                dlgContent.style.position='absolute';
+            }            
+            document.getElementById("ServerCallbackTemplateCode").innerHTML = funcCode;
+        }
+    },
     onNewActionBar:function(event) {
         var obj = typeof event === 'object' ? event.target : null;
         var obj_id = typeof event === 'object' ? obj.id : event;
@@ -5479,7 +5510,7 @@ var Liquid = {
                         var event = events[ievt];
                         if(event) {
                             if(Liquid.isSystemEvent(event)) { // system event take care of the syncronous chain
-                            	var eventParams = Liquid.buildCommandParams(liquid, event);
+                            	var eventParams = Liquid.buildCommandParams(liquid, event, null);
                                 res = systemResult = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, callback, callbackParams, defaultRetval);
                                 systemEventCounter++;
                                 eventCounter++;
@@ -5491,7 +5522,7 @@ var Liquid = {
                             var event = events[ievt];
                             if(event) {
                                 if(!Liquid.isSystemEvent(event)) {
-                                	var eventParams = Liquid.buildCommandParams(liquid, event);
+                                	var eventParams = Liquid.buildCommandParams(liquid, event, null);
                                     res = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, null, null, defaultRetval);
                                     result = res;
                                     eventCounter++;
@@ -5713,7 +5744,7 @@ var Liquid = {
                             var eventData = null;
                             var defaultRetval = null;
                             var bAlwaysCallback = true;
-                            var liquidCommandParams = Liquid.buildCommandParams(liquid, command);
+                            var liquidCommandParams = Liquid.buildCommandParams(liquid, command, obj);
                             eventName = eventName.toCamelCase();
                             Liquid.onEvent(obj, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bAlwaysCallback);
                             command.step = 0;
@@ -5736,6 +5767,7 @@ var Liquid = {
                 liquid.xhr = new XMLHttpRequest();
             if(Liquid.wait_for_xhr_ready(liquid, "command "+(command ? command.name : "?"))) {
                 try {
+                    if(obj) obj.disabled = true;
                     Liquid.startWaiting(liquid);
                     if(command.client) {
                         if(command.clientAfter !== true || command.clientBefore === true) {
@@ -5809,7 +5841,7 @@ var Liquid = {
                                 } catch (e) {
                                     console.error(liquid.xhr.responseText);
                                     console.error("onCommandStart() . error in response process:" + e);
-                                }                                
+                                }
                                 if(command.client) {
                                     if(command.clientAfter === true || command.clientBefore === false) {
                                         Liquid.executeClientSide(liquid, "command:"+command.name, command.client, liquidCommandParams, command.isNative);
@@ -5821,17 +5853,20 @@ var Liquid = {
                             } else {
                                 console.error("onCommandStart() . wrong response:" + liquid.xhr.status);
                             }
+                            
                             Liquid.release_xhr(liquid);
                             liquid.xhr = null;
                             Liquid.stopWaiting(liquid);
                             retVal = Liquid.onCommandDone(liquidCommandParams);
+                            if(obj) obj.disabled = false;
                         }
                     };
                     
                     liquid.xhr.send("{\"params\":" + (params ? JSON.stringify(params) : "[]") + "}");
                     
                 } catch (e) {
-                    console.error(e);
+                    console.error("ERROR : onCommandStart() : "+e);
+                    if(obj) obj.disabled = false;
                 }
             } else {
                 alert("!!! " + liquid.controlId+" is till waiting for last operaion:"+liquid.xhrDescription+ " !!!");
@@ -6749,7 +6784,7 @@ var Liquid = {
                             if(command.rollbackCommand)
                                 if(command.rollbackCommand.linkedObj)
                                     command.rollbackCommand.linkedObj.style.display = 'none';
-                        }
+                        }                        
                     }
                     if(Liquid.isRollbackCommand(command)) {
                         command.step = 0;
@@ -6779,7 +6814,7 @@ var Liquid = {
                     command.step = Liquid.CMD_EXECUTE;
                 }
                 if(command.step === Liquid.CMD_EXECUTE) {
-                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command);
+                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command, obj);
                     Liquid.onCommandStart(liquidCommandParams);
                     command.step = 0;
                 }
@@ -10572,7 +10607,7 @@ var Liquid = {
             Liquid.onResize(liquid);
         }
     },
-    transferFeatures:function(sourceObject, targetObject) {
+    transferFeatures:function(liquid, sourceObject, targetObject) {
         if(sourceObject) {
             if(targetObject) {
                 // options transfer
@@ -10582,7 +10617,7 @@ var Liquid = {
                     }
                 }
                 // features transfer
-                var propsToTransfer = [ "commands", "filters", "preFilters", "grids", "documents", "layouts", "charts", "multipanels", "events", "actions" ];
+                var propsToTransfer = [ "columns", "commands", "filters", "preFilters", "grids", "documents", "layouts", "charts", "multipanels", "events", "actions" ];
                 for(var ip=0; ip<propsToTransfer.length; ip++) {
                     if(isDef(sourceObject[propsToTransfer[ip]])) {
                         if(typeof targetObject[propsToTransfer[ip]] === 'undefined') {
@@ -10590,6 +10625,22 @@ var Liquid = {
                         } else {
                             for(var attrname in sourceObject[propsToTransfer[ip]]) {
                                 targetObject[propsToTransfer[ip]][attrname] = sourceObject[propsToTransfer[ip]][attrname];
+                            }
+                        }
+                    }
+                }
+                // solving links
+                for(var ip=0; ip<propsToTransfer.length; ip++) {
+                    if(isDef(targetObject[propsToTransfer[ip]])) {
+                        if(typeof targetObject[propsToTransfer[ip]] === 'string') {
+                            if(targetObject[propsToTransfer[ip]].trim().startsWith("@")) {
+                                var globalVarName = targetObject[propsToTransfer[ip]].trim().substring(1);
+                                var globalVar = Liquid.getObjectByName(liquid, globalVarName);
+                                if(isDef(globalVar)) {
+                                    targetObject[propsToTransfer[ip]] = globalVar;
+                                } else {
+                                    console.error("ERROR: "+globalVarName+" not found");
+                                }
                             }
                         }
                     }
@@ -10968,7 +11019,7 @@ var Liquid = {
             if(command.server) {
                 if(userId) {
                     var syncParam = (typeof sync !== 'undefined' ? sync : true);
-                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command);
+                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command, null);
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', glLiquidServlet + '?operation=startWorker'
                             +'&userId=' + userId
@@ -11619,6 +11670,26 @@ var Liquid = {
         }
         return dlg;
     },
+    createServerCallbackTemplate:function(liquid, itemId) {
+        var dlg = document.getElementById("liquidServerCallbackTemplate");
+        if(!dlg) {
+            dlg = document.createElement('div');
+            dlg.id = "liquidServerCallbackTemplate";
+            dlg.className = "liquidContextMenu";
+            // dlg.display = 'none';
+            var onCancelCode = "document.getElementById('liquidServerCallbackTemplate').style.display='none'";
+            var onOkCode = "";
+            var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
+            var contentHTML = "<div class=\"liquidEditorDialog-content\">"
+                    + "<span class=\"liquidContextMenu-close\"></span>"
+                    + "<textarea id=\""+itemId+"\" class=\"liquidSystemDialogTextarea\" ></textarea>"
+                    + "<input class=\"liquidSystemDialogInput\" type=\"hidden\" value='"+""+onKeyPressCode+"'/>"
+                    + "<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\""+onCancelCode+"\">Close</button>"
+                    + "</div>";
+            dlg.innerHTML = contentHTML;
+        }
+        return dlg;
+    },
     createSystemLookupDialog:function(liquid, resultId) {
         var lookupVariable = "GLOBAL_VAR_NAME"; // by json in global var or object
         var lookupContent = { schema:"SCHEMA", table:"TABLE", lookupField:"COLUMN", idColumn:"ID_COLUMN", tagetColumn:"TARGET_COLUMN" }; // by json content
@@ -11628,7 +11699,7 @@ var Liquid = {
             dlg = document.createElement('div');
             dlg.id = "liquidLookupDialog";
             dlg.className = "liquidContextMenu";
-            dlg.display = 'none';
+            // dlg.display = 'none';
             dlg.innerHTML = "<div class=\"liquidEditorDialog-content\">"
                     +"<span class=\"liquidContextMenu-close\"></span>"
                     +"Editor:<input id=\""+resultId+"\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+""+"'/>"
@@ -11783,6 +11854,8 @@ var Liquid = {
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewCommand('"+liquid.controlId+".newCommand')\" >"+addImg+"<a href=\"javascript:void(0)\">New Command"+"</a></p>"
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
+                +"<p><hr size=1></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onServerCallbackTemplate('"+liquid.controlId+".template')\">"+optImg+"<a href=\"javascript:void(0)\">Get Server Callback"+"</a></p>"
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
@@ -12371,7 +12444,7 @@ var Liquid = {
             glLastFrameId = frameId;
         });
     },
-    getGeneralServerCode:function(liquid, funcName) {
+    getServerCallbackTemplateCode:function(liquid, funcName) {
         var out = "";
         out += "static public String "+funcName+"(Object tbl_wrk, Object params, Object clientData, Object requestParam ) {\n";
         out += "int retVal = 0;\n";
@@ -12398,7 +12471,7 @@ var Liquid = {
         out += "                        // utility.set(bean, \"priority\", priority+1);\n";
         if(liquid) {
             if(liquid.tableJson.columns) {
-                for(var ic=0; ic<liquid.tableJson.columns; ic++) {
+                for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
                     var col = liquid.tableJson.columns[ic];
                     var jType = "Object";
                     if(col) {
@@ -12411,6 +12484,7 @@ var Liquid = {
                         } else {
                             jType = "String";
                         }
+                        out += "                        ";
                         out += jType
                         out += " " + col.name + " = ("+jType+")utility.get(bean, \""+col.name+"\");\n";
                     }
