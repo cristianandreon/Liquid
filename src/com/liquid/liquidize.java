@@ -6,6 +6,7 @@
 package com.liquid;
 
 import static com.liquid.workspace.GLLang;
+import static com.liquid.workspace.controlIdSeparator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -203,5 +204,21 @@ public class liquidize {
         
         return out;
     }    
-    
+
+    static String liquidizeString( String baseName, String controlIdSeparator ) {
+        return liquidizeString( baseName, controlIdSeparator, false );
+    }
+    static String liquidizeString( String baseName, String controlIdSeparator, boolean bLastPart ) {
+        String result = "";
+        String [] sParts = baseName.toString().split("\\.");
+        for(int ip=(bLastPart ? sParts.length-1 : 0); ip<sParts.length; ip++) {
+            String [] sSubParts =  sParts[ip].split("_");
+            result += (result.length()>0 ? (controlIdSeparator != null ? controlIdSeparator : "") : "");
+            for(int ips=0; ips<sSubParts.length; ips++) {
+                String part = sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length()).toLowerCase();
+                if(!part.isEmpty()) result += part;
+            }
+        }
+        return result;
+    }    
 }

@@ -629,7 +629,7 @@ public class event {
         
         glEnable = !glEnable;
         
-        result += ",\"detail\":["+updateResults+"]";        
+        result += ",\"details\":["+updateResults+"]";        
         result += "}";        
 
         return result;
@@ -695,7 +695,7 @@ public class event {
             }
         }
         result += "\"";
-        result += ",\"detail\":["+updateResults+"]";        
+        result += ",\"details\":["+updateResults+"]";        
         result += "}";
         return result;
     }
@@ -742,7 +742,7 @@ public class event {
             }
         }
         result += "\"";
-        result += ",\"detail\":["+updateResults+"]";        
+        result += ",\"details\":["+updateResults+"]";        
         result += "}";
         return result;
     }
@@ -852,7 +852,7 @@ public class event {
                 System.err.println(" updateRow() Error:" + e.getLocalizedMessage());
             }
             
-            result += ",\"detail\":"+(resAdd != null && !resAdd.isEmpty() ? resAdd: "\"\"");
+            result += ",\"details\":"+(resAdd != null && !resAdd.isEmpty() ? resAdd: "\"\"");
             result += "}";
             return result;
         
@@ -1233,7 +1233,7 @@ public class event {
                 System.err.println(" updateRow() Error:" + e.getLocalizedMessage());
             }
             
-            result += ",\"detail\":"+(resUpd != null && !resUpd.isEmpty() ? resUpd: "\"\"");
+            result += ",\"details\":"+(resUpd != null && !resUpd.isEmpty() ? resUpd: "\"\"");
             result += "}";
             return result;
         
@@ -1296,7 +1296,7 @@ public class event {
                 System.err.println(" deleteRow() Error:" + e.getLocalizedMessage());
             }
             
-            result += ",\"detail\":"+(resDel != null && !resDel.isEmpty() ? resDel: "\"\"");
+            result += ",\"details\":"+(resDel != null && !resDel.isEmpty() ? resDel: "\"\"");
             result += "}";
             return result;
         

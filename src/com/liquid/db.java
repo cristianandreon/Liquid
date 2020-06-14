@@ -1,9 +1,10 @@
 package com.liquid;
 
 import static com.liquid.event.forwardEvent;
-import com.liquid.metadata.ForeignKey;
 import static com.liquid.utility.searchProperty;
 import static com.liquid.workspace.check_database_definition;
+import com.liquid.metadata.ForeignKey;
+
 import java.beans.IntrospectionException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -32,7 +33,7 @@ import javassist.NotFoundException;
 import javax.servlet.http.HttpSession;
 
 
-
+// TODO : Get row data from client (static content) even from DB
 // TODO : set dei parametri nella prepare statement
 // TODO : Cursore nel DB aperto per non leggere le modifiche concorrenti
 // TODO : Delete cascade
@@ -234,8 +235,6 @@ public class db {
             String column_json_list = "";
             String leftJoinList = "";
             String column_alias = null;
-            String schemaTable = null;
-            String databaseSchemaTable = null;
             ArrayList<ForeignKey> foreignKeys = null;
             ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap> ();           
             workspace tbl_wrk = workspace.get_tbl_manager_workspace( tblWrk != null ? tblWrk : controlId );
@@ -249,8 +248,6 @@ public class db {
             }
 
             String itemIdString = "\"", tableIdString = "\"";
-            if(conn != null) {
-            }
             if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("postgres.")) || tbl_wrk.dbProductName.toLowerCase().contains("postgres")) {
                 isPostgres = true;
             }
@@ -408,22 +405,9 @@ public class db {
                         schema = tbl_wrk.defaultSchema;
                     }
                     
-                    schemaTable = "";
-                    databaseSchemaTable = "";
-                    if(database != null && !database.isEmpty()) {
-                        databaseSchemaTable += tableIdString+database+tableIdString;
-                    }
-                    if(schema != null && !schema.isEmpty()) {
-                        schemaTable += tableIdString+schema+tableIdString;
-                        databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+tableIdString+schema+tableIdString;
-                    }
-                    if(table != null && !table.isEmpty()) {
-                        schemaTable += (schemaTable.length()>0?".":"")+tableIdString+table+tableIdString;
-                        databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+tableIdString+table+tableIdString;
-                    }
-                        
-                    tbl_wrk.schemaTable = schemaTable;
-                    tbl_wrk.databaseSchemaTable = databaseSchemaTable;
+                    // compute table coords
+                    workspace.setDatabaseShemaTable(tbl_wrk);
+                    
 
                     
                     // N.B. targetDatabase, targetSchema, targetTable sono validi solo per le chiamate di sistema
@@ -572,7 +556,6 @@ public class db {
                 error += "[" + msg + "]";
                 System.err.println(msg);
                 table = controlId;
-                databaseSchemaTable = schemaTable = table;
             }
 
 
@@ -596,7 +579,7 @@ public class db {
             if(isCrossTableService && targetTable != null && !targetTable.isEmpty()) {
                 workingTable = targetTable; // tabella spedificata
             } else {
-                workingTable = schemaTable;
+                workingTable = tbl_wrk.schemaTable;
                 if(isMySQL) {
                 } else if(isPostgres) {
                 } else if(isOracle) {
@@ -693,7 +676,10 @@ public class db {
                                             boolean bFoundCol = false;
 
                                             // risolve l'ambiguita'
-                                            if(colParts.length==1 && (filterTable == null || filterTable.isEmpty())) {
+                                            if(colParts.length==1) {
+                                                if (filterTable == null || filterTable.isEmpty()) {
+                                                } else {
+                                                }
                                                 for(int ic = 0; ic < cols.length(); ic++) {
                                                     col = cols.getJSONObject(ic);
                                                     String colName = null;
@@ -705,7 +691,9 @@ public class db {
 
                                                     // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
                                                     // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
-                                                    colAlias = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;        
+                                                    filterTable = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table);
+                                                    if(filterTable == null || filterTable.isEmpty()) filterTable = table;
+                                                    colAlias = (table) + "." + itemIdString+colName+itemIdString;        
 
                                                     if(filterName.equalsIgnoreCase(colName)) {
                                                         // filterName = colAlias != null ? colAlias : filterName;
@@ -714,7 +702,7 @@ public class db {
                                                     }
                                                 }
                                                 if(!bFoundCol) {
-                                                    filterName = schemaTable+"."+itemIdString+filterName+itemIdString;
+                                                    filterName = tbl_wrk.schemaTable+"."+itemIdString+filterName+itemIdString;
                                                     // error += "[Filters Error: field : "+filterName+" not resolved]";
                                                     // System.err.println("Filters Error: field : "+filterName+" not resolved");
                                                 }
@@ -744,6 +732,8 @@ public class db {
                                                         break;
                                                     }
                                                 }
+                                            } else {
+                                                // undetected case
                                             }
 
                                             if(col != null) {
@@ -1032,7 +1022,7 @@ public class db {
 
                                     cRow = startRow;
                                     // WHERE utenti.utenti_id IN (65,38,
-                                    sWhereIds = "\nWHERE "+schemaTable+"."+primaryKey+" IN (" + sIdsList + ")";
+                                    sWhereIds = "\nWHERE "+tbl_wrk.schemaTable+"."+primaryKey+" IN (" + sIdsList + ")";
                                     executingQuery = baseQuery + sWhereIds;
                                     bCacheIdsInAvailable = true;
                                     System.err.println("IDS CACHE: executingQuery:" + executingQuery);
@@ -1132,7 +1122,7 @@ public class db {
                     try {
                         if(table != null && !table.isEmpty()) {
                             if(connToUse != null) {
-                                countQuery = "SELECT COUNT(*) AS nRows FROM "+schemaTable + " " + leftJoinList +" " + sWhere;
+                                countQuery = "SELECT COUNT(*) AS nRows FROM "+tbl_wrk.schemaTable + " " + leftJoinList +" " + sWhere;
                                 psdo = connToUse.prepareStatement(countQuery);
                                 rsdo = psdo.executeQuery();
                                 if(rsdo != null) {
@@ -1809,6 +1799,11 @@ public class db {
                                         executingQuery += "\n"+columnsList;
                                     }
                                 }
+                                
+                                if(ids != null && !ids.isEmpty()) {
+                                    // prevale sui filtri ultima query eseguira
+                                    where = null;
+                                }
 
                                 if(ids != null && ("*".equalsIgnoreCase(ids) || "\"*\"".equalsIgnoreCase(ids) || "all".equalsIgnoreCase(ids) || "\"all\"".equalsIgnoreCase(ids)))  {
                                     // No filter : all rows
@@ -2020,7 +2015,7 @@ public class db {
             Map<String, Class<?>> props = new HashMap<String, Class<?>>();
             Map<String, Class<?>> attributes = new HashMap<String, Class<?>>();
             for(int ic=0; ic<cols.length(); ic++) {
-                String colName = cols.getJSONObject(ic).getString("name");
+                String colName = cols.getJSONObject(ic).has("runtimeName") ? cols.getJSONObject(ic).getString("runtimeName") : cols.getJSONObject(ic).getString("name");
                 String [] colParts = colName.split("\\.");
                 if(colParts.length > 1) {
                     if(table.equalsIgnoreCase(colParts[0])) {
@@ -2406,7 +2401,7 @@ public class db {
                                 utility.set(obj, colName, value);
                             } catch (Throwable th) {
                                 error = "[ ERROR setting "+colName+" : "+th.getLocalizedMessage()+"]";
-                                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
+                                Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery "+colName+" not found", th);
                                 bResult = false;
                             }
                             try {
@@ -2435,7 +2430,7 @@ public class db {
     //
     //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public Object load_bean( HttpServletRequest request, String databaseShemaTable, String columns, String primaryKey) {
+    static public Object load_bean( HttpServletRequest request, String databaseShemaTable, String columns, Object primaryKey) {
         ArrayList<Object> beans = load_beans(request, databaseShemaTable, columns, null, primaryKey, 1);
         if(beans != null) {
             if(beans.size() > 0) {
@@ -2453,8 +2448,7 @@ public class db {
     //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
     static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) {
-        String controlId = databaseShemaTable.replace(".", "_");
-        return load_beans( request, controlId, databaseShemaTable, columns, keyColumn, key, maxRows );
+        return load_beans( request, null, databaseShemaTable, columns, keyColumn, key, maxRows );
     }
     
     //
@@ -2505,9 +2499,23 @@ public class db {
             }
 
             // cerca il controllo
-            workspace tbl_wrk = workspace.get_tbl_manager_workspace( controlId );
+            workspace tbl_wrk = null;
+            if(controlId == null) {
+                String runtimeControlId = workspace.getControlIdFromDatabaseSchemaTable(databaseShemaTable);
+                tbl_wrk = workspace.get_tbl_manager_workspace( runtimeControlId );
+                if(tbl_wrk == null) {
+                    runtimeControlId = workspace.getControlIdFromTable(databaseShemaTable);
+                    tbl_wrk = workspace.get_tbl_manager_workspace( runtimeControlId );
+                }
+            } else {                    
+                tbl_wrk = workspace.get_tbl_manager_workspace( controlId );
+            }
+            
             if(tbl_wrk == null) {
                 // crea il controllo
+                if(controlId == null) {
+                    controlId = workspace.getControlIdFromDatabaseSchemaTable(databaseShemaTable);
+                }
                 String sRequest = "";
                 String parentControlId = null;
                 String sTableJson = workspace.get_default_json(request, controlId, controlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
@@ -2582,13 +2590,19 @@ public class db {
             String sWhere = "";
             if(key instanceof String) {
                 sWhere = " WHERE " + keyColumn + "='" + key + "'";
+            } else if(key instanceof Long || key instanceof Integer || key instanceof Float || key instanceof Double) {
+                sWhere = " WHERE " + keyColumn + "=" + String.valueOf(key) + "";
             } else if(key instanceof JSONArray) {
             } else if(key instanceof ArrayList<?>) {
                 String keyList = workspace.arrayToString(((ArrayList<String>)key).toArray(), null, null, ",");
                 sWhere = " WHERE " + keyColumn + " IN (" + keyList + ")";
+            } else {
+                String err = "ERROR : load_beans() : undetect key type in control : "+controlId;
+                System.err.println("// "+err);
+                return null;
             }
             
-            String executingQuery = "SELECT * FROM " + (tableIdString+schema+tableIdString) + "." + (tableIdString+table+tableIdString) + sWhere;
+            String executingQuery = "SELECT * FROM " + tbl_wrk.schemaTable + sWhere;
 
             conn = connection.getConnection( null, request, tbl_wrk.tableJson );
 
@@ -2611,7 +2625,7 @@ public class db {
                 String [] columns_alias = column_alias_list.split(",");
                 String [] columns_json = column_json_list != null ? column_json_list.split(",") : null;
                 boolean bColumnsResolved = false;
-                // try { bColumnsResolved = ("false".equalsIgnoreCase(columnsResolved) ? false : tbl_wrk.tableJson.getBoolean("columnsResolved") ); } catch(Exception e) {}
+
                 cols = tbl_wrk.tableJson.getJSONArray("columns");
                 int [] colTypes = null; // new int[cols.length()];
                 int [] colPrecs = null; // new int[cols.length()];
@@ -2702,18 +2716,22 @@ public class db {
     }
 
     static public Object load_parent_bean( Object bean, Object params, long maxRows ) {
-        Object [] beans_result = load_bean( bean, "&Parent", params, maxRows );
+        Object [] beans_result = load_bean( bean, "$Parent", params, maxRows );
         if(beans_result != null) {
-            return beans_result[0];
-        } else {
-            return null;
+            ArrayList<Object> resultBeasns = (ArrayList<Object>)beans_result[0];
+            if(resultBeasns != null) {
+                if(resultBeasns.size() > 0) {
+                    return resultBeasns.get(0);
+                }
+            }
         }
+        return null;
     }
     
-    //  Carica i beans figli o padri della foreign Table nella proprientà beanName, valorizzandolo i campi sulla base del controllo tbl_wrk
-    //  Aggiunge i beans figli se specificati in foreignTables (elenco di stringhe separate da ,)
+    //  Load child beans defined by foreignTable beanName inside the Object bean
+    //  Need selection or rows defined in params (it comes from client)
     //
-    //  Ritorna { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
+    //  Return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
     static public Object [] load_bean( Object bean, String beanName, Object params, long maxRows ) {
         ArrayList<Object> beans = null;
         int nBeans = 0, nBeansLoaded = 0;
@@ -2792,25 +2810,29 @@ public class db {
                                     JSONArray rowsJson = jsonRecord.getJSONArray("resultSet");
                                     beans = new ArrayList<Object>();
                                     nBeans = rowsJson.length();
-                                    for(int ir=0; ir<nBeans; ir++) {
-                                        JSONObject row = rowsJson.getJSONObject(ir);
-                                        tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
-                                        Object [] resSet = set_bean_by_json_resultset(obj, tbl_wrk, row);
-                                        if(resSet != null) {
-                                            if(!(boolean)resSet[0]) {
-                                                errors += "[Error setting row "+(ir+1)+"/"+(rowsJson.length())+":" + ((String)resSet[1]) +"]";
+                                    if(nBeans > 0) {
+                                        for(int ir=0; ir<nBeans; ir++) {
+                                            JSONObject row = rowsJson.getJSONObject(ir);
+                                            tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+                                            Object [] resSet = set_bean_by_json_resultset(obj, tbl_wrk, row);
+                                            if(resSet != null) {
+                                                if(!(boolean)resSet[0]) {
+                                                    errors += "[Error setting row "+(ir+1)+"/"+(rowsJson.length())+":" + ((String)resSet[1]) +"]";
+                                                }
+                                            } else {
+                                                errors += "[Nulll result setting row "+(ir+1)+"/"+(rowsJson.length())+"]";
                                             }
-                                        } else {
-                                            errors += "[Nulll result setting row "+(ir+1)+"/"+(rowsJson.length())+"]";
+                                            beans.add(obj);
+                                            nBeansLoaded++;
                                         }
-                                        beans.add(obj);
-                                        nBeansLoaded++;
-                                    }
-                                    // set del risultato sulla propietà del bean
-                                    utility.set(bean, beanNameFound, beans);
-                                    utility.set(bean, beanNameFound+"$Read", true);
-                                    utility.set(bean, beanNameFound+"$Changed", false);
+                                        // set del risultato sulla propietà del bean
+                                        utility.set(bean, beanNameFound, beans);
+                                        utility.set(bean, beanNameFound+"$Read", true);
+                                        utility.set(bean, beanNameFound+"$Changed", false);
 
+                                    } else {
+                                        errors += "[row not found on '"+beanName+"' : "+className+"]";
+                                    }
                                 } else {
                                     errors += "[class not found on '"+beanName+"' : "+className+"]";
                                 }

@@ -144,7 +144,7 @@ public class system_command {
         }        
         
         
-        // result += ",\"detail\":["+updateResults+"]";        
+        // result += ",\"details\":["+updateResults+"]";        
         result += "}";        
 
         return result;

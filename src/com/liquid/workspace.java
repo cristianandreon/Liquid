@@ -46,6 +46,51 @@ public class workspace {
     // key persistent on server but hidden on the client
     static String [] serverPriorityKeys = { "connectionURL", "query" };
     static String kDefinedAtServerSide = "[definedAtServerSide]";
+    
+    // separator used in controId build from file or database/schema/table
+    static String controlIdSeparator = ".";
+
+    static void setDatabaseShemaTable(workspace tbl_wrk) {
+        if(tbl_wrk != null) {
+            String database = null;
+            String schema = null;
+            String table = null;
+            String schemaTable = "";
+            String databaseSchemaTable = "";
+            
+            try { database = tbl_wrk.tableJson.getString("database"); } catch (Exception e) {  }
+            try { schema = tbl_wrk.tableJson.getString("schema"); } catch (Exception e) {  }
+            try { table = tbl_wrk.tableJson.getString("table"); } catch (Exception e) {  }
+            
+            String itemIdString = "\"", tableIdString = "\"";
+            if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
+                itemIdString = "`";
+                tableIdString = "";
+            }
+
+            if(schema == null || schema.isEmpty()) {
+                schema = tbl_wrk.defaultSchema;
+            }
+            if(database == null || database.isEmpty()) {
+                database = tbl_wrk.defaultDatabase;
+            }
+            
+            if(database != null && !database.isEmpty()) {
+                databaseSchemaTable += tableIdString+database+tableIdString;
+            }
+            if(schema != null && !schema.isEmpty()) {
+                schemaTable += tableIdString+schema+tableIdString;
+                databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+tableIdString+schema+tableIdString;
+            }
+            if(table != null && !table.isEmpty()) {
+                schemaTable += (schemaTable.length()>0?".":"")+tableIdString+table+tableIdString;
+                databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+tableIdString+table+tableIdString;
+            }
+
+            tbl_wrk.schemaTable = schemaTable;
+            tbl_wrk.databaseSchemaTable = databaseSchemaTable;
+        }
+    }
 
     
     public workspace() {
@@ -269,6 +314,7 @@ public class workspace {
             File relativePath = new File(absoluteFilePathRoot+sFolder);
             String absolutePath = relativePath.getCanonicalPath();                
             final File folder = new File(absolutePath);
+            List<String> controlIds = new ArrayList<>();
             List<String> result = new ArrayList<>();
             search(".*\\.json", folder, result);
             for(String s : result) {
@@ -276,10 +322,17 @@ public class workspace {
                 Path fileName = path.getFileName();         
                 String sTableJsonFile = s;
                 String controlId = getControlIdFromFile(fileName.toString());
-                String controlScript = get_table_control(request, controlId, sTableJsonFile, replaceApex, owner, returnType);
-                out_string += "<!-- ControlId: "+controlId+" File:"+s+" -->\n";
-                out_string += controlScript;
-                out_string += "\n\n";
+                if(utility.contains(controlIds, controlId)) {
+                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Duplicate control id : "+controlId);
+                    out_string += "<!-- ERROR: Duplicate controlId: "+controlId+" File:"+s+" -->\n";
+                    out_string += "<script>alert(\"Duplicate controlId:"+controlId+"\\n\\nPlease check files in the folder:"+sFolder+"\")</script>\n";
+                } else {
+                    String controlScript = get_table_control(request, controlId, sTableJsonFile, replaceApex, owner, returnType);
+                    controlIds.add(controlId);                        
+                    out_string += "<!-- ControlId: "+controlId+" File:"+s+" -->\n";
+                    out_string += controlScript;
+                    out_string += "\n\n";
+                }
             }
             return out_string;
         } catch (Exception ex) {
@@ -1110,6 +1163,8 @@ public class workspace {
             
             String token = login.getSaltString(32);
             tableJson.put("token", token);
+            
+
     
             // In query mode set parentControlId / rootControlId to self
             if(query != null && !query.isEmpty()) {
@@ -1158,7 +1213,7 @@ public class workspace {
                         || (tblWorkspace.owner != null && owner == null)
                         || (tblWorkspace.owner != null && owner != null && !tblWorkspace.owner.getClass().equals(owner.getClass()))
                         ) {
-                        System.out.println("WARNING : Overwrited Owner of control : "+controlId);
+                        System.out.println("WARNING : Overwrited owner of control : "+controlId);
                         tblWorkspace.owner = owner;
                     }
                     
@@ -1167,6 +1222,7 @@ public class workspace {
                     tblWorkspace.defaultSchema = defaultSchema;
                     tblWorkspace.dbProductName = dbProductName;
                     tblWorkspace.token = token;
+                    workspace.setDatabaseShemaTable(tblWorkspace);
                     System.out.println("/* LIQUID INFO : control : "+controlId + " driverClass:"+tblWorkspace.driverClass + " dbProductName:"+dbProductName+"*/");
                     return result;
                 }
@@ -1180,6 +1236,7 @@ public class workspace {
             tblWorkspace.defaultSchema = defaultSchema;
             tblWorkspace.driverClass = connToUse != null ? connToUse.getClass().getName() : null;
             tblWorkspace.token = token;
+            workspace.setDatabaseShemaTable(tblWorkspace);
             // tblWorkspace.get_connection assegnato a default_connection
             System.out.println("/* LIQUID INFO : new control : "+controlId + " driverClass:"+tblWorkspace.driverClass + " dbProductName:"+dbProductName+"*/");
             glTblWorkspaces.add(tblWorkspace);
@@ -1517,6 +1574,8 @@ public class workspace {
 
             if(utility.fileExist(fileName)) { // full file name
                 fullFileName = fileName;
+                File f = new File(fileName);
+                fileName = f.getName();
             } else {
                 fullFileName = path + localFileName;
             }
@@ -1968,21 +2027,39 @@ public class workspace {
 
     static String getControlIdFromFile(String fileName) {
         String controlId = "";
-        if(fileName != null) {
+        if(fileName != null && !fileName.isEmpty()) {
             fileName = fileName.replaceAll("@", "0");
-            String [] sParts = fileName.toString().split("\\.");
-            for(int ip=0; ip<sParts.length-1; ip++) {
-                String [] sSubParts =  sParts[ip].split("_");
-                for(int ips=0; ips<sSubParts.length; ips++) {
-                    controlId += sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length()).toLowerCase();
-                }
-            }
+            if(fileName.endsWith(".json"))
+                fileName = fileName.substring(0, fileName.lastIndexOf(".json"));
+            return liquidize.liquidizeString(fileName, controlIdSeparator);
         }
-        return controlId;
+        return null;
     }
 
+    
+    // iCenter.icenter.user_asset   ->  iCenter|.center.UserAsset
+    static String getControlIdFromDatabaseSchemaTable(String databaseSchemaTable) {
+        if(databaseSchemaTable != null && !databaseSchemaTable.isEmpty()) {
+            databaseSchemaTable = databaseSchemaTable.replaceAll("`", "");
+            databaseSchemaTable = databaseSchemaTable.replaceAll("\"", "");
+            return liquidize.liquidizeString(databaseSchemaTable, controlIdSeparator);
+        }
+        return null;
+    }
+    
+    // iCenter.icenter.user_asset   ->  UserAsset
+    static String getControlIdFromTable(String table) {
+        if(table != null && !table.isEmpty()) {
+            table = table.replaceAll("`", "");
+            table = table.replaceAll("\"", "");
+            return liquidize.liquidizeString(table, controlIdSeparator, true);
+        }
+        return null;
+    }
+    
     static String getJSVariableFromControlId(String controlId) {
         if(controlId != null && !controlId.isEmpty()) {
+            controlId = controlId.replaceAll("\\.", "_");
             String [] sSubParts = controlId.split("_");
             String result = "";
             if(sSubParts.length > 1) {

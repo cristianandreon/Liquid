@@ -536,6 +536,19 @@ public class utility {
         }
         return false;
     }
+    static public boolean isChanged(Object bean) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+        if (bean != null) {
+            Field [] fields = bean.getClass().getDeclaredFields();
+            for(Field field : fields) {
+                if (field != null) {
+                    if(field.getName().indexOf("$Changed") != -1) {
+                        if((Boolean)get(bean, field.getName())) return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
     static private PropertyDescriptor getPropertyDescriptor(Class<?> bean, String propertyname) throws IntrospectionException {
         BeanInfo beanInfo = Introspector.getBeanInfo(bean);
@@ -857,6 +870,7 @@ public class utility {
         return sTimeLeft;
     }
 
+
     static class MyErrorHandler implements ErrorHandler {
 
         public void warning(SAXParseException e) throws SAXException {
@@ -938,4 +952,19 @@ public class utility {
     public static ArrayList<String> jsonArrayToArrayList(JSONArray objs, String prefix, String postfix) {
         return jsonArrayToArrayList(objs, prefix, postfix);
     }    
+    
+    public static boolean contains(ArrayList<Object> controlIds, Object controlId) {
+        for(int i=0; i<controlIds.size(); i++) {
+            if(controlIds.get(i).equals(controlId)) return true;
+        }
+        return false;
+    }
+    
+    static boolean contains(List<String> controlIds, String controlId) {
+        for(int i=0; i<controlIds.size(); i++) {
+            if(controlIds.get(i).equalsIgnoreCase(controlId)) return true;
+        }
+        return false;
+    }
+    
 }
