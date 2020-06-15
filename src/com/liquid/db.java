@@ -2430,7 +2430,7 @@ public class db {
     //
     //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public Object load_bean( HttpServletRequest request, String databaseShemaTable, String columns, Object primaryKey) {
+    static public Object load_bean( HttpServletRequest request, String databaseShemaTable, String columns, Object primaryKey) throws JSONException {
         ArrayList<Object> beans = load_beans(request, databaseShemaTable, columns, null, primaryKey, 1);
         if(beans != null) {
             if(beans.size() > 0) {
@@ -2447,10 +2447,53 @@ public class db {
     //
     //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) {
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException {
         return load_beans( request, null, databaseShemaTable, columns, keyColumn, key, maxRows );
     }
+
     
+    static public workspace load_beans_get_workspace ( HttpServletRequest request, String databaseShemaTable, String controlId ) throws JSONException {
+        String database = null, table = null, schema = null, primaryKey = null;
+        workspace tbl_wrk = null;
+        if(controlId == null) {
+            String runtimeControlId = workspace.getControlIdFromDatabaseSchemaTable(databaseShemaTable);
+            tbl_wrk = workspace.get_tbl_manager_workspace( runtimeControlId );
+            if(tbl_wrk == null) {
+                runtimeControlId = workspace.getControlIdFromTable(databaseShemaTable);
+                tbl_wrk = workspace.get_tbl_manager_workspace( runtimeControlId );
+            }
+        } else {                    
+            tbl_wrk = workspace.get_tbl_manager_workspace( controlId );
+        }        
+        if(tbl_wrk == null) {
+            // crea il controllo
+            String [] tableParts = databaseShemaTable.split("\\.");            
+            if(tableParts.length == 1) {
+                table = tableParts[0];
+            } else if(tableParts.length == 2) {
+                table = tableParts[1];
+                schema = tableParts[0];
+            } else if(tableParts.length == 3) {
+                table = tableParts[2];
+                schema = tableParts[1];
+                database = tableParts[0];
+            }            
+            if(controlId == null) {
+                controlId = workspace.getControlIdFromDatabaseSchemaTable(databaseShemaTable);
+            }
+            String sRequest = "";
+            String parentControlId = null;
+            String sTableJson = workspace.get_default_json(request, controlId, controlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
+            tbl_wrk = workspace.get_tbl_manager_workspace( controlId );
+            if(tbl_wrk != null) {
+                tbl_wrk.tableJson.put("isSystem", "true");
+            } else {
+                return null;
+            }
+        }        
+        return tbl_wrk;
+    }    
+
     //
     //  Create all beans for primaryKey
     //
@@ -2458,9 +2501,54 @@ public class db {
     //
     //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    //  TODO : defined columns not still supported... read always all columns
+    //  TODO : partial columns read still unsupported... read always all columns
     //
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) {
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException {
+        String sWhere = "";
+
+        // cerca o cerca il controllo
+        workspace tbl_wrk = load_beans_get_workspace ( request, databaseShemaTable, controlId );
+        if(tbl_wrk == null) return null;
+        
+        JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+        if(keyColumn == null || keyColumn.isEmpty()) {
+            if(tbl_wrk.tableJson.has("primaryKey")) {
+                keyColumn = tbl_wrk.tableJson.getString("primaryKey");
+            }
+        }
+        
+        if(keyColumn == null || keyColumn.isEmpty()) {
+            String err = "ERROR : load_beans() : primaryKey not defined in control : "+controlId;
+            System.err.println("// "+err);
+            return null;
+        }
+        
+        if(key instanceof String) {
+            sWhere = " WHERE " + keyColumn + "='" + key + "'";
+        } else if(key instanceof Long || key instanceof Integer || key instanceof Float || key instanceof Double) {
+            sWhere = " WHERE " + keyColumn + "=" + String.valueOf(key) + "";
+        } else if(key instanceof JSONArray) {
+        } else if(key instanceof ArrayList<?>) {
+            String keyList = workspace.arrayToString(((ArrayList<String>)key).toArray(), null, null, ",");
+            sWhere = " WHERE " + keyColumn + " IN (" + keyList + ")";
+        } else {
+            String err = "ERROR : load_beans() : undetect key type in control : "+controlId;
+            System.err.println("// "+err);
+            return null;
+        }
+        
+        return load_beans( request, controlId, databaseShemaTable, columns, sWhere, maxRows );
+    }    
+    //
+    //  Create all beans for given where condition
+    //
+    //  ControlId is automatically created if not exist (from controlId)
+    //
+    //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+    //
+    //  TODO : partial columns read still unsupported... read always all columns
+    //
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String where_condition, long maxRows ) {
         // crea un controllo sulla tabella
         String [] tableParts = databaseShemaTable.split("\\.");
         String database = null, table = null, schema = null, primaryKey = null;
@@ -2498,35 +2586,13 @@ public class db {
                 // columnsList = columns.split(",");
             }
 
-            // cerca il controllo
-            workspace tbl_wrk = null;
-            if(controlId == null) {
-                String runtimeControlId = workspace.getControlIdFromDatabaseSchemaTable(databaseShemaTable);
-                tbl_wrk = workspace.get_tbl_manager_workspace( runtimeControlId );
-                if(tbl_wrk == null) {
-                    runtimeControlId = workspace.getControlIdFromTable(databaseShemaTable);
-                    tbl_wrk = workspace.get_tbl_manager_workspace( runtimeControlId );
-                }
-            } else {                    
-                tbl_wrk = workspace.get_tbl_manager_workspace( controlId );
-            }
-            
-            if(tbl_wrk == null) {
-                // crea il controllo
-                if(controlId == null) {
-                    controlId = workspace.getControlIdFromDatabaseSchemaTable(databaseShemaTable);
-                }
-                String sRequest = "";
-                String parentControlId = null;
-                String sTableJson = workspace.get_default_json(request, controlId, controlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
-                tbl_wrk = workspace.get_tbl_manager_workspace( controlId );
-                if(tbl_wrk != null) {
-                    tbl_wrk.tableJson.put("isSystem", "true");
-                } else {
-                    return null;
-                }
-            }
+            // cerca o cerca il controllo
+            workspace tbl_wrk = load_beans_get_workspace ( request, databaseShemaTable, controlId );
+            if(tbl_wrk == null) return null;
 
+            
+            
+            
             boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
             String itemIdString = "\"", tableIdString = "\"";
 
@@ -2551,17 +2617,6 @@ public class db {
                 tableIdString = "\"";
             }
             
-            cols = tbl_wrk.tableJson.getJSONArray("columns");
-            if(keyColumn == null || keyColumn.isEmpty()) {
-                if(tbl_wrk.tableJson.has("primaryKey")) {
-                    keyColumn = tbl_wrk.tableJson.getString("primaryKey");
-                }
-            }
-            if(keyColumn == null || keyColumn.isEmpty()) {
-                String err = "ERROR : load_beans() : primaryKey not defined in control : "+controlId;
-                System.err.println("// "+err);
-                return null;
-            }
             
             for(int ic=0; ic<cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
@@ -2587,22 +2642,15 @@ public class db {
                 }
             }
 
-            String sWhere = "";
-            if(key instanceof String) {
-                sWhere = " WHERE " + keyColumn + "='" + key + "'";
-            } else if(key instanceof Long || key instanceof Integer || key instanceof Float || key instanceof Double) {
-                sWhere = " WHERE " + keyColumn + "=" + String.valueOf(key) + "";
-            } else if(key instanceof JSONArray) {
-            } else if(key instanceof ArrayList<?>) {
-                String keyList = workspace.arrayToString(((ArrayList<String>)key).toArray(), null, null, ",");
-                sWhere = " WHERE " + keyColumn + " IN (" + keyList + ")";
-            } else {
-                String err = "ERROR : load_beans() : undetect key type in control : "+controlId;
-                System.err.println("// "+err);
-                return null;
+            if(where_condition.indexOf(" WHERE ") < 0) {
+                if(where_condition.indexOf("WHERE ") < 0) {
+                    where_condition = " WHERE " + where_condition;
+                } else {
+                    where_condition = " " + where_condition;
+                }
             }
-            
-            String executingQuery = "SELECT * FROM " + tbl_wrk.schemaTable + sWhere;
+                    
+            String executingQuery = "SELECT * FROM " + tbl_wrk.schemaTable + where_condition;
 
             conn = connection.getConnection( null, request, tbl_wrk.tableJson );
 

@@ -51,6 +51,25 @@ public class liquidize {
         try {
             JSONObject json = new JSONObject(content);
             if(json != null) {
+                // removing runtime props
+                if(json.has("events")) {
+                    JSONArray events = json.getJSONArray("events");
+                    JSONArray refined_events = new JSONArray();
+                    for(int il=0; il<events.length(); il++) {
+                        JSONObject event = events.getJSONObject(il);
+                        if(!event.getBoolean("isSystem")) {
+                            refined_events.put(event);
+                        }
+                    }
+                    json.put("events", refined_events);
+                }
+                String [] props = { "sourceFileName", "sourceFullFileName", "parentObjId" };
+                for(String prop : props) {
+                    if(json.has(prop)) {
+                        json.remove(prop);
+                    }
+                }
+    
                 int cLevel = 1;
                 String sep = ",";
                 out += "{";
@@ -90,9 +109,6 @@ public class liquidize {
     public static String liquidizeAddProp(Object ojson, String prop, String fullPathProp, int cLevel, boolean bNewLine, String sep) throws JSONException {
         String out = "";
 
-        if("foreignTables.options.grid".equalsIgnoreCase(fullPathProp)) {
-            int lb = 1;
-        }
         if(ojson instanceof JSONArray) {
             if("foreignTables".equalsIgnoreCase(fullPathProp) || "foreignTables".equalsIgnoreCase(prop)) {
                 int lb = 1;
@@ -116,7 +132,7 @@ public class liquidize {
                 } else if(propVal instanceof JSONObject || propVal instanceof JSONArray) {
                     out += (il>0?",":"")+liquidizeAddProp( propVal, null, fullPathProp+(prop != null ? "."+prop:""), cLevel, bNewLine & childNewLine, "" );
                 } else {
-                    out += "\"" + String.valueOf(propVal) + "\"";
+                    out += (il>0?",":"") + "\"" + String.valueOf(propVal) + "\"";
                 }
             }
             if(bNewLine && jsons.length()>0) {
