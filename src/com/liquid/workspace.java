@@ -1,7 +1,6 @@
 package com.liquid;
 
 import com.google.gson.Gson;
-import static com.liquid.liquidize.liquidizeJSONContnet;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,6 +26,7 @@ import javax.servlet.jsp.JspWriter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import static com.liquid.liquidize.liquidizeJSONContent;
 
 
 // TODO : support for jump database when using connectioURL
@@ -630,33 +630,34 @@ public class workspace {
                 // check duplicate columns, set alias
                 //
                 try { cols = tableJson.getJSONArray("columns"); } catch(Exception e) {}
-                for(int ic=0; ic<cols.length(); ic++) {
-                    JSONObject col = cols.getJSONObject(ic);
-                    String colName = col.getString("name");
-                    String colLabel = col.has("label") ? col.getString("label") : "";
-                    for(int jc=ic+1; jc<cols.length(); jc++) {
-                        boolean duplicateFound = false;
-                        JSONObject jcol = cols.getJSONObject(jc);
-                        String jcolName = jcol.getString("name");
-                        String jcolLabel = jcol.has("label") ? jcol.getString("label") : "";
-                        if(colName.equalsIgnoreCase(jcolName)) {
-                            String aliasName = colName;
-                            String jaliasName = jcolName;
-                            if(!colLabel.isEmpty() && !jcolLabel.isEmpty() && colLabel.equalsIgnoreCase(jcolLabel)) {
-                                aliasName = colLabel+"_1";
-                                jaliasName = jcolLabel+"_2";
-                            } else {
-                                aliasName = colLabel.replaceAll(" ", "_");
-                                jaliasName = jcolLabel.replaceAll(" ", "_");
+                if(cols != null) {
+                    for(int ic=0; ic<cols.length(); ic++) {
+                        JSONObject col = cols.getJSONObject(ic);
+                        String colName = col.getString("name");
+                        String colLabel = col.has("label") ? col.getString("label") : "";
+                        for(int jc=ic+1; jc<cols.length(); jc++) {
+                            boolean duplicateFound = false;
+                            JSONObject jcol = cols.getJSONObject(jc);
+                            String jcolName = jcol.getString("name");
+                            String jcolLabel = jcol.has("label") ? jcol.getString("label") : "";
+                            if(colName.equalsIgnoreCase(jcolName)) {
+                                String aliasName = colName;
+                                String jaliasName = jcolName;
+                                if(!colLabel.isEmpty() && !jcolLabel.isEmpty() && colLabel.equalsIgnoreCase(jcolLabel)) {
+                                    aliasName = colLabel+"_1";
+                                    jaliasName = jcolLabel+"_2";
+                                } else {
+                                    aliasName = colLabel.replaceAll(" ", "_");
+                                    jaliasName = jcolLabel.replaceAll(" ", "_");
+                                }
+                                col.put("runtimeName", aliasName);
+                                cols.put(ic, col);
+                                jcol.put("runtimeName", jaliasName);
+                                cols.put(jc, jcol);
                             }
-                            col.put("runtimeName", aliasName);
-                            cols.put(ic, col);
-                            jcol.put("runtimeName", jaliasName);
-                            cols.put(jc, jcol);
                         }
                     }
                 }
-
 
 
                 // foreign columns
@@ -1756,7 +1757,7 @@ public class workspace {
                                                 bProceed = (Messagebox.show( " File <b>"+insideProjectFileName+"</b> already exist<br/><br/> Do you want to overwrite it ?", "Liquid", Messagebox.YES+Messagebox.NO+Messagebox.WARNING) == Messagebox.YES);
                                             }
                                             if(bProceed) 
-                                                Files.write( Paths.get(insideProjectFileName), liquidizeJSONContnet(fileContent).getBytes());
+                                                Files.write(Paths.get(insideProjectFileName), liquidizeJSONContent(fileContent).getBytes());
                                             else 
                                                 return "{\"result\":0,\"message\":\"\"}";
                                         } catch (Exception ex) {

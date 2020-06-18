@@ -497,7 +497,7 @@ public class assets {
                 request.getSession().setAttribute("GLLiquidConnectionURL", login.connectionURL);
 
                 // assets for user
-                ArrayList<Object> user_asset_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_assets_table, "*", "user_id", String.valueOf(userId), 1000 );
+                ArrayList<Object> user_asset_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_assets_table, "*", "user_id", (Object)userId, 1000 );
                 if(user_asset_beans != null) {
                     // put asset_id of all beans in ArryList
                     Object [] res = db.beansToArray(user_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
@@ -505,7 +505,7 @@ public class assets {
                 }
 
                 // assets per roles for user
-                ArrayList<Object> user_role_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_roles_table, "*", "user_id", String.valueOf(userId), 1000 );
+                ArrayList<Object> user_role_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_roles_table, "*", "user_id", (Object)userId, 1000 );
                 if(user_role_beans != null) {
                     for(Object role_bean : user_role_beans) {
                         Object roleId = utility.get(role_bean, "role_id");
@@ -522,7 +522,7 @@ public class assets {
                                 bProcessRole = true;
                             }
                         }
-                        ArrayList<Object> user_role_asset_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+role_assets_table, "*", "role_id", String.valueOf(roleId), 1000 );
+                        ArrayList<Object> user_role_asset_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+role_assets_table, "*", "role_id", (Object)roleId, 1000 );
                         if(user_role_asset_beans != null) {
                             if(bProcessRole) {
                                 // put asset_id of all beans in ArryList

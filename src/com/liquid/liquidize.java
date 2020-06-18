@@ -36,9 +36,19 @@ public class liquidize {
         ,"commands"
         ,"events"
         ,"query"
+        // inside columns :
+        ,"name"
+        ,"tooltip"
+        ,"icon"
+        ,"label"
+        ,"op"
+        ,"foreignTable"
+        ,"foreignColumn"
+        ,"column"
         ,"options"
     ));
 
+    
     static ArrayList<String> glkeepClosedList = new ArrayList<String> ( Arrays.asList(
             "columns", "events", "commands"
             ,"columns.options.columns"
@@ -46,7 +56,7 @@ public class liquidize {
             ,"filters.columns", "foreignTables.options.filters.columns"
     ));
 
-    static public String liquidizeJSONContnet(String content) {
+    static public String liquidizeJSONContent(String content) {
         String out = "";
         try {
             JSONObject json = new JSONObject(content);
@@ -184,21 +194,23 @@ public class liquidize {
                     }
                 }
                 JSONArray names = json.names();
-                for(int io=0; io<names.length(); io++) {
-                    String propName = names.getString(io);
-                    Object propVal = json.get(propName);
-                    if(bNewLine) {
-                        out += "\n";
-                        for(int i=0; i<cLevel; i++) out += sTabular;
-                        if(propVal instanceof JSONObject || propVal instanceof JSONArray) {
-                        } else {
+                if(names != null) {
+                    for(int io=0; io<names.length(); io++) {
+                        String propName = names.getString(io);
+                        Object propVal = json.get(propName);
+                        if(bNewLine) {
+                            out += "\n";
+                            for(int i=0; i<cLevel; i++) out += sTabular;
+                            if(propVal instanceof JSONObject || propVal instanceof JSONArray) {
+                            } else {
+                            }
                         }
+                        if(nAdded==0) out += "{ ";
+                        out += (nAdded>0?",":"")+"\"" + propName + "\":";
+                        int aLevel = (bNewLine && propVal instanceof JSONObject ? 1 : 0);
+                        out += liquidizeAddProp( propVal, null, fullPathProp+(propName != null ? "."+propName:""), cLevel+aLevel, bNewLine & liquidizeHasNewLine(fullPathProp), "" );
+                        nAdded++;
                     }
-                    if(nAdded==0) out += "{ ";
-                    out += (nAdded>0?",":"")+"\"" + propName + "\":";
-                    int aLevel = (bNewLine && propVal instanceof JSONObject ? 1 : 0);
-                    out += liquidizeAddProp( propVal, null, fullPathProp+(propName != null ? "."+propName:""), cLevel+aLevel, bNewLine & liquidizeHasNewLine(fullPathProp), "" );
-                    nAdded++;
                 }
                 out += (nAdded==0?"{":"");
                 if(bNewLine) {
@@ -215,7 +227,9 @@ public class liquidize {
         } else if(ojson instanceof Boolean || ojson instanceof Float || ojson instanceof Double || ojson instanceof Long || ojson instanceof Integer) {
             out += String.valueOf(ojson);
         } else {
-            out += "\"" + String.valueOf(ojson) + "\"";
+            String str = String.valueOf(ojson);
+            str = str != null ? str.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+            out += "\"" + str + "\"";
         }
         
         return out;

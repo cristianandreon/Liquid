@@ -21,6 +21,7 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -649,6 +650,21 @@ public class db {
                             JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                             if(requestJson.has("filtersJson")) {
                                 JSONArray filtersCols = requestJson.getJSONArray("filtersJson");
+                                JSONArray filters = null;
+                                JSONArray filtersDefCols = null;
+                                int curFilter = -1;
+                                
+                                if(requestJson.has("curFilter")) {
+                                    curFilter = requestJson.getInt("curFilter");
+                                    try { filters = tbl_wrk.tableJson.getJSONArray("filters"); } catch (Exception e) {}
+                                    try { filtersDefCols = filters.getJSONObject(curFilter).getJSONArray("columns"); } catch (Exception e) {}
+                                } else {
+                                    if(filtersCols.length() > 0) {
+                                        String msg = "Filters Error:unable to get back current filter definition";
+                                        error += "["+msg+"]";
+                                        System.err.println("// "+msg);
+                                    }
+                                }
 
                                 for(int i = 0; i < filtersCols.length(); i++) {
                                     JSONObject filtersCol = filtersCols.getJSONObject(i);
@@ -781,6 +797,9 @@ public class db {
                                                     filterValue = filterValue.replaceAll("\\*", "%");
                                                 }
                                             }
+                                            
+                                            try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
+                                            
                                             if("IN".equalsIgnoreCase(filterOp)) {
                                                 preFix = "(";	
                                                 postFix = ")";
@@ -794,6 +813,13 @@ public class db {
                                                     }
                                                 }
                                             }
+                                            
+                                            if(filterOp == null || filterOp.isEmpty()) {
+                                                if(filtersDefCols != null) {
+                                                    filterOp = filtersDefCols.getJSONObject(i).getString("op");
+                                                }
+                                            }
+                                            
                                             if("LIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
                                                 if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
                                                     // numeric : like unsupported
@@ -815,7 +841,7 @@ public class db {
                                                     }
                                                 }                                        
                                             }
-
+                                            
                                             String sensitiveCasePreOp = "";
                                             String sensitiveCasePostOp = "";
                                             if(!filterSensitiveCase) {
@@ -1522,7 +1548,7 @@ public class db {
                                 if(colTypes[ic] == 8) {
                                     double dFieldValue = rsdo.getDouble(columns_alias[0]);
                                     if(colPrecs[ic] < 0) {
-                                        fieldValue = String.format("%.2f", dFieldValue);
+                                        fieldValue = String.format(Locale.US, "%.2f", dFieldValue);
                                     } else {
                                         nf.setMaximumFractionDigits(colPrecs[ic]);
                                         fieldValue = nf.format(dFieldValue);
@@ -1572,7 +1598,7 @@ public class db {
                                         if(colTypes[ic] == 8) {
                                             double dFieldValue = columnAlias != null ? rsdo.getDouble(columns_alias[ic]) : rsdo.getDouble(ic+1);
                                             if(colPrecs[ic] < 0) {
-                                                fieldValue = String.format("%.2f", dFieldValue);
+                                                fieldValue = String.format(Locale.US, "%.2f", dFieldValue);
                                             } else {
                                                 nf.setMaximumFractionDigits(colPrecs[ic]);
                                                 fieldValue = nf.format(dFieldValue);
@@ -2548,6 +2574,7 @@ public class db {
     //
     //  TODO : partial columns read still unsupported... read always all columns
     //
+
     static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String where_condition, long maxRows ) {
         // crea un controllo sulla tabella
         String [] tableParts = databaseShemaTable.split("\\.");
@@ -2617,7 +2644,7 @@ public class db {
                 tableIdString = "\"";
             }
             
-            
+            cols = tbl_wrk.tableJson.getJSONArray("columns");
             for(int ic=0; ic<cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
                 String colName = null;
@@ -4033,19 +4060,23 @@ public class db {
                     for(int ic=0; ic<cols.length(); ic++) {
                         JSONObject col = cols.getJSONObject(ic);
                         String colName = col.getString("name");
+                        String colRuntimeName = col.has("runtimeName") ? col.getString("runtimeName") : null;
+                        String beanColName = (colRuntimeName != null ? colRuntimeName.replaceAll("\\.", "\\$") : ( colName != null ? colName.replaceAll("\\.", "\\$") : null));
                         
-                        try {
-                            Object fieldData = utility.get(bean, colName.replaceAll("\\.", "$") );
-                            if(colName.equals(primaryKey)) {
-                                primaryKeyValue = fieldData;
-                            } else {
-                                boolean isChanged = utility.isChanged(bean, colName);
-                                if(isChanged) {
-                                    sFields += (sFields.length()>0?",":"")+"{\"field\":\""+cols.getJSONObject(ic).getString("field")+"\",\"value\":\""+(fieldData != null ? fieldData : "")+"\"}";
+                        if(beanColName != null) {
+                            try {
+                                Object fieldData = utility.get(bean, beanColName );
+                                if(colName.equals(primaryKey)) {
+                                    primaryKeyValue = fieldData;
+                                } else {
+                                    boolean isChanged = utility.isChanged(bean, beanColName);
+                                    if(isChanged) {
+                                        sFields += (sFields.length()>0?",":"")+"{\"field\":\""+cols.getJSONObject(ic).getString("field")+"\",\"value\":\""+(fieldData != null ? fieldData : "")+"\"}";
+                                    }
                                 }
+                            } catch (Exception ex) {
+                                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, "// ERROR in bean:"+bean.getClass().getName()+" prop.:"+colName+" error:"+ex.getLocalizedMessage());
                             }
-                        } catch (Exception ex) {
-                            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, "// ERROR in bean:"+bean.getClass().getName()+" prop.:"+colName+" error:"+ex.getLocalizedMessage());
                         }
                     }
                     if(primaryKeyValue != null) {
