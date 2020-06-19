@@ -1970,10 +1970,45 @@ public class workspace {
         }
         return null;
     }
+    static public String getData(String controlId, String params, String column) {
+        try {
+            JSONArray paramsJson = (JSONArray)(new JSONObject(params)).getJSONArray("params");
+            for(int i=0; i<paramsJson.length(); i++) {
+                JSONObject obj = (JSONObject)paramsJson.get(i);
+                if(obj != null) {
+                    if(obj.has("data")) {
+                        JSONObject data = obj.getJSONObject("data");
+                        boolean bFoundControl = false;
+                        if(data.has("name")) {
+                            String name = data.getString("name");
+                            if(name != null) {
+                                if(name.equalsIgnoreCase(controlId)) {
+                                    bFoundControl = true;
+                                }
+                            }
+                        } else {
+                            bFoundControl = true;                                
+                        }
+                        if(bFoundControl) {
+                            if(data.has(column)) {
+                                return data.getString(column);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (JSONException ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
     
     // Wrappers
     static public String getSelection(Object tbl_wrk, String params) {
         return getSelection(((workspace)tbl_wrk).controlId, params);
+    }
+    static public String getData(Object tbl_wrk, String params, String column) {
+        return getData(((workspace)tbl_wrk).controlId, params, column);
     }
     
     static public String get_request_content(HttpServletRequest request) {

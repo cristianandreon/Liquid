@@ -4099,6 +4099,9 @@ public class db {
     static public String getSelection(Object tbl_wrk, Object params) {
         return workspace.getSelection(tbl_wrk, (String)params);
     }
+    static public String getData(Object tbl_wrk, Object params, String column) {
+        return workspace.getData(tbl_wrk, (String)params, (String)column);
+    }
 
     
     static public boolean set_current_database( Connection conn, String database, String driver, String tableIdString ) {
