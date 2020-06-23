@@ -1180,6 +1180,14 @@ public class workspace {
             tableJson.put("metadataTime", metadataTime);
 
             
+            // build query params to solve at client side
+            if(query != null && !query.isEmpty()) {
+                JSONArray queryParams = build_query_params(query);
+                if(queryParams != null) {
+                    tableJson.put("queryParams", queryParams);
+                }
+            }
+            
             JSONObject tableJsonForClient = new JSONObject(tableJson.toString());
             // ConnectionURL è gestito lato server, può avere l'account di accesso e non va passato al client
             for(String serverPriorityKey : serverPriorityKeys) {
@@ -1262,7 +1270,46 @@ public class workspace {
             }            
         }
     }
-            
+
+    static public JSONArray build_query_params(String query) throws JSONException {
+        if(query != null && !query.isEmpty()) {
+            JSONArray queryParams = new JSONArray();
+            int len = query.length();
+            for(int i=0; i<len; i++) {
+                if(query.charAt(i) == '$' || query.charAt(i) == '@') {
+                    i++;
+                    if(query.charAt(i) == '{') {
+                        int s = i;
+                        while(query.charAt(i) != '}' && i < len) {
+                            i++;
+                        }
+                        if(query.charAt(i) == '}') {
+                            String paramName = query.substring(s-1, i+1);
+                            JSONObject newParam = new JSONObject();
+                            newParam.put("name", paramName);
+                            newParam.put("value", "");
+                            queryParams.put(newParam);
+                        }
+                    }
+                }
+            }
+            return queryParams;
+        }
+        return null;
+    }
+    static public String solve_query_params(String query, JSONArray queryParams) throws JSONException {
+        if(query != null && !query.isEmpty()) {
+            if(queryParams != null) {
+                for(int i=0; i<queryParams.length(); i++) {
+                    query = query.replace(queryParams.getJSONObject(i).getString("name"), queryParams.getJSONObject(i).getString("value"));
+                }
+            }
+            return query;
+        }
+        return null;
+    }
+
+    
     static public void recoveryKeyFromServer(JSONObject serverTableJson, JSONObject clientTableJson) {
         if(serverTableJson != null) {
             if(serverTableJson != null) {
