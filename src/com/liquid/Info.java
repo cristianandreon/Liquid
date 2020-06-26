@@ -151,26 +151,22 @@ public class Info {
 
         out_string += "<tr style=\"background-color:lightGray\">";
         out_string += "<td style=\"font-size: 70%;\">Arguments</td>";
-        out_string += "<td style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getInputArguments()+"</td>";
-        out_string += "<td>"+""+"</td>";
+        out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getInputArguments()+"</td>";
         out_string += "</tr>";
 
         out_string += "<tr>";
         out_string += "<td>Library path</td>";
-        out_string += "<td style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</td>";
-        out_string += "<td>"+""+"</td>";
+        out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</td>";
         out_string += "</tr>";
         
         out_string += "<tr style=\"background-color:lightGray\">";
         out_string += "<td>class path</td>";
-        out_string += "<td style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getClassPath()+"</td>";
-        out_string += "<td>"+""+"</td>";
+        out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getClassPath()+"</td>";
         out_string += "</tr>";
 
         out_string += "<tr>";
         out_string += "<td>Library path</td>";
-        out_string += "<td style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</td>";
-        out_string += "<td>"+""+"</td>";
+        out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</td>";
         out_string += "</tr>";
         
         out_string += "<tr style=\"background-color:lightGray\">";
@@ -238,9 +234,40 @@ public class Info {
         } catch (UnknownHostException ex) {
             Logger.getLogger(Info.class.getName()).log(Level.SEVERE, null, ex);
         }
+
+        try {
+            for(int i=0; i<workspace.glTblWorkspaces.size(); i++) {
+                String sSessions = "";
+                for(int j=0; j<workspace.glTblWorkspaces.get(i).sessions.size(); j++) {
+                    sSessions += "#" + (j+1) + " : " + workspace.glTblWorkspaces.get(i).sessions.get(j).browser + " - " + workspace.glTblWorkspaces.get(i).sessions.get(j).threadName;
+                    sSessions += "<br/>";
+                }
+
+                out_string += "<tr style=\"background-color:lightGray\">";
+                out_string += "<td>"+workspace.glTblWorkspaces.get(i).controlId+"</td>";
+                out_string += "<td>"+workspace.glTblWorkspaces.get(i).databaseSchemaTable
+                        + "<span style=\"font-size: 85%;\">"
+                        + " - (token:"+workspace.glTblWorkspaces.get(i).token+")"
+                        + "</span>"
+                        + "</td>";
+                out_string += "<td>"
+                        +"Read count:"+workspace.glTblWorkspaces.get(i).nConnections
+                        +"<br/>"
+                        +"<br/>"
+                        +"Session:"+workspace.glTblWorkspaces.get(i).sessions.size()
+                        +"<br/>"
+                        +"</td>";
+                
+                out_string += "</tr>";
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(Info.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
         
         out_string += "</table>";
         out_string += "</div>";
+
         
                 
         return  out_string;

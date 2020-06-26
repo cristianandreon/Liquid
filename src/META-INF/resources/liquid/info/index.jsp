@@ -28,7 +28,7 @@
         <style>
             html { overflow-y:hidden;height:100%; }
             body { overflow-y:auto;height:100%; margin:0; padding:0; font-family: Open Sans,Roboto,calibri,sans-serif;
-                   -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+                   /* -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; */
             }
             body::-webkit-scrollbar { width: 8px; height: 8px; }
             body::-webkit-scrollbar-track { border-radius: 8px; }

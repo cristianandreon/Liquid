@@ -278,6 +278,9 @@ public class db {
             if(tbl_wrk != null && tbl_wrk.tableJson!=null) {
                 JSONArray cols = null;
                 
+                tbl_wrk.nConnections++;
+                tbl_wrk.addSession( ThreadSession.getThreadSessionInfo() );
+                
                 try { database = tbl_wrk.tableJson.getString("database"); } catch (Exception e) {  }
                 try { schema = tbl_wrk.tableJson.getString("schema"); } catch (Exception e) {  }
                 try { table = tbl_wrk.tableJson.getString("table"); } catch (Exception e) {  }
@@ -290,7 +293,7 @@ public class db {
                 // Verifica tel token : almeno un controllo deve avere il token assegnato (foreign table, lockuo etc hanno il token ereditato
                 if(!workspace.isTokenValid(token)) {
                     System.out.println("// LIQUID ERROR : Invalid Token on controlId:"+controlId);
-                    return "{\"error\":\""+"Error: invalid token on :"+controlId+"\"}";
+                    return "{\"error\":\""+utility.base64Encode("Error: invalid token on :"+controlId)+"\"}";
                 }
 
                 // set the connection

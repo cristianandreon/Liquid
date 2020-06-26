@@ -50,6 +50,8 @@ public class workspace {
     // separator used in controId build from file or database/schema/table
     static String controlIdSeparator = ".";
 
+    
+    
     static void setDatabaseShemaTable(workspace tbl_wrk) {
         if(tbl_wrk != null) {
             String database = null;
@@ -115,6 +117,9 @@ public class workspace {
     public String driverClass = "";
     public String dbProductName = "";
     public String token = "";
+    
+    public int nConnections = 0;
+    public ArrayList<ThreadSession> sessions = new ArrayList<ThreadSession>();
     
     
     static public ArrayList<workspace> glTblWorkspaces = new ArrayList<workspace>();
@@ -880,7 +885,7 @@ public class workspace {
                                             }
                                             
                                             if(colForeignTable != null && !colForeignTable.isEmpty()) { // campo esterno
-                                                col.put("default", "");
+                                                // ??? col.put("default", ""); ??? bStoreDefualt
                                                 col.put("isReflected", true);
                                             }
 
@@ -889,6 +894,7 @@ public class workspace {
                                                     if(!mdCol.autoIncString) {
                                                         if(colForeignTable == null || colForeignTable.isEmpty()) { // NON campo esterno
                                                             col.put("required", true);
+                                                            col.put("requiredByDB", true);
                                                         }
                                                     }
                                                 }
@@ -1163,11 +1169,11 @@ public class workspace {
 
             
             String token = login.getSaltString(32);
-            tableJson.put("token", token);
             
 
-    
-            // In query mode set parentControlId / rootControlId to self
+            //
+            // In query mode set parentControlId / rootControlId to self (for source validation in the security checker)
+            //
             if(query != null && !query.isEmpty()) {
                 if(!tableJson.has("parentControlId")) {
                     tableJson.put("parentControlId", controlId);
@@ -1188,28 +1194,19 @@ public class workspace {
                 }
             }
             
-            JSONObject tableJsonForClient = new JSONObject(tableJson.toString());
-            // ConnectionURL è gestito lato server, può avere l'account di accesso e non va passato al client
-            for(String serverPriorityKey : serverPriorityKeys) {
-                if(tableJsonForClient.has(serverPriorityKey)) {
-                    tableJsonForClient.put(serverPriorityKey, kDefinedAtServerSide);                    
-                }
-            }
-            sTableJson = tableJsonForClient.toString();
 
+            boolean bFoundWorkspace = false;
             
-            // script avvio client side o json 
-            if("json".equalsIgnoreCase(returnType)) {
-                result = sTableJson;
-            } else if("js".equalsIgnoreCase(returnType)) {
-                result = "<script>"+getJSVariableFromControlId(controlId)+"={controlId:\""+controlId+"\",json:'"+sTableJson+"'};</script>";
-            } else {
-                result = "<script>glLiquidStartupTables.push({controlId:\""+controlId+"\",json:'"+sTableJson+"'});</script>";
-            }
-
             for(int i=0; i<glTblWorkspaces.size(); i++) {
                 tblWorkspace = glTblWorkspaces.get(i);
                 if(tblWorkspace.controlId.equalsIgnoreCase(controlId)) {
+                    
+                    if(tblWorkspace.token == null || tblWorkspace.token.isEmpty()) {
+                        tblWorkspace.token = token;
+                        // set thre token in the json
+                        tableJson.put("token", token);
+                    }
+                    
                     if(!tblWorkspace.tableJson.equals(tableJson)) {
                         if(tblWorkspace.tableJson != null)
                             if(!tblWorkspace.tableJson.equals(tableJson))
@@ -1230,26 +1227,57 @@ public class workspace {
                     tblWorkspace.defaultDatabase = defaultDatabase;
                     tblWorkspace.defaultSchema = defaultSchema;
                     tblWorkspace.dbProductName = dbProductName;
-                    tblWorkspace.token = token;
                     workspace.setDatabaseShemaTable(tblWorkspace);
                     System.out.println("/* LIQUID INFO : control : "+controlId + " driverClass:"+tblWorkspace.driverClass + " dbProductName:"+dbProductName+"*/");
-                    return result;
+                    bFoundWorkspace = true;
                 }
             }
-            tblWorkspace = new workspace();
-            tblWorkspace.controlId = controlId;
-            tblWorkspace.tableJson = tableJson;
-            tblWorkspace.owner = owner;
-            tblWorkspace.dbProductName = dbProductName;
-            tblWorkspace.defaultDatabase = defaultDatabase;
-            tblWorkspace.defaultSchema = defaultSchema;
-            tblWorkspace.driverClass = connToUse != null ? connToUse.getClass().getName() : null;
-            tblWorkspace.token = token;
-            workspace.setDatabaseShemaTable(tblWorkspace);
-            // tblWorkspace.get_connection assegnato a default_connection
-            System.out.println("/* LIQUID INFO : new control : "+controlId + " driverClass:"+tblWorkspace.driverClass + " dbProductName:"+dbProductName+"*/");
-            glTblWorkspaces.add(tblWorkspace);
+            
+            if(!bFoundWorkspace) {
+                tblWorkspace = new workspace();
+                tblWorkspace.controlId = controlId;
+                tblWorkspace.tableJson = tableJson;
+                tblWorkspace.owner = owner;
+                tblWorkspace.dbProductName = dbProductName;
+                tblWorkspace.defaultDatabase = defaultDatabase;
+                tblWorkspace.defaultSchema = defaultSchema;
+                tblWorkspace.driverClass = connToUse != null ? connToUse.getClass().getName() : null;
+                tblWorkspace.token = token;
+                workspace.setDatabaseShemaTable(tblWorkspace);
+                // tblWorkspace.get_connection assegnato a default_connection
+                System.out.println("/* LIQUID INFO : new control : "+controlId + " driverClass:"+tblWorkspace.driverClass + " dbProductName:"+dbProductName+"*/");
+                glTblWorkspaces.add(tblWorkspace);
+                // set thre token in the json
+                tableJson.put("token", token);
+                if("Quotes".equalsIgnoreCase(controlId)) {
+                    int lb = 1;
+                }                
+            }
+            
+            
+            
+            JSONObject tableJsonForClient = new JSONObject(tableJson.toString());
+            // ConnectionURL è gestito lato server, può avere l'account di accesso e non va passato al client
+            for(String serverPriorityKey : serverPriorityKeys) {
+                if(tableJsonForClient.has(serverPriorityKey)) {
+                    tableJsonForClient.put(serverPriorityKey, kDefinedAtServerSide);                    
+                }
+            }
+            sTableJson = tableJsonForClient.toString();
+
+            
+            // script avvio client side o json 
+            if("json".equalsIgnoreCase(returnType)) {
+                result = sTableJson;
+            } else if("js".equalsIgnoreCase(returnType)) {
+                result = "<script>"+getJSVariableFromControlId(controlId)+"={controlId:\""+controlId+"\",json:'"+sTableJson+"'};</script>";
+            } else {
+                result = "<script>glLiquidStartupTables.push({controlId:\""+controlId+"\",json:'"+sTableJson+"'});</script>";
+            }
+            
             return result;
+
+
             
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
@@ -1639,15 +1667,18 @@ public class workspace {
                     if (url.getPath().contains("Liquid.jar")) {
                         try {
                             fullFileName = "jar:file:" + url.getPath() + "!/META-INF/resources"+fileName;
-                            URL inputURL = null;
-                            inputURL = new URL(fullFileName);
-                            JarURLConnection conn = (JarURLConnection)inputURL.openConnection();
-                            InputStream in = conn.getInputStream();
-                            // InputStream in = workspace.class.getClassLoader().getResourceAsStream(inputFile); 
-                            // in = workspace.class.getResourceAsStream(inputFile); 
-                            if(in != null) {
-                                br = new BufferedReader(new InputStreamReader(in));
-                                if(br != null) break;
+                            URL inputURL = new URL(fullFileName);
+                            if(inputURL != null) {
+                                JarURLConnection conn = (JarURLConnection)inputURL.openConnection();
+                                if(conn != null) {
+                                    InputStream in = conn.getInputStream();
+                                    // InputStream in = workspace.class.getClassLoader().getResourceAsStream(inputFile); 
+                                    // in = workspace.class.getResourceAsStream(inputFile); 
+                                    if(in != null) {
+                                        br = new BufferedReader(new InputStreamReader(in));
+                                        if(br != null) break;
+                                    }
+                                }
                             }
                         } catch (Throwable ex) {
                             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
@@ -1724,7 +1755,7 @@ public class workspace {
                 // Verifica tel token : almeno un controllo deve avere il token assegnato (foreign table, lockuo etc hanno il token ereditato
                 if(!workspace.isTokenValid(token)) {
                     System.out.println("// LIQUID ERROR : Invalid Token");
-                    return "{\"result\":-1,\"error\":\""+"Error: invalid token \"}";
+                    return "{\"result\":-1,\"error\":\""+utility.base64Encode("Error: invalid token")+"\"}";
                 }                
                 if(liquidJsonsProjectFolder != null && !liquidJsonsProjectFolder.isEmpty()) {
                     if(utility.folderExist(liquidJsonsProjectFolder)) {
@@ -2330,4 +2361,15 @@ public class workspace {
     static public boolean removeFromWhiteList(String database, String schema, String table) {
         return BlackWhiteList.removeFromWhiteList(database, schema, table);
     }    
+    
+    public int addSession( ThreadSession threadSession ) {
+        for(int i=0; i<sessions.size(); i++) {
+            if(sessions.get(i).threadId == threadSession.threadId) {
+                return 0;
+            }
+        }
+        sessions.add(threadSession);
+        return sessions.size();
+    }
+    
 }

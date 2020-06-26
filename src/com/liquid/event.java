@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
@@ -927,7 +928,7 @@ public class event {
                                 if(colTypes == 8) {
                                     double dFieldValue = rsdo.getDouble(1);
                                     if(colPrecs < 0) {
-                                        fieldValue = String.format("%.2f", dFieldValue);
+                                        fieldValue = String.format(Locale.US, "%.2f", dFieldValue);
                                     } else {
                                         nf.setMaximumFractionDigits(colPrecs);
                                         fieldValue = nf.format(dFieldValue);
@@ -940,6 +941,9 @@ public class event {
                                 return fieldValue;
                             }
                         }
+                    } catch (SQLException e) {
+                        // maybe user forget sql sintax ...
+                        return colDefault;
                         
                     } finally {
                         if(rsdo != null) rsdo.close(); rsdo = null;
