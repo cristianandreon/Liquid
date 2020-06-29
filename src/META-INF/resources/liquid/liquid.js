@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.13   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  27-6-2020
+// Liquid ver.1.14   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 8.1.2020 - Last update  29-6-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -1907,7 +1907,8 @@ var Liquid = {
     userConnectionList:[],
     loadDBInitialSize: (2 * 1024 * 1024),
     loadDBversion:2,
-    swapCellsMessage:"Please do you want to swap cells ?",
+    swapCellsMessage:"Do you want to swap the cells ?",
+    moveCellsMessage:"Do you want to move the the cell ?",
     flashingPersistTimeMsec:5000,
     setLanguage:function(language) {
         var lang_list = language.split(';');
@@ -1930,6 +1931,7 @@ var Liquid = {
                 Liquid.Save = "Salva";
                 Liquid.Discharge = "scarta";
                 Liquid.swapCellsMessage = "Confermi lo scambio delle celle ?";
+                Liquid.moveCellsMessage = "Confermi lo spostamento della cella ?";
                 return;
             } else if(lang === 'en' || lang === 'eng') {
                 Liquid.lang = 'eng';
@@ -1947,7 +1949,8 @@ var Liquid = {
                 Liquid.FileTooBigMessage = "File too big";
                 Liquid.Save = "Save";
                 Liquid.Discharge = "Discharge";
-                Liquid.swapCellsMessage = "Please do you want to swap cells ?";
+                Liquid.swapCellsMessage = "Do you want to swap the cells ?";
+                Liquid.moveCellsMessage = "Do you want to move the cell ?";
                 return;
             }
         }
@@ -3680,7 +3683,9 @@ var Liquid = {
                                                     } catch (e) {
                                                         console.error(e);
                                                     }
-                                                } else {
+                                                }
+                                                selNodes = liquid.gridOptions.api.getSelectedNodes();
+                                                if(!selNodes || selNodes.length === 0) {                                                
                                                     if(isDef(liquid.tableJson.autoSelect) || isDef(liquid.tableJson.tempAutoSelect)) {
                                                         if(Liquid.setNodesSelectedDefault(liquid)) { // no other refresh actions needed
                                                             disableLinkedControlRefresh = true;
@@ -4297,18 +4302,17 @@ var Liquid = {
             //
             // TODO : executing filters
             //
-            // select by search current value
-            var col = Liquid.getColumn(liquid, liquid.tableJson.lookupField);
-            if(col) {
-                var res = Liquid.setNodesSelectedByColumn(liquid, col.field, [obj.value], true);
-            }
-
-            
             if(liquid.lookupContainerObj) {
                 liquid.lookupContainerObj = document.getElementById(liquid.lookupContainerObj.id); // seems browser reuse object after rebuild .. relinking it by the id solve the probolem
                 liquid.lookupObj = document.getElementById(liquid.lookupObj.id); 
                 liquid.lookupContainerObj.style.display = "inline-block";
             }
+            // select by search current value
+            var col = Liquid.getColumn(liquid, liquid.tableJson.lookupField);
+            if(col) {
+                var res = Liquid.setNodesSelectedByColumn(liquid, col.field, [obj.value], true);
+            }
+            
             if(liquid.filtersFirstId) {
                 var filtersFirstId = document.getElementById(liquid.filtersFirstId);
                 if(filtersFirstId) {
@@ -6487,7 +6491,7 @@ var Liquid = {
                 if(Liquid.formToObjectExchange(obj, newOptions)) {
                     Liquid.updateProperty(liquid, ftIndex1B, "grids", gridIndex1B-1, newOptions);
                     if(!isDef(liquid.sourceData)) liquid.sourceData = {};
-                    liquid.sourceData.tempCurrentTab = gridIndex1B;                    
+                    liquid.sourceData.tempCurrentTab = gridIndex1B;
                     Liquid.setAskForSave(liquid, true);
                     Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
                     try { console.log("INFO: updated table json : \n"+JSON.stringify(liquid.tableJsonSource.grids[gridIndex1B-1])); } catch(e) { console.error(e); }
@@ -7228,14 +7232,7 @@ var Liquid = {
             if(command.name === "insert") {
                 Liquid.addRow(liquid);
                 Liquid.onPreparedRow(liquid, true);
-            } else if(command.name === "modify") {
-                delete liquid.backupNode;
-                var selNodes = Liquid.getCurNodes(liquid);
-                if(selNodes) {
-                    if(selNodes.length) {
-                        liquid.backupNode = { data:deepClone(selNodes[0]), id:selNodes[0].id, selectable:selNodes[0].selectable, selected:selNodes[0].selected, uiLevel:selNodes[0].uiLevel, __objectId:node.__objectId };
-                    }
-                }
+            } else if(command.name === "update") {
             } else if(command.name === "delete") {
                 // no prepare operations here
             }
@@ -7722,6 +7719,7 @@ var Liquid = {
                     var bDetected = false;
                     for(var i=0; i<nodes.length; i++) {
                         var nodeId = nodes[i].data[field];
+                        var bUnselect = false;
                         if(!bDetected) {
                             if(columnValues[iv] === nodeId) {
                                 bDetected = true;
@@ -7731,14 +7729,17 @@ var Liquid = {
                                     selectedList.push(i);
                                 }
                                 if(isDef(setVisible)) {
-                                    // liquid.gridOptions.api.ensureIndexVisible(i, "top");
-                                    setTimeout( function() {
-                                        liquid.gridOptions.api.setFocusedCell(i, 'start', 'top');
-                                        liquid.gridOptions.api.ensureIndexVisible(i, "top"); 
-                                    }, 250 );
+                                    liquid.gridOptions.api.ensureIndexVisible(nodes[i].rowIndex, "top"); 
+                                    liquid.gridOptions.api.setFocusedCell(i, 'start', 'top');
+                                    // setTimeout( function() { liquid.gridOptions.api.ensureIndexVisible(nodes[i].rowIndex, "top"); }, 250 );
                                 }
+                            } else {
+                                bUnselect = true;
                             }
                         } else {
+                            bUnselect = true;
+                        }
+                        if(bUnselect) {
                             if(nodes[i].isSelected()) {
                                 if(selectedList.indexOf(i) < 0) {
                                     nodes[i].setSelected(false);
@@ -8002,6 +8003,16 @@ var Liquid = {
                             }
                         }
                     }
+                    if(command.name === "update") { // backup
+                        delete liquid.backupNode;
+                        var selNodes = Liquid.getCurNodes(liquid);
+                        if(selNodes) {
+                            if(selNodes.length) {
+                                liquid.backupNodeData = deepClone(selNodes[0].data);
+                                liquid.backupNode = selNodes[0];
+                            }
+                        }
+                    }                    
                     if(command.name === "insert-rollback") {
                         if(liquid.addingNode) {
                             var res = liquid.gridOptions.api.updateRowData({remove: [liquid.addingRow]});
@@ -8018,10 +8029,10 @@ var Liquid = {
                         }
                         command.step = Liquid.CMD_EXECUTE;
                         
-                    } else if(command.name === "modify-rollback") {
+                    } else if(command.name === "update-rollback") {
                         if(isDef(liquid.backupNode)) {
                             for(var field in liquid.backupNode.data) {
-                                liquid.backupNode.setDataValue(field, liquid.backupNode.data[field]);
+                                liquid.backupNode.setDataValue(field, liquid.backupNodeData[field]);
                             }
                         }
                         delete liquid.backupNode;
@@ -9166,9 +9177,10 @@ var Liquid = {
                     tr.className = "liquidGridRow " + (r % 2 ? "liquidGridRowOdd" : "liquidGridRowEven");
                     for(var c = 0; c < grid.nCols; c++) {
                         var td = document.createElement("td");
-                        var tdId = grid.id + "." + (i + 1) + ".value.container";
                         if(!firstCell) firstCell = td;
                         var iList = Liquid.getGridCells(liquid, grid, r, c);
+                        td.className = "LiquidGridCellTD";
+                        td.id = grid.id + ".row." + (r+1) + ".col."+(c+1)+".label";
                         for(var il=0; il<iList.length; il++) {
                             var i = iList[il];
                             if(i >= 0 && i < grid.columns.length) {
@@ -9179,7 +9191,7 @@ var Liquid = {
                                     td = null;
                                 } else {
                                     Liquid.createGridLabel(liquid, td, grid, grid.columns[i]);
-                                    td.id = tdId;
+                                    td.id = grid.id + "." + (i + 1) + ".label.container";
                                     if(isDef(grid.columns[i].labelWidth))
                                         td.style.width = Liquid.getCSSDim(grid.columns[i].labelWidth);
                                     if(isDef(grid.columns[i].labelHeight))
@@ -9192,12 +9204,13 @@ var Liquid = {
                             if(Liquid.projectMode) Liquid.setDraggable(td);
                         }
                         td = document.createElement("td");
+                        td.className = "LiquidGridCellTD";
+                        td.id = grid.id + ".row." + (r+1) + ".col."+(c+1)+".field";
                         for(var il=0; il<iList.length; il++) {
                             var i = iList[il];
                             if(i >= 0 && i < grid.columns.length) {
                                 var tdId = grid.id + "." + (i + 1) + ".value.container";
-                                if(cellsMap.indexOf(tdId) >= 0) 
-                                    console.error("ERROR: control:"+liquid.controlId+" grid:"+grid.name+" row:"+(r+1) + " columns:"+(c+1)+" item duplicate");
+                                if(cellsMap.indexOf(tdId) >= 0) console.error("ERROR: control:"+liquid.controlId+" grid:"+grid.name+" row:"+(r+1) + " columns:"+(c+1)+" item duplicate");
                                 cellsMap.push(tdId);
                                 td.id = tdId;
                                 if(grid.columns[i].label === null) {
@@ -9324,8 +9337,8 @@ var Liquid = {
                 if(isDef(gridObj.fieldData.positionX)) position += " left:" + gridObj.fieldData.positionX + ";";
                 if(isDef(gridObj.fieldData.positionY)) position += " top:" + gridObj.fieldData.positionY + ";";
                 if(isDef(gridObj.fieldData.width)) inputWidth = "width:" + Liquid.getCSSDim(gridObj.fieldData.width) + ";";
-                if(isDef(gridObj.fieldData.height)) inputHeight = "height:" + Liquid.getCSSDim(gridObj.fieldData.height) + ";";;
-                if(isDef(gridObj.labelData.style)) itemCssText = gridObj.fieldData.style;
+                if(isDef(gridObj.fieldData.height)) inputHeight = "height:" + Liquid.getCSSDim(gridObj.fieldData.height) + ";";
+                if(isDef(gridObj.fieldData.style)) itemCssText = gridObj.fieldData.style;
             }            
             if(typeof col === 'undefined' || !col) {
                 if(isDef(gridObj.query)) { // runtime field
@@ -9352,7 +9365,7 @@ var Liquid = {
                     
                 } else if( (col && isDef(col.lookup)) || (isDef(gridObj.lookup)) ) {
                     // innerHTML += "<div id=\"" + itemId + "\" class=\""+itemClass+"\" title=\""+toolTip+"\"></div>";
-                    if(!isDef(inputHeight) || inputHeight == '') inputHeight = "height:100%;";
+                    // if(!isDef(inputHeight) || inputHeight == '') inputHeight = "height:100%;";
                     innerHTML += "<div"
                             + " id=\"" + itemId + "\""
                             + " class=\""+itemClass + "\""
@@ -9576,10 +9589,16 @@ var Liquid = {
                 var gdIndex = nameItems[2] - 1;
                 var grid = liquid.tableJson.grids[gdIndex];
                 if(nameItems.length > 4) {
-                    var gItemIndex = nameItems[4] - 1;
-                    var gridControl = grid.columns[gItemIndex];
-                    var col = liquid.tableJson.columns[gridControl.colLink1B - 1];
-                    return { grid: grid, control: gridControl, column: col, gridIndex:gdIndex, itemIndex:gItemIndex, colIndex:gridControl.colLink1B - 1 };
+                    if(nameItems[4] == 'row') {
+                        var gRow = Number(nameItems[5]) - 1;
+                        var gCol = Number(nameItems[7]) - 1;
+                        return { grid: grid, control: gridControl, gridIndex:gdIndex, cellRow:gRow, cellCol:gCol };
+                    } else {
+                        var gItemIndex = nameItems[4] - 1;
+                        var gridControl = grid.columns[gItemIndex];
+                        var col = gridControl.colLink1B ? liquid.tableJson.columns[gridControl.colLink1B - 1] : null;
+                        return { grid: grid, control: gridControl, column: col, gridIndex:gdIndex, itemIndex:gItemIndex, colIndex:gridControl.colLink1B - 1 };
+                    }
                 } else {
                     return { grid: grid, gridIndex:gdIndex };
                 }
@@ -9608,21 +9627,34 @@ var Liquid = {
             if(column) {
                 var name = column.name;
                 var label = column.label;
+                // by field name
                 for(var iF = 0; iF < liquid.tableJson.columns.length; iF++) {
-                    if(name === liquid.tableJson.columns[iF].name || label === liquid.tableJson.columns[iF].label) {
+                    if(name === liquid.tableJson.columns[iF].name) {
                         return iF + 1;
                     }
                 }
                 // Now insensitive case
                 name = column.name ? column.name.toUpperCase() : "";
-                label = column.label ? column.label.toUpperCase() : "";
                 for(var iF = 0; iF < liquid.tableJson.columns.length; iF++) {
                     var uName = isDef(liquid.tableJson.columns[iF].name) ? liquid.tableJson.columns[iF].name.toUpperCase() : null;
-                    var uLabel = isDef(liquid.tableJson.columns[iF].label) ? liquid.tableJson.columns[iF].label.toUpperCase() : null;
-                    if(name ===  uName || label === uLabel) {
+                    if(name ===  uName) {
                         return iF + 1;
                     }
                 }
+                // Now by label
+                for(var iF = 0; iF < liquid.tableJson.columns.length; iF++) {
+                    if(label === liquid.tableJson.columns[iF].label) {
+                        return iF + 1;
+                    }
+                }
+                label = column.label ? column.label.toUpperCase() : "";
+                for(var iF = 0; iF < liquid.tableJson.columns.length; iF++) {
+                    var uLabel = isDef(liquid.tableJson.columns[iF].label) ? liquid.tableJson.columns[iF].label.toUpperCase() : null;
+                    if(label === uLabel) {
+                        return iF + 1;
+                    }
+                }
+                
             }
         }
         return 0;
@@ -10823,7 +10855,7 @@ var Liquid = {
                             Liquid.onCloseRichField(obj);
                         };
                         liquid.suneditorDiv.className = "liquidRichEditorContainer";
-                        liquid.suneditorDiv.style.zIndex = 51000;
+                        liquid.suneditorDiv.style.zIndex = 91000;
 
                         liquid.suneditorCen = document.createElement('center');
                         liquid.suneditorDiv.appendChild(liquid.suneditorCen);
@@ -11478,8 +11510,9 @@ var Liquid = {
                 if(isDef(disabled)) targetObj.disabled = disabled;
                 return 1;
             } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P') {
-                targetObj.innertHTML = value;
-                targetObj.innerText = String(value);
+                $(targetObj).html(value);
+                // targetObj.innertHTML = value;
+                // targetObj.innerText = String(value);
                 if(isDef(disabled)) targetObj.disabled = disabled;
                 return 0;
             } else {
@@ -12660,6 +12693,43 @@ var Liquid = {
                                 lookupSourceGlobalVarControlId = lookupControlId;
                             }
                         }
+                        if(!lookupJson) { // search in global var deep inside
+                            var database = liquid.tableJson.database;
+                            var schema = liquid.tableJson.schema;
+                            for(var attrname in window) {
+                                if(attrname.startsWith("gl") && attrname.endsWith("JSON")) {
+                                    if(isDef(window[attrname].controlId)) {
+                                        if(isDef(window[attrname].json)) {
+                                            if(window[attrname].controlId === json) {
+                                                lookupJson = JSON.parse(window[attrname].json);
+                                                registerControlId = window[attrname].controlId;
+                                                lookupSourceGlobalVar = window[attrname];
+                                                lookupSourceGlobalVarControlId = window[attrname].controlId;
+                                                break;
+                                            } else {
+                                                if(!isDef(window[attrname].jsonObj)) {
+                                                    try { window[attrname].jsonObj = JSON.parse(window[attrname].json); } catch (e) {}
+                                                }
+                                                if(isDef(window[attrname].jsonObj)) {
+                                                    if(window[attrname].jsonObj.database === database || !isDef(database)) {
+                                                        if(window[attrname].jsonObj.schema === schema || !isDef(schema)) {
+                                                            if(window[attrname].jsonObj.table === json) {
+                                                                // finally catch it
+                                                                lookupJson = JSON.parse(window[attrname].json);
+                                                                registerControlId = window[attrname].controlId;
+                                                                lookupSourceGlobalVar = window[attrname];
+                                                                lookupSourceGlobalVarControlId = window[attrname].controlId;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }                                            
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     if(lookupJson) {
                         try {
@@ -12726,14 +12796,16 @@ var Liquid = {
                                     var columns = liquid.tableJson.columns;
                                     var aliasTargetColumn = liquid.tableJson.table + "." + lookupJson.targetColumn;
                                     for(var ic=0; ic<columns.length; ic++) {
+                                        var colName = isDef(columns[ic].runtimeName) ? columns[ic].runtimeName : columns[ic].name;
                                         try {
                                             var condA = false; // columns[ic].name === lookupJson.idColumn || columns[ic].field === lookupJson.idColumn;
-                                            var condB = columns[ic].name === lookupJson.targetColumn || columns[ic].name === aliasTargetColumn || columns[ic].field === lookupJson.targetColumn;
+                                            var condB = colName === lookupJson.targetColumn || colName === aliasTargetColumn || columns[ic].field === lookupJson.targetColumn;
                                             if(condA || condB) {
                                                 if(condB)
                                                     liquid.tableJson.columns[ic].isReflected = true;
                                                 if(idColumnLinkedFields === null) idColumnLinkedFields = [];
                                                 idColumnLinkedFields.push( { controlId: liquid.controlId, field: columns[ic].field } );
+                                                // if(columns[ic].field === '31') debugger;
                                             }
                                         } catch (e) {
                                             console.error(e);
@@ -13565,7 +13637,10 @@ var Liquid = {
                                     var targetObj = null;
                                     
                                     if(duplicateObject) {
-                                        liquid.tableJsonSource.grids[grid_coords.gridIndex].columns.push( deepClone( sourceGridCol ) );
+                                        var new_col = deepClone( sourceGridCol );
+                                        new_col.name += "_copy";
+                                        if(isDef(new_col.label)) new_col.label += "_copy";
+                                        liquid.tableJsonSource.grids[grid_coords.gridIndex].columns.push( new_col );
                                         sourceGridCol = liquid.tableJsonSource.grids[grid_coords.gridIndex].columns[ liquid.tableJsonSource.grids[grid_coords.gridIndex].columns.length-1 ];
                                     }
                                     
@@ -13636,89 +13711,136 @@ var Liquid = {
                             }
                         }
                     }
-                } else if(event.target.classList.contains('liquidGridControl') || event.target.classList.contains('liquidGridLabel')) {
-                    if(sourceObj) {
-                        var liquid = Liquid.getLiquid(sourceObjId);
-                        if(isDef(liquid.currentCommand)) {
-                            alert("Please exit from current commad before drag grid'fields");
-                            return;
-                        }                        
-                        var grid_coords = Liquid.getGridCoords(liquid, sourceObjId);
-                        if(grid_coords) {
-                            if(grid_coords.control) {
-                                var sourceGridCol = liquid.tableJsonSource.grids[grid_coords.gridIndex].columns[grid_coords.itemIndex];
-                                if(sourceGridCol){
-                                    var target_grid_coords = Liquid.getGridCoords(liquid, event.target.id);
-                                    if(target_grid_coords) {
-                                        if(target_grid_coords.control) {
-                                            var targetGridCol = liquid.tableJsonSource.grids[target_grid_coords.gridIndex].columns[target_grid_coords.itemIndex];
-                                            if(targetGridCol) {
-                                                if(sourceGridCol.row === targetGridCol.row && sourceGridCol.col === targetGridCol.col)
-                                                    return;                                            
-                                                if(confirm(Liquid.swapCellsMessage)) {
-                                                    var t = targetGridCol.row;
-                                                    targetGridCol.row = sourceGridCol.row;
-                                                    sourceGridCol.row = t;
-                                                    t = targetGridCol.col;
-                                                    targetGridCol.col = sourceGridCol.col;
-                                                    sourceGridCol.col = t;
-                                                    Liquid.setAskForSave(liquid, true);
-                                                    // update the source
-                                                    if(isDef(liquid.sourceData)) {
-                                                        if(isDef(liquid.sourceData.rootControlId)) {
-                                                            if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                                                                var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                                                                if(sourceLiquid) {
-                                                                    var sourceForeignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                                                                    if(sourceForeignTable) {
-                                                                        if(isDef(sourceForeignTable.options)) {
-                                                                            if(isDef(sourceForeignTable.options.grids)) {
-                                                                                var sourceGridCol = sourceForeignTable.options.grids[grid_coords.gridIndex].columns[grid_coords.itemIndex];
-                                                                                var targetGridCol = sourceForeignTable.options.grids[target_grid_coords.gridIndex].columns[target_grid_coords.itemIndex];
-                                                                                var t = targetGridCol.row;
-                                                                                targetGridCol.row = sourceGridCol.row;
-                                                                                sourceGridCol.row = t;
-                                                                                t = targetGridCol.col;
-                                                                                targetGridCol.col = sourceGridCol.col;
-                                                                                sourceGridCol.col = t;
-                                                                                Liquid.setAskForSave(sourceLiquid, true);
-                                                                            } else {
-                                                                                console.error("ERROR : source grid update failed .. grid not found");
-                                                                            }
+                    return;
+                }
+            }
+            if(event.target.classList.contains('liquidGridControl') || event.target.classList.contains('liquidGridLabel') || event.target.classList.contains('LiquidGridCellTD')) {
+                if(sourceObj) {
+                    var liquid = Liquid.getLiquid(sourceObjId);
+                    if(isDef(liquid.currentCommand)) {
+                        alert("Please exit from current commad before drag grid'fields");
+                        return;
+                    }                        
+                    var grid_coords = Liquid.getGridCoords(liquid, sourceObjId);
+                    if(grid_coords) {
+                        if(grid_coords.control) {
+                            var sourceGridCol = liquid.tableJsonSource.grids[grid_coords.gridIndex].columns[grid_coords.itemIndex];
+                            if(sourceGridCol){
+                                var target_grid_coords = Liquid.getGridCoords(liquid, event.target.id);
+                                if(target_grid_coords) {
+                                    if(isDef(target_grid_coords.control)) {
+                                        var targetGridCol = liquid.tableJsonSource.grids[target_grid_coords.gridIndex].columns[target_grid_coords.itemIndex];
+                                        if(targetGridCol) {
+                                            if(sourceGridCol.row === targetGridCol.row && sourceGridCol.col === targetGridCol.col) return;                                            
+                                            if(confirm(Liquid.swapCellsMessage)) {
+                                                var t = targetGridCol.row;
+                                                targetGridCol.row = sourceGridCol.row;
+                                                sourceGridCol.row = t;
+                                                t = targetGridCol.col;
+                                                targetGridCol.col = sourceGridCol.col;
+                                                sourceGridCol.col = t;
+                                                Liquid.setAskForSave(liquid, true);
+                                                // update the source
+                                                if(isDef(liquid.sourceData)) {
+                                                    if(isDef(liquid.sourceData.rootControlId)) {
+                                                        if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
+                                                            var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
+                                                            if(sourceLiquid) {
+                                                                var sourceForeignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                                                                if(sourceForeignTable) {
+                                                                    if(isDef(sourceForeignTable.options)) {
+                                                                        if(isDef(sourceForeignTable.options.grids)) {
+                                                                            var sourceGridCol = sourceForeignTable.options.grids[grid_coords.gridIndex].columns[grid_coords.itemIndex];
+                                                                            var targetGridCol = sourceForeignTable.options.grids[target_grid_coords.gridIndex].columns[target_grid_coords.itemIndex];
+                                                                            var t = targetGridCol.row;
+                                                                            targetGridCol.row = sourceGridCol.row;
+                                                                            sourceGridCol.row = t;
+                                                                            t = targetGridCol.col;
+                                                                            targetGridCol.col = sourceGridCol.col;
+                                                                            sourceGridCol.col = t;
+                                                                            Liquid.setAskForSave(sourceLiquid, true);
+                                                                            
                                                                         } else {
-                                                                            console.error("ERROR : source grid update failed .. options not found");
+                                                                            console.error("ERROR : source grid update failed .. grid not found");
                                                                         }
                                                                     } else {
-                                                                        console.error("ERROR : source grid update failed .. sourceForeignTable not found");
+                                                                        console.error("ERROR : source grid update failed .. options not found");
                                                                     }
                                                                 } else {
-                                                                    console.error("ERROR : source grid update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
+                                                                    console.error("ERROR : source grid update failed .. sourceForeignTable not found");
                                                                 }
                                                             } else {
-                                                                console.error("ERROR : source grid update failed .. source foreign table not indexed");
+                                                                console.error("ERROR : source grid update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
                                                             }
                                                         } else {
-                                                            console.error("ERROR : source grid update failed .. rootControlId not defined");
+                                                            console.error("ERROR : source grid update failed .. source foreign table not indexed");
                                                         }
+                                                    } else {
+                                                        console.error("ERROR : source grid update failed .. rootControlId not defined");
                                                     }
-                                                    // Liquid.rebuildGrid(liquid, target_grid_coords.gridIndex);
-                                                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
                                                 }
+                                                liquid.sourceData.tempCurrentTab = target_grid_coords.gridIndex+1;
+                                                // Liquid.rebuildGrid(liquid, target_grid_coords.gridIndex);
+                                                Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
                                             }
                                         }
-                                    } else {
-                                        console.error("ERROR: target coords not detected");
+                                    } else if(isDef(target_grid_coords.cellRow) && isDef(target_grid_coords.cellCol)) {
+                                        if(confirm(Liquid.moveCellsMessage)) {
+                                            sourceGridCol.row = target_grid_coords.cellRow;
+                                            sourceGridCol.col = target_grid_coords.cellCol;
+                                            Liquid.setAskForSave(liquid, true);
+                                            // update the source
+                                            if(isDef(liquid.sourceData)) {
+                                                if(isDef(liquid.sourceData.rootControlId)) {
+                                                    if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
+                                                        var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
+                                                        if(sourceLiquid) {
+                                                            var sourceForeignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                                                            if(sourceForeignTable) {
+                                                                if(isDef(sourceForeignTable.options)) {
+                                                                    if(isDef(sourceForeignTable.options.grids)) {
+                                                                        var sourceGridCol = sourceForeignTable.options.grids[grid_coords.gridIndex].columns[grid_coords.itemIndex];
+                                                                        sourceGridCol.row = target_grid_coords.cellRow;
+                                                                        sourceGridCol.col = target_grid_coords.cellCol;
+                                                                        Liquid.setAskForSave(sourceLiquid, true);
+                                                                    } else {
+                                                                        console.error("ERROR : source grid update failed .. grid not found");
+                                                                    }
+                                                                } else {
+                                                                    console.error("ERROR : source grid update failed .. options not found");
+                                                                }
+                                                            } else {
+                                                                console.error("ERROR : source grid update failed .. sourceForeignTable not found");
+                                                            }
+                                                        } else {
+                                                            console.error("ERROR : source grid update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
+                                                        }
+                                                    } else {
+                                                        console.error("ERROR : source grid update failed .. source foreign table not indexed");
+                                                    }
+                                                } else {
+                                                    console.error("ERROR : source grid update failed .. rootControlId not defined");
+                                                }
+                                            }
+                                            liquid.sourceData.tempCurrentTab = target_grid_coords.gridIndex+1;
+                                            // Liquid.rebuildGrid(liquid, target_grid_coords.gridIndex);
+                                            Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
+                                        }
                                     }
+                                } else {
+                                    console.error("ERROR: target coords not detected");
                                 }
                             }
-                        } else {
-                            console.error("ERROR: source coords not detected");
                         }
+                    } else {
+                        console.error("ERROR: source coords not detected");
                     }
                 } else {
                     console.error("ERROR: control type not recognized");
                 }
-            } else if(event.target.classList.contains('liquidWinXContainer')) {
+            } 
+            
+            if(event.target.classList.contains('liquidWinXContainer')) {
                 if(event.dataTransfer.items) {
                     for (var i = 0; i < event.dataTransfer.items.length; i++) {
                         if(event.dataTransfer.items[i].kind === 'file') {
@@ -14109,8 +14231,6 @@ var Liquid = {
                 +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewGridLookup('"+obj.id+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Make lookup"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onGridOptions('"+liquid.controlId+".gridOptions', '"+obj.id+"')\">"+optImg+"<a href=\"javascript:void(0)\">Grid options"+"</a></p>"
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
                 +"<p><hr size=1></p>"
