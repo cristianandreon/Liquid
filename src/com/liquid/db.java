@@ -290,11 +290,6 @@ public class db {
                 try { query = tbl_wrk.tableJson.getString("query"); } catch (Exception e) {  }
                 try { token = tbl_wrk.tableJson.getString("token"); } catch (Exception e) {  }
 
-                // Verifica tel token : almeno un controllo deve avere il token assegnato (foreign table, lockuo etc hanno il token ereditato
-                if(!workspace.isTokenValid(token)) {
-                    System.out.println("// LIQUID ERROR : Invalid Token on controlId:"+controlId);
-                    return "{\"error\":\""+utility.base64Encode("Error: invalid token on :"+controlId)+"\"}";
-                }
 
                 // set the connection
                 connToUse = conn;
@@ -323,7 +318,7 @@ public class db {
                 // System calls
                 String isSystemLiquid = workspace.isSystemLiquid(tbl_wrk.tableJson);
                 boolean bUserFieldIdentificator = true;
-
+                
                 try { targetDatabase = tbl_wrk.tableJson.getString("selectDatabases"); } catch(Exception e) {}
                 try { targetSchema = tbl_wrk.tableJson.getString("selectSchemas"); } catch(Exception e) {}
                 try { targetTable = tbl_wrk.tableJson.getString("selectTables"); } catch(Exception e) {}
@@ -404,6 +399,12 @@ public class db {
                 }
                 
                 try {
+                
+                    // Verifica tel token : almeno un controllo deve avere il token assegnato (foreign table, lockup etc hanno il token ereditato
+                    if(!workspace.isTokenValid(token)) {
+                        System.out.println("// LIQUID ERROR : Invalid Token on controlId:"+controlId);
+                        return "{\"error\":\""+utility.base64Encode("Error: invalid token on :"+controlId)+"\"}";
+                    }
                     
                     dbPrimaryKey = "A_"+primaryKey;
                     
@@ -4072,8 +4073,12 @@ public class db {
                     String primaryKey = tblWrk.tableJson.getString("primaryKey");
                     Object primaryKeyValue = null;
 
+                    DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+                    DateFormat dateTimeFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss.SS");
+                    
                     for(int ic=0; ic<cols.length(); ic++) {
                         JSONObject col = cols.getJSONObject(ic);
+                        int colType = col.getInt("type");
                         String colName = col.getString("name");
                         String colRuntimeName = col.has("runtimeName") ? col.getString("runtimeName") : null;
                         String beanColName = (colRuntimeName != null ? colRuntimeName.replaceAll("\\.", "\\$") : ( colName != null ? colName.replaceAll("\\.", "\\$") : null));
@@ -4081,6 +4086,23 @@ public class db {
                         if(beanColName != null) {
                             try {
                                 Object fieldData = utility.get(bean, beanColName );
+                                
+                                if(colType == 91) { //date
+                                    try {
+                                        java.sql.Date dbSqlDate = (java.sql.Date)fieldData;
+                                        fieldData = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
+                                    } catch (Exception e) { }                                                
+                                } else if(colType == 92) { //time
+                                    try {
+                                        java.sql.Time dbSqlTime = (java.sql.Time)fieldData;
+                                        fieldData = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
+                                    } catch (Exception e) { }                                                
+                                } else if(colType == 6 || colType == 93) { // datetime
+                                    try {
+                                        fieldData = fieldData != null ? dateTimeFormat.format(fieldData) : null;
+                                    } catch (Exception e) { }                                                
+                                }
+                                
                                 if(colName.equals(primaryKey)) {
                                     primaryKeyValue = fieldData;
                                 } else {

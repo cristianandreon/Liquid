@@ -128,8 +128,8 @@ public class liquidize {
             out += sep + "[";
             
             boolean childNewLine = liquidizeHasNewLine(fullPathProp);
+            cLevel++;
             if(bNewLine && jsons.length()>0) {
-                cLevel++;
                 if(!childNewLine) { // the child'll do it
                     out += "\n";
                     for(int i=0; i<cLevel; i++) out += sTabular;
@@ -145,8 +145,8 @@ public class liquidize {
                     out += (il>0?",":"") + "\"" + String.valueOf(propVal) + "\"";
                 }
             }
+            cLevel--;
             if(bNewLine && jsons.length()>0) {
-                cLevel--;
                 if(childNewLine) { // the child did it
                     out+= "\n";
                     for(int i=0; i<cLevel; i++) out += sTabular;
@@ -219,8 +219,10 @@ public class liquidize {
                     out += "}";
                 } else {
                     out += " }";
-                    if(!bCompactMode) out += "\n";
-                    for(int i=0; i<cLevel; i++) out += sTabular;
+                    if(!bCompactMode) {
+                        out += "\n";
+                        for(int i=0; i<cLevel; i++) out += sTabular;
+                    }
                 }
             }
             
