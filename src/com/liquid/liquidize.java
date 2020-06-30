@@ -26,6 +26,10 @@ public class liquidize {
     
     static ArrayList<String> glJSONPropsList = new ArrayList<String> (  Arrays.asList( 
         "database", "schema", "table", "driver", "connectionURL"
+        ,"name"
+        ,"nRows"
+        ,"nCols"
+        ,"assets"
         ,"columns"
         ,"foreignTables"
         ,"grids"
@@ -37,7 +41,6 @@ public class liquidize {
         ,"events"
         ,"query"
         // inside columns :
-        ,"name"
         ,"tooltip"
         ,"icon"
         ,"label"
@@ -54,6 +57,7 @@ public class liquidize {
             ,"columns.options.columns"
             ,"grids.columns", "foreignTables.options.grids.columns", "foreignTables.options.commands", "foreignTables.options.events"
             ,"filters.columns", "foreignTables.options.filters.columns"
+            ,"grids.assets"
     ));
 
     static public String liquidizeJSONContent(String content) {

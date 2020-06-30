@@ -1,11 +1,13 @@
-{   "database":"LiquidX"
-    ,"schema":"liquidx"
+{   "database":""
+    ,"schema":""
     ,"table":"users_roles"
     ,"columns":[
          {"name":"id","width":"!auto","label":"id","visible":false}
         ,{"name":"user_id","width":"!auto","label":"user_id"}
+        ,{"name":"login_users.user","width":"!auto","label":"user", "foreignTable":"login_users", "foreignColumn":"id", "column":"user_id"}
         ,{"name":"role_id","width":"!auto","label":"role_id"}
-        ,{"name":"status","width":"!auto","label":"status","required":true}
+        ,{"name":"roles.role","width":"!auto","label":"role", "foreignTable":"roles", "foreignColumn":"id", "column":"role_id"}
+        ,{"name":"status","width":"!auto","label":"status","required":true, "default":" "}
         ,{"name":"date","width":"!auto","label":"date"}
         ,{"name":"expire_date","width":"!auto","label":"expire_date"}
         ,{"name":"expired","width":"!auto","label":"expired"}
@@ -15,6 +17,8 @@
     ,"parentObjId":"WinXContainer","autoFitColumns":true
     ,"width":650
     ,"height":580
+    ,"left":"center"
+    ,"top":"center"
     ,"resize":"both"
     ,"primaryKey":"id"
     ,"editable":true

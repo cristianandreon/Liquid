@@ -832,7 +832,11 @@ public class db {
                                             
                                             if(filterOp == null || filterOp.isEmpty()) {
                                                 if(filtersDefCols != null) {
-                                                    filterOp = filtersDefCols.getJSONObject(i).getString("op");
+                                                    if(filtersDefCols.getJSONObject(i).has("op")) {
+                                                        try {
+                                                            filterOp = filtersDefCols.getJSONObject(i).getString("op");
+                                                        } catch (Exception e) { }
+                                                    }
                                                 }
                                             }
                                             

@@ -11,6 +11,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
+import org.json.JSONArray;
+import org.json.JSONException;
 
 
 // TODO : supporto per oracle e sqlserver
@@ -395,6 +397,39 @@ public class assets {
     }
     
     
+    static public Object [] is_asset_active ( HttpServletRequest request, JSONArray assets, String assetsOp ) throws JSONException {
+        boolean hasActiveAsset = true;
+        String invalid_assets = null;
+       
+        // Administrator  ?
+        int GLLiquidAdmin = (int)request.getSession().getAttribute("GLLiquidAdmin");
+        if(GLLiquidAdmin > 0) {
+            // ... can do everythings
+            return new Object [] { true, null };
+        }
+        if(assets != null && assets.length() > 0) {
+            hasActiveAsset = false;
+            if(assetsOp == null || assetsOp.isEmpty()) assetsOp = "or";
+            ArrayList<String>assetsArray = (ArrayList<String>)request.getSession().getAttribute("GLLiquidUserAssetsName");
+            for(int ia=0; ia<assets.length(); ia++) {
+                if(assetsArray.contains( assets.getString(ia) )) {
+                    if("or".equalsIgnoreCase(assetsOp)) {
+                        hasActiveAsset = true;
+                        invalid_assets += assets.getString(ia);
+                        break;
+                    }
+                } else {
+                    if("and".equalsIgnoreCase(assetsOp)) {
+                        hasActiveAsset = false;
+                        invalid_assets += assets.getString(ia);
+                        break;
+                    }
+                }
+            }
+        }
+        return new Object [] { hasActiveAsset, invalid_assets };
+    }
+    
     static public String is_asset_active ( String asset ) {
         try {            
             ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
@@ -427,9 +462,7 @@ public class assets {
         try {            
             ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
             if(threadSession != null) {                
-                HttpServletRequest request = threadSession.request;
-                ArrayList<Object> user_all_assets_name = (ArrayList<Object> )request.getSession().getAttribute("GLLiquidUserAssetsName");
-                return workspace.arrayToString(user_all_assets_name.toArray(), null, null, ",");
+                return get_assets ( threadSession.request );
             }
         } catch (Throwable e) {
             if(!(e instanceof java.lang.NoSuchMethodException)) {
@@ -439,6 +472,21 @@ public class assets {
         return null;
     }
     
+    // For usage from jsp
+    static public String get_assets ( HttpServletRequest request ) {
+        try {            
+            if(request != null) {                
+                ArrayList<Object> user_all_assets_name = (ArrayList<Object> )request.getSession().getAttribute("GLLiquidUserAssetsName");
+                return user_all_assets_name != null ? workspace.arrayToString(user_all_assets_name.toArray(), "\"", "\"", ",") : "";
+            }
+        } catch (Throwable e) {
+            if(!(e instanceof java.lang.NoSuchMethodException)) {
+                System.err.println("// get_assets() Error:" + e.getLocalizedMessage());
+            }
+        }        
+        return null;
+    }
+
     
     static public boolean is_valid_asset_or_role ( Object bean ) {
         if(bean != null) {
@@ -460,6 +508,9 @@ public class assets {
     
     // Load all roles and asset for userId, typically onLogin
     static public boolean read_user_assets_roles ( HttpServletRequest request, int userId ) {
+        return read_user_assets_roles(request, (String)String.valueOf(userId));
+    }
+    static public boolean read_user_assets_roles ( HttpServletRequest request, String userId ) {
         boolean retVal = true;
         
         Connection conn = null;

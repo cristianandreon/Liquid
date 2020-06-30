@@ -27,6 +27,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import static com.liquid.liquidize.liquidizeJSONContent;
+import java.util.Iterator;
 
 
 // TODO : support for jump database when using connectioURL
@@ -527,7 +528,7 @@ public class workspace {
                         
                 try {
                     String colsAsName = tableJson.getString("columns");
-                    if("*".equalsIgnoreCase(colsAsName))  {
+                    if("*".equalsIgnoreCase(colsAsName) || "all".equalsIgnoreCase(colsAsName))  {
                         bAllColumns = true;
                     }
                 } catch(Exception e) {}
@@ -959,21 +960,76 @@ public class workspace {
                     }
                 }
 
+                //
+                // Assetts on the grids : set visible = false or delete ???
+                //
+                JSONArray grids = null;
+                boolean gridChanged = false;
+                boolean bDeleteMismatchingAssetGrid = true;
+                try { grids = tableJson.getJSONArray("grids"); } catch (Exception ex) {}
+                if(grids != null) {
+                    for(int ig=0; ig<grids.length(); ig++) {
+                        JSONObject grid = grids.getJSONObject(ig);
+                        if(grid != null) {
+                            JSONArray assets = null;
+                            String assetsOp = null, asset = null, mismatching_assets = null;
+                            boolean hasActiveAsset = true;
+                            try { assetsOp = grid.getString("assetsOp");  } catch (Exception ex) { assetsOp=null; }
+                            try { assets = grid.getJSONArray("assets");  } catch (Exception ex) { assets=null; }
+                            try { asset = grid.getString("asset");  } catch (Exception ex) { asset=null; }
+
+                            if(asset != null && !asset.isEmpty()) {
+                               if(assets == null) assets = new JSONArray();
+                               assets.put(asset);
+                            }
+
+                            try {
+                                Object [] res_asset = com.liquid.assets.is_asset_active ( request, assets, assetsOp );
+                                hasActiveAsset = (boolean) res_asset[0];
+                                mismatching_assets = (String) res_asset[1];
+                            } catch (Exception ex) {
+                            }
+
+                            if(hasActiveAsset) {
+                            } else {
+                                if(bDeleteMismatchingAssetGrid) {
+                                    // Iterator keys = grid.keys();
+                                    // while(keys.hasNext()) grid.remove((String)keys.next());
+                                    grids.put(ig, new JSONObject());
+                                    gridChanged = true;
+                                } else {
+                                    grid.put("visible", false);
+                                    grid.put("visible_comment", "mismatching asset:"+mismatching_assets+"");
+                                    gridChanged = true;
+                                }
+                            }
+                        }
+                    }
+                    if(gridChanged) {
+                        tableJson.put("grids", grids);
+                    }
+                }
+
+                //
                 // Comandi Predefiniti : risoluzione campi default
+                //
                 boolean bInsertActive = false;
                 boolean bUpdateActive = false;
                 boolean bDeleteActive = false;
                 boolean bPastedRowActive = false;
                 JSONArray commands = null;
+                JSONArray new_commands = new JSONArray();
                 try { commands = tableJson.getJSONArray("commands"); } catch(Exception e) {}
                 if(commands != null) {
                     for(int ic=0; ic<commands.length(); ic++) {
                         JSONObject cmd = commands.getJSONObject(ic);
                         if(cmd != null) {
                             JSONArray labels = null;
+                            JSONArray assets = null;
                             int size = 0;
-                            String cmdName = null, img = null, text = null, rollback = null, rollbackImg = null;
+                            String cmdName = null, img = null, text = null, rollback = null, rollbackImg = null, asset = null, assetsOp = null, mismatching_assets = null;
                             boolean bServerDefined = false;
+                            boolean hasActiveAsset = true;
                             try { cmdName = cmd.getString("name");  } catch (Exception ex) {}
                             try { img = cmd.getString("img");  } catch (Exception ex) { img=null; }
                             try { rollback = cmd.getString("rollback");  } catch (Exception ex) { rollback=null; }
@@ -982,65 +1038,88 @@ public class workspace {
                             try { labels = cmd.getJSONArray("labels");  } catch (Exception ex) { labels=null; }
                             try { size = cmd.getInt("size");  } catch (Exception ex) { size=0; }
                             try { bServerDefined = cmd.has("server");  } catch (Exception ex) { }
-                            if("insert".equalsIgnoreCase(cmdName) || "create".equalsIgnoreCase(cmdName)) {
-                                if(!bServerDefined) cmd.put("server", "com.liquid.event.insertRow");
-                                cmd.put("name", "insert");
-                                cmd.put("isNative", true);
-                                if(img==null) cmd.put("img", "add.png");
-                                if(size==0) cmd.put("size", 20);
-                                if(text==null) cmd.put("text", "Aggiungi");
-                                if(labels==null) cmd.put("labels", new JSONArray("[\"Salva\"]"));
-                                if(rollback==null || rollback.isEmpty()) cmd.put("rollback", "Annulla");
-                                if(rollbackImg==null || rollbackImg.isEmpty()) cmd.put("rollbackImg", "cancel.png");
-                                bInsertActive = true;
-                            } else if("update".equalsIgnoreCase(cmdName) || "modify".equalsIgnoreCase(cmdName)) {
-                                if(!bServerDefined) cmd.put("server", "com.liquid.event.updateRow");
-                                cmd.put("name", "update");
-                                cmd.put("isNative", true);
-                                if(img==null) cmd.put("img", "update.png");
-                                if(size==0) cmd.put("size", 20);
-                                if(text==null) cmd.put("text", "Modifica");
-                                if(labels==null) cmd.put("labels", new JSONArray("[\"Salva\"]"));
-                                if(rollback==null || rollback.isEmpty()) cmd.put("rollback", "Annulla");
-                                if(rollbackImg==null || rollbackImg.isEmpty()) cmd.put("rollbackImg", "cancel.png");
-                                bUpdateActive = true;
-                            } else if("delete".equalsIgnoreCase(cmdName) || "erase".equalsIgnoreCase(cmdName)) {
-                                if(!bServerDefined) cmd.put("server", "com.liquid.event.deleteRow");
-                                cmd.put("name", "delete");
-                                cmd.put("isNative", true);
-                                if(img==null) cmd.put("img", "delete.png");
-                                if(size==0) cmd.put("size", 20);
-                                if(text==null) cmd.put("text", "Cancella");
-                                if(labels==null) cmd.put("labels", new JSONArray("[\"Conferma\"]"));
-                                if(rollback==null || rollback.isEmpty()) cmd.put("rollback", "Annulla");
-                                if(rollbackImg==null || rollbackImg.isEmpty()) cmd.put("rollbackImg", "cancel.png");
-                                bDeleteActive = true;
-                            } else if("previous".equalsIgnoreCase(cmdName)) {
-                                if(img==null) cmd.put("img", "prev.png");
-                                if(size==0) cmd.put("size", 16);
-                                cmd.put("client", "onPrevRow");
-                                cmd.put("isNative", true);
-                            } else if("next".equalsIgnoreCase(cmdName)) {                           
-                                if(img==null) cmd.put("img", "next.png");
-                                if(size==0) cmd.put("size", 16);
-                                cmd.put("client", "onNextRow");
-                                cmd.put("isNative", true);
-                            } else if("copy".equalsIgnoreCase(cmdName)) {                           
-                                if(img==null) cmd.put("img", "copy.png");
-                                if(size==0) cmd.put("size", 16);
-                                cmd.put("client", "onCopy");
-                                cmd.put("isNative", true);
-                            } else if("paste".equalsIgnoreCase(cmdName)) {                           
-                                if(img==null) cmd.put("img", "paste.png");
-                                if(size==0) cmd.put("size", 16);
-                                cmd.put("client", "onPaste");
-                                cmd.put("isNative", true);
-                                cmd.put("sync", true);
-                                bPastedRowActive = true;
+                            try { assetsOp = cmd.getString("assetsOp");  } catch (Exception ex) { assetsOp=null; }
+                            try { assets = cmd.getJSONArray("assets");  } catch (Exception ex) { assets=null; }
+                            try { asset = cmd.getString("asset");  } catch (Exception ex) { asset=null; }
+                            
+                            if(asset != null && !asset.isEmpty()) {
+                               if(assets == null) assets = new JSONArray();
+                               assets.put(asset);
+                            }
+                            
+                            try {
+                                Object [] res_asset = com.liquid.assets.is_asset_active ( request, assets, assetsOp );
+                                hasActiveAsset = (boolean) res_asset[0];
+                                mismatching_assets = (String) res_asset[1];
+                            } catch (Exception ex) {
+                            }
+
+                            if(hasActiveAsset) {
+                                if("insert".equalsIgnoreCase(cmdName) || "create".equalsIgnoreCase(cmdName)) {
+                                    if(!bServerDefined) cmd.put("server", "com.liquid.event.insertRow");
+                                    cmd.put("name", "insert");
+                                    cmd.put("isNative", true);
+                                    if(img==null) cmd.put("img", "add.png");
+                                    if(size==0) cmd.put("size", 20);
+                                    if(text==null) cmd.put("text", "Aggiungi");
+                                    if(labels==null) cmd.put("labels", new JSONArray("[\"Salva\"]"));
+                                    if(rollback==null || rollback.isEmpty()) cmd.put("rollback", "Annulla");
+                                    if(rollbackImg==null || rollbackImg.isEmpty()) cmd.put("rollbackImg", "cancel.png");
+                                    bInsertActive = true;
+                                } else if("update".equalsIgnoreCase(cmdName) || "modify".equalsIgnoreCase(cmdName)) {
+                                    if(!bServerDefined) cmd.put("server", "com.liquid.event.updateRow");
+                                    cmd.put("name", "update");
+                                    cmd.put("isNative", true);
+                                    if(img==null) cmd.put("img", "update.png");
+                                    if(size==0) cmd.put("size", 20);
+                                    if(text==null) cmd.put("text", "Modifica");
+                                    if(labels==null) cmd.put("labels", new JSONArray("[\"Salva\"]"));
+                                    if(rollback==null || rollback.isEmpty()) cmd.put("rollback", "Annulla");
+                                    if(rollbackImg==null || rollbackImg.isEmpty()) cmd.put("rollbackImg", "cancel.png");
+                                    bUpdateActive = true;
+                                } else if("delete".equalsIgnoreCase(cmdName) || "erase".equalsIgnoreCase(cmdName)) {
+                                    if(!bServerDefined) cmd.put("server", "com.liquid.event.deleteRow");
+                                    cmd.put("name", "delete");
+                                    cmd.put("isNative", true);
+                                    if(img==null) cmd.put("img", "delete.png");
+                                    if(size==0) cmd.put("size", 20);
+                                    if(text==null) cmd.put("text", "Cancella");
+                                    if(labels==null) cmd.put("labels", new JSONArray("[\"Conferma\"]"));
+                                    if(rollback==null || rollback.isEmpty()) cmd.put("rollback", "Annulla");
+                                    if(rollbackImg==null || rollbackImg.isEmpty()) cmd.put("rollbackImg", "cancel.png");
+                                    bDeleteActive = true;
+                                } else if("previous".equalsIgnoreCase(cmdName)) {
+                                    if(img==null) cmd.put("img", "prev.png");
+                                    if(size==0) cmd.put("size", 16);
+                                    cmd.put("client", "onPrevRow");
+                                    cmd.put("isNative", true);
+                                } else if("next".equalsIgnoreCase(cmdName)) {                           
+                                    if(img==null) cmd.put("img", "next.png");
+                                    if(size==0) cmd.put("size", 16);
+                                    cmd.put("client", "onNextRow");
+                                    cmd.put("isNative", true);
+                                } else if("copy".equalsIgnoreCase(cmdName)) {                           
+                                    if(img==null) cmd.put("img", "copy.png");
+                                    if(size==0) cmd.put("size", 16);
+                                    cmd.put("client", "onCopy");
+                                    cmd.put("isNative", true);
+                                } else if("paste".equalsIgnoreCase(cmdName)) {                           
+                                    if(img==null) cmd.put("img", "paste.png");
+                                    if(size==0) cmd.put("size", 16);
+                                    cmd.put("client", "onPaste");
+                                    cmd.put("isNative", true);
+                                    cmd.put("sync", true);
+                                    bPastedRowActive = true;
+                                }
+                                
+                                new_commands.put(cmd);
+                            } else {
+                                // skipped
+                                new_commands.put( new JSONObject("{ \"cmd_"+cmdName+"_comment\":\"mismatching asset:"+mismatching_assets+"\"}"));
                             }
                         }
                     }
-                    tableJson.put("commands", commands);
+                    tableJson.put("commands", new_commands);
                 }
 
                 
@@ -1205,14 +1284,17 @@ public class workspace {
                         tblWorkspace.token = token;
                         // set thre token in the json
                         tableJson.put("token", token);
+                    } else {
+                        tableJson.put("token", tblWorkspace.token);
                     }
                     
                     if(!tblWorkspace.tableJson.equals(tableJson)) {
                         if(tblWorkspace.tableJson != null)
-                            if(!tblWorkspace.tableJson.equals(tableJson))
                                 System.out.println("WARNING : Overwrited Configuration of control : "+controlId);
+                        
                         // Keep server side define (es.: query / connectionURL)
                         recoveryKeyFromServer(tblWorkspace.tableJson, tableJson);
+                        
                         tblWorkspace.tableJson = tableJson;
                     }
                     if(    (tblWorkspace.owner == null && owner != null)
@@ -1234,6 +1316,9 @@ public class workspace {
             }
             
             if(!bFoundWorkspace) {
+                // set thre token in the json
+                tableJson.put("token", token);
+                
                 tblWorkspace = new workspace();
                 tblWorkspace.controlId = controlId;
                 tblWorkspace.tableJson = tableJson;
@@ -1247,16 +1332,12 @@ public class workspace {
                 // tblWorkspace.get_connection assegnato a default_connection
                 System.out.println("/* LIQUID INFO : new control : "+controlId + " driverClass:"+tblWorkspace.driverClass + " dbProductName:"+dbProductName+"*/");
                 glTblWorkspaces.add(tblWorkspace);
-                // set thre token in the json
-                tableJson.put("token", token);
-                if("Quotes".equalsIgnoreCase(controlId)) {
-                    int lb = 1;
-                }                
             }
             
             
             
             JSONObject tableJsonForClient = new JSONObject(tableJson.toString());
+            
             // ConnectionURL è gestito lato server, può avere l'account di accesso e non va passato al client
             for(String serverPriorityKey : serverPriorityKeys) {
                 if(tableJsonForClient.has(serverPriorityKey)) {

@@ -1,0 +1,17 @@
+{   "database":""
+    ,"schema":""
+    ,"table":"login_users"
+    ,"columns":"*"
+    ,"caption":"login_users"
+    ,"mode":"winX"
+    ,"parentObjId":"WinXContainer","autoFitColumns":true
+    ,"width":650
+    ,"height":580
+    ,"left":"center"
+    ,"top":"center"
+    ,"resize":"both"
+    ,"primaryKey":"id"
+    ,"editable":true
+    ,"commands":[ {"name":"insert"},{"name":"update"},{"name":"delete"},{"name":"copy"},{"name":"paste"},{"name":"next"},{"name":"previous"} ]
+    ,"events":[]
+}

@@ -1,11 +1,13 @@
-{   "database":"LiquidX"
-    ,"schema":"liquidx"
+{   "database":""
+    ,"schema":""
     ,"table":"users_assets"
     ,"columns":[
          {"name":"id","width":"!auto","label":"id","visible":false}
         ,{"name":"user_id","width":"!auto","label":"user_id"}
+        ,{"name":"login_users.user","width":"!auto","label":"user", "foreignTable":"login_users", "foreignColumn":"id", "column":"user_id"}
         ,{"name":"asset_id","width":"!auto","label":"asset_id"}
-        ,{"name":"status","width":"!auto","label":"status","required":true}
+        ,{"name":"assets.asset","width":"!auto","label":"asset", "foreignTable":"assets", "foreignColumn":"id", "column":"asset_id"}
+        ,{"name":"status","width":"!auto","label":"status","required":true, "default":" "}
         ,{"name":"date","width":"!auto","label":"date"}
         ,{"name":"expire_date","width":"!auto","label":"expire_date"}
         ,{"name":"expired","width":"!auto","label":"expired"}]
@@ -15,6 +17,8 @@
     ,"autoFitColumns":true
     ,"width":650
     ,"height":580
+    ,"left":"center"
+    ,"top":"center"
     ,"resize":"both"
     ,"primaryKey":"id"
     ,"editable":true
