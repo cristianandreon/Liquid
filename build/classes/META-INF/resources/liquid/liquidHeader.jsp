@@ -5,7 +5,10 @@
 <%@ page import="com.liquid.emailer"%>
 <%@ page import="com.liquid.utility"%>
 
-<% String path = request.getContextPath(); %>
+<% 
+    String path = request.getContextPath(); 
+    String jssVersion = "1.16";
+%>
 <!-- -->
 <!-- START of Liquid Framework Include Files .. Your Application root is at : "<%= path %>" -->
 <!-- -->
@@ -22,15 +25,15 @@
 <link href="<%=path%>/liquid/toastr/toastr.less" rel="stylesheet" type="text/css" />
 <link href="<%=path%>/liquid/toastr/toastr.scss" rel="stylesheet" type="text/css" />
 
-<script type="text/javascript" src="<%=path%>/liquid/jquery.datetimepicker.js?version=1.09"></script>
-<link rel="stylesheet" href="<%=path%>/liquid/jquery.datetimepicker.min.css?version=1.09" type='text/css' />
+<script type="text/javascript" src="<%=path%>/liquid/jquery.datetimepicker.js?version=<%=jssVersion%>"></script>
+<link rel="stylesheet" href="<%=path%>/liquid/jquery.datetimepicker.min.css?version=<%=jssVersion%>" type='text/css' />
 
-<link href="<%=path%>/liquid/suneditor/suneditor.min.css?version=1.09" rel="stylesheet">
-<script src="<%=path%>/liquid/suneditor/common.js?version=1.09"></script>
-<script src="<%=path%>/liquid/suneditor/suneditor.min.js?version=1.09"></script>
+<link href="<%=path%>/liquid/suneditor/suneditor.min.css?version=<%=jssVersion%>" rel="stylesheet">
+<script src="<%=path%>/liquid/suneditor/common.js?version=<%=jssVersion%>"></script>
+<script src="<%=path%>/liquid/suneditor/suneditor.min.js?version=<%=jssVersion%>"></script>
 
-<link rel="stylesheet" href="<%=path%>/liquid/liquid.css?version=1.09" type='text/css' />
-<script type="text/javascript" src="<%=path%>/liquid/liquid.js?version=1.09"></script>
+<link rel="stylesheet" href="<%=path%>/liquid/liquid.css?version=<%=jssVersion%>" type='text/css' />
+<script type="text/javascript" src="<%=path%>/liquid/liquid.js?version=<%=jssVersion%>"></script>
 <!-- -->
 <!-- END of Liquid Framework include files -->
 <!-- -->

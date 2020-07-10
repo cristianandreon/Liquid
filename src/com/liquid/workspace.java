@@ -864,10 +864,33 @@ public class workspace {
                                             col.put("type", mdCol.datatype);
                                             col.put("typeName", mdCol.typeName);
                                             col.put("size", mdCol.size);
-                                            col.put("digits", mdCol.digits);
+
+                                            if(!col.has("")) {
+                                                col.put("digits", mdCol.digits);
+                                            }
+                                            
                                             col.put("nullable", mdCol.isNullable);
                                             col.put("autoIncString", mdCol.autoIncString);
                                             col.put("remarks", mdCol.remarks);
+
+                                            
+                                            boolean bStoreDigits = false;
+                                            if(col.has("digits")) {
+                                                try {
+                                                    Integer idigits = col.getInt("digits");
+                                                    if(idigits == null) {
+                                                        bStoreDigits = true;
+                                                    }
+                                                } catch (Exception e) {
+                                                    bStoreDigits = true;
+                                                }
+                                            } else {
+                                                bStoreDigits = true;
+                                            }
+                                            if(bStoreDigits) {
+                                                col.put("digits", mdCol.digits);
+                                            }
+
                                             
                                             //
                                             // Save default in the database if not overwrited by json
@@ -1472,8 +1495,10 @@ public class workspace {
                     workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk);
                     if(tbl_wrk == null) {
                         // Nessuna definizione predefinita : costruzione connessione minima
-                        String sTableJson = "{\"database\":\""+database+"\",\"schema\":\""+schema+"\",\"table\":\""+table+"\",\"columns\":\"*\"}";
+                        String sTableJson = "{\"table\":\""+table+"\",\"columns\":\"*\"}";
                         JSONObject tableJson = new JSONObject(sTableJson);
+                        tableJson.put("database", database);
+                        tableJson.put("schema", schema);
                         if(sRequest != null && !sRequest.isEmpty()) {
                             //
                             // Unione voci nella request ... es.: commands, filter, etc... deveno essere validate dal server
@@ -2099,26 +2124,29 @@ public class workspace {
         try {
             JSONArray paramsJson = (JSONArray)(new JSONObject(params)).getJSONArray("params");
             for(int i=0; i<paramsJson.length(); i++) {
-                JSONObject obj = (JSONObject)paramsJson.get(i);
-                String ids = null;
-                if(obj != null) {
-                    if(obj.has("name")) {
-                        if(obj.getString("name").equalsIgnoreCase(controlId)) {
-                            String prefix = "";
-                            if(obj.has("ids")) {
-                                // All o lista inclusione
-                                ids = obj.getString("ids");
-                            } else if(obj.has("sel")) {
-                                ids = obj.getString("sel");
-                            }
-                            if(obj.has("unsel")) {
-                                // Lista exclusione
-                                ids = obj.getString("unsel");
-                                prefix = "!";
-                            }
-                            if(ids != null && ids.length() >= 2) {
-                                ids = ids.substring(1, ids.length()-1);
-                                return prefix+ids;
+                Object ojson= paramsJson.get(i);
+                if(ojson instanceof JSONObject) {
+                    JSONObject obj = (JSONObject)paramsJson.get(i);
+                    String ids = null;
+                    if(obj != null) {
+                        if(obj.has("name")) {
+                            if(obj.getString("name").equalsIgnoreCase(controlId)) {
+                                String prefix = "";
+                                if(obj.has("ids")) {
+                                    // All o lista inclusione
+                                    ids = obj.getString("ids");
+                                } else if(obj.has("sel")) {
+                                    ids = obj.getString("sel");
+                                }
+                                if(obj.has("unsel")) {
+                                    // Lista exclusione
+                                    ids = obj.getString("unsel");
+                                    prefix = "!";
+                                }
+                                if(ids != null && ids.length() >= 2) {
+                                    ids = ids.substring(1, ids.length()-1);
+                                    return prefix+ids;
+                                }
                             }
                         }
                     }
@@ -2240,6 +2268,22 @@ public class workspace {
             return liquidize.liquidizeString(databaseSchemaTable, controlIdSeparator);
         }
         return null;
+    }
+    // iCenter.icenter.user_asset   ->  iCenter|.center.UserAsset
+    static String getDatabaseSchemaTable(String database, String schema, String Table) {
+        String sDatabaseSchemaTable = "";
+        if(database != null && !database.isEmpty()) {
+            sDatabaseSchemaTable += database+".";
+        }
+        if(schema != null && !schema.isEmpty()) {
+            sDatabaseSchemaTable += schema+".";
+        }
+        if(Table != null && !Table.isEmpty()) {
+            sDatabaseSchemaTable += Table;
+        } else {
+            return "";
+        }
+        return sDatabaseSchemaTable;
     }
     
     // iCenter.icenter.user_asset   ->  UserAsset
@@ -2445,8 +2489,11 @@ public class workspace {
     
     public int addSession( ThreadSession threadSession ) {
         for(int i=0; i<sessions.size(); i++) {
-            if(sessions.get(i).threadId == threadSession.threadId) {
-                return 0;
+            ThreadSession ts = sessions.get(i);
+            if(ts != null) {
+                if(ts.threadId == threadSession.threadId) {
+                    return 0;
+                }
             }
         }
         sessions.add(threadSession);

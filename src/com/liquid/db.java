@@ -247,6 +247,10 @@ public class db {
             if(tbl_wrk != null) {
                 // Connessione al DB ( da predefinita, da JSON o da sessione )
                 conn = connection.getConnection(null, recordset_params.request, tbl_wrk.tableJson);
+                if(conn == null) {
+                    System.out.println("// LIQUID ERROR : unbale to connect to DB on controlId:"+controlId);
+                    return "{\"error\":\""+utility.base64Encode("Error: invalid token on :"+controlId)+"\"}";
+                }
             }
 
             String itemIdString = "\"", tableIdString = "\"";
@@ -874,7 +878,7 @@ public class db {
                                                 }
                                             }
 
-                                            sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (tableIdString + filterTable + tableIdString  + "." + itemIdString + filterName +itemIdString) : (itemIdString+filterName+itemIdString) ) + sensitiveCasePostOp
+                                            sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (tableIdString + filterTable + tableIdString  + "." + itemIdString + filterName +itemIdString) : (filterName) ) + sensitiveCasePostOp
                                                     + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp : "=")
                                                     + preFix + (filterValue != null ? filterValue : "") + postFix;
                                         }
@@ -1389,11 +1393,13 @@ public class db {
                 try { cols = tbl_wrk.tableJson.getJSONArray("columns"); } catch (Exception e) {}
                 int [] colTypes = new int[cols.length()];
                 int [] colPrecs = new int[cols.length()];
+                int [] colDigits = new int[cols.length()];
                 boolean [] colNullable = new boolean[cols.length()];
                 for(int ic=0; ic<cols.length(); ic++) {
                     try { colTypes[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("type") ); } catch (Exception e) {}
                     try { colPrecs[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("precision") ); } catch (Exception e) { colPrecs[ic] = -1; }
                     try { colNullable[ic] = cols.getJSONObject(ic).getBoolean("nullable"); } catch (Exception e) { colNullable[ic] = true; }
+                    try { colDigits[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("digits") ); } catch (Exception e) { colDigits[ic] = -1; }
                 }
                 
                 //
@@ -1405,6 +1411,7 @@ public class db {
                                                     cols,
                                                     colTypes,
                                                     colPrecs,
+                                                    colDigits,
                                                     colNullable,
                                                     dbPrimaryKey,
                                                     cRow, startRow, endRow, maxRow,
@@ -1504,12 +1511,25 @@ public class db {
 
     
     // Legge il resultset
+    /**
+     * <h3>Read the recordset</h3>
+     * <p>
+     * This method get bean from the primary key list, creating it at runtime
+     *
+     * @param  tbl_wrk the control (workspace)
+     * @param  executingQuery the query (String)
+     * @param  rsdo the result set (ResultSet)
+
+     * @return      json of the records (String)
+     * @see         db
+     */
     static public Object [] get_recordset( workspace tbl_wrk,
                                             String executingQuery,
                                             ResultSet rsdo,
                                             JSONArray cols,
                                             int [] colTypes, 
                                             int [] colPrecs,
+                                            int [] colDigits,
                                             boolean [] colNullable,
                                             String dbPrimaryKey,
                                             long cRow, long startRow, long endRow, long maxRow, 
@@ -1535,10 +1555,12 @@ public class db {
             int maxColumn = columns_alias != null ? columns_alias.length : 0;
             if(colTypes == null) colTypes = new int[cols.length()];
             if(colPrecs == null) colPrecs = new int[cols.length()];
+            if(colDigits == null) colDigits = new int[cols.length()];
             if(colNullable == null) colNullable = new boolean[cols.length()];            
             for(int ic=0; ic<cols.length(); ic++) {
                 try { colTypes[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("type") ); } catch (Exception e) {}
                 try { colPrecs[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("precision") ); } catch (Exception e) { colPrecs[ic] = -1; }
+                try { colDigits[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("digits") ); } catch (Exception e) { colDigits[ic] = -1; }
                 try { colNullable[ic] = cols.getJSONObject(ic).getBoolean("nullable"); } catch (Exception e) { colNullable[ic] = true; }
             }
             
@@ -1567,10 +1589,10 @@ public class db {
                                 int ic = targetColumnIndex;
                                 if(colTypes[ic] == 8) {
                                     double dFieldValue = rsdo.getDouble(columns_alias[0]);
-                                    if(colPrecs[ic] < 0) {
-                                        fieldValue = String.format(Locale.US, "%.2f", dFieldValue);
+                                    if(colDigits[ic] < 0) {
+                                        fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
                                     } else {
-                                        nf.setMaximumFractionDigits(colPrecs[ic]);
+                                        nf.setMaximumFractionDigits(colDigits[ic]);
                                         fieldValue = nf.format(dFieldValue);
                                     }
                                 } else if(colTypes[ic] == 91) { //date
@@ -1617,10 +1639,10 @@ public class db {
                                         }
                                         if(colTypes[ic] == 8) {
                                             double dFieldValue = columnAlias != null ? rsdo.getDouble(columns_alias[ic]) : rsdo.getDouble(ic+1);
-                                            if(colPrecs[ic] < 0) {
-                                                fieldValue = String.format(Locale.US, "%.2f", dFieldValue);
+                                            if(colDigits[ic] < 0) {
+                                                fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
                                             } else {
-                                                nf.setMaximumFractionDigits(colPrecs[ic]);
+                                                nf.setMaximumFractionDigits(colDigits[ic]);
                                                 fieldValue = nf.format(dFieldValue);
                                             }
                                         } else if(colTypes[ic] == 91) { //date
@@ -1890,6 +1912,7 @@ public class db {
                                     String dbPrimaryKey = null;
                                     int [] colTypes = null;
                                     int [] colPrecs = null;
+                                    int [] colDigits = null;
                                     boolean [] colNullable = null;
                                     long cRow = 0, startRow = 0, endRow = maxRows;
                                     boolean bColumnsResolved = false;
@@ -1907,6 +1930,7 @@ public class db {
                                                                         cols,
                                                                         colTypes,
                                                                         colPrecs,
+                                                                        colDigits,
                                                                         colNullable,
                                                                         dbPrimaryKey,
                                                                         cRow, startRow, endRow, maxRows, 
@@ -1986,21 +2010,21 @@ public class db {
                                                 errors += (String)beanResult[3];
                                             }
                                         } else {
-                                            System.err.println("// get_table_recordset() format:"+format+" unrecognized..." );
+                                            System.err.println("// get_bean() format:"+format+" unrecognized..." );
                                         }
                                     } else {
-                                        System.err.println("// get_table_recordset() null recordsset..." );
+                                        System.err.println("// get_bean() null recordsset..." );
                                     }
                                 } else {
-                                    System.err.println("// get_table_recordset() null rsdo..." );
+                                    System.err.println("// get_bean() null rsdo..." );
                                 }
                             } else {
-                                System.err.println("// get_table_recordset() no connection..." );
+                                System.err.println("// get_bean() no connection..." );
                             }
                                     
                         } catch (Throwable e) {
                             errors += "Error:" + e.getLocalizedMessage();
-                            System.err.println("// get_table_recordset() ["+controlId+"] Error:" + e.getLocalizedMessage());
+                            System.err.println("// get_bean() ["+controlId+"] Error:" + e.getLocalizedMessage());
 
                         } finally {
                             try {
@@ -2012,13 +2036,13 @@ public class db {
                         }
                     }
                 } else {
-                    System.err.println(" get_table_recordset() query_info nit detected..." );
+                    System.err.println(" get_bean() query_info nit detected..." );
                 }                
             } else {
-                System.err.println(" get_table_recordset() no control workspace..." );
+                System.err.println(" get_bean() no control workspace..." );
             }
         } else {
-            System.err.println(" get_table_recordset() no request..." );
+            System.err.println(" get_bean() no request..." );
         }
         return result;
     }
@@ -2065,7 +2089,8 @@ public class db {
                 String [] colParts = colName.split("\\.");
                 if(colParts.length > 1) {
                     if(table.equalsIgnoreCase(colParts[0])) {
-                        colName = colParts[1];
+                        // colName = colParts[1]; /// NO : respect original name ... not required changes (changes could get mistakes)
+                        colName = colName.replaceAll("\\.", "\\$");
                     } else {
                         colName = colName.replaceAll("\\.", "\\$");
                     }
@@ -2575,8 +2600,10 @@ public class db {
             sWhere = " WHERE " + keyColumn + "=" + String.valueOf(key) + "";
         } else if(key instanceof JSONArray) {
         } else if(key instanceof ArrayList<?>) {
-            String keyList = workspace.arrayToString(((ArrayList<String>)key).toArray(), null, null, ",");
-            sWhere = " WHERE " + keyColumn + " IN (" + keyList + ")";
+            if(key != null && ((ArrayList<?>) key).size() > 0) {
+                String keyList = workspace.arrayToString(((ArrayList<String>)key).toArray(), null, null, ",");
+                sWhere = " WHERE " + keyColumn + " IN (" + keyList + ")";
+            }
         } else {
             String err = "ERROR : load_beans() : undetect key type in control : "+controlId;
             System.err.println("// "+err);
@@ -2689,11 +2716,13 @@ public class db {
                 }
             }
 
-            if(where_condition.indexOf(" WHERE ") < 0) {
-                if(where_condition.indexOf("WHERE ") < 0) {
-                    where_condition = " WHERE " + where_condition;
-                } else {
-                    where_condition = " " + where_condition;
+            if(!where_condition.isEmpty()) {
+                if(where_condition.indexOf(" WHERE ") < 0) {
+                    if(where_condition.indexOf("WHERE ") < 0) {
+                        where_condition = " WHERE " + where_condition;
+                    } else {
+                        where_condition = " " + where_condition;
+                    }
                 }
             }
                     
@@ -2724,14 +2753,8 @@ public class db {
                 cols = tbl_wrk.tableJson.getJSONArray("columns");
                 int [] colTypes = null; // new int[cols.length()];
                 int [] colPrecs = null; // new int[cols.length()];
+                int [] colDigits = null; // new int[cols.length()];
                 boolean [] colNullable = null; // new boolean[cols.length()];
-                /*
-                for(int ic=0; ic<cols.length(); ic++) {
-                    try { colTypes[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("type") ); } catch (Exception e) {}
-                    try { colPrecs[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("precision") ); } catch (Exception e) { colPrecs[ic] = -1; }
-                    try { colNullable[ic] = cols.getJSONObject(ic).getBoolean("nullable"); } catch (Exception e) { colNullable[ic] = true; }
-                }
-                */
 
                 // TODO : parametri da valorizzare e debug
                 Object [] recordset = get_recordset(tbl_wrk,
@@ -2740,6 +2763,7 @@ public class db {
                                                     cols,
                                                     colTypes,
                                                     colPrecs,
+                                                    colDigits,
                                                     colNullable,
                                                     primaryKeyColumn,
                                                     cRow, startRow, endRow, maxRows, 
@@ -2787,7 +2811,7 @@ public class db {
                 
         } catch (Throwable e) {
             errors += "Error:" + e.getLocalizedMessage();
-            System.err.println("// get_table_recordset() ["+controlId+"] Error:" + e.getLocalizedMessage());
+            System.err.println("// get_beans() ["+controlId+"] Error:" + e.getLocalizedMessage());
 
         } finally {
             try {
@@ -2827,7 +2851,7 @@ public class db {
     //  Need selection or rows defined in params (it comes from client)
     //
     //  Return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
-    static public Object [] load_bean( Object bean, String beanName, Object params, long maxRows ) {
+    static public Object [] load_bean( Object bean, String childBeanName, Object params, long maxRows ) {
         ArrayList<Object> beans = null;
         int nBeans = 0, nBeansLoaded = 0;
         String errors = "", warnings = "";
@@ -2844,10 +2868,10 @@ public class db {
             }
             
             // Ricerca nei beans per corrispondenza esatta
-            field = searchProperty(bean, beanName, true, true);
+            field = searchProperty(bean, childBeanName, true, true);
             if(field == null) {
                 // Ricerca nei beans per similitudine
-                field = searchProperty(bean, beanName, false, true);
+                field = searchProperty(bean, childBeanName, false, true);
             }
             if(field != null) {
                 String beanNameFound = field.getName();
@@ -2876,10 +2900,10 @@ public class db {
                                 key = idsList[0];
                                 foreignColumn = ((workspace)tbl_wrk).tableJson.getString("primaryKey");
                             } else {
-                                warnings = "Bean '"+beanName+"' primary key value not defined ... provide your own in order to read parent";
+                                warnings = "Bean '"+childBeanName+"' primary key value not defined ... provide your own in order to read parent";
                             }
                         } else {
-                            errors = "Bean '"+beanName+"' has wrong definition, control is missing";
+                            errors = "Bean '"+childBeanName+"' has wrong definition, control is missing";
                         }
                     } else {
                         column = new String(cc.getAttribute(beanNameFound + "$column"));
@@ -2888,7 +2912,7 @@ public class db {
                         if(column != null) {
                             key = (Object)utility.get(bean, column);
                         } else {
-                            errors = "Bean '"+beanName+"' has wrong definition, column is missing";
+                            errors = "Bean '"+childBeanName+"' has wrong definition, column is missing";
                         }
                     }
                     if(controlId != null) {
@@ -2926,31 +2950,31 @@ public class db {
                                         utility.set(bean, beanNameFound+"$Changed", false);
 
                                     } else {
-                                        errors += "[row not found on '"+beanName+"' : "+className+"]";
+                                        errors += "[row not found on '"+childBeanName+"' : "+className+"]";
                                     }
                                 } else {
-                                    errors += "[class not found on '"+beanName+"' : "+className+"]";
+                                    errors += "[class not found on '"+childBeanName+"' : "+className+"]";
                                 }
                             } else {
-                                errors += "[read recordset on '"+beanName+"' failed ]";
+                                errors += "[read recordset on '"+childBeanName+"' failed ]";
                             }
                         } else {
-                            warnings = "Bean '"+beanName+"' primary key value not defined ";
+                            warnings = "Bean '"+childBeanName+"' primary key value not defined ";
                         }
                     } else {
-                        errors = "Bean '"+beanName+"' has wrong definition, control is missing";
+                        errors = "Bean '"+childBeanName+"' has wrong definition, control is missing";
                     }
                 } else {
                     // TODO : rilettura del bean ???
-                    warnings = "Bean '"+beanName+"' already read ";
+                    warnings = "Bean '"+childBeanName+"' already read ";
                 }
             } else {
                 // bean non trovato
-                errors = "Bean '"+beanName+"' not found in "+bean.getClass().getName()+" ("+bean.getClass().getCanonicalName()+")";
+                errors = "Bean '"+childBeanName+"' not found in "+bean.getClass().getName()+" ("+bean.getClass().getCanonicalName()+")";
             }            
         } catch (Throwable th) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
-            errors = "Bean '"+beanName+"' Error : "+th.getLocalizedMessage();
+            errors = "Bean '"+childBeanName+"' Error : "+th.getLocalizedMessage();
         }
         return new Object [] { beans, nBeans, nBeansLoaded, errors, warnings };
     }
@@ -3012,6 +3036,17 @@ public class db {
     }
     
     // Chiamata del client per impostare i prefiltri in sessione
+    /**
+     * <h3>set the permanent filters</h3>
+     * <p>
+     * This method is used to get restrictive access to data
+     *
+     * @param  request the http request (HttpServletRequest)
+     * @param  out the output (JspWriter)
+
+     * @return      json of the operation's result (String)
+     * @see         db
+     */
     static public String set_prefilters(HttpServletRequest request, JspWriter out) {
         String retVal = "";
         String executingQuery = null;
@@ -3240,7 +3275,7 @@ public class db {
     }
 
     
-            // salva in sessione l'ultima query eseguita
+    // salva in sessione l'ultima query eseguita
     static public String set_query_info( HttpServletRequest request, workspace tbl_wrk,
                                         String columnList, String columnAliasList, 
                                         String primaryKey, String primaryKeyAlias,
@@ -3350,15 +3385,64 @@ public class db {
 
     
     
+    /**
+     * <h3>Insert a record in a table</h3>
+     * <p>
+     * This method is used internally to insert a record
+     *
+     * @param  p1 the control workspace (Object)
+     * @param  p2 the params (Object)
+     * @param  p3 the clientData (Object)
+     * @param  p4 the http request (Object)
+     * @param  p5 the event callback (Object)
+
+
+     * @return      json of the operation's result (String)
+     * @see         db
+     */
     public static String insertFields(Object p1, Object p2, Object p3, Object p4, Object p5) {
         return processModification(p1, p2, p3, p4, p5, "insert");
     }    
+    
+    /**
+     * <h3>Update a record in a table</h3>
+     * <p>
+     * This method is used internally to update a record
+     *
+     * @param  p1 the control workspace (Object)
+     * @param  p2 the params (Object)
+     * @param  p3 the clientData (Object)
+     * @param  p4 the http request (Object)
+     * @param  p5 the event callback (Object)
+
+
+     * @return      json of the operation's result (String)
+     * @see         db
+     */
     public static String updateFields(Object p1, Object p2, Object p3, Object p4, Object p5) {
         return processModification(p1, p2, p3, p4, p5, "update");
     }
+    
+    
+    /**
+     * <h3>Delete a record in a table</h3>
+     * <p>
+     * This method is used internally to delete a record
+     *
+     * @param  p1 the control workspace (Object)
+     * @param  p2 the params (Object)
+     * @param  p3 the clientData (Object)
+     * @param  p4 the http request (Object)
+     * @param  p5 the event callback (Object)
+
+
+     * @return      json of the operation's result (String)
+     * @see         db
+     */
     public static String deleteRow(Object p1, Object p2, Object p3, Object p4, Object p5) {
         return processModification(p1, p2, p3, p4, p5, "delete");
     }
+
     
     // servizio aggiornamento o inserimento
     static public String processModification(Object p1, Object p2, Object p3, Object p4, Object p5, String type) {
@@ -3420,9 +3504,11 @@ public class db {
                             if(modificationsJSON != null) {
                                 int [] colTypes = new int[cols.length()];
                                 int [] colPrecs = new int[cols.length()];
+                                int [] colDigits = new int[cols.length()];
                                 for(int ic=0; ic<cols.length(); ic++) {
                                     try { colTypes[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("type") ); } catch (NumberFormatException | JSONException e) {}
                                     try { colPrecs[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("precision") ); } catch (NumberFormatException | JSONException e) { colPrecs[ic] = -1; }
+                                    try { colDigits[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("digits") ); } catch (NumberFormatException | JSONException e) { colDigits[ic] = -1; }
                                 }
                                 for(int im=0; im<modificationsJSON.length(); im++) {
                                     JSONObject modificationJSON = (JSONObject)modificationsJSON.get(im);

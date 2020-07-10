@@ -351,7 +351,9 @@ public class utility {
                         if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Integer(0));
                         } else {
-                            field.set(bean, Integer.parseInt((String) value));
+                            try {
+                                field.set(bean, Integer.parseInt((String) value));
+                            } catch(Exception e) {}
                         }
                     } else if (value instanceof Object) {
                         field.set(bean, (Integer) value);
@@ -361,7 +363,9 @@ public class utility {
                         if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Long(0));
                         } else {
-                            field.set(bean, Long.parseLong((String) value));
+                            try {
+                                field.set(bean, Long.parseLong((String) value));
+                            } catch(Exception e) {}
                         }
                     } else if (value instanceof Object) {
                         field.set(bean, (Long) value);
@@ -371,7 +375,9 @@ public class utility {
                         if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Float(0.0f));
                         } else {
-                            field.set(bean, Float.valueOf(((String) value).replaceAll(",", ".")));
+                            try {
+                                field.set(bean, Float.valueOf(((String) value).replaceAll(",", ".")));
+                            } catch(Exception e) {}
                         }
                     } else if (value instanceof Object) {
                         field.set(bean, (Float) value);
@@ -381,7 +387,9 @@ public class utility {
                         if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Double(0.0));
                         } else {
-                            field.set(bean, Double.valueOf(((String) value).replaceAll(",", ".")));
+                            try {
+                                field.set(bean, Double.valueOf(((String) value).replaceAll(",", ".")));
+                            } catch(Exception e) {}
                         }
                     } else if (value instanceof Object) {
                         field.set(bean, (Double) value);
@@ -689,7 +697,7 @@ public class utility {
 
     static public String get_parent_path(String fullFileName) throws IOException {
         File relativePath = new File(fullFileName).getParentFile();
-        return relativePath.getCanonicalPath();
+        return relativePath != null ? relativePath.getCanonicalPath() : null;
     }
 
     static public String get_absolute_path(HttpServletRequest request, String fileName) throws IOException {

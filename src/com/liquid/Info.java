@@ -5,9 +5,11 @@
  */
 package com.liquid;
 
+import com.liquid.db.IdsCache;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
@@ -19,7 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 public class Info {
     
     public static String getVersion() {
-        return "1.11";
+        return "1.16";
     }
     public static String getInfo( HttpServletRequest request) {
         String out_string = "";
@@ -67,7 +69,16 @@ public class Info {
         out_string += "<tr>";
         out_string += "<td>No. cache items</td>";
         out_string += "<td>"+db.glIdsCaches.size()+"</td>";
-        out_string += "<td>"+""+"</td>";
+        out_string += "<td>";
+        for(int ic=0; ic<db.glIdsCaches.size(); ic++) {
+            IdsCache idc = db.glIdsCaches.get(ic);
+            out_string += "query:"+idc.query + "</br>";
+            out_string += "n.ids:"+idc.ids.size() + "</br>";;
+            out_string += "lastAccessTime:"+idc.lastAccessTime + "</br>";;
+            out_string += "startRow:"+idc.startRow + "</br>";;
+            out_string += "</br>";            
+        }
+        out_string += "</td>";
         out_string += "</tr>";
 
         out_string += "<tr style=\"background-color:lightGray\">";
@@ -251,12 +262,12 @@ public class Info {
                         + "</span>"
                         + "</td>";
                 out_string += "<td>"
-                        +"Read count:"+workspace.glTblWorkspaces.get(i).nConnections
-                        +"<br/>"
-                        +"<br/>"
-                        +"Session:"+workspace.glTblWorkspaces.get(i).sessions.size()
-                        +"<br/>"
-                        +"</td>";
+                        + "Read count:"+workspace.glTblWorkspaces.get(i).nConnections
+                        + "<br/>"
+                        + "<br/>"
+                        + "N.Sessions:"+workspace.glTblWorkspaces.get(i).sessions.size()
+                        + "<br/>"
+                        + "</td>";
                 
                 out_string += "</tr>";
             }

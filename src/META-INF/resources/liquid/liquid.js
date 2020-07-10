@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.14   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  30-6-2020
+// Liquid ver.1.16   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 8.1.2020 - Last update  10-7-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -2770,18 +2770,24 @@ var Liquid = {
     },
     processXHRMessagesFromServer:function( liquid, obj, commandOrEvent, showErrors, showWarnings, showMessages ) {
         if(isDef(obj.error)) {
-            console.error("[SERVER] ERROR:" + atob(obj.error) + " on "+commandOrEvent.name+" on control "+liquid.controlId);
+            var err = "";
+            try { err = atob(obj.error); } catch(e) { err = obj.error; }
+            console.error("[SERVER] ERROR:" + err + " on "+commandOrEvent.name+" on control "+liquid.controlId);
             if(showErrors) Liquid.setErrorDiv(liquid, obj.error);
             if(isDef(obj.query)) {
                 console.error("[SERVER] QUERY:\n\n" + atob(obj.query));
             }
         }
         if(isDef(obj.warning)) {
-            console.warn("[SERVER] WARNING:" + atob(obj.warning) + " on "+commandOrEvent.name+" on control "+liquid.controlId);
+            var wrn = "";
+            try { wrn = atob(obj.warning); } catch(e) { wrn = obj.warning; }
+            console.warn("[SERVER] WARNING:" + wrn + " on "+commandOrEvent.name+" on control "+liquid.controlId);
             if(showWarnings) Liquid.setErrorDiv(liquid, obj.warning);
         }
         if(isDef(obj.message)) {
-            console.log("[SERVER] MESSAGE:" + atob(obj.message) + " on "+commandOrEvent.name+" on control "+liquid.controlId);
+            var msg = "";
+            try { msg = atob(obj.message); } catch(e) { msg = obj.message; }
+            console.log("[SERVER] MESSAGE:" + msg + " on "+commandOrEvent.name+" on control "+liquid.controlId);
             if(showMessages) Liquid.setErrorDiv(liquid, obj.message);
         }
     },    
@@ -4270,7 +4276,7 @@ var Liquid = {
         var liquid = Liquid.getLiquid(obj);
         if(liquid.cPage + 1 < liquid.nPages) {
             liquid.cPage++;
-            Liquid.loadData(liquid, nullc);
+            Liquid.loadData(liquid, null);
         }
     },
     onPageKeyPress:function(e, obj) {
@@ -4316,9 +4322,11 @@ var Liquid = {
                 liquid.lookupContainerObj.style.display = "inline-block";
             }
             // select by search current value
-            var col = Liquid.getColumn(liquid, liquid.tableJson.lookupField);
-            if(col) {
-                var res = Liquid.setNodesSelectedByColumn(liquid, col.field, [obj.value], true);
+            if(!isDef(liquid.tableJson.lookupField)) {
+                var col = Liquid.getColumn(liquid, liquid.tableJson.lookupField);
+                if(col) {
+                    var res = Liquid.setNodesSelectedByColumn(liquid, col.field, [obj.value], true);
+                }
             }
             
             if(liquid.filtersFirstId) {
@@ -4706,18 +4714,19 @@ var Liquid = {
                 }
             }
             if(newValueId !== null) {
-                if(isDef(liquid.sourceData.targetColumnLinkedObjIds)) { // take care about all grid fields pointing to id
-                    for(var i=0; i<liquid.sourceData.targetColumnLinkedObjIds.length; i++) {
-                        try {
-                            var itemObj = document.getElementById(liquid.sourceData.targetColumnLinkedObjIds[i]);
-                            itemObj.value = newValueId;
-                            Liquid.onGridFieldModify(event, itemObj);
-                        } catch (e) {
-                            console.error(e);
+                if(isDef(liquid.sourceData)) {
+                    if(isDef(liquid.sourceData.targetColumnLinkedObjIds)) { // take care about all grid fields pointing to id
+                        for(var i=0; i<liquid.sourceData.targetColumnLinkedObjIds.length; i++) {
+                            try {
+                                var itemObj = document.getElementById(liquid.sourceData.targetColumnLinkedObjIds[i]);
+                                itemObj.value = newValueId;
+                                Liquid.onGridFieldModify(event, itemObj);
+                            } catch (e) {
+                                console.error(e);
+                            }
                         }
                     }
-                }
-                if(isDef(liquid.sourceData.idColumnLinkedFields)) { // take care about id in the dataset
+                    if(isDef(liquid.sourceData.idColumnLinkedFields)) { // take care about id in the dataset
                     for(var i=0; i<liquid.sourceData.idColumnLinkedFields.length; i++) {
                         try {
                             var field = liquid.sourceData.idColumnLinkedFields[i].field;
@@ -4757,6 +4766,7 @@ var Liquid = {
                             console.error(e);
                         }
                     }
+                }
                 }
             }
         }
@@ -5003,7 +5013,7 @@ var Liquid = {
         return rootLiquid;
     },            
     getRootSourceControlId(liquid) {
-        var srcLiquidControlId = "";
+        var srcLiquidControlId = liquid.controlId;
         while(liquid && typeof liquid.rootControlId !== 'undefined' && liquid.rootControlId) {
             srcLiquidControlId = liquid.rootControlId;
             liquid = liquid.srcLiquid;
@@ -8342,22 +8352,24 @@ var Liquid = {
     },
     getColumnFromColumns:function(table, columns, name) {
         if(isDef(columns)) {
-            var fullName = table + "." + name;
-            for(var ic=0; ic<columns.length; ic++)
-                if(columns[ic].name === name || columns[ic].name === fullName)
-                    return columns[ic];
-                else if(table + "." + columns[ic].name === name)
-                    return columns[ic];
-                else if(columns[ic].field === name)
-                    return columns[ic];
-            // Now insensitive case
-            name = name.toUpperCase();
-            fullName = fullName.toUpperCase();
-            for(var ic=0; ic<columns.length; ic++)
-                if(columns[ic].name.toUpperCase() === name || columns[ic].name.toUpperCase() === fullName)
-                    return columns[ic];
-                else if(isDef(table) && table.toUpperCase() + "." + columns[ic].name.toUpperCase() === name)
-                    return columns[ic];
+            if(isDef(name)) {
+                var fullName = table + "." + name;
+                for(var ic=0; ic<columns.length; ic++)
+                    if(columns[ic].name === name || columns[ic].name === fullName)
+                        return columns[ic];
+                    else if(table + "." + columns[ic].name === name)
+                        return columns[ic];
+                    else if(columns[ic].field === name)
+                        return columns[ic];
+                // Now insensitive case
+                name = name.toUpperCase();
+                fullName = fullName.toUpperCase();
+                for(var ic=0; ic<columns.length; ic++)
+                    if(columns[ic].name.toUpperCase() === name || columns[ic].name.toUpperCase() === fullName)
+                        return columns[ic];
+                    else if(isDef(table) && table.toUpperCase() + "." + columns[ic].name.toUpperCase() === name)
+                        return columns[ic];
+            }
         }
     },
     getColumnByField:function(obj, field) {
@@ -9628,20 +9640,22 @@ var Liquid = {
             var nameItems = obj_id ? obj_id.split(".") : null;
             if(nameItems && nameItems.length > 2) {
                 var gdIndex = nameItems[2] - 1;
-                var grid = liquid.tableJson.grids[gdIndex];
-                if(nameItems.length > 4) {
-                    if(nameItems[4] == 'row') {
-                        var gRow = Number(nameItems[5]) - 1;
-                        var gCol = Number(nameItems[7]) - 1;
-                        return { grid: grid, control: gridControl, gridIndex:gdIndex, cellRow:gRow, cellCol:gCol };
+                if(nameItems[1] === "grid_tab") {
+                    var grid = liquid.tableJson.grids[gdIndex];
+                    if(nameItems.length > 4) {
+                        if(nameItems[4] == 'row') {
+                            var gRow = Number(nameItems[5]) - 1;
+                            var gCol = Number(nameItems[7]) - 1;
+                            return { grid: grid, control: gridControl, gridIndex:gdIndex, cellRow:gRow, cellCol:gCol };
+                        } else {
+                            var gItemIndex = nameItems[4] - 1;
+                            var gridControl = grid.columns[gItemIndex];
+                            var col = gridControl.colLink1B ? liquid.tableJson.columns[gridControl.colLink1B - 1] : null;
+                            return { grid: grid, control: gridControl, column: col, gridIndex:gdIndex, itemIndex:gItemIndex, colIndex:gridControl.colLink1B - 1 };
+                        }
                     } else {
-                        var gItemIndex = nameItems[4] - 1;
-                        var gridControl = grid.columns[gItemIndex];
-                        var col = gridControl.colLink1B ? liquid.tableJson.columns[gridControl.colLink1B - 1] : null;
-                        return { grid: grid, control: gridControl, column: col, gridIndex:gdIndex, itemIndex:gItemIndex, colIndex:gridControl.colLink1B - 1 };
+                        return { grid: grid, gridIndex:gdIndex };
                     }
-                } else {
-                    return { grid: grid, gridIndex:gdIndex };
                 }
             }
         }
@@ -11162,8 +11176,7 @@ var Liquid = {
         }
         return false;
     },
-    onGridTab:function(obj) {
-        var liquid = Liquid.getLiquid(obj);
+    changeCurrentGridTab:function(liquid, obj) {
         if(liquid) {
             if(liquid.lastGridTabObj) {
                 liquid.lastGridTabObj.parentNode.className = "";
@@ -11172,6 +11185,12 @@ var Liquid = {
             liquid.lastGridTabObj = obj;
             liquid.lastGridTabObj.parentNode.className = "liquidTabSel";
             document.getElementById(liquid.lastGridTabObj.id + ".content").style.display = '';
+        }
+    },
+    onGridTab:function(obj) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            Liquid.changeCurrentGridTab(liquid, obj);
             var grid_coords = Liquid.getGridCoords(liquid, liquid.lastGridTabObj.id);
             if(grid_coords) {
                 if(grid_coords.grid) {
@@ -11189,7 +11208,7 @@ var Liquid = {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             if(liquid.tableJson.layouts) {
-                Liquid.onGridTab(obj);
+                Liquid.changeCurrentGridTab(liquid, obj);
                 var lay_coords = Liquid.getLayoutCoords(liquid, obj);
                 if(lay_coords) {
                     if(lay_coords.layout) {

@@ -78,7 +78,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`asset` VARCHAR(256) NOT NULL"
                         +",`status` VARCHAR(16) NOT NULL"
@@ -90,7 +90,7 @@ public class assets {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
 
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"asset\" VARCHAR(256) NOT NULL"
                         +",\"status\" VARCHAR(16) NOT NULL"
@@ -99,7 +99,7 @@ public class assets {
                         +",\"expired\" VARCHAR(2)"
                         +")");
 
-                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
+                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
                 } else if("oracle".equalsIgnoreCase(login.driver)) {
                 } else if("sqlserver".equalsIgnoreCase(login.driver)) {
@@ -144,7 +144,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`role` VARCHAR(256) NOT NULL"
                         +",`status` VARCHAR(16) NOT NULL"
@@ -156,7 +156,7 @@ public class assets {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
 
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"role\" VARCHAR(256) NOT NULL"
                         +",\"status\" VARCHAR(16) NOT NULL"
@@ -165,7 +165,7 @@ public class assets {
                         +",\"expired\" VARCHAR(2)"
                         +")");
 
-                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
+                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
                 } else if("oracle".equalsIgnoreCase(login.driver)) {
                 } else if("sqlserver".equalsIgnoreCase(login.driver)) {
@@ -209,7 +209,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`user_id` INT"
                         +",`aaset_id` INT"
@@ -222,7 +222,7 @@ public class assets {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
 
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"user_id\" INT "
                         +",\"aaset_id\" INT"
@@ -232,7 +232,7 @@ public class assets {
                         +",\"expired\" VARCHAR(2)"
                         +")");
 
-                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
+                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
                 } else if("oracle".equalsIgnoreCase(login.driver)) {
                 } else if("sqlserver".equalsIgnoreCase(login.driver)) {
@@ -277,7 +277,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`user_id` INT"
                         +",`role_id` INT"
@@ -290,7 +290,7 @@ public class assets {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
 
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"user_id\" INT "
                         +",\"role_id\" INT"
@@ -300,7 +300,7 @@ public class assets {
                         +",\"expired\" VARCHAR(2)"
                         +")");
 
-                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
+                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
                 } else if("oracle".equalsIgnoreCase(login.driver)) {
                 } else if("sqlserver".equalsIgnoreCase(login.driver)) {
@@ -344,7 +344,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`role_id` INT"
                         +",`asset_id` INT"
@@ -357,7 +357,7 @@ public class assets {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
 
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                    sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"role_id\" INT "
                         +",\"asset_id\" INT"
@@ -367,7 +367,7 @@ public class assets {
                         +",\"expired\" VARCHAR(2)"
                         +")");
 
-                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
+                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
                 } else if("oracle".equalsIgnoreCase(login.driver)) {
                 } else if("sqlserver".equalsIgnoreCase(login.driver)) {
@@ -548,7 +548,7 @@ public class assets {
                 request.getSession().setAttribute("GLLiquidConnectionURL", login.connectionURL);
 
                 // assets for user
-                ArrayList<Object> user_asset_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_assets_table, "*", "user_id", (Object)userId, 1000 );
+                ArrayList<Object> user_asset_beans = db.load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, user_assets_table), "*", "user_id", (Object)userId, 1000 );
                 if(user_asset_beans != null) {
                     // put asset_id of all beans in ArryList
                     Object [] res = db.beansToArray(user_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
@@ -556,7 +556,7 @@ public class assets {
                 }
 
                 // assets per roles for user
-                ArrayList<Object> user_role_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+user_roles_table, "*", "user_id", (Object)userId, 1000 );
+                ArrayList<Object> user_role_beans = db.load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, user_roles_table), "*", "user_id", (Object)userId, 1000 );
                 if(user_role_beans != null) {
                     for(Object role_bean : user_role_beans) {
                         Object roleId = utility.get(role_bean, "role_id");
@@ -573,7 +573,7 @@ public class assets {
                                 bProcessRole = true;
                             }
                         }
-                        ArrayList<Object> user_role_asset_beans = db.load_beans( (HttpServletRequest)request, login.database+"."+login.schema+"."+role_assets_table, "*", "role_id", (Object)roleId, 1000 );
+                        ArrayList<Object> user_role_asset_beans = db.load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, role_assets_table), "*", "role_id", (Object)roleId, 1000 );
                         if(user_role_asset_beans != null) {
                             if(bProcessRole) {
                                 // put asset_id of all beans in ArryList
@@ -588,14 +588,14 @@ public class assets {
                 }
                 
                 // all assets of the userId by name in ArrayList
-                ArrayList<Object> user_all_assets_beans = db.load_beans((HttpServletRequest)request, login.database+"."+login.schema+"."+assets_table, "*", "id", (Object)user_all_assets_id, 1000 );
+                ArrayList<Object> user_all_assets_beans = db.load_beans((HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, assets_table), "*", "id", (Object)user_all_assets_id, 1000 );
                 if(user_all_assets_beans != null) {
                     // put asset of all beans in ArryList
                     db.beansToArray(user_all_assets_beans, "asset", user_all_assets_name, true);
                 }
 
                 // all expired assets of the userId by name in ArrayList
-                ArrayList<Object> user_all_inactive_assets_beans = db.load_beans((HttpServletRequest)request, login.database+"."+login.schema+"."+assets_table, "*", "id", (Object)user_all_inactive_assets_id, 1000 );
+                ArrayList<Object> user_all_inactive_assets_beans = db.load_beans((HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, assets_table), "*", "id", (Object)user_all_inactive_assets_id, 1000 );
                 if(user_all_inactive_assets_beans != null) {
                     // put inactive asset of all beans in ArryList
                     db.beansToArray(user_all_inactive_assets_beans, "asset", user_all_inactive_assets_name, true);

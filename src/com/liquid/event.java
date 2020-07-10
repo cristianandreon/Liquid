@@ -113,7 +113,7 @@ public class event {
     	        System.err.println("nested exception - " + cause + " "+ite.getCause() );		
     		                
             } catch (Throwable th) {
-                error = "Error in class.method:"+className+" ("+th.getLocalizedMessage()+")\"}";
+                error = "Error in class.method:"+className+" ("+th.getLocalizedMessage()+")";
                 System.err.println(" execute() ["+controlId+"] Error:" + th.getLocalizedMessage());
             }
             
@@ -702,10 +702,10 @@ public class event {
     }
 
     static public String testScript (Object tbl_wrk, Object params, Object clientData, Object requestParam ) {
-        String result = "{ \"result\":1";
+        String resultJson = "{ \"result\":1,\"message\":\"";
         String updateResults = "";
         
-        result += ",\"message\":\"testScript(): ";
+        String result = "testScript(): ";
         
         if(tbl_wrk != null) {
             if(params != null) {
@@ -737,15 +737,16 @@ public class event {
 
                         // Richiesta conferma dal client (Messaggio con timeout)
                         String scriptResult = JSScript.script( "prompt('JS script from server test : type yout response','...');" );
-                        result += "scriptResult:" + utility.base64Encode(scriptResult);
+                        result += "scriptResult(b64):" + utility.base64Encode(scriptResult);
                     }
                 }
             }
         }
-        result += "\"";
-        result += ",\"details\":["+updateResults+"]";        
-        result += "}";
-        return result;
+        resultJson += utility.base64Encode(result);
+        resultJson += "\"";
+        resultJson += ",\"details\":["+updateResults+"]";        
+        resultJson += "}";
+        return resultJson;
     }
 
     
