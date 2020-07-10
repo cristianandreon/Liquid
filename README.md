@@ -1,2 +1,2 @@
 # Liquid
-Liquid, Java Framework
+Liquid, Font-end and Back-end FrameworkJava for Web Developers
