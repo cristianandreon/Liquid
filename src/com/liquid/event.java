@@ -1171,11 +1171,17 @@ public class event {
                             // Inserimento record
                             String sModifications = "";
                             String sFields = "";
+                            JSONArray fieldsJSON = new JSONArray();
                             for(int ic=0; ic<cols.length(); ic++) {
                                 String fieldData = rowData.getString( String.valueOf(ic+1) );
-                                sFields += (sFields.length()>0?",":"")+"{\"field\":\""+cols.getJSONObject(ic).getString("field")+"\",\"value\":\""+(fieldData != null ? fieldData : "")+"\"}";
+                                JSONObject fieldJSON = new JSONObject();
+                                fieldJSON.put("field", cols.getJSONObject(ic).getString("field") );
+                                fieldJSON.put("value", fieldData );
+                                fieldsJSON.put(fieldJSON);
                             }
-                            sModifications += "{\"rowId\":\"\",\"fields\":["+sFields+"]}";
+                            // sFields = (sFields.length()>0?",":"")+"{\"field\":\""+cols.getJSONObject(ic).getString("field")+"\",\"value\":\""+(fieldData != null ? fieldData : "")+"\"}";
+                            sFields = fieldsJSON.toString();
+                            sModifications += "{\"rowId\":\"\",\"fields\":"+sFields+"}";
 
 
                             String insertingParams = "{ \"params\":[{\"modifications\":[" + sModifications + "] } ] }";

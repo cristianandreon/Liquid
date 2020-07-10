@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Liquid ver.1.16   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  10-7-2020
+//  First update 8.1.2020 - Last update  11-7-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -7824,14 +7824,14 @@ var Liquid = {
                 for(var i=0; i<liquid.selection.exclude.length; i++) {
                     if(idsUnselected.length > 0) idsUnselected += ",";
                     var value = liquid.selection.exclude[i];
-                    if(typeof value === 'string') idsUnselected += '"' + value + '"'; else idsUnselected += value;
+                    if(typeof value === 'string') idsUnselected += '"' + value.replace(/"/g, "\\\"") ; else idsUnselected += value;
                 }
             } else {
                 // include list
                 for(var i=0; i<liquid.selection.include.length; i++) {
                     if(idsSelected.length > 0) idsSelected += ",";
                     var value = liquid.selection.include[i];
-                    if(typeof value === 'string') idsSelected += '"' + value + '"'; else idsSelected += value;
+                    if(typeof value === 'string') idsSelected += '"' + value.replace(/"/g, "\\\"") + '"'; else idsSelected += value;
                 }
             }
         }
@@ -13401,8 +13401,19 @@ var Liquid = {
                 Liquid.getDB();
                 if(glLiquidDB) {
                     glLiquidDB.transaction(function (tx) {   
-                        tx.executeSql("INSERT INTO CLIPBOARD (controlId,columns,rows,date) VALUES ('"+liquid.controlId+"','"+JSON.stringify(liquid.tableJson.columns)+"','"+(Liquid.serializedRow(liquid, true))+"','"+date.toISOString()+"')");
+                        try {
+                            var sql = "INSERT INTO CLIPBOARD (controlId,columns,rows,date) VALUES ("
+                                    + "'" + liquid.controlId + "'"
+                                    + ",'" + btoa(JSON.stringify(liquid.tableJson.columns))+"'"
+                                    + ",'" + btoa(Liquid.serializedRow(liquid, true)) + "'"
+                                    + ",'" + date.toISOString() + "'"
+                                    + ")";
+                            tx.executeSql(sql, [], function (tx, results) {
                         Liquid.copyToClipBoradDone(liquid);
+                            }, function (tx, results) {
+                                console.error(results);
+                            });
+                        } catch(e) { console.error("ERROR: "+e); }
                     }, null);
                 } else if(glLiquidIDB) {                    
                     var transaction = glLiquidIDB.transaction(["CLIPBOARD"], "readwrite");
@@ -13471,10 +13482,12 @@ var Liquid = {
             }
         }
     },
-    pasteFromClipBoradExec:function(liquid, controlId, columns, rows) {
+    pasteFromClipBoradExec:function(liquid, controlId, columnsB64, rowsB64) {
         if(liquid) {
             if(controlId) {
-                var sourceLiquid = Liquid.getLiquid(controlId);                
+                var sourceLiquid = Liquid.getLiquid(controlId);
+                var columns = atob(columnsB64);
+                var rows = atob(rowsB64);
                 if(columns) {
                     var columnsJson = JSON.parse(columns);
                     if(columnsJson) {

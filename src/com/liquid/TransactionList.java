@@ -48,7 +48,7 @@ public class TransactionList {
                     ft.values.set(ft.columns.indexOf(_column), _value);
                     } else {
                     ft.columns.add(_column);
-                    ft.values.add(_value);
+                    ft.values.add(_value.replace("'", "''"));
                     ft.sourceColumn = _sourceColumn;
                     ft.rowId = rowId;
                     ft.nodeId = nodeId;
