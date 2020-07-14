@@ -245,11 +245,20 @@ public class db {
             
             
             if(tbl_wrk != null) {
-                // Connessione al DB ( da predefinita, da JSON o da sessione )
-                conn = connection.getConnection(null, recordset_params.request, tbl_wrk.tableJson);
-                if(conn == null) {
-                    System.out.println("// LIQUID ERROR : unbale to connect to DB on controlId:"+controlId);
-                    return "{\"error\":\""+utility.base64Encode("Error: invalid token on :"+controlId)+"\"}";
+                try {
+                    // Connessione al DB ( da predefinita, da JSON o da sessione )
+                    conn = connection.getConnection(null, recordset_params.request, tbl_wrk.tableJson);
+                    if(conn == null) {
+                        String err = "null DB connect on controlId:"+controlId;
+                        System.out.println("// LIQUID ERROR : "+err);
+                        return "{\"error\":\""+utility.base64Encode(err)+"\"}";
+                    }
+                } catch (Throwable th) {
+                    final Throwable cause = th.getCause();
+                    error = th.getCause().getLocalizedMessage();
+                    String err = "connect error : "+error+", on controlId:"+controlId;
+                    System.out.println("// LIQUID ERROR : "+err);
+                    return "{\"error\":\""+utility.base64Encode(err)+"\"}";
                 }
             }
 
@@ -2501,7 +2510,7 @@ public class db {
     //
     //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public Object load_bean( HttpServletRequest request, String databaseShemaTable, String columns, Object primaryKey) throws JSONException {
+    static public Object load_bean( HttpServletRequest request, String databaseShemaTable, String columns, Object primaryKey) throws JSONException, Throwable {
         ArrayList<Object> beans = load_beans(request, databaseShemaTable, columns, null, primaryKey, 1);
         if(beans != null) {
             if(beans.size() > 0) {
@@ -2518,12 +2527,12 @@ public class db {
     //
     //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException {
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException, Throwable {
         return load_beans( request, null, databaseShemaTable, columns, keyColumn, key, maxRows );
     }
 
     
-    static public workspace load_beans_get_workspace ( HttpServletRequest request, String databaseShemaTable, String controlId ) throws JSONException {
+    static public workspace load_beans_get_workspace ( HttpServletRequest request, String databaseShemaTable, String controlId ) throws JSONException, Throwable {
         String database = null, table = null, schema = null, primaryKey = null;
         workspace tbl_wrk = null;
         if(controlId == null) {
@@ -2574,7 +2583,7 @@ public class db {
     //
     //  TODO : partial columns read still unsupported... read always all columns
     //
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException {
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException, Throwable {
         String sWhere = "";
 
         // cerca o cerca il controllo

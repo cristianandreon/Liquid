@@ -1031,7 +1031,7 @@ public class event {
                                     }
 
                                     if(cRow>0) out_string += ",";                                                    
-                                    out_string += "\""+fieldName+"\":\"" + colDefault + "\"";
+                                    out_string += "\""+fieldName+"\":\"" + (colDefault != null ? colDefault.replace("\\", "\\\\").replace("\"", "\\\"") : "") + "\"";
                                     cRow++;
                   
                                     if(out_string.charAt(out_string.length()-1) == ',') {

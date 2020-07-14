@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.16   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  10-7-2020
+// Liquid ver.1.17   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 8.1.2020 - Last update  13-7-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -293,7 +293,7 @@ class LiquidCtrl {
                                 var resultTableJson = JSON.parse(JSON.stringify(liquid.tableJson));
                                 var registeredTableJson = JSON.parse(liquid.xhr.responseText);
                                 if(registeredTableJson.error) {
-                                    alert("LIQUID Error : "+registeredTableJson.error);
+                                    Liquid.handleResponse(liquid, "Registering component", registeredTableJson, true, true, true);                                    
                                 } else {
                                     resultTableJson.mode = liquid.tableJson.mode !== 'auto' && liquid.tableJson.mode !== 'Sync' ? liquid.tableJson.mode : "";
                                     resultTableJson.database = registeredTableJson.database;
@@ -494,6 +494,25 @@ class LiquidCtrl {
                         DateEditor: DateEditor
                     },
 
+                    columnTypes: {
+                        'nonEditableColumn': { editable: false },
+                        'dateColumn': {
+                            // filter: 'agDateColumnFilter',
+                            // filterParams: { comparator: myDateComparator },
+                            suppressMenu: false
+                        },
+                        'numericColumn': {
+                            // filter: 'agDateColumnFilter',
+                            // filterParams: { comparator: myDateComparator },
+                            suppressMenu: false
+                        },
+                        'stringColumn': {
+                            // filter: 'agDateColumnFilter',
+                            // filterParams: { comparator: myDateComparator },
+                            suppressMenu: false
+                        }
+                    },
+                    
                     onRowSelected:function(event) {
                         if(event.type === "rowSelected") {
                             var isPhantomNode = false;
@@ -3336,7 +3355,11 @@ var Liquid = {
                         sortComparator = function(a, b) { return (Number(a) > Number(b) ? 1 : (Number(a) < Number(b) ? -1 : 0)); };
                         typeColumn = "numericColumn";
                     } else if(Liquid.isDate(col.type)) {
-                        sortComparator = function(a, b) { var dateA = Liquid.toDate(a); var dateB = Liquid.toDate(b); return (dateA > dateB ? 1 : (dateA < dateB ? -1 : 0)); };
+                        sortComparator = function(a, b) { 
+                            var dateA = Liquid.toDate(a); 
+                            var dateB = Liquid.toDate(b); 
+                            return (dateA > dateB ? 1 : (dateA < dateB ? -1 : 0)); 
+                        };
                         typeColumn = "dateColumn";
                     } else {
                         sortComparator = function(a, b) { return (a === 'string' ? a.localeCompare(b) : (a > b ? 1 : (a < b ? -1 : 0))); };
@@ -4322,7 +4345,7 @@ var Liquid = {
                 liquid.lookupContainerObj.style.display = "inline-block";
             }
             // select by search current value
-            if(!isDef(liquid.tableJson.lookupField)) {
+            if(isDef(liquid.tableJson.lookupField)) {
                 var col = Liquid.getColumn(liquid, liquid.tableJson.lookupField);
                 if(col) {
                     var res = Liquid.setNodesSelectedByColumn(liquid, col.field, [obj.value], true);
@@ -7824,14 +7847,14 @@ var Liquid = {
                 for(var i=0; i<liquid.selection.exclude.length; i++) {
                     if(idsUnselected.length > 0) idsUnselected += ",";
                     var value = liquid.selection.exclude[i];
-                    if(typeof value === 'string') idsUnselected += '"' + value + '"'; else idsUnselected += value;
+                    if(typeof value === 'string') idsUnselected += '"' + value.replace(/"/g, "\\\"") ; else idsUnselected += value;
                 }
             } else {
                 // include list
                 for(var i=0; i<liquid.selection.include.length; i++) {
                     if(idsSelected.length > 0) idsSelected += ",";
                     var value = liquid.selection.include[i];
-                    if(typeof value === 'string') idsSelected += '"' + value + '"'; else idsSelected += value;
+                    if(typeof value === 'string') idsSelected += '"' + value.replace(/"/g, "\\\"") + '"'; else idsSelected += value;
                 }
             }
         }
@@ -11817,8 +11840,18 @@ var Liquid = {
         return Liquid.dbtoHtmlDateFunc(date, Liquid.dateSep, "-");
     },
     toDate:function(dateStr) {
-        var parts = dateStr.split("-");
-        return new Date(parts[2], parts[1] - 1, parts[0]);
+        if(dateStr != null && dateStr.length) {
+            var dt_parts = dateStr.split(" ");
+            var d_parts = dt_parts[0].split("-");
+            if(dt_parts.length > 1) {
+                var t_parts = dt_parts[1].split(":");
+                return new Date(d_parts[2], d_parts[1] - 1, d_parts[0], t_parts[0], t_parts[1], t_parts[2]);
+            } else {
+                return new Date(d_parts[2], d_parts[1] - 1, d_parts[0]);
+            }
+        } else {
+            return new Date();
+        }
     },
     createNewRowData:function(obj) {
         var liquid = Liquid.getLiquid(obj);
@@ -13401,8 +13434,19 @@ var Liquid = {
                 Liquid.getDB();
                 if(glLiquidDB) {
                     glLiquidDB.transaction(function (tx) {   
-                        tx.executeSql("INSERT INTO CLIPBOARD (controlId,columns,rows,date) VALUES ('"+liquid.controlId+"','"+JSON.stringify(liquid.tableJson.columns)+"','"+(Liquid.serializedRow(liquid, true))+"','"+date.toISOString()+"')");
+                        try {
+                            var sql = "INSERT INTO CLIPBOARD (controlId,columns,rows,date) VALUES ("
+                                    + "'" + liquid.controlId + "'"
+                                    + ",'" + btoa(JSON.stringify(liquid.tableJson.columns))+"'"
+                                    + ",'" + btoa(Liquid.serializedRow(liquid, true)) + "'"
+                                    + ",'" + date.toISOString() + "'"
+                                    + ")";
+                            tx.executeSql(sql, [], function (tx, results) {
                         Liquid.copyToClipBoradDone(liquid);
+                            }, function (tx, results) {
+                                console.error(results);
+                            });
+                        } catch(e) { console.error("ERROR: "+e); }
                     }, null);
                 } else if(glLiquidIDB) {                    
                     var transaction = glLiquidIDB.transaction(["CLIPBOARD"], "readwrite");
@@ -13471,10 +13515,12 @@ var Liquid = {
             }
         }
     },
-    pasteFromClipBoradExec:function(liquid, controlId, columns, rows) {
+    pasteFromClipBoradExec:function(liquid, controlId, columnsB64, rowsB64) {
         if(liquid) {
             if(controlId) {
-                var sourceLiquid = Liquid.getLiquid(controlId);                
+                var sourceLiquid = Liquid.getLiquid(controlId);
+                var columns = atob(columnsB64);
+                var rows = atob(rowsB64);
                 if(columns) {
                     var columnsJson = JSON.parse(columns);
                     if(columnsJson) {

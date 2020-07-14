@@ -33,20 +33,21 @@ public class connection {
     	}
         return null;    
     }
-    static public Connection getDBConnection(String database) {
+    static public Connection getDBConnection(String database) throws Throwable {
         Class cls = null;
     	try {
             cls = Class.forName("app.liquid.dbx.connection");
             Method method = cls.getMethod("getDBConnection", String.class);
             return (Connection)method.invoke(null, database);
     	} catch(Throwable th) {
-            System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + th.getLocalizedMessage());
+            Throwable cause = th.getCause();
+            System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + cause.getLocalizedMessage());
             Method[] methods = cls.getMethods();
             for(int i=0; i<methods.length; i++) {
                 System.err.println(" Method #"+(i+1)+":" + methods[i].toString());
             }
+            throw cause;
     	}
-        return null;    
     }
     
     
@@ -99,7 +100,7 @@ public class connection {
     //
     // Connectin to DB, 1° defined by control's JSON, 2° in the session (request) or 3° by default source of the web app
     //
-    static public Connection getConnection( Method get_connection, HttpServletRequest request, JSONObject tableJson )  {
+    static public Connection getConnection( Method get_connection, HttpServletRequest request, JSONObject tableJson ) throws Throwable  {
         String driver = null, connectionURL = null, database = null;
         try { driver = tableJson.getString("driver"); } catch(Exception e) {}
         try { connectionURL = tableJson.getString("connectionURL"); } catch(Exception e) {}        
@@ -115,7 +116,7 @@ public class connection {
     //          jdbc:mysql://cnconline:3306/Liquid"
     //          jdbc:postgresql://cnconline:5432/LiquidX?user=liquid&password=liquid
     //
-    static public Connection getConnection( Method get_connection, HttpServletRequest request, String driver, String connectionURL, String database )  {
+    static public Connection getConnection( Method get_connection, HttpServletRequest request, String driver, String connectionURL, String database ) throws Throwable  {
         Connection conn = null;
         try {
 
@@ -184,27 +185,24 @@ public class connection {
                 }
             }
             // Default connection : defined in app with possible jump of database
-            try {
-                if(conn==null) {
-                    if(get_connection == null) {
-                        if(database != null && !database.isEmpty()) {
-                            conn = getDBConnection(database);
-                        } else {
-                            conn = getDBConnection();
-                        }
+            if(conn==null) {
+                if(get_connection == null) {
+                    if(database != null && !database.isEmpty()) {
+                        conn = getDBConnection(database);
                     } else {
-                        try {
-                            conn = (Connection)get_connection.invoke(database);
-                        } catch(Throwable th) {
-                            conn = (Connection)get_connection.invoke(null);
-                        }
+                        conn = getDBConnection();
+                    }
+                } else {
+                    try {
+                        conn = (Connection)get_connection.invoke(database);
+                    } catch(Throwable th) {
+                        conn = (Connection)get_connection.invoke(null);
                     }
                 }
-            } catch (Exception ex) {
-                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
             }
     	} catch(Throwable th) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
+            throw th;
     	}
         return conn;
     }

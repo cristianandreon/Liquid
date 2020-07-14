@@ -29,7 +29,7 @@ public class system_command {
     //
     // TODO : test and debug
     //
-    static public String importRemoteRows (Object tbl_wrk, Object params, Object clientData, Object requestParam ) throws JSONException, Exception {
+    static public String importRemoteRows (Object tbl_wrk, Object params, Object clientData, Object requestParam ) throws JSONException, Exception, Throwable {
         String result = "{";
         
                 

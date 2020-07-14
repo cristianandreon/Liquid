@@ -115,11 +115,11 @@ public class metadata {
     }
     
                 
-    public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName) {
+    public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName) throws Throwable {
     	return readTableMetadata(conn, database, schema, table, columnName, true);    	
     }
     
-    public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName, boolean _bReadDefault) {
+    public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName, boolean _bReadDefault) throws Throwable {
         Connection connToDB = null, connToUse = conn;
         int recCount = 0;
         int nTable = 0;            
@@ -817,7 +817,7 @@ public class metadata {
         return new Object[] { (Object)result, (Object)nRec };
     }
    
-    static public ArrayList<String> getAllColumnsAsArray(String database, String schema, String tableName, Connection conn) {
+    static public ArrayList<String> getAllColumnsAsArray(String database, String schema, String tableName, Connection conn) throws Throwable {
         ArrayList<String> result = new ArrayList<String>();
         Connection connToDB = null, connToUse = conn;
         try {
@@ -947,7 +947,7 @@ public class metadata {
         return result;
     }
     
-    static public String getPrimaryKeyData(String database, String schema, String tableName, Connection conn) {
+    static public String getPrimaryKeyData(String database, String schema, String tableName, Connection conn) throws Throwable {
         Connection connToDB = null, connToUse = conn;
         String result = null;
         try {
@@ -1331,10 +1331,13 @@ public class metadata {
             
             
             String primaryKey = null;
-            try { primaryKey = tableJson.getString("primaryKey"); } catch (Exception e) {}
-            
-            JSONArray cols = tableJson.getJSONArray("columns");            
-            for(int ic=0; ic<cols.length(); ic++) {
+            try {
+                primaryKey = tableJson.getString("primaryKey");
+            } catch (Exception e) {
+            }
+
+            JSONArray cols = tableJson.getJSONArray("columns");
+            for (int ic = 0; ic < cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
                 String name = col.getString("name");
                 String type = col.getString("type");
@@ -1342,67 +1345,76 @@ public class metadata {
                 int size = col.getInt("size");
 
                 String sDefault = "";
-                try { sDefault = col.getString("default"); } catch (Exception e) {}
+                try {
+                    sDefault = col.getString("default");
+                } catch (Exception e) {
+                }
 
-                if(ic>0)
-                	sql += ",";
-                
-                if(isOracle) {
-            		if(size <= 0) {
-            			sql += (itemIdString+name+itemIdString) + " " + typeName + "\n";
-            		} else {
-                		sql += (itemIdString+name+itemIdString) + " " + typeName + "("+ size +")" + "\n";
-            		}
-            		if(sDefault != null && !sDefault.isEmpty()) {
-            			sDefault = sDefault.replace("`", "'");
-            			sql += " DEFAULT " + sDefault;
-            		}
+                if (ic > 0) {
+                    sql += ",";
+                }
 
-                } else if(isPostgres) {
+                if (isOracle) {
+                    if (size <= 0) {
+                        sql += (itemIdString + name + itemIdString) + " " + typeName + "\n";
+                    } else {
+                        sql += (itemIdString + name + itemIdString) + " " + typeName + "(" + size + ")" + "\n";
+                    }
+                    if (sDefault != null && !sDefault.isEmpty()) {
+                        sDefault = sDefault.replace("`", "'");
+                        sql += " DEFAULT " + sDefault;
+                    }
+
+                } else if (isPostgres) {
                     // code        char(5) CONSTRAINT firstkey PRIMARY KEY,
                     // title       varchar(40) NOT NULL,
                     // did         integer NOT NULL,
 
-                	if("serial".equalsIgnoreCase(typeName)) {
-                		typeName = "integer";
-                		size = -2;
-                	}
-                	
-        			if("int4".equalsIgnoreCase(typeName)) size = -1;
-            		if(size <= 0) {
-            			sql += (itemIdString+name+itemIdString) + " " + typeName;
-            		} else {
-        				sql += (itemIdString+name+itemIdString) + " " + typeName + "("+ size +")";
-            		}
-            		if(name.equals(primaryKey)) {
-            			sql += " PRIMARY KEY "; // "("+(itemIdString+name+itemIdString) +")";
-            		}
-            		if(sDefault != null && !sDefault.isEmpty()) {
-            			sDefault = sDefault.replace("`", "'");
-            			sql += " DEFAULT " + sDefault;
-            		}
-            		
-            		sql += "\n";
-            	}
+                    if ("serial".equalsIgnoreCase(typeName)) {
+                        typeName = "integer";
+                        size = -2;
+                    }
+
+                    if ("int4".equalsIgnoreCase(typeName)) {
+                        size = -1;
+                    }
+                    if (size <= 0) {
+                        sql += (itemIdString + name + itemIdString) + " " + typeName;
+                    } else {
+                        if("text".equalsIgnoreCase(typeName)) {
+                            sql += (itemIdString + name + itemIdString) + " " + typeName;
+                        } else {
+                            sql += (itemIdString + name + itemIdString) + " " + typeName + "(" + size + ")";
+                        }
+                    }
+                    if (name.equals(primaryKey)) {
+                        sql += " PRIMARY KEY "; // "("+(itemIdString+name+itemIdString) +")";
+                    }
+                    if (sDefault != null && !sDefault.isEmpty()) {
+                        sDefault = sDefault.replace("`", "'");
+                        sql += " DEFAULT " + sDefault;
+                    }
+
+                    sql += "\n";
+                }
             }
             
             
-            if(primaryKey != null && !primaryKey.isEmpty()) {
-	        	if(isOracle) {
-	        		sql += "PRIMARY KEY " + primaryKey + "\n";
-	        	}
+            if (primaryKey != null && !primaryKey.isEmpty()) {
+                if (isOracle) {
+                    sql += "PRIMARY KEY " + primaryKey + "\n";
+                }
             }
 
-            
-            if(isOracle) {
-        	} else if(isPostgres) {
-        		sql += ");\nCOMMIT;\n";
-        	}
-            
+            if (isOracle) {
+            } else if (isPostgres) {
+                sql += ");\nCOMMIT;\n";
+            }
+
             psdo = conn.prepareStatement(sql);
             rsdo = psdo.executeQuery();
-            
-            if(!table_exist(conn, 
+
+            if (!table_exist(conn,
                     database,
                     schema,
                     table)) {

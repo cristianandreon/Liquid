@@ -186,7 +186,7 @@ public class workspace {
      * @return      the validated control json
      * @see         workspace
      */
-    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile) {
+    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile) throws Throwable {
         return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, true), null, null, null);
     }
 
@@ -204,7 +204,7 @@ public class workspace {
      * @return      the validated control json
      * @see         workspace
      */
-    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex) {
+    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex) throws Throwable {
         return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, replaceApex), null, null, null);
     }
         
@@ -224,13 +224,13 @@ public class workspace {
      * @return      the validated control json
      * @see         workspace
      */
-    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex, Object owner, String returnType ) {
+    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex, Object owner, String returnType ) throws Throwable {
         return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, replaceApex), null, owner, returnType);
     }
 
     
     // Controllo da jsp (il json viene letto dal body della request)
-    static public String get_table_control(HttpServletRequest request, JspWriter out) {
+    static public String get_table_control(HttpServletRequest request, JspWriter out) throws Throwable {
         String controlId = null, sTableJson = null;
         try { controlId = (String) request.getParameter("controlId"); } catch (Exception e) { } 
         try {
@@ -255,7 +255,7 @@ public class workspace {
      * @return      the validated control json
      * @see         workspace
      */
-    static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson) {
+    static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson) throws Throwable {
         return get_table_control(request, controlId, sTableJson, null, null, null);
     }
     
@@ -273,7 +273,7 @@ public class workspace {
      * @return      the validated control json
      * @see         workspace
      */
-    static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson, String tableKey) {
+    static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson, String tableKey) throws Throwable {
         return get_table_control(request, controlId, sTableJson, tableKey, null, null);
     }
     /**
@@ -291,7 +291,7 @@ public class workspace {
      * @return      the image at the specified URL
      * @see         workspace
      */
-    static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson, Object owner, String returnType) {
+    static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson, Object owner, String returnType) throws Throwable {
     	return get_table_control(request, controlId, sTableJson, controlId, owner, returnType);
     }
 
@@ -309,7 +309,7 @@ public class workspace {
      * @return      the validated control json
      * @see         workspace
      */
-    static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch) {
+    static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch) throws Throwable {
         String out_string = "";
         try {
             boolean replaceApex = true;
@@ -367,7 +367,7 @@ public class workspace {
     //
     // N.B.:controlId può essere diverso da tableKey, per uso interno (es. la foreignTable dallo stesso controlId accede ad altre tabelle )
     //
-    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJson, String tableKey, Object owner, String returnType) {
+    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJson, String tableKey, Object owner, String returnType) throws Throwable {
         workspace tblWorkspace = null;
         JSONObject tableJson = null;
         JSONArray foreignTablesJson = null;
@@ -446,10 +446,16 @@ public class workspace {
 
             
             // Connessione al DB
-            conn = connection.getConnection(null, request, connectionDriver, connectionURL, database);
-            if(conn==null)
-                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+controlId+" : no DB connection\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection\");</script>" );
-            
+            try {
+                conn = connection.getConnection(null, request, connectionDriver, connectionURL, database);
+                if(conn==null) {
+                    String error = "null connection";
+                    return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode( controlId+" : no DB connection.."+error )+"\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection .."+error+"\");</script>" );
+                }
+            } catch(Throwable th) {
+                String error = th.getLocalizedMessage();                
+                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode( controlId+" : no DB connection.."+error )+"\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection .."+error+"\");</script>" );
+            }            
 
             String defaultDatabase = conn.getCatalog();
             String defaultSchema = null;
@@ -1466,7 +1472,7 @@ public class workspace {
     //
     // TODO : Mettere in sicurezza verificando che la richiesta gia autorizzata dal controllo chiamante
     //
-    static public String get_default_json(HttpServletRequest request, JspWriter out) {
+    static public String get_default_json(HttpServletRequest request, JspWriter out) throws Throwable {
         String controlId = "", tblWrk = "";
         String table = "", schema = "", database = "", parentControlId = "";
         try {
@@ -1484,7 +1490,7 @@ public class workspace {
         return null;
     }
         
-    static public String get_default_json(HttpServletRequest request, String controlId, String tblWrk, String table, String schema, String database, String parentControlId, String sourceToken, String sRequest, JspWriter out) {
+    static public String get_default_json(HttpServletRequest request, String controlId, String tblWrk, String table, String schema, String database, String parentControlId, String sourceToken, String sRequest, JspWriter out) throws Throwable {
         try {
             String result = "";            
             // Verifica della sorgente source : il client non può leggere un controllo in modalità auto se il padre non è autorizzato
@@ -1680,6 +1686,10 @@ public class workspace {
     static public String get_login_button(String name, String style, String formName, String callbackCode ) {
         return get_button_control(name, style, "com.liquid.login.login", new String[] { formName }, callbackCode, true );
     }    
+    
+    static public String get_login_code(String formName, String callbackCode ) {
+        return get_login_general_code("loginCmd", "com.liquid.login.login", formName, callbackCode );
+    }    
 
     /**
      * <h3>Get a button making user logout</h3>
@@ -1697,6 +1707,11 @@ public class workspace {
     static public String get_logout_button(String name, String style, String formName, String callbackCode ) {
         return get_button_control(name, style, "com.liquid.login.logout", new String[] { formName }, callbackCode, true );
     }    
+
+    static public String get_logout_code(String formName, String callbackCode ) {
+        return get_login_general_code("logoutCmd", "com.liquid.login.logout", formName, callbackCode );
+    }    
+
     
     /**
      * <h3>Get a button making registern user</h3>
@@ -1713,6 +1728,9 @@ public class workspace {
      */
     static public String get_register_control(String name, String style, String formName, String callbackCode ) {
         return get_button_control(name, style, "com.liquid.login.register", new String[] { formName }, callbackCode, true );
+    }    
+    static public String get_register_code(String formName, String callbackCode ) {
+        return get_login_general_code("registerCmd", "com.liquid.login.register", formName, callbackCode );
     }    
 
     /**
@@ -1731,6 +1749,35 @@ public class workspace {
     static public String get_recovery_control(String name, String style, String formName, String callbackCode ) {
         return get_button_control(name, style, "com.liquid.login.recovery", new String[] { formName }, callbackCode, true );
     }    
+    static public String get_recovery_code(String formName, String callbackCode ) {
+        return get_login_general_code("recoveryCmd", "com.liquid.login.recovery", formName, callbackCode );
+    }    
+
+
+
+
+    static public String get_login_general_code(String name, String server, String formName, String callbackCode ) {
+        // Liquid.onButtonFromString(this, "{\"server\":\"com.liquid.login.login\",\"name\":\"loginCmd\",\"client\":\"onLoginResult\",\"clientAfter\":true,\"params\":[\"loginForm\"]}");
+        try {
+            String params = "";
+            params += (params.length()>0?",":"") + "'" + (String)formName + "'";            
+            String sCommandJson = "{ "
+                    + "name:'"+(name != null ? name : "") + "'"
+                    + ",client:'"+(callbackCode != null ? callbackCode : "") +"'"
+                    + ",server:'"+(server != null ? server : "") + "'"
+                    + ",params:["+(params != null ? params : "")+"]"
+                    + ",clientAfter:"+"true"
+                    + "}";            
+            JSONObject commandJson = new JSONObject(sCommandJson);
+            return "onclick='Liquid.onButtonFromString(this, \""
+                    +(commandJson.toString().replace("\"", "\\\""))
+                    +"\");'";
+        } catch (Exception ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return "";
+    }    
+
 
     
     static public String get_file_content(HttpServletRequest request, String fileName) {
