@@ -828,12 +828,22 @@ public class db {
                                             }
                                             
                                             try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
+
+                                            if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                                                if(filterValue.indexOf(",") >= 0) {
+                                                    filterOp = "IN";
+                                                }
+                                            }
                                             
                                             if("IN".equalsIgnoreCase(filterOp)) {
                                                 preFix = "(";	
                                                 postFix = ")";
                                                 if(filterValue == null || filterValue.isEmpty()) {
-                                                    filterValue = "''";
+                                                    if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                                                        filterValue = "NULL";
+                                                    } else {
+                                                        filterValue = "''";
+                                                    }
                                                 } else {
                                                     if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
                                                         // numeric
