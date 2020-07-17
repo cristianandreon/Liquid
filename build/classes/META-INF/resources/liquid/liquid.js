@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Liquid ver.1.17   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  13-7-2020
+//  First update 8.1.2020 - Last update  17-7-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -4081,9 +4081,6 @@ var Liquid = {
                 }
             }
         }
-    },
-    getCurrentTimetick:function() {
-        return ((new Date().getTime() * 10000) + 621355968000000000);        
     },
     registerOnUnloadPage:function() {
         if(!Liquid.registeredOnUnloadPage) {
@@ -16044,6 +16041,10 @@ function deepClone(obj, hash = new WeakMap()) {
         Array.from(obj, (key) => result.add(deepClone(key, hash)) );
     hash.set(obj, result);
     return Object.assign(result, ...Object.keys(obj).map (key => ( { [key]: ( key === 'linkedLabelObj' || key === 'linkedObj' || key === 'linkedCmd' ? null : deepClone(obj[key], hash)) }) ));
+}
+
+function getCurrentTimetick() {
+    return ((new Date().getTime() * 10000) + 621355968000000000);        
 }
 
 // set language

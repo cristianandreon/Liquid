@@ -402,7 +402,12 @@ public class assets {
         String invalid_assets = null;
        
         // Administrator  ?
-        int GLLiquidAdmin = (int)request.getSession().getAttribute("GLLiquidAdmin");
+        int GLLiquidAdmin = (int)0;
+        
+        try {
+            GLLiquidAdmin = (int)request.getSession().getAttribute("GLLiquidAdmin");
+        } catch (Exception e) { }
+        
         if(GLLiquidAdmin > 0) {
             // ... can do everythings
             return new Object [] { true, null };

@@ -512,7 +512,7 @@ public class db {
                                         if(!LeftJoinMap.getByKey(leftJoinsMap, leftJoinKey)) {
                                             if(leftJoinList.length()>0)
                                                 leftJoinList+="\n";
-                                            leftJoinList += "LEFT JOIN " + ( tableIdString + schema + tableIdString )+ "." + ( tableIdString + foreignTable +tableIdString ) + " AS " + leftJoinAlias + " ON "+ leftJoinAlias+"."+foreignColumn +"="+ table+"."+column;
+                                            leftJoinList += "LEFT JOIN " + ( tableIdString + schema + tableIdString )+ "." + ( tableIdString + foreignTable +tableIdString ) + " AS " + leftJoinAlias + " ON "+ leftJoinAlias+"."+(tableIdString+foreignColumn+tableIdString) +"="+ table+"."+(tableIdString+column+tableIdString);
                                             leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable) );
                                         }
                                         if(column_list.length()>0)
@@ -736,8 +736,8 @@ public class db {
 
                                                     // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
                                                     // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
-                                                    filterTable = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table);
-                                                    if(filterTable == null || filterTable.isEmpty()) filterTable = table;
+                                                    filterTable = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : tableIdString + table + tableIdString );
+                                                    if(filterTable == null || filterTable.isEmpty()) filterTable = tableIdString + table + tableIdString;
                                                     colAlias = (table) + "." + itemIdString+colName+itemIdString;        
 
                                                     if(filterName.equalsIgnoreCase(colName)) {
@@ -758,14 +758,14 @@ public class db {
                                                     if (!filterTable.equalsIgnoreCase(table)) {
                                                         if(isPostgres || isOracle) {
                                                             // mette l'alias
-                                                            String colAlias = (filterTable != null ? LeftJoinMap.getAlias(leftJoinsMap, filterTable) : table)+"." +itemIdString+colParts[1]+itemIdString;
+                                                            String colAlias = (filterTable != null ? LeftJoinMap.getAlias(leftJoinsMap, filterTable) : tableIdString + table + tableIdString )+"." +itemIdString+colParts[1]+itemIdString;
                                                             filterName = colAlias != null ? colAlias : filterName;
                                                         } else {
                                                         }
                                                         filterTable = "";
                                                     } else {
                                                         // OK con postgres
-                                                        filterTable = table;
+                                                        filterTable = tableIdString + table + tableIdString;
                                                     }
                                                 }
                                                 for(int ic = 0; ic < cols.length(); ic++) {
@@ -887,7 +887,7 @@ public class db {
                                                 }
                                             }
 
-                                            sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (tableIdString + filterTable + tableIdString  + "." + itemIdString + filterName +itemIdString) : (filterName) ) + sensitiveCasePostOp
+                                            sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName +itemIdString) : (filterName) ) + sensitiveCasePostOp
                                                     + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp : "=")
                                                     + preFix + (filterValue != null ? filterValue : "") + postFix;
                                         }
