@@ -626,7 +626,8 @@ public class assets {
             System.err.println("// read_user_assets_roles() Error:" + e.getLocalizedMessage());
         } finally {
             try {
-                conn.close();
+                if(conn!=null)
+                    conn.close();
             } catch (SQLException ex) {
                 Logger.getLogger(assets.class.getName()).log(Level.SEVERE, null, ex);
             }

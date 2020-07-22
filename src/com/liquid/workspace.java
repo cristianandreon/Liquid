@@ -449,7 +449,7 @@ public class workspace {
             try {
                 conn = connection.getConnection(null, request, connectionDriver, connectionURL, database);
                 if(conn==null) {
-                    String error = "null connection";
+                    String error = "[null connection]";
                     return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode( controlId+" : no DB connection.."+error )+"\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection .."+error+"\");</script>" );
                 }
             } catch(Throwable th) {

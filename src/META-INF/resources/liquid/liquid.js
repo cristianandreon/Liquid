@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Liquid ver.1.17   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  17-7-2020
+//  First update 8.1.2020 - Last update  22-7-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -5860,7 +5860,7 @@ var Liquid = {
         var obj_id = typeof event === 'object' ? obj.id : event;
         Liquid.onContextMenuClose();
         if(!glLiquidGenesisToken) {
-            alert("In order to create new window you must Enable Project Mode by serveer-side");
+            alert("In order to create new window you must Enable Project Mode by server-side");
             return;
         }
         Liquid.startPopup('liquidSelectTables', window.liquidSelectTables);
@@ -5993,7 +5993,7 @@ var Liquid = {
     onNewWindowFromJson:function(obj_id, mode, parentObjId) {
         Liquid.onContextMenuClose();
         if(!glLiquidGenesisToken) {
-            alert("In order to create new window you must Enable Project Mode by serveer-side");
+            alert("In order to create new window you must Enable Project Mode by server-side");
             return;
         }
         var parentObj = document.getElementById(parentObjId);

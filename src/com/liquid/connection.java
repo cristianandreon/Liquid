@@ -22,13 +22,19 @@ public class connection {
         Class cls = null;
     	try {
             cls = Class.forName("app.liquid.dbx.connection");
-            Method method = cls.getMethod("getDBConnection");
-            return (Connection)method.invoke(null);
+            if(cls != null) {
+                Method method = cls.getMethod("getDBConnection");
+                return (Connection)method.invoke(null);
+            }
+        } catch(ClassNotFoundException cnf) {
+            System.err.println(" app.liquid.dbx.connection.getDBConnection() not found. Please add it in order to access to db...");
     	} catch(Throwable th) {
             System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + th.getLocalizedMessage());
-            Method[] methods = cls.getMethods();
-            for(int i=0; i<methods.length; i++) {
-                System.err.println(" Method #"+(i+1)+":" + methods[i].toString());
+            if(cls != null) {
+                Method[] methods = cls.getMethods();
+                for(int i=0; i<methods.length; i++) {
+                    System.err.println(" Method #"+(i+1)+":" + methods[i].toString());
+                }
             }
     	}
         return null;    
@@ -238,13 +244,19 @@ public class connection {
         Class cls = null;
     	try {
             cls = Class.forName("app.liquid.dbx.connection");
-            Method method = cls.getMethod("getConnectionDesc");
-            return (String)method.invoke(null);
+            if(cls != null) {
+                Method method = cls.getMethod("getConnectionDesc");
+                return (String)method.invoke(null);
+            }
+        } catch(ClassNotFoundException cnf) {
+            System.err.println(" app.liquid.dbx.connection.getConnectionDesc() not found. Please add it in order to access to db...");
     	} catch(Throwable th) {
             System.err.println(" app.liquid.dbx.connection.getConnectionDesc() Error:" + th.getLocalizedMessage());
-            Method[] methods = cls.getMethods();
-            for(int i=0; i<methods.length; i++) {
-                System.err.println(" Method #"+(i+1)+":" + methods[i].toString());
+            if(cls != null) {
+                Method[] methods = cls.getMethods();
+                for(int i=0; i<methods.length; i++) {
+                    System.err.println(" Method #"+(i+1)+":" + methods[i].toString());
+                }
             }
     	}
         return null;
