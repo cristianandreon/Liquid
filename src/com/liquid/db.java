@@ -4126,6 +4126,29 @@ public class db {
     static public String save ( Object bean, Object tbl_wrk ) {
         return insert ( bean, tbl_wrk );
     }
+    
+    
+    /**
+     * <h3>Insert the bean to the database</h3>
+     * <p>
+     * This method execute an insert statement by the given bean
+     *
+     * @param  bean  bean to insert (Object)
+     * @param  tbl_wrk the table workspace of the control (Object)
+
+     * @return      the detail of operation as json object
+     *              { "tables":[ 
+     *                          { "table":"table name", "ids":[ list of changed primary keys ] }
+     *                          ]
+     *              ,"foreignTables":[
+     *                          { "table":"table name", "ids":[ list of changed primary keys ] }
+     *                          ]
+     *              ,"fails":["
+     *                          { "table":"table name", "ids":[ list of changed primary keys ] }
+     *                          ]
+     *              }
+     * @see         db
+     */
     static public String insert ( Object bean, Object tbl_wrk ) {
         try {
             String sModifications = "";
@@ -4155,7 +4178,7 @@ public class db {
      * <p>
      * This method execute an update statement by the given bean
      *
-     * @param  bean  bean to insert or update (Object)
+     * @param  bean  bean to update (Object)
      * @param  tbl_wrk the table workspace of the control (Object)
 
      * @return      the detail of operation as json object

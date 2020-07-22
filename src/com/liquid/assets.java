@@ -556,8 +556,11 @@ public class assets {
                 ArrayList<Object> user_asset_beans = db.load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, user_assets_table), "*", "user_id", (Object)userId, 1000 );
                 if(user_asset_beans != null) {
                     // put asset_id of all beans in ArryList
-                    Object [] res = db.beansToArray(user_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
-                    user_all_inactive_assets_id.addAll((ArrayList<Object>)res[1]);
+                    try {
+                        Object [] res = db.beansToArray(user_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
+                        user_all_inactive_assets_id.addAll((ArrayList<Object>)res[1]);
+                    } catch(Throwable th) {                        
+                    }
                 }
 
                 // assets per roles for user
@@ -581,9 +584,12 @@ public class assets {
                         ArrayList<Object> user_role_asset_beans = db.load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, role_assets_table), "*", "role_id", (Object)roleId, 1000 );
                         if(user_role_asset_beans != null) {
                             if(bProcessRole) {
-                                // put asset_id of all beans in ArryList
-                                Object [] res = db.beansToArray(user_role_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
-                                user_all_inactive_assets_id.addAll((ArrayList<Object>)res[1]);
+                                try {
+                                    // put asset_id of all beans in ArryList
+                                    Object [] res = db.beansToArray(user_role_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
+                                    user_all_inactive_assets_id.addAll((ArrayList<Object>)res[1]);
+                                } catch(Throwable th) {                        
+                                }
                             } else {
                                 // all assets inactive due to role inactive
                                 db.beansToArray(user_role_asset_beans, "asset_id", user_all_inactive_assets_id, true, null);
