@@ -58,7 +58,7 @@ public class assets {
     // Please Note : to define custon connection you need to define driver, database, and schema
     //              user and or password may be null
     //
-    static public Connection getConnection() throws ClassNotFoundException, SQLException {
+    static public Connection getConnection() throws ClassNotFoundException, SQLException, Throwable {
         return login.getConnection();
     }
 

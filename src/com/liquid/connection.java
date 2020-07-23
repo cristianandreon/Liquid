@@ -18,7 +18,7 @@ import org.json.JSONObject;
 
 public class connection {
 
-    static public Connection getDBConnection() {
+    static public Connection getDBConnection() throws Throwable {
         Class cls = null;
     	try {
             cls = Class.forName("app.liquid.dbx.connection");
@@ -28,14 +28,10 @@ public class connection {
             }
         } catch(ClassNotFoundException cnf) {
             System.err.println(" app.liquid.dbx.connection.getDBConnection() not found. Please add it in order to access to db...");
+            throw cnf.getCause();
     	} catch(Throwable th) {
             System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + th.getLocalizedMessage());
-            if(cls != null) {
-                Method[] methods = cls.getMethods();
-                for(int i=0; i<methods.length; i++) {
-                    System.err.println(" Method #"+(i+1)+":" + methods[i].toString());
-                }
-            }
+            throw th.getCause();
     	}
         return null;    
     }
@@ -48,11 +44,7 @@ public class connection {
     	} catch(Throwable th) {
             Throwable cause = th.getCause();
             System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + cause.getLocalizedMessage());
-            Method[] methods = cls.getMethods();
-            for(int i=0; i<methods.length; i++) {
-                System.err.println(" Method #"+(i+1)+":" + methods[i].toString());
-            }
-            throw cause;
+            throw th.getCause();
     	}
     }
     

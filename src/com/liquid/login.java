@@ -100,7 +100,7 @@ public class login {
     // Please Note : to define custon connection you need to define driver, database, and schema
     //              user and or password may be null
     //
-    static public Connection getConnection() throws ClassNotFoundException, SQLException {
+    static public Connection getConnection() throws ClassNotFoundException, SQLException, Throwable {
         Connection conn = null;
         Class driverClass = null;
         if( driver != null && database != null && schema != null && !driver.isEmpty() && !database.isEmpty() && !schema.isEmpty() ) {
@@ -1080,7 +1080,7 @@ public class login {
 
 
 
-    static public String register(HttpServletRequest request, HttpServletResponse response, JspWriter out) {
+    static public String register(HttpServletRequest request, HttpServletResponse response, JspWriter out) throws Throwable {
         JSONObject requestJson = null;
         String application_id = request.getParameter("application_id");
         String domain_id = request.getParameter("domain_id");
@@ -1102,7 +1102,7 @@ public class login {
     }
 
     
-    static public String register(String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sStatus, String sAdmin, String sRedirect, HttpServletRequest request) {
+    static public String register(String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sStatus, String sAdmin, String sRedirect, HttpServletRequest request) throws SQLException, Throwable {
         String out_string = "", error = "";
         Connection conn = null;
 
@@ -1448,7 +1448,7 @@ public class login {
         return "{ \"result\":666, \"error\":\"undetected case\"}";
     }
     
-    static public String recovery(HttpServletRequest request, HttpServletResponse response, JspWriter out) {
+    static public String recovery(HttpServletRequest request, HttpServletResponse response, JspWriter out) throws Throwable {
         JSONObject requestJson = null;
         String RemoteIP = request.getRemoteAddr();
         String sUserID = null;
@@ -1473,7 +1473,7 @@ public class login {
         return recovery( application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request );
    }
 
-    static public String recovery( String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sRedirect, HttpServletRequest request) {
+    static public String recovery( String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sRedirect, HttpServletRequest request) throws Throwable {
         String out_string = "", error = "";
         JSONObject requestJson = null;
         Connection conn = null;
@@ -1613,7 +1613,7 @@ public class login {
     }
     
     
-    static public String validate_email(HttpServletRequest request, HttpServletResponse response, JspWriter out) {
+    static public String validate_email(HttpServletRequest request, HttpServletResponse response, JspWriter out) throws Throwable {
         JSONObject requestJson = null;
         String RemoteIP = request.getRemoteAddr();
         String sUserID = null;
@@ -1647,7 +1647,7 @@ public class login {
     // TEST URL :
     // http://localhost:8080/LiquidX/liquid/liquid.jsp?operation=validateEmail&emailToken=MMCW1VO04SM1T8TGCS8RNF0BKSAXE2R5&redirect=&domain_id=LiquidX&application_id=LiquidX&email=cristianandreon@gmail.com    
     
-    static public String validate_email( String application_id, String domain_id, String sUserID, String sEMail, String sEmailToken, String sRedirect, String sDatabase, String sSchema, String sTable, HttpServletRequest request ) {
+    static public String validate_email( String application_id, String domain_id, String sUserID, String sEMail, String sEmailToken, String sRedirect, String sDatabase, String sSchema, String sTable, HttpServletRequest request ) throws Throwable {
         String out_string = "", error = "";
         JSONObject requestJson = null;
         Connection conn = null;

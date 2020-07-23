@@ -885,7 +885,7 @@ class LiquidCtrl {
                         this.lookupHeight = (typeof this.tableJson.height !== 'undefined' ? this.tableJson.height : (this.outDivObj.clientHeight > Liquid.minLookupHeight ? this.outDivObj.clientHeight : this.outDivObj.clientWidth * 2/3));
                         this.lookupContainerObj2 = document.createElement("div");
                         this.lookupContainerObj2.id = controlId + ".lookup.combo";
-                        // this.lookupContainerObj2.style.width = "100%";
+                        this.lookupContainerObj2.style.width = "100%";
                         this.lookupContainerObj2.style.height = (this.tableJson.keepOpen === true ? "calc(100% - 30px)" : "0px");
                         this.lookupContainerObj2.style.display = "inline-block";
                         this.lookupContainerObj2.style.position = (this.tableJson.keepOpen === true ? "" : "");
@@ -12869,7 +12869,7 @@ var Liquid = {
                                 }
                             }
                         }
-                        lookupJson = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:sourceCol.foreignTable, columns:columns, autoFitColumns:true };
+                        lookupJson = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:sourceCol.foreignTable, columns:columns, autoFitColumns:true, width:"auto" };
                     }
                     if(lookupJson) {
                         try {
@@ -14267,8 +14267,8 @@ var Liquid = {
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewGrid('"+liquid.controlId+".newGrid')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Grid"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewForeignTable('"+liquid.controlId+".newForeignTable','')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Foreign Table"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewForeignTable('"+liquid.controlId+".newForeignTable','multipanel')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Multipanel"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewFilters('"+liquid.controlId+".newFilters')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Filters"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewFilters('"+liquid.controlId+".newFilter')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Filter"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewFilters('"+liquid.controlId+".newFilters')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Filter Group"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewFilters('"+liquid.controlId+".newFilter')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Filter Field"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewEvent('"+liquid.controlId+".newEvent')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Event"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewCommandBar('"+liquid.controlId+".newActionBar')\" >"+ckeckImg+"<a href=\"javascript:void(0)\" >Add Command Bar"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewActionBar('"+liquid.controlId+".newActionBar')\" >"+ckeckImg+"<a href=\"javascript:void(0)\" >Add Action Bar"+"</a></p>"

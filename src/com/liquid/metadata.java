@@ -1009,8 +1009,8 @@ public class metadata {
             if(out != null)
                 out.print("<LiquidStartResponde/>");
             
-        }   catch (IOException ex) {
-            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Throwable th) {
+            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
         }
         return result;
     }
