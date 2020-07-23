@@ -4404,11 +4404,13 @@ var Liquid = {
                 if(comboObj) {
                     if(bBrigUp) {
                         var rect = obj.getBoundingClientRect();
+                        comboObj.style.width = rect.width+"px";
                         comboObj.style.top = rect.y + rect.height;
                         comboObj.style.left = rect.x;
                         comboObj.classList.add('liquidLookupOpen');
                     } else {
                         comboObj.classList.remove('liquidLookupOpen');
+                        comboObj.style.width = "";
                         comboObj.style.top = "";
                         comboObj.style.left = "";
                     }

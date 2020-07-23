@@ -78,14 +78,16 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
+                    sql.add("SET sql_mode='';");
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`asset` VARCHAR(256) NOT NULL"
                         +",`status` VARCHAR(16) NOT NULL"
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                        +",`expire_date` TIMESTAMP"
+                        +",`expire_date` TIMESTAMP  DEFAULT 0"
                         +",`expired` VARCHAR(2)"
-                        );
+                        +")"
+                    );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
@@ -97,7 +99,8 @@ public class assets {
                         +",\"date\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",\"expire_date\" TIMESTAMP"
                         +",\"expired\" VARCHAR(2)"
-                        +")");
+                        +")"
+                    );
 
                     sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
@@ -149,7 +152,7 @@ public class assets {
                         +",`role` VARCHAR(256) NOT NULL"
                         +",`status` VARCHAR(16) NOT NULL"
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                        +",`expire_date` TIMESTAMP"
+                        +",`expire_date` TIMESTAMP DEFAULT 0"
                         +",`expired` VARCHAR(2)"
                         );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
@@ -215,7 +218,7 @@ public class assets {
                         +",`aaset_id` INT"
                         +",`status` VARCHAR(16) NOT NULL"
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                        +",`expire_date` TIMESTAMP"
+                        +",`expire_date` TIMESTAMP DEFAULT 0"
                         +",`expired` VARCHAR(2)"
                         );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
@@ -283,7 +286,7 @@ public class assets {
                         +",`role_id` INT"
                         +",`status` VARCHAR(16) NOT NULL"
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                        +",`expire_date` TIMESTAMP"
+                        +",`expire_date` TIMESTAMP DEFAULT 0"
                         +",`expired` VARCHAR(2)"
                         );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
@@ -350,7 +353,7 @@ public class assets {
                         +",`asset_id` INT"
                         +",`status` VARCHAR(16) NOT NULL"
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                        +",`expire_date` TIMESTAMP"
+                        +",`expire_date` TIMESTAMP DEFAULT 0"
                         +",`expired` VARCHAR(2)"
                         );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
