@@ -91,7 +91,6 @@ public class assets {
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
-
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"asset\" VARCHAR(256) NOT NULL"
@@ -147,6 +146,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
+                    sql.add("SET sql_mode='';");
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`role` VARCHAR(256) NOT NULL"
@@ -154,7 +154,8 @@ public class assets {
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",`expire_date` TIMESTAMP DEFAULT 0"
                         +",`expired` VARCHAR(2)"
-                        );
+                        +")"
+                    );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
@@ -166,7 +167,8 @@ public class assets {
                         +",\"date\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",\"expire_date\" TIMESTAMP"
                         +",\"expired\" VARCHAR(2)"
-                        +")");
+                        +")"
+                    );
 
                     sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
@@ -212,6 +214,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
+                    sql.add("SET sql_mode='';");
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`user_id` INT"
@@ -220,11 +223,11 @@ public class assets {
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",`expire_date` TIMESTAMP DEFAULT 0"
                         +",`expired` VARCHAR(2)"
-                        );
+                        +")"
+                    );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
-
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"user_id\" INT "
@@ -233,7 +236,8 @@ public class assets {
                         +",\"date\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",\"expire_date\" TIMESTAMP"
                         +",\"expired\" VARCHAR(2)"
-                        +")");
+                        +")"
+                    );
 
                     sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
@@ -280,6 +284,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
+                    sql.add("SET sql_mode='';");
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`user_id` INT"
@@ -288,11 +293,11 @@ public class assets {
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",`expire_date` TIMESTAMP DEFAULT 0"
                         +",`expired` VARCHAR(2)"
-                        );
+                        +")"
+                    );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
-
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"user_id\" INT "
@@ -301,7 +306,8 @@ public class assets {
                         +",\"date\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",\"expire_date\" TIMESTAMP"
                         +",\"expired\" VARCHAR(2)"
-                        +")");
+                        +")"
+                    );
 
                     sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
@@ -347,6 +353,7 @@ public class assets {
                 ArrayList<String> sql = new ArrayList<String>();
                
                 if("mysql".equalsIgnoreCase(login.driver)) {
+                    sql.add("SET sql_mode='';");
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`role_id` INT"
@@ -355,11 +362,11 @@ public class assets {
                         +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",`expire_date` TIMESTAMP DEFAULT 0"
                         +",`expired` VARCHAR(2)"
-                        );
+                        +")"
+                    );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
-
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"role_id\" INT "
@@ -368,7 +375,8 @@ public class assets {
                         +",\"date\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                         +",\"expire_date\" TIMESTAMP"
                         +",\"expired\" VARCHAR(2)"
-                        +")");
+                        +")"
+                    );
 
                     sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+".\"id\"");
 
