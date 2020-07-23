@@ -217,6 +217,7 @@ public class login {
                
                 if("mysql".equalsIgnoreCase(driver)) {
                     // CREATE users ADD id, user VARCHAR(256), email VARCHAR(256), password VARCHAR(256), status VARCHAR(16), domain_id VARCHAR(256), application_id VARCHAR(64), token VARCHAR(32), expire TIMESTAMP, naccess INT, nfails INT)
+                    sql.add("SET sql_mode='';");
                     sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
                         +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                         +",`user` VARCHAR(256) NOT NULL"
@@ -233,11 +234,11 @@ public class login {
                         +",`nfails` INT DEFAULT 0"
                         +",`emailValidated` INT DEFAULT 0"
                         +",`emailToken` VARCHAR(32) NOT NULL"
-                        );
+                        +")"
+                    );
                 } else if("postgres".equalsIgnoreCase(driver)) {
                     String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+table+"_id_seq";
                     sql.add("CREATE SEQUENCE "+seqName+"");
-
                     sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                         +",\"user\" VARCHAR(256) NOT NULL"
@@ -254,7 +255,8 @@ public class login {
                         +",\"nfails\" INT DEFAULT 0"
                         +",\"emailValidated\" INT DEFAULT 0"
                         +",\"emailToken\" VARCHAR(32) NOT NULL"
-                        +")");
+                        +")"
+                    );
 
                     sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
 
@@ -900,6 +902,7 @@ public class login {
                         ArrayList<String> sql = new ArrayList<String>();
                         if("mysql".equalsIgnoreCase(driver)) {
                             // CREATE users ADD id, user VARCHAR(256), email VARCHAR(256), password VARCHAR(256), status VARCHAR(16), domain_id VARCHAR(256), application_id VARCHAR(64), token VARCHAR(32), expire TIMESTAMP, naccess INT, nfails INT)
+                            sql.add("SET sql_mode='';");
                             sql.add("CREATE TABLE IF NOT EXISTS "+tableLog+" ("
                                 +"`id` INT AUTO_INCREMENT PRIMARY KEY"
                                 +",`user_id` INT DEFAULT 0"
@@ -907,7 +910,8 @@ public class login {
                                 +",`ip` VARCHAR(16) NOT NULL"
                                 +",`type` VARCHAR(6) NOT NULL"
                                 +",`datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                                );
+                                +")"
+                            );
                         } else if("postgres".equalsIgnoreCase(driver)) {
                             String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+tableLog+"_id_seq";
                             sql.add("CREATE SEQUENCE "+seqName+"");
@@ -919,7 +923,8 @@ public class login {
                                 +",\"ip\" VARCHAR(16) NOT NULL"
                                 +",\"type\" VARCHAR(6) NOT NULL"
                                 +",\"datetime\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                                +")");
+                                +")"
+                            );
 
                             sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+schemaTable+".\"id\"");
 
