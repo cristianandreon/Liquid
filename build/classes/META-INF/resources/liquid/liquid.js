@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Liquid ver.1.17   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  22-7-2020
+//  First update 8.1.2020 - Last update  23-7-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -51,6 +51,8 @@ var glLiquidDBEnable = true;
 var glWorkReaderLooper = null;
 var glFlashingTimer = null;
 var glFlashingTimerMsec = 100;
+var glLookupScrollTop = 0;
+var glLookupScrollLeft = 0;
 
 //
 // start point of servlet ... the bridge to server
@@ -135,7 +137,7 @@ class LiquidCtrl {
             this.columnsApi = Liquid.columnsApi;
             this.gridsApiParams = null;
             this.gridsApi = Liquid.gridsApi;
-        } else { // bested control : given apis..
+        } else { // nested control : given apis..
             this.columnsApiParams = sourceData.columnsApiParams;
             this.columnsApi = sourceData.columnsApi;
             this.gridsApiParams = sourceData.gridsApiParams;
@@ -883,7 +885,7 @@ class LiquidCtrl {
                         this.lookupHeight = (typeof this.tableJson.height !== 'undefined' ? this.tableJson.height : (this.outDivObj.clientHeight > Liquid.minLookupHeight ? this.outDivObj.clientHeight : this.outDivObj.clientWidth * 2/3));
                         this.lookupContainerObj2 = document.createElement("div");
                         this.lookupContainerObj2.id = controlId + ".lookup.combo";
-                        this.lookupContainerObj2.style.width = "100%";
+                        // this.lookupContainerObj2.style.width = "100%";
                         this.lookupContainerObj2.style.height = (this.tableJson.keepOpen === true ? "calc(100% - 30px)" : "0px");
                         this.lookupContainerObj2.style.display = "inline-block";
                         this.lookupContainerObj2.style.position = (this.tableJson.keepOpen === true ? "" : "");
@@ -4069,6 +4071,21 @@ var Liquid = {
             }
         }
     },
+    onWindowScroll:function(e) {
+        if(glLookupScrollLeft != document.body.scrollLeft || glLookupScrollTop != document.body.scrollTop) {
+            var lookups = document.getElementsByClassName("liquidLookupOpen");
+            if(lookups) {
+                var dX = glLookupScrollLeft - document.body.scrollLeft;
+                var dY = glLookupScrollTop - document.body.scrollTop;
+                for(var i=0; i<lookups.length; i++) {
+                    lookups[i].style.top = (lookups[i].offsetTop + dY) + "px";
+                    lookups[i].style.left = (lookups[i].offsetLeft + dX) + "px";
+                }
+            }
+            glLookupScrollLeft = document.body.scrollLeft;
+            glLookupScrollTop = document.body.scrollTop;
+        }
+    },
     onFilterChange:function(e, obj) {
         if(e) {
             if(obj) {
@@ -4374,6 +4391,29 @@ var Liquid = {
                     liquid.needResize = false;
                 }
             }
+            Liquid.onBringLookup(obj, true);
+        }
+    },
+    onBringLookup:function(obj, bBrigUp) {
+        if(obj) {
+            if(obj instanceof HTMLElement) {
+                var nameItems = obj.id.split(".");
+                nameItems[nameItems.length-1] = "combo";
+                var comboId = nameItems.join(".");
+                var comboObj = document.getElementById(comboId);
+                if(comboObj) {
+                    if(bBrigUp) {
+                        var rect = obj.getBoundingClientRect();
+                        comboObj.style.top = rect.y + rect.height;
+                        comboObj.style.left = rect.x;
+                        comboObj.classList.add('liquidLookupOpen');
+                    } else {
+                        comboObj.classList.remove('liquidLookupOpen');
+                        comboObj.style.top = "";
+                        comboObj.style.left = "";
+                    }
+                }
+            }
         }
     },
     onCloseLookup:function(obj, event) {
@@ -4397,6 +4437,7 @@ var Liquid = {
                         document.getElementById(parentId).style.overflow = obj.getAttribute('containerOverflow');
                     }
                 }
+                Liquid.onBringLookup(obj, true);
             }
         }
     },
@@ -5343,27 +5384,23 @@ var Liquid = {
                 foreignTable.options[propName].push( propJson );
                 Liquid.setAskForSave(liquid, true);
 
-            } else if(isDef(liquid.sourceData)) {
+            } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
                 //
                 // update from the foreign table the source
                 //
-                if(isDef(liquid.sourceData.rootControlId)) {
-                    if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                        var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                        if(sourceLiquid) {
-                            var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                            if(!isDef(foreignTable.options)) foreignTable.options = { };
-                            if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
-                            foreignTable.options[propName].push( propJson );
-                            Liquid.setAskForSave(sourceLiquid, true);
-                        } else {
-                            console.error("ERROR : source "+propName+" add failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
-                        }
+                if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
+                    var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
+                    if(sourceLiquid) {
+                        var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                        if(!isDef(foreignTable.options)) foreignTable.options = { };
+                        if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
+                        foreignTable.options[propName].push( propJson );
+                        Liquid.setAskForSave(sourceLiquid, true);
                     } else {
-                        console.error("ERROR : source "+propName+" add failed .. source foreign table not indexed");
+                        console.error("ERROR : source "+propName+" add failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
                     }
                 } else {
-                    console.error("ERROR : source "+propName+" add failed .. rootControlId not defined");
+                    console.error("ERROR : source "+propName+" add failed .. source foreign table not indexed");
                 }
                 // for reflecting the modify by rebuild
                 liquid.tableJsonSource[propName].push( propJson );
@@ -5392,27 +5429,23 @@ var Liquid = {
                 Liquid.overlayObjectContent(foreignTable.options[propName][propIndex], propJson);
                 Liquid.setAskForSave(liquid, true);
 
-            } else if(isDef(liquid.sourceData)) {
+            } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
                 //
                 // update from the foreign table the source
                 //
-                if(isDef(liquid.sourceData.rootControlId)) {
-                    if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                        var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                        if(sourceLiquid) {
-                            var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                            if(!isDef(foreignTable.options)) foreignTable.options = { };
-                            if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
-                            Liquid.overlayObjectContent(foreignTable.options[propName][propIndex], propJson);
-                            Liquid.setAskForSave(sourceLiquid, true);
-                        } else {
-                            console.error("ERROR : source "+propName+" update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
-                        }
+                if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
+                    var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
+                    if(sourceLiquid) {
+                        var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                        if(!isDef(foreignTable.options)) foreignTable.options = { };
+                        if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
+                        Liquid.overlayObjectContent(foreignTable.options[propName][propIndex], propJson);
+                        Liquid.setAskForSave(sourceLiquid, true);
                     } else {
-                        console.error("ERROR : source "+propName+" update failed .. source foreign table not indexed");
+                        console.error("ERROR : source "+propName+" update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
                     }
                 } else {
-                    console.error("ERROR : source "+propName+" update failed .. rootControlId not defined");
+                    console.error("ERROR : source "+propName+" update failed .. source foreign table not indexed");
                 }
                 // for reflecting the modify by rebuild
                 Liquid.overlayObjectContent(liquid.tableJsonSource[propName][propIndex], propJson);
@@ -5442,31 +5475,27 @@ var Liquid = {
                         return [ sourceForeignTable.controlId, sourceForeignTable.options[propName][propIndex] ];
                     }
                 }
-            } else if(isDef(liquid.sourceData)) {
+            } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
                 // update from the foreign table the source
-                if(isDef(liquid.sourceData.rootControlId)) {
-                    if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                        var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                        if(sourceLiquid) {
-                            var sourceForeignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                            if(sourceForeignTable) {
-                                if(!isDef(sourceForeignTable.options)) {
-                                    alert("WARNING: unsupported condition .. please check me");
-                                    return null;
-                                } else {
-                                    return [ sourceLiquid.controlId, sourceForeignTable.options[propName][propIndex] ];
-                                }
+                if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
+                    var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
+                    if(sourceLiquid) {
+                        var sourceForeignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                        if(sourceForeignTable) {
+                            if(!isDef(sourceForeignTable.options)) {
+                                alert("WARNING: unsupported condition .. please check me");
+                                return null;
                             } else {
-                                console.error("ERROR : source "+propName+" get failed .. source foreign table on control '"+liquid.sourceData.rootControlId+"' not found");
+                                return [ sourceLiquid.controlId, sourceForeignTable.options[propName][propIndex] ];
                             }
                         } else {
-                            console.error("ERROR : source "+propName+" get failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
+                            console.error("ERROR : source "+propName+" get failed .. source foreign table on control '"+liquid.sourceData.rootControlId+"' not found");
                         }
                     } else {
-                        console.error("ERROR : source "+propName+" get failed .. source foreign table not indexed");
+                        console.error("ERROR : source "+propName+" get failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
                     }
                 } else {
-                    console.error("ERROR : source "+propName+" get failed .. rootControlId not defined");
+                    console.error("ERROR : source "+propName+" get failed .. source foreign table not indexed");
                 }
                 
             } else {
@@ -5579,7 +5608,7 @@ var Liquid = {
                 liquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
             }            
             Liquid.loadData(selectorLiquid, null, "newFilter");
-            selectorLiquid.onPostClosed = "Liquid.onNewFiltersProcess('"+obj_id+"','"+ftIndex1B+"')";
+            selectorLiquid.onPostClosed = "Liquid.onNewFiltersProcess('"+obj_id+"',"+ftIndex1B+")";
             if(typeof event === 'object') event.stopPropagation();
         }
     },    
@@ -5672,37 +5701,33 @@ var Liquid = {
             if(!isDef(foreignTable.options)) foreignTable.options = { };
             if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
             
-        } else if(isDef(liquid.sourceData)) {
+        } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
             //
             // update from the foreign table the source
             //
-            if(isDef(liquid.sourceData.rootControlId)) {
-                if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                    var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                    if(sourceLiquid) {
-                        var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                        if(!isDef(foreignTable.options)) foreignTable.options = { };
-                        if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
+            if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
+                var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
+                if(sourceLiquid) {
+                    var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                    if(!isDef(foreignTable.options)) foreignTable.options = { };
+                    if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
 
-                        if(curFilter > liquid.tableJsonSource.filters.length || curFilter < 0) curFilter = liquid.tableJsonSource.filters.length;
-                        if(!isDef(liquid.tableJsonSource.filters[curFilter].columns)) liquid.tableJsonSource.filters[curFilter].columns = [];
-                        for(var ic=0; ic<filtersColumns.length; ic++) {
-                            var filterColumn = filtersColumns[ic];
-                            if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
-                            liquid.tableJsonSource.filters[curFilter].columns.push( filterColumn );
-                        }
-                        // update all columns
-                        foreignTable.options[propName][curFilter].columns = liquid.tableJsonSource.filters[curFilter].columns;
-                        
-                        Liquid.setAskForSave(sourceLiquid, true);
-                    } else {
-                        console.error("ERROR : source "+propName+" update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
+                    if(curFilter > liquid.tableJsonSource.filters.length || curFilter < 0) curFilter = liquid.tableJsonSource.filters.length;
+                    if(!isDef(liquid.tableJsonSource.filters[curFilter].columns)) liquid.tableJsonSource.filters[curFilter].columns = [];
+                    for(var ic=0; ic<filtersColumns.length; ic++) {
+                        var filterColumn = filtersColumns[ic];
+                        if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
+                        liquid.tableJsonSource.filters[curFilter].columns.push( filterColumn );
                     }
+                    // update all columns
+                    foreignTable.options[propName][curFilter].columns = liquid.tableJsonSource.filters[curFilter].columns;
+
+                    Liquid.setAskForSave(sourceLiquid, true);
                 } else {
-                    console.error("ERROR : source "+propName+" update failed .. source foreign table not indexed");
+                    console.error("ERROR : source "+propName+" update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
                 }
             } else {
-                console.error("ERROR : source "+propName+" update failed .. rootControlId not defined");
+                console.error("ERROR : source "+propName+" update failed .. source foreign table not indexed");
             }
         } else {
             //
@@ -6109,14 +6134,12 @@ var Liquid = {
             if(ftIndex1B) { // work on liquid.foreignTables[].options
                 tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
                 foreignTable = liquid.tableJsonSource.foreignTables[ftIndex1B-1];
-            } else if(isDef(liquid.sourceData)) { 
+            } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
                 // update from the foreign table the source
-                if(isDef(liquid.sourceData.rootControlId)) {
-                    if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                        var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                        if(sourceLiquid) {
-                            foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                        }
+                if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
+                    var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
+                    if(sourceLiquid) {
+                        foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
                     }
                 }
             }
@@ -6182,14 +6205,12 @@ var Liquid = {
                                         if(ftIndex1B) { 
                                             // update from source the foreignTable
                                             foreignTable = liquid.tableJsonSource.foreignTables[ftIndex1B-1];
-                                        } else if(isDef(liquid.sourceData)) { 
+                                        } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) { 
                                             // update from the foreign table the source
-                                            if(isDef(liquid.sourceData.rootControlId)) {
-                                                if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                                                    var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                                                    if(sourceLiquid) {
-                                                        foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                                                    }
+                                            if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
+                                                var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
+                                                if(sourceLiquid) {
+                                                    foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
                                                 }
                                             }
                                         }
@@ -12494,6 +12515,10 @@ var Liquid = {
     },
     startup:function(e) {
         console.log("Wellcome in Liquid version:" + Liquid.version + " - Copyright 2020 Cristian Andreon - https://cristianandreon.eu/Liquid - info@cristianandreon.eu");
+        
+        // scroll listner
+        if(document.body.addEventListener) { document.body.addEventListener('scroll', Liquid.onWindowScroll); } else { document.body.attachEvent('scroll', Liquid.onWindowScroll); }
+
         for(var i=0; i<glLiquidStartupTables.length; i++) {
             new LiquidCtrl(glLiquidStartupTables[i].controlId, glLiquidStartupTables[i].controlId, glLiquidStartupTables[i].json);
         }
@@ -12599,6 +12624,11 @@ var Liquid = {
                 console.error("ERROR: "+err);
                 alert(err);
             } else {
+                if(typeof jsonString === 'object') { // wrapping to content
+                    if(isDef(jsonString.json)) {
+                        jsonString = jsonString.json;
+                    }
+                }
                 retVal = liquid = new LiquidCtrl(refControlId, controlId, jsonString
                                         , (isDef(options) ? { options:options } : null)
                                         , "winX", parentId);
@@ -12828,6 +12858,18 @@ var Liquid = {
                                 }
                             }
                         }
+                    }
+                    if(!lookupJson) {
+                        // create default control on table
+                        var columns = isDef(options) ? options.columns : [];
+                        if(isDef(sourceCol)) {
+                            if(isDef(sourceCol.foreignColumn)) {
+                                if(columns.indexOf(sourceCol.foreignColumn) < 0) {
+                                    // columns.push( { name: sourceCol.foreignColumn } );
+                                }
+                            }
+                        }
+                        lookupJson = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:sourceCol.foreignTable, columns:columns, autoFitColumns:true };
                     }
                     if(lookupJson) {
                         try {
@@ -14013,9 +14055,9 @@ var Liquid = {
                     ,rootControlId:liquid.rootControlId
                     ,sourceForeignTablesIndexes1B:isDef(liquid.sourceData) ? liquid.sourceData.sourceForeignTablesIndexes1B : null
                     ,columnsApiParams:isDef(liquid.sourceData) ? liquid.sourceData.columnsApiParams : null
-                    ,columnsApi:isDef(liquid.sourceData) ? liquid.sourceData.columnsApi : null
+                    ,columnsApi:isDef(liquid.sourceData) ? liquid.sourceData.columnsApi : Liquid.columnsApi
                     ,gridsApiParams:isDef(liquid.sourceData) ? liquid.sourceData.gridsApiParams : null
-                    ,gridsApi:isDef(liquid.sourceData) ? liquid.sourceData.gridsApi : null
+                    ,gridsApi:isDef(liquid.sourceData) ? liquid.sourceData.gridsApi : Liquid.gridsApi
                     ,tempCurrentTab:isDef(liquid.sourceData) ? liquid.sourceData.tempCurrentTab : null
                     ,isRebuilding:true
                     ,askForSave:liquid.askForSave 
@@ -15932,6 +15974,7 @@ function isDef(__var) {
 if(window.addEventListener) { window.addEventListener('click', Liquid.onClick); } else { window.attachEvent('onclick', Liquid.onClick); }
 if(window.addEventListener) { window.addEventListener('load', Liquid.startup); } else { window.attachEvent('onload', Liquid.Startup); }
 if(window.addEventListener) { window.addEventListener('keydown', Liquid.onWindowKeyDown); } else { window.attachEvent('onkeydown', Liquid.onWindowKeyDown); }
+if(window.addEventListener) { window.addEventListener('scroll', Liquid.onWindowScroll); } else { window.attachEvent('scroll', Liquid.onWindowScroll); }
 if(document.addEventListener) { document.addEventListener('contextmenu', function(e) { if(Liquid.onContextMenu(e)) e.preventDefault(); }, false ); } else { document.attachEvent('contextmenu', function() { if(Liquid.onContextMenu(window.event)) window.event.returnValue = false; }); }
 
 

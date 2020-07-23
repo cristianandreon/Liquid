@@ -22,11 +22,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspWriter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import static com.liquid.liquidize.liquidizeJSONContent;
+import java.io.IOException;
 import java.util.Iterator;
 
 
@@ -160,13 +162,30 @@ public class workspace {
     }
 
     
+    static public String enableProjectMode() {
+        return enableProjectMode( null ) ;
+        
+    }
     
     
     // Abilita la modalità progettazione
-    static public String enableProjectMode() {
-        genesisToken = login.getSaltString(32);
-        // reset metadata cache
-        metadata.invalidateMetadata();
+    static public String enableProjectMode( JspWriter out ) {
+        try {
+            genesisToken = login.getSaltString(32);
+            // reset metadata cache
+            metadata.invalidateMetadata();
+            
+            if(out != null) {
+                out.print("\n<!-- LIQUID : Enabling Project Mode -->\n");
+                out.print("<script>");
+                out.print("glLiquidGenesisToken = '" + genesisToken +"';");
+                out.print("</script>\n");
+            }
+            
+            return genesisToken;
+        } catch (IOException ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+        }
         return genesisToken;
     }
 
@@ -317,12 +336,13 @@ public class workspace {
             String returnType = "js";
             ServletContext servletContext = request.getSession().getServletContext();
             String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
-            File relativePath = new File(absoluteFilePathRoot+sFolder);
+            File relativePath = new File(absoluteFilePathRoot+(!sFolder.endsWith(File.separator) ? File.separator:"")+sFolder);
             String absolutePath = relativePath.getCanonicalPath();                
             final File folder = new File(absolutePath);
             List<String> controlIds = new ArrayList<>();
             List<String> result = new ArrayList<>();
             search(".*\\.json", folder, result);
+            out_string += "\n<!-- LIQUID : loading "+result.size()+" control(s) in the folder : "+sFolder+" -->\n";
             for(String s : result) {
                 Path path = Paths.get(s);
                 Path fileName = path.getFileName();         
@@ -335,7 +355,7 @@ public class workspace {
                 } else {
                     String controlScript = get_table_control(request, controlId, sTableJsonFile, replaceApex, owner, returnType);
                     controlIds.add(controlId);                        
-                    out_string += "<!-- ControlId: "+controlId+" File:"+s+" -->\n";
+                    out_string += "<!-- ControlId: "+controlId+" - [ File:\""+s+"\" ]-->\n";
                     out_string += controlScript;
                     out_string += "\n\n";
                 }
@@ -1911,6 +1931,22 @@ public class workspace {
                     return "{\"result\":-1,\"error\":\""+utility.base64Encode("Error: invalid token")+"\"}";
                 }                
                 if(liquidJsonsProjectFolder != null && !liquidJsonsProjectFolder.isEmpty()) {
+                    if(!utility.folderExist(liquidJsonsProjectFolder)) {
+                        File file = new File(liquidJsonsProjectFolder);
+                        if (file.isAbsolute()) {
+                        } else {
+                            ServletContext servletContext = request.getSession().getServletContext();
+                            String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
+                            if(liquidJsonsProjectFolder.startsWith("/")) {
+                                absoluteFilePathRoot += liquidJsonsProjectFolder;
+                            } else {
+                                absoluteFilePathRoot += "/" + liquidJsonsProjectFolder;
+                            }
+                            liquidJsonsProjectFolder = absoluteFilePathRoot;
+                        }
+                        new File(liquidJsonsProjectFolder).mkdirs();
+                    }
+                    
                     if(utility.folderExist(liquidJsonsProjectFolder)) {
                         request.getSession().setAttribute("GLLiquidJsonsProjectFolder", liquidJsonsProjectFolder);
                         return "{\"result\":1}";
@@ -1964,6 +2000,10 @@ public class workspace {
                             String fileName = json.has("sourceFileName") ? utility.base64Decode(json.getString("sourceFileName")) : null;
                             String fullFileName = json.has("sourceFullFileName") ? utility.base64Decode(json.getString("sourceFullFileName")) : null;
                             String liquidJsonsProjectFolder = (String)request.getSession().getAttribute("GLLiquidJsonsProjectFolder");
+                            
+                            if(fileName == null || fileName.isEmpty()) {
+                                fileName = controlId + ".json";
+                            }
                             if(fullFileName != null && !fullFileName.isEmpty()) {
                                 // salvataggio file nella cartella in produzione
                                 try {
@@ -2002,7 +2042,7 @@ public class workspace {
                                         return "{\"result\":1,\"message\":\""+utility.base64Encode("file "+fullFileName+" saved")+"\"}";
                                     }
                                 } else {
-                                    return "{\"result\":0,\"message\":\""+utility.base64Encode("liquidJsonsProjectFolder is empty... you should set it (and check exists) in server site")+"\"}";
+                                    return "{\"result\":0,\"message\":\""+utility.base64Encode("liquidJsonsProjectFolder is empty... you should set it by workspace.set_project_folder (and check exists)...")+"\"}";
                                 }
                             } else {
                                 return "{\"result\":0,\"message\":\""+utility.base64Encode("file name is empty")+"\"}";
