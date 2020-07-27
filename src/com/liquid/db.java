@@ -8,7 +8,6 @@ import com.liquid.metadata.ForeignKey;
 import java.beans.IntrospectionException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -267,6 +266,9 @@ public class db {
                 isPostgres = true;
             }
             if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
+                isMySQL = true;
+            }
+            if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mariadb.")) || tbl_wrk.dbProductName.toLowerCase().contains("mariadb")) {
                 isMySQL = true;
             }
             if((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("oracle.")) || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("oracle"))) {
@@ -2695,6 +2697,9 @@ public class db {
             if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
                 isMySQL = true;
             }
+            if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mariadb.")) || tbl_wrk.dbProductName.toLowerCase().contains("mariadb")) {
+                isMySQL = true;
+            }
             if((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("oracle.")) || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("oracle"))) {
                 isOracle = true;
             }
@@ -3989,6 +3994,9 @@ public class db {
             if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
                 isMySQL = true;
             }
+            if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mariadb.")) || tbl_wrk.dbProductName.toLowerCase().contains("mariadb")) {
+                isMySQL = true;
+            }
             if((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("oracle.")) || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("oracle"))) {
                 isOracle = true;
             }
@@ -4088,6 +4096,9 @@ public class db {
                 return "postgres";
             }
             if( (driverClass != null && driverClass.toLowerCase().contains("mysql.")) || dbProductName.toLowerCase().contains("mysql")) {
+                return "mysql";
+            }
+            if( (driverClass != null && driverClass.toLowerCase().contains("mariadb.")) || dbProductName.toLowerCase().contains("mariadb")) {
                 return "mysql";
             }
             if((driverClass != null && driverClass.toLowerCase().contains("oracle.")) || (dbProductName != null && dbProductName.toLowerCase().contains("oracle"))) {
@@ -4284,6 +4295,8 @@ public class db {
                     conn.setCatalog(database);
 
                 if("mysql".equalsIgnoreCase(driver)) {
+                    sql = "USE " + tableIdString + database + tableIdString + "";
+                } else if("mariadb".equalsIgnoreCase(driver)) {
                     sql = "USE " + tableIdString + database + tableIdString + "";
                 } else if("postgres".equalsIgnoreCase(driver)) {
                     sql = "SET search_path TO \""+database+"\",public";

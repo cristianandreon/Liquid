@@ -68,7 +68,8 @@ public class workspace {
             try { table = tbl_wrk.tableJson.getString("table"); } catch (Exception e) {  }
             
             String itemIdString = "\"", tableIdString = "\"";
-            if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
+            if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || tbl_wrk.dbProductName.toLowerCase().contains("mysql")
+                    || (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mariadb.")) || tbl_wrk.dbProductName.toLowerCase().contains("mariadb")) {
                 itemIdString = "`";
                 tableIdString = "";
             }
@@ -482,6 +483,7 @@ public class workspace {
 
             String driver = db.getDriver(conn);
             if("mysql".equalsIgnoreCase(driver)) {
+            } else if("mariadb".equalsIgnoreCase(driver)) {
             } else if("postgres".equalsIgnoreCase(driver)) {
                 defaultSchema = conn.getMetaData().getUserName();
             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -499,6 +501,9 @@ public class workspace {
                 System.out.println("LIQUID WARNING : database defined by driver :"+conn.getCatalog()+" requesting database:"+database);                
                 String itemIdString = "\"", tableIdString = "\"";
                 if("mysql".equalsIgnoreCase(driver)) {
+                    itemIdString = "`";
+                    tableIdString = "";
+                } else if("mariadb".equalsIgnoreCase(driver)) {
                     itemIdString = "`";
                     tableIdString = "";
                 }

@@ -27,7 +27,7 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 
 
-// TODO : supporto per oracle e sqlserver
+// TODO : supporto per oracle e sqlserver (creazione tabelle se inesistenti)
 
 public class login {
 

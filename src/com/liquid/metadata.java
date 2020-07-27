@@ -1295,6 +1295,8 @@ public class metadata {
             String driver = db.getDriver(conn);
             if("mysql".equalsIgnoreCase(driver)) {
                 isMySQL = true;
+            } else if("mariadb".equalsIgnoreCase(driver)) {
+                isMySQL = true;
             } else if("postgres".equalsIgnoreCase(driver)) {
                 isPostgres = true;
             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -1460,6 +1462,11 @@ public class metadata {
                 isMySQL = true;
                 if(driverClass == null) driverClass = Class.forName("com.mysql.jdbc.Driver");
                 conn = DriverManager.getConnection("jdbc:mysql://"+host+":3306/", user, password);
+
+            } else if("mariadb".equalsIgnoreCase(driver)) {
+                isMySQL = true;
+                if(driverClass == null) driverClass = Class.forName("org.mariadb.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mariadb://"+host+":3306/", user, password);
             
             } else if("sqlserver".equalsIgnoreCase(driver)) {
                 isSqlServer = true;
@@ -1502,6 +1509,8 @@ public class metadata {
 			    	String driver = db.getDriver(conn); 
 			        if("mysql".equalsIgnoreCase(driver)) {
 			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
+                                } else if("mariadb".equalsIgnoreCase(driver)) {
+			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
 			        } else if("postgres".equalsIgnoreCase(driver)) {
 			            sql = "CREATE DATABASE "+database;
 			        } else if("oracle".equalsIgnoreCase(driver)) {
@@ -1531,6 +1540,8 @@ public class metadata {
 			    try {
 			    	String driver = db.getDriver(conn); 
 			        if("mysql".equalsIgnoreCase(driver)) {
+			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
+                                } else if("mariadb".equalsIgnoreCase(driver)) {
 			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
 			        } else if("postgres".equalsIgnoreCase(driver)) {
 			            sql = "CREATE SCHEMA "+schema;
