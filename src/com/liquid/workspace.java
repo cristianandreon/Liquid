@@ -53,6 +53,9 @@ public class workspace {
     // separator used in controId build from file or database/schema/table
     static String controlIdSeparator = ".";
 
+    static String dateSep = "/";
+    static String timeSep = ":";
+    
     
     
     static void setDatabaseShemaTable(workspace tbl_wrk) {
@@ -1831,7 +1834,7 @@ public class workspace {
                 File f = new File(fileName);
                 fileName = f.getName();
             } else {
-                fullFileName = path + localFileName;
+                fullFileName = path + (path.charAt(path.length()-1) != File.separatorChar ? File.separatorChar : "" ) + localFileName;
             }
             try { br = new BufferedReader(new FileReader(fullFileName));} catch (FileNotFoundException ex) {}
             

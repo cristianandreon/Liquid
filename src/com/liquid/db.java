@@ -203,6 +203,7 @@ public class db {
 
         int targetColumnIndex = 0, aliasIndex = 1, columnMaxLength = 0;
         boolean isCrossTableService = false;
+        boolean needLeftJoinMap = false;
         long lStartTime = 0, lQueryTime = 0, lRetrieveTime = 0;
         
         // New columns definition, for queryX mode
@@ -210,11 +211,14 @@ public class db {
             
         try {
             
-            // Richiesta colonna o tabella.colonna specifia
+            // Richiesta colonna o tabella.colonna specifica
             if(targetColumn != null) {
                 isCrossTableService = true;
             }
             
+            if(isCrossTableService && "distinct".equalsIgnoreCase(targetMode)) {
+            	needLeftJoinMap = true;
+            }            
             
             if(isCrossTableService) {
                 out_string = "";
@@ -261,7 +265,7 @@ public class db {
                 }
             }
 
-            String itemIdString = "\"", tableIdString = "\"";
+            String itemIdString = "\"", tableIdString = "\"", asKeyword = " AS ";
             if( (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("postgres.")) || tbl_wrk.dbProductName.toLowerCase().contains("postgres")) {
                 isPostgres = true;
             }
@@ -288,6 +292,10 @@ public class db {
             } else {
                 itemIdString = "\"";
                 tableIdString = "\"";
+            }
+            
+            if(isOracle) {
+            	asKeyword = " ";
             }
             
             if(tbl_wrk != null && tbl_wrk.tableJson!=null) {
@@ -444,6 +452,8 @@ public class db {
                         if(!targetTable.equalsIgnoreCase(table)) System.err.println("// ERROR: cannot access to table outside its definition:"+database+"."+schema+"."+targetTable+"");
                     }
                     
+
+                    
                     foreignKeys = metadata.getForeignKeyData(database, schema, table, connToUse);
 
                     if(cols != null) {
@@ -468,9 +478,17 @@ public class db {
                                 String [] colParts = colName.split("\\.");
                                 String checkingColumn = (colParts.length > 1 ? colParts[1] : colName);
                                 String checkingTable = (colParts.length > 1 ? colParts[0] : foreignTable);
+                                boolean bAddColumnToList = false;
+
 
                                 if( targetColumn==null || colName.equalsIgnoreCase(targetColumn) || checkingColumn.equalsIgnoreCase(targetColumn) || checkingColumn.equalsIgnoreCase(idColumn) 
-                                    && (checkingTable.equalsIgnoreCase(targetTable) || targetTable == null) ) {
+                                        && (checkingTable.equalsIgnoreCase(targetTable) || targetTable == null) 
+                                        ) {
+                                	bAddColumnToList = true;
+                                }
+
+                                        
+                                if( bAddColumnToList || needLeftJoinMap ) {
 
                                     if(column_list.length()>0)
                                         colMode = "";
@@ -507,16 +525,17 @@ public class db {
                                             }
                                         }
                                     }
-
                                     if(foreignTable != null) {
                                         String leftJoinKey = foreignTable+"_"+foreignColumn+"_"+column;
                                         String leftJoinAlias = ("B"+String.valueOf(foreignIndex+1)); /*foreignTable+"_"+(leftJoinsMap.size()+1)*/
                                         if(!LeftJoinMap.getByKey(leftJoinsMap, leftJoinKey)) {
                                             if(leftJoinList.length()>0)
                                                 leftJoinList+="\n";
-                                            leftJoinList += "LEFT JOIN " + ( tableIdString + schema + tableIdString )+ "." + ( tableIdString + foreignTable +tableIdString ) + " AS " + leftJoinAlias + " ON "+ leftJoinAlias+"."+(tableIdString+foreignColumn+tableIdString) +"="+ table+"."+(tableIdString+column+tableIdString);
+                                            leftJoinList += "LEFT JOIN " + ( tableIdString + schema + tableIdString )+ "." + ( tableIdString + foreignTable +tableIdString ) + asKeyword + leftJoinAlias + " ON "+ leftJoinAlias+"."+(tableIdString+foreignColumn+tableIdString) +"="+ table+"."+(tableIdString+column+tableIdString);
                                             leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable) );
                                         }
+                                        
+                                        if(bAddColumnToList) {
                                         if(column_list.length()>0)
                                             column_list+=",";
                                         if(column_json_list.length()>0)
@@ -525,15 +544,17 @@ public class db {
                                             String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
                                             column_alias = leftJoinAlias+"_"+columnName;
                                             column_json_list += colParts[0]+"_"+columnName;
-                                            column_list += colMode + leftJoinAlias+"."+itemIdString+colParts[1]+itemIdString + " AS " + column_alias;
+	                                            column_list += colMode + leftJoinAlias+"."+itemIdString+colParts[1]+itemIdString + asKeyword + column_alias;
                                         } else {
                                             String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
                                             column_alias = leftJoinAlias+"_"+columnName;
                                             column_json_list += columnName;
-                                            column_list += colMode + leftJoinAlias+"."+itemIdString+col.getString("name")+itemIdString + " AS " + column_alias;
+	                                            column_list += colMode + leftJoinAlias+"."+itemIdString+col.getString("name")+itemIdString + asKeyword + column_alias;
+                                        }
                                         }
 
                                     } else {
+                                    	if(bAddColumnToList) {
                                         if(column_list.length()>0)
                                             column_list+=",";                            
                                         if(column_json_list.length()>0)
@@ -542,13 +563,14 @@ public class db {
                                             String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
                                             column_alias = "A"+"_"+columnName;
                                             column_json_list += colParts[0]+"_"+columnName;
-                                            column_list += colMode + colParts[0]+"."+itemIdString+colParts[1]+itemIdString + " AS " + column_alias;        
+	                                            column_list += colMode + colParts[0]+"."+itemIdString+colParts[1]+itemIdString + asKeyword + column_alias;        
                                         } else {
                                             String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
                                             column_alias = /*table*/ "A_" + columnName;
                                             column_json_list += columnName;
-                                            column_list += colMode + itemIdString + table + itemIdString + "." + itemIdString+col.getString("name")+itemIdString+" AS " + column_alias;
+	                                            column_list += colMode + itemIdString + table + itemIdString + "." + itemIdString+col.getString("name")+itemIdString + asKeyword + column_alias;
                                         }
+                                    	}
 
                                         if(primaryKey.equalsIgnoreCase(col.getString("name"))) {
                                             indexPrimaryKey = ic+1;
@@ -562,12 +584,14 @@ public class db {
                                         targetColumnIndex = ic;
                                     }
 
+                                    if(bAddColumnToList) {
                                     if(column_alias_list.length()>0)
                                         column_alias_list += ",";
                                     column_alias_list += column_alias;
                                 }
                             }
                         }
+                    }
                     }
                 } catch (Exception e) {
                     error += " [ Columns Error:"+e.getLocalizedMessage() + "]";
@@ -646,7 +670,9 @@ public class db {
             }
 
             if(isOracle) { //fuckyou
+            	if(!"distinct".equalsIgnoreCase(targetMode)) { // fail the dintinct purpose
                 column_list += ",ROWNUM as ROWNUMBER";
+            }
             }
                     
             String baseQuery = "" 
@@ -697,218 +723,13 @@ public class db {
                                     }
                                 }
 
-                                for(int i = 0; i < filtersCols.length(); i++) {
-                                    JSONObject filtersCol = filtersCols.getJSONObject(i);
-                                    JSONObject col = null;                            
-                                    int type = 0;
-                                    try {
-                                        String filterTable = null;
-                                        String filterName = null;
-                                        String filterValue = null;
-                                        String filterOp = null;
-                                        String filterLogic = null;
-                                        boolean filterSensitiveCase = false;
-
-                                        try { filterTable = filtersCol.getString("table"); } catch (JSONException e) {}
-                                        try { filterName = filtersCol.getString("name"); } catch (JSONException e) {}
-                                        try { if(!filtersCol.isNull("value")) { filterValue = filtersCol.getString("value"); } } catch (JSONException e) {}
-                                        try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
-                                        try { filterLogic = filtersCol.getString("logic"); } catch (JSONException e) {}
-                                        try { filterSensitiveCase = filtersCol.getBoolean("sensitiveCase"); } catch (JSONException e) {}
-
-                                        if(filterName != null && filterValue != null) {
-                                            String preFix = "'";
-                                            String postFix = "'";                            
-                                            String [] colParts = filterName.split("\\.");
-                                            boolean bFoundCol = false;
-
-                                            // risolve l'ambiguita'
-                                            if(colParts.length==1) {
-                                                if (filterTable == null || filterTable.isEmpty()) {
-                                                } else {
+                                sWhere = process_filters_json(
+                                		tbl_wrk, table, cols, 
+                                		isOracle, isMySQL, isPostgres, isSqlServer, 
+                                		sWhere, filtersCols, filtersDefCols, leftJoinsMap,
+                                		tableIdString, itemIdString
+                                		);
                                                 }
-                                                for(int ic = 0; ic < cols.length(); ic++) {
-                                                    col = cols.getJSONObject(ic);
-                                                    String colName = null;
-                                                    String colTable = null;                                   
-                                                    try { colTable = col.getString("foreignTable"); } catch (Exception e) {}
-                                                    try { colName = col.getString("name"); } catch (Exception e) {}
-                                                    String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
-                                                    try { colAlias = col.getString("alias"); } catch (Exception e) {}
-
-                                                    // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
-                                                    // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
-                                                    filterTable = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : tableIdString + table + tableIdString );
-                                                    if(filterTable == null || filterTable.isEmpty()) filterTable = tableIdString + table + tableIdString;
-                                                    colAlias = (table) + "." + itemIdString+colName+itemIdString;        
-
-                                                    if(filterName.equalsIgnoreCase(colName)) {
-                                                        // filterName = colAlias != null ? colAlias : filterName;
-                                                        bFoundCol = true;
-                                                        break;
-                                                    }
-                                                }
-                                                if(!bFoundCol) {
-                                                    filterName = tbl_wrk.schemaTable+"."+itemIdString+filterName+itemIdString;
-                                                    // error += "[Filters Error: field : "+filterName+" not resolved]";
-                                                    // System.err.println("Filters Error: field : "+filterName+" not resolved");
-                                                }
-                                            } else if(colParts.length>1) {
-                                                filterTable = colParts[0];
-                                                if(filterTable != null) {
-                                                    filterName = colParts[1];
-                                                    if (!filterTable.equalsIgnoreCase(table)) {
-                                                        if(isPostgres || isOracle) {
-                                                            // mette l'alias
-                                                            String colAlias = (filterTable != null ? LeftJoinMap.getAlias(leftJoinsMap, filterTable) : tableIdString + table + tableIdString )+"." +itemIdString+colParts[1]+itemIdString;
-                                                            filterName = colAlias != null ? colAlias : filterName;
-                                                        } else {
-                                                        }
-                                                        filterTable = "";
-                                                    } else {
-                                                        // OK con postgres
-                                                        filterTable = tableIdString + table + tableIdString;
-                                                    }
-                                                }
-                                                for(int ic = 0; ic < cols.length(); ic++) {
-                                                    col = cols.getJSONObject(ic);
-                                                    String colName = null;
-                                                    try { colName = col.getString("name"); } catch (Exception e) {}
-                                                    if(filterName.equalsIgnoreCase(colName)) {
-                                                        bFoundCol = true;
-                                                        break;
-                                                    }
-                                                }
-                                            } else {
-                                                // undetected case
-                                            }
-
-                                            if(col != null) {
-                                                try { type = col.getInt("type"); } catch (Exception e) {}
-                                            } else {
-                                                String err = " Filters Error: column '"+filterName+"' not defined" + "]";
-                                                error += err;
-                                                System.err.println(err);
-                                            }
-
-                                            if(sWhere.length() > 0) {
-                                                if("OR".equalsIgnoreCase(filterLogic))
-                                                    sWhere += " OR ";
-                                                else
-                                                    sWhere += " AND ";
-                                            } else {
-                                                sWhere += "\nWHERE ";
-                                            }
-
-                                            int ich = 0, nch = filterValue.length();
-                                            while(ich < nch && filterValue.charAt(ich) == ' ') ich++;
-                                            int ichs = ich;
-                                            boolean bScan = true;
-                                            if(ich < nch) {
-                                                while(bScan) {
-                                                    if(filterValue.charAt(ich) == '<' || filterValue.charAt(ich) == '>' || filterValue.charAt(ich) == '=' || filterValue.charAt(ich) == '%' || filterValue.charAt(ich) == '!') ich++;
-                                                    else if(filterValue.startsWith("IN")) ich += 2;
-                                                    else if(filterValue.startsWith("LIKE")) ich += 4;
-                                                    else bScan = false;
-                                                }
-                                            }
-                                            if(ich > ichs) {
-                                                filterOp = filterValue.substring(ichs, ich);
-                                                filterValue = filterValue.substring(ich);
-                                            } else {                                        
-                                                int commaIndex = filterValue.indexOf(",");
-                                                if(commaIndex == 0 || commaIndex > 0 && filterValue.charAt(commaIndex-1)!= '\\') {
-                                                    filterOp = "IN";
-                                                }
-                                            }
-
-                                            if(filterValue.indexOf("*") >= 0) {
-                                                if(filterOp == null || filterOp.isEmpty()) {
-                                                    filterOp = " LIKE ";
-                                                    filterValue = filterValue.replaceAll("\\*", "%");
-                                                }
-                                            }
-                                            
-                                            try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
-
-                                            if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                if(filterValue.indexOf(",") >= 0) {
-                                                    filterOp = "IN";
-                                                }
-                                            }
-                                            
-                                            if("IN".equalsIgnoreCase(filterOp)) {
-                                                preFix = "(";	
-                                                postFix = ")";
-                                                if(filterValue == null || filterValue.isEmpty()) {
-                                                    if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                        filterValue = "NULL";
-                                                    } else {
-                                                        filterValue = "''";
-                                                    }
-                                                } else {
-                                                    if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                        // numeric
-                                                    } else {
-                                                        filterValue = "'" + filterValue + "'";
-                                                    }
-                                                }
-                                            }
-                                            
-                                            if(filterOp == null || filterOp.isEmpty()) {
-                                                if(filtersDefCols != null) {
-                                                    if(filtersDefCols.getJSONObject(i).has("op")) {
-                                                        try {
-                                                            filterOp = filtersDefCols.getJSONObject(i).getString("op");
-                                                        } catch (Exception e) { }
-                                                    }
-                                                }
-                                            }
-                                            
-                                            if("LIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
-                                                if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                    // numeric : like unsupported
-                                                    filterOp = "=";
-                                                } else {
-                                                    filterOp = "LIKE";
-                                                    preFix = (filterValue.charAt(0) != '%' ? "'%" : "'");
-                                                    postFix = (filterValue.length()>0 ? (filterValue.charAt(filterValue.length()-1) != '%' ? "%'" : "'") : "'");
-                                                }
-                                            }
-                                            if(">".equalsIgnoreCase(filterOp)) {
-                                                if(col != null) {
-                                                    if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                        // numeric
-                                                    } else {
-                                                        // > 0 applicato alle stringhe -> NOT null
-                                                        filterOp = "NOT";
-                                                        filterValue = "NULL";
-                                                    }
-                                                }                                        
-                                            }
-                                            
-                                            String sensitiveCasePreOp = "";
-                                            String sensitiveCasePostOp = "";
-                                            if(!filterSensitiveCase) {
-                                                if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                                                    // numeric                                                
-                                                } else {
-                                                    filterValue = filterValue.toLowerCase();
-                                                    sensitiveCasePreOp = "lower(";
-                                                    sensitiveCasePostOp = ")";
-                                                }
-                                            }
-
-                                            sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName +itemIdString) : (filterName) ) + sensitiveCasePostOp
-                                                    + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp : "=")
-                                                    + preFix + (filterValue != null ? filterValue : "") + postFix;
-                                        }
-                                    } catch (Exception e) {
-                                        error += " Filters Error:"+e.getLocalizedMessage() + "]";
-                                        System.err.println("// "+e.getLocalizedMessage());
-                                    }
-                                }
-                            }
 
                             try { filtersIds = requestJson.getJSONArray("ids"); } catch (Exception e) {}
                             if(filtersIds != null) {
@@ -936,10 +757,12 @@ public class db {
                 //
                 // Filtri permanenti
                 //
-                // N.B.: I fintri permenaneti sono decisi dal server ma possono essere impostati sessione per sessione
+                // N.B.: I filtri permenaneti sono decisi dal server ma possono essere impostati sessione per sessione
                 //       Ad esempio accesso per dominio
-                if(!isCrossTableService) {
+                if(!isCrossTableService || "distinct".equalsIgnoreCase(targetMode)) {
                     JSONArray preFilters = null;
+                    JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+
                     try { preFilters = (tbl_wrk != null ? tbl_wrk.tableJson.getJSONArray("preFilters") : null); } catch (Exception e) { }
 
                     // Filtri sovrascritti in sessione
@@ -949,83 +772,16 @@ public class db {
                             preFilters = (JSONArray)sPrefilters;
 
                         if(preFilters != null) {
-                            for(int i = 0; i < preFilters.length(); i++) {
-                                JSONObject preFilter = preFilters.getJSONObject(i);
-                                String preFilterTable = null, preFilterValue = null, preFilterOp = null, preFilterLogic = null;
 
-                                try { preFilterLogic = preFilter.getString("logic"); } catch (Exception e) {}                    
-                                try {                        
-                                    if(preFilter.getString("name") != null) {
-                                        if(sWhere.length() > 0) {
-                                            if("OR".equalsIgnoreCase(preFilterLogic))
-                                                sWhere += " OR ";
-                                            else
-                                                sWhere += " AND ";
-                                        } else {
-                                            sWhere += "\nWHERE ";
+                            sWhere = process_filters_json(
+                            		tbl_wrk, table, cols, 
+                            		isOracle, isMySQL, isPostgres, isSqlServer, 
+                            		sWhere, preFilters, null, leftJoinsMap,
+                            		tableIdString, itemIdString
+                            		);                            
                                         }
-
-                                        try { preFilterTable = preFilter.getString("table"); } catch (Exception e) { }
-                                        try { preFilterOp = preFilter.getString("op"); } catch (Exception e) { }
-                                        try { preFilterValue = preFilter.getString("value"); } catch (Exception e) { }
-
-                                        String preFix = "'";
-                                        String postFix = "'";                            
-                                        if(!preFilterValue.isEmpty()) {
-                                            int ich = 0, nch = preFilterValue.length();
-                                            while(ich < nch && preFilterValue.charAt(ich) == ' ') ich++;
-                                            int ichs = ich;
-                                            boolean bScan = true;
-                                            if(ich < nch) {
-                                                while(bScan) {
-                                                    if(preFilterValue.charAt(ich) == '<' || preFilterValue.charAt(ich) == '>' || preFilterValue.charAt(ich) == '=' || preFilterValue.charAt(ich) == '%' || preFilterValue.charAt(ich) == '!') ich++;
-                                                    else if(preFilterValue.startsWith("IN")) ich += 2;
-                                                    else if(preFilterValue.startsWith("LIKE")) ich += 4;
-                                                    else bScan = false;
                                                 }
                                             }
-                                            if(ich > ichs) {
-                                                preFilterOp = preFilterValue.substring(ichs, ich);
-                                                preFilterValue = preFilterValue.substring(ich);
-                                            } else {                                        
-                                                int commaIndex = preFilterValue.indexOf(",");
-                                                if(commaIndex == 0 || commaIndex > 0 && preFilterValue.charAt(commaIndex-1)!= '\\') {
-                                                    preFilterOp = "IN";
-                                                }
-                                            }
-                                        }
-                                        if("IN".equalsIgnoreCase(preFilterOp)) {
-                                            preFix = "(";	
-                                            postFix = ")";	
-                                        }
-                                        if("LIKE".equalsIgnoreCase(preFilterOp) || "%".equalsIgnoreCase(preFilterOp)) {
-                                            preFilterOp = "LIKE";
-                                            preFix = (preFilterValue.charAt(0) != '%' ? "'%" : "'");
-                                            postFix = (preFilterValue.length()>0 ? (preFilterValue.charAt(preFilterValue.length()-1) != '%' ? "'%" : "'") : "'");	
-                                        }
-
-
-                                        /*
-                                        String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
-                                        try { colAlias = col.getString("alias"); } catch (Exception e) {}
-                                        */
-                                        // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
-                                        // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
-
-                                        String colName = tableIdString+(preFilterTable != null && !preFilterTable.isEmpty() ? preFilterTable : table) + tableIdString + "." + itemIdString + preFilter.getString("name") + itemIdString;
-
-                                        sWhere += colName
-                                                + " "+(preFilterOp != null && !preFilterOp.isEmpty() ? preFilterOp : "=") + " "
-                                                + preFix + (preFilterValue != null ? preFilterValue : "") + postFix;
-                                    }
-                                } catch (Exception e) {
-                                    error += " [ PreFilters #"+i+" Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+tbl_wrk.driverClass+"]";
-                                    System.err.println("// PreFilters #"+i+" error:" + e.getLocalizedMessage() + " preFilters:"+preFilters.toString() );
-                                }
-                            }
-                        }
-                    }
-                }
 
                 //
                 // Ordinamenti dalla richiesta
@@ -1073,6 +829,7 @@ public class db {
                 executingQuery = baseQuery + sWhere + sSort;
                 executingQueryForCache = executingQuery;
             }
+
 
             //
             // Utilizzo cache degli ids (delle primary keys)
@@ -1531,6 +1288,253 @@ public class db {
     }
 
     
+    
+    
+    static public String process_filters_json(
+    		workspace tbl_wrk, String table, JSONArray cols, 
+    		boolean isOracle, boolean isMySQL, boolean isPostgres, boolean isSqlServer, 
+    		String sWhere, JSONArray filtersCols, JSONArray filtersDefCols, ArrayList<LeftJoinMap> leftJoinsMap,
+    		String tableIdString, String itemIdString
+    		) throws JSONException {
+    	
+    	String error = "";
+   
+	    for(int i = 0; i < filtersCols.length(); i++) {
+	        JSONObject filtersCol = filtersCols.getJSONObject(i);
+	        JSONObject col = null;                            
+	        int type = 0;
+	        try {
+	            String filterTable = null;
+	            String filterName = null;
+	            String filterValue = null;
+	            String filterOp = null;
+	            String filterLogic = null;
+	            boolean filterSensitiveCase = false;
+	
+	            try { filterTable = filtersCol.getString("table"); } catch (JSONException e) {}
+	            try { filterName = filtersCol.getString("name"); } catch (JSONException e) {}
+	            try { if(!filtersCol.isNull("value")) { filterValue = filtersCol.getString("value"); } } catch (JSONException e) {}
+	            try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
+	            try { filterLogic = filtersCol.getString("logic"); } catch (JSONException e) {}
+	            try { filterSensitiveCase = filtersCol.getBoolean("sensitiveCase"); } catch (JSONException e) {}
+	
+	            if(filterName != null && filterValue != null) {
+	                String preFix = "'";
+	                String postFix = "'";                            
+	                String [] colParts = filterName.split("\\.");
+	                boolean bFoundCol = false;
+	
+	                // risolve l'ambiguita'
+	                if(colParts.length==1) {
+	                    if (filterTable == null || filterTable.isEmpty()) {
+	                    } else {
+	                    }
+	                    for(int ic = 0; ic < cols.length(); ic++) {
+	                        col = cols.getJSONObject(ic);
+	                        String colName = null;
+	                        String colTable = null;                                   
+	                        try { colTable = col.getString("foreignTable"); } catch (Exception e) {}
+	                        try { colName = col.getString("name"); } catch (Exception e) {}
+	                        String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
+	                        try { colAlias = col.getString("alias"); } catch (Exception e) {}
+	
+	                        // An alias can be used in a query select list to give a column a different name. You can use the alias in GROUP BY, ORDER BY, or HAVING clauses to refer to the column.
+	                        // Standard SQL disallows references to column aliases in a WHERE clause. This restriction is imposed because when the WHERE clause is evaluated, the column value may not yet have been determined.
+	                        filterTable = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : tableIdString + table + tableIdString );
+	                        if(filterTable == null || filterTable.isEmpty()) filterTable = tableIdString + table + tableIdString;
+	                        colAlias = (table) + "." + itemIdString+colName+itemIdString;        
+	
+	                        if(filterName.equalsIgnoreCase(colName)) {
+	                            // filterName = colAlias != null ? colAlias : filterName;
+	                            bFoundCol = true;
+	                            break;
+	                        }
+	                    }
+	                    if(!bFoundCol) {
+	                        filterName = tbl_wrk.schemaTable+"."+itemIdString+filterName+itemIdString;
+	                        // error += "[Filters Error: field : "+filterName+" not resolved]";
+	                        // System.err.println("Filters Error: field : "+filterName+" not resolved");
+	                    }
+	                } else if(colParts.length>1) {
+	                    filterTable = colParts[0];
+	                    if(filterTable != null) {
+	                        filterName = colParts[1];
+	                        if (!filterTable.equalsIgnoreCase(table)) {
+	                            if(isPostgres || isOracle) {
+	                                // mette l'alias
+	                                String colAlias = (filterTable != null ? LeftJoinMap.getAlias(leftJoinsMap, filterTable) : tableIdString + table + tableIdString )+"." +itemIdString+colParts[1]+itemIdString;
+	                                filterName = colAlias != null ? colAlias : filterName;
+	                            } else {
+	                            }
+	                            filterTable = "";
+	                        } else {
+	                            // OK con postgres
+	                            filterTable = tableIdString + table + tableIdString;
+	                        }
+	                    }
+	                    for(int ic = 0; ic < cols.length(); ic++) {
+	                        col = cols.getJSONObject(ic);
+	                        String colName = null;
+	                        try { colName = col.getString("name"); } catch (Exception e) {}
+	                        if(filterName.equalsIgnoreCase(colName)) {
+	                            bFoundCol = true;
+	                            break;
+	                        }
+	                    }
+	                } else {
+	                    // undetected case
+	                }
+	
+	                if(col != null) {
+	                    try { type = col.getInt("type"); } catch (Exception e) {}
+	                } else {
+	                    String err = " Filters Error: column '"+filterName+"' not defined" + "]";
+	                    error += err;
+	                    System.err.println(err);
+	                }
+	
+	                if(sWhere.length() > 0) {
+	                    if("OR".equalsIgnoreCase(filterLogic))
+	                        sWhere += " OR ";
+	                    else
+	                        sWhere += " AND ";
+	                } else {
+	                    sWhere += "\nWHERE ";
+	                }
+	
+	                int ich = 0, nch = filterValue.length();
+	                while(ich < nch && filterValue.charAt(ich) == ' ') ich++;
+	                int ichs = ich;
+	                boolean bScan = true;
+	                if(ich < nch) {
+	                    while(bScan) {
+	                        if(filterValue.charAt(ich) == '<' || filterValue.charAt(ich) == '>' || filterValue.charAt(ich) == '=' || filterValue.charAt(ich) == '%' || filterValue.charAt(ich) == '!') ich++;
+	                        else if(filterValue.startsWith("IN")) ich += 2;
+	                        else if(filterValue.startsWith("LIKE")) ich += 4;
+	                        else bScan = false;
+	                    }
+	                }
+	                if(ich > ichs) {
+	                    filterOp = filterValue.substring(ichs, ich);
+	                    filterValue = filterValue.substring(ich);
+	                } else {                                        
+	                    int commaIndex = filterValue.indexOf(",");
+	                    if(commaIndex == 0 || commaIndex > 0 && filterValue.charAt(commaIndex-1)!= '\\') {
+	                        filterOp = "IN";
+	                    }
+	                }
+	
+	                if(filterValue.indexOf("*") >= 0) {
+	                    if(filterOp == null || filterOp.isEmpty()) {
+	                        filterOp = " LIKE ";
+	                        filterValue = filterValue.replaceAll("\\*", "%");
+	                    }
+	                }
+	                
+	                try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
+	
+	                if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+	                    if(filterValue.indexOf(",") >= 0) {
+	                        filterOp = "IN";
+	                    }
+	                }
+	                
+	                if("null".equalsIgnoreCase(filterValue)) {
+	                	if("=".equalsIgnoreCase(filterOp) || "like".equalsIgnoreCase(filterOp) || "fulllike".equalsIgnoreCase(filterOp) || filterOp == null || filterOp.isEmpty()) {
+	                		filterOp = "is";
+	                		filterValue = "NULL";
+	                		preFix = " ";
+	                		postFix = "";
+	                	}
+	                } else if("\"null\"".equals(filterValue)) {
+	                	filterValue = "null";
+	                } else if("\"NULL\"".equals(filterValue)) {
+	                	filterValue = "NULL";
+	                }
+	                
+	                if("IS".equalsIgnoreCase(filterOp)) {
+	                	if("NULL".equalsIgnoreCase(filterValue)) {
+	                		preFix = " ";
+	                		postFix = "";
+	                	}
+	                }
+	                if("IN".equalsIgnoreCase(filterOp)) {
+	                    preFix = "(";	
+	                    postFix = ")";
+	                    if(filterValue == null || filterValue.isEmpty()) {
+	                        if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+	                            filterValue = "NULL";
+	                        } else {
+	                            filterValue = "''";
+	                        }
+	                    } else {
+	                        if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+	                            // numeric
+	                        } else {
+	                            filterValue = "'" + filterValue + "'";
+	                        }
+	                    }
+	                }
+	                
+	                if(filterOp == null || filterOp.isEmpty()) {
+	                    if(filtersDefCols != null) {
+	                        if(filtersDefCols.getJSONObject(i).has("op")) {
+	                            try {
+	                                filterOp = filtersDefCols.getJSONObject(i).getString("op");
+	                            } catch (Exception e) { }
+	                        }
+	                    }
+	                }
+	                
+	                if("LIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
+	                    if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+	                        // numeric : like unsupported
+	                        filterOp = "=";
+	                    } else {
+	                        filterOp = "LIKE";
+	                        preFix = (filterValue.charAt(0) != '%' ? "'%" : "'");
+	                        postFix = (filterValue.length()>0 ? (filterValue.charAt(filterValue.length()-1) != '%' ? "%'" : "'") : "'");
+	                    }
+	                }
+	                if(">".equalsIgnoreCase(filterOp)) {
+	                    if(col != null) {
+	                        if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+	                            // numeric
+	                        } else {
+	                            // > 0 applicato alle stringhe -> NOT null
+	                            filterOp = "NOT";
+	                            filterValue = "NULL";
+	                        }
+	                    }                                        
+	                }
+	                
+	                String sensitiveCasePreOp = "";
+	                String sensitiveCasePostOp = "";
+	                if(!filterSensitiveCase) {
+	                    if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+	                        // numeric                                                
+	                    } else {
+	                        filterValue = filterValue.toLowerCase();
+	                        sensitiveCasePreOp = "lower(";
+	                        sensitiveCasePostOp = ")";
+	                    }
+	                }
+	
+	                sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName +itemIdString) : (filterName) ) + sensitiveCasePostOp
+	                        + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp : "=")
+	                        + preFix + (filterValue != null ? filterValue : "") + postFix;
+	            }
+	        } catch (Exception e) {
+	            error += " Filters Error:"+e.getLocalizedMessage() + "]";
+	            System.err.println("// "+e.getLocalizedMessage());
+	        }
+	    }
+	    
+	    return sWhere;
+	}    
+
+    
+    
     // Legge il resultset
     /**
      * <h3>Read the recordset</h3>
@@ -1567,8 +1571,8 @@ public class db {
         StringBuilder out_codes_string = new StringBuilder("");
         StringBuilder out_values_string = new StringBuilder("");
         String fieldValue = null, error = "";
-        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
-        DateFormat dateTimeFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss.SS");
+        DateFormat dateFormat = new SimpleDateFormat("dd"+workspace.dateSep+"MM"+workspace.dateSep+"yyyy");
+        DateFormat dateTimeFormat = new SimpleDateFormat("dd"+workspace.dateSep+"MM"+workspace.dateSep+"yyyy HH"+workspace.timeSep+"mm"+workspace.timeSep+"ss.SS");
         NumberFormat nf = NumberFormat.getInstance();
         ArrayList<Long> ids = new ArrayList<Long>();
         
@@ -1621,21 +1625,21 @@ public class db {
                                         java.sql.Date dbSqlDate = rsdo.getDate("columnName");                                        
                                         fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
                                     } catch (Exception e) { 
-                                        fieldValue = "00-00-0000";
+                                        fieldValue = "00"+workspace.dateSep+"00"+workspace.dateSep+"0000";
                                     }                                                
                                 } else if(colTypes[ic] == 92) { //time
                                     try {
                                         java.sql.Time dbSqlTime = rsdo.getTime("columnName");
                                         fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
                                     } catch (Exception e) { 
-                                        fieldValue = "00:00:00";
+                                        fieldValue = "00"+workspace.timeSep+"00"+workspace.timeSep+"00";
                                     }                                                
                                 } else if(colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
                                     try {
                                         java.sql.Time dbSqlDateTime = rsdo.getTime("columnName");
                                         fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
                                     } catch (Exception e) { 
-                                        fieldValue = "00-00-0000 00:00:00";
+                                        fieldValue = "00"+workspace.dateSep+"00"+workspace.dateSep+"0000 00"+workspace.timeSep+"00"+workspace.timeSep+"00";
                                     }                                                
                                 } else {
                                     fieldValue = rsdo.getString(columns_alias[0]);
@@ -1671,21 +1675,21 @@ public class db {
                                                 java.sql.Date dbSqlDate = columnAlias != null ? rsdo.getDate(columnAlias) : rsdo.getDate(ic+1);
                                                 fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
                                             } catch (Exception e) { 
-                                                fieldValue = "00-00-0000";
+                                                fieldValue = "00"+workspace.dateSep+"00"+workspace.dateSep+"0000";
                                             }                                                
                                         } else if(colTypes[ic] == 92) { //time
                                             try {
                                                 java.sql.Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic+1);
                                                 fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
                                             } catch (Exception e) { 
-                                                fieldValue = "00:00:00";
+                                                fieldValue = "00"+workspace.timeSep+"00"+workspace.timeSep+"00";
                                             }                                                
                                         } else if(colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
                                             try {
                                                 java.sql.Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic+1);
                                                 fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
                                             } catch (Exception e) { 
-                                                fieldValue = "00-00-0000 00:00:00";
+                                                fieldValue = "00"+workspace.dateSep+"00"+workspace.dateSep+"0000 00"+workspace.timeSep+"00"+workspace.timeSep+"00";
                                             }                                                
                                         } else {
                                             try {
@@ -1694,7 +1698,7 @@ public class db {
                                                 fieldValue = "";
                                             }
                                         }
-                                        // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
+                                        // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" Ã¨ a carico del server, e di conseguenza \->\\
                                         fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
                                         out_string.append( "\""+fieldName+"\":\"" + fieldValue + "\"" );
                                     }
@@ -3839,7 +3843,7 @@ public class db {
         if(colType == 6 || colType == 93) { // datetime
             if(value== null || value.isEmpty()) {
                 if(!nullable)
-                    return "0000-00-00 00:00:00";
+                    return "0000-00-00 00"+workspace.timeSep+"00"+workspace.timeSep+"00";
                 else
                     return null;
             } else {
@@ -4216,8 +4220,8 @@ public class db {
                     String primaryKey = tblWrk.tableJson.getString("primaryKey");
                     Object primaryKeyValue = null;
 
-                    DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
-                    DateFormat dateTimeFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss.SS");
+                    DateFormat dateFormat = new SimpleDateFormat("dd"+workspace.dateSep+"MM"+workspace.dateSep+"yyyy");
+                    DateFormat dateTimeFormat = new SimpleDateFormat("dd"+workspace.dateSep+"MM"+workspace.dateSep+"yyyy HH"+workspace.timeSep+"mm"+workspace.timeSep+"ss.SS");
                     
                     for(int ic=0; ic<cols.length(); ic++) {
                         JSONObject col = cols.getJSONObject(ic);
