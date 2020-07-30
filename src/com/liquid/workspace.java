@@ -895,7 +895,20 @@ public class workspace {
                                                     col.put("name", mdCol.name);
                                                 }
                                             }
-                                            col.put("type", mdCol.datatype);
+                                            
+                                            if(col.has("type")) {
+                                                if("DATE".equalsIgnoreCase(col.getString("type"))) {
+                                                    col.put("type", "6");
+                                                } else if("DATETIME".equalsIgnoreCase(col.getString("type"))) {
+                                                    col.put("type", "91");
+                                                } else if("STRING".equalsIgnoreCase(col.getString("type"))) {
+                                                    col.put("type", "1");
+                                                } else {
+                                                    col.put("type", mdCol.datatype);
+                                                }
+                                            } else {
+                                                col.put("type", mdCol.datatype);
+                                            }
                                             col.put("typeName", mdCol.typeName);
                                             col.put("size", mdCol.size);
 

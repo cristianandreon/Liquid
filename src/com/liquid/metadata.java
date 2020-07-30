@@ -72,6 +72,7 @@ public class metadata {
 
     static String metaDataTableSchema = null;
     public static ArrayList<MetaDataTable> metaDataTable = new ArrayList<MetaDataTable>();
+    public static boolean metaDataCacheReadEnabled = true;
 
     
     public static boolean invalidateMetadata() {
@@ -169,7 +170,7 @@ public class metadata {
                     String autoIncString = rs.getString("IS_AUTOINCREMENT");
                     String columnDefault = null;
 
-                    // N.B.. ORACLE MERDA : lettura del campo default problematica
+                    // N.B.. ORACLE SHIT : lettura del campo default problematica
                     try {
                         columnDefault = bReadDefault ? rs.getString("COLUMN_DEF") : null;
                     } catch (Throwable th) {
@@ -303,7 +304,9 @@ public class metadata {
         return null;
     }
     
-    // Legge in soluzione unica tutte le tabelle dello schema(owner)
+    //
+    // Legge in soluzione unica tutte le tabelle dello schema(owner).tabella
+    //
     public static Object readTableMetadataBySQL(Connection conn, String schema, String table, String columnName, String dialet) {
 
         try {
@@ -319,7 +322,7 @@ public class metadata {
                 }
             }
 
-            if (metaDataTable.size() == 0) {
+            if (metaDataCacheReadEnabled) {
                 long msTrace = System.currentTimeMillis();
 
                 if (metaDataTableSchema == null) {
@@ -379,13 +382,13 @@ public class metadata {
                     // tabelle
                     "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
                     + "("
-                    + "SELECT TABLE_NAME FROM information_schema.tables WHERE OWNER = '" + schema + "'"
+                    + "SELECT TABLE_NAME FROM information_schema.tables WHERE OWNER = '" + schema + "' AND TABLE_NAME='"+table+"'"
                     + ") ORDER BY 2,3"
                     
                     // viste
                     ,"SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
                     + "("
-                    + "SELECT TABLE_NAME FROM information_schema.views WHERE AND OWNER = '" + schema + "'"
+                    + "SELECT TABLE_NAME FROM information_schema.views WHERE AND OWNER = '" + schema + "' AND TABLE_NAME='"+table+"'"
                     + ") ORDER BY 2,3"
 
                     // TODO . sinonimi
@@ -452,7 +455,7 @@ public class metadata {
                     if(recCount > 0) {
                         nTable++;
 
-                        // ORACLE MERDA : lettura DATA_DEFAULT
+                        // ORACLE SHIT : lettura DATA_DEFAULT
                         if("oracle".equalsIgnoreCase(dialet)) {
                             String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '"+table+"'";
                             Statement stmtc = conn.createStatement();

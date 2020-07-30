@@ -4298,7 +4298,7 @@ var Liquid = {
                             var col = Liquid.getColumn(liquid, filtersJson.columns[i].name);
                             if(col) {
                                 var filterComponent = liquid.gridOptions.api.getFilterInstance(col.field);
-                                filterComponent.eValue1.value = filtersJson.columns[i].value.toLowerCase() === "null" ? "" : filtersJson.columns[i].value;
+                                filterComponent.eValue1.value = filtersJson.columns[i].value && filtersJson.columns[i].value.toLowerCase() === "null" ? "" : filtersJson.columns[i].value;
                                 filterComponent.onBtApply();
                             } else {
                                 console.error("column \""+(filtersJson.columns[i].name)+"\" not found in filter:"+(filtersJson.name ? filtersJson.name : filtersJson.label) );
@@ -4616,45 +4616,17 @@ var Liquid = {
             tbl.id = liquid.controlId + ".filters";
             tbl.className = "liquidFiltersTable";
             var tbody = document.createElement("tbody");
-            var tr = document.createElement("tr");
-            var td = document.createElement("td");
+            var filterbBarToBottom = false;
+            var tr = null;
+            var trFilterBar = Liquid.createFiltersBar(liquid);
             
-            td = document.createElement("td");
-            td.className = "liquidFiltersLabel";
-            var div = document.createElement("div");
-            div.innerHTML = Liquid.lang === 'eng' ? "Filter" : "Tipo ricerca";
-            td.appendChild(div);
-            tr.appendChild(td);
-
-            td = document.createElement("td");
-            td.id = liquid.controlId+".FiltersSelector";
-            td.className = "liquidFiltersSelector";
-            var filterList = document.createElement("div");
-            liquid.filtersSelectorId = liquid.controlId+".filtersSelector";
-            var filterHTML = "<select id=\""+liquid.filtersSelectorId+"\" style=\"width: 100%;\" class=\"liquidFiltersSelect\" onchange=\"Liquid.onFilterTab(event)\" >";
-            for(var i=0; i<liquid.filtersJson.length; i++) {
-                var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
-                filterHTML += "<option id=\""+liquid.controlId+".filter."+(i+1)+".selector\" value=\"x\">"+(name)+"</option>";
+            if(isDef(liquid.tableJson.filterBarPosition)) {
+            	if(liquid.tableJson.filterBarPosition.toLowerCase() === "bottom") {
+                    filterbBarToBottom = true;
+            	}
             }
-            filterHTML += "</select>";
-            filterList.innerHTML = filterHTML;
-            td.appendChild(filterList);
-            tr.appendChild(td);
-
-            td = document.createElement("td");
-            td.id = liquid.controlId+".FiltersSpacer";
-            td.className = "liquidFiltersSpacer";
-            tr.appendChild(td);
-            
-            td = document.createElement("td");
-            td.id = liquid.controlId+".FilterButtonTd";
-            td.className = "liquidFilterButtonTd";
-            td.innerHTML = "<center><button id=\"" + liquid.controlId 
-                    + ".filter.execute\" type=\"button\" class=\"liquidFilterButton\" onClick=\"Liquid.onBtFilterExecute(this)\">" 
-                    + (Liquid.lang === 'eng' ? "Serach" : "Cerca")
-                    + "</button></center>";
-            tr.appendChild(td);            
-            tbody.appendChild(tr);
+            if(!filterbBarToBottom)
+            	tbody.appendChild(trFilterBar);
 
             tr = document.createElement("tr");
             td = document.createElement("td");
@@ -4676,10 +4648,57 @@ var Liquid = {
             }
             tr.appendChild(td);
             tbody.appendChild(tr);
+            
+            if(filterbBarToBottom)
+            	tbody.appendChild(trFilterBar);
+            
             tbl.appendChild(tbody);
             liquid.rootObj.appendChild(tbl);
             liquid.filtersObj = tbl;            
         }
+    },
+    createFiltersBar:function(liquid) {
+        var tr = document.createElement("tr");
+        var td = document.createElement("td");
+
+        td = document.createElement("td");
+        td.className = "liquidFiltersLabel";
+        if(liquid.filtersJson.length > 1) {
+            var div = document.createElement("div");
+            div.innerHTML = Liquid.lang === 'eng' ? "Filter" : "Tipo ricerca";
+            td.appendChild(div);
+            tr.appendChild(td);
+
+            td = document.createElement("td");
+            td.id = liquid.controlId+".FiltersSelector";
+            td.className = "liquidFiltersSelector";
+            var filterList = document.createElement("div");
+            liquid.filtersSelectorId = liquid.controlId+".filtersSelector";
+            var filterHTML = "<select id=\""+liquid.filtersSelectorId+"\" style=\"width: 100%;\" class=\"liquidFiltersSelect\" onchange=\"Liquid.onFilterTab(event)\" >";
+            for(var i=0; i<liquid.filtersJson.length; i++) {
+                var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
+                filterHTML += "<option id=\""+liquid.controlId+".filter."+(i+1)+".selector\" value=\"x\">"+(name)+"</option>";
+            }
+            filterHTML += "</select>";
+            filterList.innerHTML = filterHTML;
+            td.appendChild(filterList);
+        }
+        tr.appendChild(td);
+
+        td = document.createElement("td");
+        td.id = liquid.controlId+".FiltersSpacer";
+        td.className = "liquidFiltersSpacer";
+        tr.appendChild(td);
+
+        td = document.createElement("td");
+        td.id = liquid.controlId+".FilterButtonTd";
+        td.className = "liquidFilterButtonTd";
+        td.innerHTML = "<center><button id=\"" + liquid.controlId 
+                + ".filter.execute\" type=\"button\" class=\"liquidFilterButton\" onClick=\"Liquid.onBtFilterExecute(this)\">" 
+                + (Liquid.lang === 'eng' ? "Serach" : "Cerca")
+                + "</button></center>";
+        tr.appendChild(td);
+        return tr;
     },
     createFilterTab:function(liquid, filterGroupIndex, filterJson) {
         if(filterJson) {
