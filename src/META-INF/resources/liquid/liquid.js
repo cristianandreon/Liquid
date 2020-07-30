@@ -4667,8 +4667,10 @@ var Liquid = {
             var div = document.createElement("div");
             div.innerHTML = Liquid.lang === 'eng' ? "Filter" : "Tipo ricerca";
             td.appendChild(div);
-            tr.appendChild(td);
+        }
+        tr.appendChild(td);
 
+        if(liquid.filtersJson.length > 1) {
             td = document.createElement("td");
             td.id = liquid.controlId+".FiltersSelector";
             td.className = "liquidFiltersSelector";
