@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.18   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  30-7-2020
+// Liquid ver.1.19   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 8.1.2020 - Last update  02-8-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -4661,7 +4661,6 @@ var Liquid = {
         var tr = document.createElement("tr");
         var td = document.createElement("td");
 
-        td = document.createElement("td");
         td.className = "liquidFiltersLabel";
         if(liquid.filtersJson.length > 1) {
             var div = document.createElement("div");
@@ -4670,8 +4669,8 @@ var Liquid = {
         }
         tr.appendChild(td);
 
+        td = document.createElement("td");
         if(liquid.filtersJson.length > 1) {
-            td = document.createElement("td");
             td.id = liquid.controlId+".FiltersSelector";
             td.className = "liquidFiltersSelector";
             var filterList = document.createElement("div");
@@ -9188,6 +9187,8 @@ var Liquid = {
             } else {
                 if(!filterObj.lookup || typeof filterObj.lookup === 'undefined') {
                     var filterId = liquid.controlId + ".filters." +filterGroupIndex + "." + filterObj.name + ".filter";
+                    var searchCode = "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" src=\""+Liquid.getImagePath("search.png")+"\" onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterId + "')\" style=\"padding-top:1; cursor:pointer\" width=\"16\" height=\"16\">";
+
                     filterObj.objId = filterId;
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete 
                             + " value=\"\" id=\"" + filterObj.linkedContainerId + "\""
@@ -9201,7 +9202,7 @@ var Liquid = {
                             + "</div>"
                             + "</td>"
                             + "<td class=\"liquidFilterImg\">"
-                            + "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" src=\""+Liquid.getImagePath("search.png")+"\" onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterId + "')\" style=\"padding-top:1; cursor:pointer\" width=\"16\" height=\"16\">"
+                            + (liquid.tableJson.filtersSearch !== false ? searchCode : "")
                             + "</td>"
                             + "</tr></table>";
                 } else {
@@ -14664,6 +14665,15 @@ var Liquid = {
                 +"</td><td>"
                 +"</td></tr>"
 
+
+                +"<tr><td>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Search button on filters:"+"<input id=\"filtersSearch\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.filtersSearch, false)+" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Menu on grid header:"+"<input id=\"gridHeaderMenu\" type=\"checkbox\" v"+Liquid.getCheckedAttr(tagetLiquid.tableJson.gridHeaderMenu, true)+" "+onKeyPressCode+"/></p>"
+                +"</td></tr>"
+
+                
                 +"<tr><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"List Tab title:"+"<input id=\"listTabTitle\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.listTabTitle !== 'undefined' ? tagetLiquid.tableJson.listTabTitle : "Lista")+"\" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
@@ -15969,81 +15979,90 @@ SystemEditor.prototype.isPopup = function() { return true; };
 
 function LiquidGridHeader() {}
 LiquidGridHeader.prototype.init = function (agParams) {
-    var style = '' + (typeof agParams.menuIconSize !== 'undefined' ? 'font-size:'+agParams.menuIconSize+'px' : '')+'';
-    var labelStyle = agParams.column.field === String(agParams.liquidLink.lastSearchCol+1) ? "color:red;" : "";
-    var itemId = agParams.liquidLink.controlId + ".header_label."+agParams.column.colId;
-    var ic = Number(agParams.column.field)-1;
-    var tooltipField = "";
-    var liquid = agParams.liquidLink;
-    if(liquid) {
-        if(ic < liquid.tableJson.columns.length) {
-            tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].field : "";
-        }
-    }
-    if(tooltipField === null || typeof tooltipField === 'undefined')
-        tooltipField = "";
-    
-    if(Liquid.projectMode) {
-        if(tooltipField) {
-            tooltipField += "\n\n";
-        }    
-        if(ic < liquid.tableJson.columns.length) {
-            var col = liquid.tableJson.columns[ic];
-            tooltipField += Liquid.getColumnTooltip(liquid, col);
-        }
-    }
-    
-    this.agParams = agParams;
-    this.eGui = document.createElement('div');
-    this.eGui.style.display = "inline-flex";
-    this.eGui.innerHTML = ''
-        +'<div style=\"display:inline-flex\">'
-        +(agParams.enableMenu ? '<div class="customHeaderMenuButton" style=\"'+style+'\">' + this.agParams.menuIcon + '</div>' : "")
-        +'<div id=\"'+itemId+'\" title="'+tooltipField+'" class="customHeaderLabel" style=\"'+labelStyle+'\">' + this.agParams.displayName + '</div>'
-        // +'<div class="customSortDownLabel inactive">&#x25BC;</div>'
-        // +'<div class="customSortUpLabel inactive">&#x25B2;</div>'
-        // +'<div class="customSortRemoveLabel inactive"></div>'
-        +'</div>'
-        ;
-    this.eMenuButton = this.eGui.querySelector(".customHeaderMenuButton");
-    this.eSortLabelButton = this.eGui.querySelector(".customHeaderLabel");
-    this.eSortDownButton = this.eGui.querySelector(".customSortDownLabel");
-    this.eSortUpButton = this.eGui.querySelector(".customSortUpLabel");
-    this.eSortRemoveButton = this.eGui.querySelector(".customSortRemoveLabel");
-
-    if(this.agParams.enableMenu) {
-        this.onMenuClickListener = this.onMenuClick.bind(this);
-        this.eMenuButton.addEventListener('click', this.onMenuClickListener);
-    } else {
-        if(this.eMenuButton) this.eGui.removeChild(this.eMenuButton);
-        this.eMenuButton = null;
-    }
-
-    if(this.agParams.enableSorting) {
-        if(this.eSortLabelButton) {
-            this.onSortAutoRequestedListener = this.onSortRequested.bind(this, 'auto');
-            this.eSortLabelButton.addEventListener('click', this.onSortAutoRequestedListener);
-        }
-        if(this.eSortDownButton) {
-            this.onSortAscRequestedListener = this.onSortRequested.bind(this, 'asc');
-            this.eSortDownButton.addEventListener('click', this.onSortAscRequestedListener);
-        }
-        if(this.eSortUpButton) {
-            this.onSortDescRequestedListener = this.onSortRequested.bind(this, 'desc');
-            this.eSortUpButton.addEventListener('click', this.onSortDescRequestedListener);
-        }
-        if(this.eSortRemoveButton) {
-            this.onRemoveSortListener = this.onSortRequested.bind(this, '');
-            this.eSortRemoveButton.addEventListener('click', this.onRemoveSortListener);
-        }
-        this.onSortChangedListener = this.onSortChanged.bind(this);
-        this.agParams.column.addEventListener('sortChanged', this.onSortChangedListener);
-        this.onSortChanged();
-    } else {
-        this.eGui.removeChild(this.eSortDownButton);
-        this.eGui.removeChild(this.eSortUpButton);
-        this.eGui.removeChild(this.eSortRemoveButton);
-    }
+	try {
+	    var style = '' + (typeof agParams.menuIconSize !== 'undefined' ? 'font-size:'+agParams.menuIconSize+'px' : '')+'';
+	    var labelStyle = agParams.column.field === String(agParams.liquidLink.lastSearchCol+1) ? "color:red;" : "";
+	    var itemId = agParams.liquidLink.controlId + ".header_label."+agParams.column.colId;
+	    var ic = Number(agParams.column.field)-1;
+	    var tooltipField = "";
+	    var liquid = agParams.liquidLink;
+	    if(liquid) {
+	        if(ic < liquid.tableJson.columns.length) {
+	            tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].field : "";
+	        }
+	    }
+	    if(tooltipField === null || typeof tooltipField === 'undefined')
+	        tooltipField = "";
+	    
+	    if(Liquid.projectMode) {
+	        if(tooltipField) {
+	            tooltipField += "\n\n";
+	        }    
+	        if(ic < liquid.tableJson.columns.length) {
+	            var col = liquid.tableJson.columns[ic];
+	            tooltipField += Liquid.getColumnTooltip(liquid, col);
+	        }
+	    }
+	    
+	    this.agParams = agParams;
+	    this.eGui = document.createElement('div');
+	    this.eGui.style.display = "inline-flex";
+	    
+	    var gridHeaderMenu = true;
+	    if(liquid) {
+	    	gridHeaderMenu = liquid.tableJson.gridHeaderMenu;
+	    }
+	    this.eGui.innerHTML = ''
+	        +'<div style=\"display:inline-flex\">'
+	        +(agParams.enableMenu ? '<div class="customHeaderMenuButton" style=\"'+style+'\">' + (gridHeaderMenu !== false ? this.agParams.menuIcon : "") + '</div>' : "")
+	        +'<div id=\"'+itemId+'\" title="'+tooltipField+'" class="customHeaderLabel" style=\"'+labelStyle+'\">' + this.agParams.displayName + '</div>'
+	        // +'<div class="customSortDownLabel inactive">&#x25BC;</div>'
+	        // +'<div class="customSortUpLabel inactive">&#x25B2;</div>'
+	        // +'<div class="customSortRemoveLabel inactive"></div>'
+	        +'</div>'
+	        ;
+	    this.eMenuButton = this.eGui.querySelector(".customHeaderMenuButton");
+	    this.eSortLabelButton = this.eGui.querySelector(".customHeaderLabel");
+	    this.eSortDownButton = this.eGui.querySelector(".customSortDownLabel");
+	    this.eSortUpButton = this.eGui.querySelector(".customSortUpLabel");
+	    this.eSortRemoveButton = this.eGui.querySelector(".customSortRemoveLabel");
+	
+	    if(this.agParams.enableMenu) {
+	    	 if(this.eMenuButton) {
+	    		 this.onMenuClickListener = this.onMenuClick.bind(this);
+	    		 this.eMenuButton.addEventListener('click', this.onMenuClickListener);
+	    	 }
+	    } else {
+	        if(this.eMenuButton) this.eGui.removeChild(this.eMenuButton);
+	        this.eMenuButton = null;
+	    }
+	
+	    if(this.agParams.enableSorting) {
+	        if(this.eSortLabelButton) {
+	            this.onSortAutoRequestedListener = this.onSortRequested.bind(this, 'auto');
+	            this.eSortLabelButton.addEventListener('click', this.onSortAutoRequestedListener);
+	        }
+	        if(this.eSortDownButton) {
+	            this.onSortAscRequestedListener = this.onSortRequested.bind(this, 'asc');
+	            this.eSortDownButton.addEventListener('click', this.onSortAscRequestedListener);
+	        }
+	        if(this.eSortUpButton) {
+	            this.onSortDescRequestedListener = this.onSortRequested.bind(this, 'desc');
+	            this.eSortUpButton.addEventListener('click', this.onSortDescRequestedListener);
+	        }
+	        if(this.eSortRemoveButton) {
+	            this.onRemoveSortListener = this.onSortRequested.bind(this, '');
+	            this.eSortRemoveButton.addEventListener('click', this.onRemoveSortListener);
+	        }
+	        this.onSortChangedListener = this.onSortChanged.bind(this);
+	        this.agParams.column.addEventListener('sortChanged', this.onSortChangedListener);
+	        this.onSortChanged();
+	    } else {
+	        this.eGui.removeChild(this.eSortDownButton);
+	        this.eGui.removeChild(this.eSortUpButton);
+	        this.eGui.removeChild(this.eSortRemoveButton);
+	    }
+	} catch(e) { console.error(e); }
 };
 
 LiquidGridHeader.prototype.onSortChanged = function () {

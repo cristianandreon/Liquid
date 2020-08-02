@@ -109,11 +109,25 @@ html, body { height: 100% }
 .ag-body-horizontal-scroll-viewport::-webkit-scrollbar { width:8px; height:8px; }
 .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-track { box-shadow:inset 0 0 10px #d0d0d0; border-radius:6px; }
 .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb { border-radius:5px; background: #eeeeee; box-shadow:inset 0 0 6px rgba(0,0,0,0.5); }
-.ag-theme-balham .ag-column_hover { background-color:rgb(220, 241, 255) !important; }
+
+/* LS THEME */
+.ag-theme-balham .ag-row-odd { background-color:rgba(224, 243, 255, 0.27) }
+.ag-theme-balham .ag-row-even {  }
+.ag-theme-balham .ag-column-hover { background-color:rgb(220, 241, 255) !important; }
 .ag-theme-balham .ag-row-selected { background-color: #4abbff !important; }
 .ag-theme-balham .ag-ltr .ag-cell-focus { border: 1px solid darkred !important;  }
-.ag-theme-balham .ag-row-odd { /*background-color:rgba(224, 243, 255, 0.27)*/ }
-.ag-theme-balham .ag-row-even {  }
+
+/* ZK THEME */
+/*
+.ag-theme-balham .ag-row-hover { background-color: rgb(241 250 255) !important; }
+.ag-theme-balham .ag-row-odd { background-color:rgb(247 247 247); }
+.ag-theme-balham .ag-row-even { }
+.ag-theme-balham .ag-row-selected { background-color: rgb(221 240 251); border-color: #f6f6f6; }
+.ag-theme-balham .ag-ltr .ag-cell-focus { border: 1px solid darkred !important;  }
+.ag-theme-balham .ag-cell { font-family: arial, sans-serif !important; color: rgb(99 99 99) !important; border-color: #f6f6f6 !important; border-left: 1px solid #f6f6f6 !important; border-right: 0px solid #f6f6f6 !important; border-top: 0px solid #f6f6f6 !important;; border-bottom: 0px solid #f6f6f6 !important; }
+.ag-theme-balham .ag-row {  border-width: 0px 0 0 0 !important; }
+.ag-theme-balham .ag-header-cell { font-family: arial, sans-serif !important; font-weight: bold !important; color: black !important; }
+*/
 
 .liquidContextMenu { position: fixed; z-index: 99000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.50); -webkit-transition: background-color 1000ms linear; -ms-transition: background-color 1000ms linear; transition-duration: 2s; transition: background-color 1000ms linear; }
 .liquidContextMenu-content { width:auto; text-decoration: none; cursor: pointer; font-family: verdana; font-size: 13px; background-image: linear-gradient(to right, #ffffff, #e5e5e5); background-color: #fefefe; padding:20px; border:1px solid #888; width:fit-content; box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02) }
