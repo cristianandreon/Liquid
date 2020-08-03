@@ -1372,8 +1372,9 @@ public class workspace {
                         || (tblWorkspace.owner != null && owner != null && !tblWorkspace.owner.getClass().equals(owner.getClass()))
                         ) {
                         System.out.println("WARNING : Overwrited owner of control : "+controlId);
-                        tblWorkspace.owner = owner;
                     }
+                    
+                    tblWorkspace.owner = owner;
                     
                     tblWorkspace.driverClass = connToUse != null ? connToUse.getClass().getName() : null;
                     tblWorkspace.defaultDatabase = defaultDatabase;
