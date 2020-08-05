@@ -451,7 +451,7 @@ public class db {
                     if(targetTable != null && !targetTable.isEmpty()) {                        
                         if(!targetTable.equalsIgnoreCase(table)) System.err.println("// ERROR: cannot access to table outside its definition:"+database+"."+schema+"."+targetTable+"");
                     }
-                    
+
 
                     
                     foreignKeys = metadata.getForeignKeyData(database, schema, table, connToUse);
@@ -486,7 +486,7 @@ public class db {
                                         ) {
                                 	bAddColumnToList = true;
                                 }
-
+                                
                                         
                                 if( bAddColumnToList || needLeftJoinMap ) {
 
@@ -536,42 +536,42 @@ public class db {
                                         }
                                         
                                         if(bAddColumnToList) {
-                                        if(column_list.length()>0)
-                                            column_list+=",";
-                                        if(column_json_list.length()>0)
-                                            column_json_list+=",";
-                                        if(colParts.length > 1) {
-                                            String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
-                                            column_alias = leftJoinAlias+"_"+columnName;
-                                            column_json_list += colParts[0]+"_"+columnName;
+	                                        if(column_list.length()>0)
+	                                            column_list+=",";
+	                                        if(column_json_list.length()>0)
+	                                            column_json_list+=",";
+	                                        if(colParts.length > 1) {
+	                                            String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
+	                                            column_alias = leftJoinAlias+"_"+columnName;
+	                                            column_json_list += colParts[0]+"_"+columnName;
 	                                            column_list += colMode + leftJoinAlias+"."+itemIdString+colParts[1]+itemIdString + asKeyword + column_alias;
-                                        } else {
-                                            String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
-                                            column_alias = leftJoinAlias+"_"+columnName;
-                                            column_json_list += columnName;
+	                                        } else {
+	                                            String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
+	                                            column_alias = leftJoinAlias+"_"+columnName;
+	                                            column_json_list += columnName;
 	                                            column_list += colMode + leftJoinAlias+"."+itemIdString+col.getString("name")+itemIdString + asKeyword + column_alias;
-                                        }
+	                                        }
                                         }
 
                                     } else {
                                     	if(bAddColumnToList) {
-                                        if(column_list.length()>0)
-                                            column_list+=",";                            
-                                        if(column_json_list.length()>0)
-                                            column_json_list+=",";
-                                        if(colParts.length > 1) {
-                                            String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
-                                            column_alias = "A"+"_"+columnName;
-                                            column_json_list += colParts[0]+"_"+columnName;
+	                                        if(column_list.length()>0)
+	                                            column_list+=",";                            
+	                                        if(column_json_list.length()>0)
+	                                            column_json_list+=",";
+	                                        if(colParts.length > 1) {
+	                                            String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
+	                                            column_alias = "A"+"_"+columnName;
+	                                            column_json_list += colParts[0]+"_"+columnName;
 	                                            column_list += colMode + colParts[0]+"."+itemIdString+colParts[1]+itemIdString + asKeyword + column_alias;        
-                                        } else {
-                                            String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
-                                            column_alias = /*table*/ "A_" + columnName;
-                                            column_json_list += columnName;
+	                                        } else {
+	                                            String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
+	                                            column_alias = /*table*/ "A_" + columnName;
+	                                            column_json_list += columnName;
 	                                            column_list += colMode + itemIdString + table + itemIdString + "." + itemIdString+col.getString("name")+itemIdString + asKeyword + column_alias;
-                                        }
+	                                        }
                                     	}
-
+                                    	
                                         if(primaryKey.equalsIgnoreCase(col.getString("name"))) {
                                             indexPrimaryKey = ic+1;
                                         }
@@ -585,13 +585,13 @@ public class db {
                                     }
 
                                     if(bAddColumnToList) {
-                                    if(column_alias_list.length()>0)
-                                        column_alias_list += ",";
-                                    column_alias_list += column_alias;
+	                                    if(column_alias_list.length()>0)
+	                                        column_alias_list += ",";
+	                                    column_alias_list += column_alias;
+                                    }
                                 }
                             }
                         }
-                    }
                     }
                 } catch (Exception e) {
                     error += " [ Columns Error:"+e.getLocalizedMessage() + "]";
@@ -671,8 +671,8 @@ public class db {
 
             if(isOracle) { //fuckyou
             	if(!"distinct".equalsIgnoreCase(targetMode)) { // fail the dintinct purpose
-                column_list += ",ROWNUM as ROWNUMBER";
-            }
+            		column_list += ",ROWNUM as ROWNUMBER";
+            	}
             }
                     
             String baseQuery = "" 
@@ -729,7 +729,7 @@ public class db {
                                 		sWhere, filtersCols, filtersDefCols, leftJoinsMap,
                                 		tableIdString, itemIdString
                                 		);
-                                                }
+                            }
 
                             try { filtersIds = requestJson.getJSONArray("ids"); } catch (Exception e) {}
                             if(filtersIds != null) {
@@ -772,16 +772,16 @@ public class db {
                             preFilters = (JSONArray)sPrefilters;
 
                         if(preFilters != null) {
-
+                        	
                             sWhere = process_filters_json(
                             		tbl_wrk, table, cols, 
                             		isOracle, isMySQL, isPostgres, isSqlServer, 
                             		sWhere, preFilters, null, leftJoinsMap,
                             		tableIdString, itemIdString
                             		);                            
-                                        }
-                                                }
-                                            }
+                        }
+                    }
+                }
 
                 //
                 // Ordinamenti dalla richiesta
@@ -796,16 +796,29 @@ public class db {
                                 // JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                                 // for(int i = 0; i < cols.length(); i++) {
                                     // JSONObject col = cols.getJSONObject(i);
+                            	JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                                 for(int i=0; i<sortColumns.length(); i++) {
                                     String sortColumn = sortColumns.getString(i);
-
+                                	String sortColumnAlias = sortColumn;
+                                	
+                                	if(isOracle) { // need column alias
+	                                    for(int ic=0; ic<cols.length(); ic++) {
+	                                        JSONObject col = cols.getJSONObject(ic);
+	                                        String colName = null;
+	                                        try { colName = col.getString("name"); } catch (Exception e) { colName = null; }
+	                                        if(colName.equalsIgnoreCase(sortColumn)) {
+		                                        try { sortColumnAlias = col.getString("alias"); } catch (Exception e) { }
+	                                        }
+	                                    }
+                                	}                                    	
+                                    
                                     if(sortColumn != null && !sortColumn.isEmpty()) {
                                         if(sSort.length() == 0) {
                                             sSort += " ORDER BY (";
                                         } else {
                                             sSort += ",";
                                         }
-                                        sSort += itemIdString+sortColumn+itemIdString;
+                                        sSort += itemIdString+sortColumnAlias+itemIdString;
                                     }
                                 }
                                 if(sSort.length() > 0) {
@@ -826,10 +839,10 @@ public class db {
                 executingQuery = workspace.solve_query_params(query, queryParams);
                 executingQueryForCache = null;
             } else {
-                executingQuery = baseQuery + sWhere + sSort;
+                executingQuery = baseQuery + sWhere; // + sSort // Aggiunto dopo la limitazione : in oracle è ottenuta con il filtro;
                 executingQueryForCache = executingQuery;
             }
-
+            
 
             //
             // Utilizzo cache degli ids (delle primary keys)
@@ -858,7 +871,8 @@ public class db {
                                     System.err.println("IDS CACHE: no result : reexecute:" + executingQuery);
                                 }
                             } else {
-                                System.err.println("IDS CACHE: out of range :" + executingQuery);
+                            	if(cacheIds == 1) 
+                            		System.err.println("IDS CACHE: out of range :" + executingQuery);
                             }
                         }
                     }
@@ -936,6 +950,19 @@ public class db {
                     // walk the cache : no limit
                 }
             }
+            
+            
+            //
+            // Aggiunta del criterio di ordinamento
+            //
+            if(query != null && !query.isEmpty()) {
+            } else {
+            	if(sSort != null && !sSort.isEmpty()) {
+            		executingQuery += "\n"+sSort;
+            	}
+            }
+            
+            
             
             
             long maxRow = endRow - startRow;
@@ -1698,7 +1725,7 @@ public class db {
                                                 fieldValue = "";
                                             }
                                         }
-                                        // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" Ã¨ a carico del server, e di conseguenza \->\\
+                                        // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
                                         fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
                                         out_string.append( "\""+fieldName+"\":\"" + fieldValue + "\"" );
                                     }

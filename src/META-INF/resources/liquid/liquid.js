@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.19   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  02-8-2020
+// Liquid ver.1.20   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 8.1.2020 - Last update  05-8-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -11985,14 +11985,14 @@ var Liquid = {
         }
     },
     dbtoHtmlDate:function(date) {
-        return Liquid.dbtoHtmlDateFunc(date,'-', Liquid.dateSep);
+        return Liquid.dbtoHtmlDateFunc(date, Liquid.dateSep, Liquid.dateSep);
     },
     dbtoHtmlDateFunc:function(date, in_sep, out_sep) {
         try {
             if(isDef(date)) {
                 var dateArray = date.split(' ');
                 var year = dateArray[0].split(in_sep);
-                var time = dateArray.length > 1 && dateArray[1] ? dateArray[1].split(':') : null;
+                var time = dateArray.length > 1 && dateArray[1] ? dateArray[1].split(Liquid.timeSep) : null;
                 return year[2] + out_sep + year[1] + out_sep + year[0] + (time ? " " + time[0] + ":" + time[1] + ":" + time[2] : "");
             } else {
                 return null;
@@ -12006,9 +12006,9 @@ var Liquid = {
     toDate:function(dateStr) {
         if(dateStr != null && dateStr.length) {
             var dt_parts = dateStr.split(" ");
-            var d_parts = dt_parts[0].split("-");
+            var d_parts = dt_parts[0].split(Liquid.dateSep);
             if(dt_parts.length > 1) {
-                var t_parts = dt_parts[1].split(":");
+                var t_parts = dt_parts[1].split(Liquid.timeSep);
                 return new Date(d_parts[2], d_parts[1] - 1, d_parts[0], t_parts[0], t_parts[1], t_parts[2]);
             } else {
                 return new Date(d_parts[2], d_parts[1] - 1, d_parts[0]);
@@ -16093,15 +16093,19 @@ LiquidGridHeader.prototype.onSortRequested = function (order, event) {
     if(this.agParams.liquidLink)
         if(this.agParams.liquidLink.nPages > 1) sortServer = 'server';
             else if(isDef(this.agParams.liquidLink.tableJson.sortMode)) sortServer = this.agParams.liquidLink.tableJson.sortMode;
+    
+    var colIndex1B = Number(this.agParams.column.colDef.field);
+    var columnName = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].name : "";
+    var sortColumnsMode = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode : "asc";
+    if(columnName) {
+        if(sortColumnsMode === "asc") this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "desc";
+        else this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "asc";
+    }
+    
     if(sortServer === 'server') {
         if(typeof this.agParams.liquidLink.sortColumns === 'undefined' || !this.agParams.liquidLink.sortColumns)
             this.agParams.liquidLink.sortColumns = [];
-        var colIndex1B = Number(this.agParams.column.colDef.field);
-        var columnName = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].name : "";
-        var sortColumnsMode = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode : "asc";
         if(columnName) {
-            if(sortColumnsMode === "asc") this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "desc";
-            else this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "asc";
             if(event.shiftKey || event.ctrlKey) {
                 if(this.agParams.liquidLink.sortColumns.indexOf(columnName) < 0) 
                     this.agParams.liquidLink.sortColumns.push(columnName);
@@ -16113,7 +16117,7 @@ LiquidGridHeader.prototype.onSortRequested = function (order, event) {
         Liquid.loadData(this.agParams.liquidLink, null, "onSortRequested");
     } else {
         if(order==='auto') {
-            if(this.agParams.column.isSortAscending()) {
+            if(sortColumnsMode === "asc") {
                 this.agParams.setSort('desc', event.shiftKey || event.ctrlKey);
             } else {
                 this.agParams.setSort('asc', event.shiftKey || event.ctrlKey);
