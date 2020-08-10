@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.17   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  23-7-2020
+// Liquid ver.1.21   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 8.1.2020 - Last update  07-8-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -44,7 +44,6 @@ var glLiquidsPendingLoad = new Array();
 var glMessageInfoList = new Array();
 var glLastFocusedLiquid = null;
 var glLastFrameId = null;
-var glLiquidGenesisToken = null;
 var glLiquidDB = null;
 var glLiquidIDB = null;
 var glLiquidDBEnable = true;
@@ -54,14 +53,16 @@ var glFlashingTimerMsec = 100;
 var glLookupScrollTop = 0;
 var glLookupScrollLeft = 0;
 
+if(!isDef(glLiquidGenesisToken))
+    var glLiquidGenesisToken = null;
+
 //
 // start point of servlet ... the bridge to server
 //
-if(typeof glLiquidRoot === "undefined")
+if(!isDef(glLiquidRoot))
     var glLiquidRoot = ".";
-if(typeof glLiquidServlet === "undefined")
+if(!isDef(glLiquidServlet))
     var glLiquidServlet = glLiquidRoot+"/liquid/liquid.jsp";    // look inside framework : need servlet 3
-
 
 class LiquidCtrl {
    
@@ -739,6 +740,7 @@ class LiquidCtrl {
                         }
                     }
                 }
+
 
                 // set size/zindex
                 if(setSize) {
@@ -1508,6 +1510,8 @@ class LiquidCtrl {
                     this.waitingObj.appendChild(this.waitingObjAnim);
                     this.outDivObj.appendChild(this.waitingObj);
                     
+                    
+                    this.outDivObj.style.filter = "grayscale(.5) opacity(0.3) blur(5px)";
                                         
                     // resize control
                     Liquid.onResize(this);
@@ -1630,6 +1634,20 @@ class LiquidCtrl {
                     
                     // Turn Off waiters
                     Liquid.showHideWaiters(this, false);
+
+                    try {
+                        this.outDivObj.style.display = "none";
+                        var liquid = this;
+                        $( liquid.outDivObj ).slideDown( "fast", 
+                        function() { 
+                            Liquid.onResize(liquid);
+                            liquid.outDivObj.style.filter = "grayscale(.0) opacity(1.0) blur(0px)"; 
+                        } 
+                                );
+                    } catch (e) { 
+                        console.error(e);
+                        this.outDivObj.style.filter = "grayscale(.0) opacity(1.0) blur(0px)"; 
+                    }
                     
                     
                 } else {
@@ -4220,6 +4238,9 @@ var Liquid = {
      * @param obj the control where to start the filters
      * @return {} n/d
      */
+    executeFilter:function(obj) {
+        return Liquid.onExecuteFilter(obj);
+    },
     onExecuteFilter:function(obj) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
@@ -4278,7 +4299,7 @@ var Liquid = {
                             var col = Liquid.getColumn(liquid, filtersJson.columns[i].name);
                             if(col) {
                                 var filterComponent = liquid.gridOptions.api.getFilterInstance(col.field);
-                                filterComponent.eValue1.value = filtersJson.columns[i].value;
+                                filterComponent.eValue1.value = filtersJson.columns[i].value && filtersJson.columns[i].value.toLowerCase() === "null" ? "" : filtersJson.columns[i].value;
                                 filterComponent.onBtApply();
                             } else {
                                 console.error("column \""+(filtersJson.columns[i].name)+"\" not found in filter:"+(filtersJson.name ? filtersJson.name : filtersJson.label) );
@@ -4596,45 +4617,17 @@ var Liquid = {
             tbl.id = liquid.controlId + ".filters";
             tbl.className = "liquidFiltersTable";
             var tbody = document.createElement("tbody");
-            var tr = document.createElement("tr");
-            var td = document.createElement("td");
+            var filterbBarToBottom = false;
+            var tr = null;
+            var trFilterBar = Liquid.createFiltersBar(liquid);
             
-            td = document.createElement("td");
-            td.className = "liquidFiltersLabel";
-            var div = document.createElement("div");
-            div.innerHTML = Liquid.lang === 'eng' ? "Filter" : "Tipo ricerca";
-            td.appendChild(div);
-            tr.appendChild(td);
-
-            td = document.createElement("td");
-            td.id = liquid.controlId+".FiltersSelector";
-            td.className = "liquidFiltersSelector";
-            var filterList = document.createElement("div");
-            liquid.filtersSelectorId = liquid.controlId+".filtersSelector";
-            var filterHTML = "<select id=\""+liquid.filtersSelectorId+"\" style=\"width: 100%;\" class=\"liquidFiltersSelect\" onchange=\"Liquid.onFilterTab(event)\" >";
-            for(var i=0; i<liquid.filtersJson.length; i++) {
-                var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
-                filterHTML += "<option id=\""+liquid.controlId+".filter."+(i+1)+".selector\" value=\"x\">"+(name)+"</option>";
+            if(isDef(liquid.tableJson.filterBarPosition)) {
+            	if(liquid.tableJson.filterBarPosition.toLowerCase() === "bottom") {
+                    filterbBarToBottom = true;
+            	}
             }
-            filterHTML += "</select>";
-            filterList.innerHTML = filterHTML;
-            td.appendChild(filterList);
-            tr.appendChild(td);
-
-            td = document.createElement("td");
-            td.id = liquid.controlId+".FiltersSpacer";
-            td.className = "liquidFiltersSpacer";
-            tr.appendChild(td);
-            
-            td = document.createElement("td");
-            td.id = liquid.controlId+".FilterButtonTd";
-            td.className = "liquidFilterButtonTd";
-            td.innerHTML = "<center><button id=\"" + liquid.controlId 
-                    + ".filter.execute\" type=\"button\" class=\"liquidFilterButton\" onClick=\"Liquid.onBtFilterExecute(this)\">" 
-                    + (Liquid.lang === 'eng' ? "Serach" : "Cerca")
-                    + "</button></center>";
-            tr.appendChild(td);            
-            tbody.appendChild(tr);
+            if(!filterbBarToBottom)
+            	tbody.appendChild(trFilterBar);
 
             tr = document.createElement("tr");
             td = document.createElement("td");
@@ -4656,10 +4649,58 @@ var Liquid = {
             }
             tr.appendChild(td);
             tbody.appendChild(tr);
+            
+            if(filterbBarToBottom)
+            	tbody.appendChild(trFilterBar);
+            
             tbl.appendChild(tbody);
             liquid.rootObj.appendChild(tbl);
             liquid.filtersObj = tbl;            
         }
+    },
+    createFiltersBar:function(liquid) {
+        var tr = document.createElement("tr");
+        var td = document.createElement("td");
+
+        td.className = "liquidFiltersLabel";
+        if(liquid.filtersJson.length > 1) {
+            var div = document.createElement("div");
+            div.innerHTML = Liquid.lang === 'eng' ? "Filter" : "Tipo ricerca";
+            td.appendChild(div);
+        }
+        tr.appendChild(td);
+
+        td = document.createElement("td");
+        if(liquid.filtersJson.length > 1) {
+            td.id = liquid.controlId+".FiltersSelector";
+            td.className = "liquidFiltersSelector";
+            var filterList = document.createElement("div");
+            liquid.filtersSelectorId = liquid.controlId+".filtersSelector";
+            var filterHTML = "<select id=\""+liquid.filtersSelectorId+"\" style=\"width: 100%;\" class=\"liquidFiltersSelect\" onchange=\"Liquid.onFilterTab(event)\" >";
+            for(var i=0; i<liquid.filtersJson.length; i++) {
+                var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
+                filterHTML += "<option id=\""+liquid.controlId+".filter."+(i+1)+".selector\" value=\"x\">"+(name)+"</option>";
+            }
+            filterHTML += "</select>";
+            filterList.innerHTML = filterHTML;
+            td.appendChild(filterList);
+        }
+        tr.appendChild(td);
+
+        td = document.createElement("td");
+        td.id = liquid.controlId+".FiltersSpacer";
+        td.className = "liquidFiltersSpacer";
+        tr.appendChild(td);
+
+        td = document.createElement("td");
+        td.id = liquid.controlId+".FilterButtonTd";
+        td.className = "liquidFilterButtonTd";
+        td.innerHTML = "<center><button id=\"" + liquid.controlId 
+                + ".filter.execute\" type=\"button\" class=\"liquidFilterButton\" onClick=\"Liquid.onBtFilterExecute(this)\">" 
+                + (Liquid.lang === 'eng' ? "Serach" : "Cerca")
+                + "</button></center>";
+        tr.appendChild(td);
+        return tr;
     },
     createFilterTab:function(liquid, filterGroupIndex, filterJson) {
         if(filterJson) {
@@ -5692,6 +5733,7 @@ var Liquid = {
             }
         }
     },    
+    // Add one or more filters to the Filters Group at index 'curFilter'
     // TODO : test
     addFilterToGroup:function(liquid, ftIndex1B, curFilter, filtersColumns, bPrint) {
         var propName = "filters";
@@ -5702,6 +5744,16 @@ var Liquid = {
             var foreignTable = liquid.tableJsonSource.foreignTables[ftIndex1B-1];
             if(!isDef(foreignTable.options)) foreignTable.options = { };
             if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
+            
+            if(curFilter < foreignTable.options[propName].length) {
+                for(var ic=0; ic<filtersColumns.length; ic++) {
+                    var filterColumn = filtersColumns[ic];
+                    if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
+                    foreignTable.options[propName][curFilter].columns.push( filterColumn );
+                }
+            } else {
+                console.error("ERROR:addFilterToGroup() out of range");
+            }
             
         } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
             //
@@ -5714,17 +5766,21 @@ var Liquid = {
                     if(!isDef(foreignTable.options)) foreignTable.options = { };
                     if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
 
-                    if(curFilter > liquid.tableJsonSource.filters.length || curFilter < 0) curFilter = liquid.tableJsonSource.filters.length;
-                    if(!isDef(liquid.tableJsonSource.filters[curFilter].columns)) liquid.tableJsonSource.filters[curFilter].columns = [];
-                    for(var ic=0; ic<filtersColumns.length; ic++) {
-                        var filterColumn = filtersColumns[ic];
-                        if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
-                        liquid.tableJsonSource.filters[curFilter].columns.push( filterColumn );
-                    }
-                    // update all columns
-                    foreignTable.options[propName][curFilter].columns = liquid.tableJsonSource.filters[curFilter].columns;
+                    // if(curFilter > liquid.tableJsonSource.filters.length || curFilter < 0) curFilter = liquid.tableJsonSource.filters.length;
+                    if(curFilter < liquid.tableJsonSource.filters.length) {
+                        if(!isDef(liquid.tableJsonSource.filters[curFilter].columns)) liquid.tableJsonSource.filters[curFilter].columns = [];
+                        for(var ic=0; ic<filtersColumns.length; ic++) {
+                            var filterColumn = filtersColumns[ic];
+                            if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
+                            liquid.tableJsonSource.filters[curFilter].columns.push( filterColumn );
+                        }
+                        // update all columns
+                        foreignTable.options[propName][curFilter].columns = liquid.tableJsonSource.filters[curFilter].columns;
 
-                    Liquid.setAskForSave(sourceLiquid, true);
+                        Liquid.setAskForSave(sourceLiquid, true);
+                    } else {
+                        console.error("ERROR:addFilterToGroup() out of range");
+                    }
                 } else {
                     console.error("ERROR : source "+propName+" update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
                 }
@@ -7142,6 +7198,9 @@ var Liquid = {
      * @param {commandName} the name of the command to execute
      * @return {} n/d
      */
+    command:function(obj, commandName) { // aux entry
+        return Liquid.onCommand(obj, commandName);
+    },
     onCommand:function(obj, commandName) { // aux entry
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
@@ -8116,6 +8175,9 @@ var Liquid = {
                         delete liquid.backupNode;
                         command.step = Liquid.CMD_EXECUTE;
                         
+                    } else if(command.name === "filter") {
+                        Liquid.onExecuteFilter(liquid);
+                        return;
                     } else if(command.name === "next" || command.name === "previous") {
                         command.step = 0;
                         // avoid lokkup close
@@ -8580,6 +8642,7 @@ var Liquid = {
         if(liquid) {
             if(liquid instanceof LiquidCtrl) {
                 var referenceHeight = 0;
+                var left, top, width, height;
                 
                 if(liquid.mode !== "lookup") {
                     if(liquid.isIconic) {
@@ -8588,10 +8651,10 @@ var Liquid = {
                                 var iconincInfo = Liquid.getIconicCount(liquid.parentObj);
                                 liquid.iconicPos = { left:(3 + iconincInfo.x * Liquid.iconincSize.wx), top:(liquid.parentObj.clientHeight - (iconincInfo.y+1) * Liquid.iconincSize.wy-1), width:Liquid.iconincSize.wx, height:Liquid.iconincSize.wy };
                             }
-                            liquid.outDivObj.style.left = liquid.iconicPos.left+'px';
-                            liquid.outDivObj.style.top = liquid.iconicPos.top+'px';
-                            liquid.outDivObj.style.width = liquid.iconicPos.width+"px";
-                            liquid.outDivObj.style.height = liquid.iconicPos.height+"px";
+                            left = liquid.iconicPos.left; 
+                            top = liquid.iconicPos.top;
+                            width = liquid.iconicPos.width;
+                            height = liquid.iconicPos.height;
                             liquid.outDivObj.style.position = 'absolute';
                             liquid.outDivObj.style.boxShadow  = '';
                             liquid.outDivObjOverflow = liquid.outDivObj.style.overflow;
@@ -8600,6 +8663,12 @@ var Liquid = {
                             var searchObj = document.getElementById(liquid.controlId+".popup.search");
                             if(searchObj) searchObj.style.display = "none";
                             liquid.outDivObj.style.resize = '';
+                            $( liquid.outDivObj ).animate( { 
+                                left: left+'px' 
+                                ,top: top+'px'
+                                ,width: width+"px"
+                                ,height: height+"px"
+                            }, 200, function(){ } );
                         }
                     } else if(liquid.isMaximized) {
                         if(liquid.winXStatus !== 'maximized') {
@@ -8607,43 +8676,57 @@ var Liquid = {
                             liquid.referenceHeightObj = liquid.parentObj;
                             liquid.outDivObj.style.position = 'absolute';
                             if(liquid.parentObj) {
-                                liquid.outDivObj.style.width = (liquid.parentObj.offsetWidth-3)+'px';
-                                liquid.outDivObj.style.height = (liquid.parentObj.offsetHeight-3)+'px';
+                                width = (liquid.parentObj.offsetWidth-3);
+                                height = (liquid.parentObj.offsetHeight-3);
                             } else {
-                                liquid.outDivObj.style.width = (document.body.offsetWidth-3)+'px';
-                                liquid.outDivObj.style.height = (document.body.offsetHeight-3)+'px';
+                                width = (document.body.offsetWidth-3);
+                                height = (document.body.offsetHeight-3);
                                 console.warn("WARNING: controlId"+liquid.controlId+" hs no parent...");
                             }
-                            liquid.outDivObj.style.left = 0;
-                            liquid.outDivObj.style.top = 0;
-                            // liquid.outDivObj.style.width = '100%';
-                            // liquid.outDivObj.style.height = '100%';
-                            // liquid.outDivObj.style.position = 'relative';
+                            left = 0;
+                            top = 0;
                             if(liquid.outDivObjOverflow) liquid.outDivObj.style.overflow = liquid.outDivObjOverflow;
                             liquid.outDivObj.style.boxShadow  = '0 0px 0px rgba(0,0,0,0)';
                             liquid.winXStatus = 'maximized';
                             var searchObj = document.getElementById(liquid.controlId+".popup.search");
                             if(searchObj) searchObj.style.display = "";
                             liquid.outDivObj.style.resize = '';
+                            liquid.isAnimating = true;
+                            $( liquid.outDivObj ).animate( { 
+                                left: left+'px' 
+                                ,top: top+'px'
+                                ,width: width+"px"
+                                ,height: height+"px"
+                            }, 200, function(){ liquid.isAnimating = false; } );
                         } else {
-                            liquid.outDivObj.style.left = 0;
-                            liquid.outDivObj.style.top = 0;
-                            liquid.outDivObj.style.width = (liquid.parentObj.offsetWidth-3)+'px';
-                            liquid.outDivObj.style.height = (liquid.parentObj.offsetHeight-3)+'px';
+                            if(!liquid.isAnimating) {
+                                liquid.outDivObj.style.left = "0px";
+                                liquid.outDivObj.style.top = "0px";
+                                liquid.outDivObj.style.width = (liquid.parentObj.offsetWidth-3)+"px";
+                                liquid.outDivObj.style.height = (liquid.parentObj.offsetHeight-3)+"px";
+                            }
                         }
+                        
                     } else {
                         if(liquid.winXStatus !== '') {
                             if(liquid.outDivObjSize) {
                                 liquid.outDivObj.style.position = 'absolute';
-                                liquid.outDivObj.style.left = liquid.outDivObjSize.x;
-                                liquid.outDivObj.style.top = liquid.outDivObjSize.y;
-                                liquid.outDivObj.style.width = (liquid.outDivObjSize.wx)+'px';
-                                liquid.outDivObj.style.height = (liquid.outDivObjSize.wy)+'px';
+                                left = liquid.outDivObjSize.x;
+                                top = liquid.outDivObjSize.y;
+                                width = (liquid.outDivObjSize.wx);
+                                height = (liquid.outDivObjSize.wy);
                                 liquid.outDivObj.style.boxShadow  = '';
                                 if(liquid.outDivObjOverflow) liquid.outDivObj.style.overflow = liquid.outDivObjOverflow;
                                 var searchObj = document.getElementById(liquid.controlId+".popup.search");
                                 if(searchObj) searchObj.style.display = "";
                                 liquid.outDivObj.style.resize = liquid.tableJson.resize;
+                                $( liquid.outDivObj ).animate( { 
+                                    left: left+'px' 
+                                    ,top: top+'px'
+                                    ,width: width+"px"
+                                    ,height: height+"px"
+                                }, 200, function(){ } );
+                                
                             }
                             liquid.winXStatus = '';
                         } else {
@@ -9105,6 +9188,8 @@ var Liquid = {
             } else {
                 if(!filterObj.lookup || typeof filterObj.lookup === 'undefined') {
                     var filterId = liquid.controlId + ".filters." +filterGroupIndex + "." + filterObj.name + ".filter";
+                    var searchCode = "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" src=\""+Liquid.getImagePath("search.png")+"\" onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterId + "')\" style=\"padding-top:1; cursor:pointer\" width=\"16\" height=\"16\">";
+
                     filterObj.objId = filterId;
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete 
                             + " value=\"\" id=\"" + filterObj.linkedContainerId + "\""
@@ -9118,7 +9203,7 @@ var Liquid = {
                             + "</div>"
                             + "</td>"
                             + "<td class=\"liquidFilterImg\">"
-                            + "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" src=\""+Liquid.getImagePath("search.png")+"\" onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterId + "')\" style=\"padding-top:1; cursor:pointer\" width=\"16\" height=\"16\">"
+                            + (liquid.tableJson.filtersSearch !== false ? searchCode : "")
                             + "</td>"
                             + "</tr></table>";
                 } else {
@@ -11063,6 +11148,66 @@ var Liquid = {
             }
         }
     },
+    setFilter:function(obj, columnName, filterValue, filterOperator) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var column = Liquid.getColumn(liquid, columnName);
+            if(column) {
+                var filtersJson = liquid.filtersJson[liquid.curFilter];
+                bAddFilter = true;
+                if(filtersJson) {
+                    for (var i=0; i<filtersJson.columns.length; i++) {
+                        if(filtersJson.columns[i].name == columnName) {
+                            var element = document.getElementById(liquid.controlId + ".filters." +(liquid.curFilter+1) + "." + filtersJson.columns[i].name + ".filter");
+                            if(element) {
+                                bAddFilter = false;
+                                if(element.value !== filterValue) element.value = filterValue;
+                                if(isDef(filterOperator)) {
+                                    filtersJson.columns[i].op = filterOperator;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+                if(bAddFilter) {
+                    var ftIndex1B = Liquid.getForeignTableIndex(liquid);
+                    var targetLiquid = liquid;
+                    if(ftIndex1B) { // work on liquid.foreignTables[].options
+                        targetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
+                    }                    
+                    var filtersColumns = [ { name:columnName, tooltip:"", label:columnName, row:nCols?(i/nCols):'', col:nCols?(i%nCols):'', value:filterValue, op:filterOperator } ];
+                    var nFilters = isDef(targetLiquid.filtersJson) ? targetLiquid.filtersJson.length : 0;
+                    var curFilter = -1;                    
+                    if(nFilters <= 0) {
+                        for(var i=0; i<nFilters; i++) {
+                            if(targetLiquid.filtersJson[i].name === "userFilters") {
+                                curFilter = i;
+                                break;
+                            }
+                        }
+                    }                    
+                    if(curFilter < 0) {
+                        // Creating new filters group
+                        var nRows = 0, nCols = 3;
+                        var filtersName = ""
+                        var newFiltersJson = { name:"userFilters", title:"", tooltip:"", icon:"", nRows:nRows, nCols:nCols, columns:filtersColumns };
+                        try { console.log("INFO: new filters json : \n"+JSON.stringify(newFiltersJson)); } catch(e) { console.error(e); }
+                        // adding the property...
+                        Liquid.addProperty(liquid, ftIndex1B, "filters", newFiltersJson);
+                    } else {
+                        // Add to existing group of filters
+                        Liquid.addFilterToGroup(liquid, ftIndex1B, curFilter, filtersColumns, true);
+                    }
+                    
+                }
+            } else {
+                console.error("ERROR: setFilter() : column '"+columnName+"' not found in control:"+liquid.controlId);
+            }
+        } else {
+            console.error("ERROR: setFilter() : control '"+liquid.controlId+"' not found");
+        }
+    },
     onResetFilter:function(obj_id) {
         var obj = document.getElementById(obj_id);
         if(obj)
@@ -11841,14 +11986,14 @@ var Liquid = {
         }
     },
     dbtoHtmlDate:function(date) {
-        return Liquid.dbtoHtmlDateFunc(date,'-', Liquid.dateSep);
+        return Liquid.dbtoHtmlDateFunc(date, Liquid.dateSep, Liquid.dateSep);
     },
     dbtoHtmlDateFunc:function(date, in_sep, out_sep) {
         try {
             if(isDef(date)) {
                 var dateArray = date.split(' ');
                 var year = dateArray[0].split(in_sep);
-                var time = dateArray.length > 1 && dateArray[1] ? dateArray[1].split(':') : null;
+                var time = dateArray.length > 1 && dateArray[1] ? dateArray[1].split(Liquid.timeSep) : null;
                 return year[2] + out_sep + year[1] + out_sep + year[0] + (time ? " " + time[0] + ":" + time[1] + ":" + time[2] : "");
             } else {
                 return null;
@@ -11862,9 +12007,9 @@ var Liquid = {
     toDate:function(dateStr) {
         if(dateStr != null && dateStr.length) {
             var dt_parts = dateStr.split(" ");
-            var d_parts = dt_parts[0].split("-");
+            var d_parts = dt_parts[0].split(Liquid.dateSep);
             if(dt_parts.length > 1) {
-                var t_parts = dt_parts[1].split(":");
+                var t_parts = dt_parts[1].split(Liquid.timeSep);
                 return new Date(d_parts[2], d_parts[1] - 1, d_parts[0], t_parts[0], t_parts[1], t_parts[2]);
             } else {
                 return new Date(d_parts[2], d_parts[1] - 1, d_parts[0]);
@@ -12506,6 +12651,7 @@ var Liquid = {
             Liquid.onEvent(obj, "onLoad", null, null);
             liquid.outDivObj.classList.remove('liquidHide');
             liquid.outDivObj.classList.add('liquidShow');
+            $( liquid.outDivObj ).slideDown( "fast" );
             setTimeout('Liquid.onStarted(document.getElementById("' + liquid.controlId + '"))', 500);
         }
     },
@@ -14520,6 +14666,15 @@ var Liquid = {
                 +"</td><td>"
                 +"</td></tr>"
 
+
+                +"<tr><td>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Search button on filters:"+"<input id=\"filtersSearch\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.filtersSearch, false)+" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Menu on grid header:"+"<input id=\"gridHeaderMenu\" type=\"checkbox\" v"+Liquid.getCheckedAttr(tagetLiquid.tableJson.gridHeaderMenu, true)+" "+onKeyPressCode+"/></p>"
+                +"</td></tr>"
+
+                
                 +"<tr><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"List Tab title:"+"<input id=\"listTabTitle\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.listTabTitle !== 'undefined' ? tagetLiquid.tableJson.listTabTitle : "Lista")+"\" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
@@ -15825,81 +15980,90 @@ SystemEditor.prototype.isPopup = function() { return true; };
 
 function LiquidGridHeader() {}
 LiquidGridHeader.prototype.init = function (agParams) {
-    var style = '' + (typeof agParams.menuIconSize !== 'undefined' ? 'font-size:'+agParams.menuIconSize+'px' : '')+'';
-    var labelStyle = agParams.column.field === String(agParams.liquidLink.lastSearchCol+1) ? "color:red;" : "";
-    var itemId = agParams.liquidLink.controlId + ".header_label."+agParams.column.colId;
-    var ic = Number(agParams.column.field)-1;
-    var tooltipField = "";
-    var liquid = agParams.liquidLink;
-    if(liquid) {
-        if(ic < liquid.tableJson.columns.length) {
-            tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].field : "";
-        }
-    }
-    if(tooltipField === null || typeof tooltipField === 'undefined')
-        tooltipField = "";
-    
-    if(Liquid.projectMode) {
-        if(tooltipField) {
-            tooltipField += "\n\n";
-        }    
-        if(ic < liquid.tableJson.columns.length) {
-            var col = liquid.tableJson.columns[ic];
-            tooltipField += Liquid.getColumnTooltip(liquid, col);
-        }
-    }
-    
-    this.agParams = agParams;
-    this.eGui = document.createElement('div');
-    this.eGui.style.display = "inline-flex";
-    this.eGui.innerHTML = ''
-        +'<div style=\"display:inline-flex\">'
-        +(agParams.enableMenu ? '<div class="customHeaderMenuButton" style=\"'+style+'\">' + this.agParams.menuIcon + '</div>' : "")
-        +'<div id=\"'+itemId+'\" title="'+tooltipField+'" class="customHeaderLabel" style=\"'+labelStyle+'\">' + this.agParams.displayName + '</div>'
-        // +'<div class="customSortDownLabel inactive">&#x25BC;</div>'
-        // +'<div class="customSortUpLabel inactive">&#x25B2;</div>'
-        // +'<div class="customSortRemoveLabel inactive"></div>'
-        +'</div>'
-        ;
-    this.eMenuButton = this.eGui.querySelector(".customHeaderMenuButton");
-    this.eSortLabelButton = this.eGui.querySelector(".customHeaderLabel");
-    this.eSortDownButton = this.eGui.querySelector(".customSortDownLabel");
-    this.eSortUpButton = this.eGui.querySelector(".customSortUpLabel");
-    this.eSortRemoveButton = this.eGui.querySelector(".customSortRemoveLabel");
-
-    if(this.agParams.enableMenu) {
-        this.onMenuClickListener = this.onMenuClick.bind(this);
-        this.eMenuButton.addEventListener('click', this.onMenuClickListener);
-    } else {
-        if(this.eMenuButton) this.eGui.removeChild(this.eMenuButton);
-        this.eMenuButton = null;
-    }
-
-    if(this.agParams.enableSorting) {
-        if(this.eSortLabelButton) {
-            this.onSortAutoRequestedListener = this.onSortRequested.bind(this, 'auto');
-            this.eSortLabelButton.addEventListener('click', this.onSortAutoRequestedListener);
-        }
-        if(this.eSortDownButton) {
-            this.onSortAscRequestedListener = this.onSortRequested.bind(this, 'asc');
-            this.eSortDownButton.addEventListener('click', this.onSortAscRequestedListener);
-        }
-        if(this.eSortUpButton) {
-            this.onSortDescRequestedListener = this.onSortRequested.bind(this, 'desc');
-            this.eSortUpButton.addEventListener('click', this.onSortDescRequestedListener);
-        }
-        if(this.eSortRemoveButton) {
-            this.onRemoveSortListener = this.onSortRequested.bind(this, '');
-            this.eSortRemoveButton.addEventListener('click', this.onRemoveSortListener);
-        }
-        this.onSortChangedListener = this.onSortChanged.bind(this);
-        this.agParams.column.addEventListener('sortChanged', this.onSortChangedListener);
-        this.onSortChanged();
-    } else {
-        this.eGui.removeChild(this.eSortDownButton);
-        this.eGui.removeChild(this.eSortUpButton);
-        this.eGui.removeChild(this.eSortRemoveButton);
-    }
+	try {
+	    var style = '' + (typeof agParams.menuIconSize !== 'undefined' ? 'font-size:'+agParams.menuIconSize+'px' : '')+'';
+	    var labelStyle = agParams.column.field === String(agParams.liquidLink.lastSearchCol+1) ? "color:red;" : "";
+	    var itemId = agParams.liquidLink.controlId + ".header_label."+agParams.column.colId;
+	    var ic = Number(agParams.column.field)-1;
+	    var tooltipField = "";
+	    var liquid = agParams.liquidLink;
+	    if(liquid) {
+	        if(ic < liquid.tableJson.columns.length) {
+	            tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].field : "";
+	        }
+	    }
+	    if(tooltipField === null || typeof tooltipField === 'undefined')
+	        tooltipField = "";
+	    
+	    if(Liquid.projectMode) {
+	        if(tooltipField) {
+	            tooltipField += "\n\n";
+	        }    
+	        if(ic < liquid.tableJson.columns.length) {
+	            var col = liquid.tableJson.columns[ic];
+	            tooltipField += Liquid.getColumnTooltip(liquid, col);
+	        }
+	    }
+	    
+	    this.agParams = agParams;
+	    this.eGui = document.createElement('div');
+	    this.eGui.style.display = "inline-flex";
+	    
+	    var gridHeaderMenu = true;
+	    if(liquid) {
+	    	gridHeaderMenu = liquid.tableJson.gridHeaderMenu;
+	    }
+	    this.eGui.innerHTML = ''
+	        +'<div style=\"display:inline-flex\">'
+	        +(agParams.enableMenu ? '<div class="customHeaderMenuButton" style=\"'+style+'\">' + (gridHeaderMenu !== false ? this.agParams.menuIcon : "") + '</div>' : "")
+	        +'<div id=\"'+itemId+'\" title="'+tooltipField+'" class="customHeaderLabel" style=\"'+labelStyle+'\">' + this.agParams.displayName + '</div>'
+	        // +'<div class="customSortDownLabel inactive">&#x25BC;</div>'
+	        // +'<div class="customSortUpLabel inactive">&#x25B2;</div>'
+	        // +'<div class="customSortRemoveLabel inactive"></div>'
+	        +'</div>'
+	        ;
+	    this.eMenuButton = this.eGui.querySelector(".customHeaderMenuButton");
+	    this.eSortLabelButton = this.eGui.querySelector(".customHeaderLabel");
+	    this.eSortDownButton = this.eGui.querySelector(".customSortDownLabel");
+	    this.eSortUpButton = this.eGui.querySelector(".customSortUpLabel");
+	    this.eSortRemoveButton = this.eGui.querySelector(".customSortRemoveLabel");
+	
+	    if(this.agParams.enableMenu) {
+	    	 if(this.eMenuButton) {
+	    		 this.onMenuClickListener = this.onMenuClick.bind(this);
+	    		 this.eMenuButton.addEventListener('click', this.onMenuClickListener);
+	    	 }
+	    } else {
+	        if(this.eMenuButton) this.eGui.removeChild(this.eMenuButton);
+	        this.eMenuButton = null;
+	    }
+	
+	    if(this.agParams.enableSorting) {
+	        if(this.eSortLabelButton) {
+	            this.onSortAutoRequestedListener = this.onSortRequested.bind(this, 'auto');
+	            this.eSortLabelButton.addEventListener('click', this.onSortAutoRequestedListener);
+	        }
+	        if(this.eSortDownButton) {
+	            this.onSortAscRequestedListener = this.onSortRequested.bind(this, 'asc');
+	            this.eSortDownButton.addEventListener('click', this.onSortAscRequestedListener);
+	        }
+	        if(this.eSortUpButton) {
+	            this.onSortDescRequestedListener = this.onSortRequested.bind(this, 'desc');
+	            this.eSortUpButton.addEventListener('click', this.onSortDescRequestedListener);
+	        }
+	        if(this.eSortRemoveButton) {
+	            this.onRemoveSortListener = this.onSortRequested.bind(this, '');
+	            this.eSortRemoveButton.addEventListener('click', this.onRemoveSortListener);
+	        }
+	        this.onSortChangedListener = this.onSortChanged.bind(this);
+	        this.agParams.column.addEventListener('sortChanged', this.onSortChangedListener);
+	        this.onSortChanged();
+	    } else {
+	        this.eGui.removeChild(this.eSortDownButton);
+	        this.eGui.removeChild(this.eSortUpButton);
+	        this.eGui.removeChild(this.eSortRemoveButton);
+	    }
+	} catch(e) { console.error(e); }
 };
 
 LiquidGridHeader.prototype.onSortChanged = function () {
@@ -15930,15 +16094,19 @@ LiquidGridHeader.prototype.onSortRequested = function (order, event) {
     if(this.agParams.liquidLink)
         if(this.agParams.liquidLink.nPages > 1) sortServer = 'server';
             else if(isDef(this.agParams.liquidLink.tableJson.sortMode)) sortServer = this.agParams.liquidLink.tableJson.sortMode;
+    
+    var colIndex1B = Number(this.agParams.column.colDef.field);
+    var columnName = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].name : "";
+    var sortColumnsMode = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode : "asc";
+    if(columnName) {
+        if(sortColumnsMode === "asc") this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "desc";
+        else this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "asc";
+    }
+    
     if(sortServer === 'server') {
         if(typeof this.agParams.liquidLink.sortColumns === 'undefined' || !this.agParams.liquidLink.sortColumns)
             this.agParams.liquidLink.sortColumns = [];
-        var colIndex1B = Number(this.agParams.column.colDef.field);
-        var columnName = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].name : "";
-        var sortColumnsMode = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode : "asc";
         if(columnName) {
-            if(sortColumnsMode === "asc") this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "desc";
-            else this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "asc";
             if(event.shiftKey || event.ctrlKey) {
                 if(this.agParams.liquidLink.sortColumns.indexOf(columnName) < 0) 
                     this.agParams.liquidLink.sortColumns.push(columnName);
@@ -15950,7 +16118,7 @@ LiquidGridHeader.prototype.onSortRequested = function (order, event) {
         Liquid.loadData(this.agParams.liquidLink, null, "onSortRequested");
     } else {
         if(order==='auto') {
-            if(this.agParams.column.isSortAscending()) {
+            if(sortColumnsMode === "asc") {
                 this.agParams.setSort('desc', event.shiftKey || event.ctrlKey);
             } else {
                 this.agParams.setSort('asc', event.shiftKey || event.ctrlKey);

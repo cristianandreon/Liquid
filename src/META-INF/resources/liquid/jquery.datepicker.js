@@ -2,14 +2,14 @@
 
 /* datepicker component definition */
 (function(window, $) {
-    var $document = $(window);
-    var $body = $('body');
-    var $html = $('html');
+    var $document = jQ1124(window);
+    var $body = jQ1124('body');
+    var $html = jQ1124('html');
     var NS_DATEPICKER = 'jquery-datepicker';
 
     var Datepicker = function(element, options) {
         var properties;
-        var $element = $(element);
+        var $element = jQ1124(element);
 
         options = $.isPlainObject(options) ? options : {};
         properties = {
@@ -63,7 +63,7 @@
 
             /* create container for mobile browsers */
             if (this.isMobile === true) {
-                this.$container = $('<div>').addClass('jquery-datepicker__container').appendTo($body);
+                this.$container = jQ1124('<div>').addClass('jquery-datepicker__container').appendTo($body);
             }
 
             /* create datepicker view */
@@ -97,14 +97,14 @@
 
             $header = this.getHeader(this.msg[this.options.lang], dateObj);
             $content = this.getContent(this.msg[this.options.lang], dateObj);
-            $table = $('<table>').addClass('jquery-datepicker__table').append($header, $content);
+            $table = jQ1124('<table>').addClass('jquery-datepicker__table').append($header, $content);
 
             /* create the panel */
             if (this.isCreated) {
                 /* clean up before insert new child elements */
                 this.$panel.empty().append($table);
             } else {
-                this.$panel = $('<div>').addClass('jquery-datepicker__panel').append($table);
+                this.$panel = jQ1124('<div>').addClass('jquery-datepicker__panel').append($table);
             }
 
             /* add special class in mobile devices */
@@ -128,15 +128,15 @@
             year = dateObj.getFullYear();
             month = dateObj.getMonth();
 
-            $previous = $('<th>').addClass('jquery-datepicker__prev')
-                        .append($('<span>').addClass('fa fa-chevron-left'));
-            $next = $('<th>').addClass('jquery-datepicker__next')
-                        .append($('<span>').addClass('fa fa-chevron-right'));
-            $title = $('<th>').attr('colspan', '5').addClass('jquery-datepicker__title')
-                        .append($('<span>').text(msg.months[month] + ' ' + year));
-            $header = $('<thead>');
+            $previous = jQ1124('<th>').addClass('jquery-datepicker__prev')
+                        .append(jQ1124('<span>').addClass('fa fa-chevron-left'));
+            $next = jQ1124('<th>').addClass('jquery-datepicker__next')
+                        .append(jQ1124('<span>').addClass('fa fa-chevron-right'));
+            $title = jQ1124('<th>').attr('colspan', '5').addClass('jquery-datepicker__title')
+                        .append(jQ1124('<span>').text(msg.months[month] + ' ' + year));
+            $header = jQ1124('<thead>');
 
-            $('<tr>').append($previous, $title, $next).appendTo($header);
+            jQ1124('<tr>').append($previous, $title, $next).appendTo($header);
             return $header;
         },
 
@@ -150,9 +150,9 @@
             month = dateObj.getMonth();
 
             /* create day names row */
-            $content = $('<tr>');
+            $content = jQ1124('<tr>');
             msg.days.forEach(function(name) {
-                $content.append($('<td>').addClass('jquery-datepicker__dayName').append($('<span>').text(name)));
+                $content.append(jQ1124('<td>').addClass('jquery-datepicker__dayName').append(jQ1124('<span>').text(name)));
             });
 
             /* create elements for days of current month */
@@ -161,10 +161,10 @@
             }
             for (i = 0; i < firstDay - 1; i++) {
                 /* place empty cells before the first day */
-                dayItems.push($('<td>').addClass('-is--disabled').append('<span>'));
+                dayItems.push(jQ1124('<td>').addClass('-is--disabled').append('<span>'));
             }
             for (i = 1; i <= this.getDaysOfMonth(month + 1, year); i++) {
-                dayItem = $('<td>').addClass('jquery-datepicker__day').append($('<span>').text(i));
+                dayItem = jQ1124('<td>').addClass('jquery-datepicker__day').append(jQ1124('<span>').text(i));
 
                 /* add classes to selected date and disabled dates */
                 if (this.isDateSelected &&
@@ -185,7 +185,7 @@
 
             /* put day cells in order */
             for (i = 0; i < dayItems.length; i = i + 7) {
-                $content = $content.add($('<tr>').append(dayItems.slice(i, i + 7)));
+                $content = $content.add(jQ1124('<tr>').append(dayItems.slice(i, i + 7)));
             }
 
             return $content;
@@ -284,7 +284,7 @@
             });
 
             $dayItems.on('click', function(ev) {
-                var $this = $(this);
+                var $this = jQ1124(this);
                 ev.stopPropagation();
 
                 /* ignore disabled dates */
@@ -419,7 +419,7 @@
         var ret;
 
         this.each(function() {
-            var $this = $(this);
+            var $this = jQ1124(this);
             var data = $this.data(NS_DATEPICKER);
             var func;
             var dataOpts;
@@ -447,4 +447,4 @@
 
     $.fn.datepicker.Constructor = Datepicker;
 
-})(window, jQuery);
+})(window, jQ1124);

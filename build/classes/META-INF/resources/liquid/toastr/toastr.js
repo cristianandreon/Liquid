@@ -55,7 +55,7 @@
 
             function getContainer(options, create) {
                 if (!options) { options = getOptions(); }
-                $container = $('#' + options.containerId);
+                $container = jQ1124('#' + options.containerId);
                 if ($container.length) {
                     return $container;
                 }
@@ -110,7 +110,7 @@
             function remove($toastElement) {
                 var options = getOptions();
                 if (!$container) { getContainer(options); }
-                if ($toastElement && $(':focus', $toastElement).length === 0) {
+                if ($toastElement && jQ1124(':focus', $toastElement).length === 0) {
                     removeToast($toastElement);
                     return;
                 }
@@ -124,13 +124,13 @@
             function clearContainer (options) {
                 var toastsToClear = $container.children();
                 for (var i = toastsToClear.length - 1; i >= 0; i--) {
-                    clearToast($(toastsToClear[i]), options);
+                    clearToast(jQ1124(toastsToClear[i]), options);
                 }
             }
 
             function clearToast ($toastElement, options, clearOptions) {
                 var force = clearOptions && clearOptions.force ? clearOptions.force : false;
-                if ($toastElement && (force || $(':focus', $toastElement).length === 0)) {
+                if ($toastElement && (force || jQ1124(':focus', $toastElement).length === 0)) {
                     $toastElement[options.hideMethod]({
                         duration: options.hideDuration,
                         easing: options.hideEasing,
@@ -142,11 +142,11 @@
             }
 
             function createContainer(options) {
-                $container = $('<div/>')
+                $container = jQ1124('<div/>')
                     .attr('id', options.containerId)
                     .addClass(options.positionClass);
 
-                $container.appendTo($(options.target));
+                $container.appendTo(jQ1124(options.target));
                 return $container;
             }
 
@@ -204,7 +204,7 @@
                 var iconClass = map.iconClass || options.iconClass;
 
                 if (typeof (map.optionsOverride) !== 'undefined') {
-                    options = $.extend(options, map.optionsOverride);
+                    options = jQ1124.extend(options, map.optionsOverride);
                     iconClass = map.optionsOverride.iconClass || iconClass;
                 }
 
@@ -215,11 +215,11 @@
                 $container = getContainer(options, true);
 
                 var intervalId = null;
-                var $toastElement = $('<div/>');
-                var $titleElement = $('<div/>');
-                var $messageElement = $('<div/>');
-                var $progressElement = $('<div/>');
-                var $closeElement = $(options.closeHtml);
+                var $toastElement = jQ1124('<div/>');
+                var $titleElement = jQ1124('<div/>');
+                var $messageElement = jQ1124('<div/>');
+                var $progressElement = jQ1124('<div/>');
+                var $closeElement = jQ1124(options.closeHtml);
                 var progressBar = {
                     intervalId: null,
                     hideEta: null,
@@ -406,7 +406,7 @@
                     var duration = override && options.closeDuration !== false ?
                         options.closeDuration : options.hideDuration;
                     var easing = override && options.closeEasing !== false ? options.closeEasing : options.hideEasing;
-                    if ($(':focus', $toastElement).length && !override) {
+                    if (jQ1124(':focus', $toastElement).length && !override) {
                         return;
                     }
                     clearTimeout(progressBar.intervalId);
@@ -449,7 +449,7 @@
             }
 
             function getOptions() {
-                return $.extend({}, getDefaults(), toastr.options);
+                return jQ1124.extend({}, getDefaults(), toastr.options);
             }
 
             function removeToast($toastElement) {

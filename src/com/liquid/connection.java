@@ -28,7 +28,7 @@ public class connection {
             }
         } catch(ClassNotFoundException cnf) {
             System.err.println(" app.liquid.dbx.connection.getDBConnection() not found. Please add it in order to access to db...");
-            throw cnf.getCause();
+            throw new Exception("Please add app.liquid.dbx.connection to your application...(Error:"+cnf.getLocalizedMessage()+")");
     	} catch(Throwable th) {
             System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + th.getLocalizedMessage());
             throw th.getCause();

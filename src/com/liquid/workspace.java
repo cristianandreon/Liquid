@@ -248,7 +248,7 @@ public class workspace {
      * @see         workspace
      */
     static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex, Object owner, String returnType ) throws Throwable {
-        return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, replaceApex), null, owner, returnType);
+        return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, false), null, owner, returnType);
     }
 
     
@@ -1422,9 +1422,9 @@ public class workspace {
             if("json".equalsIgnoreCase(returnType)) {
                 result = sTableJson;
             } else if("js".equalsIgnoreCase(returnType)) {
-                result = "<script>"+getJSVariableFromControlId(controlId)+"={controlId:\""+controlId+"\",json:'"+sTableJson+"'};</script>";
+                result = "<script>"+getJSVariableFromControlId(controlId)+"={controlId:\""+controlId+"\",json:'"+sTableJson.replace("'", "\\'")+"'};</script>";
             } else {
-                result = "<script>glLiquidStartupTables.push({controlId:\""+controlId+"\",json:'"+sTableJson+"'});</script>";
+                result = "<script>glLiquidStartupTables.push({controlId:\""+controlId+"\",json:'"+sTableJson.replace("'", "\\'")+"'});</script>";
             }
             
             return result;
@@ -2026,6 +2026,9 @@ public class workspace {
                             if(fileName == null || fileName.isEmpty()) {
                                 fileName = controlId + ".json";
                             }
+                            fileName = fileName != null ? fileName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") : null;
+                            fullFileName = fullFileName != null ? fullFileName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") : null;
+                            
                             if(fullFileName != null && !fullFileName.isEmpty()) {
                                 // salvataggio file nella cartella in produzione
                                 try {
@@ -2044,20 +2047,25 @@ public class workspace {
                                         boolean bProceed = true;
                                         
                                         // DEBUG : liquidizeJSONContnet(fileContent); return "{\"result\":-1,\"error\":\"\"}";
-                                        
-                                        try {
-                                            if(utility.fileExist(insideProjectFileName)) {
-                                                bProceed = (Messagebox.show( " File <b>"+insideProjectFileName+"</b> already exist<br/><br/> Do you want to overwrite it ?", "Liquid", Messagebox.YES+Messagebox.NO+Messagebox.WARNING) == Messagebox.YES);
+                                        File f = new File(insideProjectFileName);
+                                        if(f == null) {
+                                            return "{\"result\":0,\"message\":\""+utility.base64Encode("Invalid file name : "+insideProjectFileName+"")+"\"}";                                            
+                                            
+                                        } else {                                        
+                                            try {
+                                                if(utility.fileExist(insideProjectFileName)) {
+                                                    bProceed = (Messagebox.show( " File <b>"+insideProjectFileName+"</b> already exist<br/><br/> Do you want to overwrite it ?", "Liquid", Messagebox.YES+Messagebox.NO+Messagebox.WARNING) == Messagebox.YES);
+                                                }
+                                                if(bProceed) 
+                                                    Files.write(Paths.get(insideProjectFileName), liquidizeJSONContent(fileContent).getBytes());
+                                                else 
+                                                    return "{\"result\":0,\"message\":\"\"}";
+                                            } catch (Exception ex) {
+                                                return "{\"result\":-1,\"error\":\""+utility.base64Encode(ex.getLocalizedMessage()+" - writing:"+insideProjectFileName)+"\"}";
                                             }
-                                            if(bProceed) 
-                                                Files.write(Paths.get(insideProjectFileName), liquidizeJSONContent(fileContent).getBytes());
-                                            else 
-                                                return "{\"result\":0,\"message\":\"\"}";
-                                        } catch (Exception ex) {
-                                            return "{\"result\":-1,\"error\":\""+utility.base64Encode(ex.getLocalizedMessage()+" - writing:"+insideProjectFileName)+"\"}";
+                                            Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "File in project as <b>"+insideProjectFileName+"</b>");
+                                            return "{\"result\":1,\"message\":\""+utility.base64Encode("file in project "+insideProjectFileName+" saved<br/><br/>javascript global var name : <b>"+jsVarName+"</b>")+"\"}";
                                         }
-                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "File in project as <b>"+insideProjectFileName+"</b>");
-                                        return "{\"result\":1,\"message\":\""+utility.base64Encode("file in project "+insideProjectFileName+" saved<br/><br/>javascript global var name : <b>"+jsVarName+"</b>")+"\"}";
 
                                     } else {
                                         Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "file "+insideProjectFileName+" saved by client request");

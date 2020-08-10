@@ -64,7 +64,7 @@ public class TransactionList {
         if(i<transactionList.size()) {
             TransactionList ft = transactionList.get(i);
             String itemIdString = "\"", tableIdString = "\"";            
-            if(tbl_wrk.driverClass.contains(".mysql")) {
+            if(tbl_wrk.driverClass.contains(".mysql") || tbl_wrk.driverClass.contains(".mariadb")) {
                 itemIdString = "`";
                 tableIdString = "";
             } else {

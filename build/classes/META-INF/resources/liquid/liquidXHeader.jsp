@@ -17,13 +17,14 @@
 </script>
 <script src="<%=path%>/liquid/ag-grid-enterprise.min.js" type="text/javascript"></script>
 
+<!-- load jQuery 1.12.4 -->
 <script src="<%=path%>/liquid/jquery-1.12.4.js"></script>
 <script src="<%=path%>/liquid/jquery-ui.js"></script>
+<script type="text/javascript">var jQ1124 = $.noConflict(true);</script>
 <link rel="stylesheet" href="<%=path%>/liquid/jquery-ui.min.css"/>
 
 <script src="<%=path%>/liquid/toastr/toastr.js"></script>
-<link href="<%=path%>/liquid/toastr/toastr.less" rel="stylesheet" type="text/css" />
-<link href="<%=path%>/liquid/toastr/toastr.scss" rel="stylesheet" type="text/css" />
+<link href="<%=path%>/liquid/toastr/toastr.css" rel="stylesheet" type="text/css" />
 
 <script type="text/javascript" src="<%=path%>/liquid/jquery.datetimepicker.js?version=<%=jssVersion%>"></script>
 <link rel="stylesheet" href="<%=path%>/liquid/jquery.datetimepicker.min.css?version=<%=jssVersion%>" type='text/css' />

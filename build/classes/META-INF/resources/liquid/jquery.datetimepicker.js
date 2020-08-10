@@ -283,7 +283,7 @@ var DateFormatter;
     }
 }(),
 function(e) {
-    "function" == typeof define && define.amd ? define(["jquery", "jquery-mousewheel"], e) : "object" == typeof exports ? module.exports = e : e(jQuery)
+    "function" == typeof define && define.amd ? define(["jquery", "jquery-mousewheel"], e) : "object" == typeof exports ? module.exports = e : e(jQ1124)
 }(function(e) {
     "use strict";
 
@@ -1090,7 +1090,7 @@ function(e) {
     }, e.fn.datetimepicker.defaults = a
 }),
 function(e) {
-    "function" == typeof define && define.amd ? define(["jquery"], e) : "object" == typeof exports ? module.exports = e : e(jQuery)
+    "function" == typeof define && define.amd ? define(["jquery"], e) : "object" == typeof exports ? module.exports = e : e(jQ1124)
 }(function(e) {
     function t(t) {
         var i = t || window.event,

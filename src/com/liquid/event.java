@@ -854,7 +854,7 @@ public class event {
                 System.err.println(" updateRow() Error:" + e.getLocalizedMessage());
             }
             
-            result += ",\"details\":"+(resAdd != null && !resAdd.isEmpty() ? resAdd: "\"\"");
+            result += ",\"details\":["+(resAdd != null && !resAdd.isEmpty() ? resAdd: "\"\"")+"]";
             result += "}";
             return result;
         
@@ -1244,7 +1244,7 @@ public class event {
                 System.err.println(" updateRow() Error:" + e.getLocalizedMessage());
             }
             
-            result += ",\"details\":"+(resUpd != null && !resUpd.isEmpty() ? resUpd: "\"\"");
+            result += ",\"details\":["+(resUpd != null && !resUpd.isEmpty() ? resUpd: "\"\"")+"]";
             result += "}";
             return result;
         
@@ -1307,7 +1307,7 @@ public class event {
                 System.err.println(" deleteRow() Error:" + e.getLocalizedMessage());
             }
             
-            result += ",\"details\":"+(resDel != null && !resDel.isEmpty() ? resDel: "\"\"");
+            result += ",\"details\":["+(resDel != null && !resDel.isEmpty() ? resDel: "\"\"")+"]";
             result += "}";
             return result;
         

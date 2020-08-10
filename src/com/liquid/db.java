@@ -263,6 +263,8 @@ public class db {
                     System.out.println("// LIQUID ERROR : "+err);
                     return "{\"error\":\""+utility.base64Encode(err)+"\"}";
                 }
+            } else {
+                return "{\"error\":\""+utility.base64Encode("controlId:"+controlId+" not found")+"\"}";
             }
 
             String itemIdString = "\"", tableIdString = "\"", asKeyword = " AS ";
@@ -531,7 +533,13 @@ public class db {
                                         if(!LeftJoinMap.getByKey(leftJoinsMap, leftJoinKey)) {
                                             if(leftJoinList.length()>0)
                                                 leftJoinList+="\n";
-                                            leftJoinList += "LEFT JOIN " + ( tableIdString + schema + tableIdString )+ "." + ( tableIdString + foreignTable +tableIdString ) + asKeyword + leftJoinAlias + " ON "+ leftJoinAlias+"."+(tableIdString+foreignColumn+tableIdString) +"="+ table+"."+(tableIdString+column+tableIdString);
+                                            leftJoinList += "LEFT JOIN " 
+                                                    + ( schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "" )
+                                                    + ( tableIdString + foreignTable +tableIdString ) + asKeyword + leftJoinAlias 
+                                                    + " ON " 
+                                                    + leftJoinAlias+"."+(tableIdString+foreignColumn+tableIdString) 
+                                                    + "=" 
+                                                    + table+"."+(tableIdString+column+tableIdString);
                                             leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable) );
                                         }
                                         
@@ -1378,9 +1386,10 @@ public class db {
 	                        }
 	                    }
 	                    if(!bFoundCol) {
-	                        filterName = tbl_wrk.schemaTable+"."+itemIdString+filterName+itemIdString;
+	                        // filterName = tbl_wrk.schemaTable+"."+itemIdString+filterName+itemIdString;
 	                        // error += "[Filters Error: field : "+filterName+" not resolved]";
 	                        // System.err.println("Filters Error: field : "+filterName+" not resolved");
+                                filterName = filterName;
 	                    }
 	                } else if(colParts.length>1) {
 	                    filterTable = colParts[0];
@@ -1468,13 +1477,13 @@ public class db {
 	                
 	                if("null".equalsIgnoreCase(filterValue)) {
 	                	if("=".equalsIgnoreCase(filterOp) || "like".equalsIgnoreCase(filterOp) || "fulllike".equalsIgnoreCase(filterOp) || filterOp == null || filterOp.isEmpty()) {
-	                		filterOp = "is";
+	                		filterOp = "IS";
 	                		filterValue = "NULL";
 	                		preFix = " ";
 	                		postFix = "";
 	                	}
 	                } else if("\"null\"".equals(filterValue)) {
-	                	filterValue = "null";
+	                	filterValue = "NULL";
 	                } else if("\"NULL\"".equals(filterValue)) {
 	                	filterValue = "NULL";
 	                }
@@ -1490,6 +1499,8 @@ public class db {
 	                    postFix = ")";
 	                    if(filterValue == null || filterValue.isEmpty()) {
 	                        if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                                    preFix = "";
+                                    postFix = "";
 	                            filterValue = "NULL";
 	                        } else {
 	                            filterValue = "''";
@@ -1529,8 +1540,15 @@ public class db {
 	                            // numeric
 	                        } else {
 	                            // > 0 applicato alle stringhe -> NOT null
-	                            filterOp = "NOT";
+                                    preFix = "";
+                                    postFix = "";
+                                    if(isPostgres) {
+                                        filterOp = "IS NOT";
+                                    } else {
+                                        filterOp = "NOT";
+                                    }
 	                            filterValue = "NULL";
+                                    filterSensitiveCase = true;
 	                        }
 	                    }                                        
 	                }
@@ -1548,7 +1566,7 @@ public class db {
 	                }
 	
 	                sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName +itemIdString) : (filterName) ) + sensitiveCasePostOp
-	                        + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp : "=")
+	                        + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=")
 	                        + preFix + (filterValue != null ? filterValue : "") + postFix;
 	            }
 	        } catch (Exception e) {
@@ -3524,7 +3542,7 @@ public class db {
                 try { table = liquid.tableJson.getString("table"); } catch (JSONException e) {}
         
                 String itemIdString = "\"", tableIdString = "\"";
-                if(liquid.driverClass.contains(".mysql")) {
+                if(liquid.driverClass.contains(".mysql") || liquid.driverClass.contains(".mariadb")) {
                     itemIdString = "`";
                     tableIdString = "";
                 } else {
