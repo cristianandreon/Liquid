@@ -3711,7 +3711,29 @@ public class db {
                                     }
                                 }
                             }
-                        }
+                        } else if(paramJSON.has("name")) {
+                            String paramName = paramJSON.getString("name");
+                            if(liquid.controlId.equalsIgnoreCase(paramName)) {
+                                if(paramJSON.has("sel")) {
+                                    JSONArray sel = paramJSON.getJSONArray("sel");
+                                    if(sel != null) {
+                                        for(int iSel=0; iSel<sel.length(); iSel++) {
+                                            String rowId = (String)sel.getString(iSel);
+                                            String nodeId = "";
+                                            if("delete".equalsIgnoreCase(type)) {
+                                                tableTransactList.add( (schema != null ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, null, null, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
+                                            } else if("update".equalsIgnoreCase(type)) {
+                                                // TODO: where is the data ???
+                                                // String field = null, value = null;
+                                                // try { field = fieldJSON.getString("field"); } catch (JSONException e) {}
+                                                // try { value = fieldJSON.getString("value"); } catch (JSONException e) {}
+                                                // tableTransactList.add( (schema != null ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, tName, value, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "update", rowId, nodeId);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }                            
                     }
                 }
             
