@@ -34356,6 +34356,3 @@ function getCurrentTimetick() {
 
 // set language
 Liquid.setLanguage( navigator.language || navigator.userLanguage );
-
-// set language
-Liquid.setLanguage( navigator.language || navigator.userLanguage );
