@@ -120,6 +120,12 @@ public class liquidize {
                     }
                 }
 
+                json.remove("metadataTime");
+                if(json.has("loadingMessage")) {
+                    if("".equalsIgnoreCase(json.getString("loadingMessage"))) {
+                        json.remove("loadingMessage");
+                    }
+                }
 
                 
                 String [] props = { "sourceFileName", "sourceFullFileName", "parentObjId" };
@@ -163,7 +169,7 @@ public class liquidize {
                 JSONObject column = columns.getJSONObject(il);
                 if(column.has("label")) {
                     if(column.getString("name").equalsIgnoreCase(column.getString("label"))) {
-                        column.remove("labal");
+                        column.remove("label");
                     }
                 }
                 if(column.has("requiredByDB")) {
@@ -187,7 +193,11 @@ public class liquidize {
             for(int il=0; il<commands.length(); il++) {
                 JSONObject command = commands.getJSONObject(il);
                 if(command.has("isNative")) {
-                    refined_commands.put( new JSONObject( "{\"name\":\""+command.getString("name")+"\"}" ) );
+                    if(command.getBoolean("isNative")) {
+                        refined_commands.put( new JSONObject( "{\"name\":\""+command.getString("name")+"\"}" ) );
+                    } else {
+                        refined_commands.put(command);
+                    }
                 } else {
                     refined_commands.put(command);
                 }
