@@ -235,6 +235,8 @@ public class db {
             String primaryKey = "id";
             String dbPrimaryKey = "id";
             int indexPrimaryKey = 0;
+            int iTypePrimaryKey = 0;
+            String typePrimaryKey = null;
             String column_list = "";
             String column_alias_list = "";
             String column_json_list = "";
@@ -563,25 +565,27 @@ public class db {
 
                                     } else {
                                     	if(bAddColumnToList) {
-	                                        if(column_list.length()>0)
-	                                            column_list+=",";                            
-	                                        if(column_json_list.length()>0)
-	                                            column_json_list+=",";
-	                                        if(colParts.length > 1) {
-	                                            String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
-	                                            column_alias = "A"+"_"+columnName;
-	                                            column_json_list += colParts[0]+"_"+columnName;
-	                                            column_list += colMode + colParts[0]+"."+itemIdString+colParts[1]+itemIdString + asKeyword + column_alias;        
-	                                        } else {
-	                                            String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
-	                                            column_alias = /*table*/ "A_" + columnName;
-	                                            column_json_list += columnName;
-	                                            column_list += colMode + itemIdString + table + itemIdString + "." + itemIdString+col.getString("name")+itemIdString + asKeyword + column_alias;
-	                                        }
+                                            if(column_list.length()>0)
+                                                column_list+=",";                            
+                                            if(column_json_list.length()>0)
+                                                column_json_list+=",";
+                                            if(colParts.length > 1) {
+                                                String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
+                                                column_alias = "A"+"_"+columnName;
+                                                column_json_list += colParts[0]+"_"+columnName;
+                                                column_list += colMode + colParts[0]+"."+itemIdString+colParts[1]+itemIdString + asKeyword + column_alias;        
+                                            } else {
+                                                String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
+                                                column_alias = /*table*/ "A_" + columnName;
+                                                column_json_list += columnName;
+                                                column_list += colMode + itemIdString + table + itemIdString + "." + itemIdString+col.getString("name")+itemIdString + asKeyword + column_alias;
+                                            }
                                     	}
                                     	
                                         if(primaryKey.equalsIgnoreCase(col.getString("name"))) {
                                             indexPrimaryKey = ic+1;
+                                            typePrimaryKey = col.getString("type");
+                                            try { iTypePrimaryKey = Integer.parseInt(typePrimaryKey); } catch (Exception e) {}
                                         }
                                     }
 
@@ -742,8 +746,16 @@ public class db {
                             try { filtersIds = requestJson.getJSONArray("ids"); } catch (Exception e) {}
                             if(filtersIds != null) {
                                 String sIdsList = "";
+                                String apex = "";
+                                
+                                if(iTypePrimaryKey == 3 || iTypePrimaryKey == 4 || iTypePrimaryKey == 7 || iTypePrimaryKey == 8  || iTypePrimaryKey == -5 || iTypePrimaryKey == -6 || iTypePrimaryKey == -7) {
+                                    // numeric
+                                } else {                                
+                                    apex = "'";
+                                }
+                                        
                                 for(int iF=0; iF<filtersIds.length(); iF++) {
-                                    sIdsList += (sIdsList.length()>0?",":"") + String.valueOf(filtersIds.get(iF));
+                                    sIdsList += (sIdsList.length()>0?",":"") + apex + String.valueOf(filtersIds.get(iF)) + apex;
                                 }
                                 if(sWhere.length() > 0) {
                                     sWhere += " AND ";
@@ -1297,6 +1309,7 @@ public class db {
                 String base64Warning = "";
                 String base64Message = "";
                 String base64Title = "";
+                
                 try { base64Query = utility.base64Encode(executingQuery != null  && !executingQuery.isEmpty() ? executingQuery : "N/D"); } catch (Throwable e) {}
                 try { base64Error = utility.base64Encode(error != null  && !error.isEmpty() ? error : ""); } catch (Throwable e) {}
                 try { base64Warning = utility.base64Encode(warning != null && !warning.isEmpty() ? warning : ""); } catch (Throwable e) {}
@@ -1637,6 +1650,8 @@ public class db {
                 try { colDigits[ic] = Integer.parseInt( cols.getJSONObject(ic).getString("digits") ); } catch (Exception e) { colDigits[ic] = -1; }
                 try { colNullable[ic] = cols.getJSONObject(ic).getBoolean("nullable"); } catch (Exception e) { colNullable[ic] = true; }
             }
+            
+            
             
             while (rsdo.next()) {
                 if(cRow >= startRow) {

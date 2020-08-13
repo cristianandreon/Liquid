@@ -56,7 +56,8 @@ public class liquidize {
     static ArrayList<String> glkeepClosedList = new ArrayList<String> ( Arrays.asList(
             "columns", "events", "commands"
             ,"columns.options.columns"
-            ,"grids.columns", "foreignTables.options.grids.columns", "foreignTables.options.commands", "foreignTables.options.events"
+            ,"grids.columns", 
+            "foreignTables.options.columns", "foreignTables.options.grids.columns", "foreignTables.options.commands", "foreignTables.options.events"
             ,"filters.columns", "foreignTables.options.filters.columns"
             ,"grids.assets"
     ));
@@ -76,7 +77,9 @@ public class liquidize {
         try {
             JSONObject json = new JSONObject(content);
             if(json != null) {
-                // removing runtime props
+                //
+                // removing runtime props on events
+                //
                 if(json.has("events")) {
                     JSONArray events = json.getJSONArray("events");
                     JSONArray refined_events = new JSONArray();
@@ -88,6 +91,30 @@ public class liquidize {
                     }
                     json.put("events", refined_events);
                 }
+                
+                //
+                // removing runtime props on columns
+                //
+                if(json.has("columns")) {
+                    json.put("columns", refineColumns( json.getJSONArray("columns") ));
+                }
+
+                if(json.has("foreignTables")) {
+                    JSONArray fts = json.getJSONArray("foreignTables");
+                    for(int ift=0; ift<fts.length(); ift++) {
+                        JSONObject ft = fts.getJSONObject(ift);
+                        if(ft != null) {
+                            if(ft.has("options")) {
+                                JSONObject opts = ft.getJSONObject("options");
+                                if(opts.has("columns")) {                            
+                                    opts.put("columns", refineColumns( opts.getJSONArray("columns") ));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                
                 String [] props = { "sourceFileName", "sourceFullFileName", "parentObjId" };
                 for(String prop : props) {
                     if(json.has(prop)) {
@@ -122,6 +149,31 @@ public class liquidize {
         return content;
     }
 
+    public static JSONArray refineColumns( JSONArray columns ) throws JSONException {
+        if(columns != null) {
+            JSONArray refined_columns = new JSONArray();
+            for(int il=0; il<columns.length(); il++) {
+                JSONObject column = columns.getJSONObject(il);
+                if(column.has("label")) {
+                    if(column.getString("name").equalsIgnoreCase(column.getString("label"))) {
+                        column.remove("labal");
+                    }
+                }
+                if(column.has("requiredByDB")) {
+                    column.remove("requiredByDB");
+                }
+                if(column.has("width")) {
+                    if("!auto".equals(column.getString("width"))) {
+                        column.remove("width");
+                    }
+                }
+                refined_columns.put(column);
+            }
+            return refined_columns;
+        }
+        return null;
+    }
+    
     public static boolean liquidizeHasNewLine( String prop ) {
         for(int i=0; i<glkeepClosedList.size(); i++) {
             if(glkeepClosedList.get(i).equalsIgnoreCase(prop)) {
@@ -219,8 +271,8 @@ public class liquidize {
                             }
                         }
 
-                        if("requiredByDB".equalsIgnoreCase(propName)) {
-                            if(fullPathProp.contains("columns")) {
+                        if(fullPathProp.contains("columns")) {
+                            if("requiredByDB".equalsIgnoreCase(propName)) {
                                 bProcessProperty = false;
                             }
                         }
