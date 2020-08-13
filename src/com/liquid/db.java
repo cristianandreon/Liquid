@@ -679,7 +679,7 @@ public class db {
 
             if(isOracle) { //fuckyou
             	if(!"distinct".equalsIgnoreCase(targetMode)) { // fail the dintinct purpose
-            		column_list += ",ROWNUM as ROWNUMBER";
+                    column_list += ",ROWNUM as ROWNUMBER";
             	}
             }
                     
@@ -847,7 +847,11 @@ public class db {
                 executingQuery = workspace.solve_query_params(query, queryParams);
                 executingQueryForCache = null;
             } else {
-                executingQuery = baseQuery + sWhere; // + sSort // Aggiunto dopo la limitazione : in oracle è ottenuta con il filtro;
+                executingQuery = baseQuery + sWhere; 
+                if(!isOracle) {
+                     // Aggiunto dopo la limitazione : in oracle è ottenuta con il filtro
+                    executingQuery += sSort;
+                }
                 executingQueryForCache = executingQuery;
             }
             
@@ -963,13 +967,14 @@ public class db {
             //
             // Aggiunta del criterio di ordinamento
             //
-            if(query != null && !query.isEmpty()) {
-            } else {
-            	if(sSort != null && !sSort.isEmpty()) {
-            		executingQuery += "\n"+sSort;
-            	}
+            if(isOracle) {
+                if(query != null && !query.isEmpty()) {
+                } else {
+                    if(sSort != null && !sSort.isEmpty()) {
+                        executingQuery += "\n"+sSort;
+                    }
+                }
             }
-            
             
             
             
@@ -1462,12 +1467,11 @@ public class db {
 	
 	                if(filterValue.indexOf("*") >= 0) {
 	                    if(filterOp == null || filterOp.isEmpty()) {
-	                        filterOp = " LIKE ";
+	                        filterOp = "LIKE";
 	                        filterValue = filterValue.replaceAll("\\*", "%");
 	                    }
 	                }
 	                
-	                try { filterOp = filtersCol.getString("op"); } catch (JSONException e) {}
 	
 	                if(type == 8 || type == 7  || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
 	                    if(filterValue.indexOf(",") >= 0) {

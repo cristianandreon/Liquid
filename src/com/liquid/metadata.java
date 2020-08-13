@@ -1290,8 +1290,10 @@ public class metadata {
     static boolean create_table(Connection conn, String database, String schema, String table, JSONObject tableJson) throws SQLException, JSONException {
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         String itemIdString = "\"", tableIdString = "\"";
+        String pre_sql = null;                    
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
+        int res;
         
         try {
 
@@ -1322,11 +1324,11 @@ public class metadata {
 
             if(isOracle) {
         	} else if(isPostgres) {
-        		if("deploysCfg".equalsIgnoreCase(table))
-        			sql += "CREATE SEQUENCE IF NOT EXISTS \"liquidx\".\"deploysCfg_seq\";\nCOMMIT;\n";
+                    if("deploysCfg".equalsIgnoreCase(table))
+                        sql += "CREATE SEQUENCE IF NOT EXISTS \"liquidx\".\"deploysCfg_seq\";\nCOMMIT;\n";
         	}
 
-    		sql += "CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ";
+            sql += "CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ";
             
 
             if(isOracle) {
@@ -1345,10 +1347,11 @@ public class metadata {
             for (int ic = 0; ic < cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
                 String name = col.getString("name");
-                String type = col.getString("type");
-                String typeName = col.getString("typeName");
-                int size = col.getInt("size");
+                String type = col.has("type") ? col.getString("type") : "1";
+                String typeName = col.has("typeName") ? col.getString("typeName") : "VARCHAR";
+                int size = col.has("size") ? col.getInt("size") : 256;
 
+                
                 String sDefault = "";
                 try {
                     sDefault = col.getString("default");
@@ -1359,6 +1362,12 @@ public class metadata {
                     sql += ",";
                 }
 
+                if(primaryKey == null || primaryKey.isEmpty()) {
+                    if("id".equalsIgnoreCase(name)) {
+                        primaryKey = name;
+                    }
+                }
+                        
                 if (isOracle) {
                     if (size <= 0) {
                         sql += (itemIdString + name + itemIdString) + " " + typeName + "\n";
@@ -1375,6 +1384,13 @@ public class metadata {
                     // title       varchar(40) NOT NULL,
                     // did         integer NOT NULL,
 
+                    if (name.equals(primaryKey)) {
+                        String seq_name = ((tableIdString+schema+tableIdString)+"."+(tableIdString+table+"_seq"+tableIdString));
+                        pre_sql = "CREATE SEQUENCE IF NOT EXISTS "+seq_name+";\nCOMMIT;\n";
+                        sDefault = "nextval('"+schema+"."+seq_name+"'::regclass)";
+                        typeName = "int4";
+                    }
+                    
                     if ("serial".equalsIgnoreCase(typeName)) {
                         typeName = "integer";
                         size = -2;
@@ -1392,14 +1408,16 @@ public class metadata {
                             sql += (itemIdString + name + itemIdString) + " " + typeName + "(" + size + ")";
                         }
                     }
+
                     if (name.equals(primaryKey)) {
-                        sql += " PRIMARY KEY "; // "("+(itemIdString+name+itemIdString) +")";
+                        sql += " PRIMARY KEY ";                        
                     }
+                    
                     if (sDefault != null && !sDefault.isEmpty()) {
                         sDefault = sDefault.replace("`", "'");
                         sql += " DEFAULT " + sDefault;
                     }
-
+                    
                     sql += "\n";
                 }
             }
@@ -1416,9 +1434,25 @@ public class metadata {
                 sql += ");\nCOMMIT;\n";
             }
 
-            psdo = conn.prepareStatement(sql);
-            rsdo = psdo.executeQuery();
+            if(pre_sql != null && !pre_sql.isEmpty()) {
+                try {
+                    psdo = conn.prepareStatement(pre_sql);
+                    res = psdo.executeUpdate();
+                } catch (Exception ex) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                psdo.close();
+            }
 
+            if(sql != null && !sql.isEmpty()) {
+                try {
+                    psdo = conn.prepareStatement(sql);
+                    res = psdo.executeUpdate();
+                } catch (Exception ex) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            
             if (!table_exist(conn,
                     database,
                     schema,
@@ -1504,68 +1538,68 @@ public class metadata {
         return false;
     }
     
-	static public boolean create_database(Connection conn, String database) {
-	    String sql = null;
-	    if(conn != null) {
-	    	if(database != null && !database.isEmpty()) {
-			    try {
-			    	String driver = db.getDriver(conn); 
-			        if("mysql".equalsIgnoreCase(driver)) {
-			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
-                                } else if("mariadb".equalsIgnoreCase(driver)) {
-			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
-			        } else if("postgres".equalsIgnoreCase(driver)) {
-			            sql = "CREATE DATABASE "+database;
-			        } else if("oracle".equalsIgnoreCase(driver)) {
-			        	// N.B. database = oracle instance
-			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
-			        } else if("sqlserver".equalsIgnoreCase(driver)) {
-			            sql = "CREATE DATABASE IF NOT EXISTS "+database;
-			        }
-			        if(sql != null) {
-			        	PreparedStatement psdo = conn.prepareStatement(sql);
-			        	psdo.executeUpdate();
-			        	psdo.close();
-			        	return true;
-			        }
-			    } catch (Throwable th) {
-			    	Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
-			    }
-	    	}
-	    }
-    	return false;
-	}
-	
-	static public boolean create_schema(Connection conn, String schema) {
-	    String sql = null;
-	    if(conn != null) {
-	    	if(schema != null && !schema.isEmpty()) {
-			    try {
-			    	String driver = db.getDriver(conn); 
-			        if("mysql".equalsIgnoreCase(driver)) {
-			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
-                                } else if("mariadb".equalsIgnoreCase(driver)) {
-			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
-			        } else if("postgres".equalsIgnoreCase(driver)) {
-			            sql = "CREATE SCHEMA "+schema;
-			        } else if("oracle".equalsIgnoreCase(driver)) {
-			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
-			        } else if("sqlserver".equalsIgnoreCase(driver)) {
-			            sql = "CREATE SCHEMA IF NOT EXISTS "+schema;
-			        }
-			        if(sql != null) {
-			        	PreparedStatement psdo = conn.prepareStatement(sql);
-			        	psdo.executeUpdate();
-			        	psdo.close();
-			            return true;
-			        }
-			    } catch (Throwable th) {
-			    	Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
-			    }
-	    	}
-	    }
-    	return false;
-	}	
+    static public boolean create_database(Connection conn, String database) {
+        String sql = null;
+        if (conn != null) {
+            if (database != null && !database.isEmpty()) {
+                try {
+                    String driver = db.getDriver(conn);
+                    if ("mysql".equalsIgnoreCase(driver)) {
+                        sql = "CREATE DATABASE IF NOT EXISTS " + database;
+                    } else if ("mariadb".equalsIgnoreCase(driver)) {
+                        sql = "CREATE DATABASE IF NOT EXISTS " + database;
+                    } else if ("postgres".equalsIgnoreCase(driver)) {
+                        sql = "CREATE DATABASE " + database;
+                    } else if ("oracle".equalsIgnoreCase(driver)) {
+                        // N.B. database = oracle instance
+                        sql = "CREATE DATABASE IF NOT EXISTS " + database;
+                    } else if ("sqlserver".equalsIgnoreCase(driver)) {
+                        sql = "CREATE DATABASE IF NOT EXISTS " + database;
+                    }
+                    if (sql != null) {
+                        PreparedStatement psdo = conn.prepareStatement(sql);
+                        psdo.executeUpdate();
+                        psdo.close();
+                        return true;
+                    }
+                } catch (Throwable th) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
+                }
+            }
+        }
+        return false;
+    }
+
+    static public boolean create_schema(Connection conn, String schema) {
+        String sql = null;
+        if (conn != null) {
+            if (schema != null && !schema.isEmpty()) {
+                try {
+                    String driver = db.getDriver(conn);
+                    if ("mysql".equalsIgnoreCase(driver)) {
+                        sql = "CREATE SCHEMA IF NOT EXISTS " + schema;
+                    } else if ("mariadb".equalsIgnoreCase(driver)) {
+                        sql = "CREATE SCHEMA IF NOT EXISTS " + schema;
+                    } else if ("postgres".equalsIgnoreCase(driver)) {
+                        sql = "CREATE SCHEMA " + schema;
+                    } else if ("oracle".equalsIgnoreCase(driver)) {
+                        sql = "CREATE SCHEMA IF NOT EXISTS " + schema;
+                    } else if ("sqlserver".equalsIgnoreCase(driver)) {
+                        sql = "CREATE SCHEMA IF NOT EXISTS " + schema;
+                    }
+                    if (sql != null) {
+                        PreparedStatement psdo = conn.prepareStatement(sql);
+                        psdo.executeUpdate();
+                        psdo.close();
+                        return true;
+                    }
+                } catch (Throwable th) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
+                }
+            }
+        }
+        return false;
+    }
 	
     
     //

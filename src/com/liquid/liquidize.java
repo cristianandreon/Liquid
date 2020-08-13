@@ -26,6 +26,7 @@ public class liquidize {
     
     static ArrayList<String> glJSONPropsList = new ArrayList<String> (  Arrays.asList( 
         "database", "schema", "table", "driver", "connectionURL"
+        ,"primaryKey"
         ,"name"
         ,"nRows"
         ,"nCols"
@@ -59,7 +60,17 @@ public class liquidize {
             ,"filters.columns", "foreignTables.options.filters.columns"
             ,"grids.assets"
     ));
+    
+    static ArrayList<String> glRuntimeParentPropsList = new ArrayList<String> ( Arrays.asList(
+            "commands"
+            ,"foreignTables.options.commands"
+    ));
+    
+    static ArrayList<String> glNativeCommands = new ArrayList<String> ( Arrays.asList(
+            "insert", "create", "update", "modify", "delete", "erase", "previous", "next", "copy", "paste"
+    ));
 
+    
     static public String liquidizeJSONContent(String content) {
         String out = "";
         try {
@@ -120,6 +131,19 @@ public class liquidize {
         return true;
     }
     
+    public static String liquidizeIsNativeCommand( String fullPathProp, String prop ) {
+        for(int i=0; i<glRuntimeParentPropsList.size(); i++) {
+            if(glRuntimeParentPropsList.get(i).equalsIgnoreCase(fullPathProp)) {
+                for(int j=0; j<glNativeCommands.size(); j++) {
+                    if(glNativeCommands.get(j).equalsIgnoreCase(prop)) {
+                        return glNativeCommands.get(j);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
     public static String liquidizeAddProp(Object ojson, String prop, String fullPathProp, int cLevel, boolean bNewLine, String sep) throws JSONException {
         String out = "";
 
@@ -162,26 +186,11 @@ public class liquidize {
         } else if(ojson instanceof JSONObject) {
             JSONObject json = (JSONObject)ojson;
             if(prop != null) {
-                if(json.has(prop)) {
-                    Object propVal = json.get(prop);
-                    if(bNewLine) {
-                        out+= "\n";
-                        for(int i=0; i<cLevel; i++) out += sTabular;
-                        if(propVal instanceof JSONObject || propVal instanceof JSONArray) {
-                        } else {
-                        }
-                    }
-                    int aLevel = (bNewLine && propVal instanceof JSONObject ? 1 : 0);
-                    out += sep + "\"" + prop + "\":";
-                    out += liquidizeAddProp( propVal, null, (prop), cLevel+aLevel, bNewLine & liquidizeHasNewLine(fullPathProp), "" );
-                    json.remove(prop);
-                }
-            } else {
-                int nAdded = 0;
-                for(int io=0; io<glJSONPropsList.size(); io++) {
-                    String propName = glJSONPropsList.get(io);
-                    if(json.has(propName)) {
-                        Object propVal = json.get(propName);
+                if(json.has(prop)) {                    
+                    boolean bProcessProperty = true;
+                            
+                    if(bProcessProperty) {
+                        Object propVal = json.get(prop);
                         if(bNewLine) {
                             out+= "\n";
                             for(int i=0; i<cLevel; i++) out += sTabular;
@@ -189,12 +198,49 @@ public class liquidize {
                             } else {
                             }
                         }
-                        if(nAdded==0) out += "{ ";
-                        out += (nAdded>0?",":"")+"\"" + propName + "\":";
                         int aLevel = (bNewLine && propVal instanceof JSONObject ? 1 : 0);
-                        out += liquidizeAddProp( propVal, null, fullPathProp+(propName != null ? "."+propName:""), cLevel+aLevel, bNewLine & liquidizeHasNewLine(fullPathProp), "" );
-                        json.remove(propName);
-                        nAdded++;
+                        out += sep + "\"" + prop + "\":";
+                        out += liquidizeAddProp( propVal, null, (prop), cLevel+aLevel, bNewLine & liquidizeHasNewLine(fullPathProp), "" );
+                        json.remove(prop);
+                    }
+                }
+            } else {
+                int nAdded = 0;
+                for(int io=0; io<glJSONPropsList.size(); io++) {
+                    String propName = glJSONPropsList.get(io);
+                    if(json.has(propName)) {
+                        boolean bProcessProperty = true;
+
+                        // Only name for native command
+                        String nativeCommand = liquidizeIsNativeCommand(fullPathProp, propName);
+                        if(nativeCommand != null) {
+                            if(!"name".equalsIgnoreCase(propName)) {
+                                bProcessProperty = false;
+                            }
+                        }
+
+                        if("requiredByDB".equalsIgnoreCase(propName)) {
+                            if(fullPathProp.contains("columns")) {
+                                bProcessProperty = false;
+                            }
+                        }
+                        
+                        if(bProcessProperty) {
+                            Object propVal = json.get(propName);
+                            if(bNewLine) {
+                                out+= "\n";
+                                for(int i=0; i<cLevel; i++) out += sTabular;
+                                if(propVal instanceof JSONObject || propVal instanceof JSONArray) {
+                                } else {
+                                }
+                            }
+                            if(nAdded==0) out += "{ ";
+                            out += (nAdded>0?",":"")+"\"" + propName + "\":";
+                            int aLevel = (bNewLine && propVal instanceof JSONObject ? 1 : 0);
+                            out += liquidizeAddProp( propVal, null, fullPathProp+(propName != null ? "."+propName:""), cLevel+aLevel, bNewLine & liquidizeHasNewLine(fullPathProp), "" );
+                            json.remove(propName);
+                            nAdded++;
+                        }
                     }
                 }
                 JSONArray names = json.names();

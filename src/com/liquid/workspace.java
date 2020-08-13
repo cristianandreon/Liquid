@@ -477,7 +477,7 @@ public class workspace {
                     return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode( controlId+" : no DB connection.."+error )+"\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection .."+error+"\");</script>" );
                 }
             } catch(Throwable th) {
-                String error = th.getLocalizedMessage();                
+                String error = th.getLocalizedMessage().replace("\"", "\\\"");
                 return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode( controlId+" : no DB connection.."+error )+"\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection .."+error+"\");</script>" );
             }            
 
@@ -579,8 +579,12 @@ public class workspace {
                 }
                 
                 if(table != null && !table.isEmpty()) {
-                    boolean createTableIfMissing = false;
+                    boolean createTableIfMissing = false, createIfMissing = false;
+                    try { createIfMissing = tableJson.getBoolean("createIfMissing"); } catch(Exception e) {}
                     try { createTableIfMissing = tableJson.getBoolean("createTableIfMissing"); } catch(Exception e) {}
+                    
+                    createTableIfMissing = createTableIfMissing || createIfMissing;
+
                     // verifica se esiste la tabella
                     if(!metadata.table_exist(connToUse, database, schema, table)) {
                         if(createTableIfMissing) {
