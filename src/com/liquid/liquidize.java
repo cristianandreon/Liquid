@@ -98,6 +98,9 @@ public class liquidize {
                 if(json.has("columns")) {
                     json.put("columns", refineColumns( json.getJSONArray("columns") ));
                 }
+                if(json.has("commands")) {
+                    json.put("commands", refineCommands( json.getJSONArray("commands") ));
+                }
 
                 if(json.has("foreignTables")) {
                     JSONArray fts = json.getJSONArray("foreignTables");
@@ -110,9 +113,13 @@ public class liquidize {
                                     opts.put("columns", refineColumns( opts.getJSONArray("columns") ));
                                 }
                             }
+                            if(ft.has("commands")) {
+                                ft.put("commands", refineCommands( ft.getJSONArray("commands") ));
+                            }
                         }
                     }
                 }
+
 
                 
                 String [] props = { "sourceFileName", "sourceFullFileName", "parentObjId" };
@@ -173,7 +180,23 @@ public class liquidize {
         }
         return null;
     }
-    
+        
+    public static JSONArray refineCommands( JSONArray commands ) throws JSONException {
+        if(commands != null) {
+            JSONArray refined_commands = new JSONArray();
+            for(int il=0; il<commands.length(); il++) {
+                JSONObject command = commands.getJSONObject(il);
+                if(command.has("isNative")) {
+                    refined_commands.put( new JSONObject( "{\"name\":\""+command.getString("name")+"\"}" ) );
+                } else {
+                    refined_commands.put(command);
+                }
+            }
+            return refined_commands;
+        }
+        return null;
+    }
+        
     public static boolean liquidizeHasNewLine( String prop ) {
         for(int i=0; i<glkeepClosedList.size(); i++) {
             if(glkeepClosedList.get(i).equalsIgnoreCase(prop)) {

@@ -14043,8 +14043,8 @@ var Liquid = {
                                                     try { window[attrname].jsonObj = JSON.parse(window[attrname].json); } catch (e) {}
                                                 }
                                                 if(isDef(window[attrname].jsonObj)) {
-                                                    if(window[attrname].jsonObj.database === database || !isDef(database)) {
-                                                        if(window[attrname].jsonObj.schema === schema || !isDef(schema)) {
+                                                    if(window[attrname].jsonObj.database === database || !isDef(database) || !isDef(window[attrname].jsonObj.database)) {
+                                                        if(window[attrname].jsonObj.schema === schema || !isDef(schema) || !isDef(window[attrname].jsonObj.schema)) {
                                                             if(window[attrname].jsonObj.table === json) {
                                                                 // finally catch it
                                                                 lookupJson = JSON.parse(window[attrname].json);

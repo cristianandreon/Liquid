@@ -367,7 +367,7 @@ public class workspace {
             return out_string;
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-            return "<script>console.error(\""+ex.getLocalizedMessage()+"\");</script>";
+            return "<script>console.error(\" get_table_controls_in_folder() Failed on folder "+sFolder+" - error:"+ex.getLocalizedMessage()+"\");</script>";
         }
     }
     
