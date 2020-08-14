@@ -3547,6 +3547,7 @@ public class db {
         TransactionList foreignTableTransactList = new TransactionList();
         TransactionList tableTransactList = new TransactionList();
         boolean bUseAutoCommit = false;
+        boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         
         try {
             
@@ -3559,9 +3560,26 @@ public class db {
                 try { database = liquid.tableJson.getString("database"); } catch (JSONException e) {}
                 try { schema = liquid.tableJson.getString("schema"); } catch (JSONException e) {}
                 try { table = liquid.tableJson.getString("table"); } catch (JSONException e) {}
-        
+
+                
+                if( (liquid.driverClass != null && liquid.driverClass.toLowerCase().contains("postgres.")) || liquid.dbProductName.toLowerCase().contains("postgres")) {
+                    isPostgres = true;
+                }
+                if( (liquid.driverClass != null && liquid.driverClass.toLowerCase().contains("mysql.")) || liquid.dbProductName.toLowerCase().contains("mysql")) {
+                    isMySQL = true;
+                }
+                if( (liquid.driverClass != null && liquid.driverClass.toLowerCase().contains("mariadb.")) || liquid.dbProductName.toLowerCase().contains("mariadb")) {
+                    isMySQL = true;
+                }
+                if((liquid.driverClass != null && liquid.driverClass.toLowerCase().contains("oracle.")) || (liquid.dbProductName != null && liquid.dbProductName.toLowerCase().contains("oracle"))) {
+                    isOracle = true;
+                }
+                if((liquid.driverClass != null && liquid.driverClass.toLowerCase().contains("sqlserver.")) || (liquid.dbProductName != null && liquid.dbProductName.toLowerCase().contains("sqlserver"))) {
+                    isSqlServer = true;
+                }
+                
                 String itemIdString = "\"", tableIdString = "\"";
-                if(liquid.driverClass.contains(".mysql") || liquid.driverClass.contains(".mariadb")) {
+                if(isMySQL) {
                     itemIdString = "`";
                     tableIdString = "";
                 } else {
@@ -3701,10 +3719,10 @@ public class db {
                                                                     } 
                                                                     if(!isExternalField) {
                                                                         if("insert".equalsIgnoreCase(sType)) {
-                                                                            tableTransactList.add( (schema != null ? tableIdString+schema+itemIdString + ".":"") + tableIdString+table+tableIdString, tName, value, null, null, "insert", rowId, nodeId);
+                                                                            tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+itemIdString+"." : "") + tableIdString+table+tableIdString, tName, value, null, null, "insert", rowId, nodeId);
 
                                                                         } else if("update".equalsIgnoreCase(sType)) {
-                                                                            tableTransactList.add( (schema != null ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, tName, value, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "update", rowId, nodeId);
+                                                                            tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString+"." : "") + tableIdString+table+tableIdString, tName, value, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "update", rowId, nodeId);
                                                                         }
                                                                     }
                                                                 }
@@ -3716,7 +3734,7 @@ public class db {
                                             }
 
                                             if("delete".equalsIgnoreCase(sType)) {
-                                                tableTransactList.add( (schema != null ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, null, null, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
+                                                tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString+"." : "") + tableIdString+table+tableIdString, null, null, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
                                             }
 
                                             // legame tableTransactList con foreignTableTransactList
@@ -3740,7 +3758,7 @@ public class db {
                                             String rowId = (String)sel.getString(iSel);
                                             String nodeId = "";
                                             if("delete".equalsIgnoreCase(type)) {
-                                                tableTransactList.add( (schema != null ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, null, null, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
+                                                tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, null, null, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
                                             } else if("update".equalsIgnoreCase(type)) {
                                                 // TODO: where is the data ???
                                                 // String field = null, value = null;
