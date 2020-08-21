@@ -1376,6 +1376,7 @@ public class db {
 	                String postFix = "'";                            
 	                String [] colParts = filterName.split("\\.");
 	                boolean bFoundCol = false;
+                        boolean filterDisabled = false;
 	
 	                // risolve l'ambiguita'
 	                if(colParts.length==1) {
@@ -1447,14 +1448,6 @@ public class db {
 	                    System.err.println(err);
 	                }
 	
-	                if(sWhere.length() > 0) {
-	                    if("OR".equalsIgnoreCase(filterLogic))
-	                        sWhere += " OR ";
-	                    else
-	                        sWhere += " AND ";
-	                } else {
-	                    sWhere += "\nWHERE ";
-	                }
 	
 	                int ich = 0, nch = filterValue.length();
 	                while(ich < nch && filterValue.charAt(ich) == ' ') ich++;
@@ -1493,23 +1486,23 @@ public class db {
 	                }
 	                
 	                if("null".equalsIgnoreCase(filterValue)) {
-	                	if("=".equalsIgnoreCase(filterOp) || "like".equalsIgnoreCase(filterOp) || "fulllike".equalsIgnoreCase(filterOp) || filterOp == null || filterOp.isEmpty()) {
-	                		filterOp = "IS";
-	                		filterValue = "NULL";
-	                		preFix = " ";
-	                		postFix = "";
-	                	}
+                            if("=".equalsIgnoreCase(filterOp) || "like".equalsIgnoreCase(filterOp) || "fulllike".equalsIgnoreCase(filterOp) || filterOp == null || filterOp.isEmpty()) {
+                                filterOp = "IS";
+                                filterValue = "NULL";
+                                preFix = " ";
+                                postFix = "";
+                            }
 	                } else if("\"null\"".equals(filterValue)) {
-	                	filterValue = "NULL";
+                            filterValue = "NULL";
 	                } else if("\"NULL\"".equals(filterValue)) {
-	                	filterValue = "NULL";
+                            filterValue = "NULL";
 	                }
 	                
 	                if("IS".equalsIgnoreCase(filterOp)) {
-	                	if("NULL".equalsIgnoreCase(filterValue)) {
-	                		preFix = " ";
-	                		postFix = "";
-	                	}
+                            if("NULL".equalsIgnoreCase(filterValue)) {
+                                preFix = " ";
+                                postFix = "";
+                            }
 	                }
 	                if("IN".equalsIgnoreCase(filterOp)) {
 	                    preFix = "(";	
@@ -1547,8 +1540,13 @@ public class db {
 	                        filterOp = "=";
 	                    } else {
 	                        filterOp = "LIKE";
-	                        preFix = (filterValue.charAt(0) != '%' ? "'%" : "'");
-	                        postFix = (filterValue.length()>0 ? (filterValue.charAt(filterValue.length()-1) != '%' ? "%'" : "'") : "'");
+                                if(filterValue != null && !filterValue.isEmpty()) {
+                                    preFix = (filterValue.charAt(0) != '%' ? "'%" : "'");
+                                    postFix = (filterValue.length()>0 ? (filterValue.charAt(filterValue.length()-1) != '%' ? "%'" : "'") : "'");
+                                } else {
+                                    // no value : assume like "" as no filter
+                                    filterDisabled = true;
+                                }
 	                    }
 	                }
 	                if(">".equalsIgnoreCase(filterOp)) {
@@ -1582,9 +1580,21 @@ public class db {
 	                    }
 	                }
 	
-	                sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName +itemIdString) : (filterName) ) + sensitiveCasePostOp
-	                        + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=")
-	                        + preFix + (filterValue != null ? filterValue : "") + postFix;
+                        if(!filterDisabled) {
+                            
+                            if(sWhere.length() > 0) {
+                                if("OR".equalsIgnoreCase(filterLogic))
+                                    sWhere += " OR ";
+                                else
+                                    sWhere += " AND ";
+                            } else {
+                                sWhere += "\nWHERE ";
+                            }
+                            
+                            sWhere  += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName +itemIdString) : (filterName) ) + sensitiveCasePostOp
+                                    + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=")
+                                    + preFix + (filterValue != null ? filterValue : "") + postFix;
+                        }
 	            }
 	        } catch (Exception e) {
 	            error += " Filters Error:"+e.getLocalizedMessage() + "]";

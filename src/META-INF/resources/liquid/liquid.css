@@ -51,6 +51,7 @@ html, body { height: 100% }
 .liquidGridTables ul { list-style: none; margin: 0px; }
 .liquidGridTablesTabs { border-bottom: 1px solid white; float:left; width:100%; text-align:center; background-color: whitesmoke; }
 .liquidGridControl { height:30px; width:calc(100% - 2px); overflow:auto; padding-left: 3px; }
+.liquidLayoutControl { height:30px; width:calc(100% - 2px); overflow:auto; padding-left: 3px; }
 .liquidGridControl readonly {  border:0px; color:darkgray; background-color: transparent; }
 .liquidGridControl::-webkit-scrollbar { width: 8px; height: 8px; }
 .liquidGridControl::-webkit-scrollbar-track { border-radius: 8px; }

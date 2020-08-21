@@ -1192,6 +1192,9 @@ public class event {
                         }
                     }
                 }
+            } else {
+                Logger.getLogger(db.class.getName()).log(Level.SEVERE, "No workspace defined");
+                retVal = "{\"error\":\""+utility.base64Encode("No workspace defined")+"\"}";
             }
         } catch (Throwable th) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);

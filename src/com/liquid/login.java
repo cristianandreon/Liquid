@@ -38,6 +38,7 @@ public class login {
     // Se driver/host/database sono valorizzati la connessione è esplicita, altrimenti
     static public String driver = null;
     static public String host = null;
+    static public String port = null;
     static public String database = null;
     static public String user = null;
     static public String password = null;
@@ -70,6 +71,16 @@ public class login {
     static public void setDomainId(HttpServletRequest request, String domain_id) {
         if(request != null)
             request.getSession().setAttribute("GLLiquidLoginDomainId", domain_id);
+    }
+    static public String getApplicationId(HttpServletRequest request) {
+        if(request != null)
+            return (String)request.getSession().getAttribute("GLLiquidLoginApplicationId");
+        return null;
+    }
+    static public String getDomainId(HttpServletRequest request) {
+        if(request != null)
+            return (String)request.getSession().getAttribute("GLLiquidLoginDomainId");
+        return null;
     }
     static public void setDaysValidity(HttpServletRequest request, int daysValidity) {
         if(request != null)
@@ -109,34 +120,44 @@ public class login {
             if(host == null || host.isEmpty()) host = "localhost";
             if("oracle".equalsIgnoreCase(driver)) {
                 // TODO : check user and password definition for connection url
-                connectionURL.add("jdbc:oracle:thin:@"+host+":1521:xe"+",user="+database);
+                if(port == null || port.isEmpty()) port = "1521";
+                connectionURL.add("jdbc:oracle:thin:@"+host+":"+port+":xe"+",user="+database);
                 connectionURL.add(user);
                 connectionURL.add(password);
                 if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
-                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":1521:xe",database, (password != null ? password : "") );
+                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":"+port+":xe",database, (password != null ? password : "") );
             } else if("postgres".equalsIgnoreCase(driver)) {                
                 // connectionURL = "jdbc:postgresql://"+host+":5432/"+database+"?user="+user+"&password="+password+"&ssl=true";
                 // connectionURL = "jdbc:postgresql://"+user+":"+password+"@"+host+":5432/"+database;
-                connectionURL.add("jdbc:postgresql://"+host+":5432/"+database);
+                if(port == null || port.isEmpty()) port = "5432";
+                connectionURL.add("jdbc:postgresql://"+host+":"+port+"/"+database);
                 connectionURL.add(user);
                 connectionURL.add(password);
                 if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
-                conn = DriverManager.getConnection("jdbc:postgresql://"+host+":5432/"+database, (user != null ? user : ""), (password != null ? password : ""));
+                conn = DriverManager.getConnection("jdbc:postgresql://"+host+":"+port+"/"+database, (user != null ? user : ""), (password != null ? password : ""));
             } else if("mysql".equalsIgnoreCase(driver)) {
-                // connectionURL = "jdbc:mysql://"+host+":3306/"+database+",user="+user+",password="+password;
-                connectionURL.add("jdbc:mysql://"+host+":3306/"+database);
+                if(port == null || port.isEmpty()) port = "3306";
+                connectionURL.add("jdbc:mysql://"+host+":"+port+"/"+database);
                 connectionURL.add(user);
                 connectionURL.add(password);
                 if(driverClass == null) driverClass = Class.forName("org.mysql.Driver");
-                conn = DriverManager.getConnection("jdbc:mysql://"+host+":3306/"+database, (user != null ? user : ""), (password != null ? password : ""));
+                conn = DriverManager.getConnection("jdbc:mysql://"+host+":"+port+"/"+database, (user != null ? user : ""), (password != null ? password : ""));                
+            } else if("mariadb".equalsIgnoreCase(driver)) {
+                if(port == null || port.isEmpty()) port = "3306";
+                connectionURL.add("jdbc:mysql://"+host+":"+port+"/"+database);
+                connectionURL.add(user);
+                connectionURL.add(password);
+                if(driverClass == null) driverClass = Class.forName("org.mariadb.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mariadb://"+host+":"+port+"/"+database+"?useSSL=false", (user != null ? user : ""), (password != null ? password : ""));
             } else if("sqlserver".equalsIgnoreCase(driver)) {
                 // TODO : check user and password definition for connection url
                 // connectionURL = "jdbc:sqlserver://"+host+":1433;DatabaseName="+database+",user="+user+",password="+password;
-                connectionURL.add("jdbc:sqlserver://"+host+":1433;DatabaseName="+database);
+                if(port == null || port.isEmpty()) port = "1433";
+                connectionURL.add("jdbc:sqlserver://"+host+":"+port+";DatabaseName="+database);
                 connectionURL.add(user);
                 connectionURL.add(password);
                 if(driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-                conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":1433;DatabaseName="+database, (user != null ? user : ""), (password != null ? password : ""));
+                conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":"+port+";DatabaseName="+database, (user != null ? user : ""), (password != null ? password : ""));
             } else {
                 Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, "drive not recognized");
             }
@@ -155,7 +176,7 @@ public class login {
         
         itemIdString = "\"";
         tableIdString = "\"";
-        if("mysql".equalsIgnoreCase(driver)) {
+        if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
             itemIdString = "`";
             tableIdString = "";
         } else if("postgres".equalsIgnoreCase(driver)) {
@@ -171,7 +192,7 @@ public class login {
 
     static boolean prepare_database(Connection conn) {
         try {
-            if("mysql".equalsIgnoreCase(driver)) {
+            if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
             } else if("postgres".equalsIgnoreCase(driver)) {
                 try {
                     PreparedStatement psdoLogin = conn.prepareStatement("CREATE EXTENSION pgcrypto");
@@ -215,7 +236,7 @@ public class login {
             if(!tableExist) {
                 ArrayList<String> sql = new ArrayList<String>();
                
-                if("mysql".equalsIgnoreCase(driver)) {
+                if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                     // CREATE users ADD id, user VARCHAR(256), email VARCHAR(256), password VARCHAR(256), status VARCHAR(16), domain_id VARCHAR(256), application_id VARCHAR(64), token VARCHAR(32), expire TIMESTAMP, naccess INT, nfails INT)
                     sql.add("SET sql_mode='';");
                     sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
@@ -586,12 +607,12 @@ public class login {
                         try {
 
                             // MYSQL
-                            if("mysql".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`='"+sUserID.toLowerCase()+"' OR `email`='"+sUserID.toLowerCase()+"') AND `password`=PASSWORD(?) AND `status`<>'A' AND `status`<>'D' AND `emailValidated` > 0 AND `domain_id`=" + (domain_id != null ? domain_id : "") +" AND `application_id`='" + (application_id != null ? application_id : ""+"'");
+                            if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`='"+sUserID.toLowerCase()+"' OR `email`='"+sUserID.toLowerCase()+"') AND (`password`=PASSWORD(?) OR `password`='') AND `status`<>'A' AND `status`<>'D' AND `emailValidated` > 0 AND `domain_id`='" + (domain_id != null ? domain_id : "") +"' AND `application_id`='" + (application_id != null ? application_id : "") + "'";
 
                             // POSTGRES
                             } else if("postgres".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"='"+sUserID.toLowerCase()+"' OR \"email\"='"+sUserID.toLowerCase()+"') AND \"password\"=crypt(CAST('" + sPassword + "' AS text),CAST('"+password_seed+"' AS text)) AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"='" + (domain_id != null ? domain_id : "")+"' AND \"application_id\"='" + (application_id != null ? application_id : "")+"'";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"='"+sUserID.toLowerCase()+"' OR \"email\"='"+sUserID.toLowerCase()+"') AND (\"password\"=crypt(CAST(? AS text),CAST('"+password_seed+"' AS text))  OR \"password\"='') AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"='" + (domain_id != null ? domain_id : "")+"' AND \"application_id\"='" + (application_id != null ? application_id : "") + "'";
 
                             // ORACLE
                             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -601,6 +622,7 @@ public class login {
                             }
 
                             psdoLogin = conn.prepareStatement(sqlSTMT);
+                            psdoLogin.setString(1, sPassword);
                             rsdoLogin = psdoLogin.executeQuery();
 
                             if (rsdoLogin == null) {
@@ -651,7 +673,7 @@ public class login {
                                 if (iwrongPass+1 >= maxWrongPasswordDisable && maxWrongPasswordDisable > 0) {
                                     message = sUserID + "@" + domain_id + " : Utente o password errati. ["+iwrongPass+1+"] Utente disabilitato" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
                                     add_event(conn, request, message, -1);
-                                    if("mysql".equalsIgnoreCase(driver)) {
+                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                         sqlSTMT = "UPDATE "+schemaTable+" SET status='D' WHERE id="+iUserId;
 
                                     } else if("postgres".equalsIgnoreCase(driver)) {
@@ -891,7 +913,7 @@ public class login {
                     DatabaseMetaData meta = conn.getMetaData();
                     PreparedStatement psdoLogin = null;
                     PreparedStatement psdoSetup = null;
-                    ResultSet res = meta.getTables(database, schema, table, new String[] {"TABLE"});
+                    ResultSet res = meta.getTables(database, schemaLog, tableLog, new String[] {"TABLE"});
                     while (res.next()) {
                         if(res.getString("TABLE_NAME") != null) {
                             tableExist = true;
@@ -900,7 +922,7 @@ public class login {
                     res.close();
                     if(!tableExist) {
                         ArrayList<String> sql = new ArrayList<String>();
-                        if("mysql".equalsIgnoreCase(driver)) {
+                        if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                             // CREATE users ADD id, user VARCHAR(256), email VARCHAR(256), password VARCHAR(256), status VARCHAR(16), domain_id VARCHAR(256), application_id VARCHAR(64), token VARCHAR(32), expire TIMESTAMP, naccess INT, nfails INT)
                             sql.add("SET sql_mode='';");
                             sql.add("CREATE TABLE IF NOT EXISTS "+tableLog+" ("
@@ -913,7 +935,7 @@ public class login {
                                 +")"
                             );
                         } else if("postgres".equalsIgnoreCase(driver)) {
-                            String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+tableLog+"_id_seq";
+                            String seqName = (schemaLog != null && !schemaLog.isEmpty() ? schemaLog+".":"")+tableLog+"_id_seq";
                             sql.add("CREATE SEQUENCE "+seqName+"");
 
                             sql.add("CREATE TABLE IF NOT EXISTS "+tableLog+" ("
@@ -961,22 +983,28 @@ public class login {
                                 setup_event(conn);
                             }
 
+                            String ip = request.getHeader("X-FORWARDED-FOR");  
+                            if (ip == null) {  
+                                ip = request.getRemoteAddr();  
+                            }                            
                             int user_id = (int)request.getSession().getAttribute("GLLiquidUserID");
                             String schemaTable = (schemaLog != null && !schemaLog.isEmpty() ? schemaLog+".":"")+tableLog+"";
                             String sqlSTMT = null;
                             PreparedStatement psdoLogin = null;
                             PreparedStatement psdoSetup = null;
 
-                            if("mysql".equalsIgnoreCase(driver)) {
+                            if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                 sqlSTMT = "INSERT INTO "+schemaTable+" (`user_id`,`event`,`ip`,`type`) VALUES (" 
                                         + ""+(user_id) 
                                         + ",'" + msg + "'"
+                                        + ",'" + ip + "'"
                                         + ",'" + type + "'"
                                         + ")";
                             } else if("postgres".equalsIgnoreCase(driver)) {
                                 sqlSTMT = "INSERT INTO "+schemaTable+" (\"user_id\",\"event\",\"ip\",\"type\") VALUES (" 
                                         + (user_id) 
                                         + ",'" + msg + "'"
+                                        + ",'" + ip + "'"
                                         + ",'" + type + "'"
                                         + ")";
                             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -1227,7 +1255,7 @@ public class login {
                                 
                                 // Controllo campo email
                                 if(sEMail != null && !sEMail.isEmpty()) {
-                                    if("mysql".equalsIgnoreCase(driver)) {
+                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (email='"+sEMail.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id=" + (domain_id != null ? domain_id : "") +" AND application_id='" + (application_id != null ? application_id : "")+"')";
                                     } else if("postgres".equalsIgnoreCase(driver)) {
                                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (email='"+sEMail.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
@@ -1254,7 +1282,7 @@ public class login {
 
                                 // Controllo campo userId
                                 if(sUserID != null && !sUserID.isEmpty()) {
-                                    if("mysql".equalsIgnoreCase(driver)) {
+                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id=" + (domain_id != null ? domain_id : "") +" AND application_id='" + (application_id != null ? application_id : "")+"')";
                                     } else if("postgres".equalsIgnoreCase(driver)) {
                                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
@@ -1383,7 +1411,7 @@ public class login {
 
                                                     try {
 
-                                                        if("mysql".equalsIgnoreCase(driver)) {
+                                                        if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                                             sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`user`,`email`,`password`,`date`,`status`,`admin`,`token`,`expire`,`emailValidated`,`emailToken`) VALUES (" 
                                                                     + "'" + (application_id != null ? application_id : "") + "'"
                                                                     + ",'" + (domain_id != null ? domain_id : "") + "'"
@@ -1544,7 +1572,7 @@ public class login {
 
                     message = "";
 
-                    if("mysql".equalsIgnoreCase(driver)) {
+                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE email=? AND status<>'A' AND emailValidated>0 AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
                     } else if("postgres".equalsIgnoreCase(driver)) {
                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE email=? AND status<>'A' AND \"emailValidated\">0 AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
@@ -1577,14 +1605,15 @@ public class login {
 
                             prepare_database(conn);
 
-                            if("mysql".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "UPDATE "+schemaTable+" SET password=PASSWORD('"+params[0]+"') WHERE id="+params[1]+"";
+                            if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                                sqlSTMT = "UPDATE "+schemaTable+" SET `password`=PASSWORD(?) WHERE `id`="+params[1]+"";
                             } else if("postgres".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "UPDATE "+schemaTable+" SET password=crypt(CAST('"+params[0]+"' AS text),CAST('"+password_seed+"' AS text)) WHERE id="+params[1]+"";
+                                sqlSTMT = "UPDATE "+schemaTable+" SET \"password\"=crypt(CAST(? AS text),CAST('"+password_seed+"' AS text)) WHERE \"id\"="+params[1]+"";
                             } else if("oracle".equalsIgnoreCase(driver)) {
                             } else if("sqlserver".equalsIgnoreCase(driver)) {
                             }
                             psdoLogin = conn.prepareStatement(sqlSTMT);
+                            psdoLogin.setString(1, params[0]);
                             psdoLogin.executeUpdate();
 
                             emailer emailerInstance = new emailer();
@@ -1617,6 +1646,146 @@ public class login {
         }
     }
     
+
+    static public String setPassword(String application_id, String domain_id, String sUserID, String sPassword, HttpServletRequest request) throws SQLException, Throwable {
+        String out_string = "", error = "";
+        Connection conn = null;
+
+        ResultSet rsdoLogin = null;
+        PreparedStatement psdoLogin = null;
+        PreparedStatement psdoSetup = null;
+        ResultSet rsdoSetup = null;
+        boolean doAutentication = true;
+        String cLang = "it";
+        String sApplicationURL = null;
+                
+        HttpSession session = request.getSession();
+        
+        try {
+        
+            String RemoteIP = request.getRemoteAddr();
+
+            String Debug = null;
+            String message = null;
+            String sqlSTMT = null;
+            String encPassword = "";
+            int iDaysValidity = 0;
+
+
+            if(application_id == null || application_id.isEmpty())
+                application_id = (String)request.getSession().getAttribute("GLLiquidLoginApplicationId");
+            if(domain_id == null || domain_id.isEmpty())
+                domain_id = (String)request.getSession().getAttribute("GLLiquidLoginDomainId");                                        
+            if(daysValidity<=0)
+                iDaysValidity = (int)request.getSession().getAttribute("GLLiquidLoginDaysValidity");
+            else
+                iDaysValidity = daysValidity;
+
+            
+            sApplicationURL = "http://" + utility.getDomainName(request.getRequestURL().toString()) + ":" + request.getLocalPort() + request.getContextPath();
+            sApplicationURL += utility.appendURLSeparator(sApplicationURL);
+            sApplicationURL += "liquid/liquid.jsp";
+
+    
+            ////////////////////////////////
+            // Aggiornamwento password
+            //
+            { 
+                {
+                    boolean isValidUserId = true;
+                    if(sUserID != null && sUserID.length() < 3) isValidUserId = false;
+
+                    if(!isValidUserId) {
+                        if (cLang.equalsIgnoreCase("IT")) {
+                            message = "sUserID non valida .. min 3 caratteri";
+                        } else {
+                            message = "Invalid sUserID .. min. 3 chars";
+                        }
+                        return "{ \"result\":-3, \"error\":\""+utility.base64Encode(message)+"\"}";
+
+                    } else {
+
+                        boolean isEmailDuplicate = false;
+                        boolean isUserIdDuplicate = false;
+                        message = "";
+
+                        conn = getConnection();
+
+                        if(conn != null || conn.isValid(30)) {
+                        
+                            String schemaTable = "";
+                            String databaseSchemaTable = "";
+
+                            schemaTable = "";
+                            databaseSchemaTable = "";
+                            if(database != null && !database.isEmpty()) {
+                                databaseSchemaTable += itemIdString+database+itemIdString;
+                            }
+                            if(schema != null && !schema.isEmpty()) {
+                                schemaTable += itemIdString+schema+itemIdString;
+                                databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+itemIdString+schema+itemIdString;
+                            }
+                            if(table != null && !table.isEmpty()) {
+                                schemaTable += (schemaTable.length()>0?".":"")+itemIdString+table+itemIdString;
+                                databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+itemIdString+table+itemIdString;
+                            }
+
+                            
+                            if(!check_login_table_exist(conn, schema, table)) {
+                                message = "login table error";
+                                return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
+                            }
+                            
+                            
+                            try {
+        
+                                db.set_current_database(conn, database, driver, tableIdString);
+
+                                prepare_database(conn);
+                                
+                                if (application_id != null && !application_id.isEmpty()) {
+                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                                        sqlSTMT = "UPDATE "+schemaTable+" SET `password`=PASSWORD(?) WHERE ( "
+                                                + "`application_id` = '" + (application_id != null ? application_id : "") + "'"
+                                                + " AND `domain_id` = '" + (domain_id != null ? domain_id : "") + "'"
+                                                + " AND `user` = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
+                                                + ")";
+                                    } else if("postgres".equalsIgnoreCase(driver)) {
+                                        sqlSTMT = "UPDATE "+schemaTable+" \"password\"=crypt(CAST(? AS text),CAST('"+password_seed+"' AS text)) WHERE (" 
+                                                + "\"application_id\" = '" + (application_id != null ? application_id : "") + "'"
+                                                + " AND \"domain_id\" = '" + (domain_id != null ? domain_id : "") + "'"
+                                                + " AND \"user\" = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
+                                                + ")";
+
+                                    } else if("oracle".equalsIgnoreCase(driver)) {
+                                    } else if("sqlserver".equalsIgnoreCase(driver)) {
+                                    }
+
+                                    psdoLogin = conn.prepareStatement(sqlSTMT);
+                                    psdoLogin.setString(1, sPassword);
+                                    psdoLogin.executeUpdate();
+
+                                    message = "Password updated";
+
+                                    return "{ \"result\":1, \"message\":\""+utility.base64Encode(message)+"\"}";
+                                }
+                                
+                            } catch (Exception e) {
+                                return "{ \"result\":-9, \"error\":\""+utility.base64Encode((e.getLocalizedMessage() + " on : ["+sqlSTMT+"]"))+"\"}";
+                            }
+                        } else {
+                            return "{ \"result\":-50, \"error\":\""+utility.base64Encode("No connection to db")+"\"}";
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return "{ \"result\":-12, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+        }
+        return "{ \"result\":666, \"error\":\"undetected case\"}";
+    }
+
+
     
     static public String validate_email(HttpServletRequest request, HttpServletResponse response, JspWriter out) throws Throwable {
         JSONObject requestJson = null;
@@ -1722,7 +1891,7 @@ public class login {
 
                     message = "";
 
-                    if("mysql".equalsIgnoreCase(driver)) {
+                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE email=? AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
                     } else if("postgres".equalsIgnoreCase(driver)) {
                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE email=? AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
@@ -1754,7 +1923,7 @@ public class login {
 
                             prepare_database(conn);
 
-                            if("mysql".equalsIgnoreCase(driver)) {
+                            if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                 sqlSTMT = "UPDATE "+schemaTable+" SET emailValidated=1 WHERE id="+params[1]+"";
                             } else if("postgres".equalsIgnoreCase(driver)) {
                                 sqlSTMT = "UPDATE "+schemaTable+" SET \"emailValidated\"=1 WHERE id="+params[1]+"";

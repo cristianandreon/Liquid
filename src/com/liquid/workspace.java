@@ -1227,7 +1227,7 @@ public class workspace {
                                     if(bUpdateActive) {
                                         if("onUpdating".equalsIgnoreCase(eventName)) {
                                             try { server = event.getString("server");  } catch (JSONException ex) { server = null; }
-                                            if(!"com.liquid.event.onUpdating".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onUpdating".equalsIgnoreCase(server))) {
+                                            if("com.liquid.event.onUpdating".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onUpdating".equalsIgnoreCase(server))) {
                                                 event.put("isSystem", true);
                                                 bUpdateEventFound = true;
                                             }
@@ -1236,7 +1236,7 @@ public class workspace {
                                     if(bDeleteActive) {
                                         if("onDeleting".equalsIgnoreCase(eventName)) {
                                             try { server = event.getString("server");  } catch (JSONException ex) { server = null; }
-                                            if(!"com.liquid.event.onDeleting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onDeleting".equalsIgnoreCase(server))) {
+                                            if("com.liquid.event.onDeleting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onDeleting".equalsIgnoreCase(server))) {
                                                 event.put("isSystem", true);
                                                 bDeleteEventFound = true;
                                             }
@@ -1245,7 +1245,7 @@ public class workspace {
                                     if(bPastedRowActive) {
                                         if("onPastedRow".equalsIgnoreCase(eventName)) {
                                             try { server = event.getString("server");  } catch (JSONException ex) { server = null; }
-                                            if(!"com.liquid.event.onPastedRow".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onPastedRow".equalsIgnoreCase(server))) {
+                                            if("com.liquid.event.onPastedRow".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onPastedRow".equalsIgnoreCase(server))) {
                                                 event.put("isSystem", true);
                                                 event.put("sync", true);
                                                 bPastedRowFound = true;
