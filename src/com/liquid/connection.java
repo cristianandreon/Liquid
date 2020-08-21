@@ -20,32 +20,53 @@ public class connection {
 
     static public Connection getDBConnection() throws Throwable {
         Class cls = null;
+        Method method = null;        
     	try {
             cls = Class.forName("app.liquid.dbx.connection");
             if(cls != null) {
-                Method method = cls.getMethod("getDBConnection");
-                return (Connection)method.invoke(null);
+                method = cls.getMethod("getDBConnection");
             }
+        } catch(NoSuchMethodException nsm) {
         } catch(ClassNotFoundException cnf) {
-            System.err.println(" app.liquid.dbx.connection.getDBConnection() not found. Please add it in order to access to db...");
-            throw new Exception("Please add app.liquid.dbx.connection to your application...(Error:"+cnf.getLocalizedMessage()+")");
+            if(jdbcSources.size() == 0) {
+                System.err.println(" app.liquid.dbx.connection.getDBConnection() not found. Please add it, or use addLiquidDBConnection(), in order to access to db...");
+                throw new Exception("Please add app.liquid.dbx.connection to your application...(Error:"+cnf.getLocalizedMessage()+")");
+            }
+    	} catch(Throwable th) {
+            System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + th.getLocalizedMessage());
+            throw th.getCause();
+    	}        
+        if(method != null) {
+            return (Connection)method.invoke(null);
+        } else {
+            // use internal method
+            return (Connection)getLiquidDBConnection()[0];
+        }
+    }
+    static public Connection getDBConnection(String database) throws Throwable {
+        Class cls = null;
+        Method method = null;
+    	try {
+            cls = Class.forName("app.liquid.dbx.connection");
+            if(cls != null) {
+                method = cls.getMethod("getDBConnection", String.class);
+            }
+        } catch(NoSuchMethodException nsm) {
+        } catch(ClassNotFoundException cnf) {
+            if(jdbcSources.size() == 0) {
+                System.err.println(" app.liquid.dbx.connection.getDBConnection() not found. Please add it, or use addLiquidDBConnection(), in order to access to db...");
+                throw new Exception("Please add app.liquid.dbx.connection to your application...(Error:"+cnf.getLocalizedMessage()+")");
+            }
     	} catch(Throwable th) {
             System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + th.getLocalizedMessage());
             throw th.getCause();
     	}
-        return null;    
-    }
-    static public Connection getDBConnection(String database) throws Throwable {
-        Class cls = null;
-    	try {
-            cls = Class.forName("app.liquid.dbx.connection");
-            Method method = cls.getMethod("getDBConnection", String.class);
+        if(method != null) {
             return (Connection)method.invoke(null, database);
-    	} catch(Throwable th) {
-            Throwable cause = th.getCause();
-            System.err.println(" app.liquid.dbx.connection.getDBConnection() Error:" + cause.getLocalizedMessage());
-            throw th.getCause();
-    	}
+        } else {
+            // use internal method
+            return (Connection)getLiquidDBConnection(database)[0];
+        }
     }
     
     
@@ -145,6 +166,15 @@ public class connection {
                                     } catch (Throwable th1) {
                                         try {
                                             driverClass = Class.forName("com.mysql.cj.jdbc.Driver");
+                                        } catch (Throwable th2) {
+                                        }
+                                    }
+                                } else if(curDriver.contains("mariadb")) {
+                                    try {
+                                        driverClass = Class.forName("org.mariadb.jdbc.Driver");
+                                    } catch (Throwable th1) {
+                                        try {
+                                            driverClass = Class.forName("org.mariadb.Driver");
                                         } catch (Throwable th2) {
                                         }
                                     }
@@ -262,6 +292,8 @@ public class connection {
                 return "jdbc:postgresql://"+host+":5432/"+database+","+user+","+password;
             } else if("mysql".equalsIgnoreCase(driver)) {
                 return "jdbc:mysql://"+host+":3306/"+database+","+user+","+password;
+            } else if("mariadb".equalsIgnoreCase(driver)) {
+                return "jdbc:mariadb://"+host+":"+"3306"+"/"+database+"?useSSL=false"+","+user+","+password;
             } else if("sqlserver".equalsIgnoreCase(driver)) {
                 return "jdbc:sqlserver://"+host+":1433;databaseName="+database+","+user+","+password;
             } else {
@@ -272,6 +304,121 @@ public class connection {
     	} catch(Throwable th) {
             Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, th);
     	}
+        return null;
+    }
+    
+    
+    public static class JDBCSource {
+        String driver = null; // "mariadb", "mysql", "mariadb", "oracle", "sqlserver"
+        String host = null;
+        String port = null;
+        String database = null;
+        String user = null;
+        String password = null;
+        Class driverClass = null;
+    }
+    
+    static ArrayList<JDBCSource> jdbcSources = new ArrayList<JDBCSource> ();
+    
+    static public boolean addLiquidDBConnection( String driver, String host, String port, String database, String user, String password) {
+        for (int ic=0; ic<jdbcSources.size(); ic++) {
+            JDBCSource jdbcSource = jdbcSources.get(ic);
+            if(driver == null && jdbcSource.driver == null || (driver != null && driver.equalsIgnoreCase(jdbcSource.driver))) {
+                if(host == null && jdbcSource.host == null || (host != null && host.equalsIgnoreCase(jdbcSource.host)) || (host == null && "localhost".equalsIgnoreCase(jdbcSource.host))) {
+                    if(port == null && jdbcSource.port == null || (port != null && port.equalsIgnoreCase(jdbcSource.port))) {
+                        if(database == null && jdbcSource.database == null || (database != null && database.equalsIgnoreCase(jdbcSource.database))) {
+                            if(user == null && jdbcSource.user == null || (user != null && user.equalsIgnoreCase(jdbcSource.user))) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        JDBCSource jdbcSource = new JDBCSource();
+        jdbcSource.driver = driver;
+        jdbcSource.host = host;
+        jdbcSource.port = port;
+        jdbcSource.database = database;
+        jdbcSource.user = user;
+        jdbcSource.password = password;
+        jdbcSources.add(jdbcSource);
+        return true;        
+    }
+
+    
+    //
+    // Connection with default database
+    //
+    static public Object [] getLiquidDBConnection() throws Throwable {
+        return getLiquidDBConnection(null);
+    }
+
+    //
+    // Connection to specific database
+    //
+    static public Object [] getLiquidDBConnection(String database) throws Throwable {
+        Connection conn = null;
+        for (int ic=0; ic<jdbcSources.size(); ic++) {
+            JDBCSource jdbcSource = jdbcSources.get(ic);
+            try {
+                
+                if(database != null && !database.isEmpty()) {
+                } else {
+                    database = jdbcSource.database;
+                }
+                conn = getLiquidDBConnection(jdbcSource, jdbcSource.driver, jdbcSource.host, jdbcSource.port, database, jdbcSource.user, jdbcSource.password);
+                if(conn != null)
+                    return new Object [] { conn, jdbcSource.driver, jdbcSource.host, jdbcSource.port, database };
+                
+            } catch (Throwable th) {                
+                Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, th);
+            }
+        }
+        return new Object [] { null, null, null, null, null };
+    }
+
+    static public Connection getLiquidDBConnection(JDBCSource jdbcSource, String driver, String host, String port, String database, String user, String password) throws Throwable {
+        Connection conn = null;
+        Class driverClass = (jdbcSource != null ? jdbcSource.driverClass : null);
+        if(host == null || host.isEmpty()) host = "localhost";
+        if("oracle".equalsIgnoreCase(driver)) {
+            if(port == null || port.isEmpty()) port = "1521";
+            if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
+            if(jdbcSource != null) jdbcSource.driverClass = driverClass;
+            conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":"+port+":xe",user,password);
+            if(conn != null) return conn;
+        } else if("postgres".equalsIgnoreCase(driver)) {
+            if(port == null || port.isEmpty()) port = "5432";
+            if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
+            if(jdbcSource != null) jdbcSource.driverClass = driverClass;
+            conn = DriverManager.getConnection("jdbc:postgresql://"+host+":"+port+"/"+database,user,password);
+            if(conn != null) return conn;
+        } else if("mysql".equalsIgnoreCase(driver)) {
+            if(port == null || port.isEmpty()) port = "3306";
+            if(driverClass == null) driverClass = Class.forName("com.mysql.jdbc.Driver");
+            if(jdbcSource != null) jdbcSource.driverClass = driverClass;
+            try {
+                conn = DriverManager.getConnection("jdbc:mysql://"+host+":"+port+"/"+database,user,password);
+            } catch (Throwable th) {
+                conn = DriverManager.getConnection("jdbc:mysql://"+host+":"+port+"/"+database+"?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",user,password);
+            }                
+            if(conn != null) return conn;
+        } else if("mariadb".equalsIgnoreCase(driver)) {
+            if(port == null || port.isEmpty()) port = "3306";
+            if(driverClass == null) driverClass = Class.forName("org.mariadb.jdbc.Driver");
+            if(jdbcSource != null) jdbcSource.driverClass = driverClass;
+            conn = DriverManager.getConnection("jdbc:mariadb://"+host+":"+port+"/"+database+"?useSSL=false", user, password);
+            if(conn != null) return conn;
+        } else if("sqlserver".equalsIgnoreCase(driver)) {
+            if(port == null || port.isEmpty()) port = "1433";
+            if(driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            if(jdbcSource != null) jdbcSource.driverClass = driverClass;
+            conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":"+port+";databaseName="+database,user,password);
+            if(conn != null) return conn;
+        } else {
+            Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, "drive not recognized");
+        }
         return null;
     }
 }

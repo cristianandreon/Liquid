@@ -1,5 +1,7 @@
 package com.liquid;
 
+import com.liquid.connection.JDBCSource;
+import static com.liquid.connection.getLiquidDBConnection;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -36,6 +38,8 @@ public class login {
     static public String adminEmail = null;
         
     // Se driver/host/database sono valorizzati la connessione è esplicita, altrimenti
+    static public boolean connRead = false;
+    static public boolean connDefined = false;
     static public String driver = null;
     static public String host = null;
     static public String port = null;
@@ -113,78 +117,43 @@ public class login {
     //
     static public Connection getConnection() throws ClassNotFoundException, SQLException, Throwable {
         Connection conn = null;
-        Class driverClass = null;
-        if( driver != null && database != null && schema != null && !driver.isEmpty() && !database.isEmpty() && !schema.isEmpty() ) {
-            // defined by driver/database/user
-            connectionURL = new ArrayList<String>();
-            if(host == null || host.isEmpty()) host = "localhost";
-            if("oracle".equalsIgnoreCase(driver)) {
-                // TODO : check user and password definition for connection url
-                if(port == null || port.isEmpty()) port = "1521";
-                connectionURL.add("jdbc:oracle:thin:@"+host+":"+port+":xe"+",user="+database);
-                connectionURL.add(user);
-                connectionURL.add(password);
-                if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
-                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":"+port+":xe",database, (password != null ? password : "") );
-            } else if("postgres".equalsIgnoreCase(driver)) {                
-                // connectionURL = "jdbc:postgresql://"+host+":5432/"+database+"?user="+user+"&password="+password+"&ssl=true";
-                // connectionURL = "jdbc:postgresql://"+user+":"+password+"@"+host+":5432/"+database;
-                if(port == null || port.isEmpty()) port = "5432";
-                connectionURL.add("jdbc:postgresql://"+host+":"+port+"/"+database);
-                connectionURL.add(user);
-                connectionURL.add(password);
-                if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
-                conn = DriverManager.getConnection("jdbc:postgresql://"+host+":"+port+"/"+database, (user != null ? user : ""), (password != null ? password : ""));
-            } else if("mysql".equalsIgnoreCase(driver)) {
-                if(port == null || port.isEmpty()) port = "3306";
-                connectionURL.add("jdbc:mysql://"+host+":"+port+"/"+database);
-                connectionURL.add(user);
-                connectionURL.add(password);
-                if(driverClass == null) driverClass = Class.forName("org.mysql.Driver");
-                conn = DriverManager.getConnection("jdbc:mysql://"+host+":"+port+"/"+database, (user != null ? user : ""), (password != null ? password : ""));                
-            } else if("mariadb".equalsIgnoreCase(driver)) {
-                if(port == null || port.isEmpty()) port = "3306";
-                connectionURL.add("jdbc:mysql://"+host+":"+port+"/"+database);
-                connectionURL.add(user);
-                connectionURL.add(password);
-                if(driverClass == null) driverClass = Class.forName("org.mariadb.jdbc.Driver");
-                conn = DriverManager.getConnection("jdbc:mariadb://"+host+":"+port+"/"+database+"?useSSL=false", (user != null ? user : ""), (password != null ? password : ""));
-            } else if("sqlserver".equalsIgnoreCase(driver)) {
-                // TODO : check user and password definition for connection url
-                // connectionURL = "jdbc:sqlserver://"+host+":1433;DatabaseName="+database+",user="+user+",password="+password;
-                if(port == null || port.isEmpty()) port = "1433";
-                connectionURL.add("jdbc:sqlserver://"+host+":"+port+";DatabaseName="+database);
-                connectionURL.add(user);
-                connectionURL.add(password);
-                if(driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-                conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":"+port+";DatabaseName="+database, (user != null ? user : ""), (password != null ? password : ""));
+
+        if(connRead) {
+            if(connDefined) {
+                // defined by driver/database/user
+                conn = getLiquidDBConnection(null, driver, host, port, database, user, password);
             } else {
-                Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, "drive not recognized");
+                // host/driver/database NOT defined : use app.liquid.dbx or JDBCsources
+                conn = connection.getDBConnection();
             }
-            
+        } else if(!connRead) {
+            connRead = true;
+            if( driver != null && database != null && schema != null && !driver.isEmpty() && !database.isEmpty() && !schema.isEmpty() ) {
+                // defined by driver/database/user
+                connDefined = true;
+                conn = getLiquidDBConnection(null, driver, host, port, database, user, password);
+            } else {
+                // host/driver/database NOT defined : use app.liquid.dbx or JDBCsources
+                connDefined = false;
+                conn = connection.getDBConnection();
+            }
+            if(table == null || table.isEmpty())
+                table = "users";
 
-        } else {
-            // host/driver/database NOT defined : use app.liquid.dbx
-            conn = connection.getDBConnection();
-        }
-        if(table == null || table.isEmpty())
-            table = "users";
-
-        if(driver == null || driver.isEmpty()) { // read driver from connection
             driver = db.getDriver(conn);
-        }
-        
-        itemIdString = "\"";
-        tableIdString = "\"";
-        if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-            itemIdString = "`";
-            tableIdString = "";
-        } else if("postgres".equalsIgnoreCase(driver)) {
+
             itemIdString = "\"";
-        } else if("oracle".equalsIgnoreCase(driver)) {
-            itemIdString = "\"";
-        } else if("sqlserver".equalsIgnoreCase(driver)) {
-            itemIdString = "\"";
+            tableIdString = "\"";
+            if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                itemIdString = "`";
+                tableIdString = "";
+            } else if("postgres".equalsIgnoreCase(driver)) {
+                itemIdString = "\"";
+            } else if("oracle".equalsIgnoreCase(driver)) {
+                itemIdString = "\"";
+            } else if("sqlserver".equalsIgnoreCase(driver)) {
+                itemIdString = "\"";
+            }
         }
         
         return conn;

@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Liquid ver.1.28   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  19-08-2020
+//  First update 8.1.2020 - Last update  21-08-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -11232,6 +11232,7 @@ var Liquid = {
                         if(!layout.bodyContainerObj) {
                             layout.bodyContainerObj = document.createElement("div");
                             layout.bodyContainerObj.id = bodyContainerObjId;
+                            layout.bodyContainerObj.className = "liquidLayoutRowContainer";
                             layout.bodyContainerObj.style.width = "100%";
                             layout.bodyContainerObj.style.height = "calc(100% - "+(layout.headerContainerObj.offsetHeight+layout.footerContainerObj.offsetHeight+2)+"px)";
                             layout.bodyContainerObj.style.overflow = "auto";
@@ -11239,8 +11240,7 @@ var Liquid = {
                             if(Liquid.debug) layout.bodyContainerObj.style.border = "1px solid blue";
                             containerObj.insertBefore(layout.bodyContainerObj, layout.footerContainerObj);
                         }
-                    }
-                    
+                    }                    
                     
                     var nRows = 0;
                     if(typeof layout.nRows !== 'undefined' && (layout.nRows === 0 || layout.nRows === 'auto')) {

@@ -4217,7 +4217,7 @@ public class db {
                 return "mysql";
             }
             if( (driverClass != null && driverClass.toLowerCase().contains("mariadb.")) || dbProductName.toLowerCase().contains("mariadb")) {
-                return "mysql";
+                return "mariadb";
             }
             if((driverClass != null && driverClass.toLowerCase().contains("oracle.")) || (dbProductName != null && dbProductName.toLowerCase().contains("oracle"))) {
                 return "oracle";
