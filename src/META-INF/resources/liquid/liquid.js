@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.28   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 8.1.2020 - Last update  21-08-2020
+// Liquid ver.1.29   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-09-2020 - Last update  21-08-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -1047,6 +1047,8 @@ class LiquidCtrl {
                                                 this.foreignTables[ic].columnsApi = Liquid.foreignTablesColumnsApi;
                                                 this.foreignTables[ic].gridsApiParams = { liquid:this, index:ic, sourceForeignTablesIndexes1B:this.foreignTables[ic].sourceForeignTablesIndexes1B };
                                                 this.foreignTables[ic].gridsApi = Liquid.foreignTablesGridsApi;
+                                                this.foreignTables[ic].contentObj.setAttribute('foreignTable1B', ic+1);
+                                                this.foreignTables[ic].contentObj.setAttribute('foreignTableIndex', this.FTTabList.length);
 
                                                 this.FTTabList.push( { name:ftName, tabId:tabId, contentId:contentId, controlId:this.foreignTables[ic].controlId } );
                                             }
@@ -1988,7 +1990,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.26,
+    version: 1.29,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -4273,6 +4275,14 @@ var Liquid = {
             glLookupScrollTop = document.body.scrollTop;
         }
     },
+    onLayourScroll:function(e) {
+        var lookups = document.getElementsByClassName("liquidLookupOpen");
+        if(lookups) {                
+            for(var i=0; i<lookups.length; i++) {
+                Liquid.onBringLookup(lookups[i], true);
+            }
+        }
+    },
     onFilterChange:function(e, obj) {
         if(e) {
             if(obj) {
@@ -5967,6 +5977,74 @@ var Liquid = {
                     }
                 }
             }                        
+        }
+    },
+    // show foreignTable content by changing its parent
+    setParentForeignTable:function(obj, currentForeignTable, newParentId) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var foundTab1B = 0;
+            for(var it=0; it<liquid.FTTabList.length; it++) {
+                if(typeof currentForeignTable === 'string') {
+                    if(liquid.FTTabList[it].name === currentForeignTable) {
+                        foundTab1B = it+1;
+                        break;
+                    }
+                } else if(typeof currentForeignTable === 'number') {                            
+                    if(it === currentForeignTable) {
+                        foundTab1B = it+1;
+                        break;
+                    }
+                }
+            }
+            if(foundTab1B) {
+                var tabId = liquid.FTTabList[foundTab1B-1].tabId;
+                var contentId = liquid.FTTabList[foundTab1B-1].contentId;
+                var contentObj = document.getElementById(contentId);
+                if(!isDef(liquid.FTTabList[foundTab1B-1].originalParent))
+                    liquid.FTTabList[foundTab1B-1].originalParent = contentObj.parentNode;
+                if(obj instanceof HTMLElement) {
+                    // is a layout fields ?
+                    var linkedRow1B = obj.getAttribute('linkedrow1b');
+                    var linkedId = obj.getAttribute('linkedid');
+                    if(linkedId) {
+                        if(isDef(newParentId)) {
+                            newParents = document.getElementsByName(newParentId);
+                            for(var ip=0; ip<newParents.length; ip++) {
+                                if(newParents[ip].getAttribute('linkedrow1b') === linkedRow1B) {
+                                    if(isDef(liquid.FTTabList[foundTab1B-1].currentParent)) {
+                                        if(liquid.FTTabList[foundTab1B-1].currentParent.id === newParents[ip].id) {
+                                            jQ1124( contentObj ).slideUp( "fast", function() {} );
+                                            liquid.FTTabList[foundTab1B-1].originalParent.appendChild(contentObj);
+                                            // liquid.FTTabList[foundTab1B-1].currentParent.style.display = 'none';
+                                            if(isDef(liquid.FTTabList[foundTab1B-1].currentParent)) delete liquid.FTTabList[foundTab1B-1].currentParent;
+                                            return;
+                                        } else {
+                                            liquid.FTTabList[foundTab1B-1].currentParent.style.display = 'none';
+                                        }
+                                    }
+                                    newParents[ip].appendChild(contentObj);
+                                    liquid.FTTabList[foundTab1B-1].currentParent = newParents[ip];
+                                    jQ1124( contentObj ).slideDown( "fast", function() { 
+                                        Liquid.onForeignTablePostProcess(contentObj);
+                                    } );
+                                    newParents[ip].style.display = '';
+                                    break;
+                                }
+                            }
+                        } else {
+                            liquid.FTTabList[foundTab1B-1].originalParent.appendChild(contentObj);
+                            if(isDef(liquid.FTTabList[foundTab1B-1].currentParent)) delete liquid.FTTabList[foundTab1B-1].currentParent;
+                        }
+                    }
+                } else {
+                    // restore
+                    if(!isDef(newParentId)) {
+                        liquid.FTTabList[foundTab1B-1].originalParent.appendChild(contentObj);
+                        if(isDef(liquid.FTTabList[foundTab1B-1].currentParent)) delete liquid.FTTabList[foundTab1B-1].currentParent;
+                    }
+                }
+            }
         }
     },
     processLinkedLiquidForResize:function(liquid, targetControlId) {
@@ -11087,6 +11165,8 @@ var Liquid = {
                                         if(bAnimate) {
                                             slideUpObjs.push(layout.rowsContainer[ir].containerObj);
                                         } else {
+                                            // check is some node own content to recover (like foreign table moved across parent)
+                                            Liquid.checkLayoutChildrenForRemove(liquid, layout.rowsContainer[ir].containerObj);
                                             layout.rowsContainer[ir].containerObj.innerHTML = "";
                                         }
                                         delete layout.rowsContainer[ir];
@@ -11239,6 +11319,8 @@ var Liquid = {
                             containerObj.style.overflow = "hidden";
                             if(Liquid.debug) layout.bodyContainerObj.style.border = "1px solid blue";
                             containerObj.insertBefore(layout.bodyContainerObj, layout.footerContainerObj);
+                            // scroll listner
+                            if(layout.bodyContainerObj.addEventListener) { layout.bodyContainerObj.addEventListener('scroll', Liquid.onLayourScroll); } else { layout.bodyContainerObj.attachEvent('scroll', Liquid.onLayourScroll); }
                         }
                     }                    
                     
@@ -11371,6 +11453,9 @@ var Liquid = {
                                 if(layout.rowsContainer[ir].templateRowSource != templateRowSource) {
                                     layout.rowsContainer[ir].templateRowSource = templateRowSource;
                                     var rowsContainer = layout.rowsContainer[ir];
+
+                                    // check is some node own content to recover (like foreign table moved across parent)
+                                    Liquid.checkLayoutChildrenForRemove(liquid, layout.rowsContainer[ir].containerObj);
 
                                     layout.rowsContainer[ir].containerObj.innerHTML = "";
                                     layout.rowsContainer[ir].containerObj.innerText = "";
@@ -11610,7 +11695,11 @@ var Liquid = {
                                             
                 if(isDef(layout.rowsContainer[iRow].incomingSource)) {
                     if(layout.rowsContainer[iRow].incomingSource != layout.rowsContainer[iRow].templateRowSource) {
-                        jQ1124( layout.rowsContainer[iRow].containerObj ).slideUp( "fast", function(){ layout.rowsContainer[iRow].containerObj.innerHTML = ""; });                        
+                        jQ1124( layout.rowsContainer[iRow].containerObj ).slideUp( "fast", function(){ 
+                            // check is some node own content to recover (like foreign table moved across parent)
+                            Liquid.checkLayoutChildrenForRemove(liquid, layout.rowsContainer[iRow].containerObj);
+                            layout.rowsContainer[iRow].containerObj.innerHTML = ""; 
+                        });
                         layout.rowsContainer[iRow].objs = [];
                         layout.rowsContainer[iRow].objsInput = [];
                         layout.rowsContainer[iRow].objsSource = [];
@@ -11821,6 +11910,7 @@ var Liquid = {
                                     newObj.style.padding = "0px";
                                     newObj.onchange = obj.onchange;
                                     newObj.dataset.linkedInputId = newId+".lookup.input"; // link to inputObj
+                                    newObj.setAttribute('comboId', lookupControlId+".lookup.combo");
                                     obj.onchange = null;
                                     parentNode.removeChild(obj);
                                     delete obj;
@@ -11887,10 +11977,13 @@ var Liquid = {
                         if(bSetup) {
                             if(obj) {
                                 // Append only record link
+                                if(!isDef(layout.noneCounter)) layout.noneCounter = 1;
                                 obj.setAttribute('linkedrow1b', iRow + 1);
-                                controlName = "col." + "none" + ".row." + (iRow + 1);
+                                controlName = "col." + "none" + (layout.noneCounter++)+ ".row." + (iRow + 1);
                                 newId = liquid.controlId + ".layout." + layoutIndex1B + "." + controlName;
                                 obj.setAttribute('linkedid', newId);
+                                obj.setAttribute('name', obj.id);
+                                obj.id = newId;                                
                                 
                                 if(!obj.id) {
                                     obj.id = newId;
@@ -11968,8 +12061,9 @@ var Liquid = {
                 } else {
                     if(bSetup) {
                         if(linkCount) {
-                            try {
-                                // if(Liquid.debug)
+                            try {                                
+                                // check is some node own content to recover (like foreign table moved across parent)
+                                Liquid.checkLayoutChildrenForRemove(liquid, obj);
                                 value = "[COLUMN '" + objLinkerDesc + "'NOT FOUND]";
                                 if(obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
                                     obj.value = value;
@@ -11988,6 +12082,27 @@ var Liquid = {
             }
         }
     },
+    checkLayoutChildrenForRemove:function(liquid, obj) {
+        if(obj) {
+            if(obj.childNodes) {
+                for (var j = 0; j < obj.childNodes.length; j++) {
+                    try {
+                        if(obj.childNodes[j].nodeType != 3) {
+                            var foreignTable1B = obj.childNodes[j].getAttribute('foreignTable1B');
+                            if(foreignTable1B) {
+                                // restore opriginal parent
+                                var foreignTableIndex = Number(obj.childNodes[j].getAttribute('foreignTableIndex'));
+                                Liquid.setParentForeignTable(liquid, foreignTableIndex);
+                            }
+                            if(obj.childNodes[j].childNodes) {
+                                Liquid.checkLayoutChildrenForRemove(liquid, obj.childNodes[j]);
+                            }
+                        }
+                    } catch (e) { }
+                }
+            }
+        }
+    },            
     getLayoutLinkedFields:function(liquid, key) {
         if(key) {
             var index = key.indexOf("@{");
