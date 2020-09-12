@@ -465,13 +465,40 @@ public class db {
                             JSONObject col = cols.getJSONObject(ic);
                             String colName = null, colMode = (targetMode != null?targetMode+" ": "");
 
-                            String foreignTable = null, foreignColumn = null, column = null;
+                            String foreignTable = null;
+                            ArrayList<String> foreignColumns = new ArrayList<String>();
+                            ArrayList<String> columns = new ArrayList<String>();
                             int foreignIndex = -1;
 
                             try { colName = col.getString("name"); } catch (Exception e) { colName = null; }
                             try { foreignTable = col.getString("foreignTable"); } catch (Exception e) { foreignTable = null; }
-                            try { foreignColumn = col.getString("foreignColumn"); } catch (Exception e) { foreignColumn = null; }
-                            try { column = col.getString("column"); } catch (Exception e) { column = null; }
+                            try { 
+                                if(col.has("foreignColumn")) {
+                                    JSONArray json_foreign_columns = null;
+                                    try { col.getJSONArray("foreignColumn"); } catch (Exception e) { }
+                                    if(json_foreign_columns != null) {
+                                        for (int ia=0; ia<json_foreign_columns.length(); ia++){ 
+                                            foreignColumns.add(json_foreign_columns.getString(ia));
+                                        }                                         
+                                    } else {
+                                        foreignColumns.add( col.getString("foreignColumn") );
+                                    }
+                                } 
+                            } catch (Exception e) { foreignColumns = null; }
+                            
+                            try { 
+                                if(col.has("column")) {
+                                    JSONArray json_columns = null;
+                                    try { json_columns = col.getJSONArray("column"); } catch (Exception e) { }                                    
+                                    if(json_columns != null) {
+                                        for (int ia=0; ia<json_columns.length(); ia++){ 
+                                            foreignColumns.add(json_columns.getString(ia));
+                                        }                                         
+                                    } else {
+                                        columns.add( col.getString("column") );
+                                    }
+                                } 
+                            } catch (Exception e) { columns = null; }
 
                             if(colName.indexOf(".") >= colName.length()-1) {
                                 error += " [ Control:"+ tbl_wrk.controlId + " Column: " + col.getString("name") + " Unsupported column name]";
@@ -486,9 +513,9 @@ public class db {
 
 
                                 if( targetColumn==null || colName.equalsIgnoreCase(targetColumn) || checkingColumn.equalsIgnoreCase(targetColumn) || checkingColumn.equalsIgnoreCase(idColumn) 
-                                        && (checkingTable.equalsIgnoreCase(targetTable) || targetTable == null) 
-                                        ) {
-                                	bAddColumnToList = true;
+                                    && (checkingTable.equalsIgnoreCase(targetTable) || targetTable == null) 
+                                    ) {
+                                    bAddColumnToList = true;
                                 }
                                 
                                         
@@ -501,13 +528,13 @@ public class db {
                                         // campo esterno ?
                                         if(!colParts[0].equalsIgnoreCase(table)) {
                                             if(foreignIndex < 0) {
-                                                if(foreignTable != null && foreignColumn != null && column != null) {
+                                                if(foreignTable != null && foreignColumns != null && columns != null) {
                                                     for(int ifk=0; ifk<foreignKeys.size(); ifk++) {
                                                        ForeignKey foreignKey = foreignKeys.get(ifk);
                                                        if(foreignKey != null) {
                                                            if(foreignKey.foreignTable.equalsIgnoreCase(foreignTable)) {
-                                                               if(foreignKey.foreignColumn.equalsIgnoreCase(foreignColumn)) {
-                                                                   if(foreignKey.column.equalsIgnoreCase(column)) {
+                                                               if(utility.compare_array(foreignKey.foreignColumns, foreignColumns)) {
+                                                                   if(utility.compare_array(foreignKey.columns, columns)) {
                                                                        foreignIndex = ifk;
                                                                        break;
                                                                     }
@@ -517,12 +544,12 @@ public class db {
                                                     }
                                                     if(foreignIndex < 0) {
                                                         foreignIndex = foreignKeys.size();
-                                                        foreignKeys.add(new ForeignKey(foreignTable, foreignColumn, column, null) );
+                                                        foreignKeys.add(new ForeignKey(foreignTable, foreignColumns, columns, null) );
                                                     }
                                                 }
                                             }
                                             if(foreignKeys != null) {
-                                                if(foreignTable == null || foreignColumn == null || column == null) {
+                                                if(foreignTable == null || foreignColumns == null || columns == null) {
                                                     // gia' controllato da workspace : se non risolto è una condizioni di errore
                                                     error += " [ Control:"+ tbl_wrk.controlId + " Column : " + col.getString("name") + " unresolved link : please define foreignKey in Database or in json..]";
                                                 }
@@ -530,37 +557,53 @@ public class db {
                                         }
                                     }
                                     if(foreignTable != null) {
-                                        String leftJoinKey = foreignTable+"_"+foreignColumn+"_"+column;
+                                        String leftJoinKey = foreignTable+"_"+utility.arrayToString(foreignColumns, null, null, ",")+"_"+utility.arrayToString(columns, null, null, ",");
                                         String leftJoinAlias = ("B"+String.valueOf(foreignIndex+1)); /*foreignTable+"_"+(leftJoinsMap.size()+1)*/
                                         if(!LeftJoinMap.getByKey(leftJoinsMap, leftJoinKey)) {
                                             if(leftJoinList.length()>0)
                                                 leftJoinList+="\n";
-                                            leftJoinList += "LEFT JOIN " 
-                                                    + ( schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "" )
-                                                    + ( tableIdString + foreignTable +tableIdString ) + asKeyword + leftJoinAlias 
-                                                    + " ON " 
-                                                    + leftJoinAlias+"."+(tableIdString+foreignColumn+tableIdString) 
-                                                    + "=" 
-                                                    + table+"."+(tableIdString+column+tableIdString);
-                                            leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable) );
+                                            int foreignColumnsSize = foreignColumns.size();
+                                            int columnsSize = columns.size();
+                                            for(int ilj=0; ilj<Math.max(foreignColumnsSize, columnsSize); ilj++) {
+                                                String foreignColumn = (ilj < foreignColumnsSize ? foreignColumns.get(ilj) : foreignColumns.get(foreignColumnsSize-1));
+                                                String column = (ilj < columnsSize ? columns.get(ilj) : columns.get(columnsSize-1));
+                                                if(ilj == 0) {
+                                                    leftJoinList += "LEFT JOIN " 
+                                                            + ( schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "" )
+                                                            + ( tableIdString + foreignTable +tableIdString ) + asKeyword + leftJoinAlias 
+                                                            + " ON " 
+                                                            + leftJoinAlias+"."+(tableIdString+foreignColumn+tableIdString) 
+                                                            + "=" 
+                                                            + table+"."+(tableIdString+column+tableIdString);
+                                                    leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable) );
+                                                } else {
+                                                    leftJoinList += " AND " 
+                                                            + ( schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "" )
+                                                            + ( tableIdString + foreignTable +tableIdString ) + asKeyword + leftJoinAlias 
+                                                            + " ON " 
+                                                            + leftJoinAlias+"."+(tableIdString+foreignColumn+tableIdString) 
+                                                            + "=" 
+                                                            + table+"."+(tableIdString+column+tableIdString);
+                                                }
+                                            }
                                         }
                                         
                                         if(bAddColumnToList) {
-	                                        if(column_list.length()>0)
-	                                            column_list+=",";
-	                                        if(column_json_list.length()>0)
-	                                            column_json_list+=",";
-	                                        if(colParts.length > 1) {
-	                                            String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
-	                                            column_alias = leftJoinAlias+"_"+columnName;
-	                                            column_json_list += colParts[0]+"_"+columnName;
-	                                            column_list += colMode + leftJoinAlias+"."+itemIdString+colParts[1]+itemIdString + asKeyword + column_alias;
-	                                        } else {
-	                                            String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
-	                                            column_alias = leftJoinAlias+"_"+columnName;
-	                                            column_json_list += columnName;
-	                                            column_list += colMode + leftJoinAlias+"."+itemIdString+col.getString("name")+itemIdString + asKeyword + column_alias;
-	                                        }
+                                            if(column_list.length()>0)
+                                                column_list+=",";
+                                            if(column_json_list.length()>0)
+                                                column_json_list+=",";
+                                            if(colParts.length > 1) {
+                                                String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength); aliasIndex++;
+                                                column_alias = leftJoinAlias+"_"+columnName;
+                                                column_json_list += colParts[0]+"_"+columnName;
+                                                column_list += colMode + leftJoinAlias+"."+itemIdString+colParts[1]+itemIdString + asKeyword + column_alias;
+                                            } else {
+                                                String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength); aliasIndex++;
+                                                column_alias = leftJoinAlias+"_"+columnName;
+                                                column_json_list += columnName;
+                                                column_list += colMode + leftJoinAlias+"."+itemIdString+col.getString("name")+itemIdString + asKeyword + column_alias;
+                                            }
                                         }
 
                                     } else {
@@ -2422,7 +2465,7 @@ public class db {
                                 JSONArray parentRowsJson = null;
                                 workspace parent_tbl_wrk = workspace.get_tbl_manager_workspace(parentControlId);
 
-                                // Crea il bean dal controllo del controllo padre
+                                // Crea il bean dal controllo del padre
                                 Object [] parentBeanResult = create_beans_multilevel_class( parent_tbl_wrk, parentRowsJson, null, null, -1, maxRows );
                                 if(parentBeanResult != null) {
                                     int parentResult = (int)parentBeanResult[0];

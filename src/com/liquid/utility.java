@@ -51,6 +51,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Base64;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -878,6 +879,23 @@ public class utility {
         return sTimeLeft;
     }
 
+    static boolean compare_array(ArrayList<String> columns, ArrayList<String> checking_columns) {
+        for(int i=0; i<checking_columns.size(); i++) {
+            String v = checking_columns.get(i);
+            boolean bFound = false;
+            for(int j=0; j<columns.size(); j++) {
+                if(v.equalsIgnoreCase(columns.get(j))) {
+                    bFound = true;
+                    break;                    
+                }
+            }
+            if(!bFound) 
+                return false;
+        }
+        return true;
+    }
+
+
 
     static class MyErrorHandler implements ErrorHandler {
 
@@ -960,6 +978,9 @@ public class utility {
     public static ArrayList<String> jsonArrayToArrayList(JSONArray objs, String prefix, String postfix) {
         return jsonArrayToArrayList(objs, prefix, postfix);
     }    
+    static String arrayToString(ArrayList<String> columns, String prefix, String postfix, String separator) {
+        return arrayToString(columns.toArray(), prefix, postfix, separator);
+    }
     
     public static boolean contains(ArrayList<Object> controlIds, Object controlId) {
         for(int i=0; i<controlIds.size(); i++) {

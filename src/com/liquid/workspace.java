@@ -712,10 +712,37 @@ public class workspace {
                         String [] colParts = col.getString("name").split("\\.");
 
                         String foreignColumn = null, column = null;
+                        ArrayList<String> foreignColumns = new ArrayList<String>();
+                        ArrayList<String> columns = new ArrayList<String>();
 
                         try { foreignTable = col.getString("foreignTable"); } catch (Exception e) { foreignTable = null; }
-                        try { foreignColumn = col.getString("foreignColumn"); } catch (Exception e) { foreignColumn = null; }
-                        try { column = col.getString("column"); } catch (Exception e) { column = null; }
+                        try { 
+                            if(col.has("foreignColumn")) {
+                                JSONArray json_foreign_columns = null;
+                                try { col.getJSONArray("foreignColumn"); } catch (Exception e) { }
+                                if(json_foreign_columns != null) {
+                                    for (int ia=0; ia<json_foreign_columns.length(); ia++){ 
+                                        foreignColumns.add(json_foreign_columns.getString(ia));
+                                    }                                         
+                                } else {
+                                    foreignColumns.add( col.getString("foreignColumn") );
+                                }
+                            } 
+                        } catch (Exception e) { foreignColumns = null; }
+
+                        try { 
+                            if(col.has("column")) {
+                                JSONArray json_columns = null;
+                                try { json_columns = col.getJSONArray("column"); } catch (Exception e) { }                                    
+                                if(json_columns != null) {
+                                    for (int ia=0; ia<json_columns.length(); ia++){ 
+                                        foreignColumns.add(json_columns.getString(ia));
+                                    }                                         
+                                } else {
+                                    columns.add( col.getString("column") );
+                                }
+                            } 
+                        } catch (Exception e) { columns = null; }
 
                         if(colParts.length > 1) { // campo esterno ...
                             if(!colParts[0].equalsIgnoreCase(table)) {
@@ -734,8 +761,16 @@ public class workspace {
                                            if(foreignKey != null) {
                                                if(foreignKey.foreignTable.equalsIgnoreCase(colParts[0])) {
                                                     if(foreignTable == null) { col.put("foreignTable", foreignKey.foreignTable); foreignTable = foreignKey.foreignTable; }
-                                                    if(foreignColumn == null) { col.put("foreignColumn", foreignKey.foreignColumn); foreignColumn = foreignKey.foreignColumn; }
-                                                    if(column == null) { col.put("column", foreignKey.column); column = foreignKey.column; }
+                                                    if(foreignKey.foreignColumns.size() > 1) {
+                                                        if(foreignColumn == null) { col.put("foreignColumn", foreignKey.foreignColumns); foreignColumns = foreignKey.foreignColumns; }
+                                                    } else {
+                                                        if(foreignColumn == null) { col.put("foreignColumn", foreignKey.foreignColumns.get(0)); foreignColumns = foreignKey.foreignColumns; }
+                                                    }
+                                                    if(foreignKey.foreignColumns.size() > 1) {
+                                                        if(column == null) { col.put("column", foreignKey.columns); columns = foreignKey.columns; }
+                                                    } else {                                                        
+                                                        if(column == null) { col.put("column", foreignKey.columns.get(0)); columns = foreignKey.columns; }
+                                                    }
                                                     break;
                                                 }
                                             }
@@ -749,8 +784,8 @@ public class workspace {
                                                metadata.ForeignKey foreignKey = foreignKeysOnTable.get(ifk);
                                                if(foreignKey != null) {
                                                    if(foreignKey.foreignTable.equalsIgnoreCase(foreignTable)) {
-                                                       if(foreignKey.foreignColumn.equalsIgnoreCase(foreignColumn)) {
-                                                           if(foreignKey.column.equalsIgnoreCase(column)) {
+                                                        if(utility.compare_array(foreignKey.foreignColumns, foreignColumns)) {
+                                                            if(utility.compare_array(foreignKey.columns, columns)) {
                                                                foreignIndex = ifk;
                                                                break;
                                                             }
@@ -788,11 +823,14 @@ public class workspace {
                                     if("*".equalsIgnoreCase(foreignTables) || "all".equalsIgnoreCase(foreignTables)) {
                                         // verifica la presenza delle colonne necessarie alla foreignTable : velocizza il processo evitando la query inneestata
                                         cols = tableJson.getJSONArray("columns");
-                                        int ic = cols.length();                                    
-                                        if(get_column(table, cols, null, foreignKey.column) <= 0) {
-                                            JSONObject colJson = new JSONObject("{\"name\":\""+table+"."+foreignKey.column+"\",\"label\":\""+table+"."+foreignKey.column+"#AutoAdded\",\"field\":\""+String.valueOf(ic+1)+"\",\"visible\":false}");
-                                            cols.put(colJson);
-                                            ic++;
+                                        int ic = cols.length();
+                                        for(int jc=0; jc<foreignKey.columns.size(); jc++) {
+                                            String column = foreignKey.columns.get(jc);
+                                            if(get_column(table, cols, null, column) <= 0) {
+                                                JSONObject colJson = new JSONObject("{\"name\":\""+table+"."+column+"\",\"label\":\""+table+"."+column+"#AutoAdded\",\"field\":\""+String.valueOf(ic+1)+"\",\"visible\":false}");
+                                                cols.put(colJson);
+                                                ic++;
+                                            }
                                         }
                                         tableJson.put("columns", cols);
                                         

@@ -3,6 +3,7 @@ package com.liquid;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
@@ -623,20 +624,28 @@ public class metadata {
     
     static public class ForeignKey {
         String foreignTable;
-        String foreignColumn;
-        String column;
+        ArrayList<String> foreignColumns;
+        ArrayList<String> columns;
         String foreignWrk;
         
+        public ForeignKey(String foreignTable, ArrayList<String> foreignColumns, ArrayList<String> columns, String foreignWrk) {
+            this.foreignTable = foreignTable; 
+            this.foreignColumns = foreignColumns;
+            this.columns = columns;
+            this.foreignWrk = foreignWrk;
+        }
         public ForeignKey (String foreignTable, String foreignColumn, String column, String foreignWrk) {
             this.foreignTable = foreignTable; 
-            this.foreignColumn = foreignColumn;
-            this.column = column;
+            this.foreignColumns = new ArrayList<String>();
+            this.foreignColumns.add(foreignColumn);
+            this.columns = new ArrayList<String>();
+            this.columns.add(column);
             this.foreignWrk = foreignWrk;
         }
         public ForeignKey () {
             this.foreignTable = null; 
-            this.foreignColumn = null;
-            this.column = null;
+            this.foreignColumns = null;
+            this.columns = null;
             this.foreignWrk = null;
         }
     }
@@ -887,9 +896,9 @@ public class metadata {
                             result += "{";
                             result += "\""+(bUserFieldIdentificator?"1":"ID")+"\":\""+(nRec+1)+"\"";
                             result += ",\""+(bUserFieldIdentificator?"2":"TABLE")+"\":\""+table+"\"";
-                            result += ",\""+(bUserFieldIdentificator?"3":"COLUMN")+"\":\""+foreignKey.column+"\"";
+                            result += ",\""+(bUserFieldIdentificator?"3":"COLUMN")+"\":\""+utility.arrayToString(foreignKey.columns.toArray(), null, null, ",")+"\"";
                             result += ",\""+(bUserFieldIdentificator?"4":"FOREIGN_TABLE")+"\":\""+foreignKey.foreignTable+"\"";
-                            result += ",\""+(bUserFieldIdentificator?"5":"FOREIGN_COLUMN")+"\":\""+foreignKey.foreignColumn+"\"";
+                            result += ",\""+(bUserFieldIdentificator?"5":"FOREIGN_COLUMN")+"\":\""+utility.arrayToString(foreignKey.foreignColumns.toArray(), null, null, ",")+"\"";
                             result += "}";
                             nRec++;
                         }
@@ -934,8 +943,8 @@ public class metadata {
             
                                 ForeignKey foreignTable = new ForeignKey();
                                 foreignTable.foreignTable = rs.getString("PKTABLE_NAME");
-                                foreignTable.foreignColumn = rs.getString("PKCOLUMN_NAME");
-                                foreignTable.column = rs.getString("FKCOLUMN_NAME");
+                                foreignTable.foreignColumns = new ArrayList<String>(Arrays.asList(rs.getString("PKCOLUMN_NAME").split(",")));
+                                foreignTable.columns = new ArrayList<String>(Arrays.asList(rs.getString("FKCOLUMN_NAME").split(",")));
                                 foreignTable.foreignWrk = foreignTable.foreignTable+".default";
                                 result.add(foreignTable);
                             }

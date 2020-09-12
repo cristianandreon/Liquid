@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.29   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-09-2020 - Last update  21-08-2020
+// Liquid ver.1.30   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  12-09-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -150,8 +150,6 @@ class LiquidCtrl {
             this.gridsApi = sourceData.gridsApi;            
         }
  
-        // solve source col (foreignTable, etc...)
-        Liquid.solveSourceColumn(this, null, null);
 
         try {
             if(tableJsonString) {
@@ -456,10 +454,16 @@ class LiquidCtrl {
                     }
                 }
 
+                this.isAsyncResolve = true;
+                this.isAsyncResolveDone = true;
+                
+                // solve source col (foreignTable, etc...)
+                Liquid.solveSourceColumn(this, null, null);
 
                 Liquid.initializeLiquid(this);
                 
                 this.tableJsonSource = JSON.parse(JSON.stringify(this.tableJson));
+
                 
                 this.gridOptions = {
                     liquidLink: this,
@@ -1990,7 +1994,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.29,
+    version: 1.30,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -3688,10 +3692,10 @@ var Liquid = {
                 } else {
                     var selNodes = liquid.srcLiquid.gridOptions.api.getSelectedNodes();
                     if(selNodes && selNodes.length > 0) {
-                        if(typeof liquid.srcColumnIndex === 'undefined' || liquid.srcColumnIndex===null) {
+                        if(!isDef(liquid.srcColumnIndex)) {
                             // solve source col (foreignTable, etc...)
                             Liquid.solveSourceColumn(liquid, (liquid,ids) => Liquid.loadData(liquid, ids, reason+".forward"), null);
-                            if(typeof liquid.srcColumnIndex === 'undefined' || liquid.srcColumnIndex===null) {
+                            if(!isDef(liquid.srcColumnIndex)) {
                                 if(liquid.gridOptions.api)
                                     liquid.gridOptions.api.setRowData(null);
                                 liquid.lastSelectedId = null;
@@ -3700,8 +3704,24 @@ var Liquid = {
                             }
                         }
                         for(var node=0; node<selNodes.length; node++) {
-                            var foreignFilter = {name: liquid.srcForeignColumn, value: selNodes[node].data[liquid.srcColumnIndex], logic: "or"};
-                            allFilterJson = allFilterJson.concat(foreignFilter);
+                            var srcColumnIndexes = null;
+                            var srcForeignColumns = null;
+                            if(Array.isArray(liquid.srcColumnIndex)) {
+                                srcColumnIndexes = liquid.srcColumnIndex;                                
+                            } else {
+                                srcColumnIndexes = [ liquid.srcColumnIndex ];
+                            }
+                            if(Array.isArray(liquid.srcForeignColumn)) {
+                                srcForeignColumns = liquid.srcForeignColumn;                                
+                            } else {
+                                srcForeignColumns = [ liquid.srcForeignColumn ];
+                            }
+                            for(var ic=0; ic<srcColumnIndexes.length; ic++) {
+                                var srcForeignColumn = srcForeignColumns[ic];
+                                var srcColumnIndex = srcColumnIndexes[ic];
+                                var foreignFilter = { name: srcForeignColumn, value: selNodes[node].data[srcColumnIndex], logic: (ic!=0 ? "and":"or") };
+                                allFilterJson = allFilterJson.concat(foreignFilter);
+                            }
                         }
                     } else {
                         // nessuna selezione
@@ -9320,6 +9340,11 @@ var Liquid = {
                                     }
                                 }
                             }
+                            if(isDef(liquid.tableJson.layouts) && liquid.tableJson.layouts.length > 0) {
+                                for(var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                                    Liquid.onLayoutMode(liquid.tableJson.layouts[il].layoutTabObj, liquid.tableJson.layouts[il].currentRow1B-1, mode);
+                                }
+                            }
                             
                             command.curLayoutIndex = gotoLayoutIndex;
                             if(isDef(liquid.tableJson.layouts) && liquid.tableJson.layouts.length > 0) {
@@ -9667,10 +9692,20 @@ var Liquid = {
         if(liquid) {
             if(liquid.srcColumn) {
                 try {
-                    liquid.srcColumnObj = Liquid.getColumn(liquid.srcLiquid, liquid.srcColumn);
-                    if(liquid.srcColumnObj) {
-                        liquid.srcColumnIndex = liquid.srcColumnObj ? liquid.srcColumnObj.field : -1;
+                    if(Array.isArray(liquid.srcColumn)) {
+                        srcColumns = liquid.srcColumn;
                     } else {
+                        srcColumns = [ liquid.srcColumn ];
+                    }
+                    liquid.srcColumnIndex = [];
+                    for(var ic=0; ic<srcColumns.length; ic++) {
+                        srcColumn = srcColumns[ic];
+                        liquid.srcColumnObj = Liquid.getColumn(liquid.srcLiquid, srcColumn);
+                        if(liquid.srcColumnObj) {
+                            liquid.srcColumnIndex.push( liquid.srcColumnObj ? liquid.srcColumnObj.field : -1 );
+                        }
+                    }
+                    if(liquid.srcColumnObj) {
                         if(liquid.srcLiquid) {
                             if(!liquid.srcLiquid.isAsyncResolve) { // Async
                                 console.error("ERROR: column \""+liquid.srcColumn+"\" not found in "+liquid.srcLiquid.controlId+"");
@@ -11123,7 +11158,7 @@ var Liquid = {
                             var isFormX = Liquid.isFormX(liquid);
                             var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
                             if(isFormX || isAutoInsert === true) mode = "write";
-                            Liquid.onLayoutMode(layout.containerObj, layout.curRow, mode);
+                            Liquid.onLayoutMode(layout.containerObj, layout.currentRow1B-1, mode);
                             if(layout.rowsContainer) {
                                 for(var ir=0; ir<layout.rowsContainer.length; ir++) {
                                     layout.rowsContainer[ir].isUpdating = false;
