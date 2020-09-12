@@ -130,7 +130,7 @@ html, body { height: 100% }
 .ag-theme-balham .ag-row-even { }
 .ag-theme-balham .ag-row-selected { background-color: rgb(221 240 251); border-color: #f6f6f6; }
 .ag-theme-balham .ag-ltr .ag-cell-focus { border: 1px solid darkred !important;  }
-.ag-theme-balham .ag-cell { font-family: arial, sans-serif !important; color: rgb(99 99 99) border-color: #f6f6f6 !important; border-left: 1px solid #f6f6f6 !important; border-right: 0px solid #f6f6f6 !important; border-top: 0px solid #f6f6f6 !important;; border-bottom: 0px solid #f6f6f6 !important; }
+.ag-theme-balham .ag-cell { font-family: arial, sans-serif !important; color: rgb(99 99 99); border-color: #f6f6f6 !important; border-left: 1px solid #f6f6f6 !important; border-right: 0px solid #f6f6f6 !important; border-top: 0px solid #f6f6f6 !important;; border-bottom: 0px solid #f6f6f6 !important; }
 .ag-theme-balham .ag-row {  border-width: 0px 0 0 0 !important; }
 .ag-theme-balham .ag-header-cell { font-family: arial, sans-serif !important; font-weight: bold !important; color: black !important; }
 .liquidActionBt { 	appearance: button; -webkit-writing-mode: horizontal-tb !important; text-rendering: auto; color: -internal-light-dark(buttontext, rgb(170, 170, 170)); letter-spacing: normal;
