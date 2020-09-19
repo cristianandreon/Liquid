@@ -20,7 +20,7 @@
 <!-- load jQuery 1.12.4 -->
 <script src="<%=path%>/liquid/jquery-1.12.4.js"></script>
 <script src="<%=path%>/liquid/jquery-ui.js"></script>
-<script type="text/javascript">var jQ1124 = $.noConflict(true);</script>
+<script src="<%=path%>/liquid/global.js"></script>
 <link rel="stylesheet" href="<%=path%>/liquid/jquery-ui.min.css"/>
 
 <script src="<%=path%>/liquid/toastr/toastr.js"></script>
