@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.30   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  12-09-2020
+// Liquid ver.1.31   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  20-09-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -1994,7 +1994,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.30,
+    version: 1.31,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -14255,7 +14255,7 @@ var Liquid = {
             curMessageInfo.intervalID = null;
             var xhr = new XMLHttpRequest();
             xhr.open('POST', glLiquidServlet + '?operation=setMessageResponse'
-                    +'&jSON=' + encodeURIComponent( JSON.stringify( { response:(typeof response !== 'undefined' ? response : ""), cypher:curMessageInfo.cypher } ) )
+                    +'&jSON=' + encodeURIComponent( JSON.stringify( { response:(typeof response !== 'undefined' ? String(response) : ""), cypher:curMessageInfo.cypher } ) )
                     );
             xhr.send();
         }
