@@ -577,7 +577,7 @@ public class login {
 
                             // MYSQL
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`='"+sUserID.toLowerCase()+"' OR `email`='"+sUserID.toLowerCase()+"') AND (`password`=PASSWORD(?) OR `password`='') AND `status`<>'A' AND `status`<>'D' AND `emailValidated` > 0 AND `domain_id`='" + (domain_id != null ? domain_id : "") +"' AND `application_id`='" + (application_id != null ? application_id : "") + "'";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`='"+sUserID.toLowerCase()+"' OR `email`='"+sUserID.toLowerCase()+"') AND (`password`=MD5(AES_ENCRYPT(?,'LIQUID2020')) OR `password`='') AND `status`<>'A' AND `status`<>'D' AND `emailValidated` > 0 AND `domain_id`='" + (domain_id != null ? domain_id : "") +"' AND `application_id`='" + (application_id != null ? application_id : "") + "'";
 
                             // POSTGRES
                             } else if("postgres".equalsIgnoreCase(driver)) {
@@ -1225,7 +1225,7 @@ public class login {
                                 // Controllo campo email
                                 if(sEMail != null && !sEMail.isEmpty()) {
                                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (email='"+sEMail.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id=" + (domain_id != null ? domain_id : "") +" AND application_id='" + (application_id != null ? application_id : "")+"')";
+                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (email='"+sEMail.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
                                     } else if("postgres".equalsIgnoreCase(driver)) {
                                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (email='"+sEMail.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
                                     } else if("oracle".equalsIgnoreCase(driver)) {
@@ -1252,7 +1252,7 @@ public class login {
                                 // Controllo campo userId
                                 if(sUserID != null && !sUserID.isEmpty()) {
                                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id=" + (domain_id != null ? domain_id : "") +" AND application_id='" + (application_id != null ? application_id : "")+"')";
+                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
                                     } else if("postgres".equalsIgnoreCase(driver)) {
                                         sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
                                     } else if("oracle".equalsIgnoreCase(driver)) {
@@ -1386,7 +1386,7 @@ public class login {
                                                                     + ",'" + (domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
                                                                     + ",'" + sEMail.toLowerCase() + "'"
-                                                                    + ",PASSWORD('"+newPassword+"')" 
+                                                                    + ",MD5(AES_ENCRYPT('"+newPassword+"','LIQUID2020'))" /* + ",PASSWORD('"+newPassword+"')"  */
                                                                     + ",'"+dateFormat.format(cDate)+"'"
                                                                     + ",'" + sStatus + "'"
                                                                     + "," + (sAdmin != null && !sAdmin.isEmpty() ? sAdmin : "0") + ""
@@ -1575,7 +1575,7 @@ public class login {
                             prepare_database(conn);
 
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "UPDATE "+schemaTable+" SET `password`=PASSWORD(?) WHERE `id`="+params[1]+"";
+                                sqlSTMT = "UPDATE "+schemaTable+" SET `password`=MD5(AES_ENCRYPT(?,'LIQUID2020')) WHERE `id`="+params[1]+"";
                             } else if("postgres".equalsIgnoreCase(driver)) {
                                 sqlSTMT = "UPDATE "+schemaTable+" SET \"password\"=crypt(CAST(? AS text),CAST('"+password_seed+"' AS text)) WHERE \"id\"="+params[1]+"";
                             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -1714,7 +1714,7 @@ public class login {
                                 
                                 if (application_id != null && !application_id.isEmpty()) {
                                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" SET `password`=PASSWORD(?) WHERE ( "
+                                        sqlSTMT = "UPDATE "+schemaTable+" SET `password`=MD5(AES_ENCRYPT(?,'LIQUID2020')) WHERE ( "
                                                 + "`application_id` = '" + (application_id != null ? application_id : "") + "'"
                                                 + " AND `domain_id` = '" + (domain_id != null ? domain_id : "") + "'"
                                                 + " AND `user` = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"

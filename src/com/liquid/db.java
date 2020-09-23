@@ -243,7 +243,7 @@ public class db {
             String leftJoinList = "";
             String column_alias = null;
             ArrayList<ForeignKey> foreignKeys = null;
-            ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap> ();           
+            ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap> ();
             workspace tbl_wrk = workspace.get_tbl_manager_workspace( tblWrk != null ? tblWrk : controlId );
             String tblWrkDesc = (tblWrk!=null?tblWrk+".":"")+(controlId!=null?controlId:"");
             boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
@@ -763,13 +763,13 @@ public class db {
                             if(requestJson.has("filtersJson")) {
                                 JSONArray filtersCols = requestJson.getJSONArray("filtersJson");
                                 JSONArray filters = null;
-                                JSONArray filtersDefCols = null;
+                                JSONArray filtersDefinitionCols = null;
                                 int curFilter = -1;
                                 
                                 if(requestJson.has("curFilter")) {
                                     curFilter = requestJson.getInt("curFilter");
                                     try { filters = tbl_wrk.tableJson.getJSONArray("filters"); } catch (Exception e) {}
-                                    try { filtersDefCols = filters.getJSONObject(curFilter).getJSONArray("columns"); } catch (Exception e) {}
+                                    try { filtersDefinitionCols = filters.getJSONObject(curFilter).getJSONArray("columns"); } catch (Exception e) {}
                                 } else {
                                     if(filtersCols.length() > 0) {
                                         String msg = "Filters Error:unable to get back current filter definition";
@@ -781,7 +781,7 @@ public class db {
                                 sWhere = process_filters_json(
                                 		tbl_wrk, table, cols, 
                                 		isOracle, isMySQL, isPostgres, isSqlServer, 
-                                		sWhere, filtersCols, filtersDefCols, leftJoinsMap,
+                                		sWhere, filtersCols, filtersDefinitionCols, leftJoinsMap,
                                 		tableIdString, itemIdString
                                 		);
                             }
@@ -1384,12 +1384,14 @@ public class db {
     }
 
     
-    
-    
+    //
+    // filtersCols = definizione del filtro nella richiesta (il filtro corrente passato dalla pagina web)
+    // filtersDefinitionCols = definizione delle colonne del filtro corrente (nel setup del controllo)
+    //
     static public String process_filters_json(
     		workspace tbl_wrk, String table, JSONArray cols, 
     		boolean isOracle, boolean isMySQL, boolean isPostgres, boolean isSqlServer, 
-    		String sWhere, JSONArray filtersCols, JSONArray filtersDefCols, ArrayList<LeftJoinMap> leftJoinsMap,
+    		String sWhere, JSONArray filtersCols, JSONArray filtersDefinitionCols, ArrayList<LeftJoinMap> leftJoinsMap,
     		String tableIdString, String itemIdString
     		) throws JSONException {
     	
@@ -1568,10 +1570,10 @@ public class db {
 	                }
 	                
 	                if(filterOp == null || filterOp.isEmpty()) {
-	                    if(filtersDefCols != null) {
-	                        if(filtersDefCols.getJSONObject(i).has("op")) {
+	                    if(filtersDefinitionCols != null) {
+	                        if(filtersDefinitionCols.getJSONObject(i).has("op")) {
 	                            try {
-	                                filterOp = filtersDefCols.getJSONObject(i).getString("op");
+	                                filterOp = filtersDefinitionCols.getJSONObject(i).getString("op");
 	                            } catch (Exception e) { }
 	                        }
 	                    }
@@ -2639,12 +2641,12 @@ public class db {
     //
     //  Load single bean for given database.schema.table + primaryKey
     //
-    //  ControlId is automatically created if not exist (from databaseShemaTable)
+    //  ControlId is automatically created if not exist (from databaseSchemaTable)
     //
     //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public Object load_bean( HttpServletRequest request, String databaseShemaTable, String columns, Object primaryKey) throws JSONException, Throwable {
-        ArrayList<Object> beans = load_beans(request, databaseShemaTable, columns, null, primaryKey, 1);
+    static public Object load_bean( HttpServletRequest request, String databaseSchemaTable, String columns, Object primaryKey) throws JSONException, Throwable {
+        ArrayList<Object> beans = load_beans(request, databaseSchemaTable, columns, null, primaryKey, 1);
         if(beans != null) {
             if(beans.size() > 0) {
                 return beans.get(0);
@@ -2656,23 +2658,23 @@ public class db {
     //
     //  Create all beans for primaryKey
     //
-    //  ControlId is automatically created if not exist (from databaseShemaTable)
+    //  ControlId is automatically created if not exist (from databaseSchemaTable)
     //
     //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException, Throwable {
-        return load_beans( request, null, databaseShemaTable, columns, keyColumn, key, maxRows );
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException, Throwable {
+        return load_beans( request, null, databaseSchemaTable, columns, keyColumn, key, maxRows );
     }
 
     
-    static public workspace load_beans_get_workspace ( HttpServletRequest request, String databaseShemaTable, String controlId ) throws JSONException, Throwable {
+    static public workspace load_beans_get_workspace ( HttpServletRequest request, String databaseSchemaTable, String controlId ) throws JSONException, Throwable {
         String database = null, table = null, schema = null, primaryKey = null;
         workspace tbl_wrk = null;
         if(controlId == null) {
-            String runtimeControlId = workspace.getControlIdFromDatabaseSchemaTable(databaseShemaTable);
+            String runtimeControlId = workspace.getControlIdFromDatabaseSchemaTable(databaseSchemaTable);
             tbl_wrk = workspace.get_tbl_manager_workspace( runtimeControlId );
             if(tbl_wrk == null) {
-                runtimeControlId = workspace.getControlIdFromTable(databaseShemaTable);
+                runtimeControlId = workspace.getControlIdFromTable(databaseSchemaTable);
                 tbl_wrk = workspace.get_tbl_manager_workspace( runtimeControlId );
             }
         } else {                    
@@ -2680,7 +2682,7 @@ public class db {
         }        
         if(tbl_wrk == null) {
             // crea il controllo
-            String [] tableParts = databaseShemaTable.split("\\.");            
+            String [] tableParts = databaseSchemaTable.split("\\.");            
             if(tableParts.length == 1) {
                 table = tableParts[0];
             } else if(tableParts.length == 2) {
@@ -2692,7 +2694,7 @@ public class db {
                 database = tableParts[0];
             }            
             if(controlId == null) {
-                controlId = workspace.getControlIdFromDatabaseSchemaTable(databaseShemaTable);
+                controlId = workspace.getControlIdFromDatabaseSchemaTable(databaseSchemaTable);
             }
             String sRequest = "";
             String parentControlId = null;
@@ -2716,11 +2718,11 @@ public class db {
     //
     //  TODO : partial columns read still unsupported... read always all columns
     //
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException, Throwable {
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException, Throwable {
         String sWhere = "";
 
         // cerca o cerca il controllo
-        workspace tbl_wrk = load_beans_get_workspace ( request, databaseShemaTable, controlId );
+        workspace tbl_wrk = load_beans_get_workspace ( request, databaseSchemaTable, controlId );
         if(tbl_wrk == null) return null;
         
         JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
@@ -2752,8 +2754,11 @@ public class db {
             return null;
         }
         
-        return load_beans( request, controlId, databaseShemaTable, columns, sWhere, maxRows );
-    }    
+        return load_beans( request, controlId, databaseSchemaTable, columns, sWhere, maxRows );
+    }
+    
+    
+    
     //
     //  Create all beans for given where condition
     //
@@ -2764,9 +2769,9 @@ public class db {
     //  TODO : partial columns read still unsupported... read always all columns
     //
 
-    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseShemaTable, String columns, String where_condition, long maxRows ) {
+    static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows ) {
         // crea un controllo sulla tabella
-        String [] tableParts = databaseShemaTable.split("\\.");
+        String [] tableParts = databaseSchemaTable.split("\\.");
         String database = null, table = null, schema = null, primaryKey = null;
         String primaryKeyColumn = "";
         JSONArray cols = null;
@@ -2803,7 +2808,7 @@ public class db {
             }
 
             // cerca o cerca il controllo
-            workspace tbl_wrk = load_beans_get_workspace ( request, databaseShemaTable, controlId );
+            workspace tbl_wrk = load_beans_get_workspace ( request, databaseSchemaTable, controlId );
             if(tbl_wrk == null) return null;
 
             
@@ -2991,8 +2996,11 @@ public class db {
         }
         return null;
     }
-    
-    //  Load child beans defined by foreignTable beanName inside the Object bean
+
+
+    //
+    //  Load child beans defined by childBeanName foreignTable, looking inside the Object bean
+    //
     //  Need selection or rows defined in params (it comes from client)
     //
     //  Return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
@@ -3993,7 +4001,25 @@ public class db {
         }
         return null;
     }
+    static public int getFieldPosition(workspace liquid, String name) {
+        try {
+            if(liquid != null) {
+                JSONArray cols = liquid.tableJson.getJSONArray("columns");
+                if(cols != null) {
+                    for(int ic=0; ic<cols.length(); ic++) {
+                        JSONObject col = cols.getJSONObject(ic);
+                        String tName = col.getString("name");
+                        if(name.equalsIgnoreCase(tName)) return (ic+1);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return 0;
+    }
 
+    
     public static String getLocalDate (String value, int colType, boolean nullable) {
         String result = null;
         // DateTimeFormatter formatter = null;
@@ -4435,6 +4461,47 @@ public class db {
         }
         return null;
     }    
+
+    /**
+     * <h3>Insert the bean to the database</h3>
+     * <p>
+     * This method execute an insert statement by the given bean
+     *
+     * @param  bean  bean to insert (Object)
+     * @param  tbl_wrk the table workspace of the control (Object)
+
+     * @return      the detail of operation as json object
+     *              { "tables":[ 
+     *                          { "table":"table name", "ids":[ list of changed primary keys ] }
+     *                          ]
+     *              ,"foreignTables":[
+     *                          { "table":"table name", "ids":[ list of changed primary keys ] }
+     *                          ]
+     *              ,"fails":["
+     *                          { "table":"table name", "ids":[ list of changed primary keys ] }
+     *                          ]
+     *              }
+     * @see         db
+     */
+    static public String delete ( Object bean, Object tbl_wrk ) {
+        try {
+            String sModifications = "";
+            String sFields = "";
+            workspace tblWrk = (workspace)tbl_wrk;
+            String id = (String)utility.get(bean, ((workspace)tbl_wrk).tableJson.getString("primaryKey") );
+            
+            sModifications += "{\"rowId\":\""+id+"\"}";
+            
+            String deletingParams = "{ \"params\":[{\"modifications\":[" + sModifications + "] } ] }";
+            
+            return db.deleteRow(tbl_wrk, deletingParams, null, null, null);
+        } catch (Exception ex) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }    
+
+    
     
     // Wrappers
     static public String getSelection(Object tbl_wrk, Object params) {
@@ -4482,16 +4549,293 @@ public class db {
     }
     
     static public boolean create_database_schema(String driver, String host, String database, String schema, String user, String password) throws Exception {
-		return metadata.create_database_schema(driver, host, database, database, user, password);
+        return metadata.create_database_schema(driver, host, database, database, user, password);
     }
+
     static public boolean create_database_schema(String driver, String database, String schema, String user, String password) throws Exception {
-		return metadata.create_database_schema(driver, database, database, user, password);
+        return metadata.create_database_schema(driver, database, database, user, password);
     }
-	static public boolean create_database(Connection conn, String database) {
-		return metadata.create_schema(conn, database);
-	}
-	static public boolean create_schema(Connection conn, String schema) {
-		return metadata.create_schema(conn, schema);
-	}
+
+    static public boolean create_database(Connection conn, String database) {
+        return metadata.create_schema(conn, database);
+    }
+
+    static public boolean create_schema(Connection conn, String schema) {
+        return metadata.create_schema(conn, schema);
+    }
+    
+
+
+    
+    static public String syncronizeTable( String databaseSchemaTable, String sourceRowsFilters,
+                                            String targetDatabaseSchemaTable, String targetRowsFilters,
+                                            String columnsRelation
+    ) {
+        return syncronizeTable( databaseSchemaTable, sourceRowsFilters, targetDatabaseSchemaTable, targetRowsFilters, columnsRelation, "mirror" );
+    }
+            
+    /**
+     * <h3>Suncronize target table by source table, adding and removing rows</h3>
+     * <p>
+     * This method execute a syncronization by adding and removing rows
+     *
+     * @param  sourceDatabaseSchemaTable  the source table (database.schema.table or schema.table or table) (String)
+     * @param  sSourceRowsFilters the filters to apply to get source rowset
+     * @param  targetDatabaseSchemaTable  the target table (database.schema.table or schema.table or table) (String)
+     * @param  sSourceRowsFilters the filters to apply to get target rowset
+     * @param  sColumnsRelation the relation beetwen source and target table's columns
+     * example:
+     *  { "target column 1":"source column 1", "target column 2":"source column 2", ... }
+     *      target column must be an existing column in target table
+     *      source column could be an existing column in source table or a fixed value
+     * 
+     * @param  mode can be a list of these values:
+     *  "mirror"    (default mode)
+     *  "preview"   (report the differences without perform any operations)
+     * 
+     * @return      the detail of operation the operation, if not preview mode as
+     *              { "addedIds":[ 1, 2, 3, ... ]
+     *               ,"addedCount":n
+     *               ,"deletedIds":[ 1, 2, 3, ... ]
+     *               ,"deletedCount":n
+     *              }
+     * @see         db
+     */
+    static public String syncronizeTable( String sourceDatabaseSchemaTable, String sSourceRowsFilters,
+                                            String targetDatabaseSchemaTable, String sTargetRowsFilters,
+                                            String sColumnsRelation,
+                                            String mode
+    ) {
+        JSONObject resultJSON = new JSONObject();
+        String result = "";
+        String database = null, schema = null, table = null, sourceControlId = null, targetControlId = null, where_condition_source = "", where_condition_target = "", error = "";
+        String sourcePrimaryKey = null, targetPrimaryKey = null;
+        boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
+        String [] tableParts = sourceDatabaseSchemaTable.split("\\.");
+        HttpServletRequest request = null;
+        ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap> ();
+
+        try {            
+            
+            if(tableParts.length == 1) {
+                table = tableParts[0];
+            } else if(tableParts.length == 2) {
+                table = tableParts[1];
+                schema = tableParts[0];
+            } else if(tableParts.length == 3) {
+                table = tableParts[2];
+                schema = tableParts[1];
+                database = tableParts[0];
+            }
+
+            sourceControlId = workspace.getControlIdFromDatabaseSchemaTable( sourceDatabaseSchemaTable );
+            workspace source_tbl_wrk = workspace.get_tbl_manager_workspace( sourceControlId );
+            if(source_tbl_wrk == null) {
+                targetControlId = workspace.getControlIdFromDatabaseSchemaTable( targetDatabaseSchemaTable );        
+                workspace target_tbl_wrk = workspace.get_tbl_manager_workspace( targetControlId );
+                if(target_tbl_wrk == null) {
+                } else {
+
+                    String itemIdString = "\"", tableIdString = "\"", asKeyword = " AS ";
+                    if( (source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("postgres.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("postgres")) {
+                        isPostgres = true;
+                    }
+                    if( (source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
+                        isMySQL = true;
+                    }
+                    if( (source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("mariadb.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("mariadb")) {
+                        isMySQL = true;
+                    }
+                    if((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("oracle.")) || (source_tbl_wrk.dbProductName != null && source_tbl_wrk.dbProductName.toLowerCase().contains("oracle"))) {
+                        isOracle = true;
+                    }
+                    if((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("sqlserver.")) || (source_tbl_wrk.dbProductName != null && source_tbl_wrk.dbProductName.toLowerCase().contains("sqlserver"))) {
+                        isSqlServer = true;
+                    }
+
+
+                    JSONObject sourceRowsFilters = sSourceRowsFilters != null && !sSourceRowsFilters.isEmpty() ? new JSONObject(sSourceRowsFilters) : null;
+                    JSONObject targetRowsFilters = sTargetRowsFilters != null && !sTargetRowsFilters.isEmpty() ? new JSONObject(sTargetRowsFilters) : null;
+
+
+                    try { sourcePrimaryKey = source_tbl_wrk.tableJson.getString("primaryKey"); } catch (Exception e) {  }
+                    try { targetPrimaryKey = target_tbl_wrk.tableJson.getString("primaryKey"); } catch (Exception e) {  }
+                    
+                    //
+                    // Build source table filters
+                    //
+                    try {
+                        if(sourceRowsFilters != null) {                    
+                            JSONArray cols = source_tbl_wrk.tableJson.getJSONArray("columns");
+                            if(sourceRowsFilters.has("filtersJson")) {
+                                JSONArray filtersCols = sourceRowsFilters.getJSONArray("filtersJson");
+
+                                where_condition_source = process_filters_json(source_tbl_wrk, table, cols, 
+                                                isOracle, isMySQL, isPostgres, isSqlServer, 
+                                                where_condition_source, filtersCols, null, leftJoinsMap,
+                                                tableIdString, itemIdString
+                                                );
+                            }
+                        }
+                    } catch (Exception e) {
+                        error += "[Filters Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+source_tbl_wrk.driverClass+"]";
+                        System.err.println("// Filters Error:" + e.getLocalizedMessage());
+                    }
+
+
+
+                    //
+                    // Filtering source table
+                    //
+                    ArrayList<Object> sourceRows = load_beans(request, sourceControlId, sourceDatabaseSchemaTable, "*", where_condition_source, 0 );
+
+
+
+
+                    //
+                    // Build target table filters
+                    //
+                    try {
+                        if(targetRowsFilters != null) {                    
+                            JSONArray cols = source_tbl_wrk.tableJson.getJSONArray("columns");
+                            if(targetRowsFilters.has("filtersJson")) {
+                                JSONArray filtersCols = targetRowsFilters.getJSONArray("filtersJson");
+
+                                where_condition_target = process_filters_json(source_tbl_wrk, table, cols, 
+                                                isOracle, isMySQL, isPostgres, isSqlServer, 
+                                                where_condition_target, filtersCols, null, leftJoinsMap,
+                                                tableIdString, itemIdString
+                                                );
+                            }
+                        }
+                    } catch (Exception e) {
+                        error += "[Filters Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+source_tbl_wrk.driverClass+"]";
+                        System.err.println("// Filters Error:" + e.getLocalizedMessage());
+                    }
+
+                    
+                    //
+                    // Filtering target table
+                    //
+                    ArrayList<Object> targetRows = load_beans( request, sourceControlId, targetDatabaseSchemaTable, "*", where_condition_target, 0 );
+
+
+
+
+                    //        
+                    // Eliminazione righe non corrispondenti
+                    //
+                    ArrayList<String> deletingIds = new ArrayList<String>();
+                    ArrayList<String> addingIds = new ArrayList<String>();
+                    ArrayList<String> addingFields = new ArrayList<String>();
+                    ArrayList<String> addingColumnsValue = new ArrayList<String>();
+                    ArrayList<String> addingColumnsName = new ArrayList<String>();
+                    ArrayList<String> addingColumnsLabel = new ArrayList<String>();
+
+                    ArrayList<Object> sourcePrimaryKeys = new ArrayList<Object>();
+                    Object [] source_res = beansToArray( sourceRows, sourcePrimaryKey, sourcePrimaryKeys );
+                    // String sSourcePrimaryKeys = utility.arrayToString(sourcePrimaryKeys.toArray(), "'", "'", ",");
+
+                    ArrayList<Object> targetPrimaryKeys = new ArrayList<Object>();
+                    Object [] target_res = beansToArray( targetRows, targetPrimaryKey, targetPrimaryKeys );
+                    
+                    
+                    for(int i=0; i<targetRows.size(); i++) {
+                        boolean found = false;
+                        Object targetBean = (Object) targetRows.get(i);
+                        String id = (String)utility.get(targetBean, sourcePrimaryKey);
+                        if(sourcePrimaryKey.contains(id)) {
+                            found = true;
+                        }
+                        if(!found) {
+                            deletingIds.add(id);
+                            if(mode.contains("preview")) {
+                            } else {
+                                delete( targetBean, target_tbl_wrk );
+                            }
+                        }
+                    }
+                    
+                    resultJSON.put("deletedCount", deletingIds.size());
+                    resultJSON.put("deletedIds", deletingIds);                            
+                    
+                    
+                    
+                    //
+                    // Aggiunta righe non trovate
+                    //
+                    
+                    JSONObject columnsRelation = new JSONObject(sColumnsRelation);
+
+                    JSONArray names = columnsRelation.names();
+                    if(names != null) {
+                        for(int io=0; io<names.length(); io++) {
+                            String propName = names.getString(io);
+                            Object propVal = columnsRelation.get(propName);
+                            if(propVal instanceof String) {
+                                if(getFieldPosition(target_tbl_wrk, (String)propName) > 0) {
+                                    int fieldPos = getFieldPosition(source_tbl_wrk, (String)propVal);
+                                    if(fieldPos > 0) {
+                                        addingColumnsValue.add(null);
+                                        addingColumnsName.add(propName);
+                                    } else {
+                                        addingColumnsValue.add(columnsRelation.getString(propName));
+                                        addingColumnsName.add(null);
+                                    }
+                                    addingColumnsLabel.add(propName);
+                                }
+                            }
+                        }
+                    }
+                    
+                    for(int i=0; i<sourceRows.size(); i++) {
+                        Object sourceBean = (Object) sourceRows.get(i);
+                        String id = (String)utility.get(sourceBean, sourcePrimaryKey);
+                        for(int j=0; j<targetRows.size(); j++) {
+                            boolean found = false;
+                            id = (String) targetRows.get(j);
+                            if(targetRows.contains(id)) {
+                                found = true;
+                            }
+                            if(!found) {
+                                // adding source table
+                                addingFields.clear();
+                                for(int ic=0; ic<addingColumnsName.size(); ic++) {
+                                    if(addingColumnsName.get(ic) != null) {
+                                        // add a column
+                                        addingFields.add( (String)utility.get(sourceBean, addingColumnsName.get(i)) );
+                                    } else {
+                                        // add a value
+                                        addingFields.add( addingColumnsValue.get(ic) );
+                                    }
+                                }
+                                
+                                if(mode.contains("preview")) {
+                                } else {
+                                    addingIds.add(id);
+                                    JSONArray rowsJson = null;
+                                    Object [] beanResult = create_beans_multilevel_class( target_tbl_wrk, rowsJson, null, "*", 0, 1 );
+                                    if(beanResult != null) {
+                                        int ftResult = (int)beanResult[0];
+                                        Object newBean = ((ArrayList<Object>)beanResult[1]).get(0);
+                                        insert( newBean, target_tbl_wrk );
+                                        
+                                    }                                    
+                                }
+                            }
+                        }
+                    }
+                    resultJSON.put("addingCount", addingIds.size());
+                    resultJSON.put("adddingIds", addingIds);                            
+                }
+            }
+            
+        } catch (Throwable e) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+        }
+        
+        return result;
+    }
+   
     
 }
