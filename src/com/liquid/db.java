@@ -4573,7 +4573,26 @@ public class db {
     ) {
         return syncronizeTable( databaseSchemaTable, sourceRowsFilters, targetDatabaseSchemaTable, targetRowsFilters, columnsRelation, "mirror" );
     }
-            
+
+    
+    
+    
+    static public JSONArray wrapFilters ( JSONObject filterJSON ) throws JSONException {
+    	JSONArray result = new JSONArray();
+    	JSONArray names = filterJSON.names();
+    	if(names != null) {
+    		for(int io=0; io<names.length(); io++) {
+    			String propName = names.getString(io);
+    			Object propVal = filterJSON.get(propName);
+    			JSONObject filter = new JSONObject();
+    			filter.put("name", propName);
+    			filter.put("value", propVal);
+    			result.put( filter );
+    		}
+    	}
+    	return result;
+    }
+    
     /**
      * <h3>Suncronize target table by source table, adding and removing rows</h3>
      * <p>
@@ -4608,15 +4627,17 @@ public class db {
     ) {
         JSONObject resultJSON = new JSONObject();
         String result = "";
-        String database = null, schema = null, table = null, sourceControlId = null, targetControlId = null, where_condition_source = "", where_condition_target = "", error = "";
+        String database = null, schema = null, table = null;
+        String targetTable = null, targetSchema = null, targetDatabase = null;
+        String sourceControlId = null, targetControlId = null, where_condition_source = "", where_condition_target = "", error = "";
         String sourcePrimaryKey = null, targetPrimaryKey = null;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
-        String [] tableParts = sourceDatabaseSchemaTable.split("\\.");
         HttpServletRequest request = null;
         ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap> ();
 
         try {            
             
+            String [] tableParts = sourceDatabaseSchemaTable.split("\\.");
             if(tableParts.length == 1) {
                 table = tableParts[0];
             } else if(tableParts.length == 2) {
@@ -4628,13 +4649,36 @@ public class db {
                 database = tableParts[0];
             }
 
+            tableParts = targetDatabaseSchemaTable.split("\\.");
+            if(tableParts.length == 1) {
+                targetTable = tableParts[0];
+            } else if(tableParts.length == 2) {
+            	targetTable = tableParts[1];
+                targetSchema = tableParts[0];
+            } else if(tableParts.length == 3) {
+            	targetTable = tableParts[2];
+            	targetSchema = tableParts[1];
+            	targetDatabase = tableParts[0];
+            }
+            
             sourceControlId = workspace.getControlIdFromDatabaseSchemaTable( sourceDatabaseSchemaTable );
             workspace source_tbl_wrk = workspace.get_tbl_manager_workspace( sourceControlId );
             if(source_tbl_wrk == null) {
+                String sRequest = "";
+                String parentControlId = null;
+                String sTableJson = workspace.get_default_json(request, sourceControlId, sourceControlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
+            }            
+            source_tbl_wrk = workspace.get_tbl_manager_workspace( sourceControlId );
+            if(source_tbl_wrk != null) {
                 targetControlId = workspace.getControlIdFromDatabaseSchemaTable( targetDatabaseSchemaTable );        
                 workspace target_tbl_wrk = workspace.get_tbl_manager_workspace( targetControlId );
                 if(target_tbl_wrk == null) {
-                } else {
+                    String sRequest = "";
+                    String parentControlId = null;
+                    String sTableJson = workspace.get_default_json(request, targetControlId, targetControlId, targetTable, targetSchema, targetDatabase, parentControlId, workspace.sourceSpecialToken, sRequest, null);
+                }
+                target_tbl_wrk = workspace.get_tbl_manager_workspace( targetControlId );
+                if(target_tbl_wrk != null) {
 
                     String itemIdString = "\"", tableIdString = "\"", asKeyword = " AS ";
                     if( (source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("postgres.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("postgres")) {
@@ -4665,17 +4709,14 @@ public class db {
                     // Build source table filters
                     //
                     try {
-                        if(sourceRowsFilters != null) {                    
+                        if(sourceRowsFilters != null) {
                             JSONArray cols = source_tbl_wrk.tableJson.getJSONArray("columns");
-                            if(sourceRowsFilters.has("filtersJson")) {
-                                JSONArray filtersCols = sourceRowsFilters.getJSONArray("filtersJson");
-
-                                where_condition_source = process_filters_json(source_tbl_wrk, table, cols, 
-                                                isOracle, isMySQL, isPostgres, isSqlServer, 
-                                                where_condition_source, filtersCols, null, leftJoinsMap,
-                                                tableIdString, itemIdString
-                                                );
-                            }
+                            JSONArray filtersCols = wrapFilters(sourceRowsFilters);
+                            where_condition_source = process_filters_json(source_tbl_wrk, table, cols, 
+                                            isOracle, isMySQL, isPostgres, isSqlServer, 
+                                            where_condition_source, filtersCols, null, leftJoinsMap,
+                                            tableIdString, itemIdString
+                                            );
                         }
                     } catch (Exception e) {
                         error += "[Filters Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+source_tbl_wrk.driverClass+"]";
@@ -4697,16 +4738,13 @@ public class db {
                     //
                     try {
                         if(targetRowsFilters != null) {                    
-                            JSONArray cols = source_tbl_wrk.tableJson.getJSONArray("columns");
-                            if(targetRowsFilters.has("filtersJson")) {
-                                JSONArray filtersCols = targetRowsFilters.getJSONArray("filtersJson");
-
-                                where_condition_target = process_filters_json(source_tbl_wrk, table, cols, 
-                                                isOracle, isMySQL, isPostgres, isSqlServer, 
-                                                where_condition_target, filtersCols, null, leftJoinsMap,
-                                                tableIdString, itemIdString
-                                                );
-                            }
+                            JSONArray cols = target_tbl_wrk.tableJson.getJSONArray("columns");
+                            JSONArray filtersCols = wrapFilters(targetRowsFilters);
+                            where_condition_target = process_filters_json(source_tbl_wrk, targetTable, cols, 
+                                            isOracle, isMySQL, isPostgres, isSqlServer, 
+                                            where_condition_target, filtersCols, null, leftJoinsMap,
+                                            tableIdString, itemIdString
+                                            );
                         }
                     } catch (Exception e) {
                         error += "[Filters Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+source_tbl_wrk.driverClass+"]";
@@ -4717,7 +4755,7 @@ public class db {
                     //
                     // Filtering target table
                     //
-                    ArrayList<Object> targetRows = load_beans( request, sourceControlId, targetDatabaseSchemaTable, "*", where_condition_target, 0 );
+                    ArrayList<Object> targetRows = load_beans( request, targetControlId, targetDatabaseSchemaTable, "*", where_condition_target, 0 );
 
 
 
@@ -4740,22 +4778,23 @@ public class db {
                     Object [] target_res = beansToArray( targetRows, targetPrimaryKey, targetPrimaryKeys );
                     
                     
-                    for(int i=0; i<targetRows.size(); i++) {
-                        boolean found = false;
-                        Object targetBean = (Object) targetRows.get(i);
-                        String id = (String)utility.get(targetBean, sourcePrimaryKey);
-                        if(sourcePrimaryKey.contains(id)) {
-                            found = true;
-                        }
-                        if(!found) {
-                            deletingIds.add(id);
-                            if(mode.contains("preview")) {
-                            } else {
-                                delete( targetBean, target_tbl_wrk );
-                            }
-                        }
+                    if(targetRows != null) {
+	                    for(int i=0; i<targetRows.size(); i++) {
+	                        boolean found = false;
+	                        Object targetBean = (Object) targetRows.get(i);
+	                        String id = String.valueOf( utility.get(targetBean, sourcePrimaryKey) );
+	                        if(utility.contains(sourcePrimaryKeys, id)) {
+	                            found = true;
+	                        }
+	                        if(!found) {
+	                            deletingIds.add(id);
+	                            if(mode.contains("preview")) {
+	                            } else {
+	                                delete( targetBean, target_tbl_wrk );
+	                            }
+	                        }
+	                    }
                     }
-                    
                     resultJSON.put("deletedCount", deletingIds.size());
                     resultJSON.put("deletedIds", deletingIds);                            
                     
@@ -4777,7 +4816,7 @@ public class db {
                                     int fieldPos = getFieldPosition(source_tbl_wrk, (String)propVal);
                                     if(fieldPos > 0) {
                                         addingColumnsValue.add(null);
-                                        addingColumnsName.add(propName);
+                                        addingColumnsName.add((String)propVal);
                                     } else {
                                         addingColumnsValue.add(columnsRelation.getString(propName));
                                         addingColumnsName.add(null);
@@ -4788,42 +4827,51 @@ public class db {
                         }
                     }
                     
-                    for(int i=0; i<sourceRows.size(); i++) {
-                        Object sourceBean = (Object) sourceRows.get(i);
-                        String id = (String)utility.get(sourceBean, sourcePrimaryKey);
-                        for(int j=0; j<targetRows.size(); j++) {
-                            boolean found = false;
-                            id = (String) targetRows.get(j);
-                            if(targetRows.contains(id)) {
+                    if(sourceRows != null) {
+	                    for(int i=0; i<sourceRows.size(); i++) {
+	                        Object sourceBean = (Object) sourceRows.get(i);
+	                        String id = String.valueOf( utility.get(sourceBean, sourcePrimaryKey) );
+	                        boolean found = false;
+	                        if(utility.contains(targetPrimaryKeys, id)) {
                                 found = true;
-                            }
+	                        }
                             if(!found) {
                                 // adding source table
+                                Object newBean = null;
+                                if(mode.contains("preview")) {
+                                } else {
+                                    JSONArray rowsJson = null;
+                                    Object [] beanResult = create_beans_multilevel_class( target_tbl_wrk, rowsJson, null, "*", 0, 1 );
+                                    if(beanResult != null) {
+                                        int ftResult = (int)beanResult[0];
+                                        newBean = ((ArrayList<Object>)beanResult[1]).get(0);
+                                    }
+                                }
                                 addingFields.clear();
                                 for(int ic=0; ic<addingColumnsName.size(); ic++) {
+                                	String value = null;
                                     if(addingColumnsName.get(ic) != null) {
                                         // add a column
-                                        addingFields.add( (String)utility.get(sourceBean, addingColumnsName.get(i)) );
+                                        value = String.valueOf( utility.get(sourceBean, addingColumnsName.get(ic)) );
                                     } else {
                                         // add a value
-                                        addingFields.add( addingColumnsValue.get(ic) );
+                                        value = addingColumnsValue.get(ic);
+                                    }
+                                    addingFields.add( value );
+                                    if(newBean != null) {
+                                    	utility.set(newBean, addingColumnsLabel.get(ic), value);
                                     }
                                 }
                                 
                                 if(mode.contains("preview")) {
                                 } else {
                                     addingIds.add(id);
-                                    JSONArray rowsJson = null;
-                                    Object [] beanResult = create_beans_multilevel_class( target_tbl_wrk, rowsJson, null, "*", 0, 1 );
-                                    if(beanResult != null) {
-                                        int ftResult = (int)beanResult[0];
-                                        Object newBean = ((ArrayList<Object>)beanResult[1]).get(0);
+                                    if(newBean != null) {
                                         insert( newBean, target_tbl_wrk );
-                                        
-                                    }                                    
-                                }
-                            }
-                        }
+	                                }
+	                            }
+	                        }
+	                    }
                     }
                     resultJSON.put("addingCount", addingIds.size());
                     resultJSON.put("adddingIds", addingIds);                            
@@ -4834,7 +4882,7 @@ public class db {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
         }
         
-        return result;
+        return resultJSON.toString();
     }
    
     
