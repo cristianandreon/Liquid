@@ -8,6 +8,7 @@ import com.liquid.metadata.ForeignKey;
 import java.beans.IntrospectionException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -3665,6 +3666,11 @@ public class db {
                     
                     for(int ip=0; ip<paramsJSON.length(); ip++) {
                         JSONObject paramJSON = (JSONObject)paramsJSON.get(ip);
+                        
+                        if(paramJSON.has("autoCommit")) {
+                        	bUseAutoCommit = paramJSON.getBoolean("autoCommit");
+                        }
+                        
                         if(paramJSON.has("modifications")) {
                             JSONArray modificationsJSON = paramJSON.getJSONArray("modifications");
 
@@ -3690,112 +3696,141 @@ public class db {
                                         try { rowId = modificationJSON.getString("rowId"); } catch (Exception e) {}
                                         try { nodeId = modificationJSON.getString("nodeId"); } catch (Exception e) {}
                                         if(rowId != null && !rowId.isEmpty() || "insert".equalsIgnoreCase(sType)) {
-                                            JSONArray fieldsJSON = modificationJSON.getJSONArray("fields");
-                                            if(fieldsJSON != null) {
-                                                if(p5 != null) {
-                                                    try {
-                                                        ((event.eventCallback)p5).callback(p1, p2, p3, p4, (Object)modificationJSON);
-                                                    } catch (Throwable th) {                                            
-                                                    }
+                                            JSONArray fieldsJSON = null;
+                                        	if(modificationJSON.has("fields")) {
+	                                            fieldsJSON = modificationJSON.getJSONArray("fields");
+                                        	}                                        	
+                                            if(p5 != null) {
+                                                try {
+                                                    ((event.eventCallback)p5).callback(p1, p2, p3, p4, (Object)modificationJSON);
+                                                } catch (Throwable th) {                                            
                                                 }
                                             }
-                                            for(int iF=0; iF<fieldsJSON.length(); iF++) {
-                                                JSONObject fieldJSON = (JSONObject)fieldsJSON.get(iF);
-                                                if(fieldJSON != null) {
-                                                    String field = null, value = null;
-                                                    try { field = fieldJSON.getString("field"); } catch (JSONException e) {}
-                                                    try { value = fieldJSON.getString("value"); } catch (JSONException e) {}
-                                                    if(field != null && !field.isEmpty() && cols != null) {
-                                                        for(int ic=0; ic<cols.length(); ic++) {
-                                                            JSONObject col = cols.getJSONObject(ic);
-                                                            String foreignTable = null, foreignColumn = null;
-                                                            String foreignEdit = null;
-                                                            Boolean foreignBEdit = false;
-                                                            String sourceColumn = null;
-                                                            String tField = col.getString("field");
-                                                            String tName = col.getString("name");
-                                                            String [] colParts = tName.split("\\.");
-                                                            boolean autoIncString = false;
-                                                            try { autoIncString = col.getBoolean("autoIncString"); } catch (JSONException e) {}
-                                                            boolean nullable = true;
-                                                            try { nullable = col.getBoolean("nullable"); } catch (Exception e) {}
-                                                            boolean isExternalField = false;
-                                                            boolean addExternalField = false;
-
-                                                            if(tField.equalsIgnoreCase(field)) {
-
-                                                                if(!autoIncString) {
-
-                                                                    try { foreignTable = col.getString("foreignTable"); } catch (Exception e) {}
-                                                                    try { foreignColumn = col.getString("foreignColumn"); } catch (Exception e) {}
-                                                                    try { foreignEdit = col.getString("foreignEdit"); } catch (Exception e) {}
-                                                                    try { foreignBEdit = col.getBoolean("foreignEdit"); } catch (Exception e) {}
-                                                                    try { sourceColumn = col.getString("column"); } catch (Exception e) {}
-
-                                                                    if(colTypes[ic] == 8) { // float
-                                                                        value = value.replace(",", ".");
-                                                                    }
-                                                                    if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
-                                                                        value = getLocalDate(value, colTypes[ic], nullable);
-                                                                    } else if(colTypes[ic] == 8 || colTypes[ic] == 7  || colTypes[ic] == 6 || colTypes[ic] == 4 || colTypes[ic] == 3 || colTypes[ic] == -5 || colTypes[ic] == -6 || colTypes[ic] == -7) {
-                                                                        // numeric
-                                                                        if(value == null || value.isEmpty()) value = "0";
-                                                                    } else if(colTypes[ic] == -7) { // date, datetime
-                                                                        value = value.isEmpty() ? null : value;
-                                                                    }
-
-                                                                    if(colParts.length > 1 || foreignTable != null && !foreignTable.isEmpty()) {
-                                                                        if(colParts.length > 1) foreignTable = colParts[0];
-                                                                        if(!foreignTable.equalsIgnoreCase(table)) {
-                                                                            // campo esterno
-                                                                            isExternalField = true;
-                                                                            if(foreignBEdit || "y".equalsIgnoreCase(foreignEdit) || "yes".equalsIgnoreCase(foreignEdit) || "s".equalsIgnoreCase(foreignEdit) || "si".equalsIgnoreCase(foreignEdit)) {
-                                                                                if(colParts.length > 1) tName = colParts[1];
-                                                                                if (foreignColumn != null && !foreignColumn.isEmpty()) {
-                                                                                    addExternalField = true;
-                                                                                    if("insert".equalsIgnoreCase(sType)) {
-                                                                                        // TODO : Inserimento in tabella esterna : legame con la tabella principale e ignezione degli ID
-                                                                                        //          Ma in transazione non sono disponibili : disabilitazione delle transazione e uso dell'autocommit
-                                                                                        // foreignTableTransactList.add( col.getString("foreignTable"), tName, value, sourceColumn, null, "insert" );
-                                                                                        // bUseAutoCommit = true;
-                                                                                    } else if("delete".equalsIgnoreCase(sType)) {
-                                                                                        foreignTableTransactList.add( col.getString("foreignTable"), tName, value, sourceColumn, null, "delete", rowId, nodeId );
-                                                                                    } else if("update".equalsIgnoreCase(sType)) {
-                                                                                        // TODO : lettura dei valori dal client
-                                                                                        String foreignValue = "(SELECT " + itemIdString+sourceColumn+itemIdString
-                                                                                                            + " FROM " + liquid.schemaTable 
-                                                                                                            + "\nWHERE "+tableIdString+liquid.tableJson.getString("primaryKey")+tableIdString
-                                                                                                            + "=" + rowId + ")";
-                                                                                        foreignTableTransactList.add( (schema != null ? tableIdString+schema+tableIdString + ".":"") + tableIdString+foreignTable+tableIdString, tName, value, sourceColumn, foreignColumn + "=" + foreignValue + "", "update", rowId, nodeId );
-                                                                                    }
-                                                                                } else {
-                                                                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, "Missing foreign column in controlId:"+liquid.controlId+" field:"+col.getString("name"));
-                                                                                }
-                                                                            }
-                                                                        } else {
-                                                                            tName = colParts[1];
-                                                                        }
-                                                                    } else {
-                                                                        tName = colParts[0];
-                                                                    } 
-                                                                    if(!isExternalField) {
-                                                                        if("insert".equalsIgnoreCase(sType)) {
-                                                                            tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+itemIdString+"." : "") + tableIdString+table+tableIdString, tName, value, null, null, "insert", rowId, nodeId);
-
-                                                                        } else if("update".equalsIgnoreCase(sType)) {
-                                                                            tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString+"." : "") + tableIdString+table+tableIdString, tName, value, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "update", rowId, nodeId);
-                                                                        }
-                                                                    }
-                                                                }
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                        	
+                                            if(fieldsJSON != null) {
+	                                            for(int iF=0; iF<fieldsJSON.length(); iF++) {
+	                                                JSONObject fieldJSON = (JSONObject)fieldsJSON.get(iF);
+	                                                if(fieldJSON != null) {
+	                                                    String field = null, value = null;
+	                                                    int valueType = 0;
+	                                                    try { field = fieldJSON.getString("field"); } catch (JSONException e) {}
+	                                                    try { value = fieldJSON.getString("value"); } catch (JSONException e) {}
+	                                                    if(field != null && !field.isEmpty() && cols != null) {
+	                                                        for(int ic=0; ic<cols.length(); ic++) {
+	                                                            JSONObject col = cols.getJSONObject(ic);
+	                                                            String foreignTable = null, foreignColumn = null;
+	                                                            String foreignEdit = null;
+	                                                            Boolean foreignBEdit = false;
+	                                                            String sourceColumn = null;
+	                                                            String tField = col.getString("field");
+	                                                            String tName = col.getString("name");
+	                                                            String [] colParts = tName.split("\\.");
+	                                                            boolean autoIncString = false;
+	                                                            try { autoIncString = col.getBoolean("autoIncString"); } catch (JSONException e) {}
+	                                                            boolean nullable = true;
+	                                                            try { nullable = col.getBoolean("nullable"); } catch (Exception e) {}
+	                                                            boolean isExternalField = false;
+	                                                            boolean addExternalField = false;
+	
+	                                                            if(tField.equalsIgnoreCase(field)) {
+	
+	                                                                if(!autoIncString) {
+	
+	                                                                    try { foreignTable = col.getString("foreignTable"); } catch (Exception e) {}
+	                                                                    try { foreignColumn = col.getString("foreignColumn"); } catch (Exception e) {}
+	                                                                    try { foreignEdit = col.getString("foreignEdit"); } catch (Exception e) {}
+	                                                                    try { foreignBEdit = col.getBoolean("foreignEdit"); } catch (Exception e) {}
+	                                                                    try { sourceColumn = col.getString("column"); } catch (Exception e) {}
+	
+	                                                                    valueType = 0;
+	                                                                    if(colTypes[ic] == 8) { // float
+	                                                                        value = value.replace(",", ".");
+	                                                                    }
+	                                                                    
+	                                                                    if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
+	                                                                        value = getLocalDate(value, colTypes[ic], nullable);
+	                                                                        if(value != null) {
+	                                                                        	// refine
+		                                                                        if(isOracle) {
+		                                                                            if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
+		                                                                            	value = "TO_DATE('"+value+"', 'YYYY-MM-DD HH24:MI:SS')";
+			                                                                            valueType = 1; // is an expression
+		                                                                            } else if(colTypes[ic] == 91) { // date
+		                                                                            	value = "TO_DATE('"+value+"', 'YYYY-MM-DD')";
+			                                                                            valueType = 1; // is an expression
+		                                                                            }
+		                                                                        }
+	                                                                        }                                                                            
+	                                                                    } else if(colTypes[ic] == 92) { // time
+	                                                                    	// TODO: 24/09/2020 Test to do
+	                                                                        value = getLocalTime(value, colTypes[ic], nullable);
+	                                                                        if(value != null) {
+	                                                                        	// refine
+		                                                                        if(isOracle) {
+		                                                                            value = "TO_DATE('"+value+"', 'HH24:MI:SS')";
+		                                                                            valueType = 1; // is an expression
+		                                                                        }
+	                                                                        }                                                                        
+	                                                                    } else if(colTypes[ic] == 8 || colTypes[ic] == 7  || colTypes[ic] == 6 || colTypes[ic] == 4 || colTypes[ic] == 3 || colTypes[ic] == -5 || colTypes[ic] == -6 || colTypes[ic] == -7) {
+	                                                                        // numeric
+	                                                                        if(value == null || value.isEmpty()) value = "0";
+	                                                                    } else if(colTypes[ic] == -7) { // 
+	                                                                        value = value.isEmpty() ? null : value;
+	                                                                    }
+	
+	                                                                    if(colParts.length > 1 || foreignTable != null && !foreignTable.isEmpty()) {
+	                                                                        if(colParts.length > 1) foreignTable = colParts[0];
+	                                                                        if(!foreignTable.equalsIgnoreCase(table)) {
+	                                                                            // campo esterno
+	                                                                            isExternalField = true;
+	                                                                            if(foreignBEdit || "y".equalsIgnoreCase(foreignEdit) || "yes".equalsIgnoreCase(foreignEdit) || "s".equalsIgnoreCase(foreignEdit) || "si".equalsIgnoreCase(foreignEdit)) {
+	                                                                                if(colParts.length > 1) tName = colParts[1];
+	                                                                                if (foreignColumn != null && !foreignColumn.isEmpty()) {
+	                                                                                    addExternalField = true;
+	                                                                                    if("insert".equalsIgnoreCase(sType)) {
+	                                                                                        // TODO : Inserimento in tabella esterna : legame con la tabella principale e ignezione degli ID
+	                                                                                        //          Ma in transazione non sono disponibili : disabilitazione delle transazione e uso dell'autocommit
+	                                                                                        // foreignTableTransactList.add( col.getString("foreignTable"), tName, value, sourceColumn, null, "insert" );
+	                                                                                        // bUseAutoCommit = true;
+	                                                                                    } else if("delete".equalsIgnoreCase(sType)) {
+	                                                                                        foreignTableTransactList.add( col.getString("foreignTable"), tName, value, valueType, sourceColumn, null, "delete", rowId, nodeId );
+	                                                                                    } else if("update".equalsIgnoreCase(sType)) {
+	                                                                                        // TODO : lettura dei valori dal client
+	                                                                                        String foreignValue = "(SELECT " + itemIdString+sourceColumn+itemIdString
+	                                                                                                            + " FROM " + liquid.schemaTable 
+	                                                                                                            + "\nWHERE "+tableIdString+liquid.tableJson.getString("primaryKey")+tableIdString
+	                                                                                                            + "=" + rowId + ")";
+	                                                                                        foreignTableTransactList.add( (schema != null ? tableIdString+schema+tableIdString + ".":"") + tableIdString+foreignTable+tableIdString, tName, value, valueType, sourceColumn, foreignColumn + "=" + foreignValue + "", "update", rowId, nodeId );
+	                                                                                    }
+	                                                                                } else {
+	                                                                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, "Missing foreign column in controlId:"+liquid.controlId+" field:"+col.getString("name"));
+	                                                                                }
+	                                                                            }
+	                                                                        } else {
+	                                                                            tName = colParts[1];
+	                                                                        }
+	                                                                    } else {
+	                                                                        tName = colParts[0];
+	                                                                    } 
+	                                                                    if(!isExternalField) {
+	                                                                        if("insert".equalsIgnoreCase(sType)) {
+	                                                                            tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+itemIdString+"." : "") + tableIdString+table+tableIdString, tName, value, valueType, null, null, "insert", rowId, nodeId);
+	
+	                                                                        } else if("update".equalsIgnoreCase(sType)) {
+	                                                                            tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString+"." : "") + tableIdString+table+tableIdString, tName, value, valueType, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "update", rowId, nodeId);
+	                                                                        }
+	                                                                    }
+	                                                                }
+	                                                                break;
+	                                                            }
+	                                                        }
+	                                                    }
+	                                                }
+	                                            }
                                             }
 
                                             if("delete".equalsIgnoreCase(sType)) {
-                                                tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString+"." : "") + tableIdString+table+tableIdString, null, null, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
+                                                tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString+"." : "") + tableIdString+table+tableIdString, null, null, 0, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
                                             }
 
                                             // legame tableTransactList con foreignTableTransactList
@@ -3819,7 +3854,7 @@ public class db {
                                             String rowId = (String)sel.getString(iSel);
                                             String nodeId = "";
                                             if("delete".equalsIgnoreCase(type)) {
-                                                tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, null, null, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
+                                                tableTransactList.add( (schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, null, null, 0, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "delete", rowId, nodeId);
                                             } else if("update".equalsIgnoreCase(type)) {
                                                 // TODO: where is the data ???
                                                 // String field = null, value = null;
@@ -3916,14 +3951,18 @@ public class db {
                                             int res = updStmt.executeUpdate( executingQuery, Statement.RETURN_GENERATED_KEYS );
                                             if (res > 0) {
                                                 nUpdates++;
-                                                ResultSet rs = updStmt.getGeneratedKeys();
-                                                if (rs != null) {
-                                                    String idsList = "";
-                                                    while(rs.next()) {
-                                                        idsList += (idsList.length()>0?",":"") + rs.getString(1);
-                                                    }
-                                                    tableUpdates.add("{\"table\":\""+liquid.schemaTable.replace(tableIdString, "")+"\",\"ids\":["+idsList+"]}");
-                                                    rs.close();
+                                                if(!"delete".equalsIgnoreCase( tableTransactList.getType(liquid, i))) {
+	                                                ResultSet rs = updStmt.getGeneratedKeys();
+	                                                if (rs != null) {
+	                                                    String idsList = "";
+	                                                    while(rs.next()) {
+	                                                        idsList += (idsList.length()>0?",":"") + rs.getString(1);
+	                                                    }
+	                                                    tableUpdates.add("{\"table\":\""+liquid.schemaTable.replace(tableIdString, "")+"\",\"ids\":["+idsList+"]}");
+	                                                    rs.close();
+	                                                } else {
+	                                                    tableUpdates.add("{\"table\":\""+liquid.schemaTable.replace(tableIdString, "")+"\",\"ids\":["+tableTransactList.transactionList.get(i).ids+"]}");
+	                                                }
                                                 } else {
                                                     tableUpdates.add("{\"table\":\""+liquid.schemaTable.replace(tableIdString, "")+"\",\"ids\":["+tableTransactList.transactionList.get(i).ids+"]}");
                                                 }
@@ -4071,6 +4110,35 @@ public class db {
         return value;
     }
 
+
+    public static String getLocalTime (String value, int colType, boolean nullable) {
+        String result = null;
+        // DateTimeFormatter formatter = null;
+        if(colType == 92) { // time
+            if(value== null || value.isEmpty()) {
+                if(!nullable)
+                    return "00"+workspace.timeSep+"00"+workspace.timeSep+"00";
+                else
+                    return null;
+            } else {
+                String timeValue = value;
+                if(timeValue.length()>19)
+                	timeValue = value.substring(0, 19);
+                String [] pattern = { "HH:mm:ss.SS", "HH:mm:ss", "HH:mm:ss", "H:m:s" };
+                for (String pattern1 : pattern) {
+                    try {
+                        DateFormat dateFormat = new SimpleDateFormat(pattern1);
+                        java.util.Date valueDate = dateFormat.parse(value);
+                        DateFormat dateFormat2 = new SimpleDateFormat("H:m:s");
+                        return dateFormat2.format(valueDate);                    
+                    }catch (Throwable ex) {  }
+                }
+            }
+        }
+        return value;
+    }
+
+    
     
     /* Only Java 8
 
@@ -4488,7 +4556,7 @@ public class db {
             String sModifications = "";
             String sFields = "";
             workspace tblWrk = (workspace)tbl_wrk;
-            String id = (String)utility.get(bean, ((workspace)tbl_wrk).tableJson.getString("primaryKey") );
+            String id = String.valueOf( utility.get(bean, ((workspace)tbl_wrk).tableJson.getString("primaryKey") ) );
             
             sModifications += "{\"rowId\":\""+id+"\"}";
             
@@ -4567,15 +4635,6 @@ public class db {
 
 
     
-    static public String syncronizeTable( String databaseSchemaTable, String sourceRowsFilters,
-                                            String targetDatabaseSchemaTable, String targetRowsFilters,
-                                            String columnsRelation
-    ) {
-        return syncronizeTable( databaseSchemaTable, sourceRowsFilters, targetDatabaseSchemaTable, targetRowsFilters, columnsRelation, "mirror" );
-    }
-
-    
-    
     
     static public JSONArray wrapFilters ( JSONObject filterJSON ) throws JSONException {
     	JSONArray result = new JSONArray();
@@ -4592,6 +4651,18 @@ public class db {
     	}
     	return result;
     }
+    
+    
+    
+    static public String syncronizeTable( String databaseSchemaTable, String sourceRowsFilters,
+                                            String targetDatabaseSchemaTable, String targetRowsFilters,
+                                            String columnsRelation
+    ) {
+        return syncronizeTable( databaseSchemaTable, sourceRowsFilters, targetDatabaseSchemaTable, targetRowsFilters, columnsRelation, null, null, "mirror" );
+    }
+
+    
+
     
     /**
      * <h3>Suncronize target table by source table, adding and removing rows</h3>
@@ -4623,6 +4694,7 @@ public class db {
     static public String syncronizeTable( String sourceDatabaseSchemaTable, String sSourceRowsFilters,
                                             String targetDatabaseSchemaTable, String sTargetRowsFilters,
                                             String sColumnsRelation,
+                                            String methodGetPrimaryKey, Object instanceGetPrimaryKey,
                                             String mode
     ) {
         JSONObject resultJSON = new JSONObject();
@@ -4630,10 +4702,11 @@ public class db {
         String database = null, schema = null, table = null;
         String targetTable = null, targetSchema = null, targetDatabase = null;
         String sourceControlId = null, targetControlId = null, where_condition_source = "", where_condition_target = "", error = "";
-        String sourcePrimaryKey = null, targetPrimaryKey = null;
+        String sourcePrimaryKey = null, targetPrimaryKey = null, targetPrimaryKeyForCompare = null;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         HttpServletRequest request = null;
         ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap> ();
+        Method mGetPrimaryKey = null;
 
         try {            
             
@@ -4705,6 +4778,8 @@ public class db {
                     try { sourcePrimaryKey = source_tbl_wrk.tableJson.getString("primaryKey"); } catch (Exception e) {  }
                     try { targetPrimaryKey = target_tbl_wrk.tableJson.getString("primaryKey"); } catch (Exception e) {  }
                     
+                    targetPrimaryKeyForCompare = targetPrimaryKey;
+                    
                     //
                     // Build source table filters
                     //
@@ -4770,12 +4845,42 @@ public class db {
                     ArrayList<String> addingColumnsName = new ArrayList<String>();
                     ArrayList<String> addingColumnsLabel = new ArrayList<String>();
 
+                    JSONObject columnsRelation = new JSONObject(sColumnsRelation);
+
+                    JSONArray names = columnsRelation.names();
+                    if(names != null) {
+                        for(int io=0; io<names.length(); io++) {
+                            String propName = names.getString(io);
+                            Object propVal = columnsRelation.get(propName);
+                            if(propVal instanceof String) {
+                                if(getFieldPosition(target_tbl_wrk, (String)propName) > 0) {
+                                    int fieldPos = getFieldPosition(source_tbl_wrk, (String)propVal);
+                                    if(fieldPos > 0) {
+                                        addingColumnsValue.add(null);
+                                        addingColumnsName.add((String)propVal);
+                                        if(sourcePrimaryKey.equalsIgnoreCase(propName)) {
+                                        	targetPrimaryKeyForCompare = propName;
+                                        }
+                                    } else {
+                                    	String value = columnsRelation.getString(propName);
+                                    	if("NULL".equalsIgnoreCase(value)) value = null;
+                                        addingColumnsValue.add(value);
+                                        addingColumnsName.add(null);
+                                    }
+                                    addingColumnsLabel.add(propName);
+                                }
+                            }
+                        }
+                    }
+                    
+                    
+                    
                     ArrayList<Object> sourcePrimaryKeys = new ArrayList<Object>();
                     Object [] source_res = beansToArray( sourceRows, sourcePrimaryKey, sourcePrimaryKeys );
                     // String sSourcePrimaryKeys = utility.arrayToString(sourcePrimaryKeys.toArray(), "'", "'", ",");
 
                     ArrayList<Object> targetPrimaryKeys = new ArrayList<Object>();
-                    Object [] target_res = beansToArray( targetRows, targetPrimaryKey, targetPrimaryKeys );
+                    Object [] target_res = beansToArray( targetRows, targetPrimaryKeyForCompare, targetPrimaryKeys );
                     
                     
                     if(targetRows != null) {
@@ -4804,28 +4909,6 @@ public class db {
                     // Aggiunta righe non trovate
                     //
                     
-                    JSONObject columnsRelation = new JSONObject(sColumnsRelation);
-
-                    JSONArray names = columnsRelation.names();
-                    if(names != null) {
-                        for(int io=0; io<names.length(); io++) {
-                            String propName = names.getString(io);
-                            Object propVal = columnsRelation.get(propName);
-                            if(propVal instanceof String) {
-                                if(getFieldPosition(target_tbl_wrk, (String)propName) > 0) {
-                                    int fieldPos = getFieldPosition(source_tbl_wrk, (String)propVal);
-                                    if(fieldPos > 0) {
-                                        addingColumnsValue.add(null);
-                                        addingColumnsName.add((String)propVal);
-                                    } else {
-                                        addingColumnsValue.add(columnsRelation.getString(propName));
-                                        addingColumnsName.add(null);
-                                    }
-                                    addingColumnsLabel.add(propName);
-                                }
-                            }
-                        }
-                    }
                     
                     if(sourceRows != null) {
 	                    for(int i=0; i<sourceRows.size(); i++) {
@@ -4866,16 +4949,68 @@ public class db {
                                 if(mode.contains("preview")) {
                                 } else {
                                     addingIds.add(id);
+                                    
+                                    // generator of primary key customized
+                                    if(instanceGetPrimaryKey != null && methodGetPrimaryKey != null) {
+                                    	if(mGetPrimaryKey == null) {
+	                                		Object [] resultGetPrimaryKey = event.get_method_by_class_name(methodGetPrimaryKey, instanceGetPrimaryKey);
+	                                		if(resultGetPrimaryKey != null) {
+	                                			instanceGetPrimaryKey = (Object)resultGetPrimaryKey[0];
+	                                			mGetPrimaryKey = (Method)resultGetPrimaryKey[1];
+	                                		} else {
+	                            				error += "Generated primary key error";
+	                                		}
+                                    	}
+                                    	
+                                    	if(mGetPrimaryKey != null) {
+	                            			String newId = (String)mGetPrimaryKey.invoke(instanceGetPrimaryKey);
+	                            			if(newId != null && !newId.isEmpty()) {
+	                            				utility.set(newBean, targetPrimaryKey, newId);
+	                            			} else {
+	                            				error += "Generated primary key error";
+	                            			}
+                                    	} else {
+                            				error += "Unable to get method for generating primary key error";
+                                    	}
+                                    }
+                                    
+                                    // inserting the row
                                     if(newBean != null) {
-                                        insert( newBean, target_tbl_wrk );
+                                        String insertResult = insert( newBean, target_tbl_wrk );
+                                        if(insertResult != null && !insertResult.isEmpty()) {
+                                        	JSONObject insertResultJSON = new JSONObject(insertResult);
+                                        	if(insertResultJSON != null) {
+                                        		if(insertResultJSON.has("tables")) {
+                                        			JSONArray tables = insertResultJSON.getJSONArray("tables");
+                                        			for(int ie=0; ie<tables.length(); ie++) {
+                                        				JSONObject t = tables.getJSONObject(ie);
+                                        				if(t.has("error")) {
+                                        					error += "Inserting record error; "+utility.base64Decode( t.getString("error") );
+                                        				}
+                                        			}
+                                        		}
+                                        		if(insertResultJSON.has("error")) {
+                                                	error += "Inserting record error; "+utility.base64Decode( insertResultJSON.getString("error") );
+                                        		}
+                                        	} else {
+                                            	error += "Inserting record error; result misformed";
+                                        	}
+                                        } else {
+                                        	error += "Inserting record result is empty";
+                                        }
 	                                }
 	                            }
 	                        }
 	                    }
                     }
-                    resultJSON.put("addingCount", addingIds.size());
-                    resultJSON.put("adddingIds", addingIds);                            
+                    if(addingIds != null) {
+                    	resultJSON.put("addingCount", addingIds.size());
+                    	resultJSON.put("adddingIds", addingIds);
+                    }
                 }
+            }
+            if(error != null && !error.isEmpty()) {
+            	resultJSON.put("error", error);
             }
             
         } catch (Throwable e) {
@@ -4883,7 +5018,6 @@ public class db {
         }
         
         return resultJSON.toString();
-    }
-   
+    }   
     
 }

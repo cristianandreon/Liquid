@@ -22,23 +22,25 @@ public class TransactionList {
     public String nodeId = null;
     public ArrayList<String> columns = null;
     public ArrayList<String> values = null;
+    public ArrayList<Integer> valueTypes = null;	// 0=String	1=Expression
     public String sourceColumn = null;
     public String ids = null;
     public ArrayList<TransactionList> linkedTransactList = null;
 
     public ArrayList<TransactionList> transactionList = null;
 
-    public TransactionList ( String table, String column, String value, String sourceColumn, String where, String type ) {
+    public TransactionList ( String table, String column, String value, int valueType, String sourceColumn, String where, String type ) {
         this.table = table;
         this.where = where;
         this.columns = new ArrayList<>(); this.columns.add(column);
         this.values = new ArrayList<>(); this.values.add(value);
+        this.valueTypes = new ArrayList<>(); this.valueTypes.add(valueType);
         this.sourceColumn = sourceColumn;
         this.type = type;
     }
     public TransactionList ( ) {
     }
-    public void add ( String _table, String _column, String _value, String _sourceColumn, String _where, String _type, String rowId, String nodeId ) {
+    public void add ( String _table, String _column, String _value, int _valueType, String _sourceColumn, String _where, String _type, String rowId, String nodeId ) {
         if(transactionList == null)
             transactionList = new ArrayList<>();
         for(int i=0; i<transactionList.size(); i++) {
@@ -48,7 +50,8 @@ public class TransactionList {
                     ft.values.set(ft.columns.indexOf(_column), _value);
                     } else {
                     ft.columns.add(_column);
-                    ft.values.add(_value.replace("'", "''"));
+                    ft.values.add(_value != null ? ( _valueType != 1 ? _value.replace("'", "''") : _value ) : null);
+                    ft.valueTypes.add(_valueType);
                     ft.sourceColumn = _sourceColumn;
                     ft.rowId = rowId;
                     ft.nodeId = nodeId;
@@ -56,7 +59,7 @@ public class TransactionList {
                 return;
             }
         }
-        transactionList.add(new TransactionList(_table, _column, _value, _sourceColumn, _where, _type) );
+        transactionList.add(new TransactionList(_table, _column, _value, _valueType, _sourceColumn, _where, _type) );
     }
     
     public String getSQL ( workspace tbl_wrk, int i ) {
@@ -77,16 +80,19 @@ public class TransactionList {
                 for(int ic=0; ic<ft.columns.size(); ic++)
                     sql += (ic>0?",":"") + itemIdString + ft.columns.get(ic) + itemIdString;
                 sql += ") VALUES (";
-                for(int ic=0; ic<ft.values.size(); ic++)
-                    sql += (ic>0?",":"") + (ft.values.get(ic) != null ? ("'" + ft.values.get(ic) + "'") : "null");
+                for(int ic=0; ic<ft.values.size(); ic++) {
+                	String apex = ft.valueTypes.get(ic) == 1 ? "":"'";
+                    sql += (ic>0?",":"") + (ft.values.get(ic) != null ? (apex + ft.values.get(ic) + apex) : "null");
+                }
                 sql += ")";
             } else if("update".equalsIgnoreCase(ft.type)) {
                 sql = "UPDATE " +(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
                 sql += " SET ";
                 for(int ic=0; ic<ft.columns.size(); ic++) {
+                	String apex = ft.valueTypes.get(ic) == 1 ? "":"'";
                     sql += (ic>0?",":"") + itemIdString + ft.columns.get(ic) + itemIdString;
                     sql += "=";
-                    sql += (ft.values.get(ic) != null ? ("'" + ft.values.get(ic) + "'") : "null");
+                    sql += (ft.values.get(ic) != null ? (apex + ft.values.get(ic) + apex) : "null");
                     sql += "";
                 }
                 sql += " WHERE ";
@@ -101,5 +107,12 @@ public class TransactionList {
         }
         return sql;
     }
-
+    public String getType ( workspace tbl_wrk, int i ) {
+        String sql = "";
+        if(i<transactionList.size()) {
+            TransactionList t = transactionList.get(i);
+            return t.type;
+        }
+        return null;
+    }
 }

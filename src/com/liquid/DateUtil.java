@@ -321,6 +321,7 @@ public class DateUtil {
         if (value instanceof java.sql.Date) return (java.sql.Date) value;
         if (value instanceof String) {
             if ("".equals((String) value)) return null;
+            if ("NULL".equalsIgnoreCase((String) value)) return null;
             java.sql.Date result = null;
             try { if(result==null) result = new java.sql.Date(OUT_DATETIME_FORMAT.parse((String) value).getTime()); } catch(Throwable th) {}
             try { if(result==null) result = new java.sql.Date(OUT_TIMESTAMP_FORMAT1a.parse((String) value).getTime()); } catch(Throwable th) {}
@@ -393,6 +394,9 @@ public class DateUtil {
         }
         if (value instanceof String) {
             if ("".equals((String) value)) {
+                return null;
+            }
+            if ("NULL".equalsIgnoreCase((String) value)) {
                 return null;
             }
             String v = (String)value;

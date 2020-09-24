@@ -52,7 +52,7 @@ import org.xml.sax.SAXParseException;
 
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Base64;
+// import java.util.Base64;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -94,7 +94,8 @@ public class utility {
         } catch (Throwable th) {
             try {
                 if (javaVersion >= 8) {
-                    return new String(Base64.getEncoder().encode(data));
+                    // return new String(Base64.getEncoder().encode(data));
+                	throw new Throwable(); // x java 7
                 } else {
                     throw new Throwable();  // x java 7
                 }
@@ -402,11 +403,11 @@ public class utility {
                         field.set(bean, String.valueOf(value));
                     }
                 } else if (propType.equals(java.util.Date.class)) {
-                    field.set(bean, DateUtil.toDate(value));                    
+                    field.set(bean, (value != null ? DateUtil.toDate(value) : null ) );            
                 } else if (propType.equals(java.sql.Date.class)) {
-                    field.set(bean, DateUtil.toDate(value));
+                    field.set(bean, (value != null ? DateUtil.toDate(value) : null ) );
                 } else if (propType.equals(java.sql.Timestamp.class)) {
-                    field.set(bean, DateUtil.toTimestamp(value)); 
+                    field.set(bean, (value != null ? DateUtil.toTimestamp(value) : null ) ); 
                     // dbSqlDateTime = (java.sql.Timestamp) 2020-05-27 10:41:53.149992
                     // value = (java.lang.String) "27-05-2020 10:35:47.788"
                 } else if (propType.equals(java.sql.Time.class)) {
@@ -984,7 +985,7 @@ public class utility {
     
     public static boolean contains(ArrayList<Object> controlIds, Object controlId) {
         for(int i=0; i<controlIds.size(); i++) {
-            if(controlIds.get(i).equals(controlId)) return true;
+        	if(String.valueOf(controlIds.get(i)).equals(String.valueOf(controlId))) return true;
         }
         return false;
     }

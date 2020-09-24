@@ -117,7 +117,9 @@ public class event {
                 System.err.println(" execute() ["+controlId+"] Error:" + th.getLocalizedMessage());
             }
             
-            errorJson = "{ \"error\":\"" + utility.base64Encode(error.getBytes())+"\"}";
+            if(error != null) {
+            	errorJson = "{ \"error\":\"" + utility.base64Encode(error.getBytes())+"\"}";
+            }
             
         } catch (Throwable e) {
             error += "Error:" + e.getLocalizedMessage();
@@ -159,13 +161,86 @@ public class event {
                     classInstance = (Object) cls.newInstance();
             }
             if(classInstance != null) {
-                Method method = cls.getMethod(sMethod, Object.class, Object.class, Object.class, Object.class);
-                return new Object [] { classInstance, method };
+            	try {
+            		Method method = cls.getMethod(sMethod, Object.class, Object.class, Object.class, Object.class);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            	try {
+            		Method method = cls.getMethod(sMethod, Object.class, Object.class, Object.class);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            	try {
+            		Method method = cls.getMethod(sMethod, Object.class, Object.class);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            	try {
+            		Method method = cls.getMethod(sMethod, Object.class);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            	try {
+            		Method method = cls.getMethod(sMethod);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
             }
         }
         return null;
     }
     
+    static public Object [] get_method_by_class_name(String className, Object classOrInstance) throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException {
+        if(className != null && !className.isEmpty()) {
+            String objectClassName = className;
+            String sMethod = "";
+            String [] classParts = className.replace(" ", ".").split("\\.");
+            Class cls = null;
+            Object classInstance = null;
+
+            sMethod = className;
+            if(classOrInstance instanceof Class) {
+            	cls = (Class) classOrInstance;
+            	classInstance = (Object)((Class) classOrInstance).newInstance();
+            } else {
+            	classInstance = classOrInstance;
+            }
+
+            if(classInstance == null || classParts.length > 1) {
+                if(classParts.length > 1) {
+                    objectClassName = "";
+                    sMethod = classParts[classParts.length-1].replace("()", "");
+                    for(int i=0; i<classParts.length-1; i++) {
+                        objectClassName += (objectClassName.length()>0?".":"")+classParts[i];
+                    }
+                }                    
+                if(classInstance == null) {
+                    cls = Class.forName(objectClassName);
+                    classInstance = (Object) cls.newInstance();
+                }
+            }
+            if(classInstance != null) {
+            	try {
+            		Method method = cls.getMethod(sMethod, Object.class, Object.class, Object.class, Object.class);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            	try {
+            		Method method = cls.getMethod(sMethod, Object.class, Object.class, Object.class);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            	try {
+            		Method method = cls.getMethod(sMethod, Object.class, Object.class);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            	try {
+            		Method method = cls.getMethod(sMethod, Object.class);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            	try {
+            		Method method = cls.getMethod(sMethod);
+            		return new Object [] { classInstance, method };
+            	} catch(Throwable th) { }
+            }
+        }
+        return null;
+    }
+
     static public String process_next_event (String currentRetVal, Object tbl_wrk, Object params, Object clientData, Object requestParam ) throws Exception {
         String retVal = currentRetVal, errors = "";
         if(tbl_wrk != null) {

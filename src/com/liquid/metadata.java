@@ -42,13 +42,13 @@ public class metadata {
                 size = Integer.parseInt(_size);
             } catch (Throwable th) {
             }
-            isNullable = "yes".equalsIgnoreCase(_isNullable) || "1".equalsIgnoreCase(_isNullable) || "s".equalsIgnoreCase(_isNullable);
+            isNullable = "yes".equalsIgnoreCase(_isNullable) || "1".equalsIgnoreCase(_isNullable) || "y".equalsIgnoreCase(_isNullable) || "s".equalsIgnoreCase(_isNullable);
             columnDef = _columnDef;
             try {
                 digits = Integer.parseInt(_digits);
             } catch (Throwable th) {
             }
-            autoIncString = "yes".equalsIgnoreCase(_autoIncString) || "1".equalsIgnoreCase(_autoIncString) || "s".equalsIgnoreCase(_autoIncString);
+            autoIncString = "yes".equalsIgnoreCase(_autoIncString) || "1".equalsIgnoreCase(_autoIncString) || "y".equalsIgnoreCase(_autoIncString) || "s".equalsIgnoreCase(_autoIncString);
             
             sourceCatalog = _sourceCatalog;
             sourceSchema = _sourceSchema;
@@ -248,6 +248,7 @@ public class metadata {
                     empty string --- if it cannot be determined whether this is a generated column
                     The COLUMN_SIZE column specifies the column size for the given column. For numeric dat
                     */                    
+                    
                     
                     MetaDataCol metaDataCol = new MetaDataCol(column, datatype, typeName, columnRemarks, columnsize, isNullable, columnDefault, decimaldigits, autoIncString, sourceCatalog, sourceSchema, sourceTable, sourceDataType, sourceIsGenerated);
                     metaDataCols.add(metaDataCol);
