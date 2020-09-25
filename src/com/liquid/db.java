@@ -4681,6 +4681,7 @@ public class db {
      * 
      * @param  mode can be a list of these values:
      *  "mirror"    (default mode)
+     *  "all"   	(allow to process all rows, if no filters defined)
      *  "preview"   (report the differences without perform any operations)
      * 
      * @return      the detail of operation the operation, if not preview mode as
@@ -4798,8 +4799,13 @@ public class db {
                         System.err.println("// Filters Error:" + e.getLocalizedMessage());
                     }
 
+                    if(where_condition_source == null || where_condition_source.isEmpty()) {
+                    	if(mode.contains("all")) {
+                    		return "{\"error\":\"You need a filter on source or add 'ALL' keyword in mode parameter\"}";
+                    	}
+                    }
 
-
+                    
                     //
                     // Filtering source table
                     //
@@ -4826,6 +4832,11 @@ public class db {
                         System.err.println("// Filters Error:" + e.getLocalizedMessage());
                     }
 
+                    if(where_condition_target == null || where_condition_target.isEmpty()) {
+                    	if(mode.contains("all")) {
+                    		return "{\"error\":\"You need a filter on target or add 'ALL' keyword in mode parameter\"}";
+                    	}
+                    }
                     
                     //
                     // Filtering target table
