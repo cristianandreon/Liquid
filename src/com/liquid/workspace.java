@@ -53,8 +53,9 @@ public class workspace {
     // separator used in controId build from file or database/schema/table
     static String controlIdSeparator = ".";
 
-    static String dateSep = "/";
-    static String timeSep = ":";
+    static public String dateSep = "/";
+    static public String timeSep = ":";
+    static public boolean projectMode;
     
     
     
@@ -172,9 +173,20 @@ public class workspace {
     }
     
     
-    // Abilita la modalità progettazione
+    /**
+     * <h3>Enable project Mode</h3>
+     * 
+     * <p>
+     * This method enable the project mode in the Liquid Framework, and write the genesis token, as global javascript variable, in the output
+     *
+     * @param  out the output stream of the response (JspWriter)
+     *
+     * @return      the validated control (JspWriter)
+     * @see         workspace
+     */
     static public String enableProjectMode( JspWriter out ) {
         try {
+            projectMode = true;
             genesisToken = login.getSaltString(32);
             // reset metadata cache
             metadata.invalidateMetadata();
@@ -193,9 +205,26 @@ public class workspace {
         return genesisToken;
     }
 
+    /**
+     * <h3>Disable project Mode</h3>
+     * 
+     * <p>
+     * This method disable the project mode in the Liquid Framework
+     *
 
-    // Controllo da file json nel server
-    // Controllo da file json nel server : wrappers
+     * @return      the validated control json
+     * @see         workspace
+     */
+    static public boolean disableProjectMode( ) {
+        if(projectMode) {
+            projectMode = false;
+            genesisToken = null;            
+            return true;
+        }
+        return false;
+    }
+
+    
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id {@link controlId}.
@@ -590,6 +619,8 @@ public class workspace {
                         if(createTableIfMissing) {
                             if(!metadata.create_table(connToUse, database, schema, table, tableJson)) {
                                 // Fail
+                                String err = "database:"+database + " schema:"+schema + " Failed to create table "+table+" ... please check fields and sizes";
+                                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+err+"\"}" : "<script> console.error(\""+err+"\");</script>" );
                             }
                         } else {
                             String err = "database:"+database + " schema:"+schema + " table "+table+" not exist";
@@ -1341,6 +1372,10 @@ public class workspace {
                     try {
                         Class cls = Class.forName(ownerClassName);
                         owner = (Object) cls.newInstance();
+                    } catch(ClassNotFoundException cnf) {
+                        if(workspace.projectMode) {
+                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, cnf);
+                        }
                     } catch(Throwable th) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
                     }

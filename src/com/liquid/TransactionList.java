@@ -5,6 +5,9 @@
  */
 package com.liquid;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 /**
@@ -114,5 +117,55 @@ public class TransactionList {
             return t.type;
         }
         return null;
+    }
+
+    Object [] executeSQL(workspace tbl_wrk, int i, Connection conn, int RETURN_TYPE) throws SQLException {
+        String sql = "";
+        if(i<transactionList.size()) {
+            ArrayList<String> params = new ArrayList<String>();
+            TransactionList ft = transactionList.get(i);
+            String itemIdString = "\"", tableIdString = "\"";            
+            if(tbl_wrk.driverClass.contains(".mysql") || tbl_wrk.driverClass.contains(".mariadb")) {
+                itemIdString = "`";
+                tableIdString = "";
+            } else {
+                itemIdString = "\"";
+                tableIdString = "\"";
+            }            
+            if("insert".equalsIgnoreCase(ft.type)) {
+                sql = "INSERT INTO "+(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+                sql += " (";
+                for(int ic=0; ic<ft.columns.size(); ic++)
+                    sql += (ic>0?",":"") + itemIdString + ft.columns.get(ic) + itemIdString;
+                sql += ") VALUES (";
+                for(int ic=0; ic<ft.values.size(); ic++) {
+                    sql += (ic>0?",":"") + "?";
+                    params.add( ft.values.get(ic) );
+                }
+                sql += ")";
+            } else if("update".equalsIgnoreCase(ft.type)) {
+                sql = "UPDATE " +(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+                sql += " SET ";
+                for(int ic=0; ic<ft.columns.size(); ic++) {
+                    sql += (ic>0?",":"") + itemIdString + ft.columns.get(ic) + itemIdString;
+                    sql += "=?";
+                    params.add( ft.values.get(ic) );
+                }
+                sql += " WHERE ";
+                sql += ft.where;
+            } else if("delete".equalsIgnoreCase(ft.type)) {
+                if(ft.where != null && !ft.where.isEmpty()) {
+                    sql = "DELETE FROM " +(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+                    sql += " WHERE ";
+                    sql += ft.where;
+                }
+            }
+            PreparedStatement stmt = conn.prepareStatement(sql, RETURN_TYPE);
+            for (int ip=0; ip<params.size(); ip++) {
+                stmt.setString(ip+1, params.get(ip));
+            }            
+            return new Object [] { stmt.executeUpdate(), stmt };
+        }
+        return new Object [] { -1, null };
     }
 }

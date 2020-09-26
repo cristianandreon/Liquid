@@ -7,7 +7,7 @@
 
 <% 
     String path = request.getContextPath(); 
-    String jssVersion = "1.16";
+    String jssVersion = "1.32";
 %>
 <!-- -->
 <!-- START of Liquid Framework Include Files .. Your Application root is at : "<%= path %>" -->
@@ -20,7 +20,7 @@
 <!-- load jQuery 1.12.4 -->
 <script src="<%=path%>/liquid/jquery-1.12.4.js"></script>
 <script src="<%=path%>/liquid/jquery-ui.js"></script>
-<script src="<%=path%>/liquid/global.js"></script>
+<script type="text/javascript">var jQ1124 = $.noConflict(true);</script>
 <link rel="stylesheet" href="<%=path%>/liquid/jquery-ui.min.css"/>
 
 <script src="<%=path%>/liquid/toastr/toastr.js"></script>

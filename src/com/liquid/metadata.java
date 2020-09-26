@@ -1395,9 +1395,12 @@ public class metadata {
                     // did         integer NOT NULL,
 
                     if (name.equals(primaryKey)) {
-                        String seq_name = ((tableIdString+schema+tableIdString)+"."+(tableIdString+table+"_seq"+tableIdString));
+                        // creoosa references non implememted
+                        // String seq_name = ((tableIdString+schema+tableIdString)+"."+(tableIdString+table+"_seq"+tableIdString));
+                        // sDefault = "nextval('"+schema+"."+seq_name+"'::regclass)";
+                        String seq_name = (tableIdString+table+"_seq"+tableIdString);
                         pre_sql = "CREATE SEQUENCE IF NOT EXISTS "+seq_name+";\nCOMMIT;\n";
-                        sDefault = "nextval('"+schema+"."+seq_name+"'::regclass)";
+                        sDefault = "nextval('"+seq_name+"'::regclass)";
                         typeName = "int4";
                     }
                     
@@ -1425,7 +1428,7 @@ public class metadata {
                     
                     if (sDefault != null && !sDefault.isEmpty()) {
                         sDefault = sDefault.replace("`", "'");
-                        sql += " DEFAULT " + sDefault;
+                        sql += " DEFAULT " + sDefault + "";
                     }
                     
                     sql += "\n";

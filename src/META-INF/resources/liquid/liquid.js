@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.31   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  20-09-2020
+// Liquid ver.1.32   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  26-09-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -1994,7 +1994,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.31,
+    version: 1.32,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -14417,7 +14417,19 @@ var Liquid = {
         }
         toastr[(validatedType?validatedType:'info')](message, title);
     },
-            
+    showDesktopNofity:function( msg ) {
+        if (!("Notification" in window)) {
+            console.error("This browser does not support desktop notification");   
+        } else if (Notification.permission === "granted") {
+            var notification = new Notification(msg);
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(function (permission) {
+                if (permission === "granted") {
+                    var notification = new Notification(msg);
+                }
+            });
+        }
+    },            
     onErrorClick:function( obj ) {    
         var liquid = Liquid.getLiquid( obj );
         Liquid.dialogBox( (liquid ? (liquid.parentObj ? liquid.parentObj : liquid.outDivObj) : liquid.outDivObj) ,
@@ -14899,12 +14911,14 @@ var Liquid = {
                             if(!lookupJson) { // by var or object
                                 if(typeof lookupObj === 'string') {
                                     if(document.getElementById(lookupObj)) {                                        
-                                        console.error("ERROR : cannot create lookup by HTMLElement ... is should be a liquid control\n Make sure control "+json+" exist and is just registered at this time");
+                                        console.error("ERROR : cannot create lookup by HTMLElement ... is should be a liquid control\n Make sure control "+json+" exist and is just registered at this time"
+                                                +"\n\nPlease check control:"+controlId+" field:"+sourceCol);
                                         if(containerObj) containerObj.title = containerObj.placeholder = "Lookup error : control " + json + " not found";
                                     }
                                 } else {
                                     if(lookupObj instanceof HTMLElement) {
-                                        console.error("ERROR : cannot create lookup by HTMLElement ... is should be a liquid control\n Make sure control "+json+" exist and is just registered at this time");
+                                        console.error("ERROR : cannot create lookup by HTMLElement ... is should be a liquid control\n Make sure control "+json+" exist and is just registered at this time"
+                                                +"\n\nPlease check control:"+controlId+" field:"+sourceCol);
                                          if(containerObj) containerObj.title = containerObj.placeholder = "Lookup error : control " + json + " not found";
                                     }
                                 }

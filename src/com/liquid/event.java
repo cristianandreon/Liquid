@@ -98,7 +98,7 @@ public class event {
                 if(method != null && classInstance != null) {
                     retVal = (String)method.invoke(classInstance, tbl_wrk, params, clientData, (Object)request);
 
-                    // system event take care of the syncronous chain
+                    // executing events as syncronous chain
                     try {
                         return process_next_event(retVal, tbl_wrk, params, clientData, (Object)request);
                     } catch (Exception e) {
