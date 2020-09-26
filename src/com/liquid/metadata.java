@@ -94,10 +94,14 @@ public class metadata {
      * <p>
      * This method clean cache of database metadata, useful when database structure change
      *
-     * @param  database  the database (String)
+     * @param database  the database (String)
+     * @param schema the schema (String)
+     * @param table the table (String)
      * @param  database  the database (String)
 
-     * @return           void
+     * @return void          
+     * void
+     * 
      * @see         metadata
      */
      public static void resetTableMetadata(String database, String schema, String table ) {
@@ -576,6 +580,8 @@ public class metadata {
      *
      * Definisce la mappatura fra i dati sql e le classi java
      * 
+     * @param type the data type (int)
+     * @return the CLass mathcing the type
      */
     static public Class getJavaClass(int type) {                                               
         if(type == 2 || type == 4 || type == -5 || type == -6 || type == 5 || type == -7) {

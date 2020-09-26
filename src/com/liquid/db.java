@@ -1653,7 +1653,7 @@ public class db {
 
     
     
-    // Legge il resultset
+    // Read the resultset... used internally
     /**
      * <h3>Read the recordset</h3>
      * <p>
@@ -1666,7 +1666,7 @@ public class db {
      * @return      json of the records (String)
      * @see         db
      */
-    static public Object [] get_recordset( workspace tbl_wrk,
+    static private Object [] get_recordset( workspace tbl_wrk,
                                             String executingQuery,
                                             ResultSet rsdo,
                                             JSONArray cols,
@@ -4696,7 +4696,9 @@ public class db {
      * @param  sourceDatabaseSchemaTable  the source table (database.schema.table or schema.table or table) (String)
      * @param  sSourceRowsFilters the filters to apply to get source rowset
      * @param  targetDatabaseSchemaTable  the target table (database.schema.table or schema.table or table) (String)
-     * @param  sSourceRowsFilters the filters to apply to get target rowset
+     * @param  sTargetRowsFilters the filters to apply to get target rowset
+     * @param  methodGetPrimaryKey the method to invoke (by java reflection) to get the primary key value
+     * @param  instanceGetPrimaryKey the class instance user to get the primary key value
      * @param  sColumnsRelation the relation beetwen source and target table's columns
      * example:
      *  { "target column 1":"source column 1", "target column 2":"source column 2", ... }

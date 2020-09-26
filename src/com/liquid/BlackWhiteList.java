@@ -161,6 +161,9 @@ public class BlackWhiteList {
      * @param  schema  the schema of the table to check (String)
      * @param  table  the table to check (String)
 
+     * @return
+     *  This method return true if the database is accessible
+     * 
      * @see         BlackWhiteList
      */    
     static public boolean isAccessible(String database, String schema, String table) {

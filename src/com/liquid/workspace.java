@@ -236,6 +236,7 @@ public class workspace {
      * @param  sTableJsonFile the configuration of the control (file in JSON format)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile) throws Throwable {
@@ -254,6 +255,7 @@ public class workspace {
      * @param  replaceApex  escape all apex (boolean)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex) throws Throwable {
@@ -274,6 +276,7 @@ public class workspace {
      * @param  returnType the or result, can be "json" or empty for html (String)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex, Object owner, String returnType ) throws Throwable {
@@ -305,6 +308,7 @@ public class workspace {
      * @param  sTableJson the configuration of the control (String in JSON format)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson) throws Throwable {
@@ -323,6 +327,7 @@ public class workspace {
      * @param  tableKey used to overwrite table definition in sTableJson (String)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson, String tableKey) throws Throwable {
@@ -341,6 +346,7 @@ public class workspace {
      * @param  returnType the or result, can be "json" or empty for html (String)
 
      * @return      the image at the specified URL
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson, Object owner, String returnType) throws Throwable {
@@ -359,6 +365,7 @@ public class workspace {
      * @param  bLaunch if true append to the list of the controls to render on web page load (boolean)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch) throws Throwable {
