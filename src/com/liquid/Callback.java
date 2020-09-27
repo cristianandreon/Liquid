@@ -23,8 +23,11 @@ public class Callback {
      * <p>
      * This method set a property from a bean
      * </p>
-     * @param  message  the message to show (String)
+     * @param  data  the message to show (String)
 
+     * @return
+     *  greater than zero on success
+     * 
      * @see         Callback
      */    
     static public int send( String data ) {
@@ -52,6 +55,7 @@ public class Callback {
                         + "}</Liquid><LiquidStartResponde/>";
                 threadSession.out.print(messageJson);
                 threadSession.out.flush();
+                retVal = 1;
             } catch (IOException ex) {
                 Logger.getLogger(Callback.class.getName()).log(Level.SEVERE, null, ex);
             }

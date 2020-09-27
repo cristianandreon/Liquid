@@ -56,6 +56,7 @@ public class DateUtil {
      * Create a new DateTime. To the last second. This will not create any
      * extra-millis-seconds, which may cause bugs when writing to stores such as
      * databases that round milli-seconds up and down.
+     * @return 
      */
     public static java.util.Date newDateTime() {
         return new java.util.Date((System.currentTimeMillis() / SECOND_MILLIS) * SECOND_MILLIS);
@@ -63,6 +64,7 @@ public class DateUtil {
 
     /**
      * Create a new Date. To the last day.
+     * @return 
      */
     public static java.sql.Date newDate() {
         return new java.sql.Date((System.currentTimeMillis() / DAY_MILLIS) * DAY_MILLIS);
@@ -70,6 +72,7 @@ public class DateUtil {
 
     /**
      * Create a new Time, with no date component.
+     * @return 
      */
     public static java.sql.Time newTime() {
         return new java.sql.Time(System.currentTimeMillis() % DAY_MILLIS);
@@ -77,6 +80,7 @@ public class DateUtil {
 
     /**
      * Create a new Timestamp.
+     * @return 
      */
     public static java.sql.Timestamp newTimestamp() {
         return new java.sql.Timestamp(System.currentTimeMillis());
@@ -84,6 +88,9 @@ public class DateUtil {
 
     /**
      * Get the seconds difference
+     * @param earlierDate
+     * @param laterDate
+     * @return 
      */
     public static int secondsDiff(Date earlierDate, Date laterDate) {
         if (earlierDate == null || laterDate == null) {
@@ -95,6 +102,9 @@ public class DateUtil {
 
     /**
      * Get the minutes difference
+     * @param earlierDate
+     * @param laterDate
+     * @return 
      */
     public static int minutesDiff(Date earlierDate, Date laterDate) {
         if (earlierDate == null || laterDate == null) {
@@ -106,6 +116,9 @@ public class DateUtil {
 
     /**
      * Get the hours difference
+     * @param earlierDate
+     * @param laterDate
+     * @return 
      */
     public static int hoursDiff(Date earlierDate, Date laterDate) {
         if (earlierDate == null || laterDate == null) {
@@ -117,6 +130,9 @@ public class DateUtil {
 
     /**
      * Get the days difference
+     * @param earlierDate
+     * @param laterDate
+     * @return 
      */
     public static int daysDiff(Date earlierDate, Date laterDate) {
         if (earlierDate == null || laterDate == null) {
@@ -132,6 +148,7 @@ public class DateUtil {
      * @param startDate - The start date
      * @param period Calendar.YEAR etc
      * @param amount - Negative to rollbackwards.
+     * @return 
      */
     public static java.sql.Time rollTime(java.util.Date startDate, int period, int amount) {
         GregorianCalendar gc = new GregorianCalendar();
@@ -146,6 +163,7 @@ public class DateUtil {
      * @param startDate - The start date
      * @param period Calendar.YEAR etc
      * @param amount - Negative to rollbackwards.
+     * @return 
      */
     public static java.util.Date rollDateTime(java.util.Date startDate, int period, int amount) {
         GregorianCalendar gc = new GregorianCalendar();
@@ -160,6 +178,7 @@ public class DateUtil {
      * @param startDate - The start date
      * @param period Calendar.YEAR etc
      * @param amount - Negative to rollbackwards.
+     * @return 
      */
     public static java.sql.Date rollDate(java.util.Date startDate, int period, int amount) {
         GregorianCalendar gc = new GregorianCalendar();
@@ -173,6 +192,7 @@ public class DateUtil {
      *
      * @param startDate - The start date
      * @param years - Negative to rollbackwards.
+     * @return 
      */
     public static java.sql.Date rollYears(java.util.Date startDate, int years) {
         return rollDate(startDate, Calendar.YEAR, years);
@@ -183,6 +203,7 @@ public class DateUtil {
      *
      * @param startDate - The start date
      * @param months - Negative to rollbackwards.
+     * @return 
      */
     public static java.sql.Date rollMonths(java.util.Date startDate, int months) {
         return rollDate(startDate, Calendar.MONTH, months);
@@ -193,6 +214,7 @@ public class DateUtil {
      *
      * @param startDate - The start date
      * @param days - Negative to rollbackwards.
+     * @return 
      */
     public static java.sql.Date rollDays(java.util.Date startDate, int days) {
         return rollDate(startDate, Calendar.DATE, days);
@@ -200,6 +222,9 @@ public class DateUtil {
 
     /**
      * Checks the day, month and year are equal.
+     * @param d1
+     * @param d2
+     * @return 
      */
     public static boolean dateEquals(java.util.Date d1, java.util.Date d2) {
         if (d1 == null || d2 == null) {
@@ -213,6 +238,9 @@ public class DateUtil {
 
     /**
      * Checks the hour, minute and second are equal.
+     * @param d1
+     * @param d2
+     * @return 
      */
     public static boolean timeEquals(java.util.Date d1, java.util.Date d2) {
         if (d1 == null || d2 == null) {
@@ -226,6 +254,9 @@ public class DateUtil {
 
     /**
      * Checks the second, hour, month, day, month and year are equal.
+     * @param d1
+     * @param d2
+     * @return 
      */
     public static boolean dateTimeEquals(java.util.Date d1, java.util.Date d2) {
         if (d1 == null || d2 == null) {
@@ -242,6 +273,10 @@ public class DateUtil {
 
     /**
      * Convert an Object of type Classs to an Object.
+     * @param clazz
+     * @param value
+     * @return 
+     * @throws java.text.ParseException
      */
     public static Object toObject(Class clazz, Object value) throws ParseException {
         if (value == null) {
@@ -269,6 +304,8 @@ public class DateUtil {
 
     /**
      * Convert an Object to a DateTime, without an Exception
+     * @param value
+     * @return 
      */
     public static java.util.Date getDateTime(Object value) {
         try {
@@ -281,6 +318,9 @@ public class DateUtil {
 
     /**
      * Convert an Object to a DateTime.
+     * @param value
+     * @return 
+     * @throws java.text.ParseException
      */
     public static java.util.Date toDateTime(Object value) throws ParseException {
         if (value == null) {
@@ -301,6 +341,8 @@ public class DateUtil {
 
     /**
      * Convert an Object to a Date, without an Exception
+     * @param value
+     * @return 
      */
     public static java.sql.Date getDate(Object value) {
         try {
@@ -313,6 +355,9 @@ public class DateUtil {
 
     /**
      * Convert an Object to a Date.
+     * @param value
+     * @return 
+     * @throws java.text.ParseException 
      */
     public static java.sql.Date toDate(Object value) throws ParseException {
         if (value == null) {
@@ -340,6 +385,8 @@ public class DateUtil {
 
     /**
      * Convert an Object to a Time, without an Exception
+     * @param value
+     * @return 
      */
     public static java.sql.Time getTime(Object value) {
         try {
@@ -352,6 +399,9 @@ public class DateUtil {
 
     /**
      * Convert an Object to a Time.
+     * @param value
+     * @return 
+     * @throws java.text.ParseException
      */
     public static java.sql.Time toTime(Object value) throws ParseException {
         if (value == null) {
@@ -372,6 +422,8 @@ public class DateUtil {
 
     /**
      * Convert an Object to a Timestamp, without an Exception
+     * @param value
+     * @return 
      */
     public static java.sql.Timestamp getTimestamp(Object value) {
         try {
@@ -384,6 +436,9 @@ public class DateUtil {
 
     /**
      * Convert an Object to a Timestamp.
+     * @param value
+     * @return 
+     * @throws java.text.ParseException
      */
     public static java.sql.Timestamp toTimestamp(Object value) throws ParseException {
         if (value == null) {
@@ -421,6 +476,10 @@ public class DateUtil {
 
     /**
      * Tells you if the date part of a datetime is in a certain time range.
+     * @param start
+     * @param end
+     * @param d
+     * @return 
      */
     public static boolean isTimeInRange(java.sql.Time start, java.sql.Time end, java.util.Date d) {
         d = new java.sql.Time(d.getHours(), d.getMinutes(), d.getSeconds());
@@ -476,6 +535,8 @@ public class DateUtil {
 
     /**
      * Convert an Object to a String using Dates
+     * @param date
+     * @return 
      */
     public static String toString(Object date) {
         if (date == null) {

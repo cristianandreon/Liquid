@@ -42,6 +42,7 @@ public class Messagebox {
      * This method set a property from a bean
      * </p>
      * @param  message  the message to show (String)
+     * @return 
 
      * @see         Messagebox
      */    
@@ -56,6 +57,7 @@ public class Messagebox {
      * </p>
      * @param  message  the message to show (String)
      * @param  title the title of the message box (String)
+     * @return 
 
      * @see         Messagebox
      */    

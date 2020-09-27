@@ -222,6 +222,8 @@ public class utility {
      * @param exaclyMatch if false strip by $ and check only the parts defined
      * in the param property (boolean) ex.: searching for 'foreigntTable' the
      * property named 'foreigntTable$foreignColumn$column' is returned as found
+     * @param onlyObject
+     * @return the Field found or null
      * @see utility
      */
     static public Field searchProperty(Object bean, String property, boolean exaclyMatch, boolean onlyObject) {
@@ -312,6 +314,12 @@ public class utility {
      *
      * @param bean the bean (Object)
      * @param property the name of the property to get (String)
+     * @param value the new value to set
+     * 
+     * @throws java.beans.IntrospectionException
+     * @throws java.lang.NoSuchFieldException
+     * @throws java.lang.reflect.InvocationTargetException
+     * @throws java.lang.IllegalAccessException
      *
      * @see utility
      */

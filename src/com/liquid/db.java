@@ -1653,7 +1653,7 @@ public class db {
 
     
     
-    // Legge il resultset
+    // Read the resultset... used internally
     /**
      * <h3>Read the recordset</h3>
      * <p>
@@ -1666,7 +1666,7 @@ public class db {
      * @return      json of the records (String)
      * @see         db
      */
-    static public Object [] get_recordset( workspace tbl_wrk,
+    static private Object [] get_recordset( workspace tbl_wrk,
                                             String executingQuery,
                                             ResultSet rsdo,
                                             JSONArray cols,
@@ -2722,7 +2722,9 @@ public class db {
     static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows ) throws JSONException, Throwable {
         String sWhere = "";
 
-        // cerca o cerca il controllo
+        //
+        // cerca (databaseSchemaTable)  o cerca (controlId) il controllo
+        //
         workspace tbl_wrk = load_beans_get_workspace ( request, databaseSchemaTable, controlId );
         if(tbl_wrk == null) return null;
         
@@ -2781,7 +2783,7 @@ public class db {
 
     static public ArrayList<Object> load_beans( HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows ) {
         // crea un controllo sulla tabella
-        String [] tableParts = databaseSchemaTable.split("\\.");
+        String [] tableParts = (databaseSchemaTable != null ? databaseSchemaTable.split("\\.") : null);
         String database = null, table = null, schema = null, primaryKey = null;
         String primaryKeyColumn = "";
         JSONArray cols = null;
@@ -2798,17 +2800,19 @@ public class db {
         
         try {            
 
-            if(tableParts.length == 1) {
-                table = tableParts[0];
-            } else if(tableParts.length == 2) {
-                table = tableParts[1];
-                schema = tableParts[0];
-            } else if(tableParts.length == 3) {
-                table = tableParts[2];
-                schema = tableParts[1];
-                database = tableParts[0];
+            if(tableParts != null) {
+                if(tableParts.length == 1) {
+                    table = tableParts[0];
+                } else if(tableParts.length == 2) {
+                    table = tableParts[1];
+                    schema = tableParts[0];
+                } else if(tableParts.length == 3) {
+                    table = tableParts[2];
+                    schema = tableParts[1];
+                    database = tableParts[0];
+                }
             }
-
+            
             String [] columnsList = null;
             if("*".equalsIgnoreCase(columns) || "all".equalsIgnoreCase(columns)) {
             } else {
@@ -3911,18 +3915,28 @@ public class db {
                             connToUse.setAutoCommit(false);
                         
                         try {
-                            Statement updStmt = connToUse.createStatement();
-                            if(updStmt != null) {
+                            PreparedStatement preparedStmt = null;
+                            if(foreignTableTransactList != null || tableTransactList != null) {
                                 if(foreignTableTransactList.transactionList != null) {
                                     for(i=0; i<foreignTableTransactList.transactionList.size(); i++) {
                                         try {
-                                            // TODO : gestione del duplicato
-                                            executingQuery = foreignTableTransactList.getSQL(liquid, i);
-                                            System.out.println("Foreign Table Update:" + executingQuery);
-                                            int res = updStmt.executeUpdate( executingQuery, Statement.RETURN_GENERATED_KEYS );
+                                            //
+                                            // Print SQL for debug
+                                            //
+                                            if(workspace.projectMode) {
+                                                executingQuery = foreignTableTransactList.getSQL(liquid, i);
+                                                System.out.println("Foreign Table Update:" + executingQuery);
+                                            }
+                                            //
+                                            // N.B.: use prepare statemet avoid sql ignection attack
+                                            //
+                                            int res = 0;
+                                            Object [] resArray = foreignTableTransactList.executeSQL(liquid, i, connToUse, Statement.RETURN_GENERATED_KEYS );
+                                            res = (int)resArray[0];
+                                            preparedStmt = (PreparedStatement)resArray[1];
                                             if (res > 0) {
                                                 nForeignUpdates++;
-                                                ResultSet rs = updStmt.getGeneratedKeys();
+                                                ResultSet rs = preparedStmt.getGeneratedKeys();
                                                 if (rs != null) {
                                                     String idsList = "";
                                                     while(rs.next()) {
@@ -3947,7 +3961,9 @@ public class db {
                                             }
                                         } catch (Throwable th) {
                                             foreignTableUpdates.add("{\"table\":\""+foreignTableTransactList.transactionList.get(i).table.replace(itemIdString, "")+"\",\"ids\":[], \"error\":\""+utility.base64Encode(th.getLocalizedMessage())+"\", \"query\":\""+utility.base64Encode(executingQuery)+"\" }");
-                                            modificationsFaild.add("{\"rowId\":\""+foreignTableTransactList.transactionList.get(i).rowId+"\",\"nodeId\":\""+tableTransactList.transactionList.get(i).nodeId+"\"}");
+                                            String fieldValue = foreignTableTransactList.transactionList.get(i).rowId;
+                                            fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                                            modificationsFaild.add("{\"rowId\":\""+fieldValue+"\",\"nodeId\":\""+tableTransactList.transactionList.get(i).nodeId+"\"}");
                                         }
                                     }
                                 }
@@ -3955,13 +3971,18 @@ public class db {
                                 if(tableTransactList.transactionList != null) {
                                     for(i=0; i<tableTransactList.transactionList.size(); i++) {
                                         try {
-                                            executingQuery = tableTransactList.getSQL(liquid, i);
-                                            System.out.println("Query:" + executingQuery);
-                                            int res = updStmt.executeUpdate( executingQuery, Statement.RETURN_GENERATED_KEYS );
+                                            if(workspace.projectMode) {
+                                                executingQuery = tableTransactList.getSQL(liquid, i);
+                                                System.out.println("Query:" + executingQuery);
+                                            }
+                                            int res = 0;
+                                            Object [] resArray = tableTransactList.executeSQL(liquid, i, connToUse, Statement.RETURN_GENERATED_KEYS );
+                                            res = (int)resArray[0];
+                                            preparedStmt = (PreparedStatement)resArray[1];
                                             if (res > 0) {
                                                 nUpdates++;
                                                 if(!"delete".equalsIgnoreCase( tableTransactList.getType(liquid, i))) {
-	                                                ResultSet rs = updStmt.getGeneratedKeys();
+	                                                ResultSet rs = preparedStmt.getGeneratedKeys();
 	                                                if (rs != null) {
 	                                                    String idsList = "";
 	                                                    while(rs.next()) {
@@ -3978,7 +3999,9 @@ public class db {
                                             }
                                         } catch (Throwable th) {
                                             tableUpdates.add("{\"table\":\""+liquid.schemaTable.replace(tableIdString, "")+"\",\"ids\":[], \"error\":\""+utility.base64Encode(th.getLocalizedMessage())+"\", \"query\":\""+utility.base64Encode(executingQuery)+"\" }");
-                                            modificationsFaild.add("{\"rowId\":\""+tableTransactList.transactionList.get(i).rowId+"\",\"nodeId\":\""+tableTransactList.transactionList.get(i).nodeId+"\"}");
+                                            String fieldValue = tableTransactList.transactionList.get(i).rowId;
+                                            fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                                            modificationsFaild.add("{\"rowId\":\""+fieldValue+"\",\"nodeId\":\""+tableTransactList.transactionList.get(i).nodeId+"\"}");
                                         }
                                     }
                                 }
@@ -3986,7 +4009,8 @@ public class db {
                                 if(!bUseAutoCommit)
                                     connToUse.commit();
                                 
-                                updStmt.close();
+                                if(preparedStmt != null)
+                                    preparedStmt.close();
                             }
 
                         retVal = "{" 
@@ -4681,7 +4705,9 @@ public class db {
      * @param  sourceDatabaseSchemaTable  the source table (database.schema.table or schema.table or table) (String)
      * @param  sSourceRowsFilters the filters to apply to get source rowset
      * @param  targetDatabaseSchemaTable  the target table (database.schema.table or schema.table or table) (String)
-     * @param  sSourceRowsFilters the filters to apply to get target rowset
+     * @param  sTargetRowsFilters the filters to apply to get target rowset
+     * @param  methodGetPrimaryKey the method to invoke (by java reflection) to get the primary key value
+     * @param  instanceGetPrimaryKey the class instance user to get the primary key value
      * @param  sColumnsRelation the relation beetwen source and target table's columns
      * example:
      *  { "target column 1":"source column 1", "target column 2":"source column 2", ... }
@@ -4701,11 +4727,11 @@ public class db {
      *              }
      * @see         db
      */
-    static public String syncronizeTable( String sourceDatabaseSchemaTable, String sSourceRowsFilters,
-                                            String targetDatabaseSchemaTable, String sTargetRowsFilters,
-                                            String sColumnsRelation,
-                                            String methodGetPrimaryKey, Object instanceGetPrimaryKey,
-                                            String mode
+    static public String syncronizeTable(String sourceDatabaseSchemaTable, String sSourceRowsFilters,
+            String targetDatabaseSchemaTable, String sTargetRowsFilters,
+            String sColumnsRelation,
+            String methodGetPrimaryKey, Object instanceGetPrimaryKey,
+            String mode
     ) {
         JSONObject resultJSON = new JSONObject();
         String result = "";
@@ -4715,145 +4741,142 @@ public class db {
         String sourcePrimaryKey = null, targetPrimaryKey = null, targetPrimaryKeyForCompare = null;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         HttpServletRequest request = null;
-        ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap> ();
+        ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap>();
         Method mGetPrimaryKey = null;
 
-        try {            
-            
-            String [] tableParts = sourceDatabaseSchemaTable.split("\\.");
-            if(tableParts.length == 1) {
+        try {
+
+            String[] tableParts = sourceDatabaseSchemaTable.split("\\.");
+            if (tableParts.length == 1) {
                 table = tableParts[0];
-            } else if(tableParts.length == 2) {
+            } else if (tableParts.length == 2) {
                 table = tableParts[1];
                 schema = tableParts[0];
-            } else if(tableParts.length == 3) {
+            } else if (tableParts.length == 3) {
                 table = tableParts[2];
                 schema = tableParts[1];
                 database = tableParts[0];
             }
 
             tableParts = targetDatabaseSchemaTable.split("\\.");
-            if(tableParts.length == 1) {
+            if (tableParts.length == 1) {
                 targetTable = tableParts[0];
-            } else if(tableParts.length == 2) {
-            	targetTable = tableParts[1];
+            } else if (tableParts.length == 2) {
+                targetTable = tableParts[1];
                 targetSchema = tableParts[0];
-            } else if(tableParts.length == 3) {
-            	targetTable = tableParts[2];
-            	targetSchema = tableParts[1];
-            	targetDatabase = tableParts[0];
+            } else if (tableParts.length == 3) {
+                targetTable = tableParts[2];
+                targetSchema = tableParts[1];
+                targetDatabase = tableParts[0];
             }
-            
-            sourceControlId = workspace.getControlIdFromDatabaseSchemaTable( sourceDatabaseSchemaTable );
-            workspace source_tbl_wrk = workspace.get_tbl_manager_workspace( sourceControlId );
-            if(source_tbl_wrk == null) {
+
+            sourceControlId = workspace.getControlIdFromDatabaseSchemaTable(sourceDatabaseSchemaTable);
+            workspace source_tbl_wrk = workspace.get_tbl_manager_workspace(sourceControlId);
+            if (source_tbl_wrk == null) {
                 String sRequest = "";
                 String parentControlId = null;
                 String sTableJson = workspace.get_default_json(request, sourceControlId, sourceControlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
-            }            
-            source_tbl_wrk = workspace.get_tbl_manager_workspace( sourceControlId );
-            if(source_tbl_wrk != null) {
-                targetControlId = workspace.getControlIdFromDatabaseSchemaTable( targetDatabaseSchemaTable );        
-                workspace target_tbl_wrk = workspace.get_tbl_manager_workspace( targetControlId );
-                if(target_tbl_wrk == null) {
+            }
+            source_tbl_wrk = workspace.get_tbl_manager_workspace(sourceControlId);
+            if (source_tbl_wrk != null) {
+                targetControlId = workspace.getControlIdFromDatabaseSchemaTable(targetDatabaseSchemaTable);
+                workspace target_tbl_wrk = workspace.get_tbl_manager_workspace(targetControlId);
+                if (target_tbl_wrk == null) {
                     String sRequest = "";
                     String parentControlId = null;
                     String sTableJson = workspace.get_default_json(request, targetControlId, targetControlId, targetTable, targetSchema, targetDatabase, parentControlId, workspace.sourceSpecialToken, sRequest, null);
                 }
-                target_tbl_wrk = workspace.get_tbl_manager_workspace( targetControlId );
-                if(target_tbl_wrk != null) {
+                target_tbl_wrk = workspace.get_tbl_manager_workspace(targetControlId);
+                if (target_tbl_wrk != null) {
 
                     String itemIdString = "\"", tableIdString = "\"", asKeyword = " AS ";
-                    if( (source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("postgres.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("postgres")) {
+                    if ((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("postgres.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("postgres")) {
                         isPostgres = true;
                     }
-                    if( (source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
+                    if ((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("mysql")) {
                         isMySQL = true;
                     }
-                    if( (source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("mariadb.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("mariadb")) {
+                    if ((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("mariadb.")) || source_tbl_wrk.dbProductName.toLowerCase().contains("mariadb")) {
                         isMySQL = true;
                     }
-                    if((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("oracle.")) || (source_tbl_wrk.dbProductName != null && source_tbl_wrk.dbProductName.toLowerCase().contains("oracle"))) {
+                    if ((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("oracle.")) || (source_tbl_wrk.dbProductName != null && source_tbl_wrk.dbProductName.toLowerCase().contains("oracle"))) {
                         isOracle = true;
                     }
-                    if((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("sqlserver.")) || (source_tbl_wrk.dbProductName != null && source_tbl_wrk.dbProductName.toLowerCase().contains("sqlserver"))) {
+                    if ((source_tbl_wrk.driverClass != null && source_tbl_wrk.driverClass.toLowerCase().contains("sqlserver.")) || (source_tbl_wrk.dbProductName != null && source_tbl_wrk.dbProductName.toLowerCase().contains("sqlserver"))) {
                         isSqlServer = true;
                     }
-
 
                     JSONObject sourceRowsFilters = sSourceRowsFilters != null && !sSourceRowsFilters.isEmpty() ? new JSONObject(sSourceRowsFilters) : null;
                     JSONObject targetRowsFilters = sTargetRowsFilters != null && !sTargetRowsFilters.isEmpty() ? new JSONObject(sTargetRowsFilters) : null;
 
+                    try {
+                        sourcePrimaryKey = source_tbl_wrk.tableJson.getString("primaryKey");
+                    } catch (Exception e) {
+                    }
+                    try {
+                        targetPrimaryKey = target_tbl_wrk.tableJson.getString("primaryKey");
+                    } catch (Exception e) {
+                    }
 
-                    try { sourcePrimaryKey = source_tbl_wrk.tableJson.getString("primaryKey"); } catch (Exception e) {  }
-                    try { targetPrimaryKey = target_tbl_wrk.tableJson.getString("primaryKey"); } catch (Exception e) {  }
-                    
                     targetPrimaryKeyForCompare = targetPrimaryKey;
-                    
+
                     //
                     // Build source table filters
                     //
                     try {
-                        if(sourceRowsFilters != null) {
+                        if (sourceRowsFilters != null) {
                             JSONArray cols = source_tbl_wrk.tableJson.getJSONArray("columns");
                             JSONArray filtersCols = wrapFilters(sourceRowsFilters);
-                            where_condition_source = process_filters_json(source_tbl_wrk, table, cols, 
-                                            isOracle, isMySQL, isPostgres, isSqlServer, 
-                                            where_condition_source, filtersCols, null, leftJoinsMap,
-                                            tableIdString, itemIdString
-                                            );
+                            where_condition_source = process_filters_json(source_tbl_wrk, table, cols,
+                                    isOracle, isMySQL, isPostgres, isSqlServer,
+                                    where_condition_source, filtersCols, null, leftJoinsMap,
+                                    tableIdString, itemIdString
+                            );
                         }
                     } catch (Exception e) {
-                        error += "[Filters Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+source_tbl_wrk.driverClass+"]";
+                        error += "[Filters Error:" + e.getLocalizedMessage() + "]" + "[Driver:" + source_tbl_wrk.driverClass + "]";
                         System.err.println("// Filters Error:" + e.getLocalizedMessage());
                     }
 
-                    if(where_condition_source == null || where_condition_source.isEmpty()) {
-                    	if(mode.contains("all")) {
-                    		return "{\"error\":\"You need a filter on source or add 'ALL' keyword in mode parameter\"}";
-                    	}
+                    if (where_condition_source == null || where_condition_source.isEmpty()) {
+                        if (mode.contains("all")) {
+                            return "{\"error\":\"You need a filter on source or add 'ALL' keyword in mode parameter\"}";
+                        }
                     }
 
-                    
                     //
                     // Filtering source table
                     //
-                    ArrayList<Object> sourceRows = load_beans(request, sourceControlId, sourceDatabaseSchemaTable, "*", where_condition_source, 0 );
-
-
-
+                    ArrayList<Object> sourceRows = load_beans(request, sourceControlId, sourceDatabaseSchemaTable, "*", where_condition_source, 0);
 
                     //
                     // Build target table filters
                     //
                     try {
-                        if(targetRowsFilters != null) {                    
+                        if (targetRowsFilters != null) {
                             JSONArray cols = target_tbl_wrk.tableJson.getJSONArray("columns");
                             JSONArray filtersCols = wrapFilters(targetRowsFilters);
-                            where_condition_target = process_filters_json(source_tbl_wrk, targetTable, cols, 
-                                            isOracle, isMySQL, isPostgres, isSqlServer, 
-                                            where_condition_target, filtersCols, null, leftJoinsMap,
-                                            tableIdString, itemIdString
-                                            );
+                            where_condition_target = process_filters_json(source_tbl_wrk, targetTable, cols,
+                                    isOracle, isMySQL, isPostgres, isSqlServer,
+                                    where_condition_target, filtersCols, null, leftJoinsMap,
+                                    tableIdString, itemIdString
+                            );
                         }
                     } catch (Exception e) {
-                        error += "[Filters Error:"+e.getLocalizedMessage() + "]" + "[Driver:"+source_tbl_wrk.driverClass+"]";
+                        error += "[Filters Error:" + e.getLocalizedMessage() + "]" + "[Driver:" + source_tbl_wrk.driverClass + "]";
                         System.err.println("// Filters Error:" + e.getLocalizedMessage());
                     }
 
-                    if(where_condition_target == null || where_condition_target.isEmpty()) {
-                    	if(mode.contains("all")) {
-                    		return "{\"error\":\"You need a filter on target or add 'ALL' keyword in mode parameter\"}";
-                    	}
+                    if (where_condition_target == null || where_condition_target.isEmpty()) {
+                        if (mode.contains("all")) {
+                            return "{\"error\":\"You need a filter on target or add 'ALL' keyword in mode parameter\"}";
+                        }
                     }
-                    
+
                     //
                     // Filtering target table
                     //
-                    ArrayList<Object> targetRows = load_beans( request, targetControlId, targetDatabaseSchemaTable, "*", where_condition_target, 0 );
-
-
-
+                    ArrayList<Object> targetRows = load_beans(request, targetControlId, targetDatabaseSchemaTable, "*", where_condition_target, 0);
 
                     //        
                     // Eliminazione righe non corrispondenti
@@ -4868,22 +4891,24 @@ public class db {
                     JSONObject columnsRelation = new JSONObject(sColumnsRelation);
 
                     JSONArray names = columnsRelation.names();
-                    if(names != null) {
-                        for(int io=0; io<names.length(); io++) {
+                    if (names != null) {
+                        for (int io = 0; io < names.length(); io++) {
                             String propName = names.getString(io);
                             Object propVal = columnsRelation.get(propName);
-                            if(propVal instanceof String) {
-                                if(getFieldPosition(target_tbl_wrk, (String)propName) > 0) {
-                                    int fieldPos = getFieldPosition(source_tbl_wrk, (String)propVal);
-                                    if(fieldPos > 0) {
+                            if (propVal instanceof String) {
+                                if (getFieldPosition(target_tbl_wrk, (String) propName) > 0) {
+                                    int fieldPos = getFieldPosition(source_tbl_wrk, (String) propVal);
+                                    if (fieldPos > 0) {
                                         addingColumnsValue.add(null);
-                                        addingColumnsName.add((String)propVal);
-                                        if(sourcePrimaryKey.equalsIgnoreCase(propName)) {
-                                        	targetPrimaryKeyForCompare = propName;
+                                        addingColumnsName.add((String) propVal);
+                                        if (sourcePrimaryKey.equalsIgnoreCase(propName)) {
+                                            targetPrimaryKeyForCompare = propName;
                                         }
                                     } else {
-                                    	String value = columnsRelation.getString(propName);
-                                    	if("NULL".equalsIgnoreCase(value)) value = null;
+                                        String value = columnsRelation.getString(propName);
+                                        if ("NULL".equalsIgnoreCase(value)) {
+                                            value = null;
+                                        }
                                         addingColumnsValue.add(value);
                                         addingColumnsName.add(null);
                                     }
@@ -4892,152 +4917,145 @@ public class db {
                             }
                         }
                     }
-                    
-                    
-                    
+
                     ArrayList<Object> sourcePrimaryKeys = new ArrayList<Object>();
-                    Object [] source_res = beansToArray( sourceRows, sourcePrimaryKey, sourcePrimaryKeys );
+                    Object[] source_res = beansToArray(sourceRows, sourcePrimaryKey, sourcePrimaryKeys);
                     // String sSourcePrimaryKeys = utility.arrayToString(sourcePrimaryKeys.toArray(), "'", "'", ",");
 
                     ArrayList<Object> targetPrimaryKeys = new ArrayList<Object>();
-                    Object [] target_res = beansToArray( targetRows, targetPrimaryKeyForCompare, targetPrimaryKeys );
-                    
-                    
-                    if(targetRows != null) {
-	                    for(int i=0; i<targetRows.size(); i++) {
-	                        boolean found = false;
-	                        Object targetBean = (Object) targetRows.get(i);
-	                        String id = String.valueOf( utility.get(targetBean, sourcePrimaryKey) );
-	                        if(utility.contains(sourcePrimaryKeys, id)) {
-	                            found = true;
-	                        }
-	                        if(!found) {
-	                            deletingIds.add(id);
-	                            if(mode.contains("preview")) {
-	                            } else {
-	                                delete( targetBean, target_tbl_wrk );
-	                            }
-	                        }
-	                    }
+                    Object[] target_res = beansToArray(targetRows, targetPrimaryKeyForCompare, targetPrimaryKeys);
+
+                    if (targetRows != null) {
+                        for (int i = 0; i < targetRows.size(); i++) {
+                            boolean found = false;
+                            Object targetBean = (Object) targetRows.get(i);
+                            String id = String.valueOf(utility.get(targetBean, sourcePrimaryKey));
+                            if (utility.contains(sourcePrimaryKeys, id)) {
+                                found = true;
+                            }
+                            if (!found) {
+                                deletingIds.add(id);
+                                if (mode.contains("preview")) {
+                                } else {
+                                    delete(targetBean, target_tbl_wrk);
+                                }
+                            }
+                        }
                     }
                     resultJSON.put("deletedCount", deletingIds.size());
-                    resultJSON.put("deletedIds", deletingIds);                            
-                    
-                    
-                    
+                    resultJSON.put("deletedIds", deletingIds);
+
                     //
                     // Aggiunta righe non trovate
                     //
-                    
-                    
-                    if(sourceRows != null) {
-	                    for(int i=0; i<sourceRows.size(); i++) {
-	                        Object sourceBean = (Object) sourceRows.get(i);
-	                        String id = String.valueOf( utility.get(sourceBean, sourcePrimaryKey) );
-	                        boolean found = false;
-	                        if(utility.contains(targetPrimaryKeys, id)) {
+                    if (sourceRows != null) {
+                        for (int i = 0; i < sourceRows.size(); i++) {
+                            Object sourceBean = (Object) sourceRows.get(i);
+                            String id = String.valueOf(utility.get(sourceBean, sourcePrimaryKey));
+                            boolean found = false;
+                            if (utility.contains(targetPrimaryKeys, id)) {
                                 found = true;
-	                        }
-                            if(!found) {
+                            }
+                            if (!found) {
                                 // adding source table
                                 Object newBean = null;
-                                if(mode.contains("preview")) {
+                                if (mode.contains("preview")) {
                                 } else {
                                     JSONArray rowsJson = null;
-                                    Object [] beanResult = create_beans_multilevel_class( target_tbl_wrk, rowsJson, null, "*", 0, 1 );
-                                    if(beanResult != null) {
-                                        int ftResult = (int)beanResult[0];
-                                        newBean = ((ArrayList<Object>)beanResult[1]).get(0);
+                                    Object[] beanResult = create_beans_multilevel_class(target_tbl_wrk, rowsJson, null, "*", 0, 1);
+                                    if (beanResult != null) {
+                                        int ftResult = (int) beanResult[0];
+                                        newBean = ((ArrayList<Object>) beanResult[1]).get(0);
                                     }
                                 }
                                 addingFields.clear();
-                                for(int ic=0; ic<addingColumnsName.size(); ic++) {
-                                	String value = null;
-                                    if(addingColumnsName.get(ic) != null) {
+                                for (int ic = 0; ic < addingColumnsName.size(); ic++) {
+                                    String value = null;
+                                    if (addingColumnsName.get(ic) != null) {
                                         // add a column
-                                        value = String.valueOf( utility.get(sourceBean, addingColumnsName.get(ic)) );
+                                        value = String.valueOf(utility.get(sourceBean, addingColumnsName.get(ic)));
                                     } else {
                                         // add a value
                                         value = addingColumnsValue.get(ic);
                                     }
-                                    addingFields.add( value );
-                                    if(newBean != null) {
-                                    	utility.set(newBean, addingColumnsLabel.get(ic), value);
+                                    addingFields.add(value);
+                                    if (newBean != null) {
+                                        utility.set(newBean, addingColumnsLabel.get(ic), value);
                                     }
                                 }
-                                
-                                if(mode.contains("preview")) {
+
+                                if (mode.contains("preview")) {
                                 } else {
                                     addingIds.add(id);
-                                    
+
                                     // generator of primary key customized
-                                    if(instanceGetPrimaryKey != null && methodGetPrimaryKey != null) {
-                                    	if(mGetPrimaryKey == null) {
-	                                		Object [] resultGetPrimaryKey = event.get_method_by_class_name(methodGetPrimaryKey, instanceGetPrimaryKey);
-	                                		if(resultGetPrimaryKey != null) {
-	                                			instanceGetPrimaryKey = (Object)resultGetPrimaryKey[0];
-	                                			mGetPrimaryKey = (Method)resultGetPrimaryKey[1];
-	                                		} else {
-	                            				error += "Generated primary key error";
-	                                		}
-                                    	}
-                                    	
-                                    	if(mGetPrimaryKey != null) {
-	                            			String newId = (String)mGetPrimaryKey.invoke(instanceGetPrimaryKey);
-	                            			if(newId != null && !newId.isEmpty()) {
-	                            				utility.set(newBean, targetPrimaryKey, newId);
-	                            			} else {
-	                            				error += "Generated primary key error";
-	                            			}
-                                    	} else {
-                            				error += "Unable to get method for generating primary key error";
-                                    	}
-                                    }
-                                    
-                                    // inserting the row
-                                    if(newBean != null) {
-                                        String insertResult = insert( newBean, target_tbl_wrk );
-                                        if(insertResult != null && !insertResult.isEmpty()) {
-                                        	JSONObject insertResultJSON = new JSONObject(insertResult);
-                                        	if(insertResultJSON != null) {
-                                        		if(insertResultJSON.has("tables")) {
-                                        			JSONArray tables = insertResultJSON.getJSONArray("tables");
-                                        			for(int ie=0; ie<tables.length(); ie++) {
-                                        				JSONObject t = tables.getJSONObject(ie);
-                                        				if(t.has("error")) {
-                                        					error += "Inserting record error; "+utility.base64Decode( t.getString("error") );
-                                        				}
-                                        			}
-                                        		}
-                                        		if(insertResultJSON.has("error")) {
-                                                	error += "Inserting record error; "+utility.base64Decode( insertResultJSON.getString("error") );
-                                        		}
-                                        	} else {
-                                            	error += "Inserting record error; result misformed";
-                                        	}
-                                        } else {
-                                        	error += "Inserting record result is empty";
+                                    if (instanceGetPrimaryKey != null && methodGetPrimaryKey != null) {
+                                        if (mGetPrimaryKey == null) {
+                                            Object[] resultGetPrimaryKey = event.get_method_by_class_name(methodGetPrimaryKey, instanceGetPrimaryKey);
+                                            if (resultGetPrimaryKey != null) {
+                                                instanceGetPrimaryKey = (Object) resultGetPrimaryKey[0];
+                                                mGetPrimaryKey = (Method) resultGetPrimaryKey[1];
+                                            } else {
+                                                error += "Generated primary key error";
+                                            }
                                         }
-	                                }
-	                            }
-	                        }
-	                    }
+
+                                        if (mGetPrimaryKey != null) {
+                                            String newId = (String) mGetPrimaryKey.invoke(instanceGetPrimaryKey);
+                                            if (newId != null && !newId.isEmpty()) {
+                                                utility.set(newBean, targetPrimaryKey, newId);
+                                            } else {
+                                                error += "Generated primary key error";
+                                            }
+                                        } else {
+                                            error += "Unable to get method for generating primary key error";
+                                        }
+                                    }
+
+                                    // inserting the row
+                                    if (newBean != null) {
+                                        String insertResult = insert(newBean, target_tbl_wrk);
+                                        if (insertResult != null && !insertResult.isEmpty()) {
+                                            JSONObject insertResultJSON = new JSONObject(insertResult);
+                                            if (insertResultJSON != null) {
+                                                if (insertResultJSON.has("tables")) {
+                                                    JSONArray tables = insertResultJSON.getJSONArray("tables");
+                                                    for (int ie = 0; ie < tables.length(); ie++) {
+                                                        JSONObject t = tables.getJSONObject(ie);
+                                                        if (t.has("error")) {
+                                                            error += "Inserting record error; " + utility.base64Decode(t.getString("error"));
+                                                        }
+                                                    }
+                                                }
+                                                if (insertResultJSON.has("error")) {
+                                                    error += "Inserting record error; " + utility.base64Decode(insertResultJSON.getString("error"));
+                                                }
+                                            } else {
+                                                error += "Inserting record error; result misformed";
+                                            }
+                                        } else {
+                                            error += "Inserting record result is empty";
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-                    if(addingIds != null) {
-                    	resultJSON.put("addingCount", addingIds.size());
-                    	resultJSON.put("adddingIds", addingIds);
+                    if (addingIds != null) {
+                        resultJSON.put("addingCount", addingIds.size());
+                        resultJSON.put("adddingIds", addingIds);
                     }
                 }
             }
-            if(error != null && !error.isEmpty()) {
-            	resultJSON.put("error", error);
+            if (error != null && !error.isEmpty()) {
+                resultJSON.put("error", error);
             }
-            
+
         } catch (Throwable e) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
         }
-        
+
         return resultJSON.toString();
-    }   
-    
+    }
+
 }

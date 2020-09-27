@@ -53,8 +53,9 @@ public class workspace {
     // separator used in controId build from file or database/schema/table
     static String controlIdSeparator = ".";
 
-    static String dateSep = "/";
-    static String timeSep = ":";
+    static public String dateSep = "/";
+    static public String timeSep = ":";
+    static public boolean projectMode;
     
     
     
@@ -172,9 +173,20 @@ public class workspace {
     }
     
     
-    // Abilita la modalità progettazione
+    /**
+     * <h3>Enable project Mode</h3>
+     * 
+     * <p>
+     * This method enable the project mode in the Liquid Framework, and write the genesis token, as global javascript variable, in the output
+     *
+     * @param  out the output stream of the response (JspWriter)
+     *
+     * @return      the validated control (JspWriter)
+     * @see         workspace
+     */
     static public String enableProjectMode( JspWriter out ) {
         try {
+            projectMode = true;
             genesisToken = login.getSaltString(32);
             // reset metadata cache
             metadata.invalidateMetadata();
@@ -193,9 +205,26 @@ public class workspace {
         return genesisToken;
     }
 
+    /**
+     * <h3>Disable project Mode</h3>
+     * 
+     * <p>
+     * This method disable the project mode in the Liquid Framework
+     *
 
-    // Controllo da file json nel server
-    // Controllo da file json nel server : wrappers
+     * @return      the validated control json
+     * @see         workspace
+     */
+    static public boolean disableProjectMode( ) {
+        if(projectMode) {
+            projectMode = false;
+            genesisToken = null;            
+            return true;
+        }
+        return false;
+    }
+
+    
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id {@link controlId}.
@@ -207,6 +236,7 @@ public class workspace {
      * @param  sTableJsonFile the configuration of the control (file in JSON format)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile) throws Throwable {
@@ -225,6 +255,7 @@ public class workspace {
      * @param  replaceApex  escape all apex (boolean)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex) throws Throwable {
@@ -245,6 +276,7 @@ public class workspace {
      * @param  returnType the or result, can be "json" or empty for html (String)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex, Object owner, String returnType ) throws Throwable {
@@ -276,6 +308,7 @@ public class workspace {
      * @param  sTableJson the configuration of the control (String in JSON format)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson) throws Throwable {
@@ -294,6 +327,7 @@ public class workspace {
      * @param  tableKey used to overwrite table definition in sTableJson (String)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson, String tableKey) throws Throwable {
@@ -312,6 +346,7 @@ public class workspace {
      * @param  returnType the or result, can be "json" or empty for html (String)
 
      * @return      the image at the specified URL
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_control_from_string(HttpServletRequest request, String controlId, String sTableJson, Object owner, String returnType) throws Throwable {
@@ -330,6 +365,7 @@ public class workspace {
      * @param  bLaunch if true append to the list of the controls to render on web page load (boolean)
 
      * @return      the validated control json
+     * @throws java.lang.Throwable
      * @see         workspace
      */
     static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch) throws Throwable {
@@ -590,6 +626,8 @@ public class workspace {
                         if(createTableIfMissing) {
                             if(!metadata.create_table(connToUse, database, schema, table, tableJson)) {
                                 // Fail
+                                String err = "database:"+database + " schema:"+schema + " Failed to create table "+table+" ... please check fields and sizes";
+                                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+err+"\"}" : "<script> console.error(\""+err+"\");</script>" );
                             }
                         } else {
                             String err = "database:"+database + " schema:"+schema + " table "+table+" not exist";
@@ -1341,6 +1379,10 @@ public class workspace {
                     try {
                         Class cls = Class.forName(ownerClassName);
                         owner = (Object) cls.newInstance();
+                    } catch(ClassNotFoundException cnf) {
+                        if(workspace.projectMode) {
+                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, cnf);
+                        }
                     } catch(Throwable th) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
                     }

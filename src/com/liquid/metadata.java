@@ -94,10 +94,14 @@ public class metadata {
      * <p>
      * This method clean cache of database metadata, useful when database structure change
      *
-     * @param  database  the database (String)
+     * @param database  the database (String)
+     * @param schema the schema (String)
+     * @param table the table (String)
      * @param  database  the database (String)
 
-     * @return           void
+     * @return void          
+     * void
+     * 
      * @see         metadata
      */
      public static void resetTableMetadata(String database, String schema, String table ) {
@@ -576,6 +580,8 @@ public class metadata {
      *
      * Definisce la mappatura fra i dati sql e le classi java
      * 
+     * @param type the data type (int)
+     * @return the CLass mathcing the type
      */
     static public Class getJavaClass(int type) {                                               
         if(type == 2 || type == 4 || type == -5 || type == -6 || type == 5 || type == -7) {
@@ -1395,9 +1401,12 @@ public class metadata {
                     // did         integer NOT NULL,
 
                     if (name.equals(primaryKey)) {
-                        String seq_name = ((tableIdString+schema+tableIdString)+"."+(tableIdString+table+"_seq"+tableIdString));
+                        // creoosa references non implememted
+                        // String seq_name = ((tableIdString+schema+tableIdString)+"."+(tableIdString+table+"_seq"+tableIdString));
+                        // sDefault = "nextval('"+schema+"."+seq_name+"'::regclass)";
+                        String seq_name = (tableIdString+table+"_seq"+tableIdString);
                         pre_sql = "CREATE SEQUENCE IF NOT EXISTS "+seq_name+";\nCOMMIT;\n";
-                        sDefault = "nextval('"+schema+"."+seq_name+"'::regclass)";
+                        sDefault = "nextval('"+seq_name+"'::regclass)";
                         typeName = "int4";
                     }
                     
@@ -1425,7 +1434,7 @@ public class metadata {
                     
                     if (sDefault != null && !sDefault.isEmpty()) {
                         sDefault = sDefault.replace("`", "'");
-                        sql += " DEFAULT " + sDefault;
+                        sql += " DEFAULT " + sDefault + "";
                     }
                     
                     sql += "\n";
