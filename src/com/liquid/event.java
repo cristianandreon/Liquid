@@ -1808,7 +1808,14 @@ public class event {
                         if(controlId != null && !controlId.isEmpty()) {
                             if(paramJSON.has("name")) {
                                 if(controlId.equalsIgnoreCase(paramJSON.getString("name"))) {
-                                    return paramJSON.getJSONObject(paramName);
+                                    Object value = paramJSON.get(paramName);
+                                    if(value instanceof JSONObject) {
+                                        return paramJSON.getJSONObject(paramName);
+                                    } else {
+                                        JSONObject result = new JSONObject();
+                                        result.put(paramName, value);
+                                        return result;
+                                    }
                                 }
                             }
                         } else if(controlId.isEmpty()) {

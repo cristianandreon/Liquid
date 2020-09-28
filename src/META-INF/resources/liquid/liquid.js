@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.33   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.34   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  26-09-2020
 //  TODO : see trello.com
 //
@@ -1996,7 +1996,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.33,
+    version: 1.34,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -2357,7 +2357,13 @@ var Liquid = {
                                     jQ1124(document).on('submit', '#'+paramObj.id, function() { // avoid page reload
                                         return false;
                                     });                            
-                                    liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" +",\"data\":{" + dataList + "}" + "}"));
+                                    if(paramObj.nodeName.toUpperCase() === 'FORM') {
+                                        // form collection
+                                        liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" +",\"data\":{" + dataList + "}" + "}"));
+                                    } else {
+                                        // single item
+                                        liquidCommandParams.params.push(JSON.parse("{\"name\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" +",\"data\":\"" + field_value + "\"" + "}"));
+                                    }
                                 } else {                                    
                                 }
                             }
@@ -8009,16 +8015,28 @@ var Liquid = {
                             }
                         }
                     };
-                    var params = (event.params ? JSON.parse(JSON.stringify(event.params)) : [] );
-                    if(!Array.isArray(params)) {
-                        params = [ params ];
-                    }
-                    // Every row must be an object
-                    for(var ip=0; ip<params.length; ip++) {
-                        if(typeof params[ip] !== 'object') {
-                            params[ip] = { name:params[ip], data:"" };
+                    var params = [];
+                    
+                    //
+                    // native parameters of the events ...
+                    //
+                    var eventBuiltInParams = (event.params ? JSON.parse(JSON.stringify(event.params)) : null);
+                    if(eventBuiltInParams) {
+                        if(!Array.isArray(eventBuiltInParams)) {
+                            eventBuiltInParams = [ eventBuiltInParams ];
+                        }
+                        // Every row must be an object
+                        for(var ip=0; ip<params.length; ip++) {
+                            // N.B.: it's already processed and putted inside eventData
+                            if(typeof params[ip] !== 'object') {
+                                // params[ip] = { name:params[ip], data:"" };
+                            } else {
+                            }
                         }
                     }
+                    //
+                    // N.B.: EventData come from event.params, so is the parameters resolved at runtime
+                    //
                     if(isDef(eventData)) params.push( { data: eventData } );
                     if(isDef(eventParams)) {
                         for(var ip=0; ip<eventParams.length; ip++) {
