@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.32   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.33   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  26-09-2020
 //  TODO : see trello.com
 //
@@ -1996,7 +1996,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.32,
+    version: 1.33,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -2312,8 +2312,15 @@ var Liquid = {
                         // No liquid object : is form ?
                         if(paramObj) {
                             if(paramObj.nodeName) {
-                                if(paramObj.nodeName.toUpperCase() === 'FORM') {
-                                    var frm_elements = paramObj.elements;
+                                if(paramObj.nodeName.toUpperCase() === 'FORM' || paramObj.nodeName.toUpperCase() === 'DIV' || paramObj.nodeName.toUpperCase() === 'INPUT') {
+                                    var frm_elements = [];
+                                    if(paramObj.nodeName.toUpperCase() === 'FORM') {
+                                        frm_elements = paramObj.elements;
+                                    } else if(paramObj.nodeName.toUpperCase() === 'DIV') {
+                                        frm_elements = [ paramObj ];
+                                    } else if(paramObj.nodeName.toUpperCase() === 'INPUT') {
+                                        frm_elements = [ paramObj ];
+                                    }                                    
                                     var dataList = "";
                                     if(frm_elements && frm_elements.length) {
                                         for (var i = 0; i < frm_elements.length; i++) {
@@ -2351,6 +2358,7 @@ var Liquid = {
                                         return false;
                                     });                            
                                     liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" +",\"data\":{" + dataList + "}" + "}"));
+                                } else {                                    
                                 }
                             }
                         }
@@ -7888,7 +7896,7 @@ var Liquid = {
                                         } catch (e) {
                                             httpResultJson = null;
                                             console.error("response:"+responseText);
-                                            console.error("ERROR : onEventProcess() : errore in response process:" + e  + " on event "+event.name+" on control "+liquid.controlId);
+                                            console.error("ERROR : onEventProcess() : errore in response process:"+e+" on event "+event.name+" on control "+liquid.controlId);
                                         }
                                         
                                         event.response = httpResultJson;
@@ -8002,6 +8010,15 @@ var Liquid = {
                         }
                     };
                     var params = (event.params ? JSON.parse(JSON.stringify(event.params)) : [] );
+                    if(!Array.isArray(params)) {
+                        params = [ params ];
+                    }
+                    // Every row must be an object
+                    for(var ip=0; ip<params.length; ip++) {
+                        if(typeof params[ip] !== 'object') {
+                            params[ip] = { name:params[ip], data:"" };
+                        }
+                    }
                     if(isDef(eventData)) params.push( { data: eventData } );
                     if(isDef(eventParams)) {
                         for(var ip=0; ip<eventParams.length; ip++) {

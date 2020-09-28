@@ -1795,6 +1795,9 @@ public class event {
     }
     
     static public JSONObject getJSONObject (Object params, String paramName ) {
+        return getJSONObject (params, paramName, null );
+    }
+    static public JSONObject getJSONObject (Object params, String paramName, String controlId ) {
         if(params != null) {
             try {
                 JSONObject rootJSON = new JSONObject((String)params);
@@ -1802,7 +1805,19 @@ public class event {
                 for(int ip=0; ip<paramsJSON.length(); ip++) {
                     JSONObject paramJSON = paramsJSON.getJSONObject(ip);
                     if(paramJSON.has(paramName)) {
-                        return paramJSON.getJSONObject(paramName);
+                        if(controlId != null && !controlId.isEmpty()) {
+                            if(paramJSON.has("name")) {
+                                if(controlId.equalsIgnoreCase(paramJSON.getString("name"))) {
+                                    return paramJSON.getJSONObject(paramName);
+                                }
+                            }
+                        } else if(controlId.isEmpty()) {
+                            if(!paramJSON.has("name")) {
+                                return paramJSON.getJSONObject(paramName);
+                            }
+                        } else {
+                            return paramJSON.getJSONObject(paramName);
+                        }
                     }
                 }
             } catch (JSONException ex) {
