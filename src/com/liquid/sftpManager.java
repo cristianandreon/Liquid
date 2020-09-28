@@ -19,6 +19,9 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import com.jcraft.jsch.SftpProgressMonitor;
+import static ch.ethz.ssh2.sftp.ErrorCodes.*;
+import java.util.logging.Level;
+
 
 public class sftpManager implements SftpProgressMonitor {
 
@@ -37,7 +40,7 @@ public class sftpManager implements SftpProgressMonitor {
     float timeLeft = 0.0f;
     float count = 0;
 
-    public Object[] upload(String host, String user, String password, String sourceFile, InputStream sourceFileIS, String targetFile) throws JSchException, SftpException, IOException {
+    public Object[] upload(String host, String user, String password, String sourceFile, InputStream sourceFileIS, String targetFile) throws JSchException, SftpException, IOException, Exception {
         long retVal = 0, fileSize = 0;
         int port = 22;
         String knownHostsFilename = "/home/world/.ssh/known_hosts";
@@ -72,30 +75,45 @@ public class sftpManager implements SftpProgressMonitor {
                 long ct = ctf.toMillis() / 1000;
 
                 try {
-                    SftpATTRS attrs = sftpChannel.lstat(targetFile);
-                    long remoteSize = attrs.getSize();
-                    int rt = attrs.getATime();
-                    String rts = attrs.getAtimeString();
 
-                    Date creationDate = new Date((long) ct * 1000L);
-                    System.out.println(" Local "
-                            + creationDate.getDate() + "/" + (creationDate.getMonth() + 1) + "/" + (creationDate.getYear() + 1900)
-                            + " "
-                            + creationDate.getHours() + ":" + creationDate.getMinutes() + ":" + creationDate.getSeconds()
-                    );
-
-                    creationDate = new Date((long) rt * 1000L);
-                    System.out.println(" Remote "
-                            + creationDate.getDate() + "/" + (creationDate.getMonth() + 1) + "/" + (creationDate.getYear() + 1900)
-                            + " "
-                            + creationDate.getHours() + ":" + creationDate.getMinutes() + ":" + creationDate.getSeconds()
-                    );
-
-                    if (ct > (long) rt || remoteSize != fileSize) {
-                        // file changed
-                    } else {
-                        return new Object[]{fileSize, false};
+                    SftpATTRS attrs = null;
+                    
+                    try {
+                    
+                        attrs = sftpChannel.lstat(targetFile);
+                    
+                    } catch (SftpException e) {
+                        if (e.id != SSH_FX_NO_SUCH_FILE) {
+                            throw e;
+                        }
                     }
+                    
+                    if(attrs != null) {                    
+                        long remoteSize = attrs.getSize();
+                        int rt = attrs.getATime();
+                        String rts = attrs.getAtimeString();
+
+                        Date creationDate = new Date((long) ct * 1000L);
+                        System.out.println(" Local "
+                                + creationDate.getDate() + "/" + (creationDate.getMonth() + 1) + "/" + (creationDate.getYear() + 1900)
+                                + " "
+                                + creationDate.getHours() + ":" + creationDate.getMinutes() + ":" + creationDate.getSeconds()
+                        );
+
+                        creationDate = new Date((long) rt * 1000L);
+                        System.out.println(" Remote "
+                                + creationDate.getDate() + "/" + (creationDate.getMonth() + 1) + "/" + (creationDate.getYear() + 1900)
+                                + " "
+                                + creationDate.getHours() + ":" + creationDate.getMinutes() + ":" + creationDate.getSeconds()
+                        );
+
+                        if (ct > (long) rt || remoteSize != fileSize) {
+                            // file changed
+                        } else {
+                            return new Object[]{fileSize, false};
+                        }
+                    }
+                    
                 } catch (Exception e) {
                     System.err.print("Error:" + e.getLocalizedMessage());
                 }
@@ -151,7 +169,7 @@ public class sftpManager implements SftpProgressMonitor {
         return retVal;
     }
 
-    public boolean checkSFTPFolderExist(ChannelSftp sftp, String path) throws SftpException {
+    public boolean checkSFTPFolderExist(ChannelSftp sftp, String path) throws SftpException, Exception {
         String[] folders = path.split("/");
         boolean retVal = false;
         String curfolder = "";
@@ -163,9 +181,14 @@ public class sftpManager implements SftpProgressMonitor {
                     try {
                         sftp.cd(curfolder);
                     } catch (SftpException e) {
-                        sftp.mkdir(curfolder);
-                        sftp.cd(curfolder);
-                        retVal = true;
+                        try {
+                            sftp.mkdir(curfolder);
+                            sftp.cd(curfolder);
+                            retVal = true;
+                        } catch (SftpException ex) {
+                            System.err.print("checkSFTPFolderExist() Error creating "+curfolder+" : " + ex.getMessage());
+                            throw new Exception( "checkSFTPFolderExist() Error creating "+curfolder+" : " + ex.getMessage() );
+                        }
                     }
                 }
             }

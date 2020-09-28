@@ -2761,11 +2761,20 @@ public class db {
     }
     
     
+
+    
     
     //
     //  Create all beans for given where condition
     //
-    //  ControlId is automatically created if not exist (from controlId)
+    static public ArrayList<Object> load_beans( String databaseSchemaTable, String columns, String where_condition, long maxRows ) {
+        return load_beans( (HttpServletRequest)null, (String)null, databaseSchemaTable, columns, where_condition, maxRows );
+    }
+    
+    //
+    //  Create all beans for given where condition
+    //
+    //  ControlId is automatically created if not exist (from databaseSchemaTable)
     //
     //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
     //
