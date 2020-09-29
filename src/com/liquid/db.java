@@ -1899,6 +1899,30 @@ public class db {
         return get_bean(request, ids, format, null, null, maxRows);
     }
     
+    /**
+     * <h3>Get the bean by primary keys</h3>
+     * <p>
+     * This method get bean from the primary key list, creating it at runtime
+     *
+     * @param  requestParam  the Http requet (HttpServletRequest)
+     * @param  ids the comma separated string of the primary keys (String)
+     * @param  format the format of the output, may by :
+     *          * all o full, for all columns of the control:
+     *          jsonObject, for data in json format (array of string or array or array of string)
+     *          array, for data in ArrayList of String format (array of string or array or array of string)
+     *          string, for data in csv format
+     *          bean, for data in a bean or ArrayList of Class of beans
+     * @param  fields the field list, as comma separated string, of the output, null or empty for primary key only
+     * @param  maxRows the maximun number of rows to retrieve (long)
+
+     * @return      comma separated values string, null if no selection defined
+     * @see         db
+     */
+    static public Object get_bean(Object request, String ids, String format, String fields, long maxRows) {
+        return get_bean(request, ids, format, fields, null, maxRows);
+    }    
+    
+    
     // formato di uscita : json o bean
     // fields : * all o full per tutti i campi
     // jsonObject : JSON campi o record
@@ -4605,6 +4629,9 @@ public class db {
     // Wrappers
     static public String getSelection(Object tbl_wrk, Object params) {
         return workspace.getSelection(tbl_wrk, (String)params);
+    }
+    static public long getSelectionCount(Object tbl_wrk, Object params) {
+        return workspace.getSelectionCount(tbl_wrk, (String)params);
     }
     static public String getData(Object tbl_wrk, Object params, String column) {
         return workspace.getData(tbl_wrk, (String)params, (String)column);

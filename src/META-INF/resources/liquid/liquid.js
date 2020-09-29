@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.34   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.35   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  26-09-2020
 //  TODO : see trello.com
 //
@@ -479,7 +479,7 @@ class LiquidCtrl {
                     suppressMenuHide: true,
                     singleClickEdit: (typeof this.tableJson.singleClickEdit !== "undefined" ? this.tableJson.singleClickEdit : false),
                     groupSelectsChildren: false,
-                    rowSelection: (typeof this.tableJson.rowSelection !== "undefined" && this.tableJson.rowSelection ? this.tableJson.rowSelection : "single"),
+                    rowSelection: (isDef(this.tableJson.rowSelection) && this.tableJson.rowSelection ? this.tableJson.rowSelection : "single"),
                     rowMultiSelectWithClick: (typeof this.tableJson.rowMultiSelectWithClick !== "undefined" ? this.tableJson.rowMultiSelectWithClick : (this.tableJson.mode === "lookup"?true:false)),
                     rowDeselection: (typeof this.tableJson.rowDeselection !== "undefined" ? this.tableJson.rowDeselection : false),
                     editType: (typeof this.tableJson.editType !== "undefined" ? this.tableJson.editType : ''),
@@ -618,6 +618,9 @@ class LiquidCtrl {
                                 liquid.lastSelectedId = event.node.id;
                             } else {
                                 // deselection event
+                                if(!isPhantomNode) {
+                                    Liquid.processNodeSelected(liquid, event.node, event.node.isSelected());
+                                }                                    
                                 if(liquid.tableJson.rowDeselection === true || liquid.gridOptions.rowSelection === "multiple") {
                                     Liquid.onEvent(liquid, "onRowUnSelected", event.data);
                                     liquid.lastSelectedId = null;
@@ -1996,7 +1999,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.34,
+    version: 1.35,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -3412,8 +3415,24 @@ var Liquid = {
         // solving external link ( "table":"@control.property" )
         Liquid.solveExpressionField(liquid.tableJson, "schema", liquid);
         Liquid.solveExpressionField(liquid.tableJson, "table", liquid);
+        
+        if(isDef(liquid.tableJson.rowSelection)) {
+            if(liquid.tableJson.rowSelection.toLowerCase() === "multiple") {
+                liquid.tableJson.checkboxSelection = true;
+            }
+            var loop = 0;
+            while(loop<liquid.tableJson.columns.length) {
+                if(liquid.tableJson.columns[0].visible === false) {
+                    liquid.tableJson.columns[liquid.tableJson.columns.length] = liquid.tableJson.columns[0];
+                    liquid.tableJson.columns.splice(0, 1);
+                } else {
+                    break;
+                }
+                loop++;
+            }
+        }
 
-        if(typeof liquid.tableJson.primaryKeyField === 'undefined') {
+        if(!isDef(liquid.tableJson.primaryKeyField)) {
             if(isDef(liquid.tableJson.primaryKey)) {
                 var keyColumn = Liquid.getColumn(liquid, liquid.tableJson.primaryKey);
                 if(keyColumn) liquid.tableJson.primaryKeyField = keyColumn.field;
@@ -3549,7 +3568,7 @@ var Liquid = {
                             }
                             return true;
                         }) : false)
-                        ,headerCheckboxSelection: (ic === 0 ? typeof liquid.tableJson.rowSelection !== 'undefined' && liquid.tableJson.rowSelection === "multiple" ? (typeof liquid.tableJson.headerCheckboxSelection !== "undefined" ? liquid.tableJson.headerCheckboxSelection : true) : (typeof liquid.tableJson.headerCheckboxSelection !== "undefined" ? liquid.tableJson.headerCheckboxSelection : false) : false)
+                        ,headerCheckboxSelection: (ic === 0 ? isDef(liquid.tableJson.rowSelection) && liquid.tableJson.rowSelection === "multiple" ? (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : true) : (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : false) : false)
                         ,tooltipField: liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].field : null
                         ,headerTooltip: liquid.tableJson.columns[ic].headerTooltip ? liquid.tableJson.columns[ic].field : null
                         ,hide: (liquid.tableJson.columns[ic].visible === false ? true : false)
@@ -8905,14 +8924,14 @@ var Liquid = {
                 for(var i=0; i<liquid.selection.exclude.length; i++) {
                     if(idsUnselected.length > 0) idsUnselected += ",";
                     var value = liquid.selection.exclude[i];
-                    if(typeof value === 'string') idsUnselected += '"' + value.replace(/"/g, "\\\"") ; else idsUnselected += value;
+                    if(typeof value === 'string') idsUnselected += value.replace(/"/g, "\\\"") ; else idsUnselected += '"' + value + '"';
                 }
             } else {
                 // include list
                 for(var i=0; i<liquid.selection.include.length; i++) {
                     if(idsSelected.length > 0) idsSelected += ",";
                     var value = liquid.selection.include[i];
-                    if(typeof value === 'string') idsSelected += '"' + value.replace(/"/g, "\\\"") + '"'; else idsSelected += value;
+                    if(typeof value === 'string') idsSelected += value.replace(/"/g, "\\\""); else idsSelected += '"' + value + '"';
                 }
             }
         }
@@ -14187,8 +14206,15 @@ var Liquid = {
                 } else {                    
                     index = liquid.selection.exclude.indexOf(id);
                     if(index < 0) liquid.selection.exclude.push(id);
-                    index = liquid.selection.exclude.indexOf(__objectId);
-                    if(index < 0) liquid.selection.exclude.push(__objectId);
+                    index = liquid.selection.excludeObjectId.indexOf(__objectId);
+                    if(index < 0) liquid.selection.excludeObjectId.push(__objectId);
+                    if(liquid.selection.exclude.length >= liquid.nRows) {
+                        liquid.selection.all = false;
+                        liquid.selection.include = [];
+                        liquid.selection.includeObjectId = [];
+                        liquid.selection.exclude = [];
+                        liquid.selection.excludeObjectId = [];
+                    }
                 }
             } else {
                 if(bSelected) {

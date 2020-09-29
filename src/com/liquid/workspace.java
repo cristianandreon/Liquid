@@ -2316,7 +2316,7 @@ public class workspace {
      * \nEx.: !4,5 means the selction is all rows NOT having as primary key "4", "5"
      *
      * @param  controlId  the control id (String)
-     * @param  params the class instance of the new owner (Object)
+     * @param  params the parameters from the Requiest (String)
 
      * @return      comma separated values string, null if no selection defined
      * @see         workspace
@@ -2358,6 +2358,57 @@ public class workspace {
         }
         return null;
     }
+    
+    /**
+     * <h3>Get the current seletion count of a control</h3>
+     * <p>
+     * This method count how many items is defined in the selection
+     *
+     * @param  controlId  the control id (String)
+     * @param  params the parameters from the Requiest (String)
+
+     * @return      long
+     * @see         workspace
+     */
+    static public long getSelectionCount(String controlId, String params) {
+        try {
+            JSONArray paramsJson = (JSONArray)(new JSONObject(params)).getJSONArray("params");
+            for(int i=0; i<paramsJson.length(); i++) {
+                Object ojson= paramsJson.get(i);
+                if(ojson instanceof JSONObject) {
+                    JSONObject obj = (JSONObject)paramsJson.get(i);
+                    String ids = null;
+                    if(obj != null) {
+                        if(obj.has("name")) {
+                            if(obj.getString("name").equalsIgnoreCase(controlId)) {
+                                String prefix = "";
+                                if(obj.has("ids")) {
+                                    // All o lista inclusione
+                                    ids = obj.getString("ids");
+                                } else if(obj.has("sel")) {
+                                    ids = obj.getString("sel");
+                                }
+                                if(ids != null && !ids.isEmpty()) {
+                                    if(obj.has("unsel")) {
+                                        // Lista exclusione
+                                        long count = obj.getString("unsel").split(",").length;
+                                        return -count;
+                                    } else {
+                                        long count = ids.split(",").length;
+                                        return count;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (JSONException ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return 0L;
+    }
+    
     static public String getData(String controlId, String params, String column) {
         try {
             JSONArray paramsJson = (JSONArray)(new JSONObject(params)).getJSONArray("params");
@@ -2394,6 +2445,9 @@ public class workspace {
     // Wrappers
     static public String getSelection(Object tbl_wrk, String params) {
         return getSelection(((workspace)tbl_wrk).controlId, params);
+    }
+    static public long getSelectionCount(Object tbl_wrk, String params) {
+        return getSelectionCount(((workspace)tbl_wrk).controlId, params);
     }
     static public String getData(Object tbl_wrk, String params, String column) {
         return getData(((workspace)tbl_wrk).controlId, params, column);

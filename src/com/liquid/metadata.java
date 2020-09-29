@@ -1679,20 +1679,20 @@ public class metadata {
         if ("mysql".equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
         } else if ("mariadb".equalsIgnoreCase(driver)) {
-            sql = "ALTER TABLE\n" + ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+            sql = "ALTER TABLE\n" + schemaTable;
         } else if ("postgres".equalsIgnoreCase(driver)) {
-            sql = "ALTER TABLE\n" + ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+            sql = "ALTER TABLE\n" + schemaTable;
         } else if ("oracle".equalsIgnoreCase(driver)) {
-            sql = "ALTER TABLE\n" + ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+            sql = "ALTER TABLE\n" + schemaTable;
         } else if ("sqlserver".equalsIgnoreCase(driver)) {
-            sql = "ALTER TABLE\n" + ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+            sql = "ALTER TABLE\n" + schemaTable;
         }
 
         if ("mysql".equalsIgnoreCase(driver)) {
         } else if ("mariadb".equalsIgnoreCase(driver)) {
         } else if ("postgres".equalsIgnoreCase(driver)) {
         } else if ("oracle".equalsIgnoreCase(driver)) {
-            sql += "ADD\n";
+            sql += " ADD\n";
             sql += "(" 
                     + field 
                     + " " + type + "("+size+") " 
