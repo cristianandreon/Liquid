@@ -66,7 +66,9 @@ public class login {
     static private boolean debug = true;
     static private String password_seed = "Liquid2020";
     
+    static public int minCharsUser = 3;
     static public int minCharsPasswords = 6;
+    private static boolean allowDuplicateUserName = false;
 
     static public void setApplicationId(HttpServletRequest request, String applicationId) {
         if(request != null)
@@ -1172,7 +1174,7 @@ public class login {
 
                 } else {
                     boolean isValidUserId = true;
-                    if(sUserID != null && sUserID.length() < 3) isValidUserId = false;
+                    if(sUserID != null && sUserID.length() < minCharsUser && minCharsUser>0) isValidUserId = false;
 
                     if(!isValidUserId) {
                         if (cLang.equalsIgnoreCase("IT")) {
@@ -1250,15 +1252,17 @@ public class login {
                             } else {
 
                                 // Controllo campo userId
-                                if(sUserID != null && !sUserID.isEmpty()) {
-                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
-                                    } else if("postgres".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
-                                    } else if("oracle".equalsIgnoreCase(driver)) {
-                                    } else if("sqlserver".equalsIgnoreCase(driver)) {
+                                if(!allowDuplicateUserName) {
+                                    if(sUserID != null && !sUserID.isEmpty()) {
+                                        if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
+                                        } else if("postgres".equalsIgnoreCase(driver)) {
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
+                                        } else if("oracle".equalsIgnoreCase(driver)) {
+                                        } else if("sqlserver".equalsIgnoreCase(driver)) {
+                                        }
+                                        isUserIdDuplicate = check_login_field(conn, sqlSTMT);
                                     }
-                                    isUserIdDuplicate = check_login_field(conn, sqlSTMT);
                                 }
 
                                 if (isUserIdDuplicate) {

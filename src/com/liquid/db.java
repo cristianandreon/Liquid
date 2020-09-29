@@ -2880,17 +2880,15 @@ public class db {
                 }
             }
 
-            if(!where_condition.isEmpty()) {
-                if(where_condition.indexOf(" WHERE ") < 0) {
-                    if(where_condition.indexOf("WHERE ") < 0) {
-                        where_condition = " WHERE " + where_condition;
-                    } else {
-                        where_condition = " " + where_condition;
-                    }
+            if(where_condition != null && !where_condition.isEmpty()) {
+                if(where_condition.toUpperCase().indexOf("WHERE ") < 0) {
+                    where_condition = " WHERE " + where_condition;
+                } else {
+                    where_condition = " " + where_condition;
                 }
             }
                     
-            String executingQuery = "SELECT * FROM " + tbl_wrk.schemaTable + where_condition;
+            String executingQuery = "SELECT * FROM " + tbl_wrk.schemaTable + (where_condition != null ? where_condition : "");
 
             conn = connection.getConnection( null, request, tbl_wrk.tableJson );
 

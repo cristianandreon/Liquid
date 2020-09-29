@@ -1014,4 +1014,54 @@ public class utility {
         } 
         return newList; 
     } 
+    
+    public static String htmlEncode(String s, boolean encodeSpecialChars) {
+        if (s != null) {
+            StringBuilder str = new StringBuilder();
+
+            for (int j = 0; j < s.length(); j++) {
+                char c = s.charAt(j);
+
+                // encode standard ASCII characters into HTML entities where needed
+                if (c < '\200') {
+                    switch (c) {
+                        case '"':
+                            str.append("&quot;");
+
+                            break;
+
+                        case '&':
+                            str.append("&amp;");
+
+                            break;
+
+                        case '<':
+                            str.append("&lt;");
+
+                            break;
+
+                        case '>':
+                            str.append("&gt;");
+
+                            break;
+
+                        default:
+                            str.append(c);
+                    }
+                } // encode 'ugly' characters (ie Word "curvy" quotes etc)
+                else if (encodeSpecialChars && (c < '\377')) {
+                    String hexChars = "0123456789ABCDEF";
+                    int a = c % 16;
+                    int b = (c - a) / 16;
+                    str.append("&#x").append(hexChars.charAt(b)).append(hexChars.charAt(a)).append(';');
+                } //add other characters back in - to handle charactersets
+                //other than ascii
+                else {
+                    str.append(c);
+                }
+            }
+            return str.toString();
+        }
+        return null;
+    }
 }

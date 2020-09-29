@@ -1671,4 +1671,49 @@ public class metadata {
         }
         return recHtml;
     }
+
+    static public String getAddColumnSQL(String driver, String database, String schema, String table, String field, String type, String size, String nullable, String autoincrement, String sDefault, String sRemarks) {
+        String sql = "";
+        String schemaTable = ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+
+        if ("mysql".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + schemaTable;
+        } else if ("mariadb".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+        } else if ("postgres".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+        } else if ("oracle".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+        } else if ("sqlserver".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+        }
+
+        if ("mysql".equalsIgnoreCase(driver)) {
+        } else if ("mariadb".equalsIgnoreCase(driver)) {
+        } else if ("postgres".equalsIgnoreCase(driver)) {
+        } else if ("oracle".equalsIgnoreCase(driver)) {
+            sql += "ADD\n";
+            sql += "(" 
+                    + field 
+                    + " " + type + "("+size+") " 
+                    + (nullable != null && "Y".equalsIgnoreCase(nullable) ? "NOT NULL " : "")
+                    + (sDefault != null && !sDefault.isEmpty() ? " DEFAULT " + sDefault : "")
+                    + ");\n";
+        }
+        
+        if(sRemarks != null && !sRemarks.isEmpty()) {
+            sql += "\n";
+            if ("mysql".equalsIgnoreCase(driver)) {
+            } else if ("mariadb".equalsIgnoreCase(driver)) {
+            } else if ("postgres".equalsIgnoreCase(driver)) {
+            } else if ("oracle".equalsIgnoreCase(driver)) {
+                sql += "COMMENT ON COLUMN "+schemaTable+"."+field
+                        +" IS "+sRemarks;
+            } else if ("sqlserver".equalsIgnoreCase(driver)) {
+            }
+        }
+        
+        return sql;
+    }
+    
 }

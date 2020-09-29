@@ -120,8 +120,14 @@ public class PojoGenerator {
                     classBody += "\n\t// "+propName;
                     
                     // add getter/setter
-                    cc.addMethod(generateGetter(cc, propName, propClass));
-                    cc.addMethod(generateSetter(cc, propName, propClass));
+                    try {
+                    
+                        cc.addMethod(generateGetter(cc, propName, propClass));
+
+                    } catch(Throwable th) {
+                        System.err.println("// PojoGenerator.generate() Error:" + th.getLocalizedMessage()+" on field:'"+propName+"' ..make sure to include javassist.jar in your project");
+                        throw th;
+                    }
                     
                     // Bug in JAVAASSIST ???
                     // add isChanged getter/setter
