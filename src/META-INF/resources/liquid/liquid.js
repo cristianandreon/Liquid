@@ -3454,6 +3454,13 @@ var Liquid = {
         if(isDef(liquid.tableJson.columns)) {
             if(isDef(liquid.tableJson)) {
                 for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                    
+                    if(liquid.tableJson.columns[ic].name.toUpperCase() === 'DEFAULT') {
+                        var err = "LIQUID: Please avod to user default as field in control:"+liquid.controlId;
+                        alert(err);
+                        console.error(err);
+                    }
+                    
                     try {
                         var cellStyle = (liquid.tableJson.columns[ic].cellStyle ? JSON.parse(liquid.tableJson.columns[ic].cellStyle.replace(/'/g, "\"")) : null);
                     } catch (e) { }
@@ -3494,6 +3501,7 @@ var Liquid = {
                             var values = liquid.tableJson.columns[ic].editorValues !== 'undefined' ? liquid.tableJson.columns[ic].editorValues : liquid.tableJson.columns[ic].editor.values;
                             if(liquid.tableJson.columns[ic].editor === 'values' ||liquid.tableJson.columns[ic].editor === 'list')
                                 liquid.tableJson.columns[ic].editor.type = 'values';
+                            
                             cellEditor = SelectEditor;
                             cellEditorParams = { 
                                      liquid: liquid
@@ -3505,6 +3513,7 @@ var Liquid = {
                                     ,targetColumn: liquid.tableJson.columns[ic].editor.targetColumn
                                     ,cache: liquid.tableJson.columns[ic].editor.cache
                                     ,values: values 
+                                    ,codes: codes
                                 };
                         } else if(Liquid.isSunEditor(liquid.tableJson.columns[ic])) {
                             cellEditor = SunEditor;
@@ -17940,54 +17949,60 @@ SelectEditor.prototype.init = function(params) {
     Liquid.solveExpressionField(this, "idColumn", this.liquid);
     Liquid.solveExpressionField(this, "targetColumn", this.liquid);
     
-    var xhr = new XMLHttpRequest();
-    if(params.colDef.cellEditorParams.cache === false || typeof params.colDef.cellEditorParams.values === 'undefined' || params.colDef.cellEditorParams.values === null) {
-        xhr.open('POST', glLiquidServlet + '?operation=get&controlId=' + this.liquid.controlId + (typeof this.liquid.srcForeignWrk !== "undefined" && this.liquid.srcForeignWrk ? '&tblWrk=' + this.liquid.srcForeignWrk : '')
-                + (this.table ? '&targetTable=' + this.table : "")
-                + '&targetColumn=' + this.column
-                + (this.idColumn ? '&idColumn=' + this.idColumn : '')
-                + '&targetMode=' + params.colDef.cellEditorParams.editor, false);
-        xhr.send();
-        if(xhr.status === 200) {
-            try {
-                var resultJson = JSON.parse(xhr.responseText);
-                if(isDef(resultJson.values)) {
-                    params.colDef.cellEditorParams.values = resultJson.values;
-                    params.colDef.cellEditorParams.codes = resultJson.codes;
-                } else if(isDef(resultJson.resultSet)) {
-                    params.colDef.cellEditorParams.values = [];
-                    params.colDef.cellEditorParams.codes = [];
-                    for(var i=0; i<resultJson.resultSet.length; i++) {
-                        var rs = resultJson.resultSet[i];
-                        if(rs) {
-                            params.colDef.cellEditorParams.values.push(rs[params.colDef.cellEditorParams.column]);
-                            if(isDef(params.colDef.cellEditorParams.idColumn))
-                                params.colDef.cellEditorParams.codes.push(rs[params.colDef.cellEditorParams.idColumn]);
+    if(this.table && this.column) {
+
+        var xhr = new XMLHttpRequest();
+        if(params.colDef.cellEditorParams.cache === false || typeof params.colDef.cellEditorParams.values === 'undefined' || params.colDef.cellEditorParams.values === null) {
+            xhr.open('POST', glLiquidServlet + '?operation=get&controlId=' + this.liquid.controlId + (typeof this.liquid.srcForeignWrk !== "undefined" && this.liquid.srcForeignWrk ? '&tblWrk=' + this.liquid.srcForeignWrk : '')
+                    + (this.table ? '&targetTable=' + this.table : "")
+                    + '&targetColumn=' + this.column
+                    + (this.idColumn ? '&idColumn=' + this.idColumn : '')
+                    + '&targetMode=' + params.colDef.cellEditorParams.editor, false);
+            xhr.send();
+            if(xhr.status === 200) {
+                try {
+                    var resultJson = JSON.parse(xhr.responseText);
+                    if(isDef(resultJson.values)) {
+                        params.colDef.cellEditorParams.values = resultJson.values;
+                        params.colDef.cellEditorParams.codes = resultJson.codes;
+                    } else if(isDef(resultJson.resultSet)) {
+                        params.colDef.cellEditorParams.values = [];
+                        params.colDef.cellEditorParams.codes = [];
+                        for(var i=0; i<resultJson.resultSet.length; i++) {
+                            var rs = resultJson.resultSet[i];
+                            if(rs) {
+                                params.colDef.cellEditorParams.values.push(rs[params.colDef.cellEditorParams.column]);
+                                if(isDef(params.colDef.cellEditorParams.idColumn))
+                                    params.colDef.cellEditorParams.codes.push(rs[params.colDef.cellEditorParams.idColumn]);
+                            }
+                        }
+                    } else {
+                        console.error("ERROR : Undetected result in SelectEditor()...");
+                    }
+                    if(params.showToast) {
+                        var values = params.colDef.cellEditorParams.values
+                        if(values.length>0) {
+                            var msg = Liquid.lang === 'eng' ? ("Reading "+this.liquid.tableJson.table+"."+this.column+" done</br></br>Found "+values.length + "item(s)") : ("Lettura "+this.liquid.tableJson.table+"."+this.column+" completata</br></br>Trovat"+(values.length===1?"a":"e")+" "+values.length + " rig"+(values.length===1 ? "a":"he") );
+                            Liquid.showToast("LIQUID", msg, "success");
+                        } else {
+                            var msg = Liquid.lang === 'eng' ? ("Reading "+this.liquid.tableJson.table+"."+this.column+" done</br></br>No items found") : ("Lettura "+this.liquid.tableJson.table+"."+this.column+" completata</br></br>Nessuna riga trovata" );
+                            Liquid.showToast("LIQUID", msg, "warning");
                         }
                     }
-                } else {
-                    console.error("ERROR : Undetected result in SelectEditor()...");
-                }
-                if(params.showToast) {
-                    var values = params.colDef.cellEditorParams.values
-                    if(values.length>0) {
-                        var msg = Liquid.lang === 'eng' ? ("Reading "+this.liquid.tableJson.table+"."+this.column+" done</br></br>Found "+values.length + "item(s)") : ("Lettura "+this.liquid.tableJson.table+"."+this.column+" completata</br></br>Trovat"+(values.length===1?"a":"e")+" "+values.length + " rig"+(values.length===1 ? "a":"he") );
-                        Liquid.showToast("LIQUID", msg, "success");
-                    } else {
-                        var msg = Liquid.lang === 'eng' ? ("Reading "+this.liquid.tableJson.table+"."+this.column+" done</br></br>No items found") : ("Lettura "+this.liquid.tableJson.table+"."+this.column+" completata</br></br>Nessuna riga trovata" );
-                        Liquid.showToast("LIQUID", msg, "warning");
+
+                    if(resultJson.error) {
+                        var err = "";
+                        try { err = atob(httpResultJson.error); } catch(e) { err = httpResultJson.error; }
+                        console.error("Error reading data: " + err);
                     }
+                } catch (e) {
+                    console.error(e);
                 }
-                
-                if(resultJson.error) {
-                    var err = "";
-                    try { err = atob(httpResultJson.error); } catch(e) { err = httpResultJson.error; }
-                    console.error("Error reading data: " + err);
-                }
-            } catch (e) {
-                console.error(e);
             }
         }
+    } else {
+        params.colDef.cellEditorParams.values = params.values;
+        params.colDef.cellEditorParams.codes = params.codes;        
     }
     if(typeof params.headless === 'undefined' || !params.headless) {
         var values = (params.colDef.cellEditorParams ? params.colDef.cellEditorParams.values : null);
