@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.35   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  26-09-2020
+// Liquid ver.1.36   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  30-09-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -1999,7 +1999,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.35,
+    version: 1.36,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -3498,8 +3498,20 @@ var Liquid = {
                             }
                         } else if(liquid.tableJson.columns[ic].editor === 'values' || liquid.tableJson.columns[ic].editor.type === 'values'
                                 || liquid.tableJson.columns[ic].editor === 'list' || liquid.tableJson.columns[ic].editor.type === 'list') {
-                            var values = liquid.tableJson.columns[ic].editorValues !== 'undefined' ? liquid.tableJson.columns[ic].editorValues : liquid.tableJson.columns[ic].editor.values;
-                            if(liquid.tableJson.columns[ic].editor === 'values' ||liquid.tableJson.columns[ic].editor === 'list')
+                            
+                            var values = null;
+                            if(isDef(liquid.tableJson.columns[ic].editorValues))
+                                values = liquid.tableJson.columns[ic].editorValues;
+                            if(isDef(liquid.tableJson.columns[ic].editor.values))
+                                values = liquid.tableJson.columns[ic].editor.values;
+
+                            var codes = null;
+                            if(isDef(liquid.tableJson.columns[ic].editorCodes))
+                                codes = liquid.tableJson.columns[ic].editorCodes;
+                            if(isDef(liquid.tableJson.columns[ic].editor.codes))
+                                codes = liquid.tableJson.columns[ic].editor.codes;
+                                
+                            if(liquid.tableJson.columns[ic].editor === 'values' || liquid.tableJson.columns[ic].editor === 'list')
                                 liquid.tableJson.columns[ic].editor.type = 'values';
                             
                             cellEditor = SelectEditor;

@@ -1381,7 +1381,8 @@ public class workspace {
                         owner = (Object) cls.newInstance();
                     } catch(ClassNotFoundException cnf) {
                         if(workspace.projectMode) {
-                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, cnf);
+                            // Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, cnf);
+                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Cannot create owner class instance '"+ownerClassName+"' (class not found) in the control: "+controlId);
                         }
                     } catch(Throwable th) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
