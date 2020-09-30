@@ -845,7 +845,8 @@ class LiquidCtrl {
 
                     var classStyle = getComputedStyle(this.outDivObj);
                     if(!classStyle.position || classStyle.position === 'static') {
-                        this.outDivObj.style.position = 'relative';
+                        // console.warn("WARNING : Changed position atttrib on HTML element :" + this.parentObjId+" on control:"+this.controlId);
+                        // this.outDivObj.style.position = 'relative';
                     }
 
                     if(isDef(this.tableJson.class)) {
@@ -9053,8 +9054,10 @@ var Liquid = {
                     liquid.parentObj.ondrop = function(event) { Liquid.onDrop(event); };
                     liquid.parentObj.ondragover = function(event) { Liquid.onAllowDrop(event); };
                     
-                    if(liquid.parentObj.style.position !== 'relative' && liquid.parentObj.style.position !== 'absolute')
+                    if(liquid.parentObj.style.position !== 'relative' && liquid.parentObj.style.position !== '' && liquid.parentObj.style.position !== 'absolute') {
+                        console.warn("WARNING : Changed position atttrib on HTML element :" + liquid.parentObjId+" on control:"+liquid.controlId);
                         liquid.parentObj.style.position = 'relative';
+                    }
 
     
                     if(glLiquidContainers.indexOf(parentObjId) < 0) {
@@ -9879,6 +9882,10 @@ var Liquid = {
             if(liquid instanceof LiquidCtrl) {
                 var referenceHeight = 0;
                 var left, top, width, height;
+                var lastDisplay = null;
+                var lastPos = null;
+                var lastLeft = null;
+                var nodesVisibilityFitted = [];
                 
                 if(liquid.mode !== "lookup") {
                     if(liquid.isIconic) {
@@ -9973,20 +9980,56 @@ var Liquid = {
                             if(liquid.outDivObj)
                                 liquid.outDivObjSize = { y:liquid.outDivObj.offsetTop, x:liquid.outDivObj.offsetLeft, wx:liquid.outDivObj.offsetWidth, wy:liquid.outDivObj.offsetHeight };
                         }
-                    }                
+                    }
                     liquid.referenceHeightObj = liquid.outDivObj;
                     if(liquid.referenceHeightObj) {
-                        var lastDisplay = liquid.referenceHeightObj.style.display;
-                        var lastPos = liquid.referenceHeightObj.style.position;
-                        var lastLeft = liquid.referenceHeightObj.style.left;
+                        referenceHeight = liquid.referenceHeightObj.clientHeight;
+                        if(referenceHeight <= 0) {
+                            if(!liquid.isResizing) {
+
+                                // liquid.pendingResize = true;
+                                // return;
+                            
+                                // try fitting visibility
+                                var node = liquid.referenceHeightObj.parentNode;
+                                while(isDef(node)) {
+                                    if(node.style) {
+                                        if(node.style.display === 'none') {
+                                            nodesVisibilityFitted.push( { node:node, visibility:node.style.visibility } );
+                                            node.style.display = 'block';
+                                            node.style.visibility = 'hidden';
+                                        }
+                                    }
+                                    node = node.parentNode;
+                                    if(node.nodeName === "HTML") break;
+                                }
+                                referenceHeight = liquid.referenceHeightObj.clientHeight;
+                                for(var inode=0; inode<nodesVisibilityFitted.length; inode++) {
+                                    nodesVisibilityFitted[inode].node.style.display = 'none';
+                                    nodesVisibilityFitted[inode].node.style.visibility = nodesVisibilityFitted[inode].visibility;
+                                }
+                                if(referenceHeight <= 0) {
+                                    console.error("ERROR: on control '" + liquid.controlId + "' : unable to resize, reference height is invalid (" + referenceHeight+")");
+                                    liquid.pendingResize = true;
+                                    return;
+                                }
+                            }
+                        }
+                        
+                        lastDisplay = liquid.referenceHeightObj.style.display;
+                        lastPos = liquid.referenceHeightObj.style.position;
+                        lastLeft = liquid.referenceHeightObj.style.left;
                         if(liquid.referenceHeightObj.clientHeight <= 0) {
                             liquid.referenceHeightObj.style.display = "block";
                             liquid.referenceHeightObj.style.position = "absolute";
                             liquid.referenceHeightObj.style.left = "+9999em";
                         }
+                        
+                    } else {
+                        console.error("ERROR: on control '" + liquid.controlId + "' : unable to resize, reference object not detected");
+                        liquid.pendingResize = true;
+                        return;
                     }
-                    if(liquid.referenceHeightObj) referenceHeight = liquid.referenceHeightObj.clientHeight;
-                    else return;
                 } else {
                     var lookupHeight = null;
                     if(isNaN(liquid.lookupHeight)) {
@@ -10003,7 +10046,7 @@ var Liquid = {
                     if(!isNaN(lookupHeight)) {
                         referenceHeight = Number(lookupHeight);
                     } else {
-                        console.error("ERROR: " + liquid.controlId + " undetected lookup height:" + liquid.lookupHeight);
+                        console.error("ERROR:  on control '" + liquid.controlId + "' : undetected lookup height:" + liquid.lookupHeight);
                     }
                 }
                 liquid.multiPanelsHeight = 0;
@@ -10056,9 +10099,9 @@ var Liquid = {
                     liquid.needResize = true;
                 }
                 if(liquid.referenceHeightObj) {
-                    liquid.referenceHeightObj.style.display = lastDisplay;
-                    liquid.referenceHeightObj.style.position = lastPos;
-                    liquid.referenceHeightObj.style.left = lastLeft;
+                    if(isDef(lastDisplay)) liquid.referenceHeightObj.style.display = lastDisplay;
+                    if(isDef(lastPos)) liquid.referenceHeightObj.style.position = lastPos;
+                    if(isDef(lastLeft)) liquid.referenceHeightObj.style.left = lastLeft;
                 }
                 
                 if(liquid.foreignTables) {
@@ -10104,6 +10147,33 @@ var Liquid = {
             } else if(liquid instanceof LiquidMenuXCtrl) {
                 if(liquid.stateClose === false && liquid.stateMoving === false) {
                     Liquid.setMenuIcon(liquid.menuIconObj, liquid, liquid.outDivObj, liquid.menuIconObj, liquid.stateClose, false);
+                }
+            }
+            
+            delete liquid.pendingResize;
+        }
+    },
+    onVisible:function(objOrId) {
+        if(objOrId) {
+            setTimeout(function(){ Liquid.onVisibleProcess(objOrId); }, 50);
+        }
+    },
+    onVisibleProcess:function(objOrId) {
+        var obj = objOrId;
+        if(typeof objOrId === 'string') obj = document.getElementById(objOrId);
+        if(obj instanceof HTMLElement) {
+            if(obj.childNodes) {
+                for(var i=0; i<obj.childNodes.length; i++) {
+                    if(obj.childNodes[i].nodeType === 1) {
+                        var o = obj.childNodes[i];
+                        var controlId = o.getAttribute("controlId");
+                        if(controlId) {
+                            Liquid.onResize(o);
+                        } else {
+                            if(o.childNodes) 
+                                Liquid.onVisible(o);
+                        }
+                    }
                 }
             }
         }
@@ -10174,7 +10244,7 @@ var Liquid = {
                         var command = liquid.tableJson.commands[i];
                         if(isDef(command.name)) {
                             if(command.linkedLabelObj)
-                                    command.linkedLabelObj.innerHTML = (isDef(command.text) ? command.text : "");                            
+                                command.linkedLabelObj.innerHTML = (isDef(command.text) ? command.text : "");
                             if(isDef(command.rollbackObj)) {
                                 jQ1124( command.rollbackObj ).slideUp( "fast", function() {} );
                             }
@@ -11492,7 +11562,7 @@ var Liquid = {
                                 layout.nRows = 1;
                             layout.itemsMaxHeight = layout.bodyContainerObj.clientHeight / layout.nRows;
                         } else {
-                            /// setTimeout(function(){ Liquid.linkLayoutToFields(liquid, layout, layout.bodyContainerObj, bSetup); }, 3000);                            
+                            /// setTimeout(function(){ Liquid.linkLayoutToFields(liquid, layout, layout.bodyContainerObj, bSetup); }, 3000);
                             return;
                         }
                         // layout.bodyContainerObj.style.display = lastDisplay;
@@ -14871,7 +14941,7 @@ var Liquid = {
             }
             Liquid.onResize(liquid);
         }
-    },
+    },            
     transferProperties:function(sourceObject, targetObject, propsToTransfer) {
         return Liquid.transferFeaturesProps(null, sourceObject, targetObject, propsToTransfer);
     },
