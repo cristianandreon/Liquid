@@ -89,7 +89,9 @@ public class connection {
         return result;
     }
     
-    // Servizio lettura della connessione dalla request
+    //
+    // Reading connection fron the request
+    //
     static public String getConnectionString( HttpServletRequest request, JspWriter out ) {
         String result = "";
         try {
@@ -236,7 +238,9 @@ public class connection {
     }
     
     
-    // Servizio lettura della descrizione della connessione
+    //
+    // Getting connection description
+    //
     static public String getConnectionDesc( HttpServletRequest request, JspWriter out ) {
         String connectionDesc = null;
         String result = "";
@@ -285,9 +289,12 @@ public class connection {
     }
     
     static public String getConnectionURL( String driver, String host, String database, String user, String password) {
+        return getConnectionURL( driver, host, database, user, password, null);
+    }
+    static public String getConnectionURL( String driver, String host, String database, String user, String password, String service) {
     	try {            
             if("oracle".equalsIgnoreCase(driver)) {
-                return "jdbc:oracle:thin:@"+host+":1521:xe"+","+user+","+password;
+                return "jdbc:oracle:thin:@"+host+":1521:"+(service!=null && !service.isEmpty() ? service : "xe")+","+user+","+password;
             } else if("postgres".equalsIgnoreCase(driver)) {
                 return "jdbc:postgresql://"+host+":5432/"+database+","+user+","+password;
             } else if("mysql".equalsIgnoreCase(driver)) {
@@ -299,8 +306,6 @@ public class connection {
             } else {
                 return null;
             }
-            
-            
     	} catch(Throwable th) {
             Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, th);
     	}
@@ -308,6 +313,14 @@ public class connection {
     }
     
     
+    
+    
+    //
+    //
+    //  Exclicit connection
+    //  Ex.: added at runtime by the code
+    //
+    //
     public static class JDBCSource {
         String driver = null; // "mariadb", "mysql", "mariadb", "oracle", "sqlserver"
         String host = null;
@@ -315,12 +328,16 @@ public class connection {
         String database = null;
         String user = null;
         String password = null;
+        String service = null;
         Class driverClass = null;
     }
     
     static ArrayList<JDBCSource> jdbcSources = new ArrayList<JDBCSource> ();
     
-    static public boolean addLiquidDBConnection( String driver, String host, String port, String database, String user, String password) {
+    static public boolean addLiquidDBConnection( String driver, String host, String port, String database, String user, String password ) {
+        return addLiquidDBConnection( driver, host, port, database, user, password, null );
+    }
+    static public boolean addLiquidDBConnection( String driver, String host, String port, String database, String user, String password, String service ) {
         for (int ic=0; ic<jdbcSources.size(); ic++) {
             JDBCSource jdbcSource = jdbcSources.get(ic);
             if(driver == null && jdbcSource.driver == null || (driver != null && driver.equalsIgnoreCase(jdbcSource.driver))) {
@@ -328,7 +345,9 @@ public class connection {
                     if(port == null && jdbcSource.port == null || (port != null && port.equalsIgnoreCase(jdbcSource.port))) {
                         if(database == null && jdbcSource.database == null || (database != null && database.equalsIgnoreCase(jdbcSource.database))) {
                             if(user == null && jdbcSource.user == null || (user != null && user.equalsIgnoreCase(jdbcSource.user))) {
-                                return false;
+                                if(service == null && jdbcSource.service == null || (service != null && user.equalsIgnoreCase(jdbcSource.service))) {
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -342,20 +361,21 @@ public class connection {
         jdbcSource.database = database;
         jdbcSource.user = user;
         jdbcSource.password = password;
+        jdbcSource.service = service;
         jdbcSources.add(jdbcSource);
         return true;        
     }
 
     
     //
-    // Connection with default database
+    // Connection with default database, defined by source previously added
     //
     static public Object [] getLiquidDBConnection() throws Throwable {
         return getLiquidDBConnection(null);
     }
 
     //
-    // Connection to specific database
+    // Connection to specific database, defined by source previously added
     //
     static public Object [] getLiquidDBConnection(String database) throws Throwable {
         Connection conn = null;
@@ -379,6 +399,9 @@ public class connection {
     }
 
     static public Connection getLiquidDBConnection(JDBCSource jdbcSource, String driver, String host, String port, String database, String user, String password) throws Throwable {
+        return getLiquidDBConnection(jdbcSource, driver, host, port, database, user, password, null);
+    }
+    static public Connection getLiquidDBConnection(JDBCSource jdbcSource, String driver, String host, String port, String database, String user, String password, String service) throws Throwable {
         Connection conn = null;
         Class driverClass = (jdbcSource != null ? jdbcSource.driverClass : null);
         if(host == null || host.isEmpty()) host = "localhost";
@@ -386,7 +409,7 @@ public class connection {
             if(port == null || port.isEmpty()) port = "1521";
             if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
             if(jdbcSource != null) jdbcSource.driverClass = driverClass;
-            conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":"+port+":xe",user,password);
+            conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":"+port+":"+(service != null && !service.isEmpty() ? service : "xe"),user,password);
             if(conn != null) return conn;
         } else if("postgres".equalsIgnoreCase(driver)) {
             if(port == null || port.isEmpty()) port = "5432";
