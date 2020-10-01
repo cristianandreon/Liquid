@@ -2744,15 +2744,17 @@ public class workspace {
     }    
     
     public int addSession( ThreadSession threadSession ) {
-        for(int i=0; i<sessions.size(); i++) {
-            ThreadSession ts = sessions.get(i);
-            if(ts != null) {
-                if(ts.threadId == threadSession.threadId) {
-                    return 0;
+        if(threadSession != null) {
+            for(int i=0; i<sessions.size(); i++) {
+                ThreadSession ts = sessions.get(i);
+                if(ts != null) {
+                    if(ts.threadId == threadSession.threadId) {
+                        return 0;
+                    }
                 }
             }
+            sessions.add(threadSession);
         }
-        sessions.add(threadSession);
         return sessions.size();
     }
     

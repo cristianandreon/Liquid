@@ -641,9 +641,9 @@ public class db {
                                     }
 
                                     if(bAddColumnToList) {
-	                                    if(column_alias_list.length()>0)
-	                                        column_alias_list += ",";
-	                                    column_alias_list += column_alias;
+                                        if(column_alias_list.length()>0)
+                                            column_alias_list += ",";
+                                        column_alias_list += column_alias;
                                     }
                                 }
                             }
@@ -681,7 +681,8 @@ public class db {
             String workingTable = "";
             
             if(isCrossTableService && targetTable != null && !targetTable.isEmpty()) {
-                workingTable = targetTable; // tabella spedificata
+                workingTable = (schema != null && !schema.isEmpty() ? schema+"." : "") + targetTable; // tabella spedificata
+                
             } else {
                 workingTable = tbl_wrk.schemaTable;
                 if(isMySQL) {
@@ -763,14 +764,14 @@ public class db {
                             JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                             if(requestJson.has("filtersJson")) {
                                 JSONArray filtersCols = requestJson.getJSONArray("filtersJson");
-                                JSONArray filters = null;
+                                JSONArray filtersDefinition = null;
                                 JSONArray filtersDefinitionCols = null;
                                 int curFilter = -1;
                                 
                                 if(requestJson.has("curFilter")) {
                                     curFilter = requestJson.getInt("curFilter");
-                                    try { filters = tbl_wrk.tableJson.getJSONArray("filters"); } catch (Exception e) {}
-                                    try { filtersDefinitionCols = filters.getJSONObject(curFilter).getJSONArray("columns"); } catch (Exception e) {}
+                                    try { filtersDefinition = tbl_wrk.tableJson.getJSONArray("filters"); } catch (Exception e) {}
+                                    try { filtersDefinitionCols = (filtersDefinition != null ? filtersDefinition.getJSONObject(curFilter).getJSONArray("columns") : null); } catch (Exception e) {}
                                 } else {
                                     if(filtersCols.length() > 0) {
                                         String msg = "Filters Error:unable to get back current filter definition";
@@ -3785,27 +3786,49 @@ public class db {
 	                                                                    if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
 	                                                                        value = getLocalDate(value, colTypes[ic], nullable);
 	                                                                        if(value != null) {
-	                                                                        	// refine
-		                                                                        if(isOracle) {
-		                                                                            if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
-		                                                                            	value = "TO_DATE('"+value+"', 'YYYY-MM-DD HH24:MI:SS')";
-			                                                                            valueType = 1; // is an expression
-		                                                                            } else if(colTypes[ic] == 91) { // date
-		                                                                            	value = "TO_DATE('"+value+"', 'YYYY-MM-DD')";
-			                                                                            valueType = 1; // is an expression
-		                                                                            }
-		                                                                        }
+                                                                                    // refine
+                                                                                    if(isOracle || isPostgres) {
+                                                                                        if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
+                                                                                            value = "TO_DATE('"+value+"', 'YYYY-MM-DD HH24:MI:SS')";
+                                                                                            valueType = 1; // is an expression
+                                                                                        } else if(colTypes[ic] == 91) { // date
+                                                                                            value = "TO_DATE('"+value+"', 'YYYY-MM-DD')";
+                                                                                            valueType = 1; // is an expression
+                                                                                        }
+                                                                                    } else if(isMySQL) {
+                                                                                        if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
+                                                                                            value = "STR_TO_DATE('"+value+"', '%Y-%m-%d %H:%i:%s')";
+                                                                                            valueType = 1; // is an expression
+                                                                                        } else if(colTypes[ic] == 91) { // date
+                                                                                            value = "STR_TO_DATE('"+value+"', '%Y-%m-%d')";
+                                                                                            valueType = 1; // is an expression
+                                                                                        }
+                                                                                    } else if(isSqlServer) {
+                                                                                        if(colTypes[ic] == 6 || colTypes[ic] == 91 || colTypes[ic] == 93) { // date, datetime
+                                                                                            value = "CONVERT(DATETIME,'"+value+"')";
+                                                                                            valueType = 1; // is an expression
+                                                                                        } else if(colTypes[ic] == 91) { // date
+                                                                                            value = "CONVERT(DATETIME,'"+value+")";
+                                                                                            valueType = 1; // is an expression
+                                                                                        }                                                                                          
+                                                                                    }
 	                                                                        }                                                                            
 	                                                                    } else if(colTypes[ic] == 92) { // time
 	                                                                    	// TODO: 24/09/2020 Test to do
 	                                                                        value = getLocalTime(value, colTypes[ic], nullable);
 	                                                                        if(value != null) {
-	                                                                        	// refine
-		                                                                        if(isOracle) {
-		                                                                            value = "TO_DATE('"+value+"', 'HH24:MI:SS')";
-		                                                                            valueType = 1; // is an expression
-		                                                                        }
-	                                                                        }                                                                        
+                                                                                    // refine
+                                                                                    if(isOracle || isPostgres) {
+                                                                                        value = "TO_DATE('"+value+"', 'HH24:MI:SS')";
+                                                                                        valueType = 1; // is an expression
+                                                                                    } else if(isMySQL) {
+                                                                                        value = "STR_TO_DATE('"+value+"', '%H:%i:%s')";
+                                                                                        valueType = 1; // is an expression
+                                                                                    } else if(isSqlServer) {
+                                                                                        value = "CONVERT(DATETIME,'"+value+")";
+                                                                                        valueType = 1; // is an expression
+                                                                                    }
+	                                                                        }
 	                                                                    } else if(colTypes[ic] == 8 || colTypes[ic] == 7  || colTypes[ic] == 6 || colTypes[ic] == 4 || colTypes[ic] == 3 || colTypes[ic] == -5 || colTypes[ic] == -6 || colTypes[ic] == -7) {
 	                                                                        // numeric
 	                                                                        if(value == null || value.isEmpty()) value = "0";

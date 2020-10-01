@@ -245,7 +245,7 @@ public class event {
         String retVal = currentRetVal, errors = "";
         if(tbl_wrk != null) {
             workspace liquid = (workspace)tbl_wrk;
-            JSONObject eventJson = new JSONObject((String)clientData);
+            JSONObject eventJson = clientData != null ? new JSONObject((String)clientData) : null;
             Object client = null;
             if(eventJson != null) {
                 if(eventJson.has("cypher")) {

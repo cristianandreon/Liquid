@@ -416,7 +416,10 @@ public class assets {
         int GLLiquidAdmin = (int)0;
         
         try {
-            GLLiquidAdmin = (int)request.getSession().getAttribute("GLLiquidAdmin");
+            Object oGLLiquidAdmin = request.getSession().getAttribute("GLLiquidAdmin");
+            if(oGLLiquidAdmin != null) {
+                GLLiquidAdmin = (int)oGLLiquidAdmin;
+            }
         } catch (Exception e) { }
         
         if(GLLiquidAdmin > 0) {

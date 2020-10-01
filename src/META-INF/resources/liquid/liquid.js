@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.36   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  30-09-2020
+// Liquid ver.1.37   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  01-10-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -870,6 +870,8 @@ class LiquidCtrl {
                         else if(this.tableJson.overflow === 'auto' || this.tableJson.overflow === 'overlay')
                             this.outDivObj.style.overflow = 'auto';
                     }
+                    
+                    // set the root container for list/grids/layouts/etc
                     this.rootObj = this.outDivObj;
                     
                     if(this.mode == "lookup") {
@@ -1106,6 +1108,7 @@ class LiquidCtrl {
                                 this.homeTablesGridContainerObj = document.createElement("div");
                                 this.homeTablesGridContainerObj.id = controlId + ".homeTable." + ftId + ".grid_content";
                                 this.homeTablesObj.appendChild(this.homeTablesGridContainerObj);
+                                // set the root container for list/grids/layouts/etc
                                 this.rootObj = this.homeTablesGridContainerObj;
                             }
                             for(var ic=0; ic<this.foreignTables.length; ic++) {
@@ -1209,6 +1212,112 @@ class LiquidCtrl {
                     var documentsTabStyle = "";
                     var chartsTabStyle = "";
                     
+                    this.dockerTbl = document.createElement("table");
+                    this.dockerTbl.className = "liquidDocker";
+                    this.dockerTbl.cellPadding = 0;
+                    this.dockerTbl.cellSpacing = 0;
+                    this.dockerTbl.id = controlId + ".docker";
+                    this.dockerTbl.className = "liquidDocker";
+                    var tbody = document.createElement("tbody");
+                    var tr = document.createElement("tr");
+                    var td = document.createElement("td");
+                    var content_div = document.createElement("div");
+                    content_div.id = controlId + ".docker.top";
+                    content_div.className = "liquidDockerHContainer";
+                    td.colSpan = 4;
+                    td.appendChild(content_div);
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+
+                    tr = document.createElement("tr");
+                    td = document.createElement("td");
+                    td.colSpan = 4;
+                    td.style.display = "flex";
+                    content_div = document.createElement("div");
+                    content_div.id = controlId + ".docker.left";
+                    content_div.className = "liquidDockerVContainer";
+                    content_div.style.width = "1px";
+                    // content_div.style.resize = "horizontal";
+                    content_div.style.overflow = "hidden";
+                    this.dockerTblLeft = content_div;
+                    td.appendChild(content_div);
+                    // tr.appendChild(td);
+                    
+                    // td = document.createElement("td");
+                    content_div = document.createElement("div");
+                    content_div.id = controlId + ".docker.center";
+                    content_div.className = "liquidDockerVContainer";
+                    content_div.style.width = "calc(100% - 2px)";
+                    content_div.style.overflow = "hidden";
+                    this.dockerTblCenter = content_div;
+                    this.dockerRoot = content_div;
+                    td.appendChild(content_div);
+                    // tr.appendChild(td);                    
+                    
+                    // td = document.createElement("td");                    
+                    content_div = document.createElement("div");
+                    content_div.id = controlId + ".docker.right";
+                    content_div.className = "liquidDockerVContainer";
+                    content_div.style.width = "1px";
+                    // content_div.style.resize = "horizontal";
+                    content_div.style.overflow = "hidden";
+                    this.dockerTblRight = content_div;
+                    td.appendChild(content_div);
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+
+                    tr = document.createElement("tr");
+                    td = document.createElement("td");
+                    content_div = document.createElement("div");
+                    content_div.id = controlId + ".docker.bottom";
+                    content_div.className = "liquidDockerHContainer";
+                    td.colSpan = 4;
+                    td.appendChild(content_div);
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+
+                    this.dockerTbl.appendChild(tbody);
+                        
+                    this.rootObj.appendChild(this.dockerTbl);
+
+                    // set the resizer
+                    var thisLiquid = this;
+                    if(thisLiquid.dockerTblLeft) {
+                        jQ1124( this.dockerTblLeft ).resizable( {
+                            handles:'e'
+                            ,animate: false
+                            ,ghost: true 
+                            ,resize: function( event, ui ) {
+                                thisLiquid.dockerTblLeft.style.width = ui.size.width + "px";
+                                thisLiquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                thisLiquid.dockerTblCenter.style.height = Math.min(liquid.dockerTblLeft.clientHeight, liquid.dockerTblRight.clientHeight) + "px";
+                            }
+                            ,stop: function( event, ui ) {
+                                if(thisLiquid.dockerTblLeft.offsetWidth <= 10) thisLiquid.dockerTblLeft.style.width = "2px";
+                                thisLiquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                thisLiquid.dockerTblCenter.style.height = Math.min(liquid.dockerTblLeft.clientHeight, liquid.dockerTblRight.clientHeight) + "px";
+                            }
+                        } );
+                    }
+                    if(thisLiquid.dockerTblRight) {
+                        jQ1124( this.dockerTblRight ).resizable( { 
+                            handles:'w'
+                            ,animate: false
+                            ,ghost: true 
+                            ,resize: function( event, ui ) {
+                                thisLiquid.dockerTblRight.style.width = ui.size.width + "px";
+                                thisLiquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                                thisLiquid.dockerTblCenter.style.height = Math.min(liquid.dockerTblLeft.clientHeight, liquid.dockerTblRight.clientHeight) + "px";
+                            }
+                            ,stop: function( event, ui ) {
+                                if(thisLiquid.dockerTblRight.offsetWidth <= 10) thisLiquid.dockerTblRight.style.width = "2px";
+                                thisLiquid.dockerTblRight.style.left = '';
+                                thisLiquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                thisLiquid.dockerTblCenter.style.height = Math.min(liquid.dockerTblLeft.clientHeight, liquid.dockerTblRight.clientHeight) + "px";
+                            }
+                        } );
+                    }
+                    
                     this.tabList = [];
                     
                     if( (this.tableJson.grids && this.tableJson.grids.length > 0)
@@ -1220,7 +1329,10 @@ class LiquidCtrl {
                         this.gridTabsObj.style.display="";
                         this.gridTabsObj.className = "liquidGridTables";
                         this.gridTabsObj.id = controlId + ".grid_tabs";
-                        this.rootObj.appendChild(this.gridTabsObj);
+                        
+                        // this.rootObj.appendChild(this.gridTabsObj);
+                        this.dockerRoot.appendChild(this.gridTabsObj);
+                        
                         if(this.tableJson.listTabVisible === false) listTabStyle = "style=\"display:none\"";
                         var gIdLast = controlId + ".grid_tab.0";
                         var gtName = isDef(this.tableJson.listTabTitle) ? this.tableJson.listTabTitle : "List";
@@ -1265,7 +1377,7 @@ class LiquidCtrl {
                             for(var ig = 0; ig < this.tableJson.grids.length; ig++) {
                                 var grid = this.tableJson.grids[ig];
                                 if(grid) {
-                                    this.rootObj.appendChild(grid.containerObj);
+                                    this.dockerRoot.appendChild(grid.containerObj);
                                     if(isDef(grid.columns)) {
                                         for(var ic=0; ic<grid.columns.length; ic++) {
                                             try {
@@ -1315,7 +1427,7 @@ class LiquidCtrl {
                                     
                                     if(layout.containerObj.addEventListener) { layout.containerObj.addEventListener('scroll', Liquid.onLayoutContainerScroll); } else { document.body.attachEvent('scroll', Liquid.onLayoutContainerScroll); }
                                     if(isDef(layout.backgroundColor)) layout.containerObj.style.backgroundColor = layout.backgroundColor;
-                                    this.rootObj.appendChild(layout.containerObj);
+                                    this.dockerRoot.appendChild(layout.containerObj);
                                     if(this.tableJson.layoutsTabVisible === false || layout.tabVisible === false) layoutsTabStyle = "style=\"display:none\"";
                                     var layoutId = controlId + ".layout_tab." + (il + 1);
                                     var layoutName = layout.title ? layout.title : layout.name ? layout.name : "Layout";
@@ -1339,7 +1451,7 @@ class LiquidCtrl {
                                     doc.containerObj.className = "liquidDocumentContainer";
                                     doc.containerObj.id = controlId + ".document_tab." + (id+1) + ".content";
                                     doc.containerObj.style.display = "none";
-                                    this.rootObj.appendChild(doc.containerObj);
+                                    this.dockerRoot.appendChild(doc.containerObj);
                                     if(this.tableJson.documentsTabVisible === false || doc.tabVisible === false) documentsTabStyle = "style=\"display:none\"";
                                     var docId = controlId + ".document_tab." + (id + 1);
                                     var docName = doc.title ? doc.title : doc.name ? doc.name : "Documents";
@@ -1362,7 +1474,7 @@ class LiquidCtrl {
                                     chart.containerObj.className = "liquidChartContainer";
                                     chart.containerObj.id = controlId + ".chart_tab." + (ic+1) + ".content";
                                     chart.containerObj.style.display = "none";
-                                    this.rootObj.appendChild(chart.containerObj);
+                                    this.dockerRoot.appendChild(chart.containerObj);
                                     if(this.tableJson.chartsTabVisible === false || chart.tabVisible === false) chartsTabStyle = "style=\"display:none\"";
                                     var chartId = controlId + ".chart_tab." + (ic + 1);
                                     var chartName = chart.title ? chart.title : chart.name ? chart.name : "Layout";
@@ -1400,13 +1512,22 @@ class LiquidCtrl {
                     }
 
                     // Table object
+                    this.listRootObj = document.createElement("div");
+                    this.listRootObj.id = controlId + ".grid_tab.0.content";
+                    this.listRootObj.style.width = "100%";
+                    this.listRootObj.className = "liquidContainer";
+                    this.listRootObj.style.overflow = "auto";
+                    this.dockerRoot.appendChild(this.listRootObj);
+
                     this.listObj = document.createElement("div");
-                    this.listObj.id = controlId + ".grid_tab.0.content";
+                    this.listObj.id = controlId + ".aggrid_contanier";
                     this.listObj.className = "liquidGridContainer";
                     this.listObj.style.overflow = "auto";
+                    this.listObj.style.width = "100%";
                     // if(Liquid.projectMode) this.listObj.draggable = true;
-                    this.rootObj.appendChild(this.listObj);
                     this.listObj.className += " ag-theme-balham liquidContainer";
+                    this.listRootObj.appendChild(this.listObj);
+                    
                     var oldWarn = console.warn; console.warn = function() {}; 
                     try { this.grid = new window.agGrid.Grid(this.listObj, this.gridOptions); } catch(e) { console.error(e); }
                     console.warn = oldWarn;
@@ -2000,7 +2121,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.36,
+    version: 1.37,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -3557,7 +3678,9 @@ var Liquid = {
                     var sortComparator = null;
                     var typeColumn = null;                    
                     if(!editable) {
-                        console.warn("LIQUID: "+liquid.controlId+" is not editable");
+                        if(Liquid.debug) {
+                            console.warn("LIQUID: "+liquid.controlId+" is not editable");
+                        }
                     }                    
                     if(Liquid.isFloat(col.type)) {
                         sortComparator = function(a, b) { a=a.replace(",","."); b=b.replace(",","."); return (Number(a) > Number(b) ? 1 : (Number(a) < Number(b) ? -1 : 0)); };
@@ -3683,6 +3806,7 @@ var Liquid = {
         var doFilter = true;
 
         // if(liquid.controlId === "formats$study_id$id@Quotes_Suggested preforms_suggested_preforms") debugger;
+        // if(liquid.controlId === "materials$id$materialid@quotes_detail$quoteid$Id@testGrid4") debugger;
         
         if(typeof liquid === 'undefined') return;
         if(typeof liquid === 'string') liquid = Liquid.getLiquid(liquid);
@@ -3749,7 +3873,17 @@ var Liquid = {
                 } else {
                     var selNodes = liquid.srcLiquid.gridOptions.api.getSelectedNodes();
                     if(selNodes && selNodes.length > 0) {
+                        var rebuildSrcColumnIndex = false;
                         if(!isDef(liquid.srcColumnIndex)) {
+                            rebuildSrcColumnIndex = true;
+                        } else {
+                            if(Array.isArray(liquid.srcColumnIndex)) {
+                                if(liquid.srcColumnIndex.length == 0) {
+                                    rebuildSrcColumnIndex = true;
+                                }
+                            }
+                        }
+                        if(rebuildSrcColumnIndex) {
                             // solve source col (foreignTable, etc...)
                             Liquid.solveSourceColumn(liquid, (liquid,ids) => Liquid.loadData(liquid, ids, reason+".forward"), null);
                             if(!isDef(liquid.srcColumnIndex)) {
@@ -3760,24 +3894,34 @@ var Liquid = {
                                 return;
                             }
                         }
-                        for(var node=0; node<selNodes.length; node++) {
-                            var srcColumnIndexes = null;
-                            var srcForeignColumns = null;
-                            if(Array.isArray(liquid.srcColumnIndex)) {
-                                srcColumnIndexes = liquid.srcColumnIndex;                                
+                        var srcColumnIndexes = null;
+                        var srcForeignColumns = null;
+                        if(Array.isArray(liquid.srcColumnIndex)) {
+                            srcColumnIndexes = liquid.srcColumnIndex;                                
+                        } else {
+                            srcColumnIndexes = [ liquid.srcColumnIndex ];
+                        }
+                        if(Array.isArray(liquid.srcForeignColumn)) {
+                            srcForeignColumns = liquid.srcForeignColumn;                                
+                        } else {
+                            srcForeignColumns = [ liquid.srcForeignColumn ];
+                        }
+                        if(!isDef(srcColumnIndexes)) {
+                            console.error("FATAL ERROR: loadData() on " + liquid.controlId + " srcColumnIndexes invalid");
+                            return;
+                        } else {
+                            if(!srcColumnIndexes.length) {
+                                console.error("FATAL ERROR: loadData() on " + liquid.controlId + " srcColumnIndexes empty");
+                                return;
                             } else {
-                                srcColumnIndexes = [ liquid.srcColumnIndex ];
-                            }
-                            if(Array.isArray(liquid.srcForeignColumn)) {
-                                srcForeignColumns = liquid.srcForeignColumn;                                
-                            } else {
-                                srcForeignColumns = [ liquid.srcForeignColumn ];
-                            }
-                            for(var ic=0; ic<srcColumnIndexes.length; ic++) {
-                                var srcForeignColumn = srcForeignColumns[ic];
-                                var srcColumnIndex = srcColumnIndexes[ic];
-                                var foreignFilter = { name: srcForeignColumn, value: selNodes[node].data[srcColumnIndex], logic: (ic!=0 ? "and":"or") };
-                                allFilterJson = allFilterJson.concat(foreignFilter);
+                                for(var node=0; node<selNodes.length; node++) {
+                                    for(var ic=0; ic<srcColumnIndexes.length; ic++) {
+                                        var srcForeignColumn = srcForeignColumns[ic];
+                                        var srcColumnIndex = srcColumnIndexes[ic];
+                                        var foreignFilter = { name: srcForeignColumn, value: selNodes[node].data[srcColumnIndex], logic: (ic!=0 ? "and":"or") };
+                                        allFilterJson = allFilterJson.concat(foreignFilter);
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -9201,11 +9345,14 @@ var Liquid = {
                     if( liquid.lastGridTabObj || (isDef(liquid.tableJson.grids) && liquid.tableJson.grids.length > 0) || (isDef(liquid.tableJson.layouts) && liquid.tableJson.layouts.length > 0) ) {
                         var nameItems = null;
                         if( isDef(liquid.tableJson.grids) && liquid.tableJson.grids.length > 0) {
-                            nameItems = liquid.tableJson.grids[0].id.split(".");
+                            if(liquid.tableJson.grids[0].id) 
+                                nameItems = liquid.tableJson.grids[0].id.split(".");
                         } else if( isDef(liquid.tableJson.layouts) && liquid.tableJson.layouts.length > 0) {
-                            nameItems = liquid.tableJson.layouts[0].id.split(".");
+                            if(liquid.tableJson.layouts[0].id) 
+                                nameItems = liquid.tableJson.layouts[0].id.split(".");
                         } else if(liquid.lastGridTabObj) {
-                            nameItems = liquid.lastGridTabObj.id.split(".");
+                            if(liquid.lastGridTabObj.id) 
+                                nameItems = liquid.lastGridTabObj.id.split(".");
                         }
                         if(nameItems) {
                             if(nameItems.length > 2) {
@@ -10009,7 +10156,9 @@ var Liquid = {
                                     nodesVisibilityFitted[inode].node.style.visibility = nodesVisibilityFitted[inode].visibility;
                                 }
                                 if(referenceHeight <= 0) {
-                                    console.error("ERROR: on control '" + liquid.controlId + "' : unable to resize, reference height is invalid (" + referenceHeight+")");
+                                    if(Liquid.debug) {
+                                        console.warn("ERROR: on control '" + liquid.controlId + "' : unable to resize, reference height is invalid (" + referenceHeight+")");
+                                    }
                                     liquid.pendingResize = true;
                                     return;
                                 }
@@ -13026,7 +13175,9 @@ var Liquid = {
                     shortColumnName = nameItems[1];
                 }
                 var params = {
-                    showToast:true ,
+                    table: liquid.tableJson.table,
+                    column: columnName,
+                    showToast:true,
                     rowIndex: null, iCol: null, column: columnName, node: null,
                     colDef: {
                         cellEditorParams: {liquid: liquid, cache: false, values: null, table: table, column: columnName, idColumn: columnName, editor: "distinct"}
@@ -13202,29 +13353,193 @@ var Liquid = {
     onGridTab:function(obj) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
+            var bRestoreList = false;
             Liquid.changeCurrentGridTab(liquid, obj);
             var grid_coords = Liquid.getGridCoords(liquid, liquid.lastGridTabObj.id);
             if(grid_coords) {
+                var gridObject = null;
                 if(isDef(grid_coords.gridIndex)) {
                     liquid.currentTab = grid_coords.gridIndex+1;
                 }
                 if(grid_coords.grid) {
+                    gridObject = grid_coords.grid;
                     if(!grid_coords.grid.resizeCounter) { // need resize ?
                         Liquid.onGridResize(liquid, grid_coords.grid);
                     }
                 } else if(grid_coords.layout) {
+                    gridObject = grid_coords.layout;
                     if(!grid_coords.layout.resizeCounter) { // need resize ?
                         Liquid.onLayoutResize(liquid, grid_coords.layout);
                     }
                 } else if(grid_coords.document) {
+                    gridObject = grid_coords.document;
                     if(!grid_coords.document.resizeCounter) { // need resize ?
                         Liquid.onDocumentResize(liquid, grid_coords.document);
                     }
-                } else if(grid_coords.chart) {                    
+                } else if(grid_coords.chart) {
+                    gridObject = grid_coords.chart;
                     if(!grid_coords.chart.resizeCounter) { // need resize ?
                         Liquid.onChartResize(liquid, grid_coords.chart);
                     }
                 }
+                if(gridObject) {
+                    if(isDef(gridObject.dock)) {
+                        var parentNode = null;
+                        if(gridObject.dock.side === 'left') {
+                            parentNode = liquid.dockerTblLeft;
+                            if(isDef(gridObject.dock.size)) {
+                                liquid.dockerTblLeft.style.width = gridObject.dock.size;
+                            }
+                            if(isDef(gridObject.dock.minSize)) {
+                                if(liquid.dockerTblLeft.style.offsetWidth < gridObject.dock.minSize) {
+                                    liquid.dockerTblLeft.style.width = gridObject.dock.minSize;
+                                }
+                            }
+                        } else if(gridObject.dock.side === 'right') {
+                            parentNode = liquid.dockerTblRight;
+                        }
+                        if(isDef(gridObject.dock.size)) {                                
+                            parentNode.style.width = gridObject.dock.size;
+                        }
+                        if(parentNode) {
+                            Liquid.setAggrigParent(liquid, parentNode, gridObject.dock);
+                        } else {
+                            bRestoreList = true;
+                        }
+                    } else {
+                        bRestoreList = true;
+                    }
+                } else {
+                    bRestoreList = true;
+                }
+            } else {
+                bRestoreList = true;
+            }
+        }
+        if(bRestoreList) {
+            Liquid.setAggrigParent(liquid, null, null);
+        }
+    },
+    setAggrigParent:function(obj, parentNode, dock) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            if(parentNode) {
+                if(isDef(dock)) {
+                    if(isDef(dock.minWidth)) {
+                        if(parentNode.offsetWidth < dock.minWidth) {
+                            dock.parentNodeLastWidth = parentNode.style.width;
+                            parentNode.style.width = dock.minWidth + "px";
+                        }
+                    }
+                    if(isDef(dock.width)) {
+                        if(parentNode.offsetWidth != dock.width) {
+                            dock.parentNodeLastWidth = parentNode.style.width;
+                            parentNode.style.width = dock.width + "px";
+                        }
+                    }
+                    if(isDef(dock.minHeight)) {
+                        if(parentNode.offsetHeight < dock.minHeight) {
+                            dock.parentNodeLastHeight = parentNode.style.height;
+                            parentNode.style.height = dock.minHeight + "px";
+                        }
+                    }
+                    if(isDef(dock.height)) {
+                        if(parentNode.offsetHeight != dock.height) {
+                            dock.parentNodeLastHeight = parentNode.style.height;
+                            parentNode.style.height = dock.height + "px";
+                        }
+                    }
+                    if(isDef(dock.columns)) {
+                        if(isDef(liquid.gridOptions)) {
+                            if(isDef(liquid.gridOptions.api)) {
+                                var allColumns = liquid.gridOptions.columnApi.getAllColumns();
+                                if(allColumns && allColumns.length) {
+                                    var columnsToHide = [];
+                                    for(var i = 0; i < allColumns.length; i++) {
+                                        columnsToHide.push( allColumns[i].colId );
+                                    }
+                                    liquid.gridOptions.columnApi.setColumnsVisible(columnsToHide, false);
+                                    for(var i = 0; i < allColumns.length; i++) {
+                                        var agGridColumn = allColumns[i];
+                                        if(isDef(agGridColumn.field)) {
+                                            var field = Number(agGridColumn.field);
+                                            var column = liquid.tableJson.columns[field-1];
+                                            if(column.name != agGridColumn.name) {
+                                                console.error("setAggrigParent() : mishandled column : " + column.name + " / " + agGridColumn.column);
+                                            }
+                                            column.colId = agGridColumn.colId;
+                                            for(var j = 0; j < dock.columns.length; j++) {
+                                                var label = null;
+                                                var width = null;
+                                                if(typeof dock.columns[j] === 'string') {
+                                                    label = dock.columns[j];
+                                                    if(label === column.name) {
+                                                        liquid.gridOptions.columnApi.setColumnsVisible( [agGridColumn.colId], true);
+                                                        break;
+                                                    }
+                                                } else {
+                                                    label = dock.columns[j].name;
+                                                    width = dock.columns[j].width;
+                                                    if(label === columns.name) {
+                                                        if(dock.columns[j].visible !== false) {
+                                                            liquid.gridOptions.columnApi.setColumnsVisible( [agGridColumn.colId], true);
+                                                        }
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            // column already not visible
+                                        }
+                                    }
+                                }
+                            }
+                        }                                    
+                    }
+                    dock.parentNode = parentNode;
+                    liquid.currentDock = dock;
+                }
+                parentNode.appendChild(liquid.listObj);
+                /*
+                for(var i=0; i<liquid.listObj.classList.length; i++) {
+                    if(!parentNode.classList.contains(liquid.listObj.classList[i])) {
+                        parentNode.classList.add(liquid.listObj.classList[i]);
+                    }
+                }
+                */
+                liquid.aggridContainerLastHeight = liquid.aggridContainerObj.style.height;
+                liquid.aggridContainerObj.style.height = "100%";
+                liquid.aggridContainerDocked = true;
+            } else {
+                liquid.listRootObj.appendChild(liquid.listObj);
+                if(isDef(liquid.currentDock)) {
+                    if(isDef(liquid.currentDock.columns)) {
+                        for(var j=0; j<liquid.tableJson.columns.length; j++) {
+                            if(isDef(liquid.tableJson.columns[j].colId)) {
+                                if(liquid.tableJson.columns[j].visible !== false) {
+                                    liquid.gridOptions.columnApi.setColumnsVisible( [liquid.tableJson.columns[j].colId], true);
+                                } else {
+                                    liquid.gridOptions.setColumnsVisible( [liquid.tableJson.columns[j].colId], false);
+                                }
+                            }
+                        }
+                    }
+                    if(liquid.currentDock.parentNode) {
+                        liquid.currentDock.parentNode.style.width = liquid.currentDock.parentNodeLastWidth;
+                        liquid.currentDock.parentNode.style.height = liquid.currentDock.parentNodeLastHeight;
+                    }
+                }
+                if(isDef(liquid.currentDock)) {
+                    if(isDef(liquid.currentDock.width)) {
+                        liquid.currentDock.width = parentNode.offsetWidth;
+                    }
+                    if(isDef(liquid.currentDock.height)) {
+                        liquid.currentDock.height = parentNode.offsetHeight;
+                    }
+                }
+                liquid.aggridContainerObj.style.height = liquid.aggridContainerLastHeight;
+                liquid.aggridContainerDocked = false;
+                liquid.currentDock = null;
             }
         }
     },
@@ -13552,8 +13867,8 @@ var Liquid = {
                                 }
                                 totalColsWidth += column.actualWidth;
                             }
-                            // params.columnApi.setColumnsVisible(columnsToShow, true);
-                            // params.columnApi.setColumnsVisible(columnsToHide, false);
+                            // liquid.gridOptions.columnApi.setColumnsVisible(columnsToShow, true);
+                            // liquid.gridOptions.columnApi.setColumnsVisible(columnsToHide, false);
                             if(liquid.tableJson.autoSizeColumns === true) {
                                 params.api.sizeColumnsToFit();
                             } else {
@@ -15272,9 +15587,11 @@ var Liquid = {
                                             }
                                         }
                                         // Link the target columns...
-                                        for(var ic=0; ic<idColumnLinkedFields.length; ic++) {
-                                            if( ic < targetColumns.length ) {
-                                                idColumnLinkedFields[ic].targetField = targetColumns[ic].field;
+                                        if(idColumnLinkedFields) {
+                                            for(var ic=0; ic<idColumnLinkedFields.length; ic++) {
+                                                if( ic < targetColumns.length ) {
+                                                    idColumnLinkedFields[ic].targetField = targetColumns[ic].field;
+                                                }
                                             }
                                         }
                                     }
