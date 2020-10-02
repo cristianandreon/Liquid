@@ -45,9 +45,13 @@ public class net {
     public ArrayList<String> getURLEx ( String baseURL, String postData, int timeout, Object headers ) {
         ArrayList<String> outString = new ArrayList<String>(2);
         StringBuffer resultString = new StringBuffer("");
+        HttpsURLConnection conns = null;
+        HttpURLConnection connh = null;
         URL myUrl;
         
         try {
+        	
+        	long lastTime = System.currentTimeMillis();
             
             if(outString.size()==0) {
                 outString.add("");
@@ -57,8 +61,6 @@ public class net {
             InputStream is = null;
             Map<String, List<String>> map = null;
             OutputStream wr = null;
-            HttpsURLConnection conns = null;
-            HttpURLConnection connh = null;
             int responseCode = 0;
 
             System.out.println("baseURL: " + baseURL);
@@ -75,6 +77,8 @@ public class net {
                 conn.setRequestProperty("User-Agent", "LIQUID");
                 conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
                 
+                process_header_params( headers, conn);
+
                 if(postData != null) {
                     conn.setRequestMethod("POST");
                     conn.setDoOutput(true);
@@ -90,6 +94,7 @@ public class net {
                 conn.setRequestProperty("User-Agent", "LIQUID");
                 conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
                 
+                process_header_params( headers, conn);
 
                 if(postData != null) {
                     conn.setRequestMethod("POST");
@@ -101,23 +106,7 @@ public class net {
                 connh = conn;
             }
 
-        	ArrayList<String> headersParams = null;
-            if(headers != null) {
-            	if(headers instanceof String) {
-            		headersParams = new ArrayList<String>();
-            		String[] params = ((String)headers).split(",");
-            		for(int ip=0; ip<params.length; ip++) {
-            			String[] pair = ((String)headers).split("=");
-            			if(pair != null) {
-            				if(pair.length>=2) {
-            					if(connh != null) connh.setRequestProperty(pair[0], pair[1]); else if(conns != null) conns.setRequestProperty(pair[0], pair[1]);
-            				} else if(pair.length == 1) {
-            					if(connh != null) connh.setRequestProperty(pair[0], ""); else if(conns != null) conns.setRequestProperty(pair[0], "");
-            				}
-            			}
-            		}
-            	}
-            }
+
 
             if(postData != null) {
                 wr.write(postData.getBytes("UTF-8"));
@@ -139,7 +128,6 @@ public class net {
                 map = connh.getHeaderFields();
             }
             
-            System.out.println("Response Code : " + responseCode);
             
             
             
@@ -169,7 +157,7 @@ public class net {
             
             outString.set(0, resultString.toString());
 
-            System.out.println("Response size: " + resultString.length());
+            System.out.println( "Response Code : " + responseCode + " size: " + resultString.length() + " time:"+(float)(System.currentTimeMillis() - lastTime)/1000.0f +" sec");
             
         } catch (MalformedURLException ex) {
             Logger.getLogger(net.class.getName()).log(Level.SEVERE, null, ex);
@@ -177,10 +165,52 @@ public class net {
         } catch (Exception e) {
             Logger.getLogger(net.class.getName()).log(Level.SEVERE, null, e);
             outString.set(0, e.getMessage());
-        }        
+        } finally {
+            if(conns != null) {
+                conns.disconnect();
+            } else if(connh != null) {
+                connh.disconnect();
+            }
+        }
         return outString;
     }
     
+	void process_header_params( Object headers, Object conn) {
+	    if(headers != null) {
+	    	try {
+				HttpsURLConnection conns = (HttpsURLConnection)(conn instanceof HttpsURLConnection ? conn : null);
+		        HttpURLConnection connh = (HttpURLConnection)(conn instanceof HttpURLConnection ? conn : null);
+		    	if(headers instanceof String) {
+		    		String[] params = ((String)headers).split(",");
+		    		for(int ip=0; ip<params.length; ip++) {
+		    			String[] pair = ((String)params[ip]).split(":");
+		    			if(pair != null) {
+		    				if(pair.length>=2) {
+		    					if(connh != null) connh.setRequestProperty(pair[0], pair[1]); else if(conns != null) conns.setRequestProperty(pair[0], pair[1]);
+		    				} else if(pair.length == 1) {
+		    					if(connh != null) connh.setRequestProperty(pair[0], ""); else if(conns != null) conns.setRequestProperty(pair[0], "");
+		    				}
+		    			}
+		    		}
+		    	} else if(headers instanceof ArrayList) {
+		    		// TODO
+		    		ArrayList<Object> params = (ArrayList<Object>)headers;
+		    		for(int ip=0; ip<params.size(); ip++) {
+		    			String[] pair = String.valueOf(params.get(ip)).split(":");
+		    			if(pair != null) {
+		    				if(pair.length>=2) {
+		    					if(connh != null) connh.setRequestProperty(pair[0], pair[1]); else if(conns != null) conns.setRequestProperty(pair[0], pair[1]);
+		    				} else if(pair.length == 1) {
+		    					if(connh != null) connh.setRequestProperty(pair[0], ""); else if(conns != null) conns.setRequestProperty(pair[0], "");
+		    				}
+		    			}
+		    		}
+		    	}
+	        } catch (Exception ex) {
+	            Logger.getLogger(net.class.getName()).log(Level.SEVERE, null, ex);
+	        }
+	    }
+	}
     
     
     // Supporto SSL
