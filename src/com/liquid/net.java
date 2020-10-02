@@ -34,15 +34,15 @@ public class net {
         return new net().getURLEx ( baseURL, postData, 0, null );
     }
     
-    public static ArrayList<String> getURL ( String baseURL, String postData, String auxData ) {
-        return new net().getURLEx ( baseURL, postData, 0, auxData );
+    public static ArrayList<String> getURL ( String baseURL, String postData, Object headers ) {
+        return new net().getURLEx ( baseURL, postData, 0, headers );
     }
 
-    public static ArrayList<String> getURL ( String baseURL, String postData, int timeout, String auxData ) {
-        return new net().getURLEx ( baseURL, postData, timeout, auxData );
+    public static ArrayList<String> getURL ( String baseURL, String postData, int timeout, Object headers ) {
+        return new net().getURLEx ( baseURL, postData, timeout, headers );
     }
 
-    public ArrayList<String> getURLEx ( String baseURL, String postData, int timeout, String auxData ) {
+    public ArrayList<String> getURLEx ( String baseURL, String postData, int timeout, Object headers ) {
         ArrayList<String> outString = new ArrayList<String>(2);
         StringBuffer resultString = new StringBuffer("");
         URL myUrl;
@@ -62,6 +62,7 @@ public class net {
             int responseCode = 0;
 
             System.out.println("baseURL: " + baseURL);
+            
             
             // Supporto SSL
             if(baseURL.startsWith("https://")) {
@@ -86,7 +87,7 @@ public class net {
             } else {
                 HttpURLConnection conn = (HttpURLConnection)myUrl.openConnection();
 
-                conn.setRequestProperty("User-Agent", "CNCONLINE");
+                conn.setRequestProperty("User-Agent", "LIQUID");
                 conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
                 
 
@@ -95,10 +96,29 @@ public class net {
                     conn.setDoOutput(true);
                 }
                 
+                wr = conn.getOutputStream();
+                
                 connh = conn;
             }
 
-    
+        	ArrayList<String> headersParams = null;
+            if(headers != null) {
+            	if(headers instanceof String) {
+            		headersParams = new ArrayList<String>();
+            		String[] params = ((String)headers).split(",");
+            		for(int ip=0; ip<params.length; ip++) {
+            			String[] pair = ((String)headers).split("=");
+            			if(pair != null) {
+            				if(pair.length>=2) {
+            					if(connh != null) connh.setRequestProperty(pair[0], pair[1]); else if(conns != null) conns.setRequestProperty(pair[0], pair[1]);
+            				} else if(pair.length == 1) {
+            					if(connh != null) connh.setRequestProperty(pair[0], ""); else if(conns != null) conns.setRequestProperty(pair[0], "");
+            				}
+            			}
+            		}
+            	}
+            }
+
             if(postData != null) {
                 wr.write(postData.getBytes("UTF-8"));
                 wr.flush();
@@ -108,11 +128,13 @@ public class net {
             if(conns != null) {
                 conns.connect();
                 responseCode = conns.getResponseCode();
+                outString.set(1, String.valueOf(responseCode));
                 is = conns.getInputStream();
                 map = conns.getHeaderFields();
             } else if(connh != null) {
                 connh.connect();
                 responseCode = connh.getResponseCode();
+                outString.set(1, String.valueOf(responseCode));
                 is = connh.getInputStream();
                 map = connh.getHeaderFields();
             }
