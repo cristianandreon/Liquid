@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.37   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.38   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  01-10-2020
 //  TODO : see trello.com
 //
@@ -891,6 +891,44 @@ class LiquidCtrl {
                         console.error('ERROR : Control ' + this.outDivId + " not found.." + e);
                     }
 
+
+
+
+                    
+                    // popup
+                    if(this.mode === "combo") {
+                        this.comboModeObj = document.createElement("div");
+                        this.comboModeObj.style.position = '';
+                        this.comboModeObj.style.width = '100%';
+                        this.comboModeObj.style.height = '30px';
+
+                        this.comboModeText = document.createElement("div");
+                        this.comboModeText.style.display = "";
+                        this.comboModeText.style.float = "left";
+                        this.comboModeText.style.width = "calc(100% - 48px)";
+
+                        this.comboModeOpenIcon = document.createElement("div");
+                        this.comboModeOpenIcon.style.display = "none";
+                        this.comboModeOpenIcon.style.float = "right";
+                        this.comboModeOpenIcon.style.width = "24px";
+                        
+                        this.comboModeCloseIcon = document.createElement("div");
+                        this.comboModeCloseIcon.style.display = "none";
+                        this.comboModeCloseIcon.style.float = "right";
+                        this.comboModeCloseIcon.style.width = "24px";
+                        
+                        this.comboModeObj.appendChild(this.comboModeText);
+                        this.comboModeObj.appendChild(this.comboModeOpenIcon);
+                        this.comboModeObj.appendChild(this.comboModeCloseIcon);
+
+                        this.outDivObj.appendChild(this.comboModeObj);
+
+                        this.comboModeOpenIcon.innerHTML = "<img src=\""+Liquid.getImagePath("down.png")+"\" width=\"16\" height=\"16\"/>";
+                        this.comboModeCloseIcon.innerHTML = "<img src=\""+Liquid.getImagePath("up.png")+"\" width=\"16\" height=\"16\"/>";
+                        
+                    }                    
+                    
+
                     // popup
                     if(this.mode === "popup" || isWinX) {
                         var title = (isDef(this.tableJson.title) ? this.tableJson.title : (isDef(this.tableJson.caption) ? this.tableJson.caption : ''));
@@ -1773,6 +1811,23 @@ class LiquidCtrl {
                         Liquid.onGridContainerSizeChanged(this, this.gridOptions);
                     }
 
+
+                    // combo mode
+                    if(this.mode === "combo") {
+                        if(this.tableJson.combo) {
+                            if(this.tableJson.combo.status === 'open' || this.tableJson.combo.status === 'openen') {
+                                Liquid.setControlAsCombo( this, false );
+                            } else {
+                                Liquid.setControlAsCombo( this, true );
+                            }
+                        } else {
+                            Liquid.setControlAsCombo( this, true );
+                        }
+                    }                    
+
+
+
+
                     var isRebuilding = typeof sourceData !== 'undefined' && sourceData ? sourceData.isRebuilding : false;
                     var hasLoadedData = false;
                     
@@ -2121,7 +2176,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.37,
+    version: 1.38,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -3529,6 +3584,65 @@ var Liquid = {
             }
         }
         return null;
+    },
+    getRecordsKey:function(liquid, node) {
+        if(liquid) {
+            if(node) {
+                var result = {};
+                for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                    result[liquid.tableJson.columns[ic].primaryKey] = node.data[liquid.tableJson.columns[ic].primaryKeyField];
+                }
+                return result;
+            }
+        }
+        return null;
+    },
+    getRecordsKeyStrings:function(liquid, node) {
+        if(liquid) {
+            if(node) {
+                result = "";
+                var result = {};
+                for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                    result += (ic>0?".":"") + node.data[liquid.tableJson.columns[ic].primaryKeyField];
+                }
+                return result;
+            }
+        }
+        return null;
+    },
+    setControlAsCombo( liquid, bClosed ) {
+        if(liquid) {
+            if(bClosed) {
+                var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                var values = Liquid.getRecordsKeyStrings(liquid, nodes);
+                if(values) {
+                    if(!isDef(liquid.combo.height)) {
+                        liquid.combo.height = 30;
+                    }
+                    if(bClosed) {
+                        liquid.comboModeObj.style.display = "";
+                        liquid.comboModeObj.innerHTML = values;
+                        liquid.comboModeOpenIcon.style.display = "";
+                        liquid.comboModeCloseIcon.style.display = "none";
+                    } else {
+                        liquid.comboModeObj.style.display = "none";
+                        liquid.comboModeOpenIcon.style.display = "none";
+                        liquid.comboModeCloseIcon.style.display = "";
+                    }
+                    var height = 30;
+                    if(isDef(liquid.comboMode.height)) {
+                        height = liquid.comboMode.height;
+                    }
+                    liquid.comboModeObj.style.height = height+"px";
+                    // liquid.navObj.style.visibility = "hidden";
+                    jQ1124( liquid.outDivObj ).animate( { 
+                        height: height+"px"
+                    }, 200, function(){ } );
+                }
+            } else {
+                
+            }
+        }
     },
     initializeLiquid:function(liquid) {
         
