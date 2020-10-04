@@ -524,7 +524,7 @@ public class event {
             result += " tableKey:N/D";
         
         if(params != null)
-            result += " params:"+((String)params).replaceAll("\"", "'")+"";
+            result += " params:"+ utility.base64Encode((String)params); // ((String)params).replaceAll("\"", "'")+"";
         else
             result += " params:N/D";
         
@@ -1154,6 +1154,7 @@ public class event {
         return retVal;
     }
     static public String onInserted (Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
+        Logger.getLogger(db.class.getName()).log(Level.INFO, "onInserted() get called");
         return null;
     }
     

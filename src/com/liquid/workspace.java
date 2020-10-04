@@ -513,7 +513,11 @@ public class workspace {
                     return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode( controlId+" : no DB connection.."+error )+"\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection .."+error+"\");</script>" );
                 }
             } catch(Throwable th) {
-                String error = th.getLocalizedMessage().replace("\"", "\\\"");
+                String error = th.getLocalizedMessage();
+                if(error == null) {
+                    error = th.getCause().getLocalizedMessage();
+                }
+                error = error != null ? error.replace("\"", "\\\"") : "";
                 return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode( controlId+" : no DB connection.."+error )+"\"}" : "<script> console.error(\""+controlId+" not created .. no DB connection .."+error+"\");</script>" );
             }            
 
@@ -1518,7 +1522,7 @@ public class workspace {
             
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+ex.getLocalizedMessage()+"\"}" : "<script> console.error(\""+ex.getLocalizedMessage()+"\");</script>" );
+            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode(ex.getLocalizedMessage())+"\"}" : "<script> console.error(\""+ex.getLocalizedMessage()+"\");</script>" );
 
         } finally {
             try {
