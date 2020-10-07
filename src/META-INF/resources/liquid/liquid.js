@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.38   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.39   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  01-10-2020
 //  TODO : see trello.com
 //
@@ -2184,7 +2184,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.38,
+    version: 1.39,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -4857,12 +4857,18 @@ var Liquid = {
                             var bDoFilter = false;
                             if(filtersJson.columns.length) {
                                 for(var i=0; i<filtersJson.columns.length; i++) {
-                                    var element = document.getElementById(liquid.controlId + ".filters." +(liquid.curFilter+1) + "." + filtersJson.columns[i].name + ".filter");
+                                    var element = document.getElementById(liquid.controlId + ".filters." +(liquid.curFilter+1) + "." + filtersJson.columns[i].runtimeName + ".filter");
                                     if(element) {
                                         if(isDef(element.dataset.linkedInputId))
                                             element = document.getElementById(element.dataset.linkedInputId);
-                                        if(filtersJson.columns[i].value !== element.value) {
-                                            filtersJson.columns[i].value = (element.value === '' ? null : (element.value === '""' ? "" : element.value));
+                                        var elementValue = null;
+                                        if(element.nodeName === "SELECT") {
+                                            elementValue = element.options[element.selectedIndex].getAttribute("value");
+                                        } else {
+                                            elementValue = element.value;
+                                        }
+                                        if(filtersJson.columns[i].value !== elementValue) {
+                                            filtersJson.columns[i].value = (elementValue === '' ? null : (elementValue === '""' ? "" : elementValue));
                                             if(filtersJson.columns[i].value) {
                                                 var ic = 0;
                                                 while (filtersJson.columns[i].value.charAt(ic) === ' ')
@@ -5729,7 +5735,8 @@ var Liquid = {
                     for(var c = 0; c < filterJson.nCols; c++) {
                         if(i < filterJson.columns.length) {
                             var td = document.createElement("td");
-                            filterJson.columns[i].linkedContainerId = liquid.controlId + ".filters." +filterGroupIndex + "." + filterJson.columns[i].name + ".filter";
+                            filterJson.columns[i].runtimeName = filterJson.columns[i].name+"."+(i+1);
+                            filterJson.columns[i].linkedContainerId = liquid.controlId + ".filters." +filterGroupIndex + "." + filterJson.columns[i].runtimeName + ".filter";
                             Liquid.createFilterObject(liquid, td, filterGroupIndex, filterJson.columns[i]);
                             tr.appendChild(td);
                             i++;
@@ -5739,7 +5746,7 @@ var Liquid = {
                 }
                 tbl.appendChild(tbody);
                 if(isDef(filterJson.columns) && filterJson.columns.length) {
-                    liquid.filtersFirstId = liquid.controlId + ".filters." +filterGroupIndex + "." + filterJson.columns[0].name + ".filter";
+                    liquid.filtersFirstId = liquid.controlId + ".filters." +filterGroupIndex + "." + filterJson.columns[0].runtimeName + ".filter";
                 }
                 return tbl;
             }
@@ -10824,24 +10831,28 @@ var Liquid = {
             var innerHTML = "<table style=\"width:100%; table-layout:fixed\"><tr>"
                     + "<td class=\"liquidFilterLabel\" id=\""+(liquid.controlId+".filters."+filterGroupIndex+"."+filterObj.name+".label")+"\">" + Liquid.getFilterLabel(liquid, filterObj) + "</td>"
                     + "<td class=\"liquidFilterInputTd\" id=\""+(liquid.controlId+".filters."+filterGroupIndex+"."+filterObj.name+".td")+"\">";
-            var filterId = liquid.controlId + ".filters." +filterGroupIndex+"."+ filterObj.name + ".filter";
-            var codeOnChange = (liquid.tableJson.filterMode == 'client' || liquid.tableJson.filterMode == "dynamic" ? " onkeyup=\"Liquid.onFilterChange(event, '"+filterId+"');\" onchange=\"Liquid.onFilterChange(event, '"+filterId+"');\"" : "");
+
+            // var filterId = liquid.controlId + ".filters." +filterGroupIndex+"."+ filterObj.runtimeName + ".filter";
+            
+            var codeOnChange = (liquid.tableJson.filterMode == 'client' || liquid.tableJson.filterMode == "dynamic" ? " onkeyup=\"Liquid.onFilterChange(event, '"+filterObj.linkedContainerId+"');\" onchange=\"Liquid.onFilterChange(event, '"+filterObj.linkedContainerId+"');\"" : "");
+
+
             if(filterObj.valuesList || filterObj.values) {
                 var values = filterObj.valuesList ? filterObj.valuesList : filterObj.values;
-                innerHTML += "<select id=\"" + filterId + "\"" + codeOnChange + " class=\"liquidSelect\" >";
+                innerHTML += "<select id=\"" + filterObj.linkedContainerId + "\"" + codeOnChange + " class=\"liquidSelect\" >";
                 for(var i=0; i<values.length; i++) {
                     var valueObj = values[i];
                     if(valueObj) {
                         var selected = "";
                         if(valueObj.value === filterObj.value)
                             selected = "selected";
-                        innerHTML += "<option " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " value=\"" + (valueObj.value ? valueObj.value : valueObj.label) + "\" " + selected + ">" + (valueObj.label ? valueObj.label : valueObj.value) + "</option>";
+                        innerHTML += "<option " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " value=\"" + ( isDef(valueObj.value) ? valueObj.value : valueObj.label) + "\" " + selected + ">" + (valueObj.label ? valueObj.label : valueObj.value) + "</option>";
                     }
                 }
                 innerHTML += "</select>" + "</td>";
             } else if(filterObj.editor) {
                 var values = filterObj.editor.values ? filterObj.values : filterObj.editorValues;
-                innerHTML += "<select id=\"" + filterId + "\"" + codeOnChange + " class=\"liquidSelect\" >";
+                innerHTML += "<select id=\"" + filterObj.linkedContainerId + "\"" + codeOnChange + " class=\"liquidSelect\" >";
                 for(var i=0; i<values.length; i++) {
                     var valueObj = values[i];
                     if(valueObj) {
@@ -10855,10 +10866,8 @@ var Liquid = {
                         + "</td>";
             } else {
                 if(!filterObj.lookup || typeof filterObj.lookup === 'undefined') {
-                    var filterId = liquid.controlId + ".filters." +filterGroupIndex + "." + filterObj.name + ".filter";
-                    var searchCode = "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" src=\""+Liquid.getImagePath("search.png")+"\" onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterId + "')\" style=\"padding-top:1; cursor:pointer\" width=\"16\" height=\"16\">";
+                    var searchCode = "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" src=\""+Liquid.getImagePath("search.png")+"\" onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterObj.linkedContainerId + "')\" style=\"padding-top:1; cursor:pointer\" width=\"16\" height=\"16\">";
 
-                    filterObj.objId = filterId;
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete 
                             + " value=\"\" id=\"" + filterObj.linkedContainerId + "\""
                             + " type=\"" + inputType + "\""
@@ -10867,7 +10876,7 @@ var Liquid = {
                             + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                             + "/>" 
                             + "<div style=\"display:inline-block; margin-left:-22px;\">"
-                            + "<img src=\""+Liquid.getImagePath("delete.png")+"\" onClick=\"Liquid.onResetFilter('" + filterId + "')\" style=\"top:4px; right:7px; position:relative; cursor:pointer\" width=\"16\" height=\"16\">"
+                            + "<img src=\""+Liquid.getImagePath("delete.png")+"\" onClick=\"Liquid.onResetFilter('" + filterObj.linkedContainerId + "')\" style=\"top:4px; right:7px; position:relative; cursor:pointer\" width=\"16\" height=\"16\">"
                             + "</div>"
                             + "</td>"
                             + "<td class=\"liquidFilterImg\">"
@@ -10956,7 +10965,7 @@ var Liquid = {
                     var col = liquid.tableJson.columns[iField1B-1];
                     if(isDef(col)) {
                         if(Liquid.isDate(col.type)) {
-                            var obj = document.getElementById(filterObj.objId);
+                            var obj = document.getElementById(filterObj.linkedContainerId);
                             Liquid.createDateTimePicker(col, obj, false, liquid, null);
                         }
                     }
@@ -13283,7 +13292,7 @@ var Liquid = {
                 if(filtersJson) {
                     for (var i=0; i<filtersJson.columns.length; i++) {
                         if(filtersJson.columns[i].name == columnName) {
-                            var element = document.getElementById(liquid.controlId + ".filters." +(liquid.curFilter+1) + "." + filtersJson.columns[i].name + ".filter");
+                            var element = document.getElementById(liquid.controlId + ".filters." +(liquid.curFilter+1) + "." + filtersJson.columns[i].runtimeName + ".filter");
                             if(element) {
                                 bAddFilter = false;
                                 if(element.value !== filterValue) element.value = filterValue;

@@ -888,6 +888,44 @@ public class event {
         result += "}";
         return result;
     }
+    
+    
+    
+    static public String testDialogX (Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
+        String result = "{ \"timestamp\":"+System.currentTimeMillis();
+        String title = "", error = "", warning = "", message = "";
+        boolean fail = false;
+        if(params != null) {
+            try {
+                HttpServletRequest request = (HttpServletRequest)freeParam;
+                JSONObject paramsJSON = event.getJSONObject(params, "dialogX");
+                if(paramsJSON != null) {
+                    JSONArray names = paramsJSON.names();
+                    if(names != null) {
+                        for(int io=0; io<names.length(); io++) {
+                            String propName = names.getString(io);
+                            Object propVal = paramsJSON.get(propName);
+
+                            if(propVal != null) {
+                                // propVal = utility.base64Decode(propVal);
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable th) {
+                fail = true;
+                Logger.getLogger(event.class.getName()).log(Level.SEVERE, null, th);
+                error = "[SERVER] ERROR: "+th.getLocalizedMessage();
+            }
+        }
+        result += ",\"fail\":"+fail+"";
+        result += ",\"title\":\""+title+"\"";
+        result += ",\"error\":\""+utility.base64Encode(error)+"\"";
+        result += ",\"warning\":\""+utility.base64Encode(warning)+"\"";
+        result += ",\"message\":\""+utility.base64Encode(message)+"\"";
+        result += "}";
+        return result;
+    }    
     //
     // Fine callback di test
     //
@@ -1819,9 +1857,29 @@ public class event {
                                     }
                                 }
                             }
-                        } else if(controlId.isEmpty()) {
-                            if(!paramJSON.has("name")) {
+                        } else if(controlId != null && controlId.isEmpty()) {
+                            if(!paramJSON.has("name")) { // exclude the "name" field, get the "name" content
                                 return paramJSON.getJSONObject(paramName);
+                            }
+                        } else if(controlId == null) {
+                            if(paramJSON.has(paramName)) {
+                                Object o = paramJSON.get(paramName);
+                                if(o instanceof JSONObject) {
+                                    return paramJSON.getJSONObject(paramName);
+                                } else if(o instanceof JSONArray) {
+                                    JSONArray oArray = (JSONArray)o;
+                                    if(oArray.length() == 1) {
+                                        Object obj = oArray.get(0);
+                                        if(obj instanceof JSONObject) {
+                                            return (JSONObject)obj;
+                                        } else {
+                                            String type = obj.getClass().getName();
+                                            Logger.getLogger(event.class.getName()).log(Level.SEVERE, "event.getJSONObject() : Cannot return JSONObject from param '"+paramName+"' ... it's a '"+type+"'");
+                                        }
+                                    } else {
+                                        Logger.getLogger(event.class.getName()).log(Level.SEVERE, "event.getJSONObject() : Cannot return JSONObject from param '"+paramName+"' ... it's a 'JSONArray' with multiple content");
+                                    }
+                                }
                             }
                         } else {
                             return paramJSON.getJSONObject(paramName);

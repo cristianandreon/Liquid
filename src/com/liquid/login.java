@@ -2,7 +2,10 @@ package com.liquid;
 
 import com.liquid.connection.JDBCSource;
 import static com.liquid.connection.getLiquidDBConnection;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -69,6 +72,23 @@ public class login {
     static public int minCharsUser = 3;
     static public int minCharsPasswords = 6;
     private static boolean allowDuplicateUserName = false;
+    
+    
+    // Filter on ip address
+    static class ipFilter {
+        String ip = null;
+        int type = 0;
+        
+        ipFilter(String ip, String typeOf) {
+            this.type = ("enabled".equalsIgnoreCase(typeOf) ? 1 : 0 );
+            this.ip = ip;
+        }
+    }
+    
+    static public ArrayList<ipFilter>FilterIPs = null;
+
+    
+            
 
     static public void setApplicationId(HttpServletRequest request, String applicationId) {
         if(request != null)
@@ -434,7 +454,6 @@ public class login {
 
             String sRedirect = null;
 
-
             application_id = request.getParameter("application_id");
             domain_id = request.getParameter("domain_id");
             sUserID = request.getParameter("user");
@@ -669,6 +688,20 @@ public class login {
                                 return "{ \"result\":-30, \"error\":\""+utility.base64Encode(message)+"\", \"wrongPassCounter\":"+iwrongPass+"}";
                             }
 
+
+                            // Verifica filtro IP                            
+                            if (isLoginPassed) {
+                                try {
+                                    String RemoteIP = request.getRemoteAddr();
+                                    if(hasIpAccess( RemoteIP )) {
+                                    } else {
+                                        isLoginPassed = false;
+                                    }
+                                } catch (Exception e) {
+                                    return "{ \"result\":-30, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+                                }
+                            }
+                            
                             if (isLoginPassed) {
                                 String assets_id = "", assets_name = "", assets_inactive_name = "";
                                 
@@ -1981,4 +2014,114 @@ public class login {
         }
         return bRetVal;
     }    
+    
+    
+    static public String getIP( HttpServletRequest request ) throws Exception {
+        String RemoteIP = request.getRemoteAddr();
+        if(RemoteIP.startsWith("0.0.0.0")) {
+            URL whatismyip = new URL("http://checkip.amazonaws.com");
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                    whatismyip.openStream()));
+            return in.readLine();
+        } else {            
+            return RemoteIP;
+        }
+    }
+    
+    static public boolean addFilterIP( String IP ) throws Exception {
+            return addFilterIP( IP, "enabled" );
+    }
+    
+    static public boolean addFilterIP( String IP, String typeOf ) throws Exception {
+        boolean bRetVal = true;
+
+        try {
+            
+            if(IP != null) {
+                if(FilterIPs == null) {
+                    FilterIPs = new ArrayList<ipFilter>();
+                }
+
+                FilterIPs.add( new ipFilter(IP, "enabled") );
+            }
+            
+        } catch (Exception e) {
+            throw new Exception(e);            
+        }
+        return bRetVal;
+    }    
+    
+    static public boolean removeFilterIP( String IP ) throws Exception {
+        boolean bRetVal = true;
+
+        try {
+            
+            if(IP != null) {
+            }
+                    
+        } catch (Exception e) {
+            throw new Exception(e);            
+        }
+        return bRetVal;
+    }
+    
+    
+    static public boolean hasIpAccess( String IP ) throws Exception {
+
+        try {
+            
+            if(FilterIPs == null) {
+                return true;
+            } else {
+                
+                for(int i=0; i<FilterIPs.size(); i++) {
+                    String filterIp = FilterIPs.get(i).ip;
+                    boolean match = compareIp(filterIp, IP);
+                    if(FilterIPs.get(i).type == 0) {
+                        // enabled
+                        if(match) return true;
+                    } else {
+                        // disable
+                        if(match) return false;
+                    }
+                }
+            }
+        
+        } catch (Exception e) {
+            throw new Exception(e);            
+        }
+        return false;
+    }        
+
+    static public boolean compareIp( String IP1, String IP2 ) throws Exception {
+        String [] ip1Parts = IP1.split(".");
+        String [] ip2Parts = IP2.split(".");
+        
+        for(int i=0; i<4; i++) {
+            if(ip1Parts.length >= i+1) {
+                if(ip2Parts.length >= i+1) {
+                    if("*".equalsIgnoreCase( ip1Parts[i] )) {
+                    } else {
+                        String [] subParts = ip1Parts[i].split("-");
+                        if(subParts.length >= 2) {
+                            int max = Math.max(Integer.parseInt(subParts[0]), Integer.parseInt(subParts[1]));
+                            int min = Math.min(Integer.parseInt(subParts[0]), Integer.parseInt(subParts[1]));
+                            int ip = Integer.parseInt(ip2Parts[i]);
+                            if(ip <= max && ip <= min) {                            
+                            } else {
+                                return false;
+                            }
+                        } else {
+                            if(ip1Parts[i] == ip2Parts[i]) {
+                            } else {
+                                return false;
+                            }
+                        }                        
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
 }

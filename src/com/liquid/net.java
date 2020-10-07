@@ -73,9 +73,6 @@ public class net {
                 sc.init(null, new TrustManager[]{new TrustAnyTrustManager()}, new java.security.SecureRandom());
                 conn.setSSLSocketFactory(sc.getSocketFactory());
 
-                conn.setRequestProperty("User-Agent", "LIQUID");
-                conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
-
                 process_header_params(headers, conn);
 
                 if (postData != null) {
@@ -89,9 +86,6 @@ public class net {
 
             } else {
                 HttpURLConnection conn = (HttpURLConnection) myUrl.openConnection();
-
-                conn.setRequestProperty("User-Agent", "LIQUID");
-                conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
 
                 process_header_params(headers, conn);
 
@@ -125,7 +119,7 @@ public class net {
                 map = connh.getHeaderFields();
             }
 
-            /* TOMCAT MERDA : NON FUNZIONA : TOMACAT non riconosce la JSESSIONID
+            /* TOMCAT SHIT : NON FUNZIONA : TOMACAT non riconosce la JSESSIONID
             for (Map.Entry<String, List<String>> entry : map.entrySet()) {
                 if("Set-Cookie".equalsIgnoreCase(entry.getKey())) {
                     List<String> coockies = entry.getValue();
@@ -168,50 +162,62 @@ public class net {
     }
 
     void process_header_params(Object headers, Object conn) {
+        boolean userAgentSet = false;
+        boolean acceptLanguageSet = false;
         if (headers != null) {
             try {
                 HttpsURLConnection conns = (HttpsURLConnection) (conn instanceof HttpsURLConnection ? conn : null);
                 HttpURLConnection connh = (HttpURLConnection) (conn instanceof HttpURLConnection ? conn : null);
+                ArrayList<Object> params = new ArrayList<Object>();
+
                 if (headers instanceof String) {
-                    String[] params = ((String) headers).split(",");
-                    for (int ip = 0; ip < params.length; ip++) {
-                        String[] pair = ((String) params[ip]).split(":");
-                        if (pair != null) {
-                            if (pair.length >= 2) {
-                                if (connh != null) {
-                                    connh.setRequestProperty(pair[0], pair[1]);
-                                } else if (conns != null) {
-                                    conns.setRequestProperty(pair[0], pair[1]);
-                                }
-                            } else if (pair.length == 1) {
-                                if (connh != null) {
-                                    connh.setRequestProperty(pair[0], "");
-                                } else if (conns != null) {
-                                    conns.setRequestProperty(pair[0], "");
-                                }
+                    String[] sparams = ((String) headers).split(",");
+                    for (int ip = 0; ip < sparams.length; ip++) {
+                        params.add(sparams[ip]);
+                    }
+                } else if (headers instanceof ArrayList) {
+                    params = (ArrayList<Object>) headers;
+                }
+
+                for (int ip = 0; ip < params.size(); ip++) {
+                    String[] pair = String.valueOf(params.get(ip)).split(":");
+                    if (pair != null) {
+                        if (pair.length >= 2) {
+                            if ("User-Agent".equalsIgnoreCase(pair[0])) {
+                                userAgentSet = true;
+                            }
+                            if ("Accept-Language".equalsIgnoreCase(pair[0])) {
+                                acceptLanguageSet = true;
+                            }
+                            if (connh != null) {
+                                connh.setRequestProperty(pair[0], pair[1].trim());
+                            } else if (conns != null) {
+                                conns.setRequestProperty(pair[0], pair[1].trim());
+                            }
+                        } else if (pair.length == 1) {
+                            if (connh != null) {
+                                connh.setRequestProperty(pair[0], "");
+                            } else if (conns != null) {
+                                conns.setRequestProperty(pair[0], "");
                             }
                         }
                     }
-                } else if (headers instanceof ArrayList) {
-                    // TODO
-                    ArrayList<Object> params = (ArrayList<Object>) headers;
-                    for (int ip = 0; ip < params.size(); ip++) {
-                        String[] pair = String.valueOf(params.get(ip)).split(":");
-                        if (pair != null) {
-                            if (pair.length >= 2) {
-                                if (connh != null) {
-                                    connh.setRequestProperty(pair[0], pair[1]);
-                                } else if (conns != null) {
-                                    conns.setRequestProperty(pair[0], pair[1]);
-                                }
-                            } else if (pair.length == 1) {
-                                if (connh != null) {
-                                    connh.setRequestProperty(pair[0], "");
-                                } else if (conns != null) {
-                                    conns.setRequestProperty(pair[0], "");
-                                }
-                            }
-                        }
+                }
+
+                if (!userAgentSet) {
+                    if (conns != null) {
+                        conns.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 Edg/85.0.564.68");
+                    }
+                    if (connh != null) {
+                        connh.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 Edg/85.0.564.68");
+                    }
+                }
+                if (!acceptLanguageSet) {
+                    if (conns != null) {
+                        conns.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+                    }
+                    if (connh != null) {
+                        connh.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
                     }
                 }
             } catch (Exception ex) {
