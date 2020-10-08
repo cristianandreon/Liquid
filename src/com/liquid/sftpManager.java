@@ -214,15 +214,17 @@ public class sftpManager implements SftpProgressMonitor {
             float dt = (System.currentTimeMillis() - lastCurrentTimeMillis) / 1000;
             this.lastCurrentTimeMillis = System.currentTimeMillis();
             String pec = String.format("%1.2f", (float) ((float) this.uploadingCurrent / (float) glFileSize * 100.0f));
-            float fSpeed = (ds / dt / 1024.0f);
-            if (fSpeed > maxSpeed) {
-                maxSpeed = fSpeed;
+            float fSpeed = dt > 0.0f ? (ds / dt / 1024.0f) : 0.0f;
+            if (fSpeed > 0.0f) {
+                if (fSpeed > maxSpeed) {
+                    maxSpeed = fSpeed;
+                }
+                if (fSpeed < minSpeed) {
+                    minSpeed = fSpeed;
+                }
+                mediaSpeed = (mediaSpeed * count + fSpeed) / (count + 1);
+                count++;
             }
-            if (fSpeed < minSpeed) {
-                minSpeed = fSpeed;
-            }
-            mediaSpeed = (mediaSpeed * count + fSpeed) / (count + 1);
-            count++;
             timeLeft = mediaSpeed > 0.0f ? (glFileSize - uploadingCurrent) / (mediaSpeed * 1024.0f) : 0.0f;
             String speed = String.format("%1.2f", mediaSpeed);
             String sTimeLeft = utility.getTimeString(timeLeft);
