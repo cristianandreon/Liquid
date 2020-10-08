@@ -100,7 +100,7 @@ html, body { height: 100% }
 .liquidError { color: darkred; z-index: 111; position: relative; overflow: auto; height: 29px; }
 .liquidShow {-webkit-transition: opacity 0.5s linear; -o-transition: opacity 0.5s linear; transition: opacity 0.5s linear; opacity: 1; border-right: 1px solid lightgray; border-bottom: 1px solid lightgray }
 .liquidHide {opacity: 0; -webkit-transition: opacity 0.5s linear; -o-transition: opacity 0.5s linear; transition: opacity 0.5s linear;}
-.liquidActionBar { width: 100%; pointer-events: none; float: right; height: 50px; overflow: hidden; background-color: rgb(234, 234, 234); border-top:1px solid white; border-bottom:1px solid lightgrey; border-right: 1px solid lightgrey; border-left: 1px solid lightgrey; }
+.liquidActionBar { width: 100%; pointer-events: none; height: 50px; overflow: hidden; background-color: rgb(234, 234, 234); border-top:1px solid white; border-bottom:1px solid lightgrey; border-right: 1px solid lightgrey; border-left: 1px solid lightgrey; }
 .liquidActionBarContent { width:100%; text-align:center; vertical-align: middle; margin-top: 3px; z-index: 112; position: relative; }
 .liquidActionImg { margin-left:5px; margin-right:7px; }
 .liquidActionBt { border: darkgray; width: 150px; padding: 5px; height: 37px; text-align: left; display: inline-flex; }

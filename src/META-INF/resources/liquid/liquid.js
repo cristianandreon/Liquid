@@ -1282,6 +1282,7 @@ class LiquidCtrl {
                     content_div.id = controlId + ".docker.left";
                     content_div.className = "liquidDockerVContainer";
                     content_div.style.width = "1px";
+                    content_div.style.display = "none";
                     // content_div.style.resize = "horizontal";
                     content_div.style.overflow = "hidden";
                     this.dockerTblLeft = content_div;
@@ -1292,7 +1293,7 @@ class LiquidCtrl {
                     content_div = document.createElement("div");
                     content_div.id = controlId + ".docker.center";
                     content_div.className = "liquidDockerVContainer";
-                    content_div.style.width = "calc(100% - 2px)";
+                    content_div.style.width = "calc(100% - 0px)";
                     content_div.style.overflow = "hidden";
                     this.dockerTblCenter = content_div;
                     this.dockerRoot = content_div;
@@ -1304,6 +1305,7 @@ class LiquidCtrl {
                     content_div.id = controlId + ".docker.right";
                     content_div.className = "liquidDockerVContainer";
                     content_div.style.width = "1px";
+                    content_div.style.display = "none";
                     // content_div.style.resize = "horizontal";
                     content_div.style.overflow = "hidden";
                     this.dockerTblRight = content_div;
