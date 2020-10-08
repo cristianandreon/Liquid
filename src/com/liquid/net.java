@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.CertificateException;
@@ -164,6 +165,7 @@ public class net {
     void process_header_params(Object headers, Object conn) {
         boolean userAgentSet = false;
         boolean acceptLanguageSet = false;
+        boolean hostName = false;
         if (headers != null) {
             try {
                 HttpsURLConnection conns = (HttpsURLConnection) (conn instanceof HttpsURLConnection ? conn : null);
@@ -188,6 +190,9 @@ public class net {
                             }
                             if ("Accept-Language".equalsIgnoreCase(pair[0])) {
                                 acceptLanguageSet = true;
+                            }
+                            if ("Host".equalsIgnoreCase(pair[0])) {
+                                hostName = true;
                             }
                             if (connh != null) {
                                 connh.setRequestProperty(pair[0], pair[1].trim());
@@ -220,6 +225,16 @@ public class net {
                         connh.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
                     }
                 }
+
+                if (!hostName) {
+                    if (conns != null) {
+                        conns.setRequestProperty("Host", InetAddress.getLocalHost().getHostName());
+                    }
+                    if (connh != null) {
+                        connh.setRequestProperty("Host", InetAddress.getLocalHost().getHostName());
+                    }
+                }
+
             } catch (Exception ex) {
                 Logger.getLogger(net.class.getName()).log(Level.SEVERE, null, ex);
             }

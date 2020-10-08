@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.39   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.40   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  01-10-2020
 //  TODO : see trello.com
 //
@@ -2184,7 +2184,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.39,
+    version: 1.40,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -10844,7 +10844,7 @@ var Liquid = {
                     var valueObj = values[i];
                     if(valueObj) {
                         var selected = "";
-                        if(valueObj.value === filterObj.value)
+                        if(valueObj.value === filterObj.value || (valueObj.selected === true) )
                             selected = "selected";
                         innerHTML += "<option " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " value=\"" + ( isDef(valueObj.value) ? valueObj.value : valueObj.label) + "\" " + selected + ">" + (valueObj.label ? valueObj.label : valueObj.value) + "</option>";
                     }
@@ -10857,7 +10857,7 @@ var Liquid = {
                     var valueObj = values[i];
                     if(valueObj) {
                         var selected = "";
-                        if(valueObj.value === filterObj.value)
+                        if(valueObj.value === filterObj.value || (valueObj.selected === true) )
                             selected = "selected";
                         innerHTML += "<option " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " value=\"" + (valueObj.value ? valueObj.value : valueObj.label) + "\" " + selected + ">" + (valueObj.label ? valueObj.label : valueObj.value) + "</option>";
                     }
