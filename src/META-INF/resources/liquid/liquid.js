@@ -9285,14 +9285,16 @@ var Liquid = {
                 for(var i=0; i<liquid.selection.exclude.length; i++) {
                     if(idsUnselected.length > 0) idsUnselected += ",";
                     var value = liquid.selection.exclude[i];
-                    if(typeof value === 'string') idsUnselected += value.replace(/"/g, "\\\"") ; else idsUnselected += '"' + value + '"';
+                    if(typeof value === 'string') value = value.replace(/"/g, "\\\""); 
+                	idsUnselected += (value.startsWith('"') ? "" : '"') +  + value + (value.endsWith('"') ? "" : '"');
                 }
             } else {
                 // include list
                 for(var i=0; i<liquid.selection.include.length; i++) {
                     if(idsSelected.length > 0) idsSelected += ",";
                     var value = liquid.selection.include[i];
-                    if(typeof value === 'string') idsSelected += value.replace(/"/g, "\\\""); else idsSelected += '"' + value + '"';
+                    if(typeof value === 'string') value = value.replace(/"/g, "\\\""); 
+                    idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
                 }
             }
         }
