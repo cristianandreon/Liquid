@@ -428,7 +428,7 @@ public class metadata {
 
                     ResultSet rs = stmt.executeQuery(queryList[iq]);
 
-                    System.err.println(" Tempo esecuzione query :" + (System.currentTimeMillis() - msTrace));
+                    long query_time = (System.currentTimeMillis() - msTrace);
                     
                     recCount = 0;
 
@@ -458,6 +458,8 @@ public class metadata {
                     }
                     rs.close();
                     
+                    long retrive_time = (System.currentTimeMillis() - msTrace);
+                    
                     if(recCount > 0) {
                         nTable++;
 
@@ -482,12 +484,17 @@ public class metadata {
                             stmtc.close();
                         }
                         metaDataTable.add(new MetaDataTable(table, schema, null, metaDataCols));
-                        System.err.println(" Letta tabella n." + nTable + " : " + schema + "." + schema + "...");
+                        
+                        long total_time = (System.currentTimeMillis() - msTrace);
+                        long extra_time = total_time - retrive_time;
+                        long total_retrive_time = retrive_time -  query_time;
+                        
+                        System.err.println(" Lettura tabella n." + nTable + " : " + schema + "." + table + "... [ TIME Statistics : query:"+query_time+"ms" + " + retrive:"+total_retrive_time+"ms" + " + extra:"+extra_time+"ms" + " = "+total_time+"ms");
                     }
                 }
                 stmt.close();                
                 
-                System.err.println("Read meatadata on table: " + schema + "." + table + " recCount:" + recCount + " Tempo lettura :" + (System.currentTimeMillis() - msTrace));
+                System.err.println("Read meatadata on table: " + schema + "." + table + " Items:" + recCount + " Total time :" + (System.currentTimeMillis() - msTrace));
 
                 if (columnName != null) {
                     return getTableMetadata(conn, null, schema, table, columnName);
