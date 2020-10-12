@@ -1855,7 +1855,7 @@ public class db {
                         filterValue = (String) fres[0];
                         int filterValueType = (int) fres[1];
 
-                        if (filterValueType == 1) {
+                        if (filterValueType == 0) {
                             // expression
                             preFix = "";
                             postFix = "";
@@ -3890,13 +3890,13 @@ public class db {
                     tbl_wrk.bLocked = true;
 
                     return new Object[]{(Object) session.getAttribute(tbl_wrk.controlId + ".columnList"),
-                        (Object) session.getAttribute(tbl_wrk.controlId + ".primaryKey"),
-                        (Object) session.getAttribute(tbl_wrk.controlId + ".from"),
-                        (Object) session.getAttribute(tbl_wrk.controlId + ".join"),
-                        (Object) session.getAttribute(tbl_wrk.controlId + ".where"),
-                        (Object) session.getAttribute(tbl_wrk.controlId + ".sort"),
-                        (Object) session.getAttribute(tbl_wrk.controlId + ".limit"),
-                        (Object) session.getAttribute(tbl_wrk.controlId + ".delimiter")
+                         (Object) session.getAttribute(tbl_wrk.controlId + ".primaryKey"),
+                         (Object) session.getAttribute(tbl_wrk.controlId + ".from"),
+                         (Object) session.getAttribute(tbl_wrk.controlId + ".join"),
+                         (Object) session.getAttribute(tbl_wrk.controlId + ".where"),
+                         (Object) session.getAttribute(tbl_wrk.controlId + ".sort"),
+                         (Object) session.getAttribute(tbl_wrk.controlId + ".limit"),
+                         (Object) session.getAttribute(tbl_wrk.controlId + ".delimiter")
                     };
 
                 } catch (Exception e) {
@@ -4314,6 +4314,8 @@ public class db {
                             if (foreignTableTransactList != null || tableTransactList != null) {
                                 if (foreignTableTransactList.transactionList != null) {
                                     for (i = 0; i < foreignTableTransactList.transactionList.size(); i++) {
+                                    	executingQuery = null;
+                                    	
                                         try {
                                             //
                                             // Print SQL for debug
@@ -4355,6 +4357,8 @@ public class db {
                                                 }
                                             }
                                         } catch (Throwable th) {
+                                        	if(executingQuery == null)
+                                        		executingQuery = foreignTableTransactList.getSQL(liquid, i);
                                             foreignTableUpdates.add("{\"table\":\"" + foreignTableTransactList.transactionList.get(i).table.replace(itemIdString, "") + "\",\"ids\":[], \"error\":\"" + utility.base64Encode(th.getLocalizedMessage()) + "\", \"query\":\"" + utility.base64Encode(executingQuery) + "\" }");
                                             String fieldValue = foreignTableTransactList.transactionList.get(i).rowId;
                                             fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
@@ -4365,6 +4369,7 @@ public class db {
 
                                 if (tableTransactList.transactionList != null) {
                                     for (i = 0; i < tableTransactList.transactionList.size(); i++) {
+                                    	executingQuery = null;
                                         try {
                                             if (workspace.projectMode) {
                                                 executingQuery = tableTransactList.getSQL(liquid, i);
@@ -4393,6 +4398,8 @@ public class db {
                                                 }
                                             }
                                         } catch (Throwable th) {
+                                            if(executingQuery == null)
+                                            	executingQuery = tableTransactList.getSQL(liquid, i);
                                             tableUpdates.add("{\"table\":\"" + liquid.schemaTable.replace(tableIdString, "") + "\",\"ids\":[], \"error\":\"" + utility.base64Encode(th.getLocalizedMessage()) + "\", \"query\":\"" + utility.base64Encode(executingQuery) + "\" }");
                                             String fieldValue = tableTransactList.transactionList.get(i).rowId;
                                             fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
@@ -4599,8 +4606,9 @@ public class db {
         if ((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("sqlserver.")) || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("sqlserver"))) {
             isSqlServer = true;
         }
-        int valueType = 0;
-        if (colTypes == 8) { // float
+        int valueType = 1; // srting
+        
+        if (colTypes == 8 || colTypes == 7) { // float
             value = value.replace(",", ".");
         }
 
@@ -4611,7 +4619,7 @@ public class db {
                 if (isOracle || isPostgres) {
                     if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
                         value = "TO_DATE('" + value + "', 'YYYY-MM-DD HH24:MI:SS')";
-                        valueType = 1; // is an expression
+                        valueType = 0; // is an expression
                         // > of means at the end of the day
                         /*
                         if(value != null && value.length() <= 10) {
@@ -4619,15 +4627,15 @@ public class db {
                         		value += "+1";
                         	}
                         }
-                         */
+                        */
                     } else if (colTypes == 91) { // date
                         value = "TO_DATE('" + value + "', 'YYYY-MM-DD')";
-                        valueType = 1; // is an expression
+                        valueType = 0; // is an expression
                     }
                 } else if (isMySQL) {
                     if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
                         value = "STR_TO_DATE('" + value + "', '%Y-%m-%d %H:%i:%s')";
-                        valueType = 1; // is an expression
+                        valueType = 0; // is an expression
                         // > of means at the end of the day
                         /*
                         if(value != null && value.length() <= 10) {
@@ -4635,18 +4643,18 @@ public class db {
                         		value += "+1";
                         	}
                         }
-                         */
+                        */
                     } else if (colTypes == 91) { // date
                         value = "STR_TO_DATE('" + value + "', '%Y-%m-%d')";
-                        valueType = 1; // is an expression
+                        valueType = 0; // is an expression
                     }
                 } else if (isSqlServer) {
                     if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
                         value = "CONVERT(DATETIME,'" + value + "')";
-                        valueType = 1; // is an expression
+                        valueType = 0; // is an expression
                     } else if (colTypes == 91) { // date
                         value = "CONVERT(DATETIME,'" + value + ")";
-                        valueType = 1; // is an expression
+                        valueType = 0; // is an expression
                     }
                 }
             }
@@ -4666,11 +4674,13 @@ public class db {
                     valueType = 1; // is an expression
                 }
             }
-        } else if (colTypes == 8 || colTypes == 7 || colTypes == 6 || colTypes == 4 || colTypes == 3 || colTypes == -5 || colTypes == -6 || colTypes == -7) {
+        } else if (colTypes == 8 || colTypes == 7 || colTypes == 4 || colTypes == 3 || colTypes == -5 || colTypes == -6 || colTypes == -7) {
             // numeric
             if (value == null || value.isEmpty()) {
                 value = "0";
             }
+            valueType = colTypes; // is a number
+            
         } else if (colTypes == -7) { // 
             value = value.isEmpty() ? null : value;
         }
@@ -4987,6 +4997,12 @@ public class db {
             for (int ic = 0; ic < cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
                 Object fieldData = utility.get(bean, col.getString("name"));
+                if(fieldData instanceof Date || fieldData instanceof Timestamp) {
+                	// N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
+                    DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                    fieldData = dateFormat.format(fieldData);
+                } else {                	
+                }
                 sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + (fieldData != null ? fieldData : "") + "\"}";
             }
             sModifications += "{\"rowId\":\"\",\"fields\":[" + sFields + "]}";
@@ -5540,6 +5556,9 @@ public class db {
                                                         if (t.has("error")) {
                                                             error += "Inserting record error; " + utility.base64Decode(t.getString("error"));
                                                         }
+                                                        if (t.has("qery")) {
+                                                            error += " - query:" + utility.base64Decode(t.getString("query"));
+                                                        }
                                                     }
                                                 }
                                                 if (insertResultJSON.has("error")) {
@@ -5563,7 +5582,7 @@ public class db {
                 }
             }
             if (error != null && !error.isEmpty()) {
-                resultJSON.put("error", error);
+                resultJSON.put("error", utility.base64Encode(error));
             }
 
         } catch (Throwable e) {

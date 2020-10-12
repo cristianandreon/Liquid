@@ -53,7 +53,7 @@ public class TransactionList {
                     ft.values.set(ft.columns.indexOf(_column), _value);
                     } else {
                     ft.columns.add(_column);
-                    ft.values.add(_value != null ? ( _valueType != 1 ? _value.replace("'", "''") : _value ) : null);
+                    ft.values.add(_value != null ? ( _value /* _valueType != 0 ? _value.replace("'", "''") : _value*/ ) : null);
                     ft.valueTypes.add(_valueType);
                     ft.sourceColumn = _sourceColumn;
                     ft.rowId = rowId;
@@ -68,7 +68,7 @@ public class TransactionList {
     public String getSQL ( workspace tbl_wrk, int i ) {
         String sql = "";
         if(i<transactionList.size()) {
-            TransactionList ft = transactionList.get(i);
+            TransactionList transaction = transactionList.get(i);
             String itemIdString = "\"", tableIdString = "\"";            
             if(tbl_wrk.driverClass.contains(".mysql") || tbl_wrk.driverClass.contains(".mariadb")) {
                 itemIdString = "`";
@@ -77,34 +77,34 @@ public class TransactionList {
                 itemIdString = "\"";
                 tableIdString = "\"";
             }            
-            if("insert".equalsIgnoreCase(ft.type)) {
-                sql = "INSERT INTO "+(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+            if("insert".equalsIgnoreCase(transaction.type)) {
+                sql = "INSERT INTO "+(transaction.table.startsWith(itemIdString)?"":itemIdString)+transaction.table+(transaction.table.endsWith(itemIdString)?"":itemIdString)+"";
                 sql += " (";
-                for(int ic=0; ic<ft.columns.size(); ic++)
-                    sql += (ic>0?",":"") + itemIdString + ft.columns.get(ic) + itemIdString;
+                for(int ic=0; ic<transaction.columns.size(); ic++)
+                    sql += (ic>0?",":"") + itemIdString + transaction.columns.get(ic) + itemIdString;
                 sql += ") VALUES (";
-                for(int ic=0; ic<ft.values.size(); ic++) {
-                	String apex = ft.valueTypes.get(ic) == 1 ? "":"'";
-                    sql += (ic>0?",":"") + (ft.values.get(ic) != null ? (apex + ft.values.get(ic) + apex) : "null");
+                for(int ic=0; ic<transaction.values.size(); ic++) {
+                	String apex = transaction.valueTypes.get(ic) == 0 ? "":"'";
+                    sql += (ic>0?",":"") + (transaction.values.get(ic) != null ? (apex + transaction.values.get(ic) + apex) : "null");
                 }
                 sql += ")";
-            } else if("update".equalsIgnoreCase(ft.type)) {
-                sql = "UPDATE " +(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+            } else if("update".equalsIgnoreCase(transaction.type)) {
+                sql = "UPDATE " +(transaction.table.startsWith(itemIdString)?"":itemIdString)+transaction.table+(transaction.table.endsWith(itemIdString)?"":itemIdString)+"";
                 sql += " SET ";
-                for(int ic=0; ic<ft.columns.size(); ic++) {
-                	String apex = ft.valueTypes.get(ic) == 1 ? "":"'";
-                    sql += (ic>0?",":"") + itemIdString + ft.columns.get(ic) + itemIdString;
+                for(int ic=0; ic<transaction.columns.size(); ic++) {
+                	String apex = transaction.valueTypes.get(ic) == 0 ? "":"'";
+                    sql += (ic>0?",":"") + itemIdString + transaction.columns.get(ic) + itemIdString;
                     sql += "=";
-                    sql += (ft.values.get(ic) != null ? (apex + ft.values.get(ic) + apex) : "null");
+                    sql += (transaction.values.get(ic) != null ? (apex + transaction.values.get(ic) + apex) : "null");
                     sql += "";
                 }
                 sql += " WHERE ";
-                sql += ft.where;
-            } else if("delete".equalsIgnoreCase(ft.type)) {
-                if(ft.where != null && !ft.where.isEmpty()) {
-                    sql = "DELETE FROM " +(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+                sql += transaction.where;
+            } else if("delete".equalsIgnoreCase(transaction.type)) {
+                if(transaction.where != null && !transaction.where.isEmpty()) {
+                    sql = "DELETE FROM " +(transaction.table.startsWith(itemIdString)?"":itemIdString)+transaction.table+(transaction.table.endsWith(itemIdString)?"":itemIdString)+"";
                     sql += " WHERE ";
-                    sql += ft.where;
+                    sql += transaction.where;
                 }
             }
         }
@@ -123,7 +123,7 @@ public class TransactionList {
         String sql = "";
         if(i<transactionList.size()) {
             ArrayList<String> params = new ArrayList<String>();
-            TransactionList ft = transactionList.get(i);
+            TransactionList transaction = transactionList.get(i);
             String itemIdString = "\"", tableIdString = "\"";            
             if(tbl_wrk.driverClass.contains(".mysql") || tbl_wrk.driverClass.contains(".mariadb")) {
                 itemIdString = "`";
@@ -132,37 +132,79 @@ public class TransactionList {
                 itemIdString = "\"";
                 tableIdString = "\"";
             }            
-            if("insert".equalsIgnoreCase(ft.type)) {
-                sql = "INSERT INTO "+(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+            if("insert".equalsIgnoreCase(transaction.type)) {
+                sql = "INSERT INTO "+(transaction.table.startsWith(itemIdString)?"":itemIdString)+transaction.table+(transaction.table.endsWith(itemIdString)?"":itemIdString)+"";
                 sql += " (";
-                for(int ic=0; ic<ft.columns.size(); ic++)
-                    sql += (ic>0?",":"") + itemIdString + ft.columns.get(ic) + itemIdString;
+                for(int ic=0; ic<transaction.columns.size(); ic++)
+                    sql += (ic>0?",":"") + itemIdString + transaction.columns.get(ic) + itemIdString;
                 sql += ") VALUES (";
-                for(int ic=0; ic<ft.values.size(); ic++) {
-                    sql += (ic>0?",":"") + "?";
-                    params.add( ft.values.get(ic) );
+                for(int ic=0; ic<transaction.values.size(); ic++) {
+                	int value_type = transaction.valueTypes.get(ic);
+                	if(value_type == 0) {
+                		// expression : put in the statement
+                        sql += (ic>0?",":"") + transaction.values.get(ic);
+                        params.add( null );
+                	} else {
+                		// value : put in parameters
+                        sql += (ic>0?",":"") + "?";
+                        params.add( transaction.values.get(ic) );
+                	}
                 }
                 sql += ")";
-            } else if("update".equalsIgnoreCase(ft.type)) {
-                sql = "UPDATE " +(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+            } else if("update".equalsIgnoreCase(transaction.type)) {
+                sql = "UPDATE " +(transaction.table.startsWith(itemIdString)?"":itemIdString)+transaction.table+(transaction.table.endsWith(itemIdString)?"":itemIdString)+"";
                 sql += " SET ";
-                for(int ic=0; ic<ft.columns.size(); ic++) {
-                    sql += (ic>0?",":"") + itemIdString + ft.columns.get(ic) + itemIdString;
-                    sql += "=?";
-                    params.add( ft.values.get(ic) );
+                for(int ic=0; ic<transaction.columns.size(); ic++) {
+                    sql += (ic>0?",":"") + itemIdString + transaction.columns.get(ic) + itemIdString;
+                	int value_type = transaction.valueTypes.get(ic);
+                	if(value_type == 0) {
+                		// expression : put in the statement
+                        sql += "=" + transaction.values.get(ic);
+                        params.add( null );
+                	} else {
+                		// value : put in parameters
+	                    sql += "=?";
+	                    params.add(transaction.values.get(ic) );
+                	}
                 }
                 sql += " WHERE ";
-                sql += ft.where;
-            } else if("delete".equalsIgnoreCase(ft.type)) {
-                if(ft.where != null && !ft.where.isEmpty()) {
-                    sql = "DELETE FROM " +(ft.table.startsWith(itemIdString)?"":itemIdString)+ft.table+(ft.table.endsWith(itemIdString)?"":itemIdString)+"";
+                sql += transaction.where;
+            } else if("delete".equalsIgnoreCase(transaction.type)) {
+                if(transaction.where != null && !transaction.where.isEmpty()) {
+                    sql = "DELETE FROM " +(transaction.table.startsWith(itemIdString)?"":itemIdString)+transaction.table+(transaction.table.endsWith(itemIdString)?"":itemIdString)+"";
                     sql += " WHERE ";
-                    sql += ft.where;
+                    sql += transaction.where;
                 }
             }
             PreparedStatement stmt = conn.prepareStatement(sql, RETURN_TYPE);
-            for (int ip=0; ip<params.size(); ip++) {
-                stmt.setString(ip+1, params.get(ip));
+            int ip = 1;
+            for (int ic=0; ic<params.size(); ic++) {
+                int value_type = transaction.valueTypes.get(ic);
+                // String col = transaction.columns.get(ic);
+                if(value_type == 0) {
+                    // espression : not here, stmt aspect value not expression
+                } else {
+                	if(value_type == 1) {
+	                    // srting
+	                    stmt.setString(ip, params.get(ic));
+	                } else if(value_type == 4) {
+	                    // Integer number
+	                    stmt.setInt(ip, Integer.parseInt(params.get(ic)));
+	                } else if(value_type == 3) {
+	                    // Long number
+	                    stmt.setInt(ip, Integer.parseInt(params.get(ic)));
+	                } else if(value_type == 7) {
+	                    // Float
+	                    stmt.setFloat(ip, Float.parseFloat(params.get(ic)));
+	                } else if(value_type == 8) {
+	                    // Double
+	                    stmt.setDouble(ip, Double.parseDouble(params.get(ic)));
+	                } else {
+	                    // unknown : srting
+	                    stmt.setString(ip, params.get(ic));
+	                }
+                	ip += 1;
+                }
             }            
             return new Object [] { stmt.executeUpdate(), stmt };
         }
