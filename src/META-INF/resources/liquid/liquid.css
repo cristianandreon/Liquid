@@ -116,7 +116,8 @@ html, body { height: 100% }
 .liquidSelect { font-size:10pt; font-family:verdana; height: 23px; background-color: #eaeaea; }    
 .liquidFiltersSelect { font-size:9pt; font-family:verdana; height: 27px; background-color: #eaeaea; }
 .liquidButtonHOver{ background-color:rgba(3, 169, 244, 0.20) !important; border:1px solid rgba(3, 169, 244, 0.75) !important; transition: all 1s ease-Out; box-shadow: 5px 6px 6px rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
-
+.liquidFormXContainer {  background-color: whitesmoke; }
+.liquidDialogXContainer {  background-color: whitesmoke; }
 .ag-body-viewport::-webkit-scrollbar { width: 8px; height: 8px; }
 .ag-body-viewport::-webkit-scrollbar-track { border-radius: 6px; }
 .ag-body-viewport::-webkit-scrollbar-thumb { border-radius: 5px; background: #eeeeee; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
@@ -164,7 +165,7 @@ html, body { height: 100% }
 .liquidOptionsMenu { font-size:10pt; font-family:verdana; }
 .liquidGeneralOptionsMenu { font-size:10pt; font-family:verdana; }
 .liquidOptionsButtonMenu { font-size:12pt; font-family:verdana; width:120px; height:27px; }
-.liquidDocker { width:100%; }
+.liquidDocker { width:100%; /* -webkit-box-shadow: 4px 4px 8px 1px #636363; */ }
 .liquidDockerHContainer { height:0px; border: 0px solid red; }
 .liquidDockerVContainer { width:0px; border: 0px solid blue; }
 .liquidCombo { background-color: rgba(213, 225, 232, 0.45); }
