@@ -1479,11 +1479,12 @@ public class db {
             } catch (SQLException ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
-            if (connToDB != null) 
+            if (connToDB != null) {
                 try {
-                connToDB.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                    connToDB.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
 
@@ -3890,13 +3891,13 @@ public class db {
                     tbl_wrk.bLocked = true;
 
                     return new Object[]{(Object) session.getAttribute(tbl_wrk.controlId + ".columnList"),
-                         (Object) session.getAttribute(tbl_wrk.controlId + ".primaryKey"),
-                         (Object) session.getAttribute(tbl_wrk.controlId + ".from"),
-                         (Object) session.getAttribute(tbl_wrk.controlId + ".join"),
-                         (Object) session.getAttribute(tbl_wrk.controlId + ".where"),
-                         (Object) session.getAttribute(tbl_wrk.controlId + ".sort"),
-                         (Object) session.getAttribute(tbl_wrk.controlId + ".limit"),
-                         (Object) session.getAttribute(tbl_wrk.controlId + ".delimiter")
+                        (Object) session.getAttribute(tbl_wrk.controlId + ".primaryKey"),
+                        (Object) session.getAttribute(tbl_wrk.controlId + ".from"),
+                        (Object) session.getAttribute(tbl_wrk.controlId + ".join"),
+                        (Object) session.getAttribute(tbl_wrk.controlId + ".where"),
+                        (Object) session.getAttribute(tbl_wrk.controlId + ".sort"),
+                        (Object) session.getAttribute(tbl_wrk.controlId + ".limit"),
+                        (Object) session.getAttribute(tbl_wrk.controlId + ".delimiter")
                     };
 
                 } catch (Exception e) {
@@ -4314,8 +4315,8 @@ public class db {
                             if (foreignTableTransactList != null || tableTransactList != null) {
                                 if (foreignTableTransactList.transactionList != null) {
                                     for (i = 0; i < foreignTableTransactList.transactionList.size(); i++) {
-                                    	executingQuery = null;
-                                    	
+                                        executingQuery = null;
+
                                         try {
                                             //
                                             // Print SQL for debug
@@ -4357,8 +4358,9 @@ public class db {
                                                 }
                                             }
                                         } catch (Throwable th) {
-                                        	if(executingQuery == null)
-                                        		executingQuery = foreignTableTransactList.getSQL(liquid, i);
+                                            if (executingQuery == null) {
+                                                executingQuery = foreignTableTransactList.getSQL(liquid, i);
+                                            }
                                             foreignTableUpdates.add("{\"table\":\"" + foreignTableTransactList.transactionList.get(i).table.replace(itemIdString, "") + "\",\"ids\":[], \"error\":\"" + utility.base64Encode(th.getLocalizedMessage()) + "\", \"query\":\"" + utility.base64Encode(executingQuery) + "\" }");
                                             String fieldValue = foreignTableTransactList.transactionList.get(i).rowId;
                                             fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
@@ -4369,7 +4371,7 @@ public class db {
 
                                 if (tableTransactList.transactionList != null) {
                                     for (i = 0; i < tableTransactList.transactionList.size(); i++) {
-                                    	executingQuery = null;
+                                        executingQuery = null;
                                         try {
                                             if (workspace.projectMode) {
                                                 executingQuery = tableTransactList.getSQL(liquid, i);
@@ -4398,8 +4400,9 @@ public class db {
                                                 }
                                             }
                                         } catch (Throwable th) {
-                                            if(executingQuery == null)
-                                            	executingQuery = tableTransactList.getSQL(liquid, i);
+                                            if (executingQuery == null) {
+                                                executingQuery = tableTransactList.getSQL(liquid, i);
+                                            }
                                             tableUpdates.add("{\"table\":\"" + liquid.schemaTable.replace(tableIdString, "") + "\",\"ids\":[], \"error\":\"" + utility.base64Encode(th.getLocalizedMessage()) + "\", \"query\":\"" + utility.base64Encode(executingQuery) + "\" }");
                                             String fieldValue = tableTransactList.transactionList.get(i).rowId;
                                             fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
@@ -4451,11 +4454,12 @@ public class db {
             } catch (SQLException ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
-            if (connToDB != null) 
+            if (connToDB != null) {
                 try {
-                connToDB.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                    connToDB.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
         return retVal;
@@ -4607,7 +4611,7 @@ public class db {
             isSqlServer = true;
         }
         int valueType = 1; // srting
-        
+
         if (colTypes == 8 || colTypes == 7) { // float
             value = value.replace(",", ".");
         }
@@ -4627,7 +4631,7 @@ public class db {
                         		value += "+1";
                         	}
                         }
-                        */
+                         */
                     } else if (colTypes == 91) { // date
                         value = "TO_DATE('" + value + "', 'YYYY-MM-DD')";
                         valueType = 0; // is an expression
@@ -4643,7 +4647,7 @@ public class db {
                         		value += "+1";
                         	}
                         }
-                        */
+                         */
                     } else if (colTypes == 91) { // date
                         value = "STR_TO_DATE('" + value + "', '%Y-%m-%d')";
                         valueType = 0; // is an expression
@@ -4680,7 +4684,7 @@ public class db {
                 value = "0";
             }
             valueType = colTypes; // is a number
-            
+
         } else if (colTypes == -7) { // 
             value = value.isEmpty() ? null : value;
         }
@@ -4997,11 +5001,11 @@ public class db {
             for (int ic = 0; ic < cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
                 Object fieldData = utility.get(bean, col.getString("name"));
-                if(fieldData instanceof Date || fieldData instanceof Timestamp) {
-                	// N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
+                if (fieldData instanceof Date || fieldData instanceof Timestamp) {
+                    // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
                     DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                     fieldData = dateFormat.format(fieldData);
-                } else {                	
+                } else {
                 }
                 sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + (fieldData != null ? fieldData : "") + "\"}";
             }
