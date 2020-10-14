@@ -47,7 +47,7 @@ public class workspace {
     static public String pythonExecutable = null;
 
     // key persistent on server but hidden on the client
-    static String [] serverPriorityKeys = { "connectionURL", "query" };
+    static String [] serverPriorityKeys = { "connectionURL", "queryK" };	// allow query to be replaced
     static String kDefinedAtServerSide = "[definedAtServerSide]";
     
     // separator used in controId build from file or database/schema/table

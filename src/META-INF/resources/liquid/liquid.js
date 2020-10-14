@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.40   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.41   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  01-10-2020
 //  TODO : see trello.com
 //
@@ -2186,7 +2186,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.40,
+    version: 1.41,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -3728,6 +3728,12 @@ var Liquid = {
             if(liquid.tableJson.rowSelection.toLowerCase() === "multiple") {
                 liquid.tableJson.checkboxSelection = true;
             }
+            
+            
+            if(!isDef(liquid.tableJson.columns)) {
+                liquid.tableJson.columns = [];
+            }
+            
             var loop = 0;
             while(loop<liquid.tableJson.columns.length) {
                 if(liquid.tableJson.columns[0].visible === false) {
@@ -4455,6 +4461,8 @@ var Liquid = {
                     for(var jc=0; jc<columns.length; jc++) {
                         if(columns[jc].name === column.name) {
                             columns[jc].rtFound = true;
+                            if(isDef(columns[jc].field)) column.field = columns[jc].field; 
+                            if(isDef(columns[jc].type)) column.type = columns[jc].type; 
                             bFound = true;
                             break;
                         }
@@ -4484,6 +4492,7 @@ var Liquid = {
                 liquid.tableJson.columns = newColumns;
                 if(bUIUpdate) {
                     Liquid.initializeLiquidColumns(liquid);
+                    liquid.gridOptions.api.setColumnDefs([]); // reset previsout definition
                     liquid.gridOptions.api.setColumnDefs(liquid.columnDefs);
                 }
             }
