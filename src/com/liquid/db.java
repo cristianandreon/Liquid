@@ -521,10 +521,16 @@ public class db {
                                 foreignTable = null;
                             }
                             try {
-                                if (col.has("foreignColumn")) {
+                                String fcolumnsKey = null;
+                                if (col.has("foreignColumns")) {
+                                    fcolumnsKey = "foreignColumns";
+                                } else if (col.has("foreignColumn")) {
+                                    fcolumnsKey = "foreignColumn";
+                                }
+                                if(fcolumnsKey != null) {
                                     JSONArray json_foreign_columns = null;
                                     try {
-                                        col.getJSONArray("foreignColumn");
+                                        json_foreign_columns = col.getJSONArray(fcolumnsKey);
                                     } catch (Exception e) {
                                     }
                                     if (json_foreign_columns != null) {
@@ -532,7 +538,7 @@ public class db {
                                             foreignColumns.add(json_foreign_columns.getString(ia));
                                         }
                                     } else {
-                                        foreignColumns.add(col.getString("foreignColumn"));
+                                        foreignColumns.add(col.getString(fcolumnsKey));
                                     }
                                 }
                             } catch (Exception e) {
@@ -540,10 +546,16 @@ public class db {
                             }
 
                             try {
-                                if (col.has("column")) {
+                                String columnsKey = null;
+                                if (col.has("columns")) {
+                                    columnsKey = "columns";
+                                } else if (col.has("column")) {
+                                    columnsKey = "column";
+                                }
+                                if(columnsKey != null) {
                                     JSONArray json_columns = null;
                                     try {
-                                        json_columns = col.getJSONArray("column");
+                                        json_columns = col.getJSONArray(columnsKey);
                                     } catch (Exception e) {
                                     }
                                     if (json_columns != null) {
@@ -551,7 +563,7 @@ public class db {
                                             foreignColumns.add(json_columns.getString(ia));
                                         }
                                     } else {
-                                        columns.add(col.getString("column"));
+                                        columns.add(col.getString(columnsKey));
                                     }
                                 }
                             } catch (Exception e) {
@@ -2575,34 +2587,108 @@ public class db {
                     for (int ift = 0; ift < foreignablesJson.length(); ift++) {
                         JSONObject foreignableJson = foreignablesJson.getJSONObject(ift);
                         if (foreignableJson != null) {
-                            String ft = null, fc = null, c = null;
+                            String ft = null, foreignColumnDescriptor = null, columnDescriptor = null;
                             JSONArray nestedForeignTablesJson = null;
+                            
+                            try { nestedForeignTablesJson = foreignableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
+                            try { ft = foreignableJson.getString("foreignTable"); } catch (Exception e) { }
+                            
+                            ArrayList<String> foreignColumns = new ArrayList<String>();
+                            ArrayList<String> columns = new ArrayList<String>();
+
                             try {
-                                nestedForeignTablesJson = foreignableJson.getJSONArray("foreignTables");
+                                String fcolumnsKey = null;
+                                if (foreignableJson.has("foreignColumns")) {
+                                    fcolumnsKey = "foreignColumns";
+                                } else if (foreignableJson.has("foreignColumn")) {
+                                    fcolumnsKey = "foreignColumn";
+                                }
+                                if(fcolumnsKey != null) {
+                                    JSONArray json_foreign_columns = null;
+                                    try { json_foreign_columns = foreignableJson.getJSONArray(fcolumnsKey); } catch (Exception e) { }
+                                    if (json_foreign_columns != null) {
+                                        for (int ia = 0; ia < json_foreign_columns.length(); ia++) {
+                                            foreignColumns.add(json_foreign_columns.getString(ia));
+                                        }
+                                    } else {
+                                        foreignColumns.add(foreignableJson.getString(fcolumnsKey));
+                                    }
+                                }
                             } catch (Exception e) {
-                            };
+                                foreignColumns = null;
+                            }
+
                             try {
-                                ft = foreignableJson.getString("foreignTable");
+                                String columnsKey = null;
+                                if (foreignableJson.has("columns")) {
+                                    columnsKey = "columns";
+                                } else if (foreignableJson.has("column")) {
+                                    columnsKey = "column";
+                                }
+                                if(columnsKey != null) {
+                                    JSONArray json_columns = null;
+                                    try { json_columns = foreignableJson.getJSONArray(columnsKey); } catch (Exception e) { }
+                                    if (json_columns != null) {
+                                        for (int ia = 0; ia < json_columns.length(); ia++) {
+                                            columns.add(json_columns.getString(ia));
+                                        }
+                                    } else {
+                                        columns.add(foreignableJson.getString(columnsKey));
+                                    }
+                                }
                             } catch (Exception e) {
-                            };
+                                columns = null;
+                            }
+
+                            
                             try {
-                                fc = foreignableJson.getString("foreignColumn");
+                                foreignColumnDescriptor = utility.arrayToString(foreignColumns, "", "", "_");
                             } catch (Exception e) {
-                            };
+                            }
                             try {
-                                c = foreignableJson.getString("column");
+                                columnDescriptor = utility.arrayToString(columns, "", "", "_");
                             } catch (Exception e) {
-                            };
+                            }
+                            
                             if (foreignTablesList.contains(ft) || "*".equalsIgnoreCase(foreignTables) || "all".equalsIgnoreCase(foreignTables)) {
+                                //
                                 // Include questa classe nel bean
-                                String ftControlId = "" + ft + "$" + fc + "$" + c + "@" + tbl_wrk.controlId + "";
+                                //
+                                String ftControlId = "" + ft + "$" + foreignColumnDescriptor + "$" + columnDescriptor + "@" + tbl_wrk.controlId + "";
                                 JSONArray ftRowsJson = null;
                                 workspace ft_tbl_wrk = workspace.get_tbl_manager_workspace(ftControlId);
 
                                 if (ft_tbl_wrk == null) {
                                     //
+                                    // chiamata da codice ?
+                                    //
+                                    if(tbl_wrk.tableJson.has("loadALL")) {
+                                        try {
+                                            if(tbl_wrk.tableJson.getBoolean("loadALL")) {
+                                                // load default workspace
+                                                String ftSchema = tbl_wrk.tableJson.has("schema") != null ? tbl_wrk.tableJson.getString("schema") : tbl_wrk.defaultSchema;
+                                                String ftDatabase = tbl_wrk.tableJson.has("database") != null ? tbl_wrk.tableJson.getString("database") : tbl_wrk.defaultDatabase;
+                                                String ftJson = workspace.get_default_json( (HttpServletRequest)null, ftControlId, null, ft, ftSchema, ftDatabase, tbl_wrk.controlId, tbl_wrk.token, null, (JspWriter)null );
+                                                if(ftJson != null && !ftJson.isEmpty()) {
+                                                    ft_tbl_wrk = workspace.get_tbl_manager_workspace(ftControlId);
+                                                    if (ft_tbl_wrk != null) {
+                                                        // OK
+                                                    } else {
+                                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// Error loading foreign table control '" + ftControlId + "' :" + " workspace not found");
+                                                    }
+                                                } else {
+                                                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// Error loading foreign table control '" + ftControlId + "' :" + "Empty json response");
+                                                }
+                                            }
+                                        } catch (Exception e) {
+                                        }
+                                    }                                    
+                                }
+                                
+                                if (ft_tbl_wrk == null) {
+                                    //
                                     // N.B.: se il tab della foreign table non è attivo il workspace non viene creato
-                                    //      Attualmente non ci sono ragio per cui il workspace del controllo non venga caricato
+                                    //      Attualmente non ci sono ragioni (salvo la chiamata da codice) per cui il workspace del controllo non venga caricato
                                     //      E' possibile nel caso caricarlo espressamente dal server su necessità con :
                                     //
                                     //      String get_default_json(null, String controlId, String tblWrk, String table, String schema, String database, String source, null)
@@ -2618,7 +2704,7 @@ public class db {
                                 } else {
 
                                     // proprietà bean figlio
-                                    String ftPropName = (ft + "$" + fc + "$" + c).toUpperCase();
+                                    String ftPropName = (ft + "$" + foreignColumnDescriptor + "$" + columnDescriptor).toUpperCase();
                                     props.put(ftPropName, Object.class);
                                     // proprietà Changed
                                     props.put(ftPropName + "$Changed", boolean.class);
@@ -2658,9 +2744,9 @@ public class db {
                                             }
                                         }
                                         if (colSearch != null) {
-                                            if (colSearch.equalsIgnoreCase(c)) {
-                                                ftColumnList.add(c /*(String)rowJson.getString(colName)*/);
-                                                ftForeignColumnList.add(fc);
+                                            if (colSearch.equalsIgnoreCase(columnDescriptor)) {
+                                                ftColumnList.add(columnDescriptor/*(String)rowJson.getString(colName)*/);
+                                                ftForeignColumnList.add(foreignColumnDescriptor);
                                                 break;
                                             }
                                         }
@@ -2961,13 +3047,26 @@ public class db {
         return new Object[]{bResult, error};
     }
 
-    //
-    //  Load single bean for given database.schema.table + primaryKey
-    //
-    //  ControlId is automatically created if not exist (from databaseSchemaTable)
-    //
-    //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
-    //
+    
+    
+    /**
+     * Load single bean for given database.schema.table + primaryKey
+     * 
+     * It also load foreign tables definitions but not values
+     * 
+     * ControlId is automatically created if not exist (from databaseSchemaTable)
+     * 
+     * 
+     * @param request
+     * @param databaseSchemaTable
+     * @param columns
+     * @param primaryKey
+     * 
+     * @return  { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+     * 
+     * @throws JSONException
+     * @throws Throwable 
+     */
     static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, Object primaryKey) throws JSONException, Throwable {
         ArrayList<Object> beans = load_beans(request, databaseSchemaTable, columns, null, primaryKey, 1);
         if (beans != null) {
@@ -2978,13 +3077,23 @@ public class db {
         return null;
     }
 
-    //
-    //  Create all beans for primaryKey
-    //
-    //  ControlId is automatically created if not exist (from databaseSchemaTable)
-    //
-    //  Ritorna { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
-    //
+    /**
+     * Create all beans from primaryKey value
+     *
+     *   ControlId is automatically created if not exist (from databaseSchemaTable)
+     * 
+     * @param request
+     * @param databaseSchemaTable
+     * @param columns
+     * @param keyColumn
+     * @param key
+     * @param maxRows
+     * 
+     * @return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+     * 
+     * @throws JSONException
+     * @throws Throwable 
+     */
     static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws JSONException, Throwable {
         return load_beans(request, null, databaseSchemaTable, columns, keyColumn, key, maxRows);
     }
@@ -3031,15 +3140,26 @@ public class db {
         return tbl_wrk;
     }
 
-    //
-    //  Create all beans for primaryKey
-    //
-    //  ControlId is automatically created if not exist (from controlId)
-    //
-    //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
-    //
-    //  TODO : partial columns read still unsupported... read always all columns
-    //
+    /**
+     *  Create all beans from primaryKey value
+     * 
+     * ControlId is automatically created if not exist (from controlId)
+     * 
+     * @param request
+     * @param controlId
+     * @param databaseSchemaTable
+     * @param columns
+     * @param keyColumn
+     * @param key
+     * @param maxRows
+     * 
+     * @return  { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+     * 
+     * @throws JSONException
+     * @throws Throwable 
+     * 
+     *  TODO : partial columns read still unsupported... read always all columns
+     */
     static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws JSONException, Throwable {
         String sWhere = "";
 
@@ -3083,22 +3203,40 @@ public class db {
         return load_beans(request, controlId, databaseSchemaTable, columns, sWhere, maxRows);
     }
 
-    //
-    //  Create all beans for given where condition
-    //
+    
+    
+    /**
+     * Create all beans for given where condition
+     * 
+     * @param databaseSchemaTable
+     * @param columns
+     * @param where_condition
+     * @param maxRows
+     * @return 
+     */
     static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition, long maxRows) {
         return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
     }
 
-    //
-    //  Create all beans for given where condition
-    //
-    //  ControlId is automatically created if not exist (from databaseSchemaTable)
-    //
-    //  Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
-    //
-    //  TODO : partial columns read still unsupported... read always all columns
-    //
+    /**
+     * Create all beans from given where condition
+     * 
+     * ControlId is automatically created if not exist (from databaseSchemaTable)
+     * 
+     * Return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+     * 
+     * @param request
+     * @param controlId
+     * @param databaseSchemaTable
+     * @param columns
+     * @param where_condition
+     * @param maxRows
+     * 
+     * @return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
+     * 
+     * TODO : partial columns read still unsupported... read always all columns
+     * 
+     */    
     static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows) {
         // crea un controllo sulla tabella
         String[] tableParts = (databaseSchemaTable != null ? databaseSchemaTable.split("\\.") : null);
@@ -3313,15 +3451,31 @@ public class db {
         return null;
     }
 
-    //
-    //  Load child bean (beanName) from the Object bean (the children are the foreignTables)
-    //
-    //  Return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
-    //
+    
+    /**
+     * Load child bean (beanName) from the Object bean (the children are the foreignTables)
+     * 
+     * @param bean
+     * @param beanName
+     * @param maxRows
+     * 
+     * @return ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
+     * 
+     */
+    static public Object[] load_child_bean(Object bean, String beanName, long maxRows) {
+        return load_bean( bean, beanName, maxRows);
+    }
     static public Object[] load_bean(Object bean, String beanName, long maxRows) {
         return load_bean(bean, beanName, null, maxRows);
     }
 
+    /**
+     * 
+     * @param bean
+     * @param params
+     * @param maxRows
+     * @return 
+     */
     static public Object load_parent_bean(Object bean, Object params, long maxRows) {
         Object[] beans_result = load_bean(bean, "$Parent", params, maxRows);
         if (beans_result != null) {
@@ -3335,12 +3489,18 @@ public class db {
         return null;
     }
 
-    //
-    //  Load child beans defined by childBeanName foreignTable, looking inside the Object bean
-    //
-    //  Need selection or rows defined in params (it comes from client)
-    //
-    //  Return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
+    /**
+     * Load child beans defined by childBeanName foreignTable, looking inside the Object bean
+     * Need selection or rows defined in params (it comes from client)
+     * 
+     * @param bean
+     * @param childBeanName
+     * @param params
+     * @param maxRows
+     * 
+     * @return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
+     * 
+     */
     static public Object[] load_bean(Object bean, String childBeanName, Object params, long maxRows) {
         ArrayList<Object> beans = null;
         int nBeans = 0, nBeansLoaded = 0;
@@ -3533,6 +3693,8 @@ public class db {
         return new Object[]{nAdded, skipperList};
     }
 
+    
+    
     // Chiamata del client per impostare i prefiltri in sessione
     /**
      * <h3>set the permanent filters</h3>
@@ -4991,27 +5153,31 @@ public class db {
      */
     static public String insert(Object bean, Object tbl_wrk) {
         try {
-            String sModifications = "";
-            String sFields = "";
-            workspace tblWrk = (workspace) tbl_wrk;
-            JSONArray cols = tblWrk.tableJson.getJSONArray("columns");
+            if(tbl_wrk != null) {
+                if(bean != null) {
+                    String sModifications = "";
+                    String sFields = "";
+                    workspace tblWrk = (workspace) tbl_wrk;
+                    JSONArray cols = tblWrk.tableJson.getJSONArray("columns");
 
-            for (int ic = 0; ic < cols.length(); ic++) {
-                JSONObject col = cols.getJSONObject(ic);
-                Object fieldData = utility.get(bean, col.getString("name"));
-                if(fieldData instanceof Date || fieldData instanceof Timestamp) {
-                	// N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
-                    DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-                    fieldData = dateFormat.format(fieldData);
-                } else {                	
+                    for (int ic = 0; ic < cols.length(); ic++) {
+                        JSONObject col = cols.getJSONObject(ic);
+                        Object fieldData = utility.get(bean, col.getString("name"));
+                        if(fieldData instanceof Date || fieldData instanceof Timestamp) {
+                                // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
+                            DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                            fieldData = dateFormat.format(fieldData);
+                        } else {                	
+                        }
+                        sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + (fieldData != null ? fieldData : "") + "\"}";
+                    }
+                    sModifications += "{\"rowId\":\"\",\"fields\":[" + sFields + "]}";
+
+                    String insertingParams = "{ \"params\":[{\"modifications\":[" + sModifications + "] } ] }";
+
+                    return db.insertFields(tbl_wrk, insertingParams, null, null, null);
                 }
-                sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + (fieldData != null ? fieldData : "") + "\"}";
             }
-            sModifications += "{\"rowId\":\"\",\"fields\":[" + sFields + "]}";
-
-            String insertingParams = "{ \"params\":[{\"modifications\":[" + sModifications + "] } ] }";
-
-            return db.insertFields(tbl_wrk, insertingParams, null, null, null);
         } catch (Exception ex) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
         }
