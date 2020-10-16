@@ -443,7 +443,13 @@ public class workspace {
 
             JSONArray cols = null;
 
-            try { tableJson = sTableJson != null ? new JSONObject(sTableJson) : null; } catch(Exception e) {}
+            try { 
+                tableJson = sTableJson != null ? new JSONObject(sTableJson) : null; 
+            } catch(Exception e) {
+                String err = "source json string is ivalid on control:"+controlId;
+                System.out.println(err);
+                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+err+"\"}" : "<script> console.error(\""+err+"\");</script>" );
+            }
             
             if(tableJson != null) {
                 String sourceURL = null;
@@ -615,6 +621,7 @@ public class workspace {
                 if(sTableJson != null && !sTableJson.isEmpty()) {
                     try { primaryKey = tableJson.getString("primaryKey"); } catch(Exception e) {}
                     try { foreignTables = tableJson.getString("foreignTable"); } catch(Exception e) {}
+                    try { if(foreignTables == null || foreignTables.isEmpty()) foreignTables = tableJson.getString("foreignTables"); } catch(Exception e) {}
                     try { foreignTablesJson = tableJson.getJSONArray("foreignTables"); } catch(Exception e) {}
                 }
                 
@@ -969,7 +976,17 @@ public class workspace {
                                 if(colName != null && !colName.isEmpty()) {
 
                                     if(!isSystem) {
-                                        metadata.MetaDataCol mdCol = (metadata.MetaDataCol)metadata.readTableMetadata(connToUse, database, schema, colTable, colName);
+                                        boolean bReadDefault = true;
+                                        if(tableJson.has("readOnly")) {
+                                            Object oReadOnly = tableJson.get("readOnly");
+                                            String sReadOnly = String.valueOf(oReadOnly);
+                                            if("true".equalsIgnoreCase(sReadOnly) || "yes".equalsIgnoreCase(sReadOnly)) {
+                                                // deccrease read metatata time
+                                                bReadDefault = false;
+                                            }
+                                        }
+                                        
+                                        metadata.MetaDataCol mdCol = (metadata.MetaDataCol)metadata.readTableMetadata(connToUse, database, schema, colTable, colName, bReadDefault);
                                         if(mdCol != null) {
                                             // Handle sensitive case mismath
                                             if(!colName.equals(mdCol.name)) {
@@ -1277,16 +1294,23 @@ public class workspace {
                 }
 
                 
+                String sOwner = null;
+                try { sOwner = tableJson.getString("owner"); } catch(JSONException e) {}
+                if(sOwner != null && !sOwner.isEmpty()) {
+                    if(owner == null) {
+                        // owner setted inside the json : create when needed
+                    }
+                }
+                
+                
                 // Eventi di sistema
                 boolean bInsertEventFound = false;
                 boolean bUpdateEventFound = false;
                 boolean bDeleteEventFound = false;
                 boolean bPastedRowFound = false;
                 JSONArray events = null;
-                String sOwner = null;
                 try {
                     try { events = tableJson.getJSONArray("events"); } catch(JSONException e) {}
-                    try { sOwner = tableJson.getString("owner"); } catch(JSONException e) {}
                     if(events != null) {
                         for(int ie=0; ie<events.length(); ie++) {
                             try {
@@ -1598,11 +1622,18 @@ public class workspace {
     }
                         
     
-    //
-    // Ottiene il JSON del controllo generato automaticamentte per accedere ad una tabella
-    //
-    // TODO : Mettere in sicurezza verificando che la richiesta gia autorizzata dal controllo chiamante
-    //
+    /**
+     * 
+     * get default JSON (automaticallly general purpose control from a table)
+     * 
+     * @param request
+     * @param out
+     * @return
+     * @throws Throwable 
+     * 
+     *     // TODO : Mettere in sicurezza verificando che la richiesta gia autorizzata dal controllo chiamante
+     */
+    
     static public String get_default_json(HttpServletRequest request, JspWriter out) throws Throwable {
         String controlId = "", tblWrk = "";
         String table = "", schema = "", database = "", parentControlId = "";
@@ -1620,7 +1651,24 @@ public class workspace {
         }
         return null;
     }
-        
+    
+    /**
+     * 
+     *  * get default JSON (automaticallly general purpose control from a table)
+     * 
+     * @param request
+     * @param controlId
+     * @param tblWrk
+     * @param table
+     * @param schema
+     * @param database
+     * @param parentControlId
+     * @param sourceToken
+     * @param sRequest
+     * @param out
+     * @return
+     * @throws Throwable 
+     */
     static public String get_default_json(HttpServletRequest request, String controlId, String tblWrk, String table, String schema, String database, String parentControlId, String sourceToken, String sRequest, JspWriter out) throws Throwable {
         try {
             String result = "";            
@@ -2521,7 +2569,7 @@ public class workspace {
 
     
     // iCenter.icenter.user_asset   ->  iCenter|.center.UserAsset
-    static String getControlIdFromDatabaseSchemaTable(String databaseSchemaTable) {
+    static public String getControlIdFromDatabaseSchemaTable(String databaseSchemaTable) {
         if(databaseSchemaTable != null && !databaseSchemaTable.isEmpty()) {
             databaseSchemaTable = databaseSchemaTable.replaceAll("`", "");
             databaseSchemaTable = databaseSchemaTable.replaceAll("\"", "");
@@ -2530,7 +2578,7 @@ public class workspace {
         return null;
     }
     // iCenter.icenter.user_asset   ->  iCenter|.center.UserAsset
-    static String getDatabaseSchemaTable(String database, String schema, String Table) {
+    static public String getDatabaseSchemaTable(String database, String schema, String Table) {
         String sDatabaseSchemaTable = "";
         if(database != null && !database.isEmpty()) {
             sDatabaseSchemaTable += database+".";
@@ -2547,7 +2595,7 @@ public class workspace {
     }
     
     // iCenter.icenter.user_asset   ->  UserAsset
-    static String getControlIdFromTable(String table) {
+    static public String getControlIdFromTable(String table) {
         if(table != null && !table.isEmpty()) {
             table = table.replaceAll("`", "");
             table = table.replaceAll("\"", "");
