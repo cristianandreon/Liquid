@@ -143,12 +143,15 @@ public class connection {
 
             // Connessione specificata su JSON
             if(connectionURL != null) {
-                if(driver != null) { Class driverClass = Class.forName(driver); }
+                if(driver != null) { 
+                    Class driverClass = Class.forName(classNameFromDriver(driver)); 
+                }
                 if(connectionURL != null && !connectionURL.isEmpty() && !"[definedAtServerSide]".equalsIgnoreCase(connectionURL)) {
                     try {
                         conn = DriverManager.getConnection(connectionURL);
                     } catch(Throwable th) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
+                        throw th;
                     }
                 }
             } else {
@@ -235,6 +238,21 @@ public class connection {
             throw th;
     	}
         return conn;
+    }
+
+    static String classNameFromDriver( String curDriver ) {
+        if(curDriver.contains("mysql")) {
+            return "com.mysql.jdbc.Driver";
+        } else if(curDriver.contains("mariadb")) {
+            return "org.mariadb.jdbc.Driver";
+        } else if(curDriver.contains("postgres")) {
+            return "org.postgresql.Driver";
+        } else if(curDriver.contains("oracle")) {
+            return "oracle.jdbc.driver.OracleDriver";
+        } else if(curDriver.contains("sqlserver")) {
+            return "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+        }
+        return curDriver;
     }
     
     
