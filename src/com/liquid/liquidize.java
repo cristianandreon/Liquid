@@ -383,8 +383,10 @@ public class liquidize {
             result += (result.length()>0 ? (controlIdSeparator != null ? controlIdSeparator : "") : "");
             for(int ips=0; ips<sSubParts.length; ips++) {
                 // String part = sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length()).toLowerCase();
-                String part = sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length());
-                if(!part.isEmpty()) result += part;
+                if(sSubParts[ips].length()>0) {
+                    String part = sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length());
+                    if(!part.isEmpty()) result += part;
+                }
             }
         }
         return result;

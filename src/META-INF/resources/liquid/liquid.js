@@ -9558,7 +9558,7 @@ var Liquid = {
                         var nameItems = null;
                         if(liquid.lastGridTabObj) {
                             nameItems = liquid.lastGridTabObj.id.split(".");
-                        } else if( isDef(liquid.tableJson.grids) && liquid.tableJson.grids.length > 0) {
+                        } else if(isDef(liquid.tableJson.grids) && liquid.tableJson.grids.length > 0) {
                             if(liquid.tableJson.grids[0].id) 
                                 nameItems = liquid.tableJson.grids[0].id.split(".");
                         } else if( isDef(liquid.tableJson.layouts) && liquid.tableJson.layouts.length > 0) {
@@ -9572,6 +9572,12 @@ var Liquid = {
                             if(nameItems.length > 2) {
                                 if(nameItems[1] === 'grid_tab') {
                                     gotoGridIndex = nameItems[2] - 1 + 1;
+                                    if(gotoGridIndex == 0) {
+                                        if(isDef(liquid.tableJson.grids) && liquid.tableJson.grids.length > 0) {
+                                            // go to first grid
+                                            gotoGridIndex = 1;
+                                        }
+                                    }
                                 } else if(nameItems[1] === 'layout_tab') {
                                     gotoLayoutIndex = nameItems[2] - 1 + 1;
                                 } else {

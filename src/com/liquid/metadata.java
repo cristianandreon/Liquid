@@ -143,7 +143,7 @@ public class metadata {
                 String driver = db.getDriver(conn);
                 boolean bReadDefault = _bReadDefault;
                 if("oracle".equalsIgnoreCase(driver)) {
-                    return readTableMetadataBySQL(conn, schema, table, columnName, "oracle");
+                    return readTableMetadataBySQL(conn, schema, table, columnName, "oracle", _bReadDefault);
                 }
                 
                 
@@ -313,7 +313,7 @@ public class metadata {
     //
     // Legge in soluzione unica tutte le tabelle dello schema(owner).tabella
     //
-    public static Object readTableMetadataBySQL(Connection conn, String schema, String table, String columnName, String dialet) {
+    public static Object readTableMetadataBySQL(Connection conn, String schema, String table, String columnName, String dialet, boolean bReadDefault) {
 
         try {
 
@@ -463,25 +463,29 @@ public class metadata {
                     if(recCount > 0) {
                         nTable++;
 
-                        // ORACLE SHIT : lettura DATA_DEFAULT
-                        if("oracle".equalsIgnoreCase(dialet)) {
-                            String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '"+table+"'";
-                            Statement stmtc = conn.createStatement();
-                            stmtc.setFetchSize(8 * 1024);
-                            ResultSet rsc = stmtc.executeQuery(stmtSQL);
-                            while (rsc.next()) {
-                                String col = rsc.getString(1);
-                                String def = rsc.getString(2);
-                                for(int i=0; i<metaDataCols.size(); i++) {
-                                    MetaDataCol metaDataCol2 = metaDataCols.get(i);
-                                    if(metaDataCol2.name.equalsIgnoreCase(col)) {
-                                        metaDataCol2.columnDef = def;
-                                        break;
+                        if(!bReadDefault) {                                
+                            // ORACLE SHIT : lettura DATA_DEFAULT
+                            if("oracle".equalsIgnoreCase(dialet)) {
+                                String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '"+table+"'";
+                                Statement stmtc = conn.createStatement();
+                                stmtc.setFetchSize(8 * 1024);
+                                ResultSet rsc = stmtc.executeQuery(stmtSQL);
+                                try {
+                                    while (rsc.next()) {
+                                        String col = rsc.getString(1);
+                                        String def = rsc.getString(2);
+                                        for(int i=0; i<metaDataCols.size(); i++) {
+                                            MetaDataCol metaDataCol2 = metaDataCols.get(i);
+                                            if(metaDataCol2.name.equalsIgnoreCase(col)) {
+                                                metaDataCol2.columnDef = def;
+                                                break;
+                                            }
+                                        }
                                     }
-                                }
+                                } catch(Exception e) { }
+                                rsc.close();
+                                stmtc.close();
                             }
-                            rsc.close();
-                            stmtc.close();
                         }
                         metaDataTable.add(new MetaDataTable(table, schema, null, metaDataCols));
                         

@@ -2666,9 +2666,20 @@ public class db {
                                         try {
                                             if(tbl_wrk.tableJson.getBoolean("loadALL")) {
                                                 // load default workspace
-                                                String ftSchema = tbl_wrk.tableJson.has("schema") != null ? tbl_wrk.tableJson.getString("schema") : tbl_wrk.defaultSchema;
-                                                String ftDatabase = tbl_wrk.tableJson.has("database") != null ? tbl_wrk.tableJson.getString("database") : tbl_wrk.defaultDatabase;
-                                                String ftJson = workspace.get_default_json( (HttpServletRequest)null, ftControlId, null, ft, ftSchema, ftDatabase, tbl_wrk.controlId, tbl_wrk.token, null, (JspWriter)null );
+                                                String ftConnectionDriver = (tbl_wrk.tableJson.has("connectionDriver") ? (tbl_wrk.tableJson.getString("connectionDriver")!= null ? tbl_wrk.tableJson.getString("connectionDriver") : null) : null );
+                                                String ftConnectionURL = (tbl_wrk.tableJson.has("connectionURL") ? (tbl_wrk.tableJson.getString("connectionURL")!= null ? tbl_wrk.tableJson.getString("connectionURL") : null) : null );
+                                                String ftDatabase = (tbl_wrk.tableJson.has("database") ? (tbl_wrk.tableJson.getString("database")!= null ? tbl_wrk.tableJson.getString("database") : tbl_wrk.defaultDatabase)  : tbl_wrk.defaultDatabase );
+                                                String ftSchema = (tbl_wrk.tableJson.has("schema") ? (tbl_wrk.tableJson.getString("schema")!= null ? tbl_wrk.tableJson.getString("schema") : tbl_wrk.defaultSchema) : tbl_wrk.defaultSchema );
+                                                JSONObject sRequestJSON = new JSONObject();
+                                                if(ftConnectionDriver != null && !ftConnectionDriver.isEmpty()) {
+                                                    sRequestJSON.put("cnnectionDriver", ftConnectionDriver);
+                                                }
+                                                if(ftConnectionURL != null && !ftConnectionURL.isEmpty()) {
+                                                    sRequestJSON.put("connectionURL", ftConnectionURL);
+                                                }
+                                                sRequestJSON.put("foreignTables", "*");
+                                                
+                                                String ftJson = workspace.get_default_json( (HttpServletRequest)null, ftControlId, null, ft, ftSchema, ftDatabase, tbl_wrk.controlId, tbl_wrk.token, sRequestJSON.toString(), (JspWriter)null );
                                                 if(ftJson != null && !ftJson.isEmpty()) {
                                                     ft_tbl_wrk = workspace.get_tbl_manager_workspace(ftControlId);
                                                     if (ft_tbl_wrk != null) {
