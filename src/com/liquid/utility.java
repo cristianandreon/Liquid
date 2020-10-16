@@ -587,7 +587,7 @@ public class utility {
 
     static Object removeString(Object key, String removing) {
         if (key != null) {
-            String skey = (String) key;
+            String skey = String.valueOf(key);
             int index = skey.indexOf(removing);
             if (index >= 0) {
                 skey = skey.substring(index + removing.length());
@@ -904,8 +904,106 @@ public class utility {
         return true;
     }
 
+ static private String transfer_client_to_result(Object clientToTransfer, String result) throws JSONException {
+        JSONObject retValJSON = new JSONObject(result);
+        if (clientToTransfer != null) {
+            if (retValJSON.has("client")) {
+                Object retValClient = retValJSON.get("client");
+                JSONArray newRetValClient = null;
+                if (retValClient instanceof String) {
+                    if (clientToTransfer instanceof String) {
+                        newRetValClient = new JSONArray();
+                        newRetValClient.put(retValClient);
+                        newRetValClient.put(clientToTransfer);
+                    } else if (clientToTransfer instanceof JSONArray) {
+                        newRetValClient = new JSONArray();
+                        newRetValClient.put(retValClient);
+                        for (int i = 0; i < ((JSONArray) clientToTransfer).length(); i++) {
+                            newRetValClient.put(((JSONArray) clientToTransfer).get(i));
+                        }
+                    }
+                    if (newRetValClient != null) {
+                        retValJSON.put("client", newRetValClient);
+                    }
+
+                } else if (retValClient instanceof JSONArray) {
+                    if (clientToTransfer instanceof String) {
+                        ((JSONArray) retValClient).put(clientToTransfer);
+                    } else if (clientToTransfer instanceof JSONArray) {
+                        for (int i = 0; i < ((JSONArray) clientToTransfer).length(); i++) {
+                            ((JSONArray) retValClient).put(((JSONArray) clientToTransfer).get(i));
+                        }
+                    }
+                    retValJSON.put("client", retValClient);
+                }
+            }
+        }
+        return retValJSON.toString();
+    }
+
+ 
+    /**
+     * 
+     * Transfer result to parameter of next event process
+     * 
+     *  ex.: 
+     *       {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
+     *           to 
+     *       {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
+     * 
+     * @param retValToTransfer
+     * @param params
+     * @return
+     * @throws JSONException 
+     */
+    static private String transfer_result_to_params(String retValToTransfer, String params) throws JSONException {
+        return event.transfer_result_to_params(retValToTransfer, params);
+    }
+
+    
+    
+    /**
+     * 
+     * Transfer current result to global result for next event process
+     * 
+     * @param retValToTransfer
+     * @param retValTarget
+     * @return
+     * 
+     * ex.: 
+     *      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
+     *  to 
+     *      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
+     * 
+     * @throws JSONException 
+     */
+    static public String transfer_result_to_results(String retValToTransfer, String retValTarget) throws JSONException {
+        return event.transfer_result_to_results(retValToTransfer, retValTarget);
+    }
 
 
+    /**
+     * 
+     * Transfer error to global result
+     * 
+     * @param error
+     * @param result
+     * @return
+     * 
+     * ex.: 
+     *      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
+     *  to 
+     *      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
+     * 
+     * @throws JSONException 
+     */
+    static public String append_error_to_result(String error, String result) {
+        return event.append_error_to_result(error, result);
+    }
+
+
+    
+    
     static class MyErrorHandler implements ErrorHandler {
 
         public void warning(SAXParseException e) throws SAXException {
@@ -929,6 +1027,7 @@ public class utility {
             System.out.println("System ID: " + e.getSystemId());
         }
     }
+    
 
     public static Object getArchiveXMLTag(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
         java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);

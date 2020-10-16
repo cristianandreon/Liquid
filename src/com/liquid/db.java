@@ -2506,11 +2506,11 @@ public class db {
 
     //  Costruisce il bean valorizzandolo con rowsJson, sulla base del controllo tbl_wrk
     //  Aggiunge i beans figli se specificati in foreignTables (elenco di stringhe separate da ,)
-    //  foreignablesJson : definizione foreing tables
+    //  foreignTablesJson : definizione foreing tables
     //  foreignTables : elenco di foreign table da processare
     //
     //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
-    static public Object[] create_beans_multilevel_class(workspace tbl_wrk, JSONArray rowsJson, JSONArray foreignablesJson, String foreignTables, int level, long maxRows) {
+    static public Object[] create_beans_multilevel_class(workspace tbl_wrk, JSONArray rowsJson, JSONArray foreignTablesJson, String foreignTables, int level, long maxRows) {
         Object[] beanResult = new Object[]{0, null, 0, null, null};
         PojoGenerator pojoGenerator = null;
         String errors = "";
@@ -2583,14 +2583,11 @@ public class db {
             if (level >= 0) {
                 String[] sForeignTablesList = foreignTables != null ? foreignTables.split(",") : null;
                 ArrayList<String> foreignTablesList = sForeignTablesList != null ? new ArrayList<String>(Arrays.asList(sForeignTablesList)) : null;
-                if (foreignablesJson != null) {
-                    for (int ift = 0; ift < foreignablesJson.length(); ift++) {
-                        JSONObject foreignableJson = foreignablesJson.getJSONObject(ift);
+                if (foreignTablesJson != null) {
+                    for (int ift = 0; ift < foreignTablesJson.length(); ift++) {
+                        JSONObject foreignableJson = foreignTablesJson.getJSONObject(ift);
                         if (foreignableJson != null) {
                             String ft = null, foreignColumnDescriptor = null, columnDescriptor = null;
-                            JSONArray nestedForeignTablesJson = null;
-                            
-                            try { nestedForeignTablesJson = foreignableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
                             try { ft = foreignableJson.getString("foreignTable"); } catch (Exception e) { }
                             
                             ArrayList<String> foreignColumns = new ArrayList<String>();
@@ -2714,7 +2711,9 @@ public class db {
 
                                 } else {
 
+                                    //
                                     // proprietà bean figlio
+                                    //
                                     String ftPropName = (ft + "$" + foreignColumnDescriptor + "$" + columnDescriptor).toUpperCase();
                                     props.put(ftPropName, Object.class);
                                     // proprietà Changed
@@ -2731,6 +2730,14 @@ public class db {
                                     // Attributo nome classe del controllo
                                     attributes.put(ftPropName + "$className", String.class);
 
+                                    //
+                                    // add a links ($class/$controlId) to the workkspace.tableJson.foreignTables[]
+                                    //
+                                    foreignableJson.put("foreignTableControlId", ftControlId);
+                                    foreignableJson.put("foreignTableClassName", ftPropName);
+                                    foreignTablesJson.put(ift, foreignableJson);
+                                    
+                                    //
                                     // lettura dei records nella ft a partire da rowsJson :
                                     // Impossibile stabilire il raggio d'azione senza la selezione delle righe del client
                                     // Possibili vie :
@@ -2763,6 +2770,11 @@ public class db {
                                         }
                                     }
 
+                                    //
+                                    // Nested foreign table ?
+                                    //
+                                    JSONArray nestedForeignTablesJson = null;
+                                    try { nestedForeignTablesJson = foreignableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
                                     String nestedForeignTables = "";
                                     JSONObject nestedForeignTableJson = null;
                                     if (foreignTablesList != null) {
@@ -2778,7 +2790,9 @@ public class db {
                                         }
                                     }
 
-                                    // Crea il bean dal controllo della foreign table ft_tbl_wrk
+                                    //
+                                    // Crea il bean (vuoto) dal controllo della foreign table ft_tbl_wrk
+                                    //
                                     Object[] ftBeanResult = create_beans_multilevel_class(ft_tbl_wrk, ftRowsJson, nestedForeignTablesJson, nestedForeignTables, level + 1, maxRows);
                                     if (ftBeanResult != null) {
                                         int ftResult = (int) ftBeanResult[0];
@@ -2797,6 +2811,7 @@ public class db {
                                             Class clazzChk = Class.forName(ftClassName);
                                             if (clazzChk == null) {
                                                 throw new Throwable("Null class");
+                                            } else {
                                             }
                                         } catch (Throwable th) {
                                             Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// Error getting class " + ftClassName + ":" + th.getLocalizedMessage());
@@ -2885,7 +2900,9 @@ public class db {
                                 JSONArray parentRowsJson = null;
                                 workspace parent_tbl_wrk = workspace.get_tbl_manager_workspace(parentControlId);
 
+                                //
                                 // Crea il bean dal controllo del padre
+                                //
                                 Object[] parentBeanResult = create_beans_multilevel_class(parent_tbl_wrk, parentRowsJson, null, null, -1, maxRows);
                                 if (parentBeanResult != null) {
                                     int parentResult = (int) parentBeanResult[0];
@@ -3433,14 +3450,13 @@ public class db {
                     // try { foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables"); } catch(Exception e) {}
                     // Array foreign tables di partenza
                     JSONArray foreignTablesJson = null;
-                    try {
-                        foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables");
-                    } catch (Exception e) {
-                    }
+                    try { foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
 
                     //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
                     Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows);
                     if ((int) beanResult[0] >= 0) {
+                        // Updating the foreignTables (some info may be added)
+                        try { tbl_wrk.tableJson.put("foreignTables", foreignTablesJson); } catch (Exception e) { }
                         return (ArrayList<Object>) beanResult[1];
                     }
                 }
@@ -3529,114 +3545,135 @@ public class db {
                     bean = (Object) list.get(0);
                 }
             }
-
-            // Ricerca nei beans per corrispondenza esatta
-            field = searchProperty(bean, childBeanName, true, true);
-            if (field == null) {
-                // Ricerca nei beans per similitudine
-                field = searchProperty(bean, childBeanName, false, true);
+            ArrayList<String> childBeansName = new ArrayList<String>();
+            if("*".equalsIgnoreCase(childBeanName) || "ALL".equalsIgnoreCase(childBeanName)) {
+                Field[] fields = bean.getClass().getDeclaredFields();
+                for (Field f : fields) {
+                    String fieldName = f.getName();
+                    Class<?> type = f.getType();
+                    String tn = type.getTypeName();
+                    if(fieldName.endsWith("$Read")) {
+                        String className = fieldName.substring(0, fieldName.length()-5);
+                        if(!"$Parent".equalsIgnoreCase(className)) {
+                            childBeansName.add(className);
+                        }
+                    }
+                }
+            } else {
+                childBeansName.add(childBeanName);
             }
-            if (field != null) {
-                String beanNameFound = field.getName();
-                String column = null;
-                String foreignColumn = null;
-                String className = null;
-                Object key = null;
-                boolean read = (boolean) utility.get(bean, beanNameFound + "$Read");
 
-                String beanClassName = bean.getClass().getName();
-                ClassPool pool = ClassPool.getDefault();
-                CtClass cc = pool.get(beanClassName);
+            for(int ib=0; ib<childBeansName.size(); ib++) {
+                childBeanName = childBeansName.get(ib);
+            
+                // Ricerca nei beans per corrispondenza esatta
+                field = searchProperty(bean, childBeanName, true, true);
+                if (field == null) {
+                    // Ricerca nei beans per similitudine
+                    field = searchProperty(bean, childBeanName, false, true);
+                }
+                if (field != null) {
+                    String beanNameFound = field.getName();
+                    String column = null;
+                    String foreignColumn = null;
+                    String className = null;
+                    Object key = null;
+                    boolean read = (boolean) utility.get(bean, beanNameFound + "$Read");
 
-                if (!read) {
-                    // assegna la primary key della riga
-                    String controlId = new String(cc.getAttribute(beanNameFound + "$controlId"));
+                    String beanClassName = bean.getClass().getName();
+                    ClassPool pool = ClassPool.getDefault();
+                    CtClass cc = pool.get(beanClassName);
 
-                    if ("$Parent".equalsIgnoreCase(beanNameFound)) {
-                        // N.B. : recupoero della selezione sul controllo 'controlId' che sta nella request...
-                        className = new String(cc.getAttribute(beanNameFound + "$className"));
-                        tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
-                        if (tbl_wrk != null) {
-                            String ids = workspace.getSelection(((workspace) tbl_wrk).controlId, (String) params);
-                            String[] idsList = workspace.split(ids);
-                            if (idsList != null) {
-                                key = idsList[0];
-                                foreignColumn = ((workspace) tbl_wrk).tableJson.getString("primaryKey");
+                    if (!read) {
+                        // assegna la primary key della riga
+                        String controlId = new String(cc.getAttribute(beanNameFound + "$controlId"));
+
+                        if ("$Parent".equalsIgnoreCase(beanNameFound)) {
+                            // N.B. : recupoero della selezione sul controllo 'controlId' che sta nella request...
+                            className = new String(cc.getAttribute(beanNameFound + "$className"));
+                            tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+                            if (tbl_wrk != null) {
+                                String ids = workspace.getSelection(((workspace) tbl_wrk).controlId, (String) params);
+                                String[] idsList = workspace.split(ids);
+                                if (idsList != null) {
+                                    key = idsList[0];
+                                    foreignColumn = ((workspace) tbl_wrk).tableJson.getString("primaryKey");
+                                } else {
+                                    warnings = "Bean '" + childBeanName + "' primary key value not defined ... provide your own in order to read parent";
+                                }
                             } else {
-                                warnings = "Bean '" + childBeanName + "' primary key value not defined ... provide your own in order to read parent";
+                                errors = "Bean '" + childBeanName + "' has wrong definition, control is missing";
+                            }
+                        } else {
+                            column = new String(cc.getAttribute(beanNameFound + "$column"));
+                            foreignColumn = new String(cc.getAttribute(beanNameFound + "$foreignCol"));
+                            className = new String(cc.getAttribute(beanNameFound + "$className"));
+                            if (column != null) {
+                                key = (Object) utility.get(bean, column);
+                            } else {
+                                errors = "Bean '" + childBeanName + "' has wrong definition, column is missing";
+                            }
+                        }
+                        if (controlId != null) {
+                            if (key != null) {
+                                key = utility.removeCommas(key);
+                                String sRequest = "{\"filtersJson\":[{\"name\":\"" + foreignColumn + "\",\"value\":\"" + key + "\"}]}";
+                                String sRecordset = get_table_recordset(controlId, sRequest, false, maxRows, null);
+                                JSONObject jsonRecord = new JSONObject(sRecordset);
+                                if (jsonRecord != null) {
+                                    Class<?> clazz = null;
+                                    try {
+                                        clazz = Class.forName(className);
+                                    } catch (Throwable e) {
+                                    }
+                                    if (clazz != null) {
+                                        Object obj = clazz.newInstance();
+                                        JSONArray rowsJson = jsonRecord.getJSONArray("resultSet");
+                                        beans = new ArrayList<Object>();
+                                        nBeans = rowsJson.length();
+                                        if (nBeans > 0) {
+                                            for (int ir = 0; ir < nBeans; ir++) {
+                                                JSONObject row = rowsJson.getJSONObject(ir);
+                                                tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+                                                Object[] resSet = set_bean_by_json_resultset(obj, tbl_wrk, row);
+                                                if (resSet != null) {
+                                                    if (!(boolean) resSet[0]) {
+                                                        errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[1]) + "]";
+                                                    }
+                                                } else {
+                                                    errors += "[Nulll result setting row " + (ir + 1) + "/" + (rowsJson.length()) + "]";
+                                                }
+                                                beans.add(obj);
+                                                nBeansLoaded++;
+                                            }
+                                            // set del risultato sulla propietà del bean
+                                            utility.set(bean, beanNameFound, beans);
+                                            utility.set(bean, beanNameFound + "$Read", true);
+                                            utility.set(bean, beanNameFound + "$Changed", false);
+
+                                        } else {
+                                            errors += "[row not found on '" + childBeanName + "' : " + className + "]";
+                                        }
+                                    } else {
+                                        errors += "[class not found on '" + childBeanName + "' : " + className + "]";
+                                    }
+                                } else {
+                                    errors += "[read recordset on '" + childBeanName + "' failed ]";
+                                }
+                            } else {
+                                warnings = "Bean '" + childBeanName + "' primary key value not defined ";
                             }
                         } else {
                             errors = "Bean '" + childBeanName + "' has wrong definition, control is missing";
                         }
                     } else {
-                        column = new String(cc.getAttribute(beanNameFound + "$column"));
-                        foreignColumn = new String(cc.getAttribute(beanNameFound + "$foreignCol"));
-                        className = new String(cc.getAttribute(beanNameFound + "$className"));
-                        if (column != null) {
-                            key = (Object) utility.get(bean, column);
-                        } else {
-                            errors = "Bean '" + childBeanName + "' has wrong definition, column is missing";
-                        }
-                    }
-                    if (controlId != null) {
-                        if (key != null) {
-                            key = utility.removeCommas(key);
-                            String sRequest = "{\"filtersJson\":[{\"name\":\"" + foreignColumn + "\",\"value\":\"" + key + "\"}]}";
-                            String sRecordset = get_table_recordset(controlId, sRequest, false, maxRows, null);
-                            JSONObject jsonRecord = new JSONObject(sRecordset);
-                            if (jsonRecord != null) {
-                                Class<?> clazz = null;
-                                try {
-                                    clazz = Class.forName(className);
-                                } catch (Throwable e) {
-                                }
-                                if (clazz != null) {
-                                    Object obj = clazz.newInstance();
-                                    JSONArray rowsJson = jsonRecord.getJSONArray("resultSet");
-                                    beans = new ArrayList<Object>();
-                                    nBeans = rowsJson.length();
-                                    if (nBeans > 0) {
-                                        for (int ir = 0; ir < nBeans; ir++) {
-                                            JSONObject row = rowsJson.getJSONObject(ir);
-                                            tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
-                                            Object[] resSet = set_bean_by_json_resultset(obj, tbl_wrk, row);
-                                            if (resSet != null) {
-                                                if (!(boolean) resSet[0]) {
-                                                    errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[1]) + "]";
-                                                }
-                                            } else {
-                                                errors += "[Nulll result setting row " + (ir + 1) + "/" + (rowsJson.length()) + "]";
-                                            }
-                                            beans.add(obj);
-                                            nBeansLoaded++;
-                                        }
-                                        // set del risultato sulla propietà del bean
-                                        utility.set(bean, beanNameFound, beans);
-                                        utility.set(bean, beanNameFound + "$Read", true);
-                                        utility.set(bean, beanNameFound + "$Changed", false);
-
-                                    } else {
-                                        errors += "[row not found on '" + childBeanName + "' : " + className + "]";
-                                    }
-                                } else {
-                                    errors += "[class not found on '" + childBeanName + "' : " + className + "]";
-                                }
-                            } else {
-                                errors += "[read recordset on '" + childBeanName + "' failed ]";
-                            }
-                        } else {
-                            warnings = "Bean '" + childBeanName + "' primary key value not defined ";
-                        }
-                    } else {
-                        errors = "Bean '" + childBeanName + "' has wrong definition, control is missing";
+                        // TODO : rilettura del bean ???
+                        warnings = "Bean '" + childBeanName + "' already read ";
                     }
                 } else {
-                    // TODO : rilettura del bean ???
-                    warnings = "Bean '" + childBeanName + "' already read ";
+                    // bean non trovato
+                    errors = "Bean '" + childBeanName + "' not found in " + bean.getClass().getName() + " (" + bean.getClass().getCanonicalName() + ")";
                 }
-            } else {
-                // bean non trovato
-                errors = "Bean '" + childBeanName + "' not found in " + bean.getClass().getName() + " (" + bean.getClass().getCanonicalName() + ")";
             }
         } catch (Throwable th) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
@@ -5163,6 +5200,10 @@ public class db {
      * @see db
      */
     static public String insert(Object bean, Object tbl_wrk) {
+        return insert(bean, tbl_wrk, null);
+    }
+    static public String insert(Object bean, Object tbl_wrk, String foreignTables) {
+        String result = null;
         try {
             if(tbl_wrk != null) {
                 if(bean != null) {
@@ -5175,7 +5216,7 @@ public class db {
                         JSONObject col = cols.getJSONObject(ic);
                         Object fieldData = utility.get(bean, col.getString("name"));
                         if(fieldData instanceof Date || fieldData instanceof Timestamp) {
-                                // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
+                            // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
                             DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                             fieldData = dateFormat.format(fieldData);
                         } else {                	
@@ -5186,13 +5227,112 @@ public class db {
 
                     String insertingParams = "{ \"params\":[{\"modifications\":[" + sModifications + "] } ] }";
 
-                    return db.insertFields(tbl_wrk, insertingParams, null, null, null);
+                    //
+                    // do insert
+                    //
+                    result = db.insertFields(tbl_wrk, insertingParams, null, null, null);
+                    
+                    if(foreignTables != null && !foreignTables.isEmpty()) {
+                        //
+                        // Peocess child beans (foreign tables) for insert
+                        //
+                        
+                        ArrayList<String> childBeansName = new ArrayList<String>();
+                        if("*".equalsIgnoreCase(foreignTables) || "ALL".equalsIgnoreCase(foreignTables)) {
+                            Field[] fields = bean.getClass().getDeclaredFields();
+                            for (Field f : fields) {
+                                String fieldName = f.getName();
+                                Class<?> type = f.getType();
+                                String tn = type.getTypeName();
+                                if(fieldName.endsWith("$Read")) {
+                                    String className = fieldName.substring(0, fieldName.length()-5);
+                                    if(!"$Parent".equalsIgnoreCase(className)) {
+                                        childBeansName.add(className);
+                                    }
+                                }
+                            }
+                        } else {
+                            childBeansName.add(foreignTables);
+                        }
+
+                        for(int ib=0; ib<childBeansName.size(); ib++) {
+                            String childBeanName = childBeansName.get(ib);
+                            String error = null;
+
+                            // Ricerca nei beans per corrispondenza esatta
+                            Field field = searchProperty(bean, childBeanName, true, true);
+                            if (field != null) {
+                                String beanNameFound = field.getName();
+                                String column = null;
+                                String foreignColumn = null;
+                                String className = null;
+
+                                String beanClassName = bean.getClass().getName();
+                                ClassPool pool = ClassPool.getDefault();
+                                CtClass cc = pool.get(beanClassName);
+
+                                // assegna la primary key della riga
+                                String ftControlId = new String(cc.getAttribute(beanNameFound + "$controlId"));
+                                if(ftControlId != null && !ftControlId.isEmpty()) {
+                                    String ftClassName = new String(cc.getAttribute(beanNameFound + "$className"));
+                                    if(ftClassName != null && !ftClassName.isEmpty()) {
+                                        workspace ftWrk = workspace.get_tbl_manager_workspace(ftControlId);
+                                        if (ftWrk != null) {
+                                            Object ftFieldData = utility.get(bean, childBeanName);
+                                            if(ftFieldData != null) {
+                                                //
+                                                // inserting rows in the foreign teble
+                                                //                                                
+                                                ArrayList<Object> ftRows = null;
+                                                if(ftFieldData instanceof ArrayList<?>) {
+                                                    ftRows = (ArrayList<Object>)ftFieldData;
+                                                } else {
+                                                    ftRows = new ArrayList<Object>();
+                                                    ftRows.add(ftFieldData);
+                                                }
+                                                for(int iftRow=0; iftRow<ftRows.size(); iftRow++) {
+                                                    Object oftFieldData = ftRows.get(iftRow);
+                                                    if(oftFieldData != null) {
+                                                        //
+                                                        // backup ftWrk... set ftWrk busy ...
+                                                        //
+                                                        
+                                                        //
+                                                        // translate ftWrk (database, schema, connectionDriver, connectionURL
+                                                        //
+                                                        String ftRowResult = db.insert( oftFieldData, ftWrk, foreignTables );
+                                                        result = utility.transfer_result_to_results(ftRowResult, result);
+                                                        
+                                                        //
+                                                        // restore ftWrk
+                                                        //
+                                                    }
+                                                }
+                                            } else {
+                                                error = "Bean '" + childBeanName + "' has wrong definition, class '"+ftClassName+"' not found";
+                                            }
+                                        } else {
+                                            error = "Bean '" + childBeanName + "' has wrong definition, workspace '"+ftControlId+"' not found";
+                                        }
+                                    } else {
+                                        error = "Bean '" + childBeanName + "' has wrong definition, class name '"+ftClassName+"' not found";
+                                    }
+                                } else {
+                                    error = "Bean '" + childBeanName + "' has wrong definition, control is missing";
+                                }
+                            } else {
+                                error = "Bean '" + childBeanName + "' has wrong definition, field not found";
+                            }
+                            
+                            result = utility.append_error_to_result(error, result);
+                        }
+                    }
                 }
             }
         } catch (Exception ex) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return null;
+        return result;
     }
 
     // Metodo aggiornamento db da bean

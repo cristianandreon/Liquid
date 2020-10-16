@@ -346,7 +346,7 @@ public class event {
     //
     // Transfer client param to parameter for next event process
     // 
-    static private String transfer_client_to_result(Object clientToTransfer, String result) throws JSONException {
+    static public String transfer_client_to_result(Object clientToTransfer, String result) throws JSONException {
         JSONObject retValJSON = new JSONObject(result);
         if (clientToTransfer != null) {
             if (retValJSON.has("client")) {
@@ -390,7 +390,7 @@ public class event {
     //          to 
     //      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
     //
-    static private String transfer_result_to_params(String retValToTransfer, String params) throws JSONException {
+    static public String transfer_result_to_params(String retValToTransfer, String params) throws JSONException {
         String retVal = params;
         JSONObject retValJSON = new JSONObject((String) retValToTransfer);
         JSONObject rootJSON = new JSONObject((String) params);
@@ -430,9 +430,9 @@ public class event {
     //          to 
     //      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
     //   
-    static private String transfer_result_to_results(String retValToTransfer, String retValTarget) throws JSONException {
+    static public String transfer_result_to_results(String retValToTransfer, String retValTarget) throws JSONException {
         String retVal = retValTarget;
-        JSONObject retValToTransferJSON = new JSONObject((String) retValToTransfer);
+        JSONObject retValToTransferJSON = new JSONObject((String) retValToTransfer != null ? retValToTransfer : "{}");
         JSONObject retValTargetJSON = new JSONObject((String) retValTarget);
 
         if (retValToTransferJSON.has("resultSet")) {
@@ -449,6 +449,28 @@ public class event {
         return retVal;
     }
 
+    static public String append_error_to_result(String error, String result) {
+        if(error != null) {
+            if(result != null) {
+                try {
+                    JSONObject resultJson = new JSONObject(result);
+                    String errors = "";
+                    if(resultJson.has("error")) {
+                        errors = utility.base64Decode( resultJson.getString("error") );
+                        errors += "\n\n";
+                    }
+                    errors += error;
+                    resultJson.put("error", errors);
+                    result = resultJson.toString();
+                } catch (JSONException ex) {
+                    Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        return result;
+    }
+
+    
     //
     // Per eseguire un file python nel server da js
     //
