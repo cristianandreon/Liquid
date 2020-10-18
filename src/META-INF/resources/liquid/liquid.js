@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.41   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.42   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  01-10-2020
 //  TODO : see trello.com
 //
@@ -264,6 +264,16 @@ class LiquidCtrl {
             this.xhrDescription = null;
             this.xhrBusy = false;
             this.xhrCount = 0;
+
+            this.sortColumns = isDef(this.tableJson.sortColumns) ? this.tableJson.sortColumns : null;
+            if(this.sortColumns) {
+                if(!Array.isArray(this.sortColumns)) {
+                    this.sortColumns = [ this.sortColumns ];
+                }
+            }
+            this.sortColumnsMode = isDef(this.tableJson.sortColumnsMode) ? this.tableJson.sortColumnsMode : null;
+
+
 
             this.bRegisterControl = true;
 
@@ -2186,7 +2196,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.41,
+    version: 1.42,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,

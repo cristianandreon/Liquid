@@ -57,7 +57,17 @@ public class workspace {
     static public String timeSep = ":";
     static public boolean projectMode;
     
+    static public long maxRows = 100000;
+    static public long pageSize = 1000;
+
     
+    static long getHash(String s) {
+        long hash = 7;
+        for (int i = 0; i < s.length(); i++) {
+            hash = hash*31 + s.charAt(i);
+        }
+        return hash;
+    }
     
     static void setDatabaseShemaTable(workspace tbl_wrk) {
         if(tbl_wrk != null) {
@@ -102,16 +112,8 @@ public class workspace {
         }
     }
 
-    
-    public workspace() {
-        try {
-            } catch (Throwable ex) {
-            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
 
-    static public long maxRows = 100000;
-    static public long pageSize = 1000;
+
 
     public String controlId = null;
     public String schemaTable = null;
@@ -119,6 +121,8 @@ public class workspace {
     public String defaultDatabase = null;
     public String defaultSchema = null;
     public JSONObject tableJson = null;
+    public String clientTableJson = null;
+    public long sourceTableJsonHash = 0;
     public Object owner = null; 
     public boolean bLocked = false;
     public long timeout;
@@ -128,6 +132,34 @@ public class workspace {
     
     public int nConnections = 0;
     public ArrayList<ThreadSession> sessions = new ArrayList<ThreadSession>();
+    
+    
+    public workspace() {
+        try {
+            } catch (Throwable ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    private workspace(workspace target_wrk) {
+        try {
+            this.controlId = target_wrk.controlId;
+            this.schemaTable = target_wrk.schemaTable;
+            this.databaseSchemaTable = target_wrk.databaseSchemaTable;
+            this.defaultDatabase = target_wrk.defaultDatabase;
+            this.defaultSchema = target_wrk.defaultSchema;
+            this.tableJson = new JSONObject(target_wrk.tableJson.toString());
+            this.owner = target_wrk.owner;
+            this.timeout = target_wrk.timeout;
+            this.driverClass = target_wrk.driverClass;
+            this.dbProductName = target_wrk.dbProductName;
+            this.token = target_wrk.token;
+            // this.nConnections = target_wrk.nConnections;
+            // this.sessions = target_wrk.sessions;
+            } catch (Throwable ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     
     
     static public ArrayList<workspace> glTblWorkspaces = new ArrayList<workspace>();
@@ -441,6 +473,28 @@ public class workspace {
         
         try {
 
+            // Is in cache and updated ?
+            long sourceTableJsonHash = workspace.getHash(sTableJson);
+            tblWorkspace = workspace.get_tbl_manager_workspace(controlId);
+            if(tblWorkspace != null) {
+                if(tblWorkspace.tableJson != null) {
+                    if(tblWorkspace.sourceTableJsonHash == sourceTableJsonHash) {
+                        // TODO : clientTableJson is wrong
+                        String warn = "controlId '"+controlId+"' is updated";
+                        System.out.println(warn);
+                        // script avvio client side o json 
+                        if("json".equalsIgnoreCase(returnType)) {
+                            result = tblWorkspace.clientTableJson;
+                        } else if("js".equalsIgnoreCase(returnType)) {
+                            result = "<script>"+getJSVariableFromControlId(controlId)+"={controlId:\""+controlId+"\",json:'"+tblWorkspace.clientTableJson.replace("'", "\\'")+"'};</script>";
+                        } else {
+                            result = "<script>glLiquidStartupTables.push({controlId:\""+controlId+"\",json:'"+tblWorkspace.clientTableJson.replace("'", "\\'")+"'});</script>";
+                        }
+                        return result;
+                    }
+                }
+            }
+            
             JSONArray cols = null;
 
             try { 
@@ -1458,10 +1512,13 @@ public class workspace {
             
 
             boolean bFoundWorkspace = false;
+
             
             for(int i=0; i<glTblWorkspaces.size(); i++) {
                 tblWorkspace = glTblWorkspaces.get(i);
                 if(tblWorkspace.controlId.equalsIgnoreCase(controlId)) {
+
+                    tblWorkspace.sourceTableJsonHash = sourceTableJsonHash;
                     
                     if(tblWorkspace.token == null || tblWorkspace.token.isEmpty()) {
                         tblWorkspace.token = token;
@@ -1473,7 +1530,7 @@ public class workspace {
                     
                     if(!tblWorkspace.tableJson.equals(tableJson)) {
                         if(tblWorkspace.tableJson != null)
-                                System.out.println("WARNING : Overwrited Configuration of control : "+controlId);
+                            System.out.println("WARNING : Overwrited Configuration of control : "+controlId);
                         
                         // Keep server side define (es.: query / connectionURL)
                         recoveryKeyFromServer(tblWorkspace.tableJson, tableJson);
@@ -1496,6 +1553,7 @@ public class workspace {
                     workspace.setDatabaseShemaTable(tblWorkspace);
                     System.out.println("/* LIQUID INFO : control : "+controlId + " driverClass:"+tblWorkspace.driverClass + " dbProductName:"+dbProductName+"*/");
                     bFoundWorkspace = true;
+                    break;
                 }
             }
             
@@ -1506,6 +1564,7 @@ public class workspace {
                 tblWorkspace = new workspace();
                 tblWorkspace.controlId = controlId;
                 tblWorkspace.tableJson = tableJson;
+                tblWorkspace.sourceTableJsonHash = sourceTableJsonHash;
                 tblWorkspace.owner = owner;
                 tblWorkspace.dbProductName = dbProductName;
                 tblWorkspace.defaultDatabase = defaultDatabase;
@@ -1528,16 +1587,23 @@ public class workspace {
                     tableJsonForClient.put(serverPriorityKey, kDefinedAtServerSide);                    
                 }
             }
-            sTableJson = tableJsonForClient.toString();
+            
+            // store the clientSide response for th cache
+            if(controlId.equalsIgnoreCase(tblWorkspace.controlId)) {
+                tblWorkspace.clientTableJson = tableJsonForClient.toString();
+            } else {
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "WHAT???");
+                return null;
+            }
 
             
             // script avvio client side o json 
             if("json".equalsIgnoreCase(returnType)) {
-                result = sTableJson;
+                result = tblWorkspace.clientTableJson;
             } else if("js".equalsIgnoreCase(returnType)) {
-                result = "<script>"+getJSVariableFromControlId(controlId)+"={controlId:\""+controlId+"\",json:'"+sTableJson.replace("'", "\\'")+"'};</script>";
+                result = "<script>"+getJSVariableFromControlId(controlId)+"={controlId:\""+controlId+"\",json:'"+tblWorkspace.clientTableJson.replace("'", "\\'")+"'};</script>";
             } else {
-                result = "<script>glLiquidStartupTables.push({controlId:\""+controlId+"\",json:'"+sTableJson.replace("'", "\\'")+"'});</script>";
+                result = "<script>glLiquidStartupTables.push({controlId:\""+controlId+"\",json:'"+tblWorkspace.clientTableJson.replace("'", "\\'")+"'});</script>";
             }
             
             return result;
@@ -2794,6 +2860,7 @@ public class workspace {
     static public boolean removeFromWhiteList(String database, String schema, String table) {
         return BlackWhiteList.removeFromWhiteList(database, schema, table);
     }    
+
     
     public int addSession( ThreadSession threadSession ) {
         if(threadSession != null) {
@@ -2809,5 +2876,72 @@ public class workspace {
         }
         return sessions.size();
     }
+
+    /**
+     * 
+     * Copy connectionDriver, connectionURL, database, schema from source_wrk to target_wrk
+     * 
+     * @param source_wrk
+     * @param target_wrk
+     * @param auxParam
+     * @return
+     * @throws JSONException 
+     */
+    static workspace redirect_workspace(workspace source_wrk, workspace target_wrk, String auxParam) throws JSONException {
+        if(target_wrk != null) {
+            if(source_wrk != null) {
+                workspace result = new workspace(target_wrk);
+                if(result != null) {
+                    copy_workspace_prop(source_wrk, result, "connectionDriver");
+                    copy_workspace_prop(source_wrk, result, "connectionURL");
+                    copy_workspace_prop(source_wrk, result, "database");
+                    copy_workspace_prop(source_wrk, result, "schema");
+                    result.databaseSchemaTable = source_wrk.databaseSchemaTable;
+                    result.schemaTable = source_wrk.schemaTable;
+                    result.defaultDatabase = source_wrk.defaultDatabase;
+                    result.defaultSchema = source_wrk.defaultSchema;
+                    result.dbProductName = source_wrk.dbProductName;
+                    return result;
+                }
+            } else {
+                return target_wrk;
+            }
+        }
+        return null;
+    }
     
+    /**
+     * 
+     * Copy a json property from source_wrk.tableJson on target_wrk.tableJson
+     * 
+     * @param source_wrk
+     * @param target_wrk
+     * @param prop
+     * @return
+     * @throws JSONException 
+     */
+    static boolean copy_workspace_prop(workspace source_wrk, workspace target_wrk, String prop) throws JSONException {
+        if(target_wrk != null) {
+            if(source_wrk != null) {
+                if(source_wrk.tableJson.has(prop)) {
+                    if(!source_wrk.tableJson.isNull(prop)) {
+                        target_wrk.tableJson.put(prop, source_wrk.tableJson.get(prop));
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    public String toSrting() {
+        String table = "", schema = "", database = "";
+        try { table = this.tableJson.getString("table"); } catch(Exception e) {}
+        try { schema = this.tableJson.getString("table"); } catch(Exception e) {}
+        try { database = this.tableJson.getString("table"); } catch(Exception e) {}
+        return "controlId:'" + this.controlId+"'" 
+                + "\n table:'"+table+"'"
+                + "\n schema:'"+schema+"'"
+                + "\n database:'"+database+"'"
+                ;
+    }
 }

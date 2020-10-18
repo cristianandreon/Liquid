@@ -31,6 +31,7 @@ public class PojoGenerator {
     public String props = "";
     public String attributes = "";
     public String classBody = "";
+    boolean bReadOnly = false;
     
     
     static void removeFinal(CtClass clazz) throws Exception {
@@ -42,15 +43,27 @@ public class PojoGenerator {
         }
     }
         
-        
     public Class generate(String className, Map<String, Class<?>> properties, Map<String, Class<?>> attributes) throws Throwable {
+        return generate(className, properties, attributes, null);
+    }
+    
+    public Class generate(String className, Map<String, Class<?>> properties, Map<String, Class<?>> attributes, String mode) throws Throwable {
         CtClass cc = null;
         ClassPool pool = null;
-        
+
         try {
 
-            System.out.println("javassist ver.: "+javassist.CtClass.version);
+            if(workspace.projectMode) {
+                System.out.println("javassist ver.: "+javassist.CtClass.version + " ... generating pojo on '"+className+"' N.props:" + properties.size());
+            }
 
+            
+            if(mode != null) {
+                if(mode.contains("radOnly")) {
+                    bReadOnly = true;
+                }
+            }
+            
             try {
                 pool = javassist.ClassPool.getDefault();
             } catch(Throwable th) {                
@@ -203,7 +216,11 @@ public class PojoGenerator {
         String getterName = "get" + fieldName.substring(0, 1).toUpperCase()+ fieldName.substring(1)+"$Changed";
         String className = fieldClass.getName().replaceAll("java.lang.", "");
         StringBuffer sb = new StringBuffer();
-        sb.append("public boolean "+getterName+" throws Exception (){ return this."+fieldName+"$Changed; }");
+        if(bReadOnly) {
+            sb.append("public boolean "+getterName+" throws Exception (){ return false; }");
+        } else {
+            sb.append("public boolean "+getterName+" throws Exception (){ return this."+fieldName+"$Changed; }");
+        }
         classBody += "\n\t" + sb.toString();
         return CtMethod.make(sb.toString(), declaringClass);
     }
@@ -211,7 +228,11 @@ public class PojoGenerator {
         String setterName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1)+"$Changed";
         String className = fieldClass.getName().replaceAll("java.lang.", "");
         StringBuffer sb = new StringBuffer();
-        sb.append("public void ").append(setterName).append(" throws Exception (boolean bChanged){ this."+fieldName+"$Changed=bChanged; }");
+        if(bReadOnly) {
+            sb.append("public void ").append(setterName).append(" throws Exception (boolean bChanged){ /* read only class */ }");
+        } else {
+            sb.append("public void ").append(setterName).append(" throws Exception (boolean bChanged){ this."+fieldName+"$Changed=bChanged; }");
+        }
         classBody += "\n\t" + sb.toString();
         return CtMethod.make(sb.toString(), declaringClass);
     }
@@ -219,7 +240,11 @@ public class PojoGenerator {
         String setterName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1)+"$Changed";
         String className = fieldClass.getName().replaceAll("java.lang.", "");
         StringBuffer sb = new StringBuffer();
-        sb.append("public void ").append(setterName).append(" throws Exception (){ this."+fieldName+"$Changed=true; }");
+        if(bReadOnly) {
+            sb.append("public void ").append(setterName).append(" throws Exception (){ /* read only class */ }");
+        } else {
+            sb.append("public void ").append(setterName).append(" throws Exception (){ this."+fieldName+"$Changed=true; }");
+        }
         classBody += "\n\t" + sb.toString();
         return CtMethod.make(sb.toString(), declaringClass);
     }
@@ -325,125 +350,3 @@ public class PojoGenerator {
     }
 }
 
-/*
-class LiquidX_liquidx_users{
-
-	public java.sql.Date date;
-	public boolean emailValidated$Changed;
-	public String emailToken;
-	public boolean id$Changed;
-	public String cognome;
-	public boolean password$Changed;
-	public Integer naccess;
-	public Integer admin;
-	public boolean status$Changed;
-	public boolean emailToken$Changed;
-	public String domain_id;
-	public boolean nfails$Changed;
-	public String password;
-	public boolean naccess$Changed;
-	public Integer id;
-	public boolean application_id$Changed;
-	public boolean expire$Changed;
-	public String email;
-	public Object $Parent;
-	public boolean date$Changed;
-	public boolean admin$Changed;
-	public boolean token$Changed;
-	public boolean email$Changed;
-	public Integer nfails;
-	public boolean cognome$Changed;
-	public String nome;
-	public String application_id;
-	public boolean domain_id$Changed;
-	public String token;
-	public boolean $Parent$Read;
-	public boolean user$Changed;
-	public String expire;
-	public boolean nome$Changed;
-	public boolean $Parent$Changed;
-	public String user;
-	public Integer emailValidated;
-	public String status;
-	// Generic set propery as changed
-	public void setChanged(String fieldName, boolean bChanged) throws Exception {
-	Field field = this.getClass().getDeclaredField(fieldName+"$Changed");
-	if(field!=null) { 
-	field.setAccessible(true);
-	field.set(this,new Boolean(bChanged)); };
-        }
-	// date
-	public java.sql.Date getDate() throws Exception {return this.date;}
-	public void setDate(java.sql.Date date) throws Exception {this.date=date; this.setChanged("date", true); }
-	public void setDate(Object date) throws Exception  {try { Class clazz = Class.forName("com.liquid.DateUtil");Class[] cArg = new Class[1];cArg[0] = Object.class;java.lang.reflect.Method method = clazz.getMethod("getDate", cArg);method.setAccessible(true);this.date=(java.sql.Date)method.invoke(clazz.newInstance(),date); } catch (Throwable th) {} }
-	// emailToken
-	public String getEmailToken() throws Exception {return this.emailToken;}
-	public void setEmailToken(String emailToken) throws Exception {this.emailToken=emailToken; this.setChanged("emailToken", true); }
-	public void setEmailToken(Object emailToken) throws Exception  {this.emailToken=String.valueOf(emailToken); }
-	// cognome
-	public String getCognome() throws Exception {return this.cognome;}
-	public void setCognome(String cognome) throws Exception {this.cognome=cognome; this.setChanged("cognome", true); }
-	public void setCognome(Object cognome) throws Exception  {this.cognome=String.valueOf(cognome); }
-	// naccess
-	public Integer getNaccess() throws Exception {return this.naccess;}
-	public void setNaccess(Integer naccess) throws Exception {this.naccess=naccess; this.setChanged("naccess", true); }
-	public void setNaccess(Object naccess) throws Exception  {this.naccess=(Integer)(naccess); }
-	// admin
-	public Integer getAdmin() throws Exception {return this.admin;}
-	public void setAdmin(Integer admin) throws Exception {this.admin=admin; this.setChanged("admin", true); }
-	public void setAdmin(Object admin) throws Exception  {this.admin=(Integer)(admin); }
-	// domain_id
-	public String getDomain_id() throws Exception {return this.domain_id;}
-	public void setDomain_id(String domain_id) throws Exception {this.domain_id=domain_id; this.setChanged("domain_id", true); }
-	public void setDomain_id(Object domain_id) throws Exception  {this.domain_id=String.valueOf(domain_id); }
-	// password
-	public String getPassword() throws Exception {return this.password;}
-	public void setPassword(String password) throws Exception {this.password=password; this.setChanged("password", true); }
-	public void setPassword(Object password) throws Exception  {this.password=String.valueOf(password); }
-	// id
-	public Integer getId() throws Exception {return this.id;}
-	public void setId(Integer id) throws Exception {this.id=id; this.setChanged("id", true); }
-	public void setId(Object id) throws Exception  {this.id=(Integer)(id); }
-	// email
-	public String getEmail() throws Exception {return this.email;}
-	public void setEmail(String email) throws Exception {this.email=email; this.setChanged("email", true); }
-	public void setEmail(Object email) throws Exception  {this.email=String.valueOf(email); }
-	// $Parent
-	public Object get$Parent() throws Exception {return this.$Parent;}
-	public void set$Parent(Object $Parent) throws Exception {this.$Parent=$Parent; this.setChanged("$Parent", true); }
-	// nfails
-	public Integer getNfails() throws Exception {return this.nfails;}
-	public void setNfails(Integer nfails) throws Exception {this.nfails=nfails; this.setChanged("nfails", true); }
-	public void setNfails(Object nfails) throws Exception  {this.nfails=(Integer)(nfails); }
-	// nome
-	public String getNome() throws Exception {return this.nome;}
-	public void setNome(String nome) throws Exception {this.nome=nome; this.setChanged("nome", true); }
-	public void setNome(Object nome) throws Exception  {this.nome=String.valueOf(nome); }
-	// application_id
-	public String getApplication_id() throws Exception {return this.application_id;}
-	public void setApplication_id(String application_id) throws Exception {this.application_id=application_id; this.setChanged("application_id", true); }
-	public void setApplication_id(Object application_id) throws Exception  {this.application_id=String.valueOf(application_id); }
-	// token
-	public String getToken() throws Exception {return this.token;}
-	public void setToken(String token) throws Exception {this.token=token; this.setChanged("token", true); }
-	public void setToken(Object token) throws Exception  {this.token=String.valueOf(token); }
-	// expire
-	public String getExpire() throws Exception {return this.expire;}
-	public void setExpire(String expire) throws Exception {this.expire=expire; this.setChanged("expire", true); }
-	public void setExpire(Object expire) throws Exception  {this.expire=String.valueOf(expire); }
-	// user
-	public String getUser() throws Exception {return this.user;}
-	public void setUser(String user) throws Exception {this.user=user; this.setChanged("user", true); }
-	public void setUser(Object user) throws Exception  {this.user=String.valueOf(user); }
-	// emailValidated
-	public Integer getEmailValidated() throws Exception {return this.emailValidated;}
-	public void setEmailValidated(Integer emailValidated) throws Exception {this.emailValidated=emailValidated; this.setChanged("emailValidated", true); }
-	public void setEmailValidated(Object emailValidated) throws Exception  {this.emailValidated=(Integer)(emailValidated); }
-	// status
-	public String getStatus() throws Exception {return this.status;}
-	public void setStatus(String status) throws Exception {this.status=status; this.setChanged("status", true); }
-	public void setStatus(Object status) throws Exception  {this.status=String.valueOf(status); }
-}
-
-
-*/

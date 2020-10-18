@@ -440,12 +440,37 @@ public class event {
             retValTargetJSON.put("resultSet", resultSetToTranfserJSON);
             retVal = retValTargetJSON.toString();
         }
-        for (String key : new String[]{"error", "warning", "message", "client"}) {
+        for (String key : new String[]{"tables", "foreignTables"}) {
             if (retValToTransferJSON.has(key)) {
-                retValTargetJSON.put(key, retValToTransferJSON.getString(key));
-                retVal = retValTargetJSON.toString();
+                JSONArray resultSetToTranfserJSONList = retValToTransferJSON.getJSONArray(key);
+                if (retValTargetJSON.has(key)) {
+                    JSONArray retValTargetJSONList = retValTargetJSON.getJSONArray(key);
+                    if(retValTargetJSON.has(key)) {
+                        for(int it=0; it<resultSetToTranfserJSONList.length(); it++) {
+                            JSONObject t = resultSetToTranfserJSONList.getJSONObject(it);
+                            if(t != null) {
+                                String tName = t.getString("table");
+                                retValTargetJSONList.put(t);
+                            }
+                        }
+                    }
+                } else {
+                    retValTargetJSON.put(key, resultSetToTranfserJSONList);
+                }
             }
         }
+        for (String key : new String[]{"error", "warning", "message", "client"}) {
+            if (retValToTransferJSON.has(key)) {
+                if (retValTargetJSON.has(key) && !retValTargetJSON.isNull(key)) {
+                    String data = retValTargetJSON.getString(key);
+                    if(data != null) data = utility.base64Decode(data);
+                    retValTargetJSON.put(key, utility.base64Encode( (data != null ? data : "") + "\n\n" + utility.base64Decode( retValToTransferJSON.getString(key))) );
+                } else {
+                    retValTargetJSON.put(key, retValToTransferJSON.getString(key));
+                }
+            }
+        }
+        retVal = retValTargetJSON.toString();
         return retVal;
     }
 
@@ -617,7 +642,7 @@ public class event {
             if (tbl_wrk != null) {
                 HttpServletRequest request = (HttpServletRequest) requestParam;
                 String ids = db.getSelection(tbl_wrk, params);
-                long maxRows = 0;
+                int maxRows = 0;
 
                 // ES.: Elenco selezione come JSONArray
                 JSONArray jsonIds = (JSONArray) db.get_bean(request, (String) ids, "jsonarray", maxRows);
@@ -750,7 +775,7 @@ public class event {
                 //
                 // ES.: Legge il bean completo, tutti i campi, tutte le foreign tables
                 //
-                long maxRows = 0;
+                int maxRows = 0;
                 ArrayList<Object> beans = (ArrayList<Object>) db.get_bean(requestParam, (String) ids, "bean", "all", "all", maxRows);
                 if (beans != null) {
                     int i = 1, n = beans.size();
@@ -812,7 +837,7 @@ public class event {
                 //
                 // ES.: Legge il bean completo, tutti i campi, tutte le foreign tables
                 //
-                long maxRows = 0;
+                int maxRows = 0;
                 ArrayList<Object> beans = (ArrayList<Object>) db.get_bean(requestParam, (String) ids, "bean", "all", "all", maxRows);
                 if (beans != null) {
                     int i = 1, n = beans.size();
@@ -851,7 +876,7 @@ public class event {
             if (tbl_wrk != null) {
                 HttpServletRequest request = (HttpServletRequest) requestParam;
                 String ids = workspace.getSelection(((workspace) tbl_wrk).controlId, (String) params);
-                long maxRows = 0, i = 1;
+                int maxRows = 0, i = 1;
                 ArrayList<Object> beans = (ArrayList<Object>) db.get_bean(request, (String) ids, "bean", "all", "all", maxRows);
                 for (Object bean : beans) {
                     try {

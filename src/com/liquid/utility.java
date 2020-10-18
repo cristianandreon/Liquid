@@ -440,8 +440,8 @@ public class utility {
                         field = searchProperty(bean, property + "$Changed", true, false);
                         if (field != null) {
                             field.setAccessible(true);
+                            field.set(bean, true);
                         }
-                        field.set(bean, true);
                     } catch (Throwable th2) {
                         try {
                             bean.getClass().getMethod("setChanged", String.class, Boolean.class).invoke(bean, property, true);
@@ -1097,7 +1097,7 @@ public class utility {
         return false;
     }
     
-    static boolean contains(List<String> controlIds, String controlId) {
+    public static boolean contains(List<String> controlIds, String controlId) {
         for(int i=0; i<controlIds.size(); i++) {
             if(controlIds.get(i).equalsIgnoreCase(controlId)) return true;
         }

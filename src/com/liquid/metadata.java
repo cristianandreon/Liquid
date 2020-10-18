@@ -25,6 +25,9 @@ public class metadata {
      ***********************************
      */
     static boolean IsMetadataCacheEnabled = true;
+    
+    static long TIME_MSEC_LIMIT_FOR_WARNING = 1000;
+    
 
     static class MetaDataCol {
 
@@ -463,7 +466,7 @@ public class metadata {
                     if(recCount > 0) {
                         nTable++;
 
-                        if(!bReadDefault) {                                
+                        if(bReadDefault) {                                
                             // ORACLE SHIT : lettura DATA_DEFAULT
                             if("oracle".equalsIgnoreCase(dialet)) {
                                 String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '"+table+"'";
@@ -850,6 +853,8 @@ public class metadata {
     static public ArrayList<String> getAllColumnsAsArray(String database, String schema, String tableName, Connection conn) throws Throwable {
         ArrayList<String> result = new ArrayList<String>();
         Connection connToDB = null, connToUse = conn;
+        long time1 = 0, time0 = System.currentTimeMillis();
+        
         try {
             if(database == null || database.isEmpty()) {
                 database = conn.getCatalog();
@@ -880,6 +885,7 @@ public class metadata {
                     rs.close();
                 }
             }
+            
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
@@ -890,6 +896,13 @@ public class metadata {
                 Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        
+        time1 = System.currentTimeMillis();
+        
+        if(time1-time0 > TIME_MSEC_LIMIT_FOR_WARNING) {        
+            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, "*** WARNING : getAllColumnsAsArray() database:"+database+" schema:"+schema+" table:"+tableName+" time:"+(time1-time0));
+        }
+        
         return result;
     }
             
