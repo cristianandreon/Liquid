@@ -347,6 +347,9 @@ public class db {
                 }
                 try {
                     query = tbl_wrk.tableJson.getString("query");
+                    if(query != null) {
+                        query = utility.base64Decode(query);
+                    }
                 } catch (Exception e) {
                 }
                 try {
@@ -1069,7 +1072,8 @@ public class db {
                     canApplyLimit = false;
                 }
                 int where_index = query.toLowerCase().indexOf("where");
-                sWhere = query.substring(where_index);
+                if(where_index >= 0)
+                    sWhere = query.substring(where_index);
             }
             if (canApplyLimit) {
                 if (!bCacheIdsInAvailable) {
@@ -3430,7 +3434,7 @@ public class db {
      * @throws Throwable 
      */
     static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws JSONException, Throwable {
-        return load_beans(request, databaseSchemaTable, null, columns, keyColumn, key, maxRows);
+        return load_beans(request, null, databaseSchemaTable, columns, keyColumn, key, maxRows);
     }
 
     static public workspace load_beans_get_workspace(HttpServletRequest request, String databaseSchemaTable, String controlId) throws JSONException, Throwable {

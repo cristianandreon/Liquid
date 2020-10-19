@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.42   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.43   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  01-10-2020
 //  TODO : see trello.com
 //
@@ -647,6 +647,7 @@ class LiquidCtrl {
                                     }
                                 }
                             }
+                            Liquid.updateCaption(liquid);
                         }
                     },                    
                     onCellContextMenu:function(event) {
@@ -969,7 +970,8 @@ class LiquidCtrl {
                                 ];
                             }
                         }
-                        var captionTitleHTML = "<div class=\"liquidPopupTitle\" style=\"pointer-events:none;\" title=\""+title+"\">" + title + "</div>";
+                        var captionId = controlId + ".caption_title";
+                        var captionTitleHTML = "<div class=\"liquidPopupTitle\" id=\""+captionId+"\" style=\"pointer-events:none;\" title=\""+title+"\">" + title + "</div>";
                         if(this.tableJson.captionButtons) {
                             for(var ibt = 0; ibt < this.tableJson.captionButtons.length; ibt++) {
                                 var captionButton = this.tableJson.captionButtons[ibt];
@@ -1115,7 +1117,7 @@ class LiquidCtrl {
                                                 this.foreignTables[ic].contentObj.setAttribute('foreignTable1B', ic+1);
                                                 this.foreignTables[ic].contentObj.setAttribute('foreignTableIndex', this.FTTabList.length);
 
-                                                this.FTTabList.push( { name:ftName, tabId:tabId, contentId:contentId, controlId:this.foreignTables[ic].controlId } );
+                                                this.FTTabList.push( { name:ftName, tabId:tabId, contentId:contentId, controlId:this.foreignTables[ic].controlId, parentControlId:this.controlId } );
                                             }
                                         }
                                     }
@@ -1137,6 +1139,8 @@ class LiquidCtrl {
                                 Liquid.setTooltip(this.homeTabId, "Liquid.onHomeTooltip('"+this.homeTabId+"')");
                                 this.FTTabList[0].name = this.homeName;
                                 this.FTTabList[0].tabId = this.homeTabId;
+                                this.FTTabList[0].controlId = this;
+                                this.FTTabList[0].parentControlId = null;
                             }                        
 
                             // contenitori foreign tables
@@ -1273,6 +1277,8 @@ class LiquidCtrl {
                     this.dockerTbl.cellSpacing = 0;
                     this.dockerTbl.id = controlId + ".docker";
                     this.dockerTbl.className = "liquidDocker";
+                    // this.dockerTbl.style.height = "100%";
+                    
                     var tbody = document.createElement("tbody");
                     var tr = document.createElement("tr");
                     var td = document.createElement("td");
@@ -1544,7 +1550,7 @@ class LiquidCtrl {
                     // list/grids/layout/document tabs   
                     if(this.gridTabsObj) {
                         this.gridTabsObj.innerHTML = ""
-                                + "<div style=\"display:block\" id=\""+controlId + ".gridTableTabs."+"\" class=\"liquidGridTablesTabs\" ><ul>"
+                                + "<div style=\"display:block\" id=\""+controlId + ".gridTableTabs"+"\" class=\"liquidGridTablesTabs\" ><ul>"
                                 + listTabHTML
                                 + gridTabHTML
                                 + layoutTabHTML
@@ -2196,7 +2202,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.42,
+    version: 1.43,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -6343,7 +6349,7 @@ var Liquid = {
             var nameItems = obj.id.split(".");
             if(nameItems.length > 2) {
                 var ftId = nameItems[2];
-                var tabId = liquid.controlId + ".foreignTable." + ftId;
+                var tabId = obj.id; // liquid.controlId + ".foreignTable." + ftId;
                 if(liquid.lastForeignTabSelected)
                     liquid.lastForeignTabSelected.className = "";
                 liquid.lastForeignTabSelected = obj.parentNode;
@@ -6376,7 +6382,7 @@ var Liquid = {
             var nameItems = obj.id.split(".");
             if(nameItems.length > 2) {
                 var ftId = nameItems[2];
-                var tabId = liquid.controlId + ".foreignTable." + ftId;
+                var tabId = obj.id; // liquid.controlId + ".foreignTable." + ftId;
                 var controlIdForeignTable = "";
                 var contentIdForeignTable = obj.id + ".content";
                 var contentIdForeignTableObj = document.getElementById(contentIdForeignTable);
@@ -6415,6 +6421,8 @@ var Liquid = {
                         }
                     }
                 }
+                // Update the caption
+                Liquid.updateCaption(liquid);
             }
         }
     },
@@ -6436,7 +6444,9 @@ var Liquid = {
             }                        
         }
     },
+    //
     // show foreignTable content by changing its parent
+    //
     setParentForeignTable:function(obj, currentForeignTable, newParentId) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
@@ -9297,6 +9307,64 @@ var Liquid = {
     },
     /**
      * Get the current selecter row
+     * @param {selctionInfoObject} the object defining the selection ([0] list of ids selected, [1] = ALL - list of ids unselected)
+     * @return the descrition (string)
+     */
+    getSelectionDescription:function(selctionInfoObject) {
+        var desc = "";
+        var selLabel = Liquid.lang === 'eng' ? ("selected") : ("selezionate" );
+        if(selctionInfoObject) {
+            if(selctionInfoObject.selectionKey.length) {
+                var selection = selctionInfoObject.selectionKey.split(",");
+                if(Array.isArray(selection)) {
+                    var nSel = selection.length;
+                    if(nSel == 1) {
+                        if(isDef(selctionInfoObject.columns)) {
+                            var liquid = selctionInfoObject.liquid;
+                            var rowFields = Liquid.getSelectedLiquidRow(liquid);
+                            for(var ic=0; ic<selctionInfoObject.columns.length; ic++) {
+                                var col = Liquid.getColumn(liquid, selctionInfoObject.columns[ic]);
+                                if(col) {
+                                    desc += (ic>0 > 0 ? " | " : "") + rowFields[col.name];
+                                }
+                            }
+                        } else {
+                            desc = "[ "+selection+" ]";
+                        }
+                    } else {
+                        desc = "[ "+nSel+selLabel+(Liquid.lang === 'eng' ? ("selected") : ("selezionate" )) + " ]";
+                    }
+                }
+            } else if(selctionInfoObject.unselectionKey) {
+                var selection = elctionInfoObject.unselectionKey.split(",");
+                if(Array.isArray(selection)) {                    
+                    var nSel = liquid.nRows - sselection.length;
+                    if(nSel == 1) {
+                        if(isDef(selctionInfoObject.columns)) {
+                            desc = Liquid.lang === 'eng' ? "[ ALL except " : "[ TUTTO tranne ";
+                            var rowFields = Liquid.getSelectedLiquidRow(selctionInfoObject.liquid);
+                            var liquid = selctionInfoObject.liquid;
+                            for(var ic=0; ic<selctionInfoObject.columns.length; ic++) {
+                                var col = Liquid.getColumn(liquid, selctionInfoObject.columns[ic]);
+                                if(col) {
+                                    desc += (ic>0 ? " | " : "") + rowFields[col.name];
+                                }
+                            }
+                            desc += " ]";
+                        } else {
+                            desc = (Liquid.lang === 'eng' ? "[ ALL except " : "[ TUTTO tranne ");
+                            desc += selection[0]+" ]";
+                        }
+                    } else {
+                        desc = "[ "+nSel+selLabel+" ]";
+                    }
+                }
+            }
+        }
+        return desc;
+    },
+    /**
+     * Get the current selecter row
      * @param {liquid} the control id or the class instance (LiquidCtrl)
      * @return [ including list, excluding list ] array
      */
@@ -10455,7 +10523,7 @@ var Liquid = {
                 liquid.actionsObjHeight = Liquid.getPrecomputedHeight(liquid.actionsObj);
 
                 if(referenceHeight > 0) {
-                    var gridTabsHeight = (liquid.gridTabsObj ? (liquid.gridTabsObjHeight ? liquid.gridTabsObjHeight : 0) : 0);
+                    var gridTabsHeight = Number( (liquid.gridTabsObj ? (liquid.gridTabsObjHeight ? liquid.gridTabsObjHeight : 0) : 0) );
                     var aggridContainerHeight = (
                             (referenceHeight)
                             - (liquid.popupCaptionObj ? liquid.popupCaptionObj.offsetHeight : 0)
@@ -10474,6 +10542,12 @@ var Liquid = {
                         liquid.aggridContainerHeight = aggridContainerHeight;
                         liquid.resizeCounter++;
                     }
+                    // if(liquid.controlId === 'testGrid7') debugger;
+                    // put the docker to fixed height (container of tabs list/grids/layout
+                    if(liquid.dockerTbl) {
+                        liquid.dockerTbl.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight+gridTabsHeight : "0") + "px";
+                    }
+                    
                 } else {
                     liquid.needResize = true;
                 }
@@ -13558,6 +13632,66 @@ var Liquid = {
         }
     },
     onGridResize:function(liquid, grid) {
+    },
+    getCaptionTitle:function(liquid) {
+        if(liquid) {
+            var title = (isDef(liquid.tableJson.title) ? liquid.tableJson.title : (isDef(liquid.tableJson.caption) ? liquid.tableJson.caption : null));
+            if(!title && isDef(liquid.tableJson.table))
+                title = liquid.tableJson.table;
+            return title;
+        }
+        return "";
+    },
+    updateCaption:function(obj) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var rootLiquid = Liquid.getRootLiquid(liquid);
+            var descriptonList = [];
+            if(isDef(rootLiquid.currentForeignTable)) {
+                if(rootLiquid.currentForeignTable < rootLiquid.FTTabList.length) {
+                    var FTTab = rootLiquid.FTTabList[rootLiquid.currentForeignTable];
+                    if(isDef(FTTab)) {
+                        if(isDef(FTTab.controlId)) {
+                            var ftLiquid = Liquid.getLiquid(FTTab.controlId);
+                            while(isDef(ftLiquid)) {
+                                var selectionData = Liquid.getSelectedPrimaryKeys(ftLiquid);
+                                var selectionKey = selectionData[0];
+                                var unselectionKey = selectionData[1];
+                                var columns = null;
+                                if(isDef(ftLiquid.tableJson.captionColumn)) {
+                                    columns = [ftLiquid.tableJson.captionColumn];
+                                } else if(isDef(ftLiquid.tableJson.captionColumns)) {
+                                    columns = ftLiquid.tableJson.captionColumns;
+                                } else if(isDef(ftLiquid.tableJson.titleColumn)) {
+                                    columns = [ftLiquid.tableJson.titleColumn];
+                                } else if(isDef(ftLiquid.tableJson.titleColumns)) {
+                                    columns = ftLiquid.tableJson.titleColumns;
+                                }
+                                descriptonList.push( { descriptior:"", liquid:ftLiquid, selectionKey:selectionKey, unselectionKey:unselectionKey, columns } );
+                                if(ftLiquid.controlId === rootLiquid.controlId) {
+                                    break;
+                                }
+                                ftLiquid = ftLiquid.srcLiquid;
+                            }
+                        }
+                    }
+                }
+            }
+            var desc = "";
+            if(descriptonList.length > 0) {
+                for(var i=descriptonList.length-1; i>=0; i--) {
+                    descriptonList[i].descriptior = Liquid.getSelectionDescription(descriptonList[i]);
+                    title = Liquid.getCaptionTitle(descriptonList[i].liquid);
+                    desc += (i != descriptonList.length-1 ? " > " : "") + title + " " + descriptonList[i].descriptior;
+                }
+                var captionId = rootLiquid.controlId + ".caption_title";
+                var captionObj = document.getElementById(captionId);
+                if(captionObj) {
+                    captionObj.title = desc;
+                    captionObj.innerHTML = desc;
+                }
+            }
+        }
     },
     setCurrentTab:function(obj, currentTab) {
         var liquid = Liquid.getLiquid(obj);

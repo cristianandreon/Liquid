@@ -718,9 +718,12 @@ public class login {
                                 try {
                                     
                                     if(assets.read_user_assets_roles ( request, iUserId )) {
-                                        assets_id = utility.arrayToString( ((ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserAssetsID")).toArray(), null, null, ",");
-                                        assets_name = utility.arrayToString( ((ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserAssetsName")).toArray(), null, null, ",");
-                                        assets_inactive_name = utility.arrayToString( ((ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserInactiveAssetsName")).toArray(), null, null, ",");
+                                        ArrayList<Object> GLLiquidUserAssetsID = (ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserAssetsID");
+                                        ArrayList<Object> GLLiquidUserAssetsName = (ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserAssetsName");
+                                        ArrayList<Object> GLLiquidUserInactiveAssetsName = (ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserInactiveAssetsName");
+                                        assets_id = GLLiquidUserAssetsID != null ? utility.arrayToString( GLLiquidUserAssetsID.toArray(), null, null, ",") : null;
+                                        assets_name = GLLiquidUserAssetsName != null ? utility.arrayToString( GLLiquidUserAssetsName.toArray(), null, null, ",") : null;
+                                        assets_inactive_name = GLLiquidUserInactiveAssetsName != null ? utility.arrayToString( GLLiquidUserInactiveAssetsName.toArray(), null, null, ",") : null;
                                     }
                                     
                                 } catch (Exception e) {
@@ -1231,7 +1234,7 @@ public class login {
 
                         conn = getConnection();
 
-                        if(conn != null || conn.isValid(30)) {
+                        if(conn != null && conn.isValid(30)) {
                         
                             String schemaTable = "";
                             String databaseSchemaTable = "";
@@ -1488,7 +1491,7 @@ public class login {
                 }
             }
         } catch (Exception e) {
-            return "{ \"result\":-12, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+            return "{ \"result\":-12, \"error\":\""+utility.base64Encode("Exception:"+e.getLocalizedMessage())+"\"}";
         }
         return "{ \"result\":666, \"error\":\"undetected case\"}";
     }

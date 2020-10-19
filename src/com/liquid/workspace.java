@@ -46,9 +46,18 @@ public class workspace {
     static public String pythonPath = null;
     static public String pythonExecutable = null;
 
+    //
     // key persistent on server but hidden on the client
-    static String [] serverPriorityKeys = { "connectionURL", "queryK" };	// allow query to be replaced
+    // N.B.: allow query to be replaced in client side ... user queryK to keep it hidden to the client
+    //
+    static String [] serverPriorityKeys = { "connectionURL", "queryK" };	
     static String kDefinedAtServerSide = "[definedAtServerSide]";
+    
+    //
+    // key to bey encoded to be passed basck to client
+    //
+    static String [] base64EncodeKeys = { "query" };
+    
     
     // separator used in controId build from file or database/schema/table
     static String controlIdSeparator = ".";
@@ -1581,10 +1590,22 @@ public class workspace {
             
             JSONObject tableJsonForClient = new JSONObject(tableJson.toString());
             
-            // ConnectionURL è gestito lato server, può avere l'account di accesso e non va passato al client
+            //
+            // ConnectionURL is managed at server side only, it may be including account data and musto not be passed to the client
+            // QueryK is managed by server side only
+            //
             for(String serverPriorityKey : serverPriorityKeys) {
                 if(tableJsonForClient.has(serverPriorityKey)) {
                     tableJsonForClient.put(serverPriorityKey, kDefinedAtServerSide);                    
+                }
+            }
+            for(String base64EncodeKey : base64EncodeKeys) {
+                if(tableJsonForClient.has(base64EncodeKey)) {
+                    String sEncoded = utility.base64Encode(tableJsonForClient.getString(base64EncodeKey));
+                    // encode the client side
+                    tableJsonForClient.put(base64EncodeKey, sEncoded);
+                    // encode the server side
+                    tblWorkspace.tableJson.put(base64EncodeKey, sEncoded);
                 }
             }
             
@@ -1612,8 +1633,17 @@ public class workspace {
             
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\""+utility.base64Encode(ex.getLocalizedMessage())+"\"}" : "<script> console.error(\""+ex.getLocalizedMessage()+"\");</script>" );
+            if("json".equalsIgnoreCase(returnType)) {
+                result = "{\"error\":\""+utility.base64Encode(ex.getLocalizedMessage())+"\"}";
+            } else if("js".equalsIgnoreCase(returnType)) {
+                result = "<script> console.error(\"controlId:"+controlId+" error:"+ex.getLocalizedMessage()+"\");</script>" ;
+            } else {
+                result = "<script> console.error(\"controlId:"+controlId+" error:"+ex.getLocalizedMessage()+"\");</script>" ;
+            }
+            
+            return result;
 
+            
         } finally {
             try {
                 if(conn != null)
