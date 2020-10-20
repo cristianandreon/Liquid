@@ -2062,7 +2062,7 @@ public class db {
                                         fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
                                     }
                                 } else {
-                                    fieldValue = rsdo.getString(columns_alias[0]);
+                                    fieldValue = rsdo.getString(columns_alias[0]).replace("\"", "\\\"");
                                 }
                                 out_values_string.append("\"" + fieldValue + "\"");
                             } else {

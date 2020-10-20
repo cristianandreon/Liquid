@@ -13361,7 +13361,7 @@ var Liquid = {
         if(liquid) {
             liquid.suneditorDiv.style.display = "none";
             if(liquid.suneditorGridControl.linkedObj)
-                liquid.suneditorGridControl.linkedObj.innerHTML = content;
+                liquid.suneditorGridControl.linkedObj.innerHTML = Liquid.textToHTML(content);
             if(liquid.suneditorGridControl.colLink1B > 0) {
                 var iCol = liquid.suneditorGridControl.colLink1B - 1;
                 var col = liquid.tableJson.columns[iCol];
@@ -13374,9 +13374,12 @@ var Liquid = {
                                 if(validateResult[0] >= 0) {                                    
                                     if(Liquid.isCodeEditor(col)) {
                                         var div = document.createElement("div");
+                                        /*
+                                         * NO : this destroy the format
                                         div.innerHTML = validateResult[1];
                                         content = div.textContent || div.innerText || "";
                                         delete div;
+                                        */
                                     } else {
                                         content = validateResult[1];
                                     }
@@ -13390,6 +13393,18 @@ var Liquid = {
                 }
             }
         }
+    },
+    HTMLToText:function( text ) {
+        if(text) {
+            return text.replace("<br>", "\n").replace("</br>", "\n").replace("<br/>", "\n").replace("</p><p>", "\n").replace("</p>", ""); 
+        }
+        return text;
+    },
+    textToHTML:function( text ) {
+        if(text) {
+            return text.replace("\n", "<br/>"); 
+        }
+        return text;
     },
     setFilter:function(obj, columnName, filterValue, filterOperator) {
         var liquid = Liquid.getLiquid(obj);
@@ -18391,8 +18406,8 @@ var Liquid = {
         out += "\n";
         out += "\n";
         out += "                    /*\n";
-        out += "                    // confiem message request\n";
-        out += "                    if(Messagebox.show( \"Updating table (set priority += 1) ... continue operation ?\", \"Liquid\", Messagebox.OK+Messagebox.CANCEL+Messagebox.QUESTION, 30, Messagebox.CANCEL ) == Messagebox.OK) {\n";
+        out += "                    // confirmation\n";
+        out += "                    if(Messagebox.show( \"Update ?\", \"Liquid\", Messagebox.OK+Messagebox.CANCEL+Messagebox.QUESTION, 30, Messagebox.CANCEL ) == Messagebox.OK) {\n";
         out += "\n";
         out += "                        // update DB\n";
         out += "                        String updateResult = db.update ( bean, tbl_wrk );\n";
