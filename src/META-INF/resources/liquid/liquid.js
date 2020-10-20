@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.43   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  01-10-2020
+// Liquid ver.1.44   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  21-10-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -4369,7 +4369,7 @@ var Liquid = {
                                                 try {
                                                     console.debug("[SERVER] QUERY:" + atob(httpResultJson.query));
                                                     console.debug("[SERVER] QUERY-TIME:" + httpResultJson.queryTime);
-                                                    console.debug("[SERVER] RETRIEVE-TIME:" + httpResultJson.retrieveTime);
+                                                    console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
                                                 } catch(e) { debugger; }
                                             }
                                             if(httpResultJson.error) {

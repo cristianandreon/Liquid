@@ -212,7 +212,7 @@ public class login {
     }
 
     static private boolean check_login_table_exist( Connection conn, String schema, String table ) throws SQLException {
-        if(conn != null) {
+        if(conn != null && conn.isValid(30)) {
             boolean tableExist = false;
             DatabaseMetaData meta = conn.getMetaData();
             ResultSet res = meta.getTables(database, schema, table, new String[] {"TABLE"});
@@ -504,7 +504,7 @@ public class login {
 
             conn = getConnection();
 
-            if(conn != null || conn.isValid(30)) {
+            if(conn != null && conn.isValid(30)) {
 
                 try {
 
@@ -918,7 +918,7 @@ public class login {
         // coordinate tabella log eventi
         if(schemaLog != null && !schemaLog.isEmpty()) {
             if(tableLog != null && !tableLog.isEmpty()) {
-                if(conn != null) {
+                if(conn != null && conn.isValid(30)) {
                     String schemaTable = (schemaLog != null && !schemaLog.isEmpty() ? schemaLog+".":"")+tableLog+"";
                     boolean tableExist = false;
                     DatabaseMetaData meta = conn.getMetaData();
@@ -987,7 +987,7 @@ public class login {
         try {
             if(schemaLog != null && !schemaLog.isEmpty()) {
                 if(tableLog != null && !tableLog.isEmpty()) {
-                    if(conn != null) {
+                    if(conn != null && conn.isValid(30)) {
                         if(msg != null) {
                             if(!setupLogDone) {
                                 setupLogDone = true;
@@ -1562,7 +1562,7 @@ public class login {
 
             conn = getConnection();
 
-            if(conn != null || conn.isValid(30)) {
+            if(conn != null && conn.isValid(30)) {
                 
                 String schemaTable = "";
                 String databaseSchemaTable = "";
@@ -1726,7 +1726,7 @@ public class login {
 
                         conn = getConnection();
 
-                        if(conn != null || conn.isValid(30)) {
+                        if(conn != null && conn.isValid(30)) {
                         
                             String schemaTable = "";
                             String databaseSchemaTable = "";
@@ -1881,7 +1881,7 @@ public class login {
 
             conn = getConnection();
 
-            if(conn != null || conn.isValid(30)) {
+            if(conn != null && conn.isValid(30)) {
                 
                 String schemaTable = "";
                 String databaseSchemaTable = "";

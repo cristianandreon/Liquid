@@ -1761,10 +1761,10 @@ public class db {
                         while (bScan) {
                             if (filterValue.charAt(ich) == '<' || filterValue.charAt(ich) == '>' || filterValue.charAt(ich) == '=' || filterValue.charAt(ich) == '%' || filterValue.charAt(ich) == '!') {
                                 ich++;
-                            } else if (filterValue.startsWith("IN")) {
-                                ich += 2;
-                            } else if (filterValue.startsWith("LIKE")) {
-                                ich += 4;
+                            } else if (filterValue.startsWith("IN ")) {
+                                ich += 3;
+                            } else if (filterValue.startsWith("LIKE ")) {
+                                ich += 5;
                             } else {
                                 bScan = false;
                             }
