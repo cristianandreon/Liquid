@@ -22,14 +22,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspWriter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import static com.liquid.liquidize.liquidizeJSONContent;
 import java.io.IOException;
-import java.util.Iterator;
 
 
 public class workspace {
