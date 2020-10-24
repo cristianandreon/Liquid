@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.44   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  21-10-2020
+// Liquid ver.1.45   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  24-10-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -13989,6 +13989,7 @@ var Liquid = {
                 }
                 */
                 liquid.aggridContainerLastHeight = liquid.aggridContainerObj.style.height;
+                // set at max height
                 liquid.aggridContainerObj.style.height = "100%";
                 liquid.aggridContainerDocked = true;
             } else {
