@@ -34,6 +34,10 @@ public class ThreadSession {
     public long threadId = 0;
     private ArrayList<Long> childThreadIds = null;
     public String incoming = null;
+    public String sessionId = null;
+            
+   // store the owner (the callback instance) of the workspace... one workspace can have multiple owner (storing additional data)
+    public Object workspaceOwner = null;
     
     static ArrayList<ThreadSession> threadSessionList = new ArrayList<ThreadSession>();
 
@@ -51,11 +55,29 @@ public class ThreadSession {
             threadSessionInfo.threadName = threadSessionInfo.thread.getName();
             threadSessionInfo.threadId = threadSessionInfo.thread.getId();
             threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
+            threadSessionInfo.sessionId = request.getRequestedSessionId();
             threadSessionList.add(threadSessionInfo);
         } finally {
             bLocked = false;
         }
     }    
+    
+    /**
+     * set a specific owner for this session (ex.: workspace store multiple owner, each for his thread, or none for main, like in a static class)
+     * 
+     * @param Owner the object Owning
+     * @return 
+     */
+    static public boolean setOwner ( Object owner ) {
+        ThreadSession threadSession = getThreadSessionInfo ();
+        if(threadSession != null) {
+            if(threadSession.workspaceOwner != owner) {
+                threadSession.workspaceOwner = owner;
+            }
+            return true;
+        }
+        return false;
+    }
     
     static public boolean addChildThread ( long childThreadId ) {
         ThreadSession threadSession = getThreadSessionInfo ();
@@ -67,6 +89,10 @@ public class ThreadSession {
         return false;
     }
     
+    /**
+     * Search in the threads registered as servlet for the request / session / etc..
+     * @return 
+     */
     static public ThreadSession getThreadSessionInfo ( ) {
         long threadId = Thread.currentThread().getId();
         for(ThreadSession threadSession : threadSessionList) {

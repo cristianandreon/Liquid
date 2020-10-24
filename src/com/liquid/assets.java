@@ -535,6 +535,7 @@ public class assets {
         Connection conn = null;
         
         try {
+            
             conn = getConnection();
 
             if(!check_assets_table_exist( conn, login.schema, assets_table )) {            

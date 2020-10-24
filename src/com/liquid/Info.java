@@ -69,11 +69,11 @@ public class Info {
         out_string += "<tr>";
         out_string += "<td>No. cache items</td>";
         out_string += "<td>"+db.glIdsCaches.size()+"</td>";
-        out_string += "<td>";
+        out_string += "<td style=\"font-size: 65%;\">";
         for(int ic=0; ic<db.glIdsCaches.size(); ic++) {
             IdsCache idc = db.glIdsCaches.get(ic);
-            out_string += "query:"+idc.query + "</br>";
-            out_string += "n.ids:"+idc.ids.size() + "</br>";;
+            out_string += "query:<span style=\"font-size: 65%;\">"+idc.query + "</span></br>";
+            out_string += "n.ids:"+(idc.ids != null ? idc.ids.size() : "N/D") + "</br>";;
             out_string += "lastAccessTime:"+idc.lastAccessTime + "</br>";;
             out_string += "startRow:"+idc.startRow + "</br>";;
             out_string += "</br>";            
@@ -161,7 +161,7 @@ public class Info {
         out_string += "</tr>";
 
         out_string += "<tr style=\"background-color:lightGray\">";
-        out_string += "<td style=\"font-size: 70%;\">Arguments</td>";
+        out_string += "<td>Arguments</td>";
         out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getInputArguments()+"</td>";
         out_string += "</tr>";
 
@@ -177,18 +177,18 @@ public class Info {
 
         out_string += "<tr>";
         out_string += "<td>Library path</td>";
-        out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</td>";
+        out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</span></td>";
         out_string += "</tr>";
         
         out_string += "<tr style=\"background-color:lightGray\">";
         out_string += "<td>Specific name</td>";
-        out_string += "<td>"+ManagementFactory.getRuntimeMXBean().getSpecName() + " - " + ManagementFactory.getRuntimeMXBean().getSpecVersion() + " - " + ManagementFactory.getRuntimeMXBean().getSpecVendor()+"</td>";
+        out_string += "<td><span style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getSpecName() + " - " + ManagementFactory.getRuntimeMXBean().getSpecVersion() + " - " + ManagementFactory.getRuntimeMXBean().getSpecVendor()+"</span></td>";
         out_string += "<td>"+""+"</td>";
         out_string += "</tr>";
 
         out_string += "<tr>";
         out_string += "<td>VM name</td>";
-        out_string += "<td>"+ManagementFactory.getRuntimeMXBean().getVmName() + " - " + ManagementFactory.getRuntimeMXBean().getVmVersion()+ " - " + ManagementFactory.getRuntimeMXBean().getVmVersion()+"</td>";
+        out_string += "<td><span style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getVmName() + " - " + ManagementFactory.getRuntimeMXBean().getVmVersion()+ " - " + ManagementFactory.getRuntimeMXBean().getVmVersion()+"</span></td>";
         out_string += "<td>"+""+"</td>";
         out_string += "</tr>";
 
@@ -204,7 +204,7 @@ public class Info {
 
         out_string += "<tr style=\"background-color:lightGray\">";
         out_string += "<td>Memory usage</td>";
-        out_string += "<td>"+ManagementFactory.getMemoryMXBean().getHeapMemoryUsage() + " - " + ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage()+"</td>";
+        out_string += "<td><span style=\"font-size: 70%;\">"+ManagementFactory.getMemoryMXBean().getHeapMemoryUsage() + " - " + ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage()+"</span></td>";
         out_string += "<td>"+""+"</td>";
         out_string += "</tr>";
 
@@ -262,7 +262,7 @@ public class Info {
                         + "</span>"
                         + "</td>";
                 out_string += "<td>"
-                        + "Read count:"+workspace.glTblWorkspaces.get(i).nConnections
+                        + "Service count:"+workspace.glTblWorkspaces.get(i).nConnections
                         + "<br/>"
                         + "<br/>"
                         + "N.Sessions:"+workspace.glTblWorkspaces.get(i).sessions.size()

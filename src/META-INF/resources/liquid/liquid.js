@@ -1283,16 +1283,23 @@ class LiquidCtrl {
                     var tr = document.createElement("tr");
                     var td = document.createElement("td");
                     var content_div = document.createElement("div");
+
+                    tbody.className = "liquidDockerChild";
+
                     content_div.id = controlId + ".docker.top";
                     content_div.className = "liquidDockerHContainer";
-                    td.colSpan = 4;
+                    td.colSpan = 3;
+                    td.className = "liquidDockerChild";
+                    tr.className = "liquidDockerChild";
                     td.appendChild(content_div);
                     tr.appendChild(td);
                     tbody.appendChild(tr);
 
+
+
                     tr = document.createElement("tr");
                     td = document.createElement("td");
-                    td.colSpan = 4;
+                    td.colSpan = 3;
                     td.style.display = "flex";
                     content_div = document.createElement("div");
                     content_div.id = controlId + ".docker.left";
@@ -1325,6 +1332,9 @@ class LiquidCtrl {
                     // content_div.style.resize = "horizontal";
                     content_div.style.overflow = "hidden";
                     this.dockerTblRight = content_div;
+                    td.className = "liquidDockerChild";
+                    tr.className = "liquidDockerChild";
+
                     td.appendChild(content_div);
                     tr.appendChild(td);
                     tbody.appendChild(tr);
@@ -1334,7 +1344,10 @@ class LiquidCtrl {
                     content_div = document.createElement("div");
                     content_div.id = controlId + ".docker.bottom";
                     content_div.className = "liquidDockerHContainer";
-                    td.colSpan = 4;
+                    td.colSpan = 3;
+                    td.className = "liquidDockerChild";
+                    tr.className = "liquidDockerChild";
+                    
                     td.appendChild(content_div);
                     tr.appendChild(td);
                     tbody.appendChild(tr);
@@ -1352,13 +1365,13 @@ class LiquidCtrl {
                             ,ghost: true 
                             ,resize: function( event, ui ) {
                                 thisLiquid.dockerTblLeft.style.width = ui.size.width + "px";
-                                thisLiquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
-                                thisLiquid.dockerTblCenter.style.height = Math.min(liquid.dockerTblLeft.clientHeight, liquid.dockerTblRight.clientHeight) + "px";
+                                thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                // thisLiquid.dockerTblCenter.style.height = Math.max(thisLiquid.dockerTblLeft.clientHeight, thisLiquid.dockerTblRight.clientHeight) + "px";
                             }
                             ,stop: function( event, ui ) {
                                 if(thisLiquid.dockerTblLeft.offsetWidth <= 10) thisLiquid.dockerTblLeft.style.width = "2px";
-                                thisLiquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
-                                thisLiquid.dockerTblCenter.style.height = Math.min(liquid.dockerTblLeft.clientHeight, liquid.dockerTblRight.clientHeight) + "px";
+                                thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                // thisLiquid.dockerTblCenter.style.height = Math.max(thisLiquid.dockerTblLeft.clientHeight, thisLiquid.dockerTblRight.clientHeight) + "px";
                             }
                         } );
                     }
@@ -1369,14 +1382,14 @@ class LiquidCtrl {
                             ,ghost: true 
                             ,resize: function( event, ui ) {
                                 thisLiquid.dockerTblRight.style.width = ui.size.width + "px";
-                                thisLiquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
-                                thisLiquid.dockerTblCenter.style.height = Math.min(liquid.dockerTblLeft.clientHeight, liquid.dockerTblRight.clientHeight) + "px";
+                                thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                // thisLiquid.dockerTblCenter.style.height = Math.min(thisLiquid.dockerTblLeft.clientHeight, thisLiquid.dockerTblRight.clientHeight) + "px";
                             }
                             ,stop: function( event, ui ) {
                                 if(thisLiquid.dockerTblRight.offsetWidth <= 10) thisLiquid.dockerTblRight.style.width = "2px";
                                 thisLiquid.dockerTblRight.style.left = '';
-                                thisLiquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
-                                thisLiquid.dockerTblCenter.style.height = Math.min(liquid.dockerTblLeft.clientHeight, liquid.dockerTblRight.clientHeight) + "px";
+                                thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                // thisLiquid.dockerTblCenter.style.height = Math.min(thisLiquid.dockerTblLeft.clientHeight, thisLiquid.dockerTblRight.clientHeight) + "px";
                             }
                         } );
                     }
@@ -13408,62 +13421,111 @@ var Liquid = {
     },
     setFilter:function(obj, columnName, filterValue, filterOperator) {
         var liquid = Liquid.getLiquid(obj);
-        if(liquid) {
+        if (liquid) {
             var column = Liquid.getColumn(liquid, columnName);
-            if(column) {
-                var filtersJson = liquid.filtersJson[liquid.curFilter];
-                bAddFilter = true;
-                if(filtersJson) {
-                    for (var i=0; i<filtersJson.columns.length; i++) {
-                        if(filtersJson.columns[i].name == columnName) {
-                            var element = document.getElementById(liquid.controlId + ".filters." +(liquid.curFilter+1) + "." + filtersJson.columns[i].runtimeName + ".filter");
-                            if(element) {
-                                bAddFilter = false;
-                                if(element.value !== filterValue) element.value = filterValue;
-                                if(isDef(filterOperator)) {
-                                    filtersJson.columns[i].op = filterOperator;
+            if (column) {
+                var bAddFilter = true;
+                for (var iFilter = 0; iFilter < liquid.filtersJson.length; iFilter++) {
+                    var filtersJson = liquid.filtersJson[iFilter];
+                    if (filtersJson) {
+                        for (var i = 0; i < filtersJson.columns.length; i++) {
+                            if (filtersJson.columns[i].name == columnName) {
+                                var element = document.getElementById(liquid.controlId + ".filters." + (iFilter + 1) + "." + filtersJson.columns[i].runtimeName + ".filter");
+                                if (element) {
+                                    bAddFilter = false;
+                                    if (element.value != filterValue) {
+                                        element.value = filterValue;
+                                    }
+                                    if (isDef(filterOperator)) {
+                                        filtersJson.columns[i].op = filterOperator;
+                                    }
                                 }
+                                break;
                             }
+                        }
+                        if (bAddFilter == false) {
                             break;
                         }
                     }
                 }
-                if(bAddFilter) {
+                if (bAddFilter) {
                     var ftIndex1B = Liquid.getForeignTableIndex(liquid);
                     var targetLiquid = liquid;
-                    if(ftIndex1B) { // work on liquid.foreignTables[].options
-                        targetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-                    }                    
-                    var filtersColumns = [ { name:columnName, tooltip:"", label:columnName, row:nCols?(i/nCols):'', col:nCols?(i%nCols):'', value:filterValue, op:filterOperator } ];
+                    if (ftIndex1B) { // work on liquid.foreignTables[].options
+                        targetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B - 1].controlId);
+                    }
+                    var filtersColumns = [ { name:columnName, tooltip:"", label:columnName, row:nCols ? (i / nCols) :'', col:nCols ? (i % nCols) : '', value: filterValue , op: filterOperator } ];
                     var nFilters = isDef(targetLiquid.filtersJson) ? targetLiquid.filtersJson.length : 0;
-                    var curFilter = -1;                    
-                    if(nFilters <= 0) {
-                        for(var i=0; i<nFilters; i++) {
-                            if(targetLiquid.filtersJson[i].name === "userFilters") {
+                    var curFilter = - 1;
+                    if (nFilters <= 0) {
+                        for (var i = 0; i < nFilters; i++) {
+                            if (targetLiquid.filtersJson[i].name == "userFilters") {
                                 curFilter = i;
                                 break;
                             }
                         }
-                    }                    
-                    if(curFilter < 0) {
+                    }
+                    if (curFilter < 0) {
                         // Creating new filters group
                         var nRows = 0, nCols = 3;
                         var filtersName = ""
                         var newFiltersJson = { name:"userFilters", title:"", tooltip:"", icon:"", nRows:nRows, nCols:nCols, columns:filtersColumns };
-                        try { console.log("INFO: new filters json : \n"+JSON.stringify(newFiltersJson)); } catch(e) { console.error(e); }
+                    
+                        try {
+                            console.log("INFO: new filters json : \n" + JSON.stringify(newFiltersJson));
+                        } catch (e) {
+                            console.error(e);
+                        }
                         // adding the property...
                         Liquid.addProperty(liquid, ftIndex1B, "filters", newFiltersJson);
                     } else {
                         // Add to existing group of filters
                         Liquid.addFilterToGroup(liquid, ftIndex1B, curFilter, filtersColumns, true);
                     }
-                    
                 }
             } else {
-                console.error("ERROR: setFilter() : column '"+columnName+"' not found in control:"+liquid.controlId);
+                console.error("ERROR: setFilter() : column '" + columnName + "' not found in control:" + liquid.controlId);
             }
         } else {
-            console.error("ERROR: setFilter() : control '"+liquid.controlId+"' not found");
+            console.error("ERROR: setFilter() : control '" + liquid.controlId + "' not found");
+        }
+    },
+    /**
+     * filterMode = 'ReadOnly', 'ReadWrite', 'Write', 'RO', 'RW'
+     */
+    setFilterMode(obj, columnName, filterMode) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var column = Liquid.getColumn(liquid, columnName);
+            if(column) {
+                var filtersJson = liquid.filtersJson[liquid.curFilter];
+                var bFoundFilter = false;
+                for(var iFilter = 0; iFilter<liquid.filtersJson.length; iFilter++) {
+                    var filtersJson = liquid.filtersJson[iFilter];
+                    if(filtersJson) {
+                        for (var i=0; i<filtersJson.columns.length; i++) {
+                            if(filtersJson.columns[i].name == columnName) {
+                                var element = document.getElementById(liquid.controlId + ".filters." +(iFilter+1) + "." + filtersJson.columns[i].runtimeName + ".filter");
+                                if(element) {
+                                    bFoundFilter = true;
+                                    if(isDef(filterMode)) {
+                                        filterMode = filterMode.toUpperCase();
+                                        if(filterMode == 'READONLY' || filterMode == 'RO') {
+                                            element.disabled = true;                                            
+                                        } else if(filterMode == 'READWRITE' || filterMode == 'WRITE' || filterMode == 'RW') {
+                                            element.disabled = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                console.error("ERROR: setFilterMode() : column '"+columnName+"' not found in control:"+liquid.controlId);
+            }
+        } else {
+            console.error("ERROR: setFilterMode() : control '"+liquid.controlId+"' not found");
         }
     },
     onResetFilter:function(obj_id) {
@@ -13803,6 +13865,7 @@ var Liquid = {
                     if(isDef(gridObject.dock)) {
                         var parentNode = null;
                         if(gridObject.dock.side === 'left') {
+                            liquid.dockerTblLeft.style.display = '';
                             parentNode = liquid.dockerTblLeft;
                             if(isDef(gridObject.dock.size)) {
                                 liquid.dockerTblLeft.style.width = gridObject.dock.size;
@@ -13813,6 +13876,7 @@ var Liquid = {
                                 }
                             }
                         } else if(gridObject.dock.side === 'right') {
+                            liquid.dockerTblRight.style.display = '';
                             parentNode = liquid.dockerTblRight;
                         }
                         if(isDef(gridObject.dock.size)) {                                
@@ -13882,7 +13946,7 @@ var Liquid = {
                                             var field = Number(agGridColumn.field);
                                             var column = liquid.tableJson.columns[field-1];
                                             if(column.name != agGridColumn.name) {
-                                                console.error("setAggrigParent() : mishandled column : " + column.name + " / " + agGridColumn.column);
+                                                console.error("setAggrigParent() : mis-handled column : " + column.name + " / " + agGridColumn.column);
                                             }
                                             column.colId = agGridColumn.colId;
                                             for(var j = 0; j < dock.columns.length; j++) {
@@ -13954,6 +14018,8 @@ var Liquid = {
                         liquid.currentDock.height = parentNode.offsetHeight;
                     }
                 }
+                // restore center docker
+                liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
                 liquid.aggridContainerObj.style.height = liquid.aggridContainerLastHeight;
                 liquid.aggridContainerDocked = false;
                 liquid.currentDock = null;

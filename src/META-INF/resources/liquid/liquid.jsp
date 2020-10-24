@@ -161,7 +161,7 @@
                 out.println( "<br/><center>Unknown Command <b>"+( operation.isEmpty() ? "[N/D]" : operation ) +"</b></center>" );
         }
     } catch (Throwable th) {
-        out.println( "<br/><center>Error parsing <b>"+(sJSON)+"</b> error:"+th.getMessage()+"</center>" );
+        out.println( "<br/><center>Error in Main Liquid Servlet </b> error:"+th.getMessage()+"</center>" );
         th.printStackTrace();
     } finally {
         ThreadSession.removeThreadSessionInfo ();

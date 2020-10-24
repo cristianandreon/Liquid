@@ -130,20 +130,23 @@ public class event {
         return errorJson;
     }
 
-    static public Object[] get_method_by_class_name(String className, workspace tbl_wrk, String owner) throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException {
+    static public Object[] get_method_by_class_name(String className, workspace tbl_wrk, String owner) throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, Exception {
         if (className != null && !className.isEmpty()) {
             String objectClassName = className;
             String sMethod = "";
             String[] classParts = className.replace(" ", ".").split("\\.");
-            Object classInstance = null;
+            Object classInstance = null, wrkOwner = null;
             Class cls = null;
 
             if (tbl_wrk != null) {
-                if (tbl_wrk.owner != null) {
-                    classInstance = tbl_wrk.owner;
-                    sMethod = className;
-                    cls = classInstance.getClass();
-                }
+                wrkOwner = tbl_wrk.getOwner();
+            }
+            
+            if (wrkOwner != null) {
+                classInstance = wrkOwner;
+                sMethod = className;
+                cls = classInstance.getClass();
+
             } else if (owner != null && !owner.isEmpty()) {
                 try {
                     cls = Class.forName(owner);
@@ -981,7 +984,8 @@ public class event {
             try {
                 if (tbl_wrk != null) {
                     workspace tblWrk = (workspace) tbl_wrk;
-                    if (tblWrk.owner != null) {
+                    Object owner = tblWrk.getOwner();
+                    if (owner != null) {
                         Object retVal = forwardEvent("beforeInsertRow", tbl_wrk, params, clientData, freeParam);
                         if (retVal != null) {
                             if (retVal.getClass() == boolean.class) {
@@ -1007,7 +1011,8 @@ public class event {
             try {
                 if (tbl_wrk != null) {
                     workspace tblWrk = (workspace) tbl_wrk;
-                    if (tblWrk.owner != null) {
+                    Object owner = tblWrk.getOwner();
+                    if (owner != null) {
                         Object retVal = forwardEvent("afterInsertRow", tbl_wrk, params, clientData, freeParam);
                     }
                 }
@@ -1437,7 +1442,8 @@ public class event {
             try {
                 if (tbl_wrk != null) {
                     workspace tblWrk = (workspace) tbl_wrk;
-                    if (tblWrk.owner != null) {
+                    Object owner = tblWrk.getOwner();
+                    if (owner != null) {
                         Object retVal = forwardEvent("onUpdatingRow", tbl_wrk, params, clientData, freeParam);
                         if (retVal != null) {
                             if (retVal.getClass() == boolean.class) {
@@ -1463,7 +1469,8 @@ public class event {
             try {
                 if (tbl_wrk != null) {
                     workspace tblWrk = (workspace) tbl_wrk;
-                    if (tblWrk.owner != null) {
+                    Object owner = tblWrk.getOwner();
+                    if (owner != null) {
                         Object retVal = forwardEvent("onUpdatedRow", tbl_wrk, params, clientData, freeParam);
                     }
                 }
@@ -1508,7 +1515,8 @@ public class event {
             try {
                 if (tbl_wrk != null) {
                     workspace tblWrk = (workspace) tbl_wrk;
-                    if (tblWrk.owner != null) {
+                    Object owner = tblWrk.getOwner();
+                    if (owner != null) {
                         Object retVal = forwardEvent("onDeletingRow", tbl_wrk, params, clientData, freeParam);
                         if (retVal != null) {
                             if (retVal.getClass() == boolean.class) {
@@ -1534,7 +1542,8 @@ public class event {
             try {
                 if (tbl_wrk != null) {
                     workspace tblWrk = (workspace) tbl_wrk;
-                    if (tblWrk.owner != null) {
+                    Object owner = tblWrk.getOwner();
+                    if (owner != null) {
                         Object retVal = forwardEvent("onDeletedRow", tbl_wrk, params, clientData, freeParam);
                     }
                 }
@@ -1555,8 +1564,10 @@ public class event {
         return "{ \"result\":0, \"error\":\"" + utility.base64Encode(error) + "\"}";
     }
 
+    //
     // Evento di SISTEMA onDeleting : cancellazione iniziale del record senza scrittura nel DB
     // Per Test con "owner":"com.liquid.event"
+    //
     static public String onDeleting(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         return null;
     }
@@ -1776,7 +1787,8 @@ public class event {
         try {
             if (tbl_wrk != null) {
                 workspace tblWrk = (workspace) tbl_wrk;
-                if (tblWrk.owner != null) {
+                Object owner = tblWrk.getOwner();
+                if (owner != null) {
                     forwardEvent("onInit", tbl_wrk, params, clientData, freeParam);
                 }
             }
@@ -1793,7 +1805,8 @@ public class event {
         try {
             if (tbl_wrk != null) {
                 workspace tblWrk = (workspace) tbl_wrk;
-                if (tblWrk.owner != null) {
+                Object owner = tblWrk.getOwner();
+                if (owner != null) {
                     result = forwardEvent("onclose", tbl_wrk, params, clientData, freeParam);
                 }
             }
@@ -1807,8 +1820,11 @@ public class event {
         try {
             if (tbl_wrk != null) {
                 workspace tblWrk = (workspace) tbl_wrk;
-                if (tblWrk.owner != null) {
-                    return forwardEvent(eventName, tbl_wrk, tblWrk.owner, params, clientData, freeParam);
+                Object owner = tblWrk.getOwner();
+                if (owner != null) {
+                    return forwardEvent(eventName, tbl_wrk, owner, params, clientData, freeParam);
+                } else {
+                    // workspace hsa no owner .. stop the chain
                 }
             }
         } catch (Throwable e) {
