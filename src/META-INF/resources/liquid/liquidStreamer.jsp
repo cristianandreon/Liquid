@@ -6,90 +6,47 @@
     import="com.liquid.StreamerServer"
     errorPage="" 
     %><%!
-    %>
+    %>    
 <!-- -->
 <!-- START of Liquid Framework Streamer Service (WebSocket) -->
 <!-- -->
-<script>
+<%  String streamerLoginId = login.getLoggedID(request);
     
-    //
-    // Start the sreamer for logged user
-    //
-    <%  String streamerLoginId = login.getLoggedID(request);
-    
-        streamerLoginId = "1";
-    
-        try {
+    // debug
+    streamerLoginId = "1";
 
-            // N.B.: Possibile riduzione del carico sul server salvando la sessione solo sui rami necessari (es.: exec)
-            ThreadSession.saveThreadSessionInfo ( "Liquid", request, response, out );
+    try {
 
-            if(streamerLoginId != null && !streamerLoginId.isEmpty()) {
-                
-                // start server if not running
-                StreamerServer.start(request);
+        // N.B.: Possibile riduzione del carico sul server salvando la sessione solo sui rami necessari (es.: exec)
+        ThreadSession.saveThreadSessionInfo ( "Liquid", request, response, out );
 
-    %>
-                var glLiquidWebSocket = null;
-                var glLiquidAppPort = <%=StreamerServer.port%>;
+        if(streamerLoginId != null && !streamerLoginId.isEmpty()) {
 
-                function openLiquidStreamer() {
-                    var streamerEnabled = false;
+            // start server if not running
+            StreamerServer.start(request);
 
-                    if(idDef(liquidAssets)) {
-                        // check the assests
-                    } else {
-                        streamerEnabled = false;
-                    }
+            if(StreamerServer.run) {
 
-                    if(streamerEnabled) {
-                        if(glLiquidWebSocket !== undefined && glLiquidWebSocket.readyState !== WebSocket.CLOSED){
-                            return;
-                        }
+        %>
 
-                        LiquidWebSocket = new WebSocket("ws://"+glLiquidRoot+":"+glLiquidAppPort+"/liquidStreamer");
-
-
-                        LiquidWebSocket.onopen = function(event){
-                            send("xxx");
-                        };
-
-                        LiquidWebSocket.onmessage = function(event){
-                            console.warn("[LIQUID Streamer] : data:"+event.data);
-                        };
-
-                        LiquidWebSocket.onclose = function(event){
-                            console.warn("[LIQUID Streamer] : Closed");
-                        };
-                    }
-                }
-
-                function send(data){
-                    LiquidWebSocket.send(ata);
-                }
-
-                function closeSocket(){
-                    LiquidWebSocket.close();
-                    LiquidWebSocket = null;
-                }
-
-
-            openLiquidStreamer();
-            console.warn("LIQUID: Streamer is activated");
+                <script src="<%=path%>/liquid/StreamerServer.js?version=<%=jssVersion%>"></script>
 
         <% } else { %>
-            console.warn("LIQUID: Streamer is activater only for logged user");
+                <script>console.warn("LIQUID: Streamer is not running...Please see server log");</script>
         <% }
-        
-    } catch (Throwable th) {
-        out.println( "console.error(\"Error in Liquid Streamer Servlet error:"+th.getMessage()+"\");" );
-        th.printStackTrace();
-    } finally {
-        ThreadSession.removeThreadSessionInfo ();
-    }
-    %>
-   
-</script>
+
+        } else { %>
+            <script>console.warn("LIQUID: Streamer is activater only for logged user");</script>
+    <% }
+
+} catch (Throwable th) {
+    out.println( "console.error(\"Error in Liquid Streamer Servlet error:"+th.getMessage()+"\");" );
+    th.printStackTrace();
+} finally {
+    ThreadSession.removeThreadSessionInfo ();
+}
+%>   
+
 <!-- -->
 <!-- END of Liquid Framework Streamer Service (WebSocket) -->
 <!-- -->

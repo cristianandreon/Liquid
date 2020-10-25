@@ -4,6 +4,7 @@
 <%@ page import="com.liquid.login"%>
 <%@ page import="com.liquid.emailer"%>
 <%@ page import="com.liquid.utility"%>
+<%@ page import="com.liquid.StreamerServer"%>
 
 <% 
     String path = request.getContextPath(); 
@@ -14,6 +15,7 @@
 <!-- -->
 <script>
     var glLiquidRoot = "<%=path%>";
+    var glLiquidAppPort = <%=StreamerServer.port%>
 </script>
 <script src="<%=path%>/liquid/ag-grid-enterprise.min.js" type="text/javascript"></script>
 
@@ -33,6 +35,11 @@
 <script src="<%=path%>/liquid/suneditor/common.js?version=<%=jssVersion%>"></script>
 <script src="<%=path%>/liquid/suneditor/suneditor.js?version=<%=jssVersion%>"></script>
 
+<!-- gunzip -->
+<script src="<%=path%>/liquid/gunzip.min.js"></script>
+<script src="<%=path%>/liquid/gzip.min.js"></script>
+
+
 <!-- -->
 <!-- Client side files -->
 <!-- -->
@@ -41,6 +48,7 @@
 <script type="text/javascript" >console.log("LIQUID : Please NOTE : keeping as runtime liquid.css and liquid.js from developing Project LiquidX , not from your project path : <%=path%> ");</script>
 <link rel="stylesheet" href="/LiquidX/liquid.css?version=<%=jssVersion%>" type='text/css' />
 <script type="text/javascript" src="/LiquidX/liquid.js?version=<%=jssVersion%>"></script>
+<script type="text/javascript" src="/LiquidX/liquidEditing.js?version=<%=jssVersion%>"></script>
 <!-- -->
 <!-- END of Liquid Framework Developing Include Files -->
 <!-- -->

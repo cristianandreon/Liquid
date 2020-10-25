@@ -4,6 +4,7 @@
 <%@ page import="com.liquid.login"%>
 <%@ page import="com.liquid.emailer"%>
 <%@ page import="com.liquid.utility"%>
+<%@ page import="com.liquid.StreamerServer"%>
 
 <% 
     String path = request.getContextPath(); 
@@ -14,6 +15,7 @@
 <!-- -->
 <script>
     var glLiquidRoot = "<%=path%>";
+    var glLiquidAppPort = <%=StreamerServer.port%>
 </script>
 <script src="<%=path%>/liquid/ag-grid-enterprise.min.js" type="text/javascript"></script>
 
@@ -32,6 +34,11 @@
 <link href="<%=path%>/liquid/suneditor/suneditor.min.css?version=<%=jssVersion%>" rel="stylesheet">
 <script src="<%=path%>/liquid/suneditor/common.js?version=<%=jssVersion%>"></script>
 <script src="<%=path%>/liquid/suneditor/suneditor.min.js?version=<%=jssVersion%>"></script>
+
+<!-- gunzip -->
+<script src="<%=path%>/liquid/gunzip.min.js"></script>
+<script src="<%=path%>/liquid/gzip.min.js"></script>
+
 
 <link rel="stylesheet" href="<%=path%>/liquid/liquid.css?version=<%=jssVersion%>" type='text/css' />
 <script type="text/javascript" src="<%=path%>/liquid/liquid.js?version=<%=jssVersion%>"></script>

@@ -296,7 +296,7 @@ public class db {
             }
 
 
-            
+       
             String itemIdString = "\"", tableIdString = "\"", asKeyword = " AS ";
             if ((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("postgres.")) || tbl_wrk.dbProductName.toLowerCase().contains("postgres")) {
                 isPostgres = true;

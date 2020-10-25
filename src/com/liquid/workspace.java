@@ -29,7 +29,6 @@ import org.json.JSONObject;
 import static com.liquid.liquidize.liquidizeJSONContent;
 import java.io.IOException;
 
-
 public class workspace {
 
     static public String GLLang = "EN";
@@ -254,8 +253,8 @@ public class workspace {
     }
 
     /**
-     * Get the owner (The specific owner defined by the user's session)
-     * session (ThreadId != session))
+     * Get the owner (The specific owner defined by the user's session) session
+     * (ThreadId != session))
      *
      * @return
      */
@@ -286,8 +285,6 @@ public class workspace {
         }
     }
 
-    
-    
     static public ArrayList<workspace> glTblWorkspaces = new ArrayList<workspace>();
 
     static public workspace get_tbl_manager_workspace(String controlId) {
@@ -362,6 +359,10 @@ public class workspace {
                 out.print("<script>");
                 out.print("glLiquidGenesisToken = '" + genesisToken + "';");
                 out.print("</script>\n");
+                out.print("\n<!-- LIQUID : Editing support -->\n");
+                out.print("<script type=\"text/javascript\" src=\"/liquid/liquidEditing.js?version=<%=jssVersion%>\"></script>");
+                out.print("\n");
+
             }
 
             return genesisToken;
@@ -757,8 +758,7 @@ public class workspace {
                                 Object obj = fileContentJSON.get(key);
 
                                 if (obj instanceof JSONArray) {
-                                    if ("columns".equalsIgnoreCase(key)
-                                            || "grids".equalsIgnoreCase(key)
+                                    if ("grids".equalsIgnoreCase(key)
                                             || "filters".equalsIgnoreCase(key)
                                             || "preFilters".equalsIgnoreCase(key)
                                             || "layouts".equalsIgnoreCase(key)
@@ -769,6 +769,29 @@ public class workspace {
                                             || "events".equalsIgnoreCase(key)) {
                                         tableJson.remove(key);
                                         tableJson.put(key, fileContentJSON.get(key));
+                                    } else if ("columns".equalsIgnoreCase(key)) {
+                                        cols = (JSONArray)tableJson.getJSONArray(key);
+                                        JSONArray newCols = (JSONArray)obj;
+                                        for(int ic=0; ic<cols.length(); ic++) {
+                                            boolean colFound = false;
+                                            JSONObject col = cols.getJSONObject(ic);
+                                            String colName = col.has("name") ? col.getString("name") : null;
+                                            if(colName != null) {
+                                                for(int icn=0; icn<newCols.length(); icn++) {
+                                                    JSONObject newCol = newCols.getJSONObject(icn);
+                                                    if(newCol != null) {
+                                                        if(newCol.getString("name").equalsIgnoreCase(colName)) {
+                                                            cols.put(ic, newCol);
+                                                            colFound = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if(!colFound) {
+                                                col.put("visible", false);
+                                            }
+                                        }
                                     } else {
                                         Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "Skipped json array:" + key);
                                     }
