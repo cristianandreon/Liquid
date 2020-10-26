@@ -43,123 +43,134 @@
         }
 
 
-        if (operation != null && operation.equalsIgnoreCase("get")) {
-            // lettura dati
+        if ("get".equalsIgnoreCase(operation)) {
+            // get processed json configuration from the server
             out.print( db.get_table_recordset(request, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("getJson")) {
-            // ritorna il file d i configurazione json nel server
+        } else if ("getJson".equalsIgnoreCase(operation)) {
+            // get the json configuration from the server
             out.print( workspace.get_file_content(request, request.getParameter("fileURL")) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("setJson")) {
-            // ritorna il file d i configurazione json nel server
+        } else if ("setJson".equalsIgnoreCase(operation)) {
+            // write json configuration to the server
             out.print( workspace.set_file_content(request, out) );
             
-        } else if (operation != null && operation.equalsIgnoreCase("setLiquidJsonProjectFolder")) {
-            // Imposta la cartella di salvataggio dei controlli JSON nel progetto
+        } else if ("setLiquidJsonProjectFolder".equalsIgnoreCase(operation)) {
+            // Set the working folder of the project (where to save new json configurations)
             out.print( workspace.set_project_folder(request, out) );
             
-        } else if (operation != null && operation.equalsIgnoreCase("auto")) {
-            // configurazione predefinita (crea il wrk "table"."defaul" )
+        } else if ("auto".equalsIgnoreCase(operation)) {
+            // get the default json configuration of a control
             out.print( workspace.get_default_json(request, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("registerControl")) {
-            // configurazione predefinita (crea il wrk "table"."defaul" )
+        } else if ("registerControl".equalsIgnoreCase(operation)) {
+            // register a json configuraqtion
             out.print( workspace.get_table_control(request, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("exec")) {
-            // callbacks in java
+        } else if ("exec".equalsIgnoreCase(operation)) {
+            // execution of commands, events ...
             try { out.print( event.execute(request, out) ); } catch (Exception e) {}
         
+            
+            
         // N.B.: Previsto ma non utilizzato : usanto il comando 'SERVER' exec è possibile lanciare l'interprete python
         //          L'uso del campo 'server' del json evita di duplicare codice in js
         //          E' eventualmente possibile lanciare codice python (risiedente su file nel server) da js con executeClientSide
-        } else if (operation != null && operation.equalsIgnoreCase("pythonExec")) {
+        } else if ("pythonExec".equalsIgnoreCase(operation)) {
             // callbacks n python
             try { out.print( event.pythonExecute(request, out) ); } catch (Exception e) {}
             
             
             
-        } else if (operation != null && operation.equalsIgnoreCase("setPrefilter")) {
-            // Assegnamento e validazione prefiltri
+        } else if ("setPrefilter".equalsIgnoreCase(operation)) {
+            // validate and set the prefilter (hidden to user)
             out.print( db.set_prefilters(request, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("getColumnsManager")) {
-            // Ritorna una WinX Liquid per la gestione delle colonne
+        } else if ("getColumnsManager".equalsIgnoreCase(operation)) {
+            // Get the WinX of the columns manager
             out.print( ColumnsManager.get_table_column_windowx_json(request, operation, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("setColumnsManager")) {
-            // Salvataggio dalla gestione delle colonne
+        } else if ("setColumnsManager".equalsIgnoreCase(operation)) {
+            // Save the columns manager modifications
             out.print( ColumnsManager.set_table_column_windowx_json(request, operation, out) );
 
-
-        } else if (operation != null && operation.equalsIgnoreCase("countOccurences")) {
-            // Conteggio occorrenze
+        } else if ("countOccurences".equalsIgnoreCase(operation)) {
+            // Count the occurences
             out.print( db.count_occurences_by_column(request, operation, out) );
 
 
-        } else if (operation != null && operation.equalsIgnoreCase("login")) {
-            // Servizio Login : login
+            
+        } else if ("login".equalsIgnoreCase(operation)) {
+            // Login Service : login
             out.print( login.login(request, response, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("logout")) {
-            // Servizio Login : logout
+        } else if ("logout".equalsIgnoreCase(operation)) {
+            // Login Service : logout
             out.print( login.logout(request, response, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("register")) {
-            // Servizio Login : register user
+        } else if ("register".equalsIgnoreCase(operation)) {
+            // Login Service : register user
             out.print( login.register(request, response, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("recovery")) {
-            // Servizio Login : recovery password
+        } else if ("recovery".equalsIgnoreCase(operation)) {
+            // Login Service : recovery password
             out.print( login.recovery(request, response, out) );
             
-        } else if (operation != null && operation.equalsIgnoreCase("validateEmail")) {
-            // Servizio Login : validazione password
+        } else if ("validateEmail".equalsIgnoreCase(operation)) {
+            // Login Service : validazione email
             response.sendRedirect( login.validate_email(request, response, out) );
 
 
 
-        } else if (operation != null && operation.equalsIgnoreCase("search")) {
-            // Servizio Ricerca 
+        } else if ("search".equalsIgnoreCase(operation)) {
+            // Search service 
             out.print( metadata.searchOnDatabases(request, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("setConnection")) {
-            // Servizio impostazione della connessione
+        } else if ("setConnection".equalsIgnoreCase(operation)) {
+            // Set a connection to DB
             out.print( connection.setConnectionString(request, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("getConnection")) {
-            // Servizio lettura della connessione
+        } else if ("getConnection".equalsIgnoreCase(operation)) {
+            // Read a connection to DB
             out.print( connection.getConnectionString(request, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("getConnectionDesc")) {
-            // Servizio lettura della connessione
+        } else if ("getConnectionDesc".equalsIgnoreCase(operation)) {
+            // Get the description of the connection to DB
             out.print( connection.getConnectionDesc(request, out) );
 
 
 
-        } else if (operation != null && operation.equalsIgnoreCase("startWorker")) {
+        } else if ("startWorker".equalsIgnoreCase(operation)) {
             // Servizio lettura della connessione
             out.print( worker.start_worker(request, operation, out) );
 
-        } else if (operation != null && operation.equalsIgnoreCase("getWorker")) {
-            // Servizio lettura della connessione
+        } else if ("getWorker".equalsIgnoreCase(operation)) {
+            // Get a worker data
             out.print( worker.get_worker(request, operation, out) );
 
+            
 
-        } else if (operation != null && operation.equalsIgnoreCase("setMessageResponse")) {
-            // Servizio consegna del messaggio
+        } else if ("setMessageResponse".equalsIgnoreCase(operation)) {
+            // Dispatch message service
             if(requestjSON != null) {
                 ThreadSession.addIncomingMessage ( requestjSON.getString("response"), requestjSON.getString("cypher") );
             } else {
                 out.println( "<br/><center>in <b>setMessageResponse </b> you should set JSON parameter (JSON:"+sJSON+"</center>" );
             }
 
+        } else if ("getSessionId".equalsIgnoreCase(operation)) {
+            // Get the session ID
+            // Cookie cookie = request.getCookies().get("JSESSIONID");
+            String value = request.getRequestedSessionId();
+            out.print(value);
+
+            
         } else {
             out.println( "<br/><center>Welcome in Liquid ver. 1.x</center><br/>");
             if(operation != null)
                 out.println( "<br/><center>Unknown Command <b>"+( operation.isEmpty() ? "[N/D]" : operation ) +"</b></center>" );
         }
+        
     } catch (Throwable th) {
         out.println( "<br/><center>Error in Main Liquid Servlet </b> error:"+th.getMessage()+"</center>" );
         th.printStackTrace();

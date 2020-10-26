@@ -62,6 +62,28 @@ public class ThreadSession {
         }
     }    
     
+    static void saveThreadSessionInfo(String browser, String sessionId) throws InterruptedException {
+        while(bLocked) { Thread.sleep(100); }
+        try {
+            bLocked = true;
+            ThreadSession threadSessionInfo = new ThreadSession();
+            threadSessionInfo.browser = browser;
+            threadSessionInfo.request = null;
+            threadSessionInfo.response = null;
+            threadSessionInfo.out = null;
+            threadSessionInfo.timeTick = System.currentTimeMillis();        
+            threadSessionInfo.thread = Thread.currentThread();
+            threadSessionInfo.threadName = threadSessionInfo.thread.getName();
+            threadSessionInfo.threadId = threadSessionInfo.thread.getId();
+            threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
+            threadSessionInfo.sessionId = sessionId;
+            threadSessionList.add(threadSessionInfo);
+        } finally {
+            bLocked = false;
+        }
+    }
+    
+    
     /**
      * set a specific owner for this session (ex.: workspace store multiple owner, each for his thread, or none for main, like in a static class)
      * 

@@ -5,6 +5,8 @@
  */
 package com.liquid;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,22 +16,40 @@ import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import javax.xml.bind.DatatypeConverter;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.JspWriter;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 
 /**
- * 
+ * TODO: unzip request from client
+ * TODO: send binary zipped as response
  */
 
 public class ServerClientThread {
+    
+    static public String version = "1.01";
     
     
     /**
@@ -67,8 +87,10 @@ public class ServerClientThread {
             }
 
             try {
+
                 bufSize = server.getReceiveBufferSize();
                 timeout = server.getSoTimeout();
+                
             } catch (Exception ex) {                
                 error = ex.getLocalizedMessage();
                 StreamerServer.errors += error + "\n";
@@ -115,6 +137,7 @@ public class ServerClientThread {
         private SocketAddress ra = null;
         private ServerThread serverThread = null;
         private OutputStream outputStream = null;
+        private String hostName = null;
 
         ClientThread(Socket clientSocket) {
             this.clientSocket = clientSocket;
@@ -151,18 +174,24 @@ public class ServerClientThread {
                 throw new IllegalStateException("Could not connect to client input stream", ex);
             }
 
+            // Welcome
+            /*
             try {
-                outputStream.write(encode("[LIQUID Streamer] start"));
-                outputStream.flush();
+                send(("[LIQUID Streamer Ver.:" + ServerClientThread.version + "] start session").getBytes());
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            */
 
+            
+            this.hostName = this.clientSocket.getLocalAddress().getHostName() + " - " + this.clientSocket.getRemoteSocketAddress() + "-"+login.getSaltString(16);
+            Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Srteamer] : client conencted : "+this.hostName);
+            
             while (run) {
                 try {
-                    if(ServerClientThread.processMessageLoop(inputStream) < 0) {
+                    if(ServerClientThread.processMessageLoop(this, inputStream, outputStream) < 0) {
                         serverThread.clientThreads.remove(this);
                         return;
                     }
@@ -170,12 +199,22 @@ public class ServerClientThread {
                     error = ex.getLocalizedMessage();
                     StreamerServer.errors += error + "\n";
                     throw new IllegalStateException("Could not connect to client input stream", ex);
+                } catch (JSONException ex) {
+                    error = ex.getLocalizedMessage();
+                    StreamerServer.errors += error + "\n";
+                    // throw new IllegalStateException("Could not connect to client input stream", ex);
+                } catch (InterruptedException ex) {
+                    error = ex.getLocalizedMessage();
+                    StreamerServer.errors += error + "\n";
+                    // throw new IllegalStateException("Could not connect to client input stream", ex);
+                } catch (Exception ex) {
+                    error = ex.getLocalizedMessage();
+                    StreamerServer.errors += error + "\n";
+                } catch (Throwable th) {
+                    error = th.getLocalizedMessage();
+                    StreamerServer.errors += error + "\n";
                 }
             }
-        }
-        
-        public int send(String data) throws IOException {
-            return ServerClientThread.send(this.outputStream, data);
         }
     }
 
@@ -190,7 +229,7 @@ public class ServerClientThread {
      * @throws IOException 
      */
 
-    private static int processMessageLoop(InputStream inputStream) throws IOException {
+    private static int processMessageLoop(ClientThread clientThread, InputStream inputStream, OutputStream outputStream) throws IOException, JSONException, InterruptedException {
         int len = 0;
         byte[] b = new byte[1024];
         // rawIn is a Socket.getInputStream();
@@ -201,10 +240,21 @@ public class ServerClientThread {
                 byte rLength = 0;
                 int rMaskIndex = 2;
                 int rDataStart = 0;
-                //b[0] is always text in my case so no need to check;
+
                 byte data = b[1];
-                byte op = (byte) 127;
-                rLength = (byte) (data & op);
+                rLength = (byte) (data & (byte) 127);
+
+                byte opCode = (byte) (((b[0] >> 4) & 0xFF) << 4);
+                
+                // disconnect ?
+                int disconnect = opCode & (byte)0x8;
+                if(disconnect == 8) {
+                    if(clientThread != null) {
+                        Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Srteamer] : client disconencted : "+clientThread.hostName);                        
+                    }
+                    return -1;
+                }
+                
 
                 if (rLength == (byte) 126) {
                     rMaskIndex = 4;
@@ -236,16 +286,101 @@ public class ServerClientThread {
                 StreamerServer.nRecived += message.length;
 
                 System.out.println("[LIQUID Streamer] < "+message.length+"bytes");
+                // System.out.println("[LIQUID Streamer] \" "+new String(message)+"\"");
 
-                b = new byte[1024];
+                ByteBuffer wrapped = ByteBuffer.wrap(message); // big-endian by default
+                        
+                
+                long msgLen = getUnsignedInt(message, 0);
+                int msgType = getUnsignedShort(message, 4);
+                
+                byte[] decompressedData = null;
+                if(msgType == 1) {
+                    decompressedData = gunzip(Arrays.copyOfRange(message, 4+2, message.length));
+                } else if(msgType == 0) {
+                    decompressedData = Arrays.copyOfRange(message, 4+2, message.length);
+                } else {
+                    // unexpected type
+                    Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Srteamer] : unexpected data type on host : "+clientThread.hostName);                        
+                }
+                
+                if(decompressedData != null) {
+                    handleCommand(decompressedData, outputStream);
+                }
 
             } else {
                 inputStream.close();
+                if(clientThread != null) {
+                    Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Srteamer] : client terminated : "+clientThread.hostName);                        
+                }
                 return -1;
             }
         }
     }
     
+    public static long getUnsignedInt(byte[] data, int pos) {
+        long result = 0;
+        for (int i = pos; i < pos+4; i++) {
+            result += data[i] << 8 * (data.length - 1 - i);
+        }
+        return result;
+    }
+    public static int getUnsignedShort(byte[] data, int pos) {
+        return (int)((data[pos+0] << 8) & 0xff00) | (data[pos+1] & 0x00ff);
+    }
+    
+
+    static public boolean handleCommand( byte[] decompressedData, OutputStream outputStream ) throws JSONException, IOException, InterruptedException {
+        boolean retVal = false;
+        if(decompressedData != null) {
+            if(decompressedData[0] == '{') {
+                JSONObject requestJson = new JSONObject(new String(decompressedData, java.nio.charset.Charset.defaultCharset()));
+                String operation = null;
+                String sessionId = null;
+                String token = null;
+                
+                try {
+                
+                    if(requestJson.has("sessionId")) {
+                        sessionId = requestJson.getString("sessionId");
+                        if(sessionId != null) {
+                            // register the session
+                            ThreadSession.saveThreadSessionInfo ( "Liquid", sessionId );
+                        }
+                    }
+                    if(requestJson.has("token")) {
+                        token = requestJson.getString("token");
+                    }
+                    
+                    wsHttpServletRequest resuest = new wsHttpServletRequest(requestJson);
+                    operation = resuest.getParameter("operation");
+                    
+
+                    if("get".equalsIgnoreCase(operation)) {
+
+                        send( outputStream, db.get_table_recordset( (HttpServletRequest)resuest, (JspWriter)null ), token );
+                        retVal = true;
+                        
+                    } else if ("auto".equalsIgnoreCase(operation)) {
+                        // get the default json configuration of a control
+                        send( outputStream, workspace.get_default_json( (HttpServletRequest)resuest, (JspWriter)null ), token );
+                        retVal = true;
+
+                    } else {
+                        Logger.getLogger(ServerClientThread.class.getName()).log(Level.SEVERE, "[LIQUID Streamer] unsupported operation : "+operation);
+                    }
+
+                } catch (Throwable th) {
+                    Logger.getLogger(ServerClientThread.class.getName()).log(Level.SEVERE, null, th);
+                } finally {
+                    ThreadSession.removeThreadSessionInfo();
+                }                    
+            } else {
+                // not expected
+            }
+        }
+        return retVal;
+    }
     
     /**
      * sendind data back to client
@@ -255,22 +390,48 @@ public class ServerClientThread {
      * @return
      * @throws IOException 
      */
-    private static int send(OutputStream outputStream, String data) throws IOException {
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(data.length());
+    private static int send(OutputStream outputStream, String data, String token) throws IOException {
+        return send(outputStream, data.getBytes(), token);
+    }
+    private static int send(OutputStream outputStream, byte[] data, String token) throws IOException {
+        boolean bZip = false;
+        byte[] compressedData = encode( bZip ? gzip(data) : data, bZip, token );
+        outputStream.write(compressedData, 0, compressedData.length);
+        outputStream.flush();
+        return compressedData.length;
+    }
+    
+    private static byte[] gzip(String data) throws IOException {
+        return gzip(data.getBytes());
+    }
+    
+    private static byte[] gzip(byte [] data) throws IOException {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(data.length+128);
         try {
             GZIPOutputStream zipStream = new GZIPOutputStream(byteStream);
-
-            zipStream.write(data.getBytes());
+            zipStream.write(data);
             zipStream.close();
         } finally {
             byteStream.close();
         }
-
-        byte[] compressedData = byteStream.toByteArray();
-
-        outputStream.write(compressedData, 0, compressedData.length);
-        outputStream.flush();
-        return compressedData.length;
+        return byteStream.toByteArray();
+    }
+    
+    private static byte[] gunzip(byte [] data) throws IOException {
+        /*
+        for(int i=0; i<data.length; i++)
+            if(data[i] < 0) 
+                data[i] = (byte) (127 + data[i]);
+        */
+        ByteArrayInputStream byteStream = new ByteArrayInputStream(data);
+        try {
+            GZIPInputStream zipStream = new GZIPInputStream(byteStream);
+            zipStream.read(data);
+            zipStream.close();
+        } finally {
+            byteStream.close();
+        }
+        return byteStream.readAllBytes();
     }
     
 
@@ -281,26 +442,24 @@ public class ServerClientThread {
      * @return
      * @throws IOException 
      */
-    public static byte[] encode(String mess) throws IOException {
-        byte[] rawData = mess.getBytes();
-
+    public static byte[] encode( byte[] rawData, boolean bBinary, String token ) throws IOException {
         int frameCount = 0;
         byte[] frame = new byte[10];
 
-        frame[0] = (byte) 129;
+        frame[0] = (byte)(bBinary ? 128 : 128+1);
 
-        if (rawData.length <= 125) {
-            frame[1] = (byte) rawData.length;
+        int len = 1 + 32 + rawData.length;
+        
+        if (len <= 125) {
+            frame[1] = (byte) (len);
             frameCount = 2;
-        } else if (rawData.length >= 126 && rawData.length <= 65535) {
+        } else if (len >= 126 && len <= 65535) {
             frame[1] = (byte) 126;
-            int len = rawData.length;
             frame[2] = (byte) ((len >> 8) & (byte) 255);
             frame[3] = (byte) (len & (byte) 255);
             frameCount = 4;
         } else {
             frame[1] = (byte) 127;
-            int len = rawData.length;
             frame[2] = (byte) ((len >> 56) & (byte) 255);
             frame[3] = (byte) ((len >> 48) & (byte) 255);
             frame[4] = (byte) ((len >> 40) & (byte) 255);
@@ -312,7 +471,7 @@ public class ServerClientThread {
             frameCount = 10;
         }
 
-        int bLength = frameCount + rawData.length;
+        int bLength = frameCount + len;
 
         byte[] reply = new byte[bLength];
 
@@ -321,6 +480,15 @@ public class ServerClientThread {
             reply[bLim] = frame[i];
             bLim++;
         }
+
+        reply[bLim] = (byte)(bBinary ? 'B' : ' ');
+        bLim++;
+
+        for (int i = 0; i < 32; i++) {
+            reply[bLim] = (byte)token.charAt(i);
+            bLim++;
+        }
+        
         for (int i = 0; i < rawData.length; i++) {
             reply[bLim] = rawData[i];
             bLim++;

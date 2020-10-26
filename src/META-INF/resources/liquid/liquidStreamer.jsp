@@ -29,7 +29,7 @@
 
         %>
 
-                <script src="<%=path%>/liquid/StreamerServer.js?version=<%=jssVersion%>"></script>
+                <script src="<%=path%>/liquid/liquidStreamer.js?version=<%=jssVersion%>"></script>
 
         <% } else { %>
                 <script>console.warn("LIQUID: Streamer is not running...Please see server log");</script>
