@@ -23,23 +23,27 @@ public class StreamerServer {
     static public String AppURL = null;
     static public int port = 7373;
     static public boolean run = false;
-    static public ServerClientThread.ServerThread serverThread = null;
+    static public SrteamerClient.ServerThread serverThread = null;
     static public String errors = "";
     static public long nConnections = 0;
     static public long nRequests = 0;
     static public long nRecived = 0;
     static public long nSent = 0;
 
+    // override user's assets (test purpose)
+    static public boolean applyForAllUsers = true;
+
+    
     public static void start( HttpServletRequest request ) throws SocketException, IOException {
         try {
             AppURL = request.getContextPath();
             if(serverThread == null) {
-                serverThread = new ServerClientThread().new ServerThread();
+                serverThread = new SrteamerClient().new ServerThread();
                 serverThread.start();
                 StreamerServer.run = true;
             }
         } catch (Exception ex) {
-            Logger.getLogger(ServerClientThread.class.getName()).log(Level.SEVERE, "Could not create web server "+ex.getLocalizedMessage());
+            Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, "Could not create web server "+ex.getLocalizedMessage());
         }        
     }                
 }

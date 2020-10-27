@@ -8,14 +8,11 @@ package com.liquid;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.SocketException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
@@ -24,8 +21,9 @@ import javax.servlet.http.HttpSession;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-class wsHttpServletRequest implements HttpServletRequest {
+public class wsHttpServletRequest implements HttpServletRequest {
     
+    String sessionId = null;
     ArrayList<String> params = null;
     ArrayList<String> values = null;
     String body = null;
@@ -39,21 +37,30 @@ class wsHttpServletRequest implements HttpServletRequest {
             if(requestJson.has("url")) {
                 String url = requestJson.getString("url");
                 if(url != null) {
-                    String [] params = url.split("?");
+                    String [] params = url.split("\\?");
                     if(params.length>1) {
+                        this.params = new ArrayList<String>();
+                        this.values = new ArrayList<String>();
                         params = params[1].split("&");
                         for(int ip=0; ip<params.length;ip++) {
                             String [] couple = params[ip].split("=");
-                            String value = couple[1];
-                            String param = couple[0];
-                            this.params.add(param);
-                            this.values.add(value);
+                            if(couple != null && couple.length > 1) {
+                                String value = couple[1];
+                                String param = couple[0];
+                                this.params.add(param);
+                                this.values.add(value);
+                            } else {
+                                int lb = 1;
+                            }
                         }
                     }
                 }
             }
             if(requestJson.has("data")) {
                 this.body = requestJson.getString("data");
+            }
+            if(requestJson.has("sessionId")) {
+                this.sessionId = requestJson.getString("sessionId");
             }
         }
     }
@@ -155,12 +162,12 @@ class wsHttpServletRequest implements HttpServletRequest {
 
     @Override
     public HttpSession getSession(boolean bln) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return HttpSessionCollector.find(sessionId);
     }
 
     @Override
     public HttpSession getSession() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return HttpSessionCollector.find(sessionId);
     }
 
     @Override

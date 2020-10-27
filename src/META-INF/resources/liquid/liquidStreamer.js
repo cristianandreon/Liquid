@@ -164,14 +164,25 @@ var LiquidStreamer = {
                 try {
                     if(isDef(glLiquidWSQueue[i].callback)) {
                         if(glLiquidWSQueue[i].param instanceof LiquidCtrl) {
+                            //
+                            // swap xhr to work like ajax (cannot write to readyState ... )
+                            //
                             var liquid = glLiquidWSQueue[i].param;
-                            if(!isDef(liquid.xhr)) liquid.xhr = { readyState:null, status:null, responseText: null, ws:null };
-                            liquid.xhr.readyState = 4;
-                            liquid.xhr.status = 200;
-                            liquid.xhr.responseText = response;
-                            liquid.xhr.ws = true;
-                        }                                    
-                        glLiquidWSQueue[i].callback(glLiquidWSQueue[i].param);
+                            var prevXhr = liquid.xhr;
+                            try {
+                                liquid.xhr = { readyState:null, status:null, responseText: null, ws:null };
+                                liquid.xhr.readyState = 4;
+                                liquid.xhr.status = 200;
+                                liquid.xhr.responseText = response;
+                                liquid.xhr.ws = true;
+                                glLiquidWSQueue[i].callback(glLiquidWSQueue[i].param);
+                            } catch(e) {
+                                console.error("queueProcessLiquidStreamer() error:"+e);
+                            }
+                            liquid.xhr = prevXhr;
+                        } else {
+                            glLiquidWSQueue[i].callback(glLiquidWSQueue[i].param);
+                        }                                 
                     }                
                     glLiquidWSQueue[i].pending = false;
                     return true;

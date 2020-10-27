@@ -5,7 +5,6 @@
  */
 package com.liquid;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -16,15 +15,10 @@ import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,11 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspWriter;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,11 +37,11 @@ import org.json.JSONObject;
  * TODO: send binary zipped as response
  */
 
-public class ServerClientThread {
+public class SrteamerClient {
     
     static public String version = "1.01";
     
-    
+       
     /**
      * Manage the clients connections
      */
@@ -94,7 +84,7 @@ public class ServerClientThread {
             } catch (Exception ex) {                
                 error = ex.getLocalizedMessage();
                 StreamerServer.errors += error + "\n";
-                Logger.getLogger(ServerClientThread.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, null, ex);
             }
 
             run = true;            
@@ -187,32 +177,37 @@ public class ServerClientThread {
 
             
             this.hostName = this.clientSocket.getLocalAddress().getHostName() + " - " + this.clientSocket.getRemoteSocketAddress() + "-"+login.getSaltString(16);
-            Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Srteamer] : client conencted : "+this.hostName);
+            Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : client conencted : "+this.hostName);
             
             while (run) {
                 try {
-                    if(ServerClientThread.processMessageLoop(this, inputStream, outputStream) < 0) {
+                    if(SrteamerClient.processMessageLoop(this, inputStream, outputStream) < 0) {
                         serverThread.clientThreads.remove(this);
                         return;
                     }
                 } catch (IOException ex) {
                     error = ex.getLocalizedMessage();
                     StreamerServer.errors += error + "\n";
-                    throw new IllegalStateException("Could not connect to client input stream", ex);
+                    // throw new IllegalStateException("Could not connect to client input stream", ex);
+                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+ex.getLocalizedMessage());
                 } catch (JSONException ex) {
                     error = ex.getLocalizedMessage();
                     StreamerServer.errors += error + "\n";
                     // throw new IllegalStateException("Could not connect to client input stream", ex);
+                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+ex.getLocalizedMessage());
                 } catch (InterruptedException ex) {
                     error = ex.getLocalizedMessage();
                     StreamerServer.errors += error + "\n";
                     // throw new IllegalStateException("Could not connect to client input stream", ex);
+                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+ex.getLocalizedMessage());
                 } catch (Exception ex) {
                     error = ex.getLocalizedMessage();
                     StreamerServer.errors += error + "\n";
+                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+ex.getLocalizedMessage());
                 } catch (Throwable th) {
                     error = th.getLocalizedMessage();
                     StreamerServer.errors += error + "\n";
+                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+th.getLocalizedMessage());
                 }
             }
         }
@@ -228,15 +223,308 @@ public class ServerClientThread {
      * @return
      * @throws IOException 
      */
+        enum state {
+                BUFFERING
+                ,PARSING
+                ,WAITING_MORE_DATA
+                ,EXECUTE
+        }
 
     private static int processMessageLoop(ClientThread clientThread, InputStream inputStream, OutputStream outputStream) throws IOException, JSONException, InterruptedException {
-        int len = 0;
-        byte[] b = new byte[1024];
-        // rawIn is a Socket.getInputStream();
-        while (true) {
-            len = inputStream.read(b);
-            if (len != -1) {
+        int nReciv = 0;
+        int startIndex = 0;
+        int nBufferLeft = 0;
+        int nBufferMax = 1024;
+        byte[] recvBuffer = null;
 
+        byte [] PayLoad = null;
+        int PayLoadSize = 0;
+        int PayLoadStartIndex = 0;
+        int websocketHeader = 0;
+
+        byte HeaderOpcode = 0;
+        byte HeaderPayloadLen = 0, Mask = 0;
+        byte Len = 0;
+        int Len16 = 0;
+        long Len32 = 0;
+        byte [] MaskingKey = new byte[4];
+        byte Opcode = 0, ReversedBits = 0;
+        int i, j;
+        int supportedCase = 0;
+        
+        state curState = state.BUFFERING;
+                
+        while (true) {
+            
+            //
+            // Reading
+            //
+            if(curState == state.BUFFERING) {
+                startIndex = 0;
+                recvBuffer = new byte[nBufferMax];
+                nReciv = inputStream.read(recvBuffer);
+            } else if (curState == state.WAITING_MORE_DATA) {
+                startIndex = 0;
+                recvBuffer = new byte[nBufferLeft];
+                nReciv = inputStream.read(recvBuffer);
+            }
+            
+            // 
+            // Parsing or Finishing
+            //
+            if ((nReciv-startIndex) >= 4 || curState == state.WAITING_MORE_DATA) {
+
+                if(curState == state.BUFFERING || curState == state.PARSING) {
+                    //
+                    // Parsing
+                    //
+                    curState = state.PARSING;
+
+                    // N.B.: bit speculari rispetto alle specifiche
+
+                    HeaderOpcode = (byte)recvBuffer[startIndex++];
+                    HeaderPayloadLen = (byte)recvBuffer[startIndex++];
+
+
+                    Opcode = (byte) ((byte)((HeaderOpcode << 4) & 0xFF) >> 4);
+                    // disconnect ?
+                    int disconnect = Opcode & (byte)0x8;
+                    if(disconnect == 8) {
+                        if(clientThread != null) {
+                            Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : client disconencted : "+clientThread.hostName);                        
+                        }
+                        return -1;
+                    }
+
+
+                    /*  Da specifica RFC 6455
+
+                    Opcode:  4 bits
+
+                        Defines the interpretation of the "Payload data".  If an unknown
+                        opcode is received, the receiving endpoint MUST _Fail the
+                        WebSocket Connection_.  The following values are defined.
+
+                     *  %x0 denotes a continuation frame
+                     *  %x1 denotes a text frame
+                     *  %x2 denotes a binary frame
+                     *  %x3-7 are reserved for further non-control frames
+                     *  %x8 denotes a connection close
+                     *  %x9 denotes a ping
+                     *  %xA denotes a pong
+                     *  %xB-F are reserved for further control frames
+
+                     */
+
+
+                    Len = (byte) (((HeaderPayloadLen << 1) & 0xFF) >> 1);
+                    Len16 = (int) Len;
+
+                    // Mask = HeaderPayloadLen & 0x80;
+                    Mask = (byte) (HeaderPayloadLen & 128);
+
+
+
+
+                    if (Opcode == 2) {
+                        // Binary frame
+                        // Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Streamer] : binary frame unsupported : "+clientThread.hostName);                        
+                        // return -1;
+                    }
+                    /*
+                      *  %x0 denotes a continuation frame
+                      *  %x1 denotes a text frame
+                      *  %x2 denotes a binary frame
+                      *  %x3-7 are reserved for further non-control frames
+                      *  %x8 denotes a connection close
+                      *  %x9 denotes a ping
+                      *  %xA denotes a pong
+                      *  %xB-F are reserved for further control frames                    
+                    */
+
+
+                    if (Len == 126 || Len == 127) {
+                        Len16 = getUnsignedShort(recvBuffer, startIndex);
+                        // memcpy(&Len16, &recvBuffer[startIndex], 2);
+                        startIndex += 2;
+                        // Len16 = xrt_ntohs(Len16);
+                    }
+                    if (Len == 127) {
+                        Len32 = getUnsignedInt(recvBuffer, startIndex);
+                        // memcpy(&Len32, &recvBuffer[startIndex], 4);
+                        startIndex += 4;
+
+                        // NON Supportato
+                        Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : 32bit frame unsupported : "+clientThread.hostName);                        
+                        return -1;
+                    }
+
+
+
+                    if (Mask != 0) {
+                        for(int ib=0; ib<4; ib++) {
+                            MaskingKey[ib] = recvBuffer[startIndex+ib];
+                        }
+                        // memcpy(MaskingKey, &recvBuffer[startIndex], 4);
+                        startIndex += 4;
+                    }
+
+
+
+
+
+                    if (   (HeaderOpcode & 2) == (byte)2
+                        || (HeaderOpcode & 4) == (byte)4
+                        || (HeaderOpcode & 8) == (byte)8) {
+
+                        /*  Da specifica RFC 6455
+
+                        RSV1, RSV2, RSV3:  1 bit each
+
+                            MUST be 0 unless an extension is negotiated that defines meanings
+                            for non-zero values.  If a nonzero value is received and none of
+                            the negotiated extensions defines the meaning of such a nonzero
+                            value, the receiving endpoint MUST _Fail the WebSocket
+                            Connection_.
+
+                         */
+                        
+                        if(HeaderOpcode != -126) { // workaround
+                            Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : streaming failed : "+clientThread.hostName);                        
+                            return -1;
+                        }
+                    }
+
+                    
+                    PayLoadStartIndex = 0;
+                    PayLoadSize = Len16;
+                    PayLoad = new byte [PayLoadSize+1];
+                    if (PayLoad == null)
+                        PayLoadSize = 0;
+
+
+                    if (Len16 <= PayLoadSize) { // size ok ?
+                        int nDataAvailable = 0;
+                        if (startIndex + Len16 <= nReciv) {
+                            nDataAvailable = Len16;
+                        } else {
+                            nDataAvailable = nReciv-startIndex;
+                        }
+
+                        for (i = startIndex, j = PayLoadStartIndex; j < (PayLoadStartIndex+nDataAvailable); i++, j++) {
+                            if (Mask != 0) {
+                                PayLoad[j] = (byte) (recvBuffer[i] ^ MaskingKey[j % 4]);
+                            } else {
+                                PayLoad[j] = recvBuffer[i];
+                            }
+                        }
+
+                        PayLoadStartIndex += nDataAvailable;
+                        startIndex += nDataAvailable;
+                        PayLoad[Len16] = 0;
+
+                    } else {
+                        Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : undetected case : "+clientThread.hostName);                        
+                        return -1;
+                    }
+                    
+                    
+                    if (PayLoadStartIndex == Len16) { // all data available ?
+
+                        //
+                        // Execute
+                        //
+                        curState = state.EXECUTE;
+
+                        
+                    } else {
+                        /////////////////////////////////////////////////////////////////////////
+                        // Dati parziali : continua la lettura ripartendo dall'indice originale
+                        //
+                        nBufferLeft = Len16 - PayLoadStartIndex;
+                        curState = state.WAITING_MORE_DATA;
+                    }
+                    
+                } else if(curState == state.WAITING_MORE_DATA) {
+                    //
+                    // Finishing :
+                    // fill by the rest of the data
+                    //
+                    int nDataAvailable = nReciv > nBufferLeft ? nBufferLeft : nReciv;
+                    for (i = startIndex, j = PayLoadStartIndex; j < (PayLoadStartIndex+nDataAvailable); i++, j++) {
+                        if (Mask != 0) {
+                            PayLoad[j] = (byte) (recvBuffer[i] ^ MaskingKey[j % 4]);
+                        } else {
+                            PayLoad[j] = recvBuffer[i];
+                        }
+                    }
+                    PayLoadStartIndex += nDataAvailable;
+                    startIndex += nDataAvailable;
+                    if(PayLoadStartIndex == Len16) {
+                        // done
+                        curState = state.EXECUTE;
+                    } else {
+                        // still waiting for
+                        nBufferLeft = Len16 - PayLoadStartIndex;
+                    }
+                }
+                
+                
+                if(curState == state.EXECUTE) {
+                    long msgLen = getUnsignedInt(PayLoad, 0);
+                    int msgType = getUnsignedShort(PayLoad, 4);
+
+                    byte[] decompressedData = null;
+                    if(msgType == 1) {
+                        decompressedData = gunzip(Arrays.copyOfRange(PayLoad, 4+2, Len16));
+                    } else if(msgType == 0) {
+                        decompressedData = Arrays.copyOfRange(PayLoad, 4+2, Len16);
+                    } else {
+                        // unexpected type
+                        Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : unexpected data type on host : "+clientThread.hostName);                        
+                    }
+
+                    if(decompressedData != null) {
+                        handleCommand(decompressedData, outputStream);
+                    }
+
+
+                    
+                    if (startIndex == nReciv) {
+                        /////////////////////////
+                        // Buffer completed
+                        //
+                        curState = state.BUFFERING;
+
+                    } else {
+                        /////////////////////////////////////////////////////////
+                        // Continue parsing not reading staring from startIndex
+                        //
+                        curState = state.PARSING;
+                    }                    
+                }
+
+
+            } else if (nReciv == -1) {
+                inputStream.close();
+                if(clientThread != null) {
+                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : client terminated : "+clientThread.hostName);                        
+                }
+                return -1;
+                
+            } else {
+                /////////////////////////////////
+                // Partial data : continue ?
+                //
+                if(clientThread != null) {
+                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : partial buffer (< 4byte) unsupported : "+clientThread.hostName);                        
+                }
+                return -1;
+            }
+        }
+    }
+    
+ /*
                 byte rLength = 0;
                 int rMaskIndex = 2;
                 int rDataStart = 0;
@@ -307,23 +595,11 @@ public class ServerClientThread {
                 if(decompressedData != null) {
                     handleCommand(decompressedData, outputStream);
                 }
+                */
 
-            } else {
-                inputStream.close();
-                if(clientThread != null) {
-                    Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Srteamer] : client terminated : "+clientThread.hostName);                        
-                }
-                return -1;
-            }
-        }
-    }
     
     public static long getUnsignedInt(byte[] data, int pos) {
-        long result = 0;
-        for (int i = pos; i < pos+4; i++) {
-            result += data[i] << 8 * (data.length - 1 - i);
-        }
-        return result;
+        return (long)((data[pos+0] << 24) & 0xff000000) | ((data[pos+1] << 16) & 0x00ff0000) | ((data[pos+2] << 8) & 0x0000ff00) | (data[pos+3] & 0x000000ff);
     }
     public static int getUnsignedShort(byte[] data, int pos) {
         return (int)((data[pos+0] << 8) & 0xff00) | (data[pos+1] & 0x00ff);
@@ -352,26 +628,52 @@ public class ServerClientThread {
                         token = requestJson.getString("token");
                     }
                     
-                    wsHttpServletRequest resuest = new wsHttpServletRequest(requestJson);
-                    operation = resuest.getParameter("operation");
+                    wsHttpServletRequest request = new wsHttpServletRequest(requestJson);
+                    operation = request.getParameter("operation");
                     
 
                     if("get".equalsIgnoreCase(operation)) {
 
-                        send( outputStream, db.get_table_recordset( (HttpServletRequest)resuest, (JspWriter)null ), token );
+                        send( outputStream, db.get_table_recordset( (HttpServletRequest)request, (JspWriter)null ), token );
                         retVal = true;
                         
-                    } else if ("auto".equalsIgnoreCase(operation)) {
-                        // get the default json configuration of a control
-                        send( outputStream, workspace.get_default_json( (HttpServletRequest)resuest, (JspWriter)null ), token );
+                    } else if ("getJson".equalsIgnoreCase(operation)) {
+                        // get the json configuration from the server
+                        send( outputStream,  workspace.get_file_content((HttpServletRequest)request, request.getParameter("fileURL")), token );
                         retVal = true;
 
+                    } else if ("setJson".equalsIgnoreCase(operation)) {
+                        // write json configuration to the server
+                        send( outputStream,  workspace.set_file_content((HttpServletRequest)request, (JspWriter)null), token );
+                        retVal = true;
+
+                    } else if ("setLiquidJsonProjectFolder".equalsIgnoreCase(operation)) {
+                        // Set the working folder of the project (where to save new json configurations)
+                        send( outputStream,  workspace.set_project_folder((HttpServletRequest)request, (JspWriter)null), token );
+                        retVal = true;
+
+                    } else if ("auto".equalsIgnoreCase(operation)) {
+                        // get the default json configuration of a control
+                        send( outputStream, workspace.get_default_json( (HttpServletRequest)request, (JspWriter)null ), token );
+                        retVal = true;
+
+                    } else if ("registerControl".equalsIgnoreCase(operation)) {
+                        // register a json configuraqtion
+                        send( outputStream,  workspace.get_table_control((HttpServletRequest)request, (JspWriter)null), token );
+                        retVal = true;
+
+                    } else if ("exec".equalsIgnoreCase(operation)) {
+                        // execution of commands, events ...
+                        try { send( outputStream,  event.execute((HttpServletRequest)request, (JspWriter)null), token ); } catch (Exception e) {}
+                        retVal = true;
+
+            
                     } else {
-                        Logger.getLogger(ServerClientThread.class.getName()).log(Level.SEVERE, "[LIQUID Streamer] unsupported operation : "+operation);
+                        Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, "[LIQUID Streamer] unsupported operation : "+operation);
                     }
 
                 } catch (Throwable th) {
-                    Logger.getLogger(ServerClientThread.class.getName()).log(Level.SEVERE, null, th);
+                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, null, th);
                 } finally {
                     ThreadSession.removeThreadSessionInfo();
                 }                    
@@ -530,10 +832,10 @@ public class ServerClientThread {
             try {
                 outputStream.write(response, 0, response.length);
             } catch (IOException ex) {
-                Logger.getLogger(ServerClientThread.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
-            Logger.getLogger(ServerClientThread.class.getName()).log(Level.SEVERE, "doHandShakeToInitializeWebSocketConnection() : unexpected case!");
+            Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, "doHandShakeToInitializeWebSocketConnection() : unexpected case!");
         }
     }
 }

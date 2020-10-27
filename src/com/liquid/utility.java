@@ -52,9 +52,11 @@ import org.xml.sax.SAXParseException;
 
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-// import java.util.Base64;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+// comment this for java <= 7
+import java.util.Base64;
 
 public class utility {
 
@@ -94,8 +96,8 @@ public class utility {
         } catch (Throwable th) {
             try {
                 if (javaVersion >= 8) {
-                    // return new String(Base64.getEncoder().encode(data));
-                	throw new Throwable(); // x java 7
+                    return new String(Base64.getEncoder().encode(data));
+                    // throw new Throwable(); // x java 7
                 } else {
                     throw new Throwable();  // x java 7
                 }

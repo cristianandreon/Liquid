@@ -12,15 +12,13 @@
 <!-- -->
 <%  String streamerLoginId = login.getLoggedID(request);
     
-    // debug
-    streamerLoginId = "1";
 
     try {
 
         // N.B.: Possibile riduzione del carico sul server salvando la sessione solo sui rami necessari (es.: exec)
         ThreadSession.saveThreadSessionInfo ( "Liquid", request, response, out );
 
-        if(streamerLoginId != null && !streamerLoginId.isEmpty()) {
+        if(streamerLoginId != null && !streamerLoginId.isEmpty() || StreamerServer.applyForAllUsers) {
 
             // start server if not running
             StreamerServer.start(request);
