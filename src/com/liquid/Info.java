@@ -169,7 +169,10 @@ public class Info {
         out_string += "<tr>";
         out_string += "<td>Java version</td>";
         out_string += "<td>"+System.getProperty("java.version")+"</td>";
-        out_string += "<td>"+"(bytecode ver.:"+bytecodeVer+")"+"</td>";
+        out_string += "<td>"
+                +"(bytecode ver.:"+bytecodeVer+")<br/>"
+                +"("+request.getSession().getServletContext().getMajorVersion()+"."+request.getSession().getServletContext().getMinorVersion()+")<br/>"
+                +"</td>";
         out_string += "</tr>";
 
         out_string += "<tr style=\"background-color:lightGray\">";

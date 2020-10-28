@@ -1,3 +1,11 @@
+//////////////////////////////////////////////////////////////////////////
+//
+// Liquid Streamer ver.1.01   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 20-10-2020 - Last update  27-10-2020
+//  TODO : see trello.com
+//
+//
+var glLiquidWSQueueBusy = false;
 var glLiquidWebSocket = null;
 var glLiquidWebSocketRunning = false;
 
@@ -100,6 +108,7 @@ var LiquidStreamer = {
                         };
                         
                         glLiquidWebSocket.onerror = function(event) {
+                            LiquidStreamer.queueErrorLiquidStreamer(responseToken, responseToProcess);
                             console.error("[LIQUID Streamer] : Error :"+event.code);
                         };
 
@@ -148,17 +157,23 @@ var LiquidStreamer = {
         glLiquidWebSocket = null;
     },
     queueAppendLiquidStreamer:function( token, callback, param, async ) {
-        for(var i=0; i<glLiquidWSQueue.length; i++) {
-            if(glLiquidWSQueue[i].pending === false) {
-                glLiquidWSQueue.splice(glLiquidWSQueue[i]);
-                i--;
+        if(!glLiquidWSQueueBusy) {
+            glLiquidWSQueueBusy = true;
+            for(var i=0; i<glLiquidWSQueue.length; i++) {
+                if(glLiquidWSQueue[i].pending === false) {
+                    glLiquidWSQueue.splice(glLiquidWSQueue[i]);
+                    i--;
+                }
             }
+            glLiquidWSQueueBusy = false;
         }
         var queue = { token:token, callback:callback, param:param, async:async, pending:true, tick:getCurrentTimetick(), timeout:false };
         glLiquidWSQueue.push( queue );
         return queue;
     }
     ,queueProcessLiquidStreamer:function( token, response ){
+        var res = false;
+        glLiquidWSQueueBusy = true;
         for(var i=0; i<glLiquidWSQueue.length; i++) {
             if(glLiquidWSQueue[i].token === token) {
                 try {
@@ -185,13 +200,15 @@ var LiquidStreamer = {
                         }                                 
                     }                
                     glLiquidWSQueue[i].pending = false;
-                    return true;
+                    glLiquidWSQueue[i].token = null;
+                    res = true;
                 } catch(e) {
                     console.error("[LIQUID Error] queueLiquidStreamerProcess() : "+e);
                 }
             }
         }
-        return false;
+        glLiquidWSQueueBusy = false;
+        return res;
     },
     generate_token:function(length){
         var a = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".split("");

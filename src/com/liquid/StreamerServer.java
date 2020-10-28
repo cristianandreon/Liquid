@@ -31,7 +31,7 @@ public class StreamerServer {
     static public long nSent = 0;
 
     // override user's assets (test purpose)
-    static public boolean applyForAllUsers = true;
+    static public boolean applyForAllUsers = false;
 
     
     public static void start( HttpServletRequest request ) throws SocketException, IOException {
