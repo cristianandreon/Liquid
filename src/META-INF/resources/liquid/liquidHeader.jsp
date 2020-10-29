@@ -4,7 +4,7 @@
 <%@ page import="com.liquid.login"%>
 <%@ page import="com.liquid.emailer"%>
 <%@ page import="com.liquid.utility"%>
-<%@ page import="com.liquid.StreamerServer"%>
+<%@ page import="com.liquid.wsStreamerServer"%>
 
 <% 
     String path = request.getContextPath(); 
@@ -15,7 +15,7 @@
 <!-- -->
 <script>
     var glLiquidRoot = "<%=path%>";
-    var glLiquidAppPort = <%=StreamerServer.port%>
+    var glLiquidAppPort = <%=wsStreamerServer.port%>
 </script>
 <script src="<%=path%>/liquid/ag-grid-enterprise.min.js" type="text/javascript"></script>
 

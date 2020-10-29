@@ -5,6 +5,7 @@
  */
 package com.liquid;
 
+import java.io.OutputStream;
 import java.util.ArrayList;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,6 +36,10 @@ public class ThreadSession {
     private ArrayList<Long> childThreadIds = null;
     public String incoming = null;
     public String sessionId = null;
+
+    // for the websocket
+    public OutputStream outputStream = null;
+    public String token = null;
             
    // store the owner (the callback instance) of the workspace... one workspace can have multiple owner (storing additional data)
     public Object workspaceOwner = null;
@@ -50,6 +55,8 @@ public class ThreadSession {
             threadSessionInfo.request = request;
             threadSessionInfo.response = response;
             threadSessionInfo.out = out;
+            threadSessionInfo.outputStream = null;
+            threadSessionInfo.token = null;
             threadSessionInfo.timeTick = System.currentTimeMillis();        
             threadSessionInfo.thread = Thread.currentThread();
             threadSessionInfo.threadName = threadSessionInfo.thread.getName();
@@ -62,7 +69,7 @@ public class ThreadSession {
         }
     }    
     
-    static void saveThreadSessionInfo(String browser, String sessionId) throws InterruptedException {
+    static void saveThreadSessionInfo(String browser, String sessionId, OutputStream outputStream, String token) throws InterruptedException {
         while(bLocked) { Thread.sleep(100); }
         try {
             bLocked = true;
@@ -71,6 +78,8 @@ public class ThreadSession {
             threadSessionInfo.request = null;
             threadSessionInfo.response = null;
             threadSessionInfo.out = null;
+            threadSessionInfo.outputStream = outputStream;
+            threadSessionInfo.token = token;
             threadSessionInfo.timeTick = System.currentTimeMillis();        
             threadSessionInfo.thread = Thread.currentThread();
             threadSessionInfo.threadName = threadSessionInfo.thread.getName();

@@ -7,6 +7,8 @@ package com.liquid;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
@@ -30,7 +32,11 @@ public class HttpSessionCollector implements HttpSessionListener {
     }
 
     public static HttpSession find(String sessionId) {
-        return sessions.get(sessionId);
+        if(sessions == null || (sessions != null && sessions.isEmpty())) {
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "[LIQUID] : no HttpSession collected ... may listner is not active");
+            return null;
+        } else {
+            return sessions.get(sessionId);
+        }
     }
-
 }

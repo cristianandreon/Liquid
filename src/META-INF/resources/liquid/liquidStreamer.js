@@ -23,11 +23,13 @@ var LiquidStreamer = {
     openLiquidStreamer:function() {
         var streamerEnabled = false;
 
-
         // debug
+        if(!isDef(glCurrentAsset)) {
+            glCurrentAsset = [];
+        }
         glCurrentAsset.push("StreamerServer");
 
-        if(isDef(glCurrentAsset)) {
+        if(isDef(glCurrentAsset)) {            
             // TODO: check the assests
             if(glCurrentAsset.contains("StreamerServer") || glCurrentAsset.contains("WebSocket")) {
                 streamerEnabled = true;
@@ -66,9 +68,7 @@ var LiquidStreamer = {
 
                         glLiquidWebSocket.onmessage = function(event){
                             console.info("[LIQUID Streamer] : < "+event.data.length+"bytes");
-
                             try {
-                                
                                 var dv = null;
                                 var responseBin = "";
                                 var responseToken = "";
@@ -82,7 +82,7 @@ var LiquidStreamer = {
                                         responseToProcess.setUint8(i, event.data[i+1+32]);
                                     }
                                     var gunzip = new Zlib.Gunzip(responseToProcess);
-                                    LiquidStreamer.queueProcessLiquidStreamer(responseToken, gunzip.decompress());
+                                    responseToProcess = gunzip.decompress();
                                 } else {
                                     responseBin = event.data[0];
                                     for(var i=0; i<32; i++) {
@@ -91,8 +91,8 @@ var LiquidStreamer = {
                                     for(var i=0; i<event.data.length-1-32; i++) {
                                         responseToProcess += event.data[i+1+32];
                                     }
-                                    LiquidStreamer.queueProcessLiquidStreamer(responseToken, responseToProcess);
                                 }
+                                LiquidStreamer.queueProcessLiquidStreamer(responseToken, responseToProcess, event);
                                 
                             } catch(e) {
                                 console.error("[LIQUID Error] : onmessage() : "+e);
@@ -108,8 +108,8 @@ var LiquidStreamer = {
                         };
                         
                         glLiquidWebSocket.onerror = function(event) {
-                            LiquidStreamer.queueErrorLiquidStreamer(responseToken, responseToProcess);
                             console.error("[LIQUID Streamer] : Error :"+event.code);
+                            LiquidStreamer.queueProcessLiquidStreamer(null, null, event);
                         };
 
                         glLiquidWebSocketRunning = true;
@@ -131,7 +131,7 @@ var LiquidStreamer = {
     },
     sendLiquidStreamer:function(data, length, queue, async) {
         if(glLiquidWebSocket) {
-            if(glLiquidWebSocket.readyState == 0) {
+            if(glLiquidWebSocket.readyState === 0) {
                 var dtime = (getCurrentTimetick() - queue.tick) / 1000;
                 if(dtime < LiquidStreamer.waitForWebSocketTimeoutMS) {                
                     setTimeout( function() {
@@ -139,6 +139,7 @@ var LiquidStreamer = {
                     }, 3000 );
                     return 0;
                 } else {
+                    console.error("sendLiquidStreamer() timeout ... maybe StreamerServer not running");
                     queue.pending = false;
                     queue.timeout = true;
                     return -1;
@@ -147,6 +148,7 @@ var LiquidStreamer = {
             if(glLiquidWebSocket.readyState > 0) {
                 return glLiquidWebSocket.send(data, length);
             } else {
+                console.error("sendLiquidStreamer() error ... maybe StreamerServer not running");
                 return -1;
             }
         }
@@ -156,51 +158,100 @@ var LiquidStreamer = {
             glLiquidWebSocket.close();
         glLiquidWebSocket = null;
     },
-    queueAppendLiquidStreamer:function( token, callback, param, async ) {
+    queueAppendLiquidStreamer:function( token, reason, callback, onProgress, onCompleted, onFailed, onCancelled, param, async ) {
         if(!glLiquidWSQueueBusy) {
             glLiquidWSQueueBusy = true;
             for(var i=0; i<glLiquidWSQueue.length; i++) {
                 if(glLiquidWSQueue[i].pending === false) {
-                    glLiquidWSQueue.splice(glLiquidWSQueue[i]);
+                    glLiquidWSQueue.splice(i, 1);
                     i--;
                 }
             }
             glLiquidWSQueueBusy = false;
         }
-        var queue = { token:token, callback:callback, param:param, async:async, pending:true, tick:getCurrentTimetick(), timeout:false };
-        glLiquidWSQueue.push( queue );
-        return queue;
+        var queueItem = { 
+            token:token,
+            reason:reason,
+            callback:callback, 
+            onProgress:onProgress, onCompleted:onCompleted, onFailed:onFailed, onCancelled:onCancelled, 
+            param:param,
+            async:async, pending:true, 
+            tick:getCurrentTimetick(), 
+            timeout:false 
+        };
+        // add to the queue
+        glLiquidWSQueue.push( queueItem );
+        // fire onProgress
+        if(isDef(queueItem.onProgress)) {
+            setTimeout(function() {
+                var event = { currentTarget:{ response:""}, loaded:false, total:0, timeStamp:0, eventPhase:0 };
+                queueItem.onProgress(queueItem.param, event);
+            }, 50);
+        }
+        return queueItem;
     }
-    ,queueProcessLiquidStreamer:function( token, response ){
+    ,queueProcessLiquidStreamer:function( token, response, event ){
         var res = false;
+        var queueItemFound = false;
         glLiquidWSQueueBusy = true;
         for(var i=0; i<glLiquidWSQueue.length; i++) {
             if(glLiquidWSQueue[i].token === token) {
-                try {
-                    if(isDef(glLiquidWSQueue[i].callback)) {
-                        if(glLiquidWSQueue[i].param instanceof LiquidCtrl) {
-                            //
-                            // swap xhr to work like ajax (cannot write to readyState ... )
-                            //
-                            var liquid = glLiquidWSQueue[i].param;
-                            var prevXhr = liquid.xhr;
-                            try {
-                                liquid.xhr = { readyState:null, status:null, responseText: null, ws:null };
-                                liquid.xhr.readyState = 4;
-                                liquid.xhr.status = 200;
-                                liquid.xhr.responseText = response;
-                                liquid.xhr.ws = true;
-                                glLiquidWSQueue[i].callback(glLiquidWSQueue[i].param);
-                            } catch(e) {
-                                console.error("queueProcessLiquidStreamer() error:"+e);
+                var queueItem = glLiquidWSQueue[i];
+                queueItemFound = true;
+                
+                try {                    
+                    var bCloseQueue = true;
+                    if(event.type === 'message') {
+                        // onMessage
+                        if(event.data[0] == ' ' || event.data[0] == 'B') {
+                            // last response
+                            bCloseQueue = true;
+                            if(isDef(queueItem.onCompleted)) {
+                                var jsEvent = { currentTarget:{ response:response }, loaded:true, total:response.length, timeStamp:0, eventPhase:0 };
+                                queueItem.onCompleted(queueItem.param, jsEvent);
                             }
-                            liquid.xhr = prevXhr;
+                        } else if(event.data[0] == 'P') {
+                            // partial response
+                            bCloseQueue = false;
+                            if(isDef(queueItem.onProgress)) {
+                                var jsEvent = { currentTarget:{ response:response }, loaded:true, total:response.length, timeStamp:0, eventPhase:0 };
+                                queueItem.onProgress(queueItem.param, jsEvent);
+                            }
                         } else {
-                            glLiquidWSQueue[i].callback(glLiquidWSQueue[i].param);
-                        }                                 
-                    }                
-                    glLiquidWSQueue[i].pending = false;
-                    glLiquidWSQueue[i].token = null;
+                            console.error("queueProcessLiquidStreamer() unknown rensonse type: '"+event.data[0]+"'");
+                        }
+                        
+                        if(event.data[0] == ' ' || event.data[0] == 'B') {
+                            // last response
+                            if(isDef(queueItem.callback)) {
+                                if(queueItem.param instanceof LiquidCtrl) {
+                                    //
+                                    // swap xhr to work like ajax (cannot write to readyState ... )
+                                    //
+                                    var liquid = queueItem.param;
+                                    var prevXhr = liquid.xhr;
+                                    try {
+                                        liquid.xhr = { readyState:null, status:null, responseText: null, ws:null };
+                                        liquid.xhr.readyState = 4;
+                                        liquid.xhr.status = 200;
+                                        liquid.xhr.responseText = response;
+                                        liquid.xhr.ws = true;
+
+                                        queueItem.callback(queueItem.param);
+                                    } catch(e) {
+                                        console.error("queueProcessLiquidStreamer() error:"+e);
+                                    }
+                                    liquid.xhr = prevXhr;
+                                } else {
+                                    queueItem.callback(queueItem.param);
+                                }                                 
+                            }
+                        }
+                    }
+                    if(bCloseQueue) {
+                        queueItem.pending = false;
+                        queueItem.token = null;
+                    }
                     res = true;
                 } catch(e) {
                     console.error("[LIQUID Error] queueLiquidStreamerProcess() : "+e);
@@ -208,6 +259,11 @@ var LiquidStreamer = {
             }
         }
         glLiquidWSQueueBusy = false;
+        
+        if(!queueItemFound) {
+            console.error("[LIQUID Error] queueLiquidStreamerProcess() : queue item not found");
+        }
+        
         return res;
     },
     generate_token:function(length){
@@ -219,7 +275,7 @@ var LiquidStreamer = {
         }
         return b.join("");
     }
-}
+};
 
 LiquidStreamer.openLiquidStreamer();
 

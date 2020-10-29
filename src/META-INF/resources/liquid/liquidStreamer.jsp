@@ -3,7 +3,7 @@
     import="com.liquid.assets"
     import="com.liquid.login"
     import="com.liquid.ThreadSession"
-    import="com.liquid.StreamerServer"
+    import="com.liquid.wsStreamerServer"
     errorPage="" 
     %><%!
     %>    
@@ -18,12 +18,12 @@
         // N.B.: Possibile riduzione del carico sul server salvando la sessione solo sui rami necessari (es.: exec)
         ThreadSession.saveThreadSessionInfo ( "Liquid", request, response, out );
 
-        if(streamerLoginId != null && !streamerLoginId.isEmpty() || StreamerServer.applyForAllUsers) {
+        if(streamerLoginId != null && !streamerLoginId.isEmpty() || wsStreamerServer.applyForAllUsers) {
 
             // start server if not running
-            StreamerServer.start(request);
+            wsStreamerServer.start(request);
 
-            if(StreamerServer.run) {
+            if(wsStreamerServer.run) {
 
         %>
 

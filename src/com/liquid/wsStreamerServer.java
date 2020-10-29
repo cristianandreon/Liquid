@@ -12,18 +12,13 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 
 
-/**
- * @ServerEndpoint da un nome all'end point Questo può essere acceduto via
- * ws://localhost:8080/myfirstws/echo "localhost" è l'indirizzo dell'host dove è
- * deployato il server ws, "myfirstws" è il nome del package ed "echo" è
- * l'indirizzo specifico di questo endpoint
- */
-public class StreamerServer {
+
+public class wsStreamerServer {
 
     static public String AppURL = null;
     static public int port = 7373;
     static public boolean run = false;
-    static public SrteamerClient.ServerThread serverThread = null;
+    static public wsServerThread serverThread = null;
     static public String errors = "";
     static public long nConnections = 0;
     static public long nRequests = 0;
@@ -31,19 +26,19 @@ public class StreamerServer {
     static public long nSent = 0;
 
     // override user's assets (test purpose)
-    static public boolean applyForAllUsers = false;
+    static public boolean applyForAllUsers = true;
 
     
     public static void start( HttpServletRequest request ) throws SocketException, IOException {
         try {
             AppURL = request.getContextPath();
             if(serverThread == null) {
-                serverThread = new SrteamerClient().new ServerThread();
+                serverThread = new wsServerThread();
                 serverThread.start();
-                StreamerServer.run = true;
+                wsStreamerServer.run = true;
             }
         } catch (Exception ex) {
-            Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, "Could not create web server "+ex.getLocalizedMessage());
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "Could not create web server "+ex.getLocalizedMessage());
         }        
-    }                
+    }   
 }

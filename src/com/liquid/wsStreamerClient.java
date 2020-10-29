@@ -37,183 +37,10 @@ import org.json.JSONObject;
  * TODO: send binary zipped as response
  */
 
-public class SrteamerClient {
+public class wsStreamerClient {
     
     static public String version = "1.01";
-    
-       
-    /**
-     * Manage the clients connections
-     */
-    class ServerThread extends Thread {
 
-        public String error;
-                
-        public boolean run = false;
-        public int bufSize = 0;
-        public int timeout = 0;
-
-        private ServerSocket server = null;
-        ArrayList<ClientThread> clientThreads = new ArrayList<ClientThread> ();
-
-        public void run() {
-
-            try {
-                server = new ServerSocket(StreamerServer.port);
-            } catch (BindException ex) {
-                //
-                // may be other service maybe our service still pending (when you stop and restart debugger the application server, and the listner) is still running
-                // anyway don't know how to acquire existing listen socket
-                //
-                StreamerServer.run = true;
-                error = ex.getLocalizedMessage();
-                StreamerServer.errors += error + "\n";
-                throw new IllegalStateException("Could not create web server", ex);
-            } catch (IOException ex) {
-                StreamerServer.run = false;
-                error = ex.getLocalizedMessage();
-                StreamerServer.errors += error + "\n";
-                throw new IllegalStateException("Could not create web server", ex);
-            }
-
-            try {
-
-                bufSize = server.getReceiveBufferSize();
-                timeout = server.getSoTimeout();
-                
-            } catch (Exception ex) {                
-                error = ex.getLocalizedMessage();
-                StreamerServer.errors += error + "\n";
-                Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-            run = true;            
-
-            while(run) {
-
-                Socket clientSocket = null;
-
-                try {
-                    // waits until a client connects
-                    clientSocket = server.accept();
-                    if (clientSocket != null) {
-                        ClientThread clientThread = new ClientThread(clientSocket);
-                        clientThread.serverThread = this;
-                        clientThreads.add(clientThread);
-                        clientThread.start();
-                    }
-
-                } catch (IOException ex) {
-                    error = ex.getLocalizedMessage();
-                    StreamerServer.errors += error + "\n";
-                    throw new IllegalStateException("Could not wait for client connection", ex);
-                }
-            }
-        }
-    }
-    
-    
-    /**
-     * Manage the client requests
-     */
-    
-    class ClientThread extends Thread {
-
-        public boolean run = true;
-        public String id = null;
-        public String error = null;
-        
-        private Socket clientSocket = null;
-        private SocketAddress ra = null;
-        private ServerThread serverThread = null;
-        private OutputStream outputStream = null;
-        private String hostName = null;
-
-        ClientThread(Socket clientSocket) {
-            this.clientSocket = clientSocket;
-            this.ra = clientSocket.getRemoteSocketAddress();
-        }
-
-        public void run() {
-            System.out.println("[LIQUID Streamer] : ClientThread running");
-
-            StreamerServer.nConnections++;
-            
-            InputStream inputStream;
-            try {
-                inputStream = clientSocket.getInputStream();
-            } catch (IOException ex) {
-                error = ex.getLocalizedMessage();
-                StreamerServer.errors += error + "\n";
-                throw new IllegalStateException("Could not connect to client input stream", ex);
-            }
-            
-            try {
-                outputStream = clientSocket.getOutputStream();
-            } catch (IOException ex) {
-                error = ex.getLocalizedMessage();
-                StreamerServer.errors += error + "\n";
-                throw new IllegalStateException("Could not connect to client input stream", ex);
-            }
-
-            try {
-                doHandShakeToInitializeWebSocketConnection(inputStream, outputStream);
-            } catch (UnsupportedEncodingException ex) {
-                error = ex.getLocalizedMessage();
-                StreamerServer.errors += error + "\n";
-                throw new IllegalStateException("Could not connect to client input stream", ex);
-            }
-
-            // Welcome
-            /*
-            try {
-                send(("[LIQUID Streamer Ver.:" + ServerClientThread.version + "] start session").getBytes());
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            */
-
-            
-            this.hostName = this.clientSocket.getLocalAddress().getHostName() + " - " + this.clientSocket.getRemoteSocketAddress() + "-"+login.getSaltString(16);
-            Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : client conencted : "+this.hostName);
-            
-            while (run) {
-                try {
-                    if(SrteamerClient.processMessageLoop(this, inputStream, outputStream) < 0) {
-                        serverThread.clientThreads.remove(this);
-                        return;
-                    }
-                } catch (IOException ex) {
-                    error = ex.getLocalizedMessage();
-                    StreamerServer.errors += error + "\n";
-                    // throw new IllegalStateException("Could not connect to client input stream", ex);
-                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+ex.getLocalizedMessage());
-                } catch (JSONException ex) {
-                    error = ex.getLocalizedMessage();
-                    StreamerServer.errors += error + "\n";
-                    // throw new IllegalStateException("Could not connect to client input stream", ex);
-                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+ex.getLocalizedMessage());
-                } catch (InterruptedException ex) {
-                    error = ex.getLocalizedMessage();
-                    StreamerServer.errors += error + "\n";
-                    // throw new IllegalStateException("Could not connect to client input stream", ex);
-                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+ex.getLocalizedMessage());
-                } catch (Exception ex) {
-                    error = ex.getLocalizedMessage();
-                    StreamerServer.errors += error + "\n";
-                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+ex.getLocalizedMessage());
-                } catch (Throwable th) {
-                    error = th.getLocalizedMessage();
-                    StreamerServer.errors += error + "\n";
-                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : "+th.getLocalizedMessage());
-                }
-            }
-        }
-    }
-
-    
     
     
     /**
@@ -230,7 +57,7 @@ public class SrteamerClient {
                 ,EXECUTE
         }
 
-    private static int processMessageLoop(ClientThread clientThread, InputStream inputStream, OutputStream outputStream) throws IOException, JSONException, InterruptedException {
+    public static int processMessageLoop(wsClientThread clientThread, InputStream inputStream, OutputStream outputStream) throws IOException, JSONException, InterruptedException {
         int nReciv = 0;
         int startIndex = 0;
         int nBufferLeft = 0;
@@ -291,7 +118,7 @@ public class SrteamerClient {
                     int disconnect = Opcode & (byte)0x8;
                     if(disconnect == 8) {
                         if(clientThread != null) {
-                            Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : client disconencted : "+clientThread.hostName);                        
+                            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : client disconencted : "+clientThread.hostName);                        
                         }
                         return -1;
                     }
@@ -355,7 +182,7 @@ public class SrteamerClient {
                         startIndex += 4;
 
                         // NON Supportato
-                        Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : 32bit frame unsupported : "+clientThread.hostName);                        
+                        Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : 32bit frame unsupported : "+clientThread.hostName);                        
                         return -1;
                     }
 
@@ -390,7 +217,7 @@ public class SrteamerClient {
                          */
                         
                         if(HeaderOpcode != -126) { // workaround
-                            Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : streaming failed : "+clientThread.hostName);                        
+                            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : streaming failed : "+clientThread.hostName);                        
                             return -1;
                         }
                     }
@@ -424,7 +251,7 @@ public class SrteamerClient {
                         PayLoad[Len16] = 0;
 
                     } else {
-                        Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : undetected case : "+clientThread.hostName);                        
+                        Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : undetected case : "+clientThread.hostName);                        
                         return -1;
                     }
                     
@@ -481,7 +308,7 @@ public class SrteamerClient {
                         decompressedData = Arrays.copyOfRange(PayLoad, 4+2, Len16);
                     } else {
                         // unexpected type
-                        Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : unexpected data type on host : "+clientThread.hostName);                        
+                        Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : unexpected data type on host : "+clientThread.hostName);                        
                     }
 
                     if(decompressedData != null) {
@@ -508,7 +335,7 @@ public class SrteamerClient {
             } else if (nReciv == -1) {
                 inputStream.close();
                 if(clientThread != null) {
-                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : client terminated : "+clientThread.hostName);                        
+                    Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : client terminated : "+clientThread.hostName);                        
                 }
                 return -1;
                 
@@ -517,85 +344,13 @@ public class SrteamerClient {
                 // Partial data : continue ?
                 //
                 if(clientThread != null) {
-                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : partial buffer (< 4byte) unsupported : "+clientThread.hostName);                        
+                    Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : partial buffer (< 4byte) unsupported : "+clientThread.hostName);                        
                 }
                 return -1;
             }
         }
     }
     
- /*
-                byte rLength = 0;
-                int rMaskIndex = 2;
-                int rDataStart = 0;
-
-                byte data = b[1];
-                rLength = (byte) (data & (byte) 127);
-
-                byte opCode = (byte) (((b[0] >> 4) & 0xFF) << 4);
-                
-                // disconnect ?
-                int disconnect = opCode & (byte)0x8;
-                if(disconnect == 8) {
-                    if(clientThread != null) {
-                        Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Srteamer] : client disconencted : "+clientThread.hostName);                        
-                    }
-                    return -1;
-                }
-                
-
-                if (rLength == (byte) 126) {
-                    rMaskIndex = 4;
-                }
-                if (rLength == (byte) 127) {
-                    rMaskIndex = 10;
-                }
-
-                byte[] masks = new byte[4];
-
-                int j = 0;
-                int i = 0;
-                for (i = rMaskIndex; i < (rMaskIndex + 4); i++) {
-                    masks[j] = b[i];
-                    j++;
-                }
-
-                rDataStart = rMaskIndex + 4;
-
-                int messLen = len - rDataStart;
-
-                byte[] message = new byte[messLen];
-
-                for (i = rDataStart, j = 0; i < len; i++, j++) {
-                    message[j] = (byte) (b[i] ^ masks[j % 4]);
-                }
-
-                StreamerServer.nRequests++;
-                StreamerServer.nRecived += message.length;
-
-                System.out.println("[LIQUID Streamer] < "+message.length+"bytes");
-                // System.out.println("[LIQUID Streamer] \" "+new String(message)+"\"");
-
-                ByteBuffer wrapped = ByteBuffer.wrap(message); // big-endian by default
-                        
-                
-                long msgLen = getUnsignedInt(message, 0);
-                int msgType = getUnsignedShort(message, 4);
-                
-                byte[] decompressedData = null;
-                if(msgType == 1) {
-                    decompressedData = gunzip(Arrays.copyOfRange(message, 4+2, message.length));
-                } else if(msgType == 0) {
-                    decompressedData = Arrays.copyOfRange(message, 4+2, message.length);
-                } else {
-                    // unexpected type
-                    Logger.getLogger(ServerClientThread.class.getName()).log(Level.INFO, "[LIQUID Srteamer] : unexpected data type on host : "+clientThread.hostName);                        
-                }
-                
-                if(decompressedData != null) {
-                    handleCommand(decompressedData, outputStream);
-                }
-                */
 
     
     public static long getUnsignedInt(byte[] data, int pos) {
@@ -617,15 +372,15 @@ public class SrteamerClient {
                 
                 try {
                 
+                    if(requestJson.has("token")) {
+                        token = requestJson.getString("token");
+                    }
                     if(requestJson.has("sessionId")) {
                         sessionId = requestJson.getString("sessionId");
                         if(sessionId != null) {
                             // register the session
-                            ThreadSession.saveThreadSessionInfo ( "Liquid", sessionId );
+                            ThreadSession.saveThreadSessionInfo ( "Liquid", sessionId, outputStream, token );
                         }
-                    }
-                    if(requestJson.has("token")) {
-                        token = requestJson.getString("token");
                     }
                     
                     wsHttpServletRequest request = new wsHttpServletRequest(requestJson);
@@ -669,11 +424,11 @@ public class SrteamerClient {
 
             
                     } else {
-                        Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, "[LIQUID Streamer] unsupported operation : "+operation);
+                        Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "[LIQUID Streamer] unsupported operation : "+operation);
                     }
 
                 } catch (Throwable th) {
-                    Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, null, th);
+                    Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, th);
                 } finally {
                     ThreadSession.removeThreadSessionInfo();
                 }                    
@@ -689,15 +444,37 @@ public class SrteamerClient {
      * 
      * @param outputStream
      * @param data
+     * @param token
      * @return
      * @throws IOException 
      */
-    private static int send(OutputStream outputStream, String data, String token) throws IOException {
-        return send(outputStream, data.getBytes(), token);
+    public static int send(OutputStream outputStream, String data, String token) throws IOException {
+        return send(outputStream, data.getBytes(), token, null);
     }
-    private static int send(OutputStream outputStream, byte[] data, String token) throws IOException {
+    /**
+     * 
+     * @param outputStream
+     * @param data
+     * @param token
+     * @param typeOf    "B" = binary, " " = text, , "P" = partial
+     * @return
+     * @throws IOException 
+     */
+    public static int send(OutputStream outputStream, String data, String token, String typeOf) throws IOException {
+        return send(outputStream, data.getBytes(), token, typeOf);
+    }
+    /**
+     * 
+     * @param outputStream
+     * @param data
+     * @param token
+     * @param typeOf    "B" = binary, " " = text, , "P" = partial
+     * @return
+     * @throws IOException 
+     */
+    public static int send(OutputStream outputStream, byte[] data, String token, String typeOf) throws IOException {
         boolean bZip = false;
-        byte[] compressedData = encode( bZip ? gzip(data) : data, bZip, token );
+        byte[] compressedData = encode(bZip ? gzip(data) : data, token, typeOf );
         outputStream.write(compressedData, 0, compressedData.length);
         outputStream.flush();
         return compressedData.length;
@@ -744,11 +521,11 @@ public class SrteamerClient {
      * @return
      * @throws IOException 
      */
-    public static byte[] encode( byte[] rawData, boolean bBinary, String token ) throws IOException {
+    public static byte[] encode( byte[] rawData, String token, String typeOf) throws IOException {
         int frameCount = 0;
         byte[] frame = new byte[10];
 
-        frame[0] = (byte)(bBinary ? 128 : 128+1);
+        frame[0] = (byte)("B".equalsIgnoreCase(typeOf) ? 128 : 128+1);
 
         int len = 1 + 32 + rawData.length;
         
@@ -783,7 +560,7 @@ public class SrteamerClient {
             bLim++;
         }
 
-        reply[bLim] = (byte)(bBinary ? 'B' : ' ');
+        reply[bLim] = (byte)(typeOf != null ? typeOf.codePointAt(0) : ' ');
         bLim++;
 
         for (int i = 0; i < 32; i++) {
@@ -806,7 +583,7 @@ public class SrteamerClient {
      * @param outputStream
      * @throws UnsupportedEncodingException 
      */
-    private static void doHandShakeToInitializeWebSocketConnection(InputStream inputStream, OutputStream outputStream) throws UnsupportedEncodingException {
+    public static void doHandShakeToInitializeWebSocketConnection(InputStream inputStream, OutputStream outputStream) throws UnsupportedEncodingException {
         String data = new Scanner(inputStream, "UTF-8").useDelimiter("\\r\\n\\r\\n").next();
 
         Matcher get = Pattern.compile("^GET").matcher(data);
@@ -832,10 +609,10 @@ public class SrteamerClient {
             try {
                 outputStream.write(response, 0, response.length);
             } catch (IOException ex) {
-                Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
-            Logger.getLogger(SrteamerClient.class.getName()).log(Level.SEVERE, "doHandShakeToInitializeWebSocketConnection() : unexpected case!");
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "doHandShakeToInitializeWebSocketConnection() : unexpected case!");
         }
     }
 }

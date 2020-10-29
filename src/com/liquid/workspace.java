@@ -82,15 +82,15 @@ public class workspace {
 
             try {
                 database = tbl_wrk.tableJson.getString("database");
-            } catch (Exception e) {
+            } catch (JSONException e) {
             }
             try {
                 schema = tbl_wrk.tableJson.getString("schema");
-            } catch (Exception e) {
+            } catch (JSONException e) {
             }
             try {
                 table = tbl_wrk.tableJson.getString("table");
-            } catch (Exception e) {
+            } catch (JSONException e) {
             }
 
             String itemIdString = "\"", tableIdString = "\"";
@@ -180,7 +180,7 @@ public class workspace {
 
             // this.nConnections = target_wrk.nConnections;
             // this.sessions = target_wrk.sessions;
-        } catch (Throwable ex) {
+        } catch (JSONException ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -189,8 +189,9 @@ public class workspace {
      * Set the owner ( the specific owner defined by the user session ( not
      * always the threadId ) )
      *
-     * @param tbl_wrk
+     * @param owner
      * @return
+     * @throws java.lang.Exception
      */
     public boolean setOwner(Object owner) throws Exception {
         ThreadSession threadSession = ThreadSession.getThreadSessionInfo();
@@ -257,6 +258,7 @@ public class workspace {
      * (ThreadId != session))
      *
      * @return
+     * @throws java.lang.Exception
      */
     public Object getOwner() throws Exception {
         Object owner = null;
@@ -288,9 +290,8 @@ public class workspace {
     static public ArrayList<workspace> glTblWorkspaces = new ArrayList<workspace>();
 
     static public workspace get_tbl_manager_workspace(String controlId) {
-        workspace tblWorkspace = null;
         for (int i = 0; i < glTblWorkspaces.size(); i++) {
-            tblWorkspace = glTblWorkspaces.get(i);
+            workspace tblWorkspace = tblWorkspace = glTblWorkspaces.get(i);
             if (tblWorkspace.controlId.equalsIgnoreCase(controlId)) {
                 return tblWorkspace;
             }

@@ -8,6 +8,7 @@ package com.liquid;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.http.HttpServletRequest;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -112,7 +113,7 @@ public class Messagebox {
     static int show( String message, String title, int buttons, float autoCloseTimeSec, int autoCloseButton ) {
         int retVal = 0;
         ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
-        if(threadSession != null && threadSession.out != null) {
+        if(threadSession != null && threadSession.out != null || threadSession.outputStream != null) {
             try {
                 String messageJson = "<Liquid>serverMessage:{"
                         + "\"title\":\""+utility.base64Encode(title)+"\""
@@ -122,8 +123,13 @@ public class Messagebox {
                         + ",\"timeoutButton\":\""+autoCloseButton+"\""
                         + ",\"cypher\":\""+utility.base64Encode(threadSession.cypher)+"\""
                         + "}</Liquid><LiquidStartResponde/>";
-                threadSession.out.print(messageJson);
-                threadSession.out.flush();
+                if(threadSession.out != null) {
+                    threadSession.out.print(messageJson);
+                    threadSession.out.flush();
+                }
+                if(threadSession.outputStream != null) {
+                    wsStreamerClient.send( threadSession.outputStream, messageJson, threadSession.token, "P" );
+                }
             } catch (IOException ex) {
                 Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -134,16 +140,18 @@ public class Messagebox {
                 while(System.currentTimeMillis() - cTime < timeout * 1000 || timeout <= 0) {
                     Thread.sleep(sleepIntervelMsec);
                     // Verifica messagi in coda
-                    if(threadSession.out == null) {
-                        // No stream
-                        break;
-                    } else {
+                    if(threadSession.out != null || threadSession.outputStream != null) {
                         boolean bStillPending = true;
                         if(System.currentTimeMillis() - cTimeChecker > checkerIntervelMsec) {
                             cTimeChecker = System.currentTimeMillis();
                             try {
-                                threadSession.out.print("<Liquid></Liquid>");
-                                threadSession.out.flush();
+                                if(threadSession.out != null) {
+                                    threadSession.out.print("<Liquid></Liquid>");
+                                    threadSession.out.flush();
+                                }
+                                if(threadSession.outputStream != null) {
+                                    wsStreamerClient.send( threadSession.outputStream, "<Liquid></Liquid>", threadSession.token, "P" );
+                                }
                             } catch (Exception ex) {
                                 // request cancelled
                                 Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, "WARNING : MessageBox.show() : the end user has cancelled the reaquest");
@@ -166,6 +174,8 @@ public class Messagebox {
                                 break;
                             }
                         }
+                    } else {
+                        // no stream
                     }
                 }
             } catch (InterruptedException ex) {

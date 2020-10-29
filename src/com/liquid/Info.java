@@ -49,12 +49,12 @@ public class Info {
                 
         out_string += "<tr style=\"background-color:whiteSmoke\">";
         out_string += "<td>WS Server</td>";
-        out_string += "<td>"+(StreamerServer.serverThread != null ? (StreamerServer.serverThread.run ? "<span style=\"color:darkGreen\">[running on port "+StreamerServer.port+"]</span>" : "<span style=\"color:darkRed\">[stopped]</span>") : ("<span style=\"color:darkGray\">[n/d]</span>") )+"</td>";
+        out_string += "<td>"+(wsStreamerServer.serverThread != null ? (wsStreamerServer.serverThread.run ? "<span style=\"color:darkGreen\">[running on port "+wsStreamerServer.port+"]</span>" : "<span style=\"color:darkRed\">[stopped]</span>") : ("<span style=\"color:darkGray\">[n/d]</span>") )+"</td>";
         out_string += "<td>"
-                +(StreamerServer.errors != null ? (StreamerServer.errors.replace("\n", "<br/>")+"<br/>") : "")
-                +(StreamerServer.nConnections > 0 ? (StreamerServer.nConnections+" connections"+"<br/>") : "")
-                +(StreamerServer.nRequests > 0 ? (StreamerServer.nRequests+" requests"+"<br/>") : "")
-                +(StreamerServer.serverThread != null ? (StreamerServer.serverThread.clientThreads.size()+" hosts"+"<br/>") : "")
+                +(wsStreamerServer.errors != null ? (wsStreamerServer.errors.replace("\n", "<br/>")+"<br/>") : "")
+                +(wsStreamerServer.nConnections > 0 ? (wsStreamerServer.nConnections+" connections"+"<br/>") : "")
+                +(wsStreamerServer.nRequests > 0 ? (wsStreamerServer.nRequests+" requests"+"<br/>") : "")
+                +(wsStreamerServer.serverThread != null ? (wsStreamerServer.serverThread.clientThreads.size()+" hosts"+"<br/>") : "")
                 
                 +"</td>";
         out_string += "</tr>";

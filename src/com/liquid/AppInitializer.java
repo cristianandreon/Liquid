@@ -2,7 +2,8 @@ package com.liquid;
 
 
 
-import javax.servlet.ServletConfig;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletContextEvent;
@@ -13,6 +14,7 @@ public class AppInitializer implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID] : contextInitialized ... ");
         ServletContext sc = sce.getServletContext();
         // sc.addListener(new HttpSessionCollector());
     }
