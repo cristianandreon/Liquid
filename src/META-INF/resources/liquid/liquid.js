@@ -6254,7 +6254,8 @@ var Liquid = {
      * @param liquid the control where to start the waiter
      * @return {} n/d
      */
-    startWaiting:function(liquid) {
+    startWaiting:function(obj) {
+        var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             if(liquid.waitingObj) {
                 liquid.waitingObj.style.display = '';
@@ -6266,7 +6267,8 @@ var Liquid = {
      * @param liquid the control where to top the waiter
      * @return {} n/d
      */
-    stopWaiting:function(liquid) {
+    stopWaiting:function(obj) {
+        var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             if(liquid.waitingObj) {
                 liquid.waitingObj.style.display = 'none';
@@ -16845,7 +16847,7 @@ if(window.addEventListener) { window.addEventListener('click', Liquid.onClick); 
 if(window.addEventListener) { window.addEventListener('load', Liquid.startup); } else { window.attachEvent('onload', Liquid.Startup); }
 if(window.addEventListener) { window.addEventListener('keydown', Liquid.onWindowKeyDown); } else { window.attachEvent('onkeydown', Liquid.onWindowKeyDown); }
 if(window.addEventListener) { window.addEventListener('scroll', Liquid.onWindowScroll); } else { window.attachEvent('scroll', Liquid.onWindowScroll); }
-if(document.addEventListener) { document.addEventListener('contextmenu', function(e) { if(isDef(LiquidEditing)) if(LiquidEditing.onContextMenu(e)) e.preventDefault(); }, false ); } else { document.attachEvent('contextmenu', function() { if(isDef(LiquidEditing)) if(LiquidEditing.onContextMenu(window.event)) window.event.returnValue = false; }); }
+if(document.addEventListener) { document.addEventListener('contextmenu', function(e) { if(typeof(LiquidEditing)!=='undefined') if(LiquidEditing.onContextMenu(e)) e.preventDefault(); }, false ); } else { document.attachEvent('contextmenu', function() { if(isDef(LiquidEditing)) if(LiquidEditing.onContextMenu(window.event)) window.event.returnValue = false; }); }
 
 
 
