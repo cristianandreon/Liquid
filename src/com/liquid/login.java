@@ -196,7 +196,9 @@ public class login {
                         }
                         psdoLogin.close();
                     }
-                } catch (Exception e) { }
+                } catch (Exception e) { 
+                    Logger.getLogger(login.class.getName()).log(Level.SEVERE, null, e);
+                }
 
                 try {
                     Statement sqlSTMTUpdate = conn.createStatement();
@@ -207,92 +209,97 @@ public class login {
             } else if("sqlserver".equalsIgnoreCase(driver)) {
             }
         } catch (Throwable e) {
+            Logger.getLogger("prepare_database() error : "+e.getLocalizedMessage());
         }
         return true;
     }
 
     static private boolean check_login_table_exist( Connection conn, String schema, String table ) throws SQLException {
-        if(conn != null && conn.isValid(30)) {
-            boolean tableExist = false;
-            DatabaseMetaData meta = conn.getMetaData();
-            ResultSet res = meta.getTables(database, schema, table, new String[] {"TABLE"});
-            while (res.next()) {
-                if(res.getString("TABLE_NAME") != null) {
-                    tableExist = true;
-                }
-            }
-            res.close();
-            if(!tableExist) {
-                ArrayList<String> sql = new ArrayList<String>();
-               
-                if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                    // CREATE users ADD id, user VARCHAR(256), email VARCHAR(256), password VARCHAR(256), status VARCHAR(16), domain_id VARCHAR(256), application_id VARCHAR(64), token VARCHAR(32), expire TIMESTAMP, naccess INT, nfails INT)
-                    sql.add("SET sql_mode='';");
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
-                        +"`id` INT AUTO_INCREMENT PRIMARY KEY"
-                        +",`user` VARCHAR(256) NOT NULL"
-                        +",`email` VARCHAR(256) NOT NULL"
-                        +",`password` VARCHAR(256) NOT NULL"
-                        +",`status` VARCHAR(16) NOT NULL"
-                        +",`admin` INT DEFAULT 0"
-                        +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                        +",`domain_id` VARCHAR(256) NOT NULL"
-                        +",`application_id` VARCHAR(64) NOT NULL"
-                        +",`token` VARCHAR(256) NOT NULL"
-                        +",`expire` VARCHAR(256) NOT NULL"
-                        +",`naccess` INT DEFAULT 0"
-                        +",`nfails` INT DEFAULT 0"
-                        +",`emailValidated` INT DEFAULT 0"
-                        +",`emailToken` VARCHAR(32) NOT NULL"
-                        +")"
-                    );
-                } else if("postgres".equalsIgnoreCase(driver)) {
-                    String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+table+"_id_seq";
-                    sql.add("CREATE SEQUENCE "+seqName+"");
-                    sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
-                        +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
-                        +",\"user\" VARCHAR(256) NOT NULL"
-                        +",\"email\" VARCHAR(256) NOT NULL"
-                        +",\"password\" VARCHAR(256) NOT NULL"
-                        +",\"status\" VARCHAR(16) NOT NULL"
-                        +",\"admin\" INT DEFAULT 0"
-                        +",\"date\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-                        +",\"domain_id\" VARCHAR(256) NOT NULL"
-                        +",\"application_id\" VARCHAR(64) NOT NULL"
-                        +",\"token\" VARCHAR(256) NOT NULL"
-                        +",\"expire\" VARCHAR(256) NOT NULL"
-                        +",\"naccess\" INT DEFAULT 0"
-                        +",\"nfails\" INT DEFAULT 0"
-                        +",\"emailValidated\" INT DEFAULT 0"
-                        +",\"emailToken\" VARCHAR(32) NOT NULL"
-                        +")"
-                    );
-
-                    sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
-
-                } else if("oracle".equalsIgnoreCase(driver)) {
-                } else if("sqlserver".equalsIgnoreCase(driver)) {
-                }
-                if(sql != null) {
-                    for(int is=0; is<sql.size(); is++) {
-                        PreparedStatement psdoLogin = null;
-                        PreparedStatement psdoSetup = null;
-                        try {
-                            psdoLogin = conn.prepareStatement(sql.get(is));
-                            psdoLogin.executeUpdate();
-                        } catch (Throwable e) {
-                            System.err.println("// check_login_table_exist() Error:" + e.getLocalizedMessage());
-                        }
-                        psdoLogin.close();
-                        psdoLogin = null;
+        try {
+            if(conn != null && conn.isValid(30)) {
+                boolean tableExist = false;
+                DatabaseMetaData meta = conn.getMetaData();
+                ResultSet res = meta.getTables(database, schema, table, new String[] {"TABLE"});
+                while (res.next()) {
+                    if(res.getString("TABLE_NAME") != null) {
+                        tableExist = true;
                     }
-                    tableExist = true;
-                } else {
-                    // message = "unbale to create table, unsupported driver :"+driver;
-                    // return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
-                }                
+                }
+                res.close();
+                if(!tableExist) {
+                    ArrayList<String> sql = new ArrayList<String>();
+
+                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                        // CREATE users ADD id, user VARCHAR(256), email VARCHAR(256), password VARCHAR(256), status VARCHAR(16), domain_id VARCHAR(256), application_id VARCHAR(64), token VARCHAR(32), expire TIMESTAMP, naccess INT, nfails INT)
+                        sql.add("SET sql_mode='';");
+                        sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                            +"`id` INT AUTO_INCREMENT PRIMARY KEY"
+                            +",`user` VARCHAR(256) NOT NULL"
+                            +",`email` VARCHAR(256) NOT NULL"
+                            +",`password` VARCHAR(256) NOT NULL"
+                            +",`status` VARCHAR(16) NOT NULL"
+                            +",`admin` INT DEFAULT 0"
+                            +",`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                            +",`domain_id` VARCHAR(256) NOT NULL"
+                            +",`application_id` VARCHAR(64) NOT NULL"
+                            +",`token` VARCHAR(256) NOT NULL"
+                            +",`expire` VARCHAR(256) NOT NULL"
+                            +",`naccess` INT DEFAULT 0"
+                            +",`nfails` INT DEFAULT 0"
+                            +",`emailValidated` INT DEFAULT 0"
+                            +",`emailToken` VARCHAR(32) NOT NULL"
+                            +")"
+                        );
+                    } else if("postgres".equalsIgnoreCase(driver)) {
+                        String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+table+"_id_seq";
+                        sql.add("CREATE SEQUENCE "+seqName+"");
+                        sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ("
+                            +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
+                            +",\"user\" VARCHAR(256) NOT NULL"
+                            +",\"email\" VARCHAR(256) NOT NULL"
+                            +",\"password\" VARCHAR(256) NOT NULL"
+                            +",\"status\" VARCHAR(16) NOT NULL"
+                            +",\"admin\" INT DEFAULT 0"
+                            +",\"date\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                            +",\"domain_id\" VARCHAR(256) NOT NULL"
+                            +",\"application_id\" VARCHAR(64) NOT NULL"
+                            +",\"token\" VARCHAR(256) NOT NULL"
+                            +",\"expire\" VARCHAR(256) NOT NULL"
+                            +",\"naccess\" INT DEFAULT 0"
+                            +",\"nfails\" INT DEFAULT 0"
+                            +",\"emailValidated\" INT DEFAULT 0"
+                            +",\"emailToken\" VARCHAR(32) NOT NULL"
+                            +")"
+                        );
+
+                        sql.add("ALTER SEQUENCE "+seqName+" OWNED BY "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+".\"id\"");
+
+                    } else if("oracle".equalsIgnoreCase(driver)) {
+                    } else if("sqlserver".equalsIgnoreCase(driver)) {
+                    }
+                    if(sql != null) {
+                        for(int is=0; is<sql.size(); is++) {
+                            PreparedStatement psdoLogin = null;
+                            PreparedStatement psdoSetup = null;
+                            try {
+                                psdoLogin = conn.prepareStatement(sql.get(is));
+                                psdoLogin.executeUpdate();
+                            } catch (Throwable e) {
+                                Logger.getLogger("// check_login_table_exist() Error:" + e.getLocalizedMessage());
+                            }
+                            psdoLogin.close();
+                            psdoLogin = null;
+                        }
+                        tableExist = true;
+                    } else {
+                        // message = "unbale to create table, unsupported driver :"+driver;
+                        // return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
+                    }                
+                }
+                return tableExist;
             }
-            return tableExist;
+        } catch (Throwable e) {
+            Logger.getLogger("check_login_table_exist() error : "+e.getLocalizedMessage());
         }
         return false;
     }
@@ -355,7 +362,7 @@ public class login {
             }            
         } catch (Throwable e) {
             if(!(e instanceof java.lang.NoSuchMethodException)) {
-                System.err.println("// login() Error:" + e.getLocalizedMessage());
+                Logger.getLogger("// login() Error:" + e.getLocalizedMessage());
             }
         }        
         return null;
@@ -376,15 +383,14 @@ public class login {
                                     String domain_id = dataJson.has("domain_id") ? dataJson.getString("domain_id") : "";
                                     String sUserID = dataJson.has("user") ? dataJson.getString("user") : "";
                                     String sEMail = dataJson.has("email") ? dataJson.getString("email") : "";
-                                    String sRegisterUserID = dataJson.has("registerUser") ? dataJson.getString("user") : "";
-                                    String sRegisterEMail = dataJson.has("registerEmail") ? dataJson.getString("email") : "";
+                                    String sRegisterUserID = dataJson.has("registerUser") ? dataJson.getString("registerUser") : "";
+                                    String sRegisterEMail = dataJson.has("registerEmail") ? dataJson.getString("registerEmail") : "";
                                     String sPassword = dataJson.has("password") ? dataJson.getString("password") : "";
                                     String sStatus = dataJson.has("status") ? dataJson.getString("status") : "";
                                     String sAdmin = dataJson.has("admin") ? dataJson.getString("admin") : "";
                                     String sRedirect = dataJson.has("redirect") ? dataJson.getString("redirect") : "";
                                     HttpServletRequest request = (HttpServletRequest)freeParam;
-                                    return register( application_id, domain_id, (sRegisterUserID != null && !sRegisterUserID.isEmpty() ? sRegisterUserID : sUserID), (sRegisterEMail != null && !sRegisterEMail.isEmpty() ? sRegisterEMail : sEMail), sPassword, sStatus, sAdmin, sRedirect, request );
-                                    
+                                    return register( application_id, domain_id, (sRegisterUserID != null && !sRegisterUserID.isEmpty() ? sRegisterUserID : sUserID), (sRegisterEMail != null && !sRegisterEMail.isEmpty() ? sRegisterEMail : sEMail), sPassword, sStatus, sAdmin, sRedirect, request );                                    
                                 }
                             }
                         }
@@ -393,12 +399,14 @@ public class login {
             }            
         } catch (Throwable e) {
             if(!(e instanceof java.lang.NoSuchMethodException)) {
-                System.err.println("// register() Error:" + e.getLocalizedMessage());
+                Logger.getLogger("// register() Error:" + e.getLocalizedMessage());
                 if(debug) {
                     HttpServletRequest request = (HttpServletRequest)freeParam;
                     HttpServletResponse response = (HttpServletResponse)request.getAttribute("response");
                     e.printStackTrace(new java.io.PrintStream(response.getOutputStream()));
                 }
+            } else {
+                Logger.getLogger("// register() Error:" + e.getLocalizedMessage());
             }
         }        
         return null;
@@ -432,9 +440,7 @@ public class login {
                 }
             }            
         } catch (Throwable e) {
-            if(!(e instanceof java.lang.NoSuchMethodException)) {
-                System.err.println("// recovery() Error:" + e.getLocalizedMessage());
-            }
+            Logger.getLogger("// recovery() Error:" + e.getLocalizedMessage());
         }        
         return null;
     }
@@ -470,7 +476,7 @@ public class login {
             return login( application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request );
             
         } catch (Exception e) { 
-            System.err.println(e.getLocalizedMessage()); 
+            Logger.getLogger("// login() Error:" + e.getLocalizedMessage());
             return "{ \"result\":-60, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
         }
     }
@@ -779,7 +785,7 @@ public class login {
                                     Logger.getLogger(login.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
-                            System.err.println("// login() Error:" + err);
+                            Logger.getLogger("// login() Error:" + err);
                             return "{ \"result\":-40, \"error\":\""+utility.base64Encode(error)+"\"}";
                         }
                     }
@@ -793,7 +799,7 @@ public class login {
         } catch (Throwable e) {
             String err = e.getLocalizedMessage();
             error += "Error:" + err;
-            System.err.println("// login() Error interno:" + err);
+            Logger.getLogger("// login() Error:" + err);
             return "{ \"result\":-60, \"error\":\""+utility.base64Encode(error)+"\"}";
 
         } finally {
@@ -813,6 +819,7 @@ public class login {
             conn = null;
         }
             
+        Logger.getLogger("// login() Error:" + "undetected case");
         return "{ \"result\":-666, \"error\":\"undetected case\"}";
     }
 
@@ -825,7 +832,7 @@ public class login {
             sRedirect = request.getParameter("redirect");
             return logout( sRedirect, request );            
         } catch (Exception e) { 
-            System.err.println(e.getLocalizedMessage()); 
+            Logger.getLogger("// logout() Error:" + e.getLocalizedMessage());
             return "{ \"result\":-60, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
         }
     }
@@ -852,8 +859,7 @@ public class login {
                 return "{ \"result\":-666, \"error\":\"" + utility.base64Encode("undetected case : no session") + "\"}";
             }
         } catch (Throwable e) {
-            error += "Error:" + e.getLocalizedMessage();
-            System.err.println("// logout() Error:" + utility.base64Encode(e.getLocalizedMessage()));
+            Logger.getLogger("// logout() Error:" + utility.base64Encode(e.getLocalizedMessage()));
             return "{ \"result\":-60, \"error\":\"" + utility.base64Encode(e.getLocalizedMessage()) + "\"}";
         }            
     }
@@ -867,7 +873,7 @@ public class login {
                 }
             }                    
         } catch (Throwable e) {
-            System.err.println("// isLogged() error:" + e.getLocalizedMessage());
+            Logger.getLogger("// isLogged() error:" + e.getLocalizedMessage());
             return false;
         }            
         return false;
@@ -881,7 +887,7 @@ public class login {
                     return String.valueOf(GLLiquidUserID);
             }                    
         } catch (Throwable e) {
-            System.err.println("// getLoggedID() error:" + e.getLocalizedMessage());
+            Logger.getLogger("// getLoggedID() error:" + e.getLocalizedMessage());
             return null;
         }            
         return null;
@@ -895,7 +901,7 @@ public class login {
                     return (int)(GLLiquidUserID);
             }                    
         } catch (Throwable e) {
-            System.err.println("// getLoggedID() error:" + e.getLocalizedMessage());
+            Logger.getLogger("// getLoggedIntID() error:" + e.getLocalizedMessage());
             return 0;
         }            
         return 0;
@@ -907,7 +913,7 @@ public class login {
                 return (String)session.getAttribute("GLLiquidToken");
             }                    
         } catch (Throwable e) {
-            System.err.println("// getLoggedToken() error:" + e.getLocalizedMessage());
+            Logger.getLogger("// getLoggedToken() error:" + e.getLocalizedMessage());
             return null;
         }            
         return null;
@@ -1030,7 +1036,7 @@ public class login {
             return 1;
             
         } catch (Throwable e) {
-            System.err.println("// setup_event() Error:" + e.getLocalizedMessage());
+            Logger.getLogger("// setup_event() Error:" + e.getLocalizedMessage());
         }
         return -1;
     }
@@ -1101,7 +1107,7 @@ public class login {
                 return "/" + (error != null ? "?error=" + error : "") + (message != null ? "?message=" + message : "");
             }
         } catch (Exception e) {
-            System.err.println("// get_redirect_string() Error:" + e.getLocalizedMessage());
+            Logger.getLogger("// get_redirect_string() Error:" + e.getLocalizedMessage());
         }
 
         return "./";
@@ -1827,7 +1833,9 @@ public class login {
         String sRequest = workspace.get_request_content(request);
         try {
             if(sRequest != null && !sRequest.isEmpty()) requestJson = new JSONObject(sRequest); 
-        } catch (Exception e) { System.err.println(e.getLocalizedMessage()); }
+        } catch (Exception e) { 
+            Logger.getLogger("// validate_email() Error:" + e.getLocalizedMessage());
+        }
 
         return validate_email( application_id, domain_id, sUserID, sEMail, sEmailToken, sRedirect, sDatabase, sSchema, sTable, request );
    }
@@ -1982,7 +1990,7 @@ public class login {
             }
         } catch (Exception e) {
             error = "recovery() Error:" + e.getLocalizedMessage();
-            System.err.println(error);
+            Logger.getLogger(error);
             // return "{ \"result\":-6, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
         }
         
@@ -2131,6 +2139,5 @@ public class login {
             }
         }
         return true;
-    }
-    
+    }    
 }

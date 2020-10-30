@@ -22,8 +22,8 @@ html, body { height: 100% }
 .liquidPopupTitle { float: left; color: black; font-family: verdana; font-size: 15px; padding-left: 5px }
 .liquidCaptionSearch { height:100%; width:125px; color: black; font-family: verdana; font-size: 11px; background-color:transparent; border: 1px solid lightgray; }
 .liquidPopupBt { width:16px; height: 16px; float:right; z-index: 110; position: relative; }
-.liquidNav { height:29px; overflow: hidden; position: relative; font-family: verdana; font-size: 11px; background-color: whitesmoke; border-bottom: 1px solid lightgrey; border-left: 1px solid lightgray; border-right: 1px solid lightgray; }
-.liquidMultiPanelsContent { width:100%; position: relative; font-family: verdana; font-size: 11px; background-color: whitesmoke; border:1px solid lightyellow; }
+.liquidNav { height:29px; overflow: hidden; position: relative; font-family: verdana; font-size: 11px; background-color: whitesmoke; border-bottom: 1px solid lightgrey; }
+.liquidMultiPanelsContent { /*width:100%;*/ position: relative; font-family: verdana; font-size: 11px; background-color: whitesmoke; border:1px solid lightyellow; }
 .liquidMultiPanelsTitle { width:100%; height:20px; position: relative; font-family: verdana; font-size: 10px; background-color: whitesmoke; border:1px solid lightyellow; margin:-1px; }
 .liquidNavLabel { font-family: verdana; font-size: 10px; color: rgba(28, 31, 32, 0.85); }
 .liquidNavInfo { margin-left: 5px; margin-top:1px; float:right; }
@@ -134,10 +134,12 @@ html, body { height: 100% }
 .ag-theme-balham .ag-cell { font-family: arial, sans-serif !important; color: rgb(99 99 99); border-color: #f6f6f6 !important; border-left: 1px solid #f6f6f6 !important; border-right: 0px solid #f6f6f6 !important; border-top: 0px solid #f6f6f6 !important;; border-bottom: 0px solid #f6f6f6 !important; }
 .ag-theme-balham .ag-row {  border-width: 0px 0 0 0 !important; }
 .ag-theme-balham .ag-header-cell { font-family: arial, sans-serif !important; font-weight: bold !important; color: black !important; }
-.liquidActionBt { 	appearance: button; -webkit-writing-mode: horizontal-tb !important; text-rendering: auto; color: -internal-light-dark(buttontext, rgb(170, 170, 170)); letter-spacing: normal;
+.liquidActionBt { appearance: button; -webkit-writing-mode: horizontal-tb !important; text-rendering: auto; color: -internal-light-dark(buttontext, rgb(170, 170, 170)); letter-spacing: normal;
     word-spacing: normal;  text-transform: none;  text-indent: 0px;  text-shadow: none;  display: inline-block; text-align: center; align-items: flex-start; cursor: default;  background-color: -internal-light-dark(rgb(239, 239, 239), rgb(74, 74, 74));
     box-sizing: border-box; margin: 0em; font: 400 13.3333px Arial; padding: 1px 6px; border-width: 2px;  border-style: outset; border-color: -internal-light-dark(rgb(118, 118, 118), rgb(195, 195, 195)); border-image: initial;
     }
+/* No side border */
+.ag-theme-balham .ag-root { border-left: 0px !important; border-right: 0px !important; }
 
 
 .liquidContextMenu { position: fixed; z-index: 99000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.50); -webkit-transition: background-color 1000ms linear; -ms-transition: background-color 1000ms linear; transition-duration: 2s; transition: background-color 1000ms linear; }
@@ -225,7 +227,7 @@ tr.liquidDocumentsXRows td { height:30px; background-color: transparent; padding
 
 .liquidFoundTable { table-layout:auto; width:100%; z-index:99999; position:relative; background:rgb(234, 234, 234); }
 .liquidFoundTable tr:nth-child(even) { background-color: #e2dfdf; }
-
+.liquidBadge { display:block; float:left;  min-width:14px; width:auto; height:14px; font-size:smaller; margin:2px; overflow:hidden; border:1px solid #01404c;; border-radius:10px; -webkit-border-radius:10px; -moz-border-radius:10px; border-radius:10px; background:#eeeeee; text-align:center; vertical-align:middle; padding-top:1px; padding-left:2px; padding-right:2px; border-collapse:separate; }
 .liquidChartContainer { width:100%; display:block; overflow: auto; border:0px solid transparent; }
 .liquidChartsX { width:100%; height:100%; background-color: whitesmoke; border: 0px solid transparent; padding:5px; }
 .liquidloader { position:relative; margin:auto; top:calc(50% - 60px);  border:8px solid #f3f3f3; border-radius:50%;  border-top:8px solid #3498db; width:120px; height: 120px; -webkit-animation: spin 2s linear infinite; /* Safari */  animation: spin 2s linear infinite; }

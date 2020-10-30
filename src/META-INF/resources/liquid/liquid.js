@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.45   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  24-10-2020
+// Liquid ver.1.46   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  30-10-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -362,62 +362,118 @@ class LiquidCtrl {
                 };
 
                 Liquid.registerOnUnloadPage();
-                if(!this.xhr)
-                    this.xhr = new XMLHttpRequest();
-                if(Liquid.wait_for_xhr_ready(this, "register control")) {
-                    try {
+                
+                try {
 
-                        // if(typeof this.tableJson.schema === 'undefined') if(this.tableJson.isSystem !== true) debugger;
-                        
-                        if(this.tableJson.mode === "auto") { // async
-                            this.isAsyncResolve = true;
-                            this.xhr.open('POST', glLiquidServlet + "?operation=auto"
-                                    + "&controlId=" + this.controlId
-                                    + "&table=" + (typeof this.tableJson.table !== 'undefined' ? this.tableJson.table : "")
-                                    + "&schema=" + (typeof this.tableJson.schema !== 'undefined' ? this.tableJson.schema : "")
-                                    + "&database=" + (typeof this.tableJson.database !== 'undefined' ? this.tableJson.database : "")
-                                    + "&parentControlId=" + Liquid.getRootSourceControlId(this)
-                                    );
-                            this.xhr.send(JSON.stringify(this.tableJson));
-                            var liquid = this;
-                            this.xhr.onreadystatechange = function() {
-                                if(liquid.xhr.readyState === 4) {
-                                    Liquid.release_xhr(liquid);
-                                    if(liquid.xhr.status === 200) {
-                                        this.isAsyncResolveDone = true;
-                                        this.promise = new Promise((param) => {
-                                            retVal = onProcessServerResult(liquid);
-                                        });
-                                    }
+                    // if(typeof this.tableJson.schema === 'undefined') if(this.tableJson.isSystem !== true) debugger;
+
+                    if(this.tableJson.mode === "auto") { // async
+                        this.isAsyncResolve = true;
+                        Liquid.sendRequest(
+                          this
+                        , null
+                        , 'POST'
+                        , glLiquidServlet + "?operation=auto"
+                                + "&controlId=" + this.controlId
+                                + "&table=" + (typeof this.tableJson.table !== 'undefined' ? this.tableJson.table : "")
+                                + "&schema=" + (typeof this.tableJson.schema !== 'undefined' ? this.tableJson.schema : "")
+                                + "&database=" + (typeof this.tableJson.database !== 'undefined' ? this.tableJson.database : "")
+                                + "&parentControlId=" + Liquid.getRootSourceControlId(this)
+                        , true
+                        , JSON.stringify(this.tableJson)
+                        , function(liquid) {
+                            if(liquid.xhr.readyState === 4) {
+                                Liquid.release_xhr(liquid);
+                                if(liquid.xhr.status === 200) {
+                                    liquid.isAsyncResolveDone = true;
+                                    liquid.promise = new Promise((param) => {
+                                        retVal = onProcessServerResult(liquid);
+                                    });
                                 }
-                            };
-                        } else if(this.tableJson.mode === "autoSync") { // sync
-                            this.xhr.open('POST', glLiquidServlet + "?operation=auto"
-                                    + "&controlId=" + this.controlId
-                                    + "&table=" + this.tableJson.table
-                                    + "&schema=" + (typeof this.tableJson.schema !== 'undefined' ? this.tableJson.schema : "")
-                                    + "&database=" + (typeof this.tableJson.database !== 'undefined' ? this.tableJson.database : "")
-                                    + "&parentControlId=" + Liquid.getRootSourceControlId(this)
-                                    , false);
-                            this.xhr.send(tableJsonString);
-                            Liquid.release_xhr(this);
-                            retVal = onProcessServerResult(this);
-                        } else if(!this.tableJson.columnsResolved) { // sync
-                            this.xhr.open('POST', glLiquidServlet + '?operation=registerControl'
-                                    +'&controlId=' + (typeof this.tableJson.registerControlId !== "undefined" ? this.tableJson.registerControlId : this.controlId)
-                                    +'&token=' + (typeof this.tableJson.token !== "undefined" ? this.tableJson.token : "")
-                                    , false);
-                            this.xhr.send(tableJsonString);
-                            Liquid.release_xhr(this);
-                            retVal = onProcessServerResult(this);
+                            }
                         }
-                    } catch (e) {
-                        console.error(e);
+                        ,"register control "+this.controlId
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                                );
+                        /// this.xhr.send(JSON.stringify(this.tableJson));
+                    } else if(this.tableJson.mode === "autoSync") { // sync
+                        /*
+                        this.xhr.open('POST', glLiquidServlet + "?operation=auto"
+                                + "&controlId=" + this.controlId
+                                + "&table=" + this.tableJson.table
+                                + "&schema=" + (typeof this.tableJson.schema !== 'undefined' ? this.tableJson.schema : "")
+                                + "&database=" + (typeof this.tableJson.database !== 'undefined' ? this.tableJson.database : "")
+                                + "&parentControlId=" + Liquid.getRootSourceControlId(this)
+                                , false);
+                        var liquid = this;
+                        this.xhr.onreadystatechange = function() {
+                            return onProcessServerResult(liquid);
+                        }
+                        */
+                        retVal = Liquid.sendRequest(
+                          this
+                        , null
+                        , 'POST'
+                        , glLiquidServlet + "?operation=auto"
+                                + "&controlId=" + this.controlId
+                                + "&table=" + this.tableJson.table
+                                + "&schema=" + (typeof this.tableJson.schema !== 'undefined' ? this.tableJson.schema : "")
+                                + "&database=" + (typeof this.tableJson.database !== 'undefined' ? this.tableJson.database : "")
+                                + "&parentControlId=" + Liquid.getRootSourceControlId(this)
+                        , false
+                        , tableJsonString
+                        , function(liquid) {
+                            return onProcessServerResult(liquid);
+                        }
+                        ,"register control "+this.controlId
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                                );
+                        // retVal = onProcessServerResult(this);
+                    } else if(!this.tableJson.columnsResolved) { // sync
+                        /*
+                        this.xhr.open('POST', glLiquidServlet + '?operation=registerControl'
+                                +'&controlId=' + (typeof this.tableJson.registerControlId !== "undefined" ? this.tableJson.registerControlId : this.controlId)
+                                +'&token=' + (typeof this.tableJson.token !== "undefined" ? this.tableJson.token : "")
+                                , false);
+
+                        var liquid = this;
+                        this.xhr.onreadystatechange = function() {
+                            return onProcessServerResult(liquid);
+                        }
+                        */
+                        retVal = Liquid.sendRequest(
+                          this
+                        , null
+                        , 'POST'
+                        , glLiquidServlet + '?operation=registerControl'
+                                +'&controlId=' + (typeof this.tableJson.registerControlId !== "undefined" ? this.tableJson.registerControlId : this.controlId)
+                                +'&token=' + (typeof this.tableJson.token !== "undefined" ? this.tableJson.token : "")
+                        , false                            
+                        , tableJsonString
+                        , function(liquid) {
+                            return onProcessServerResult(liquid);
+                        }
+                        ,"register control "+this.controlId
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                                );
+                        // retVal = onProcessServerResult(this);
                     }
-                    
-                } else {
-                    alert("!!! " + this.controlId+" is till waiting for last operaion:"+this.xhrDescription+ " !!!");
+                } catch (e) {
+                    console.error(e);
                 }
+                    
                 this.bRegisterControl = false;
             }
 
@@ -1094,7 +1150,7 @@ class LiquidCtrl {
                                                 var tabId = controlId + ".foreignTable." + ftId;
                                                 var contentId = this.controlId + ".foreignTable." + ftId + ".content";
                                                 var addingCode = "";
-                                                if(Liquid.projectMode) addingCode = "<img src=\""+Liquid.getImagePath("add.png")+"\" id=\""+tabId+".adder"+"\" onClick=\"Liquid.onNewForeignTable(event)\" style=\"width:12px; height:12px; padding-left:10px; filter:grayscale(0.7); cursor:pointer\" />";
+                                                if(Liquid.projectMode) addingCode = "<img src=\""+Liquid.getImagePath("add.png")+"\" id=\""+tabId+".adder"+"\" onClick=\"LiquidEditing.onNewForeignTable(event)\" style=\"width:12px; height:12px; padding-left:10px; filter:grayscale(0.7); cursor:pointer\" />";
                                                 var waitingCode = "<div class=\"lds-ring\" id=\""+tabId+".waiter"+"\"><div></div><div></div><div></div><div></div></div>";
                                                 ftHTML += "<li><a href=\"javascript:void(0)\" id=\"" + tabId + "\" class=\"liquidTab\" onClick=\"Liquid.onForeignTable(this)\">" 
                                                         + ftName 
@@ -1124,7 +1180,7 @@ class LiquidCtrl {
                                 }
                                 if(Liquid.projectMode) {
                                     // New tab
-                                    ftHTML += "<li><a href=\"javascript:void(0)\" style=\"\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"Liquid.onNewForeignTable(event)\">" + "<img id=\"" + controlId + ".newForeignTable" + "\" src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; filter:grayscale(0.7); cursor:pointer\" />" + "</a></li>";
+                                    ftHTML += "<li><a href=\"javascript:void(0)\" style=\"\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"LiquidEditing.onNewForeignTable(event)\">" + "<img id=\"" + controlId + ".newForeignTable" + "\" src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; filter:grayscale(0.7); cursor:pointer\" />" + "</a></li>";
                                 }
                                 // tabs
                                 this.homeTabId = controlId + ".homeTable." + this.tableJson.table;
@@ -1445,9 +1501,9 @@ class LiquidCtrl {
                             if(Liquid.projectMode) {
                                 // New tab
                                 var title = (Liquid.lang === 'eng' ? "Add a grid" : "Aggiungi una griglia");
-                                newTabHTML += "<li><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" title=\""+title+"\" onClick=\"Liquid.onNewGrid(event)\">" + "<img id=\"" + controlId + ".newGrid" + "\" src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:12px; height:12px; filter:grayscale(0.7); cursor:pointer\" />" + "</a></li>";
+                                newTabHTML += "<li><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" title=\""+title+"\" onClick=\"LiquidEditing.onNewGrid(event)\">" + "<img id=\"" + controlId + ".newGrid" + "\" src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:12px; height:12px; filter:grayscale(0.7); cursor:pointer\" />" + "</a></li>";
                                 title = (Liquid.lang === 'eng' ? "Add a layout" : "Aggiungi un layout");
-                                newTabHTML += "<li><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" title=\""+title+"\" onClick=\"Liquid.onNewLayout(event)\">" + "<img id=\"" + controlId + ".neLayout" + "\" src=\""+Liquid.getImagePath("forms2.png")+"\" style=\"width:12px; height:12px; filter:grayscale(0.7); cursor:pointer\" />" + "</a></li>";
+                                newTabHTML += "<li><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" title=\""+title+"\" onClick=\"LiquidEditing.onNewLayout(event)\">" + "<img id=\"" + controlId + ".neLayout" + "\" src=\""+Liquid.getImagePath("forms2.png")+"\" style=\"width:12px; height:12px; filter:grayscale(0.7); cursor:pointer\" />" + "</a></li>";
                             }
                             // Append grid object and link to fields
                             for(var ig = 0; ig < this.tableJson.grids.length; ig++) {
@@ -2215,7 +2271,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.43,
+    version: 1.46,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -2266,7 +2322,7 @@ var Liquid = {
     curMessageDealyTimeSec:10,
     registeredOnUnloadPage:false,
     onClosePageReturn:null,
-    dynamicFilterMinTime:500,
+    dynamicFilterMinTimeMS:500,
     userConnectionList:[],
     loadDBInitialSize: (2 * 1024 * 1024),
     loadDBversion:2,
@@ -3353,11 +3409,13 @@ var Liquid = {
         var outDiv = Liquid.getStatusDiv(liquid);
         if(outDiv) {
             var runningImg = "<img src=\""+Liquid.getImagePath("yellow.png")+"\" width=\"16\" height=\"16\"/>";
-            if(event.lengthComputable && event.total) {
-            var percentage = Math.round((event.loaded * 100) / event.total);
-                outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent)+" download in progress (" + percentage + "%)";
-            } else {
-                outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent)+" downloading...";
+            if(event) {
+                if(event.lengthComputable && event.total) {
+                var percentage = Math.round((event.loaded * 100) / event.total);
+                    outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent)+" download in progress (" + percentage + "%)";
+                } else {
+                    outDiv.innerHTML = runningImg+"[ "+liquid.controlId+" ] " + handlerName + " " + Liquid.getCommandOrEventName(commandOrEvent)+" downloading...";
+                }
             }
         }
         if(isDef(liquid.stackDownloading)) {
@@ -3366,7 +3424,13 @@ var Liquid = {
                 return;
             }
         }
-        liquid.stackDownloading = { lastResponseLen:liquid.lastResponseLen, responseLen:event.currentTarget.response.length, loaded:event.loaded, total:event.total, timeStamp:event.timeStamp, eventPhase:event.eventPhase };
+        liquid.stackDownloading = { 
+            lastResponseLen:liquid.lastResponseLen
+            , responseLen:event ? event.currentTarget.response.length : 0
+            , loaded:event ? event.loaded : true, total:event ? event.total : 0
+            , timeStamp:event ? event.timeStamp : 0
+            , eventPhase:event ? event.eventPhase : 0
+        };
         liquid.lastResponseLen = Liquid.onTransferDownloadingProgress(event, liquid, liquid.lastResponseLen, outDiv, commandOrEvent, userCallback, userCallbackParam);
     },
     onTransferLoaded:function(liquid, commandOrEvent, handlerName, event, userCallback, userCallbackParam) {
@@ -3660,9 +3724,9 @@ var Liquid = {
                             }
                         }
                     }
-                    result += (ir>0?(rowSep?rowSep:" | "):"") + fieldsValue;
+                    result += (ir>0?(rowSep?rowSep:" - "):"") + fieldsValue;
                 }
-                return result;
+                return "<div class=\"liquidBadge\">"+nodes.length+"</div> "+result;
             }
         }
         return "";
@@ -4009,6 +4073,9 @@ var Liquid = {
     updateProgress:function(event, liquid) {
         // console.log("WARNING: controlId:"+liquid.controlId+" progress..."+event);
     },
+    downloadProgress:function(event, liquid) {
+        // console.log("WARNING: controlId:"+liquid.controlId+" progress..."+event);
+    },    
     transferComplete:function(event, liquid) {
         // console.log("WARNING: controlId:"+liquid.controlId+" completed..."+event);
         Liquid.showHideWaiters(liquid, false);
@@ -4026,6 +4093,8 @@ var Liquid = {
         var allFilterJson = [];
         var doFilter = true;
 
+
+        
         // if(liquid.controlId === "formats$study_id$id@Quotes_Suggested preforms_suggested_preforms") debugger;
         // if(liquid.controlId === "materials$id$materialid@quotes_detail$quoteid$Id@testGrid4") debugger;
         
@@ -4206,270 +4275,268 @@ var Liquid = {
                 || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
                 ||  isDef(liquid.tableJson.query)
                 ) {
-                // if(liquid.controlId === 'quotes_detail$quoteid$id@testGrid4') debugger;
-                // if(liquid.controlId === "utenti$id$user_id@testGrid4") debugger;
+                    // if(liquid.controlId === 'quotes_detail$quoteid$id@testGrid4') debugger;
+                    // if(liquid.controlId === "utenti$id$user_id@testGrid4") debugger;
                 
-                Liquid.registerOnUnloadPage();
-                if(!liquid.xhr)
-                    liquid.xhr = new XMLHttpRequest();
-                if(Liquid.wait_for_xhr_ready(liquid, reason+".loading data")) {
-                        liquid.xhr.addEventListener("progress", function(){ Liquid.updateProgress(event, liquid); }, false);
-                        liquid.xhr.addEventListener("load", function(){ Liquid.transferComplete(event, liquid); }, false);
-                        liquid.xhr.addEventListener("error", function(){ Liquid.transferFailed(event, liquid); }, false);
-                        liquid.xhr.addEventListener("abort", function(){ Liquid.transferCanceled(event, liquid); }, false);
-                        liquid.xhr.open('POST', glLiquidServlet + '?operation=get&controlId='
-                                + (typeof liquid.tableJson.registerControlId !== "undefined" ? liquid.tableJson.registerControlId : liquid.controlId)
-                                + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : '')
-                                + '&page=' + liquid.cPage
-                                + "&pageSize=" + liquid.pageSize
-                                + "&cacheIds=" + (typeof liquid.tableJson.cacheIds !== 'undefined' ? liquid.tableJson.cacheIds : "auto")
-                                + "&targetDatabase=" + (typeof liquid.tableJson.database !== 'undefined' ? liquid.tableJson.database : "")
-                                + "&targetSchema=" + (typeof liquid.tableJson.schema !== 'undefined' ? liquid.tableJson.schema : "")
-                                + "&targetTable=" + (typeof liquid.tableJson.table !== 'undefined' ? liquid.tableJson.table : "")
-                                + (!liquid.tableJson.columnsResolved ? '&columnsResolved=false' : '')
-                                , liquid.tableJson.loadDataSync === true ? false : true
-                                );
-                        
-                        var onreadystatechange = function() {
-                            if(liquid.xhr.readyState === 4) {
-                                Liquid.release_xhr(liquid);
-                                liquid.gridOptions.api.hideOverlay();
-                                if(liquid.xhr.status === 200) {
-                                    var result = { retVal:0, selectionChanged:false };
-                                    var bFoundSelection = false;
-                                    var bFirstTimeLoad = false;
-                                    var disableLinkedControlRefresh = false;
-                                    try {
-                                        // \b \f \n \r \t
-                                        var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b"); // .replace(/(?:[\r\\])/g, "\\\\");
-                                        responseText = responseText.substring(0, responseText.lastIndexOf("}") + 1);
+                    Liquid.registerOnUnloadPage();
+
+                    //
+                    // the callback
+                    //
+                    var onreadystatechange = function(liquid) {
+                        if(liquid.xhr.readyState === 4) {
+                            Liquid.release_xhr(liquid);
+                            liquid.gridOptions.api.hideOverlay();
+                            if(liquid.xhr.status === 200) {
+                                var result = { retVal:0, selectionChanged:false };
+                                var bFoundSelection = false;
+                                var bFirstTimeLoad = false;
+                                var disableLinkedControlRefresh = false;
+                                try {
+                                    // \b \f \n \r \t
+                                    var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b"); // .replace(/(?:[\r\\])/g, "\\\\");
+                                    responseText = responseText.substring(0, responseText.lastIndexOf("}") + 1);
 
 
-                                        // Initially selected by server
-                                        if(liquid.absoluteLoadCounter === 0) {
-                                            bFirstTimeLoad = true;
+                                    // Initially selected by server
+                                    if(liquid.absoluteLoadCounter === 0) {
+                                        bFirstTimeLoad = true;
+                                    }
+
+                                    liquid.loadCounter++;
+                                    liquid.absoluteLoadCounter++;
+
+                                    if(responseText) {
+                                        var httpResultJson = JSON.parse(responseText);
+                                        if(!ids) { // set data as partial
+                                            liquid.nRows = httpResultJson.nRows;
                                         }
-                                        
-                                        liquid.loadCounter++;
-                                        liquid.absoluteLoadCounter++;
-                                        
-                                        if(responseText) {
-                                            var httpResultJson = JSON.parse(responseText);
-                                            if(!ids) { // set data as partial
-                                                liquid.nRows = httpResultJson.nRows;
-                                            }
-                                            
-                                            // columns redifined by server
-                                            if(isDef(httpResultJson.columns)) {
-                                                if(Liquid.compareColumns(liquid, httpResultJson.columns)) {
-                                                    Liquid.updateColumns(liquid, httpResultJson.columns, true, true);
-                                                }
-                                            }
-                                            
-                                            // any changes
-                                            var anyFieldsChange = false;
 
-                                            // current selection
-                                            var selNodes = liquid.gridOptions.api.getSelectedNodes();
+                                        // columns redifined by server
+                                        if(isDef(httpResultJson.columns)) {
+                                            if(Liquid.compareColumns(liquid, httpResultJson.columns)) {
+                                                Liquid.updateColumns(liquid, httpResultJson.columns, true, true);
+                                            }
+                                        }
 
-                                            if(ids) { // set data as partial
-                                                result.retVal = 2;
-                                                var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                                                var itemsToUpdate = [];
-                                                for(var ir = 0; ir < httpResultJson.resultSet.length; ir++) {
-                                                    var idRs = httpResultJson.resultSet[ir][liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
-                                                    if(isDef(nodes) && nodes.length > 0) {
-                                                        for(var ind = 0; ind < nodes.length; ind++) {
-                                                            var data = nodes[ind].data;
-                                                            var id = data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
-                                                            if(id === idRs) {
-                                                                for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
-                                                                    var col = liquid.tableJson.columns[ic];
-                                                                    if(Liquid.addFlashingField(liquid, col, data, httpResultJson.resultSet[ir])) {
-                                                                        anyFieldsChange = true;
-                                                                    }
-                                                                    data[col.field] = httpResultJson.resultSet[ir][col.field];
+                                        // any changes
+                                        var anyFieldsChange = false;
+
+                                        // current selection
+                                        var selNodes = liquid.gridOptions.api.getSelectedNodes();
+
+                                        if(ids) { // set data as partial
+                                            result.retVal = 2;
+                                            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                                            var itemsToUpdate = [];
+                                            for(var ir = 0; ir < httpResultJson.resultSet.length; ir++) {
+                                                var idRs = httpResultJson.resultSet[ir][liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                                                if(isDef(nodes) && nodes.length > 0) {
+                                                    for(var ind = 0; ind < nodes.length; ind++) {
+                                                        var data = nodes[ind].data;
+                                                        var id = data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
+                                                        if(id === idRs) {
+                                                            for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                                                                var col = liquid.tableJson.columns[ic];
+                                                                if(Liquid.addFlashingField(liquid, col, data, httpResultJson.resultSet[ir])) {
+                                                                    anyFieldsChange = true;
                                                                 }
-                                                                nodes[ind].setData(data);
-                                                                break;
+                                                                data[col.field] = httpResultJson.resultSet[ir][col.field];
                                                             }
+                                                            nodes[ind].setData(data);
+                                                            break;
                                                         }
                                                     }
                                                 }
-                                            } else {  // set data as full
-                                                result.retVal = 1;
-                                                liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
-                                                liquid.lastSelectedId = null;
                                             }
-                                            
-                                            if(liquid.nRows <= 0) {
-                                                // server didn't compute ?
-                                                var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                                                if(nodes) {
-                                                    liquid.nRows = nodes.length;
+                                        } else {  // set data as full
+                                            result.retVal = 1;
+                                            liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
+                                            liquid.lastSelectedId = null;
+                                        }
+
+                                        if(liquid.nRows <= 0) {
+                                            // server didn't compute ?
+                                            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                                            if(nodes) {
+                                                liquid.nRows = nodes.length;
+                                            }
+                                        }
+                                        liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(liquid.nRows / liquid.gridOptions.paginationPageSize)) : 1;
+
+
+                                        // Initially selected ...
+                                        if(bFirstTimeLoad) {
+                                            if(liquid.tableJson.checkboxSelection) {
+                                                try {
+                                                    liquid.gridOptions.onGetSelection();
+                                                } catch (e) {
+                                                    console.error(e);
                                                 }
                                             }
-                                            liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(liquid.nRows / liquid.gridOptions.paginationPageSize)) : 1;
-                                            
-                                            
-                                            // Initially selected ...
-                                            if(bFirstTimeLoad) {
-                                                if(liquid.tableJson.checkboxSelection) {
-                                                    try {
-                                                        liquid.gridOptions.onGetSelection();
-                                                    } catch (e) {
-                                                        console.error(e);
+                                            selNodes = liquid.gridOptions.api.getSelectedNodes();
+                                            if(!selNodes || selNodes.length === 0) {                                                
+                                                if(isDef(liquid.tableJson.autoSelect) || isDef(liquid.tableJson.tempAutoSelect)) {
+                                                    if(Liquid.setNodesSelectedDefault(liquid)) { // no other refresh actions needed
+                                                        disableLinkedControlRefresh = true;
                                                     }
-                                                }
-                                                selNodes = liquid.gridOptions.api.getSelectedNodes();
-                                                if(!selNodes || selNodes.length === 0) {                                                
-                                                    if(isDef(liquid.tableJson.autoSelect) || isDef(liquid.tableJson.tempAutoSelect)) {
-                                                        if(Liquid.setNodesSelectedDefault(liquid)) { // no other refresh actions needed
-                                                            disableLinkedControlRefresh = true;
-                                                        }
-                                                        if(isDef(liquid.tableJson.tempAutoSelect)) delete liquid.tableJson.tempAutoSelect;
-                                                    }
+                                                    if(isDef(liquid.tableJson.tempAutoSelect)) delete liquid.tableJson.tempAutoSelect;
                                                 }
                                             }
-                                            
-                                            // restore previous selection
-                                            bFoundSelection = Liquid.setSelctions(liquid, selNodes);
-                                            if((!bFoundSelection && selNodes && selNodes.length > 0) || (anyFieldsChange) ) {
-                                                var refreshReason = "";
-                                                if(!bFoundSelection && selNodes && selNodes.length > 0) {
-                                                    reason = "unselect";
-                                                } else if(anyFieldsChange) {
-                                                    reason = "reload";
-                                                }
-                                                result.selectionChanged = true;
-                                                if(!disableLinkedControlRefresh) {
-                                                    Liquid.refreshGrids(liquid, null, refreshReason);
-                                                    Liquid.refreshLayouts(liquid, false);
-                                                    Liquid.refreshDocuments(liquid, false);
-                                                    Liquid.refreshCharts(liquid, false);
-                                                    if(liquid.linkedLiquids)
-                                                        Liquid.refreshLinkedLiquids(liquid);
-                                                    Liquid.showHideChildWaiters(liquid, false);
-                                                } else {
-                                                    Liquid.showHideChildWaiters(liquid, false);
-                                                }
+                                        }
+
+                                        // restore previous selection
+                                        bFoundSelection = Liquid.setSelctions(liquid, selNodes);
+                                        if((!bFoundSelection && selNodes && selNodes.length > 0) || (anyFieldsChange) ) {
+                                            var refreshReason = "";
+                                            if(!bFoundSelection && selNodes && selNodes.length > 0) {
+                                                reason = "unselect";
+                                            } else if(anyFieldsChange) {
+                                                reason = "reload";
+                                            }
+                                            result.selectionChanged = true;
+                                            if(!disableLinkedControlRefresh) {
+                                                Liquid.refreshGrids(liquid, null, refreshReason);
+                                                Liquid.refreshLayouts(liquid, false);
+                                                Liquid.refreshDocuments(liquid, false);
+                                                Liquid.refreshCharts(liquid, false);
+                                                if(liquid.linkedLiquids)
+                                                    Liquid.refreshLinkedLiquids(liquid);
+                                                Liquid.showHideChildWaiters(liquid, false);
                                             } else {
                                                 Liquid.showHideChildWaiters(liquid, false);
                                             }
-                                            
-                                            // set selection multipaged
-                                            Liquid.resumeNodeSelected(liquid);
-
-
-                                            // start inserting a row
-                                            var isFormX = Liquid.isFormX(liquid);
-                                            var isAutoInsert = Liquid.isAutoInsert(liquid);
-                                            if(isFormX || isAutoInsert === true) {
-                                                var insertCommand = { name:"insert", server:"", client:"", isNative:true };
-                                                Liquid.onButton(liquid, insertCommand);
-                                            }
-                                            
-
-                                            // set as selected by liquid.ids
-                                            if(isDef(liquid.tableJson.ids)) {
-                                                liquid.ids = liquid.tableJson.ids;
-                                                liquid.tableJson.ids = null;
-                                            }
-                                            if(sFiltersJson && liquid.absoluteLoadCounter > 0 && liquid.ids)
-                                                Liquid.setNodesSelected(liquid, liquid.ids);
-
-                                            if(httpResultJson.debug) {
-                                                try {
-                                                    console.debug("[SERVER] QUERY:" + atob(httpResultJson.query));
-                                                    console.debug("[SERVER] QUERY-TIME:" + httpResultJson.queryTime);
-                                                    console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
-                                                } catch(e) { debugger; }
-                                            }
-                                            if(httpResultJson.error) {
-                                                try { console.error("[SERVER] ERROR:" + atob(httpResultJson.error) + " on loadData() on control "+liquid.controlId); } catch(e) { debugger; }
-                                                Liquid.setErrorDiv(liquid, httpResultJson.error);
-                                            }
-                                            if(httpResultJson.warning) {
-                                                try { console.warn("[SERVER] WARNING:" + atob(httpResultJson.warning));  } catch(e) { debugger; }
-                                            }
-                                            if(httpResultJson.message) {
-                                                try {
-                                                    var msg = atob(httpResultJson.message);
-                                                    var title = (typeof httpResultJson.title !== 'undefined' && httpResultJson.title ? atob(httpResultJson.title) : (Liquid.lang === 'eng' ? "SERVER MESSAGE" : "MESSAGGIO DAL SERVER" ));
-                                                    console.info("[SERVER] MESSAGE:" + msg);
-                                                    Liquid.dialogBox(null, title, msg, { text:"OK", func:function() { } }, null);
-                                                } catch(e) { debugger; }
-                                            }
+                                        } else {
+                                            Liquid.showHideChildWaiters(liquid, false);
                                         }
-                                    } catch (e) {
-                                        console.error(responseText);
-                                        console.error("loadData() on " + liquid.controlId + " error in response process:" + e);
-                                    }
+
+                                        // set selection multipaged
+                                        Liquid.resumeNodeSelected(liquid);
 
 
-                                    if(bFirstTimeLoad) {
-                                    } else {
-                                        if(bFoundSelection === false) {
-                                            if(isDef(liquid.tableJson.autoSelect)) {
-                                                Liquid.setNodesSelectedDefault(liquid);
-                                            }
-                                        }                                        
-                                        Liquid.setAutoresizeColumn(liquid, false);
-                                        Liquid.onGridContainerSizeChanged(liquid, liquid.gridOptions);
-                                        liquid.lastSearchCol = -1;
-                                        liquid.lastSearchRec = -1;
-                                    }
-                                    
-                                    if(liquid.navObj) {
-                                        Liquid.updateStatusBar(liquid);
-                                    }
-                                    
-                                    if(isDef(liquid.pendingControlIds)) {
-                                        for(var il=0; il<liquid.pendingControlIds.length; il++) {
-                                            if(liquid.pendingControlIds[il]) {
-                                                Liquid.loadData(liquid.pendingControlIds[il], null);
-                                                // Liquid.onResize(liquid.pendingControlIds[il]);
-                                                // Liquid.setAutoresizeColumn(liquid, false);
-                                                liquid.pendingControlIds[il] = null;
-                                            }
+                                        // start inserting a row
+                                        var isFormX = Liquid.isFormX(liquid);
+                                        var isAutoInsert = Liquid.isAutoInsert(liquid);
+                                        if(isFormX || isAutoInsert === true) {
+                                            var insertCommand = { name:"insert", server:"", client:"", isNative:true };
+                                            Liquid.onButton(liquid, insertCommand);
+                                        }
+
+
+                                        // set as selected by liquid.ids
+                                        if(isDef(liquid.tableJson.ids)) {
+                                            liquid.ids = liquid.tableJson.ids;
+                                            liquid.tableJson.ids = null;
+                                        }
+                                        if(sFiltersJson && liquid.absoluteLoadCounter > 0 && liquid.ids)
+                                            Liquid.setNodesSelected(liquid, liquid.ids);
+
+                                        if(httpResultJson.debug) {
+                                            try {
+                                                console.debug("[SERVER] QUERY:" + atob(httpResultJson.query));
+                                                console.debug("[SERVER] QUERY-TIME:" + httpResultJson.queryTime);
+                                                console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
+                                            } catch(e) { debugger; }
+                                        }
+                                        if(httpResultJson.error) {
+                                            try { console.error("[SERVER] ERROR:" + atob(httpResultJson.error) + " on loadData() on control "+liquid.controlId); } catch(e) { debugger; }
+                                            Liquid.setErrorDiv(liquid, httpResultJson.error);
+                                        }
+                                        if(httpResultJson.warning) {
+                                            try { console.warn("[SERVER] WARNING:" + atob(httpResultJson.warning));  } catch(e) { debugger; }
+                                        }
+                                        if(httpResultJson.message) {
+                                            try {
+                                                var msg = atob(httpResultJson.message);
+                                                var title = (typeof httpResultJson.title !== 'undefined' && httpResultJson.title ? atob(httpResultJson.title) : (Liquid.lang === 'eng' ? "SERVER MESSAGE" : "MESSAGGIO DAL SERVER" ));
+                                                console.info("[SERVER] MESSAGE:" + msg);
+                                                Liquid.dialogBox(null, title, msg, { text:"OK", func:function() { } }, null);
+                                            } catch(e) { debugger; }
                                         }
                                     }
-
-                                    if(liquid.mode === "combo") {
-                                        Liquid.setComboTitle( liquid );
-                                    }
-
-
-                                } else {
-                                    console.error("loadData() . wrong response:" + liquid.xhr.status);
+                                } catch (e) {
+                                    console.error(responseText);
+                                    console.error("loadData() on " + liquid.controlId + " error in response process:" + e);
                                 }
-                            }
-                        };
 
-                        liquid.gridOptions.api.showLoadingOverlay();                        
-                        if(liquid.tableJson.loadDataSync === true) {
-                            liquid.xhr.send(sFiltersJson);                        
-                            onreadystatechange();
-                        } else {
-                            liquid.xhr.onreadystatechange = onreadystatechange;
-                            liquid.xhr.send(sFiltersJson);                        
+
+                                if(bFirstTimeLoad) {
+                                } else {
+                                    if(bFoundSelection === false) {
+                                        if(isDef(liquid.tableJson.autoSelect)) {
+                                            Liquid.setNodesSelectedDefault(liquid);
+                                        }
+                                    }                                        
+                                    Liquid.setAutoresizeColumn(liquid, false);
+                                    Liquid.onGridContainerSizeChanged(liquid, liquid.gridOptions);
+                                    liquid.lastSearchCol = -1;
+                                    liquid.lastSearchRec = -1;
+                                }
+
+                                if(liquid.navObj) {
+                                    Liquid.updateStatusBar(liquid);
+                                }
+
+                                if(isDef(liquid.pendingControlIds)) {
+                                    for(var il=0; il<liquid.pendingControlIds.length; il++) {
+                                        if(liquid.pendingControlIds[il]) {
+                                            Liquid.loadData(liquid.pendingControlIds[il], null);
+                                            // Liquid.onResize(liquid.pendingControlIds[il]);
+                                            // Liquid.setAutoresizeColumn(liquid, false);
+                                            liquid.pendingControlIds[il] = null;
+                                        }
+                                    }
+                                }
+
+                                if(liquid.mode === "combo") {
+                                    Liquid.setComboTitle( liquid );
+                                }
+
+
+                            } else {
+                                console.error("loadData() . wrong response:" + liquid.xhr.status);
+                            }
                         }
-                        
-                    } else {
-                        // alert("!!! " + liquid.controlId+" is till waiting for last operaion:"+liquid.xhrDescription+ " !!!");
-                        console.error("ERROR: loadData(): potential duplicate call on control '"+liquid.controlId
-                                +"'\n\nplease avoid multiple call on the same control"
-                                +"'\n\nprevoius call: "+liquid.xhrDescription
-                                +"'\n\ncurrent call: "+reason
+                    };
+
+                    // Send the request
+                    Liquid.sendRequest(
+                          liquid
+                        , null
+                        , 'POST'
+                        ,glLiquidServlet + '?operation=get&controlId='
+                            + (typeof liquid.tableJson.registerControlId !== "undefined" ? liquid.tableJson.registerControlId : liquid.controlId)
+                            + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : '')
+                            + '&page=' + liquid.cPage
+                            + "&pageSize=" + liquid.pageSize
+                            + "&cacheIds=" + (typeof liquid.tableJson.cacheIds !== 'undefined' ? liquid.tableJson.cacheIds : "auto")
+                            + "&targetDatabase=" + (typeof liquid.tableJson.database !== 'undefined' ? liquid.tableJson.database : "")
+                            + "&targetSchema=" + (typeof liquid.tableJson.schema !== 'undefined' ? liquid.tableJson.schema : "")
+                            + "&targetTable=" + (typeof liquid.tableJson.table !== 'undefined' ? liquid.tableJson.table : "")
+                            + (!liquid.tableJson.columnsResolved ? '&columnsResolved=false' : '')
+                        , liquid.tableJson.loadDataSync === true ? false : true
+                        , sFiltersJson
+                        , function(liquid) {
+                            onreadystatechange(liquid);
+                        }
+                        , reason+".loading data "+liquid.controlId
+                        , function(){ Liquid.updateProgress(event, liquid); }
+                        , function(){ Liquid.downloadProgress(event, liquid); }
+                        , function(){ Liquid.transferComplete(event, liquid); }
+                        , function(){ Liquid.transferFailed(event, liquid); }
+                        , function(){ Liquid.transferCanceled(event, liquid); }
                                 );
-                        if(liquid.xhrCount < 10) {
-                            liquid.xhrCount++;
-                            setTimeout(function() { Liquid.loadData(liquid, ids, reason+".posted" ); }, 3000);
-                        } else {
-                            alert("ERROR: loadData() busy");
-                        }
-                        return;
+
+                    liquid.gridOptions.api.showLoadingOverlay();
+                    if(liquid.tableJson.loadDataSync === true) {
+                        // liquid.xhr.send(sFiltersJson);
+                        // onreadystatechange(liquid);
+                        debugger;
+                    } else {
+                        // liquid.xhr.onreadystatechange = onreadystatechange;
+                        // liquid.xhr.send(sFiltersJson);                        
                     }
+
                 }
             } catch (e) { 
                 console.error("ERROR: loadData() on control '"+liquid.controlId+"' : "+e); 
@@ -4628,13 +4695,20 @@ var Liquid = {
     },
     release_xhr:function(liquid) {
         if(liquid) {
-            liquid.xhrCount = 0;
-            liquid.xhrBusy = false;
-            // liquid.xhrDescription = "";
-            for(var i=0; i<glPendingXHRs.length; i++) {
-                if(glPendingXHRs[i].controlId === liquid.controlId) {
-                    glPendingXHRs[i].controlId = null;
-                    break;
+            if(isDef(liquid.xhr)) {
+                if(liquid.ws === true) {
+                    // ws
+                    } else {
+                    // ajax
+                    liquid.xhrCount = 0;
+                    liquid.xhrBusy = false;
+                    // liquid.xhrDescription = "";
+                    for(var i=0; i<glPendingXHRs.length; i++) {
+                        if(glPendingXHRs[i].controlId === liquid.controlId) {
+                            glPendingXHRs[i].controlId = null;
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -4658,7 +4732,7 @@ var Liquid = {
     onWindowKeyDown:function(e, obj) {
         if(e.keyCode === 13) {
         } else if(e.keyCode === 27) {
-            Liquid.onContextMenuClose();
+            LiquidEditing.onContextMenuClose();
         }
     },
     onKeyPress:function(e, obj) {
@@ -4746,13 +4820,13 @@ var Liquid = {
                             liquid.lastFilterTimetick = getCurrentTimetick();
                         }
                         var dtime = (getCurrentTimetick() - liquid.lastFilterTimetick) / 1000;
-                        if(dtime < Liquid.dynamicFilterMinTime) {
+                        if(dtime < Liquid.dynamicFilterMinTimeMS) {
                             liquid.lastFilterTimetick = getCurrentTimetick();
                             if(Liquid.dynamicFilterTimer) clearTimeout(Liquid.dynamicFilterTimer);
                             Liquid.dynamicFilterTimer = setTimeout( 
                                     function () { 
                                         Liquid.onFilterChange(e, obj); 
-                                    }, Liquid.dynamicFilterMinTime );
+                                    }, Liquid.dynamicFilterMinTimeMS );
                             return;
                         }
                         Liquid.onExecuteFilter(obj);
@@ -5676,6 +5750,7 @@ var Liquid = {
             var tbl = document.createElement("table");
             tbl.id = liquid.controlId + ".filters";
             tbl.className = "liquidFiltersTable";
+            tbl.cellSpacing = 0;
             var tbody = document.createElement("tbody");
             var filterbBarToBottom = false;
             var tr = null;
@@ -5769,6 +5844,7 @@ var Liquid = {
                 var tbl = document.createElement("table");
                 tbl.id = liquid.controlId+".FilterTbl";
                 tbl.className = "liquidFilterTbl";
+                tbl.cellSpacing = 0;
                 var tbody = document.createElement("tbody");
                 liquid.filtersFirstId = null;
                 for(var r = 0; r < filterJson.nRows; r++) {
@@ -6400,7 +6476,6 @@ var Liquid = {
                 var contentIdForeignTable = obj.id + ".content";
                 var contentIdForeignTableObj = document.getElementById(contentIdForeignTable);
 
-                Liquid.processLinkedLiquidForResize(liquid, nameItems[2]);
                 delete liquid.tableJson.currentForeignTable;
                 for(var i=0; i<liquid.FTTabList.length; i++) {
                     if(liquid.FTTabList[i].tabId == tabId) {
@@ -6434,6 +6509,8 @@ var Liquid = {
                         }
                     }
                 }
+                // rsize columns
+                Liquid.processLinkedLiquidForResize(liquid, nameItems[2]);
                 // Update the caption
                 Liquid.updateCaption(liquid);
             }
@@ -6543,74 +6620,6 @@ var Liquid = {
                     if(liquid.linkedLiquids[i].linkedLiquids) {
                         Liquid.processLinkedLiquidForResize(liquid.linkedLiquids[i], targetControlId);
                     }
-                }
-            }
-        }
-    },
-    onNewForeignTable:function(event, mode) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            var nameItems = obj_id.split(".");
-            Liquid.startPopup('liquidSelectForeignKeys', window.liquidSelectForeignKeys);
-            var selectorLiquid = Liquid.getLiquid("liquidSelectForeignKeys");
-            selectorLiquid.tableJson.caption = "New Liquid Foreign Table : <b>create or select foreign key</b>";
-            selectorLiquid.tableJson.database = liquid.tableJson.database;
-            selectorLiquid.tableJson.schema = liquid.tableJson.schema;
-            if(nameItems[1] === 'newForeignTable') {
-                selectorLiquid.tableJson.table = liquid.tableJson.table;
-                selectorLiquid.tableJson.column = null;
-            } else {
-                if(nameItems.length > 2) { selectorLiquid.tableJson.table = nameItems[2]; } else { console.error("ERROR: unrecognize context:"+obj.id); return; }
-            }
-            Liquid.loadData(selectorLiquid, null, "newForeignTable");
-            selectorLiquid.onPostClosed = "Liquid.onNewForeignTableProcess('"+obj_id+"','"+mode+"')";
-            Liquid.autoInsert(selectorLiquid);
-            if(typeof event === 'object') event.stopPropagation();
-        }
-    },
-    onNewForeignTableProcess:function(obj_id, mode) {
-        var liquid = Liquid.getLiquid(obj_id);
-        if(liquid) {
-            var nameItems = obj_id.split(".");
-            var selectorLiquid = Liquid.getLiquid("liquidSelectForeignKeys");
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                if(selectorLiquid.tableJson.selections) {
-                    for(var isel=0; isel<selectorLiquid.tableJson.selections.length; isel++) {
-                        var sel = selectorLiquid.tableJson.selections[isel];
-                        if(sel) {
-                            var foreignName = prompt("Enter folder name", ""+sel["FOREIGN_TABLE"]);
-                            if(foreignName) {
-                                var newForeignTableJson = null;
-                                if(nameItems[1] === 'newForeignTable') {
-                                    // alert("New foreign table : "+sel["TABLE"]+"."+sel["COLUMN"]+"="+sel["FOREIGN_TABLE"]+"."+sel["FOREIGN_COLUMN"]);
-                                    newForeignTableJson = { name:foreignName, tooltip:"", icon:"", column:sel["COLUMN"], foreignTable:sel["FOREIGN_TABLE"], foreignColumn:sel["FOREIGN_COLUMN"], options:{ editable:true, autoSelect:true, autoSizeColumns:true } };
-                                    if(mode === 'multipanel') {
-                                        if(typeof liquid.tableJsonSource.multipanels === 'undefined' || !liquid.tableJsonSource.multipanels) liquid.tableJsonSource.multipanels = [];
-                                        newForeignTableJson["height"] = Liquid.defaultMultipanelHeight;
-                                        newForeignTableJson["text"] = sel["FOREIGN_TABLE"];
-                                        newForeignTableJson["options"] = { navVisible:false };
-                                        liquid.tableJsonSource.multipanels.push( newForeignTableJson );
-                                    } else {
-                                        if(typeof liquid.tableJsonSource.foreignTables === 'undefined' || !liquid.tableJsonSource.foreignTables) liquid.tableJsonSource.foreignTables = [];
-                                        if(!(liquid.tableJsonSource.foreignTables instanceof Array)) liquid.tableJsonSource.foreignTables = [];
-                                        liquid.tableJsonSource.foreignTables.push( newForeignTableJson );
-                                    }
-                                } else {
-                                    // alert("On "+nameItems[2] + " : " + sel["TABLE"]+"."+sel["COLUMN"]+"="+sel["FOREIGN_TABLE"]+"."+sel["FOREIGN_COLUMN"]);
-                                    newForeignTableJson = { name:foreignName, tooltip:"", icon:"", column:sel["COLUMN"], foreignTable:sel["FOREIGN_TABLE"], foreignColumn:sel["FOREIGN_COLUMN"], options:{ autoSelect:true, autoSizeColumns:true } };
-                                    var targetForeignTables = Liquid.getForeignTablesContainer(liquid.tableJsonSource.foreignTables, nameItems[2]);
-                                    if(targetForeignTables) targetForeignTables.push( newForeignTableJson );
-                                    else console.error("ERROR: foreign table target not found:"+nameItems[2]);
-                                }
-                                try { console.log("INFO: new foreign table json : \n"+JSON.stringify(newForeignTableJson)); } catch(e) { console.error(e); }
-                            }
-                        }
-                    }
-                    Liquid.setAskForSave(liquid, true);
-                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
                 }
             }
         }
@@ -6764,1061 +6773,6 @@ var Liquid = {
             console.error("ERROR: updateProperty failed, error:"+e);
         }
     },
-    onNewGrid:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            Liquid.startPopup('liquidSelectTableColumns', window.liquidSelectTableColumns);
-            var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-            selectorLiquid.tableJson.caption = "New grid : <b>select columns</b>";
-            selectorLiquid.tableJson.database = liquid.tableJson.database;
-            selectorLiquid.tableJson.schema = liquid.tableJson.schema;
-            var table = liquid.tableJson.table;
-            var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-            if(ftIndex1B) { // work on liquid.foreignTables[].options
-                liquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-                table = liquid.tableJson.table;
-            }            
-            selectorLiquid.tableJson.table = table;
-            Liquid.loadData(selectorLiquid, null, "newGrid");
-            selectorLiquid.onPostClosed = "Liquid.onNewGridProcess('"+obj_id+"',"+ftIndex1B+")";            
-            if(typeof event === 'object') event.stopPropagation();
-        }
-    },    
-    onNewGridProcess:function(obj_id, ftIndex1B) {
-        var liquid = Liquid.getLiquid(obj_id);
-        if(liquid) {
-            var nameItems = obj_id.split(".");
-            var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                if(selectorLiquid.tableJson.selections) {
-                    if(selectorLiquid.tableJson.selections.length) {
-                        var sels = selectorLiquid.tableJson.selections;
-                        if(nameItems[1] === 'newGrid') {
-                            var cols = "";
-                            for(var i=0; i<sels.length; i++) {
-                                cols += "[" + sels[i]["COLUMN"] + "]";
-                            }
-                            var gridName = prompt("Enter grid name", "new grid "+(liquid.tableJson.grids?liquid.tableJson.grids.length+1:1));
-                            if(gridName) {
-                                var gridNumColumns = prompt("Enter grid no. columns", "1");
-                                if(gridNumColumns) {
-                                    var nCols = Number(gridNumColumns) > 0 ? Number(gridNumColumns) : 1;
-                                    var nRows = Math.ceil(sels.length / nCols);
-                                    var gridColumns = [];
-                                    
-                                    for(var i=0; i<sels.length; i++) {
-                                        var gridColumn = { name:sels[i]["COLUMN"], tooltip:sels[i]["REMARKS"], label:sels[i]["COLUMN"].replace("_", " "), row:Math.floor(i/nCols), col:(i%nCols) };
-                                        gridColumns.push( gridColumn );                                        
-                                        if(ftIndex1B) {
-                                            // TODO : add column ?
-                                            tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-                                            var iField1B = Liquid.solveGridField(tagetLiquid, gridColumn);
-                                            if(iField1B <= 0) {
-                                                var listColumn = { name:sels[i]["COLUMN"], visible:false };
-                                                tagetLiquid.tableJsonSource.columns.push(listColumn);
-                                                tagetLiquid.tableJsonSource.columnsResolved = false;
-                                            }
-                                        } else {
-                                            var iField1B = Liquid.solveGridField(liquid, gridColumn);
-                                            if(iField1B <= 0) {
-                                                var listColumn = { name:sels[i]["COLUMN"], visible:false };
-                                                liquid.tableJsonSource.columns.push(listColumn);
-                                                liquid.tableJsonSource.columnsResolved = false;
-                                            }
-                                        }
-                                    }
-                                    if(typeof liquid.tableJsonSource.grids === 'undefined' || !liquid.tableJsonSource.grids) liquid.tableJsonSource.grids = [];
-                                    var newGridJson = { name:gridName, title:gridName, tooltip:"", icon:"", nRows:nRows, nCols:nCols, columns:gridColumns };
-                                    try { console.log("INFO: new grid json : \n"+JSON.stringify(newGridJson)); } catch(e) { console.error(e); }
-     
-                                    // adding the property...
-                                    Liquid.addProperty(liquid, ftIndex1B, "grids", newGridJson);                                    
-                                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                                }
-                            }                            
-                        } else {
-                            console.error("ERROR : Unrecognized taget");
-                        }
-                    } else {
-                        console.warn("ERROR : no column selected");
-                    }
-                }
-            }
-        }
-    },    
-    onNewLayout:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            var table = liquid.tableJson.table;
-            var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-            if(ftIndex1B) { // work on liquid.foreignTables[].options
-                liquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-                table = liquid.tableJson.table;
-            }            
-            if(typeof event === 'object') event.stopPropagation();
-            Liquid.onNewLayoutProcess(obj_id,ftIndex1B);
-        }
-    },    
-    onNewLayoutProcess:function(obj_id, ftIndex1B) {
-        var liquid = Liquid.getLiquid(obj_id);
-        if(liquid) {
-            if(typeof liquid.tableJsonSource.layouts === 'undefined' || !liquid.tableJsonSource.layouts) liquid.tableJsonSource.layouts = [];
-            var layoutName = "Layout" + (liquid.tableJsonSource.layouts.length > 0 ? (liquid.tableJsonSource.layouts.length+1) : "");
-            var nRows = "";
-            var newLayoutJson = { name:layoutName, tooltip:"", source:"url(./layouts/myLayout.jsp)", sourceForInsert:"url(./layouts/myLayoutForInsert.jsp)", nRows:-1 };
-            try { console.log("INFO: new layout json : \n"+JSON.stringify(newLayoutJson)); } catch(e) { console.error(e); }
-
-            //  to accees need layput built ( liquid.foreignTables[].option.layouts[]... )
-            //  better user options in layout tab
-            // if(!isDef(liquid.onLoaded)) liquid.srcLiquid.onLoaded = [];
-            // liquid.onLoaded.push ( function() { Liquid.onContextMenu({target:{classList:["liquidOptionsLayout"], id:obj_id}}); } );
-
-            // adding the property...
-            Liquid.addProperty(liquid, ftIndex1B, "layouts", newLayoutJson);
-            Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-        }
-    },    
-    onNewFilters:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            Liquid.startPopup('liquidSelectTableColumns', window.liquidSelectTableColumns);
-            var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-            selectorLiquid.tableJson.caption = "New Liquid Filters : </b>select columns</b>";
-            selectorLiquid.tableJson.database = liquid.tableJson.database;
-            selectorLiquid.tableJson.schema = liquid.tableJson.schema;
-            selectorLiquid.tableJson.table = liquid.tableJson.table;
-            var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-            if(ftIndex1B) { // work on liquid.foreignTables[].options
-                liquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-            }            
-            Liquid.loadData(selectorLiquid, null, "newFilter");
-            selectorLiquid.onPostClosed = "Liquid.onNewFiltersProcess('"+obj_id+"',"+ftIndex1B+")";
-            if(typeof event === 'object') event.stopPropagation();
-        }
-    },    
-    onNewFiltersProcess:function(obj_id, ftIndex1B) {
-        var liquid = Liquid.getLiquid(obj_id);
-        if(liquid) {
-            var nameItems = obj_id.split(".");
-            var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                if(selectorLiquid.tableJson.selections) {
-                    if(selectorLiquid.tableJson.selections.length) {
-                        var sels = selectorLiquid.tableJson.selections;
-                        if(nameItems[1] === 'newFilters' || nameItems[1] === 'newFilter') {
-                            var cols = "";
-                            for(var i=0; i<sels.length; i++) {
-                                cols += "[" + sels[i]["COLUMN"] + "]";
-                            }
-                            var filtersName = "newFilter";
-                            if(nameItems[1] === 'newFilters') {
-                                filtersName = prompt("Enter filters name", "Filter tab "+(liquid.tableJson.filters?(Array.isArray(liquid.tableJsonSource.filters)?liquid.tableJson.filters.length+1:1):1));
-                            }
-                            if(filtersName) {
-                                var filterNumColumns = 1;
-                                if(nameItems[1] === 'newFilters') {
-                                    filterNumColumns = prompt("Enter filters no. columns", "1");
-                                    if(filterNumColumns <= 0) filterNumColumns = 1;
-                                    if(filterNumColumns > 1000) filterNumColumns = 1000;
-                                }
-                                if(filterNumColumns) {
-                                    var nCols = Number(filterNumColumns) > 0 ? Number(filterNumColumns) : 1;
-                                    var nRows = Math.ceil(sels.length / nCols);
-                                    var filtersColumns = [];
-                                    
-                                    if(nameItems[1] === 'newFilter') { 
-                                        nCols = "";
-                                        nRows = "";
-                                    }
-                                    for(var i=0; i<sels.length; i++) {
-                                        var filtersColumn = { name:sels[i]["COLUMN"], tooltip:sels[i]["REMARKS"], label:sels[i]["COLUMN"], row:nCols?(i/nCols):'', col:nCols?(i%nCols):'' };
-                                        filtersColumns.push( filtersColumn );
-                                        var iField1B = Liquid.solveGridField(liquid, filtersColumn);
-                                        if(iField1B <= 0) { // Add column if not in list
-                                            var listColumn = { name:sels[i]["COLUMN"], visible:false };
-                                            liquid.tableJsonSource.columns.push(listColumn);
-                                            liquid.tableJsonSource.columnsResolved = false;
-                                        }
-                                    }
-                                    if(!isDef(liquid.curFilter)) liquid.curFilter = 0;
-                                    if(!isDef(liquid.tableJsonSource.filters)) liquid.tableJsonSource.filters = [];
-                                    if(!Array.isArray(liquid.tableJsonSource.filters)) {
-                                        liquid.curFilter = 0;
-                                        liquid.tableJsonSource.filters = [ liquid.tableJsonSource.filters ];                                        
-                                    } else {
-                                        if(!isDef(liquid.tableJsonSource.filters[0]) || !liquid.tableJsonSource.filters.length) {
-                                            var newFiltersJson = { name:"", title:"", tooltip:"", icon:"", nRows:filtersColumns.length/2, nCols:2, columns:[] };
-                                            liquid.tableJsonSource.filters.push( newFiltersJson );
-                                            liquid.curFilter = 0;
-                                        }
-                                    }
-                                    if(nameItems[1] === 'newFilters') {
-                                        var newFiltersJson = { name:filtersName, title:filtersName, tooltip:"", icon:"", nRows:nRows, nCols:nCols, columns:filtersColumns };
-                                        try { console.log("INFO: new filters json : \n"+JSON.stringify(newFiltersJson)); } catch(e) { console.error(e); }
-                                        // adding the property...
-                                        Liquid.addProperty(liquid, ftIndex1B, "filters", newFiltersJson);
-                                        
-                                    } else if(nameItems[1] === 'newFilter') {
-                                        Liquid.addFilterToGroup(liquid, ftIndex1B, liquid.curFilter, filtersColumns, true);
-                                    }
-                                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                                }
-                            }
-                        } else {
-                            console.error("ERROR : Unrecognized taget");
-                        }
-                    } else {
-                        console.warn("ERROR : no column selected");
-                    }
-                }
-            }
-        }
-    },    
-    // Add one or more filters to the Filters Group at index 'curFilter'
-    // TODO : test
-    addFilterToGroup:function(liquid, ftIndex1B, curFilter, filtersColumns, bPrint) {
-        var propName = "filters";
-        if(ftIndex1B) {
-            //
-            // update from source the foreignTable
-            //
-            var foreignTable = liquid.tableJsonSource.foreignTables[ftIndex1B-1];
-            if(!isDef(foreignTable.options)) foreignTable.options = { };
-            if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
-            
-            if(curFilter < foreignTable.options[propName].length) {
-                for(var ic=0; ic<filtersColumns.length; ic++) {
-                    var filterColumn = filtersColumns[ic];
-                    if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
-                    foreignTable.options[propName][curFilter].columns.push( filterColumn );
-                }
-            } else {
-                console.error("ERROR:addFilterToGroup() out of range");
-            }
-            
-        } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
-            //
-            // update from the foreign table the source
-            //
-            if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                if(sourceLiquid) {
-                    var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                    if(!isDef(foreignTable.options)) foreignTable.options = { };
-                    if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
-
-                    // if(curFilter > liquid.tableJsonSource.filters.length || curFilter < 0) curFilter = liquid.tableJsonSource.filters.length;
-                    if(curFilter < liquid.tableJsonSource.filters.length) {
-                        if(!isDef(liquid.tableJsonSource.filters[curFilter].columns)) liquid.tableJsonSource.filters[curFilter].columns = [];
-                        for(var ic=0; ic<filtersColumns.length; ic++) {
-                            var filterColumn = filtersColumns[ic];
-                            if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
-                            liquid.tableJsonSource.filters[curFilter].columns.push( filterColumn );
-                        }
-                        // update all columns
-                        foreignTable.options[propName][curFilter].columns = liquid.tableJsonSource.filters[curFilter].columns;
-
-                        Liquid.setAskForSave(sourceLiquid, true);
-                    } else {
-                        console.error("ERROR:addFilterToGroup() out of range");
-                    }
-                } else {
-                    console.error("ERROR : source "+propName+" update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
-                }
-            } else {
-                console.error("ERROR : source "+propName+" update failed .. source foreign table not indexed");
-            }
-        } else {
-            //
-            // direct update
-            //
-            if(curFilter > liquid.tableJsonSource.filters.length || curFilter < 0) curFilter = liquid.tableJsonSource.filters.length;
-            if(!isDef(liquid.tableJsonSource.filters[curFilter].columns)) liquid.tableJsonSource.filters[curFilter].columns = [];
-            for(var ic=0; ic<filtersColumns.length; ic++) {
-                var filterColumn = filtersColumns[ic];
-                if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
-                liquid.tableJsonSource.filters[curFilter].columns.push( filterColumn );
-            }
-            // liquid.tableJsonSource.filters[curFilter].name = "";
-        }
-    },            
-    onNewCommand:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            if(liquid.tableJsonSource) {
-                var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-                if(ftIndex1B) { // work on liquid.foreignTables[].options
-                    liquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-                }            
-                if(typeof liquid.tableJsonSource.commands === 'undefined' || !liquid.tableJsonSource.commands) 
-                    liquid.tableJsonSource.commands = [];
-                var command = {};
-                var userCmdName = prompt("Enter command name", "new_command"+(liquid.tableJsonSource.commands.length+1));
-                if(userCmdName) {
-                    var cmdName = userCmdName.replace(/\ /g, "_");
-                    var cmdText = userCmdName.replace(/_/g, " ");
-                    var cmdImage = "new.png";
-                    var userClientSide = prompt("Enter client side action", "alert(\"Command fired\")");
-                    var userServerSide = prompt("Enter server side action", "com.company.application.class");                    
-                    // custom command
-                    newCommandJson = { name:cmdName, img:cmdImage, size:20, text:cmdText , server:userServerSide, params:["", ""], client:userClientSide };
-                                        
-                    // adding the property...
-                    Liquid.addProperty(liquid, ftIndex1B, "commands", newCommandJson);                    
-                    // Liquid.rebuildGrid(liquid, target_grid_coords.gridIndex);
-                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                }
-            }
-        } else {
-            console.error("ERROR: target coords not detected");
-        }
-    },
-    onServerCallbackTemplate:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            var funcName = prompt("Enter server side method name", "myCommand");
-            var funcCode = Liquid.getServerCallbackTemplateCode(liquid, funcName);
-            var dlg = Liquid.createServerCallbackTemplate(liquid, "ServerCallbackTemplateCode");
-            document.body.appendChild(dlg);
-            dlg.style.display = "";
-            var dlgContent = document.querySelector(".liquidEditorDialog-content");
-            if(dlgContent) {
-                dlgContent.style.top = dlg.parentNode.offsetTop + dlg.parentNode.clientHeight/2 - (dlgContent.clientHeight > 0 ? dlgContent.clientHeight:250)/2;
-                dlgContent.style.left = dlg.parentNode.offsetLeft + dlg.parentNode.clientWidth/2 - (dlgContent.clientWidth > 0 ? dlgContent.clientWidth:200)/2;
-                dlgContent.style.position='absolute';
-            }            
-            document.getElementById("ServerCallbackTemplateCode").innerHTML = funcCode;
-        }
-    },
-    onNewActionBar:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            if(liquid.tableJsonSource) {
-                if(typeof liquid.tableJsonSource.actions === 'undefined' || !liquid.tableJsonSource.actions)
-                    liquid.tableJsonSource.actions = [];                
-                var userCmdName = prompt("Enter action name", "new_action"+(liquid.tableJsonSource.actions.length+1));
-                if(userCmdName) {
-                    var cmdName = userCmdName.replace(/\ /g, "_");
-                    var userClientSide = prompt("Enter client side action", "Liquid.close");
-                    var userServerSide = prompt("Enter server side action", "com.company.application.class");
-                    var command = { name:cmdName, img:"cancel.png", size:20, text:"Close", client:userClientSide, server:userServerSide };
-                    liquid.tableJsonSource.actions.push(command);
-                    try { console.log("INFO: updated table json : \n"+JSON.stringify(liquid.tableJsonSource)); } catch(e) { console.error(e); }
-                    Liquid.setAskForSave(liquid, true);
-                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                }
-            }
-        }
-    },
-    onNewCommandBar:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            if(liquid.tableJsonSource) {
-                if(typeof liquid.tableJsonSource.commands === 'undefined' || !liquid.tableJsonSource.commands)
-                    liquid.tableJsonSource.commands = [ {name:"insert"} ,{name:"update"},{name:"delete"},{name:"previous"},{name:"next"} ];
-                var userCmdName = prompt("Enter action name", "new_command"+(liquid.tableJsonSource.commands.length+1));
-                if(userCmdName) {
-                    var cmdName = userCmdName.replace(/\ /g, "_");
-                    var userClientSide = prompt("Enter client side action", "Liquid.close");
-                    var userServerSide = prompt("Enter server side action", "com.company.application.class");
-                    var command = { name:cmdName, img:"cancel.png", size:20, text:"Close", client:userClientSide, server:userServerSide };
-                    liquid.tableJsonSource.commands.push(command);
-                    try { console.log("INFO: updated table json : \n"+JSON.stringify(liquid.tableJsonSource)); } catch(e) { console.error(e); }
-                    Liquid.setAskForSave(liquid, true);
-                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                }
-            }
-        }
-    },
-    onNewEvent:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {            
-            // TODO : dialogo tipo evento  + codice java callback
-            Liquid.onContextMenu({target:{classList:["liquidEvent"],id:liquid.controlId}});
-        }
-    },
-    onNewEventOk:function(formId, obj) {
-        var liquid = Liquid.getLiquid(obj);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            var event = {};
-            var formObj = document.getElementById(formId);
-            Liquid.formToObjectExchange(formObj, event);
-            if(liquid.tableJsonSource) {
-                if(typeof liquid.tableJsonSource.events === 'undefined' || !liquid.tableJsonSource.events)
-                    liquid.tableJsonSource.events = [];
-                liquid.tableJsonSource.events.push( event );
-                Liquid.setAskForSave(liquid, true);
-                Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-            }
-        }
-    },
-    onNewWindowFromTableName:function(tableName, mode, parentObjId) {
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidSelectTables', window.liquidSelectTables);
-        var selectorLiquid = Liquid.getLiquid("liquidSelectTables");
-        if(selectorLiquid) {
-            selectorLiquid.lastAction = { name:"ok" };
-            selectorLiquid.tableJson.selections = [ { TABLE:tableName } ];
-            Liquid.close(selectorLiquid);
-            Liquid.onNewWindowProcess('',(mode?mode:'winX'),(parentObjId?parentObjId:'WinXContainer'));
-        } else console.error("ERROR: selector module not found");
-    },
-    onNewWindow:function(event, mode, parentObjId) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        if(!glLiquidGenesisToken) {
-            alert("In order to create new window you must Enable Project Mode by server-side");
-            return;
-        }
-        Liquid.startPopup('liquidSelectTables', window.liquidSelectTables);
-        var selectorLiquid = Liquid.getLiquid("liquidSelectTables");
-        if(selectorLiquid) {
-            if(mode === 'formX')
-                selectorLiquid.tableJson.caption = "New FormX : <b>select table (if you need to store data)</b>";
-            else
-                selectorLiquid.tableJson.caption = "New Window : <b>select table</b>";
-            selectorLiquid.tableJson.database = Liquid.curDatabase;
-            selectorLiquid.tableJson.schema = Liquid.curSchema;
-            selectorLiquid.tableJson.table = "";
-            Liquid.loadData(selectorLiquid, null, "newWindow");
-            selectorLiquid.onPostClosed = "Liquid.onNewWindowProcess('"+obj_id+"'"+",'"+(mode?mode:'winX')+"','"+(parentObjId?parentObjId:'WinXContainer')+"')";
-            if(typeof event === 'object') event.stopPropagation();
-        } else console.error("ERROR: selector module not found");
-    },
-    onNewWindowProcess:function(obj_id, mode, parentObjId) {
-        var selectorLiquid = Liquid.getLiquid("liquidSelectTables");
-        if(selectorLiquid) {
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                if(selectorLiquid.tableJson.selections) {
-                    if(selectorLiquid.tableJson.selections.length) {
-                        var sels = selectorLiquid.tableJson.selections;
-                        if(sels.length > 0) {
-                            var table = sels[0]["TABLE"];
-                            Liquid.startPopup('liquidSelectTableColumns', window.liquidSelectTableColumns);
-                            var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-                            if(mode === 'formX')
-                                selectorLiquid.tableJson.caption = "New forX : <b>select columns</b>";
-                            else
-                                selectorLiquid.tableJson.caption = "New Window : <b>select columns</b>";
-                            selectorLiquid.tableJson.database = Liquid.curDatabase;
-                            selectorLiquid.tableJson.schema = Liquid.curSchema;
-                            selectorLiquid.tableJson.table = table;
-                            Liquid.loadData(selectorLiquid, null, "newWindow");
-                            selectorLiquid.onPostClosed = "Liquid.onNewWindowProcess2('"+obj_id+"','"+mode+"','"+parentObjId+"','"+table+"')";
-                            if(typeof event === 'object') event.stopPropagation();
-                        } else {
-                            
-                        }
-                    }
-                }
-            }
-        } else console.error("ERROR: selector module not found");
-    },
-    onNewWindowProcess2:function(obj_id, mode, parentObjId, table) {
-        var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-        if(selectorLiquid) {
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                var cols = [];
-                if(selectorLiquid.tableJson.selections && selectorLiquid.tableJson.selections.length) {
-                    var sels = selectorLiquid.tableJson.selections;
-                    for(var i=0; i<sels.length; i++) {
-                        cols.push( { name:sels[i]["COLUMN"], width:"!auto", label:sels[i]["COLUMN"] } );
-                    }
-                } else {
-                    if(mode === 'formX') {
-                        cols.push( { name:"data1" } );
-                    }
-                }
-                
-                if(cols) {
-                    var defaultVal = "";
-                    if(mode === 'winX')
-                        defaultVal = ""+(table)+"";
-                    else if(mode === 'formX')
-                        defaultVal = "new formX_"+(table)+"";
-                    else
-                        defaultVal = "new_control_"+(glLiquids.length+1);
-
-                    var parentObj = document.getElementById(parentObjId);
-                    var width = Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5;
-                    var height = Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5;
-                    var controlId = prompt("Enter control name", defaultVal);
-                    if(controlId) {
-                        var copyCounter = 1;
-                        var sourceControlId = controlId;
-                        var checkLiquid = true;
-                        while(checkLiquid) {
-                            checkLiquid = Liquid.getLiquid(controlId);
-                            if(checkLiquid) {
-                                copyCounter++;
-                                controlId = sourceControlId+"("+copyCounter+")";
-                            }
-                        }
-                        var cmds = [];
-                        if(mode === 'winX')
-                            cmds = [ { name:"create" },{ name:"update" },{ name:"delete" },{ name:"copy" },{ name:"paste" },{ name:"next" },{ name:"previous" } ];
-                        
-                        liquidJson = { database:Liquid.curDatabase, schema:Liquid.curSchema, table:table, columns:cols, commands:cmds, caption:controlId, mode:mode, parentObjId:parentObjId, autoFitColumns:true, width:width, height:height, resize:"both", askForSave:true, editable:true };
-                        
-                        if(mode === 'formX') {
-                            liquidJson.navVisible = false;
-                            liquidJson.autoInsert = false;
-                            liquidJson.layouts = [ { name:"MyFormX", title:"My formX", tooltip:"My formX", icon:"", source:"url(liquidFormX.jsp)", nRows:1, overflow:"overlay" } ];
-                            liquidJson.actions = [ 
-                                 { name:"cancel", img:"cancel.png", size:20, text:"Annulla", client:"Liquid.close"  }
-                                ,{ name:"ok", img:"add.png", size:20, text:"OK", server:"com.liquid.event.echo", client:["Liquid.close", "closeFormX()"] }
-                            ];
-                            liquidJson.listTabVisible = false;
-                            liquidJson.layoutsTabVisible = false;
-                            liquidJson.owner = "com.liquid.event";
-                            liquidJson.events = [ { name:"onInserted", server:"com.liquid.event.onInsertedRow", params:[], client:"" } ];
-                        }
-    
-                        if(Liquid.curDriver) liquidJson.driver = Liquid.curDriver; 
-                        if(Liquid.curConnectionURL) liquidJson.connectionURL = Liquid.curConnectionURL;
-                        liquidJson.token = glLiquidGenesisToken;
-                        liquidJson.askForSave = true;
-                        var newLiquid = new LiquidCtrl(controlId, controlId, JSON.stringify(liquidJson)
-                                        , null
-                                        , mode, parentObjId
-                                        );
-                        Liquid.setFocus(controlId);
-                    }
-                }
-            }
-        } else console.error("ERROR: selector module not found");
-    },
-    onNewWindowFromFileJson:function(obj_id, mode, parentObjId, file) {
-        var reader = new FileReader();
-        reader.onload = (function(theFile) {
-            return function(e) {
-                Liquid.onNewWindowFromJsonProcess(obj_id, mode, parentObjId, e.target.result);
-            };
-        })(file);
-        reader.readAsText(file);
-    },      
-    onNewWindowFromJson:function(obj_id, mode, parentObjId) {
-        Liquid.onContextMenuClose();
-        if(!glLiquidGenesisToken) {
-            alert("In order to create new window you must Enable Project Mode by server-side");
-            return;
-        }
-        var parentObj = document.getElementById(parentObjId);
-        var width = Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5;
-        var height = Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5;
-        var liquidJsonString = prompt("Enter control json", "{}");
-        return Liquid.onNewWindowFromJsonProcess(obj_id, mode, parentObjId, liquidJsonString);
-    },
-    onNewWindowFromJsonProcess:function(obj_id, mode, parentObjId, liquidJsonString) {
-        if(liquidJsonString) {
-            var parentObj = document.getElementById(parentObjId);
-            var width = Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5;
-            var height = Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5;
-            var liquidJson = JSON.parse(liquidJsonString);
-            var controlId = liquidJson.controlId;
-            if(!controlId) {
-                controlId = "window-"+liquidJson.table;
-            }
-            if(controlId) {
-                var copyCounter = 1;
-                var sourceControlId = controlId;
-                var checkLiquid = true;
-                while(checkLiquid) {
-                    checkLiquid = Liquid.getLiquid(controlId);
-                    if(checkLiquid) {
-                        copyCounter++;
-                        controlId = sourceControlId+"("+copyCounter+")";
-                    }
-                }
-                // liquidJson = { database:Liquid.curDatabase, schema:Liquid.curSchema, table:table, columns:cols, caption:controlId, mode:mode, parentObjId:parentObjId, autoFitColumns:true, width:width, height:height, resize:"both", askForSave:true };
-                if(Liquid.curDriver) liquidJson.driver = Liquid.curDriver; 
-                if(Liquid.curConnectionURL) liquidJson.connectionURL = Liquid.curConnectionURL;
-                liquidJson.columnsResolved = null;
-                liquidJson.columnsResolvedBy = null;
-                liquidJson.token = glLiquidGenesisToken;
-                new LiquidCtrl( controlId, controlId, JSON.stringify(liquidJson), 
-                                null, 
-                                mode, parentObjId );
-            }
-        }
-    },
-    onNewColumns:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {            
-            if(liquid.tableJsonSource) {
-                Liquid.startPopup('liquidSelectTableColumns', window.liquidSelectTableColumns);
-                var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-                selectorLiquid.tableJson.caption = "New Liquid Window : <b>select columns</b>";
-                selectorLiquid.tableJson.database = Liquid.curDatabase;
-                selectorLiquid.tableJson.schema = Liquid.curSchema;
-                selectorLiquid.tableJson.table = liquid.tableJson.table;
-                Liquid.loadData(selectorLiquid, null, "newColumn");
-                selectorLiquid.onPostClosed = "Liquid.onNewColumnsProcess('"+obj_id+"')";
-            }
-        }
-    },
-    onNewColumnsProcess:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        if(liquid) {
-            var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-            if(selectorLiquid) {
-                if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                    if(selectorLiquid.tableJson.selections) {
-                        if(selectorLiquid.tableJson.selections.length) {
-                            var sels = selectorLiquid.tableJson.selections;
-                            var colsToAdd = [];
-                            var colsToRemove = [];
-                            for(var i=0; i<liquid.tableJson.columns.length; i++) {
-                                colsToRemove.push(liquid.tableJson.columns[i].name);
-                            }
-                            for(var i=0; i<sels.length; i++) {
-                                var col = Liquid.getColumn(liquid, sels[i]["COLUMN"]);
-                                if(col) {
-                                    colsToRemove.splice(col.name, 1);
-                                } else {
-                                    colsToAdd.push(sels[i]["COLUMN"]);
-                                }
-                            }
-                            console.log("INFO: columns added:"+colsToAdd.toString() + "...");
-                            console.log("INFO: columns removed:"+colsToRemove.toString() + "...");
-                            
-                            // rimozioe e aggiunta colonne
-                            if(liquid.columnsApi) {
-                                for(var ic=0; ic<colsToAdd.length; ic++) {
-                                    liquid.columnsApi(liquid, "add", colsToAdd[ic], liquid.columnsApiParams);
-                                }
-                                for(var ic=0; ic<colsToRemove.length; ic++) {
-                                    liquid.columnsApi(liquid, "delete", colsToRemove[ic], liquid.columnsApiParams);
-                                }
-                            }
-                            Liquid.setAskForSave(liquid, true);
-                            Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                        }
-                    }
-                }            
-            }
-        }
-    },
-    onColumnsManager:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-            var tagetLiquid = liquid;
-            var foreignTable = null;
-            if(ftIndex1B) { // work on liquid.foreignTables[].options
-                tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-                foreignTable = liquid.tableJsonSource.foreignTables[ftIndex1B-1];
-            } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
-                // update from the foreign table the source
-                if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                    var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                    if(sourceLiquid) {
-                        foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                    }
-                }
-            }
-            if(foreignTable){
-                if(isDef(foreignTable.options)) {
-                    if(isDef(foreignTable.options.columns)) {
-                        if(typeof foreignTable.options.columns === 'string') {
-                            alert("WARNING: Unable to manage columns define by expression\n\nYou should detect manually the source control and modify it");
-                            console.error("ERROR: unsupported case");
-                            return;
-                        }
-                    }
-                }
-            }            
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', glLiquidServlet + '?operation=getColumnsManager&controlId=' + tagetLiquid.controlId);
-            xhr.send(JSON.stringify(liquid.tableJsonSource));
-            xhr.onreadystatechange = function() {
-                if(xhr.readyState === 4) {
-                    if(xhr.status === 200) {
-                        try {
-                            if(xhr.responseText) {
-                                Liquid.startPopup('liquidColumnsManager', xhr.responseText);
-                                var selectorLiquid = Liquid.getLiquid("liquidColumnsManager");
-                                selectorLiquid.tableJson.caption = "Columns Manager : <b>"+liquid.controlId+"</b>";
-                                Liquid.loadData(selectorLiquid, null, "columnsManager");
-                                selectorLiquid.onPostClosed = "Liquid.onColumnsManagerProcess('"+liquid.controlId+"')";
-                            } else
-                                console.error(xhr.responseText);
-                        } catch (e) {
-                            console.error(xhr.responseText);
-                            alert("FATAL ERROR: unsupported condition in columsn manager... error:"+e);
-                        }
-                    }
-                }
-            };
-        }
-    },
-    onColumnsManagerProcess:function(controlId) {
-        var liquid = Liquid.getLiquid(controlId);
-        if(liquid) {            
-            var selectorLiquid = Liquid.getLiquid("liquidColumnsManager");
-            if(selectorLiquid) {
-                if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', glLiquidServlet + '?operation=setColumnsManager&controlId=' + liquid.controlId);
-                    var nodes = selectorLiquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                    var dataSet = [];
-                    for(var node=0; node<nodes.length; node++) dataSet.push(nodes[node].data);
-                    xhr.send("{\"dataSet\":"+JSON.stringify(dataSet)+"}");
-                    xhr.onreadystatechange = function() {
-                        if(xhr.readyState === 4) {
-                            if(xhr.status === 200) {
-                                try {
-                                    if(xhr.responseText) {
-                                        var resltJson = JSON.parse(xhr.responseText);
-                                        // "{ "columns":... , "log":[...]}"
-                                        try { console.log("INFO: "+resltJson.log); } catch (e) { }
-
-                                        var targetColumns = null;
-                                        var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-                                        var foreignTable = null;                                        
-                                        if(ftIndex1B) { 
-                                            // update from source the foreignTable
-                                            foreignTable = liquid.tableJsonSource.foreignTables[ftIndex1B-1];
-                                        } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) { 
-                                            // update from the foreign table the source
-                                            if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                                                var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                                                if(sourceLiquid) {
-                                                    foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
-                                                }
-                                            }
-                                        }
-                                        if(foreignTable) {
-                                            if(!isDef(foreignTable.options)) foreignTable.options = { };
-                                            if(!isDef(foreignTable.options.columns)) foreignTable.options.columns = [];
-                                            targetColumns = foreignTable.options.columns;
-                                        } else {
-                                            targetColumns = liquid.tableJsonSource.columns;
-                                        }
-                                        
-                                        for(var ic=0; ic<resltJson.updatedColumns.length; ic++) {
-                                            for(var ics=0; ics<targetColumns.length; ics++) {
-                                                if(targetColumns[ics].name === resltJson.updatedColumns[ic].name) {
-                                                    Liquid.overlayObjectContent( targetColumns[ics], resltJson.updatedColumns[ic] );
-                                                    Liquid.setAskForSave(liquid, true);
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        for(var ic=0; ic<resltJson.addedColumns.length; ic++) {
-                                            if(resltJson.addedColumns[ic].name) {
-                                                targetColumns.push( resltJson.addedColumns[ic] );
-                                                Liquid.setAskForSave(liquid, true);
-                                            }
-                                        }
-                                        for(var ic=0; ic<resltJson.deletedColumns.length; ic++) {
-                                            var name = resltJson.deletedColumns[ic].name;
-                                            if(name) {
-                                                for(var index=0; index<targetColumns.length; index++) {
-                                                    if(targetColumns[index].name === name) {
-                                                        try { console.log("INFO: on "+liquid.controlId+" removed column "+name); } catch (e) { }
-                                                        targetColumns.splice(index, 1);
-                                                        Liquid.setAskForSave(liquid, true);
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        liquid.tableJsonSource.columnsResolved = false;
-                                        Liquid.rebuild( liquid, liquid.outDivObjOrId, liquid.tableJsonSource );
-                                    } else console.error("ERROR: "+xhr.responseText);
-                                } catch (e) {
-                                    console.error(xhr.responseText);
-                                }
-                            }
-                        }
-                    };
-                }
-            }
-        }
-    },
-    onNewGridLookup:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
-        Liquid.onContextMenuClose();
-        if(liquid) {
-            var nameItems = obj_id.split(".");
-            Liquid.startPopup('liquidSelectForeignKeys', window.liquidSelectForeignKeys);
-            var selectorLiquid = Liquid.getLiquid("liquidSelectForeignKeys");
-            selectorLiquid.tableJson.caption = "New Liquid Lookup : <b>create or select foreign key</b>";
-            selectorLiquid.tableJson.database = liquid.tableJson.database;
-            selectorLiquid.tableJson.schema = liquid.tableJson.schema;
-            selectorLiquid.tableJson.table = liquid.tableJson.table;
-            var grid_coords = Liquid.getGridCoords(liquid, obj_id);
-            if(grid_coords) {
-                var gridControl = grid_coords.control;
-                if(gridControl) {
-                    var col = grid_coords.column;
-                    selectorLiquid.tableJson.column = col.name;
-                }
-            }
-            Liquid.loadData(selectorLiquid, null, "newGridLookup");
-            selectorLiquid.onPostClosed = "Liquid.onNewGridLookupProcess('"+obj_id+"')";
-            Liquid.autoInsert(selectorLiquid);
-            if(typeof event === 'object') event.stopPropagation();
-        }
-    },
-    onNewGridLookupProcess:function(obj_id) {
-        var liquid = Liquid.getLiquid(obj_id);
-        if(liquid) {
-            var selectorLiquid = Liquid.getLiquid("liquidSelectForeignKeys");
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok" && selectorLiquid.tableJson.selections) {
-                var sel = selectorLiquid.tableJson.selections[0];
-                if(sel) {
-                    Liquid.startPopup('liquidSelectTableColumns', window.liquidSelectTableColumns);
-                    var selectorColumnLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-                    selectorColumnLiquid.tableJson.caption = "New Lookup : <b>select columns to show</b>";
-                    selectorColumnLiquid.tableJson.database = liquid.tableJson.database;
-                    selectorColumnLiquid.tableJson.schema = liquid.tableJson.schema;
-                    selectorColumnLiquid.tableJson.table = sel["FOREIGN_TABLE"];
-                    Liquid.loadData(selectorColumnLiquid, null, "newGridLookup");
-                    selectorColumnLiquid.onPostClosed = "Liquid.onNewGridLookupProcess2('"+obj_id+"')";
-                }
-            }
-        }
-    },
-    onNewGridLookupProcess2:function(obj_id, selectorLiquid) {
-        var liquid = Liquid.getLiquid(obj_id);
-        if(liquid) {
-            var nameItems = obj_id.split(".");
-            var selectorLiquid = Liquid.getLiquid("liquidSelectForeignKeys");
-            var selectorColumnLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-            if(selectorColumnLiquid.lastAction && selectorColumnLiquid.lastAction.name==="ok" && selectorColumnLiquid.tableJson.selections) {
-                var colSel = selectorColumnLiquid.tableJson.selections[0];
-                if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok" && selectorLiquid.tableJson.selections) {
-                    var rootLiquid = Liquid.getRootLiquid(liquid);
-                    for(var isel=0; isel<selectorLiquid.tableJson.selections.length; isel++) {
-                        var sel = selectorLiquid.tableJson.selections[isel];
-                        if(sel) {
-                            var grid_coords = Liquid.getGridCoords(liquid, obj_id);
-                            if(grid_coords) {
-                                var gridControl = grid_coords.control;
-                                if(gridControl) {
-                                    var col = grid_coords.column;
-                                    if(col) {
-                                        if(typeof col.isReflected === 'undefined' || col.isReflected !== true) {
-                                            var columnsToShow = [];
-                                            for(var isc=0; isc<selectorColumnLiquid.tableJson.selections.length; isc++) {
-                                                columnsToShow.push( { name:selectorColumnLiquid.tableJson.selections[isc]["COLUMN"] } );
-                                            }
-                                            var globalVarName = "gl"+capitalizeFirstLetter(sel["FOREIGN_TABLE"].toCamelCase())+"JSON";
-                                            var controlName = sel["FOREIGN_TABLE"];
-                                            var controlId = null;
-                                            var foreignLiquid = Liquid.getLiquid(sel["FOREIGN_TABLE"]);
-                                            if(foreignLiquid) {
-                                                controlId = sel["FOREIGN_TABLE"];
-                                            } else {
-                                                foreignLiquid = Liquid.getProperty(sel["FOREIGN_TABLE"]);
-                                                if(foreignLiquid) {
-                                                    controlId = foreignLiquid;
-                                                } else {
-                                                    foreignLiquid = Liquid.getProperty(globalVarName);
-                                                    if(foreignLiquid) { // point to js global var
-                                                        controlId = globalVarName+".json";
-                                                    }                                                    
-                                                }
-                                            }
-                                            if(!isDef(controlId)) {
-                                                var msg = "Unable to find a control to use by the lookup : "
-                                                        +"\n\nControl "+controlName+" not found"
-                                                        +"\n\nGlobal var "+globalVarName+" not found"
-                                                        +"\n\n\nYou should define it manually (by \"lookup\":\"...\" property) ...";
-                                                alert(msg);
-                                                console.error(msg);
-                                                controlId = sel["FOREIGN_TABLE"];
-                                            }
-                                            
-                                            var lookupField = colSel["COLUMN"];
-                                            var newOptionsJson = {
-                                                lookupField:lookupField,
-                                                idColumn:sel["FOREIGN_COLUMN"],
-                                                targetColumn:sel["COLUMN"],
-                                                navVisible:true,
-                                                autoSelect:false,
-                                                status:"closed",
-                                                height:Liquid.defaultLookupHeight,
-                                                columns:columnsToShow };
-                                            // verify if exist
-                                            var new_col_name = sel["FOREIGN_TABLE"] + "." + colSel["COLUMN"];
-                                            var new_col_label = colSel["COLUMN"].replace(/\_/g, " ")
-
-                                            if(confirm("Hide column "+col.name+" ?")) {
-                                                col.visible = false;
-                                            }
-                                            
-                                            if(!isDef(sel["COLUMN"])) {
-                                                sel["COLUMN"] = col.name;
-                                            }
-                                            
-                                            // new column on table columns
-                                            var new_col = { 
-                                                 name: new_col_name
-                                                ,foreignTable: sel["FOREIGN_TABLE"]
-                                                ,foreignColumn: sel["FOREIGN_COLUMN"] 
-                                                ,column: sel["COLUMN"]
-                                            };
-                                            new_col.lookup = controlId;
-                                            new_col.options = newOptionsJson;
-                                            
-                                            if(liquid.columnsApi) {
-                                               liquid.columnsApi(liquid, "add", new_col, liquid.columnsApiParams);
-                                            }
-
-                                            // replace grid column pointer
-                                            var updatedGrid = null;
-                                            if(liquid.gridsApi) {
-                                                updatedGrid = liquid.gridsApi(liquid, "update", grid_coords.gridIndex, grid_coords.itemIndex, { name:new_col_name, label:new_col_label }, liquid.gridsApiParams );
-                                            }
-
-                                            try { console.log("INFO: grid field : \n"+JSON.stringify(updatedGrid.columns[grid_coords.itemIndex])); } catch(e) { console.error(e); }
-                                            try { console.log("INFO: new column : \n"+JSON.stringify(new_col)); } catch(e) { console.error(e); }
-                                        }
-                                    }
-                                }                                                
-                            }
-                        }
-                    }                    
-                    Liquid.setAskForSave(rootLiquid, true);
-                    Liquid.rebuild(rootLiquid, rootLiquid.outDivObjOrId, rootLiquid.tableJsonSource);
-                }
-            }
-        }
-    },
-    onSetDatabase:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidSelectDatabases', window.liquidSelectDatabases);
-        var selectorLiquid = Liquid.getLiquid("liquidSelectDatabases");
-        if(selectorLiquid) {
-            selectorLiquid.tableJson.caption = "<b>Select current Database</b>";
-            selectorLiquid.tableJson.database = Liquid.curDatabase;
-            Liquid.loadData(selectorLiquid, null, "setDatabase");
-            selectorLiquid.onPostClosed = "Liquid.onSetDatabaseProcess('"+obj_id+"')";
-            if(typeof event === 'object') event.stopPropagation();
-        } else console.error("ERROR: selector module not found");
-    },
-    onSetDatabaseProcess:function(obj_id) {
-        var selectorLiquid = Liquid.getLiquid("liquidSelectDatabases");
-        if(selectorLiquid) {
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                if(selectorLiquid.tableJson.selections) {
-                    if(selectorLiquid.tableJson.selections.length) {
-                        var sels = selectorLiquid.tableJson.selections;
-                        Liquid.curDatabase = sels[0]["DATABASE"];
-                    }
-                }
-            }
-        }
-    },
-    onSetSchema:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidSelectSchemas', window.liquidSelectSchemas);
-        var selectorLiquid = Liquid.getLiquid("liquidSelectSchemas");
-        if(selectorLiquid) {
-            selectorLiquid.tableJson.caption = "<b>Select current Schema</b>";
-            selectorLiquid.tableJson.database = Liquid.curDatabase;
-            selectorLiquid.tableJson.schema =  Liquid.curSchema;
-            Liquid.loadData(selectorLiquid, null, "setSchema");
-            selectorLiquid.onPostClosed = "Liquid.onSetSchemaProcess('"+obj_id+"')";
-            if(typeof event === 'object') event.stopPropagation();
-        } else console.error("ERROR: selector module not found");
-    },    
-    onSetSchemaProcess:function(obj_id) {
-        var selectorLiquid = Liquid.getLiquid("liquidSelectSchemas");
-        if(selectorLiquid) {
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                if(selectorLiquid.tableJson.selections) {
-                    if(selectorLiquid.tableJson.selections.length) {
-                        var sels = selectorLiquid.tableJson.selections;
-                        Liquid.curSchema = sels[0]["SCHEMA"];
-                    } else {
-                        console.info("INFO: setting schema as default");
-                        Liquid.curSchema = "";
-                    }
-                }
-            }
-        }
-    },
-    onLiquidAssets:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidAssets', window.liquidAssets);
-    },
-    onLiquidRoles:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidRoles', window.liquidRoles);
-    },
-    onLiquidRolesAssets:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidRolesAssets', window.liquidRolesAssets);
-    },
-    onLiquidUsersRoles:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidUsersRoles', window.liquidUsersRoles);
-    },
-    onLiquidUsersAssets:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidUsersAssets', window.liquidUsersAssets);
-    },
-    onLiquidLoginUsers:function(event) {
-        var obj = typeof event === 'object' ? event.target : null;
-        var obj_id = typeof event === 'object' ? obj.id : event;
-        Liquid.onContextMenuClose();
-        Liquid.startPopup('liquidLoginUsers', window.liquidLoginUsers);
-    },
     is_asset_active:function(jsonObject, asset) {
         if(jsonObject) {
             if(isDef(jsonObject.assets)) {
@@ -7828,261 +6782,6 @@ var Liquid = {
             }
         }
     },
-    onMenuOptions:function(obj) {
-        Liquid.onContextMenu({target:{classList:["liquidMenuX"],id: typeof obj === 'string' ? obj : obj.id}});
-    },
-    onLayoutOptions:function(obj) {
-        Liquid.onContextMenu({target:{classList:["liquidLayoutOptions"],id: typeof obj === 'string' ? obj : obj.id}});
-    },
-    onGridOptions:function(obj) {
-        Liquid.onContextMenu({target:{classList:["liquidGridOptions"],id: typeof obj === 'string' ? obj : obj.id}});
-    },
-    onOptions:function(obj) {
-        Liquid.onContextMenu({target:{classList:["liquidOptions"],id: typeof obj === 'string' ? obj : obj.id}});
-    },
-    onLiquidOptions:function() {
-        Liquid.onContextMenu({target:{classList:["liquidGeneralOptions"],id:null}});
-    },
-    onOptionsOk:function(objId, controlId) {
-        var obj = document.getElementById(objId);
-        var liquid = Liquid.getLiquid(controlId);
-        if(obj && liquid) {
-            var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-            var tagetLiquid = liquid;
-            if(ftIndex1B) { // work on liquid.foreignTables[].options
-                tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-                var foreignTable = liquid.tableJsonSource.foreignTables[ftIndex1B-1];
-                if(typeof foreignTable.options === 'undefined') foreignTable.options = { };
-                Liquid.formToObjectExchange(obj, foreignTable.options);
-            }
-            if(Liquid.formToObjectExchange(obj, tagetLiquid.tableJsonSource)) {
-                try { console.log("INFO: updated table json : \n"+JSON.stringify(tagetLiquid.tableJsonSource)); } catch(e) { console.error(e); }
-                Liquid.setAskForSave(liquid, true);
-                Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-            } else {
-                console.log("INFO: no changes to apply");
-            }
-        }
-    },
-    onGridOptionsOk:function(objId, controlId, gridName) {
-        var obj = document.getElementById(objId);
-        var liquid = Liquid.getLiquid(controlId);
-        if(obj && liquid && gridName) {
-            var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-            var gridIndex1B = Liquid.getGridIndexByName(liquid, gridName);
-            if(gridIndex1B) {
-                var grid = liquid.tableJson.grids[gridIndex1B-1];
-                var newOptions = {};
-                if(Liquid.formToObjectExchange(obj, newOptions)) {
-                    Liquid.updateProperty(liquid, ftIndex1B, "grids", gridIndex1B-1, newOptions);
-                    if(!isDef(liquid.sourceData)) liquid.sourceData = {};
-                    liquid.sourceData.tempCurrentTab = gridIndex1B;
-                    Liquid.setAskForSave(liquid, true);
-                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                    try { console.log("INFO: updated table json : \n"+JSON.stringify(liquid.tableJsonSource.grids[gridIndex1B-1])); } catch(e) { console.error(e); }
-                } else {
-                    console.log("INFO: no changes to apply");
-                }
-            }
-        }
-    },
-    onGridFieldOptionsOk:function(objId, controlId, gridName, fieldName) {
-        var obj = document.getElementById(objId);
-        var liquid = Liquid.getLiquid(controlId);
-        if(obj && liquid && gridName) {
-            var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-            var gridIndex1B = Liquid.getGridIndexByName(liquid, gridName);
-            if(gridIndex1B) {
-                var grid = liquid.tableJson.grids[gridIndex1B-1];
-                var newOptions = {};
-                if(Liquid.formToObjectExchange(obj, newOptions)) {
-                    var sourceObjects = Liquid.getSourceProperty(liquid, ftIndex1B, "grids", gridIndex1B-1);
-                    if(sourceObjects) {
-                        var sourceLiquid = sourceObjects[0];
-                        var sourceProperty = sourceObjects[1];
-                        var updateDone = false;
-                        for(var i=0; i<sourceProperty.columns.length; i++) {
-                            if(sourceProperty.columns[i].name === fieldName) {
-                                Liquid.overlayObjectContent(sourceProperty.columns[i], newOptions);
-                                updateDone = true;
-                                break;
-                            }
-                        }
-                        if(sourceProperty != liquid.tableJsonSource.grids[gridIndex1B-1]) { // reflect on runtime area
-                            sourceProperty = liquid.tableJsonSource.grids[gridIndex1B-1]
-                            for(var i=0; i<sourceProperty.columns.length; i++) {
-                                if(sourceProperty.columns[i].name === fieldName) {
-                                    Liquid.overlayObjectContent(sourceProperty.columns[i], newOptions);
-                                    updateDone = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if(updateDone) {
-                            try { console.log("INFO: updated table json : \n"+JSON.stringify(liquid.tableJsonSource.grids[gridIndex1B-1])); } catch(e) { console.error(e); }
-                            if(!isDef(liquid.sourceData)) liquid.sourceData = {};
-                            liquid.sourceData.tempCurrentTab = gridIndex1B;                    
-                            Liquid.setAskForSave(sourceLiquid, true);
-                            Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                        }
-                    }
-                } else {
-                    console.log("INFO: no changes to apply");
-                }
-            }
-        }
-    },            
-    onLiquidOptionsOk:function(objId) {
-        var obj = document.getElementById(objId);        
-        Liquid.formToObjectExchange(obj, Liquid);
-    },
-    onLayoutOptionsOk:function(objId, controlId, layoutName) {
-        var obj = document.getElementById(objId);
-        var liquid = Liquid.getLiquid(controlId);
-        if(obj && liquid && layoutName) {
-            var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-            var layoutIndex1B = Liquid.getLayoutIndexByName(liquid, layoutName);
-            if(layoutIndex1B) {
-                var layout = liquid.tableJson.layouts[layoutIndex1B-1];
-                var newOptions = {};
-                if(Liquid.formToObjectExchange(obj, newOptions)) {
-                    Liquid.updateProperty(liquid, ftIndex1B, "layouts", layoutIndex1B-1, newOptions);
-                    if(!isDef(liquid.sourceData)) liquid.sourceData = {};
-                    liquid.sourceData.tempCurrentTab = layoutIndex1B;
-                    Liquid.setAskForSave(liquid, true);
-                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                    try { console.log("INFO: updated table json : \n"+JSON.stringify(liquid.tableJsonSource.layouts[layoutIndex1B-1])); } catch(e) { console.error(e); }
-                } else {
-                    console.log("INFO: no changes to apply");
-                }
-            }
-        }
-    },
-    onLiquidConnection:function(event) {
-        var xhr = new XMLHttpRequest();
-        try {
-            xhr.open('POST', glLiquidServlet + '?operation=getConnection');
-            xhr.send();
-            xhr.onreadystatechange = function() {
-                if(xhr.readyState === 4) {
-                    if(xhr.status === 200) {
-                        try {
-                            if(xhr.responseText) {
-                                httpResultJson = JSON.parse(xhr.responseText);
-                                Liquid.curDriver = httpResultJson.driver ? atob(httpResultJson.driver) : "";
-                                Liquid.curConnectionURL = httpResultJson.connectionURL ? atob(httpResultJson.connectionURL) : "";
-                                Liquid.curConnectionDesc = httpResultJson.connectionDesc ? atob(httpResultJson.connectionDesc) : "";
-                            }
-                            Liquid.onContextMenu({target:{classList:["liquidConnection"],id:null}});
-                        } catch (e) { console.error("ERROR "+e+" on : "+xhr.responseText); }
-                    }
-                }
-            };
-        } catch (e) { console.error(e); }
-    },
-    onLiquidConnectionOk:function(objId) {
-        var obj = document.getElementById(objId);
-        Liquid.formToObjectExchange(obj, Liquid);
-        if(Liquid.curConnectionURL && Liquid.curConnectionURL) {
-            var xhr = new XMLHttpRequest();
-            try {
-                xhr.open('POST', glLiquidServlet + '?operation=setConnection' 
-                        + '&driver=' + btoa(Liquid.curDriver ? Liquid.curDriver : "")
-                        + '&connectionURL=' + btoa(Liquid.curConnectionURL ? Liquid.curConnectionURL : "")
-                        );
-                xhr.send();
-                xhr.onreadystatechange = function() {
-                    if(xhr.readyState === 4) {
-                        if(xhr.status === 200) {
-                            try {
-                                if(xhr.responseText) {
-                                    httpResultJson = JSON.parse(xhr.responseText);
-                                    Liquid.createPopup( httpResultJson.message, httpResultJson.img );
-                                }
-                            } catch (e) { console.error("ERROR "+e+" on : "+xhr.responseText); }
-                        }
-                    }
-                };
-            } catch (e) { console.error(e); }
-        } else {
-            Liquid.dialogBox(null, "ERROR", "Please select driver and url", { text:"OK", func:function() { } }, null);
-            // alert("ERROR: Please select driver and url");
-        }
-    },
-    onSearchDatabase:function(event) {
-        Liquid.onContextMenuClose();
-        var db = prompt("Database where to search, * for all", Liquid.curDatabase ? Liquid.curDatabase: "*");
-        if(db) {
-            var searchFor = prompt("String to search", Liquid.lastSearchFor);
-            if(searchFor) {
-                Liquid.onDoSearch(db, null, null, searchFor);
-                Liquid.lastSearchFor = searchFor;
-            }
-        }
-    },
-    onSearchSchema:function(event) {
-        Liquid.onContextMenuClose();
-        var scm = prompt("Schema where to search, * for all (current db.schema: "+(Liquid.curDatabase ? Liquid.curDatabase : "[N/D]")+"."+(Liquid.curSchema ? Liquid.curSchema : "[N/D]")+")", Liquid.curSchema ? Liquid.curSchema : "*");
-        if(scm) {
-            var searchFor = prompt("String to search", Liquid.lastSearchFor);
-            if(searchFor) {
-                Liquid.onDoSearch(Liquid.curDatabase, scm, null, searchFor);
-                Liquid.lastSearchFor = searchFor;            
-            }
-        }
-    },
-    onSearchTable:function(event) {
-        Liquid.onContextMenuClose();
-        var tbl = prompt("Table where to search, * for all (cur database.schema:"+Liquid.curDatabase+"."+Liquid.curSchema+")", "*");
-        if(tbl) {
-            var searchFor = prompt("String to search", Liquid.lastSearchFor);
-            if(searchFor) {
-                Liquid.onDoSearch(Liquid.curDatabase, Liquid.curSchema, tbl, searchFor);
-                Liquid.lastSearchFor = searchFor;
-            }
-        }
-    },
-    onDoSearch:function(database, schema, table, search) {
-        if(search) {
-            // craete status bar
-            var parentObjId = "WinXContainer";
-            Liquid.parentObj = document.getElementById(parentObjId);
-            Liquid.parentObjStatus = Liquid.createStatusDiv(Liquid.parentObj, parentObjId);
-            var xhr = new XMLHttpRequest();
-            try {
-                xhr.open('POST', glLiquidServlet + '?operation=search' 
-                        + '&database=' + (database ? database : "")
-                        + '&schema=' + (schema ? schema : "") 
-                        + '&table=' + (table ? table : "")
-                        + '&search=' + (search ? search : "")
-                        );
-                
-                xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(Liquid, null, "Searching", e); }, false);
-                xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(Liquid, null, "Searching", e); }, false);
-                xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(Liquid, null, "Searching", e); }, false);
-                xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(Liquid, null, "Searching", e); }, false);
-                xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(Liquid, null, "Searching", e); }, false);
-                
-                xhr.send();
-                xhr.onreadystatechange = function() {
-                    if(xhr.readyState === 4) {
-                        if(xhr.status === 200) {
-                            try {
-                                if(xhr.responseText) {
-                                    responseText = Liquid.getXHRResponse(xhr.responseText);
-                                    Liquid.createPopup( responseText, null );
-                                }
-                            } catch (e) {
-                                console.error(xhr.responseText);
-                            }
-                        }
-                    }
-                };
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    },    
     handleFormText:function(childNode) {
         if(childNode.name.toLowerCase() === 'redirect' || childNode.id.toLowerCase() === 'redirect') {
             if(childNode.value === '' || childNode.value === './') {
@@ -8164,17 +6863,21 @@ var Liquid = {
                                 // var comp = LZW.compress();
                             	// var my_lzma = new LZMA("./lzma_worker.js");                            	
                                 // queue.propValue = JSONC.pack( evt.target.result, true );
-                            	var s1 = evt.target.result.length;
+                            	
+                                /*
+                                 var s1 = evt.target.result.length;
                             	var t1 = performance.now();
                             	var zipped = gzip.zip(evt.target.result);
                             	var s2 = zipped.length;
+                                */
+                                
                             	// queue.propValue = "base64,"+Base64.encode(zipped);
                             	// queue.propValue = "binaryData,"+zipped.length+":"+zipped;
                             	// queue.propValue = "base64,"+btoa(zipped);
                             	queue.propValue = "base64,"+btoa(evt.target.result);                            	
                             	var t2 = performance.now();
                             	var s3 = queue.propValue.length;
-                            	console.log("ZIP time:"+(t2-t1)/1000.0 + " sec, size:"+s1 / 1024 +" / "+s2/1024+" / "+s3/1024 + " Kb, ratio:"+(s3/s1 * 100.0)+"%")
+                            	// console.log("ZIP time:"+(t2-t1)/1000.0 + " sec, size:"+s1 / 1024 +" / "+s2/1024+" / "+s3/1024 + " Kb, ratio:"+(s3/s1 * 100.0)+"%")
                             } else {
                                 if(!queue.propValue) queue.propValue = [];
                                 queue.propValue.push(evt.target.result); 
@@ -8295,190 +6998,195 @@ var Liquid = {
             if(event.server) {
                 event.response = null;
                 Liquid.registerOnUnloadPage();
-                if(!event.xhr)
-                    event.xhr = new XMLHttpRequest();
-                if(event.xhr) {
-                    event.xhr.open('POST', glLiquidServlet 
+                    
+                var onreadystatechange = function(liquid) {
+                    if(liquid.xhr.readyState === 4) {
+                        if(liquid.xhr.status === 200) {                                
+                            if(event.clientAfter === true || event.clientBefore === false) {
+                                Liquid.executeClientSide(liquid, "event:"+event.name, event.client, event.params, event.isNative);
+                            }                                
+                            try {
+                                var httpResultJson = null;
+                                if(liquid.xhr.responseText !== null && liquid.xhr.responseText !== 'null') {
+                                    try {
+                                        var responseText = Liquid.getXHRResponse(liquid.xhr.responseText);
+                                        httpResultJson = JSON.parse(responseText);
+                                    } catch (e) {
+                                        httpResultJson = null;
+                                        console.error("response:"+responseText);
+                                        console.error("ERROR : onEventProcess() : errore in response process:"+e+" on event "+event.name+" on control "+liquid.controlId);
+                                    }
+
+                                    event.response = httpResultJson;
+                                    if(httpResultJson) {
+                                        if(event.name === 'onGetSelection') {
+                                            try {
+                                                liquid.ids = httpResultJson.ids;
+                                                Liquid.setNodesSelected(liquid, liquid.ids);
+                                            } catch (e) {
+                                                console.error(e);
+                                            }
+                                        }
+                                        if(httpResultJson.client) {
+                                            Liquid.executeClientSide(liquid, "event response:"+event.name, httpResultJson.client, event.params, event.isNative);
+                                        }
+                                    }
+                                }
+                                // reset error
+                                Liquid.setErrorDiv(liquid, null);
+                                if(Liquid.isSystemEvent(event)) { }
+                                if(event.name === 'onInserting') {
+                                    if(httpResultJson) {
+                                        if(httpResultJson.resultSet) {
+                                            for(var ir = 0; ir < httpResultJson.resultSet.length; ir++) {
+                                                var fieldSet = httpResultJson.resultSet[ir];
+                                                var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
+                                                liquid.addingRow[primaryKeyField] = fieldSet[primaryKeyField];
+                                                for(var prop in fieldSet) {
+                                                    if(liquid.addingRow[prop] !== fieldSet[prop]) {
+                                                        if(liquid.addingRow[prop] !== fieldSet[prop]) {
+                                                            // Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.__objectId : null, liquid.addingRow[primaryKeyField], prop, liquid.addingRow[prop], fieldSet[prop]);
+                                                            liquid.addingRow[prop] = fieldSet[prop];
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } else console.warn("WARNING : no fields value on event "+event.name+" on control "+liquid.controlId + " .. please check event "+event.servero);
+                                    } else console.error("ERROR : invalid fields value on event "+event.name+" on control "+liquid.controlId + " .. please check event "+event.server);
+                                } else if(event.name === 'onPastedRow') {
+                                    if(httpResultJson.tables) {
+                                        var ids = [];
+                                        for(var it=0; it<httpResultJson.tables.length; it++) {
+                                            if(httpResultJson.tables[it].table === liquid.tableJson.table || httpResultJson.tables[it].table === liquid.tableJson.schema+"."+liquid.tableJson.table) {
+                                                if(httpResultJson.tables[it].error || httpResultJson.tables[it].fails) {
+                                                    // paste faild so create modification
+                                                    if(httpResultJson.tables[it].error) {
+                                                        Liquid.setErrorDiv(liquid, httpResultJson.error);
+                                                    }
+
+                                                    if(liquid.addingRow) {
+                                                        liquid.gridOptions.api.updateRowData({remove: [liquid.addingRow]});
+                                                    }
+
+                                                    liquid.addingRow = null;
+                                                    liquid.addingNode = null;
+                                                    Liquid.resetMofifications(liquid);
+
+                                                    console.warn("WARNING: row paste failed at "+liquid.controlId+" key:"+liquid.addingRow[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ] );
+                                                } else {
+                                                    // pasted ok
+                                                    if(httpResultJson.tables[it].ids) {
+                                                        for(var iid=0; iid< httpResultJson.tables[it].ids.length; iid++) {
+                                                            ids.push(httpResultJson.tables[it].ids[iid]);
+                                                            var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
+                                                            liquid.addingNode.data[primaryKeyField] = String(httpResultJson.tables[it].ids[iid]);
+                                                            liquid.nRows++;
+                                                            liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(liquid.nRows / liquid.gridOptions.paginationPageSize)) : 1;
+                                                            if(liquid.navObj) {
+                                                                Liquid.updateStatusBar(liquid);
+                                                            }
+                                                        }
+                                                    }
+                                                    liquid.addingRow = null;
+                                                    liquid.addingNode = null;
+                                                    Liquid.resetMofifications(liquid);
+                                                }
+                                            }
+                                        }
+                                        if(ids) {
+                                            if(ids.length) {
+                                                Liquid.loadData(liquid, ids, "onEventProcess");
+                                            }
+                                        }
+                                    }
+                                }
+                                if(httpResultJson) {
+                                    if(httpResultJson.error) {
+                                        console.error("[SERVER] ERROR:" + atob(httpResultJson.error) + " on event "+event.name+" on control "+liquid.controlId);
+                                        Liquid.setErrorDiv(liquid, httpResultJson.error);
+                                    }
+                                }
+                            } catch (e) {
+                                console.error(liquid.xhr.responseText);
+                                console.error("onEventProcess() . error in response process:" + e  + " on event "+event.name+" on control "+liquid.controlId);
+                            }
+                        } else {
+                            console.error("onEventProcess() . wrong response:" + liquid.xhr.status);
+                        }
+                        // excuting callback
+                        if(callback) {
+                            retVal = callback(callbackParams, httpResultJson);
+                        }
+                        if(Liquid.isSystemEvent(event)) {
+                            if(liquid.currentCommand) {
+                                if(liquid.currentCommand.step === Liquid.CMD_WAIT_FOR_ENABLE) {
+                                    liquid.currentCommand.step = Liquid.CMD_ENABLED;
+                                    Liquid.onButton(obj, liquid.currentCommand);
+                                }
+                            }
+                        }
+                    }
+                };
+                
+
+                var params = [];
+
+                //
+                // native parameters of the events ...
+                //
+                var eventBuiltInParams = (event.params ? JSON.parse(JSON.stringify(event.params)) : null);
+                if(eventBuiltInParams) {
+                    if(!Array.isArray(eventBuiltInParams)) {
+                        eventBuiltInParams = [ eventBuiltInParams ];
+                    }
+                    // Every row must be an object
+                    for(var ip=0; ip<params.length; ip++) {
+                        // N.B.: it's already processed and putted inside eventData
+                        if(typeof params[ip] !== 'object') {
+                            // params[ip] = { name:params[ip], data:"" };
+                        } else {
+                        }
+                    }
+                }
+                //
+                // N.B.: EventData come from event.params, so is the parameters resolved at runtime
+                //
+                if(isDef(eventData)) params.push( { data: eventData } );
+                if(isDef(eventParams)) {
+                    for(var ip=0; ip<eventParams.length; ip++) {
+                        params.push( eventParams[ip] );
+                    }
+                }
+                
+                /*
+                if(event.sync === true) {
+                } else {
+                }
+                */
+                  
+                // Send the request
+                Liquid.sendRequest(
+                      liquid
+                    , null
+                    , 'POST'
+                    , glLiquidServlet 
                             + '?operation=exec'
                             + '&className=' + encodeURI(event.server)
                             + '&clientData=' + encodeURI(JSON.stringify(event))
-                            + '&controlId=' + liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : ""),
-                            (event.sync === true ? false : true)
+                            + '&controlId=' + liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : "")
+                    , (event.sync === true ? false : true)
+                    , "{\"params\":" + JSON.stringify(params) + "}"
+                    , function(liquid) {
+                        onreadystatechange(liquid);
+                    }
+                    , "event "+event.name+" on "+liquid.controlId
+                    , function(param, e){ Liquid.onTransferUploading(param, event, "Event", e, event.onUploading, event.onUploadingParam); }
+                    , function(param, e){ Liquid.onTransferDownloading(param, event, "Event", e, event.onDownloading, event.onDownloadingParam); }
+                    , function(param, e){ Liquid.onTransferLoaded(param, event, "Event", e, event.onLoad, event.onLoadParam); }
+                    , function(param, e){ Liquid.onTransferFailed(param, event, "Event", e, event.onError, event.onErrorParam); }
+                    , function(param, e){ Liquid.onTransferAbort(param, event, "Event", e, event.onAbort, event.onAbortParam); }
                             );
-                    
-                    event.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, event, "Event", e, event.onUploading, event.onUploadingParam); }, false);
-                    event.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, event, "Event", e, event.onDownloading, event.onDownloadingParam); }, false);
-                    event.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, event, "Event", e, event.onLoad, event.onLoadParam); }, false);
-                    event.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, event, "Event", e, event.onError, event.onErrorParam); }, false);
-                    event.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, event, "Event", e, event.onAbort, event.onAbortParam); }, false);
-                    
-                    var onreadystatechange = function() {
-                        if(event.xhr.readyState === 4) {
-                            if(event.xhr.status === 200) {                                
-                                if(event.clientAfter === true || event.clientBefore === false) {
-                                    Liquid.executeClientSide(liquid, "event:"+event.name, event.client, event.params, event.isNative);
-                                }                                
-                                try {
-                                    var httpResultJson = null;
-                                    if(event.xhr.responseText !== null && event.xhr.responseText !== 'null') {
-                                        try {
-                                            var responseText = Liquid.getXHRResponse(event.xhr.responseText);
-                                            httpResultJson = JSON.parse(responseText);
-                                        } catch (e) {
-                                            httpResultJson = null;
-                                            console.error("response:"+responseText);
-                                            console.error("ERROR : onEventProcess() : errore in response process:"+e+" on event "+event.name+" on control "+liquid.controlId);
-                                        }
-                                        
-                                        event.response = httpResultJson;
-                                        if(httpResultJson) {
-                                            if(event.name === 'onGetSelection') {
-                                                try {
-                                                    liquid.ids = httpResultJson.ids;
-                                                    Liquid.setNodesSelected(liquid, liquid.ids);
-                                                } catch (e) {
-                                                    console.error(e);
-                                                }
-                                            }
-                                            if(httpResultJson.client) {
-                                                Liquid.executeClientSide(liquid, "event response:"+event.name, httpResultJson.client, event.params, event.isNative);
-                                            }
-                                        }
-                                    }
-                                    // reset error
-                                    Liquid.setErrorDiv(liquid, null);
-                                    if(Liquid.isSystemEvent(event)) { }
-                                    if(event.name === 'onInserting') {
-                                        if(httpResultJson) {
-                                            if(httpResultJson.resultSet) {
-                                                for(var ir = 0; ir < httpResultJson.resultSet.length; ir++) {
-                                                    var fieldSet = httpResultJson.resultSet[ir];
-                                                    var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
-                                                    liquid.addingRow[primaryKeyField] = fieldSet[primaryKeyField];
-                                                    for(var prop in fieldSet) {
-                                                        if(liquid.addingRow[prop] !== fieldSet[prop]) {
-                                                            if(liquid.addingRow[prop] !== fieldSet[prop]) {
-                                                                // Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.__objectId : null, liquid.addingRow[primaryKeyField], prop, liquid.addingRow[prop], fieldSet[prop]);
-                                                                liquid.addingRow[prop] = fieldSet[prop];
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            } else console.warn("WARNING : no fields value on event "+event.name+" on control "+liquid.controlId + " .. please check event "+event.servero);
-                                        } else console.error("ERROR : invalid fields value on event "+event.name+" on control "+liquid.controlId + " .. please check event "+event.server);
-                                    } else if(event.name === 'onPastedRow') {
-                                        if(httpResultJson.tables) {
-                                            var ids = [];
-                                            for(var it=0; it<httpResultJson.tables.length; it++) {
-                                                if(httpResultJson.tables[it].table === liquid.tableJson.table || httpResultJson.tables[it].table === liquid.tableJson.schema+"."+liquid.tableJson.table) {
-                                                    if(httpResultJson.tables[it].error || httpResultJson.tables[it].fails) {
-                                                        // paste faild so create modification
-                                                        if(httpResultJson.tables[it].error) {
-                                                            Liquid.setErrorDiv(liquid, httpResultJson.error);
-                                                        }
-                                                        
-                                                        if(liquid.addingRow) {
-                                                            liquid.gridOptions.api.updateRowData({remove: [liquid.addingRow]});
-                                                        }
-                                                        
-                                                        liquid.addingRow = null;
-                                                        liquid.addingNode = null;
-                                                        Liquid.resetMofifications(liquid);
-
-                                                        console.warn("WARNING: row paste failed at "+liquid.controlId+" key:"+liquid.addingRow[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ] );
-                                                    } else {
-                                                        // pasted ok
-                                                        if(httpResultJson.tables[it].ids) {
-                                                            for(var iid=0; iid< httpResultJson.tables[it].ids.length; iid++) {
-                                                                ids.push(httpResultJson.tables[it].ids[iid]);
-                                                                var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
-                                                                liquid.addingNode.data[primaryKeyField] = String(httpResultJson.tables[it].ids[iid]);
-                                                                liquid.nRows++;
-                                                                liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(liquid.nRows / liquid.gridOptions.paginationPageSize)) : 1;
-                                                                if(liquid.navObj) {
-                                                                    Liquid.updateStatusBar(liquid);
-                                                                }
-                                                            }
-                                                        }
-                                                        liquid.addingRow = null;
-                                                        liquid.addingNode = null;
-                                                        Liquid.resetMofifications(liquid);
-                                                    }
-                                                }
-                                            }
-                                            if(ids) {
-                                                if(ids.length) {
-                                                    Liquid.loadData(liquid, ids, "onEventProcess");
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if(httpResultJson) {
-                                        if(httpResultJson.error) {
-                                            console.error("[SERVER] ERROR:" + atob(httpResultJson.error) + " on event "+event.name+" on control "+liquid.controlId);
-                                            Liquid.setErrorDiv(liquid, httpResultJson.error);
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.error(event.xhr.responseText);
-                                    console.error("onEventProcess() . error in response process:" + e  + " on event "+event.name+" on control "+liquid.controlId);
-                                }
-                            } else {
-                                console.error("onEventProcess() . wrong response:" + event.xhr.status);
-                            }
-                            // excuting callback
-                            if(callback) {
-                                retVal = callback(callbackParams, httpResultJson);
-                            }
-                            if(Liquid.isSystemEvent(event)) {
-                                if(liquid.currentCommand) {
-                                    if(liquid.currentCommand.step === Liquid.CMD_WAIT_FOR_ENABLE) {
-                                        liquid.currentCommand.step = Liquid.CMD_ENABLED;
-                                        Liquid.onButton(obj, liquid.currentCommand);
-                                    }
-                                }
-                            }
-                        }
-                    };
-                    var params = [];
-                    
-                    //
-                    // native parameters of the events ...
-                    //
-                    var eventBuiltInParams = (event.params ? JSON.parse(JSON.stringify(event.params)) : null);
-                    if(eventBuiltInParams) {
-                        if(!Array.isArray(eventBuiltInParams)) {
-                            eventBuiltInParams = [ eventBuiltInParams ];
-                        }
-                        // Every row must be an object
-                        for(var ip=0; ip<params.length; ip++) {
-                            // N.B.: it's already processed and putted inside eventData
-                            if(typeof params[ip] !== 'object') {
-                                // params[ip] = { name:params[ip], data:"" };
-                            } else {
-                            }
-                        }
-                    }
-                    //
-                    // N.B.: EventData come from event.params, so is the parameters resolved at runtime
-                    //
-                    if(isDef(eventData)) params.push( { data: eventData } );
-                    if(isDef(eventParams)) {
-                        for(var ip=0; ip<eventParams.length; ip++) {
-                            params.push( eventParams[ip] );
-                        }
-                    }
-                    if(event.sync === true) {
-                        event.xhr.send("{\"params\":" + JSON.stringify(params) + "}");
-                        onreadystatechange();
-                    } else {
-                        event.xhr.onreadystatechange = onreadystatechange;
-                        event.xhr.send("{\"params\":" + JSON.stringify(params) + "}");
-                    }
-                    
-                } else {
-                    alert("Server busy on event " + eventName);
-                }
+                
                 retVal = true;
             }
             
@@ -8545,113 +7253,115 @@ var Liquid = {
         
         if(command.server) {
             Liquid.registerOnUnloadPage();
-            if(!liquid.xhr)
-                liquid.xhr = new XMLHttpRequest();
-            if(Liquid.wait_for_xhr_ready(liquid, "command "+(command ? command.name : "?"))) {
-                try {
-                    if(obj) obj.disabled = true;
-                    Liquid.startWaiting(liquid);
-                    if(command.client) {
-                        if(command.clientAfter !== true || command.clientBefore === true) {
-                            Liquid.executeClientSide(liquid, "command:"+command.name, command.client, liquidCommandParams, command.isNative);
-                        }
+
+            try {
+                if(obj) obj.disabled = true;
+                Liquid.startWaiting(liquid);
+                if(command.client) {
+                    if(command.clientAfter !== true || command.clientBefore === true) {
+                        Liquid.executeClientSide(liquid, "command:"+command.name, command.client, liquidCommandParams, command.isNative);
                     }
-                    
-                    // Informazioni sul comando
-                    var commandData = { name:command.name,  server:command.server, clientAfter:command.clientAfter, 
-                                        img:command.img, size:command.size, text:command.text, labels:command.labels, isNative:command.isNative
-                                        };
-                    var clientData = JSON.stringify(commandData);                            
-        
-                    liquid.xhr.open('POST', glLiquidServlet 
-                            + '?operation=exec'
-                            + '&className=' + encodeURI(command.server)
-                            + '&clientData=' + encodeURI(clientData)
-                            + '&controlId=' + (liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : ""))
-                            + '&owner=' + (typeof liquid !== 'undefined' && liquid ? (typeof liquid.tableJson !== 'undefined' && liquid.tableJson ? liquid.tableJson.owner : "" ) : "")
-                            );
-                    
-                    liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "Command", e, command.onUploading, command.onUploadingParam); }, false);
-                    liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "Command", e, command.onDownloading, command.onDownloadingParam); }, false);
-                    liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "Command", e, command.onLoad, command.onLoadParam); }, false);
-                    liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "Command", e, command.onError, command.onErrorParam); }, false);
-                    liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "Command", e, command.onAbort, command.onAbortParam); }, false);
-                    
-                    liquid.xhr.onreadystatechange = function() {
-                        if(liquid.xhr.readyState === 4) {
-                            Liquid.release_xhr(liquid);
-                            
-                            if(liquid.xhr.status === 200) {
-                                var httpResultJson = null;                                
-                                try {
-                                    // \b \f \n \r \t
-                                    var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
-                                    responseText = Liquid.getXHRResponse(responseText);
-                                    httpResultJson = JSON.parse(responseText);
-                                    liquidCommandParams.command.response = httpResultJson;
-                                    if(httpResultJson) {
-                                        if(httpResultJson.client) {
-                                            Liquid.executeClientSide(liquid, "command response:"+command.name, httpResultJson.client, liquidCommandParams, command.isNative);
-                                        }
-                                        Liquid.processXHRMessagesFromServer(liquid, httpResultJson, command, true, false, false, false);
-                                        
-                                        if(isDef(httpResultJson.details)) {
-                                            Liquid.processXHRMessagesFromServer(liquid, httpResultJson.details, command, true, false, false, false);
-                                        }
-                                        if(isDef(httpResultJson.details)) {
-                                            for(var id=0; id<httpResultJson.details.length; id++) {
-                                                var detail = httpResultJson.details[id];
-                                                if(isDef(detail.tables)) {
-                                                    for(var it=0; it<detail.tables.length; it++) {
-                                                        if(isDef(detail.tables[it])) {
-                                                            Liquid.processXHRMessagesFromServer(liquid, detail.tables[it], command, true, false, false, false);
-                                                        }
+                }
+
+                // Informazioni sul comando
+                var commandData = { name:command.name,  server:command.server, clientAfter:command.clientAfter, 
+                                    img:command.img, size:command.size, text:command.text, labels:command.labels, isNative:command.isNative
+                                    };
+                var clientData = JSON.stringify(commandData);                            
+
+                var onreadystatechange = function(liquid) {
+                    if(liquid.xhr.readyState === 4) {
+                        Liquid.release_xhr(liquid);
+
+                        if(liquid.xhr.status === 200) {
+                            var httpResultJson = null;                                
+                            try {
+                                // \b \f \n \r \t
+                                var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                                responseText = Liquid.getXHRResponse(responseText);
+                                httpResultJson = JSON.parse(responseText);
+                                liquidCommandParams.command.response = httpResultJson;
+                                if(httpResultJson) {
+                                    if(httpResultJson.client) {
+                                        Liquid.executeClientSide(liquid, "command response:"+command.name, httpResultJson.client, liquidCommandParams, command.isNative);
+                                    }
+                                    Liquid.processXHRMessagesFromServer(liquid, httpResultJson, command, true, false, false, false);
+
+                                    if(isDef(httpResultJson.details)) {
+                                        Liquid.processXHRMessagesFromServer(liquid, httpResultJson.details, command, true, false, false, false);
+                                    }
+                                    if(isDef(httpResultJson.details)) {
+                                        for(var id=0; id<httpResultJson.details.length; id++) {
+                                            var detail = httpResultJson.details[id];
+                                            if(isDef(detail.tables)) {
+                                                for(var it=0; it<detail.tables.length; it++) {
+                                                    if(isDef(detail.tables[it])) {
+                                                        Liquid.processXHRMessagesFromServer(liquid, detail.tables[it], command, true, false, false, false);
                                                     }
                                                 }
-                                                if(isDef(detail.foreignTables)) {
-                                                    for(var it=0; it<detail.foreignTables.length; it++) {
-                                                        if(isDef(detail.foreignTables[it])) {
-                                                            Liquid.processXHRMessagesFromServer(liquid, detail.foreignTables[it], command, true, false, false, false);
-                                                        }
+                                            }
+                                            if(isDef(detail.foreignTables)) {
+                                                for(var it=0; it<detail.foreignTables.length; it++) {
+                                                    if(isDef(detail.foreignTables[it])) {
+                                                        Liquid.processXHRMessagesFromServer(liquid, detail.foreignTables[it], command, true, false, false, false);
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                } catch (e) {
-                                    console.error(liquid.xhr.responseText);
-                                    console.error("onCommandStart() : error in response of command '"+command.name+"' : " + e);
-                                    alert("Error in response of command '"+command.name+"' : "+e+"\n\nPlease check server side code...");
                                 }
-                                if(command.client) {
-                                    if(command.clientAfter === true || command.clientBefore === false) {
-                                        Liquid.executeClientSide(liquid, "command:"+command.name, command.client, liquidCommandParams, command.isNative);
-                                    }
-                                }                                
-                            } else if(liquid.xhr.status === 404) {
-                                alert("Servlet Url is wrong : \""+glLiquidServlet+"\" was not found\n\nPlease set the variable \"glLiquidRoot\" to a correct value...\n\nShould be : glLiquidRoot=<YourAppURL>");
-                                console.error("onCommandStart() . wrong servlet url:" + glLiquidServlet);
-                            } else {
-                                console.error("onCommandStart() . wrong response:" + liquid.xhr.status);
+                            } catch (e) {
+                                console.error(liquid.xhr.responseText);
+                                console.error("onCommandStart() : error in response of command '"+command.name+"' : " + e);
+                                alert("Error in response of command '"+command.name+"' : "+e+"\n\nPlease check server side code...");
                             }
-                            
-                            Liquid.release_xhr(liquid);
-                            liquid.xhr = null;
-                            Liquid.stopWaiting(liquid);
-                            retVal = Liquid.onCommandDone(liquidCommandParams);
-                            if(obj) obj.disabled = false;
+                            if(command.client) {
+                                if(command.clientAfter === true || command.clientBefore === false) {
+                                    Liquid.executeClientSide(liquid, "command:"+command.name, command.client, liquidCommandParams, command.isNative);
+                                }
+                            }                                
+                        } else if(liquid.xhr.status === 404) {
+                            alert("Servlet Url is wrong : \""+glLiquidServlet+"\" was not found\n\nPlease set the variable \"glLiquidRoot\" to a correct value...\n\nShould be : glLiquidRoot=<YourAppURL>");
+                            console.error("onCommandStart() . wrong servlet url:" + glLiquidServlet);
+                        } else {
+                            console.error("onCommandStart() . wrong response:" + liquid.xhr.status);
                         }
-                    };
-                    
-                    liquid.xhr.send("{\"params\":" + (params ? JSON.stringify(params) : "[]") + "}");
-                    
-                } catch (e) {
-                    console.error("ERROR : onCommandStart() : "+e);
-                    if(obj) obj.disabled = false;
-                }
-            } else {
-                alert("!!! " + liquid.controlId+" is till waiting for last operaion:"+liquid.xhrDescription+ " !!!");
+
+                        Liquid.stopWaiting(liquid);
+                        retVal = Liquid.onCommandDone(liquidCommandParams);
+                        if(obj) obj.disabled = false;
+                    }
+                };
+
+                // Send the request
+                Liquid.sendRequest(
+                      liquid
+                    , null
+                    , 'POST'
+                    , glLiquidServlet 
+                        + '?operation=exec'
+                        + '&className=' + encodeURI(command.server)
+                        + '&clientData=' + encodeURI(clientData)
+                        + '&controlId=' + (liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : ""))
+                        + '&owner=' + (typeof liquid !== 'undefined' && liquid ? (typeof liquid.tableJson !== 'undefined' && liquid.tableJson ? liquid.tableJson.owner : "" ) : "")
+                    , false
+                    , "{\"params\":" + (params ? JSON.stringify(params) : "[]") + "}"
+                    , function(liquid) {
+                        onreadystatechange(liquid);
+                    }
+                    , "command "+command.name+" on "+liquid.controlId
+                    , function(param, e){ Liquid.onTransferUploading(param, command, "Command", e, command.onUploading, command.onUploadingParam); }
+                    , function(param, e){ Liquid.onTransferDownloading(param, command, "Command", e, command.onDownloading, command.onDownloadingParam); }
+                    , function(param, e){ Liquid.onTransferLoaded(param, command, "Command", e, command.onLoad, command.onLoadParam); }
+                    , function(param, e){ Liquid.onTransferFailed(param, command, "Command", e, command.onError, command.onErrorParam); }
+                    , function(param, e){ Liquid.onTransferAbort(param, command, "Command", e, command.onAbort, command.onAbortParam); }
+                            );
+
+            } catch (e) {
+                console.error("ERROR : onCommandStart() : "+e);
+                if(obj) obj.disabled = false;
             }
+
         } else {
             // system command or no server actions, simulate response
             command.response = { detail:{} };
@@ -9067,6 +7777,8 @@ var Liquid = {
         var focusedLiquid = null;
         var focusedLiquidZIndex = 0;
         var detectedFocus = false;
+        var liquidsToClose = [];
+        var liquidFocused = [];
         for(var i=0; i<glLiquids.length; i++) {
             if(glLiquids[i] instanceof LiquidCtrl) {
                 if(glLiquids[i].mode === 'lookup') {
@@ -9079,11 +7791,13 @@ var Liquid = {
                         || (glLiquids[i].lookupContainerComboContent && glLiquids[i].lookupContainerComboContent.contains(e.target))
                         ) {
                             detectedFocus = true;
+                            liquidFocused.push(glLiquids[i]);
                         } else {
-                            Liquid.onCloseLookup(glLiquids[i]);
+                            liquidsToClose.push(glLiquids[i]);
                         }
                     }
                 }
+                // removing parent liquid from queue
                 if(glLiquids[i].outDivObj && glLiquids[i].outDivObj.contains(e.target)) {
                     var bProcess = true;
                     if(isDef(focusedLiquid)) { // privilege lookups
@@ -9097,7 +7811,28 @@ var Liquid = {
             } else if(glLiquids[i] instanceof LiquidMenuXCtrl) {
                 var liquid = glLiquids[i];
                 Liquid.closeAllPopupMenuCommand(liquid, e);
-            }            
+            }
+        }
+        // prevent parent to be closed
+        for(var i=0; i<liquidFocused.length; i++) {
+            if(liquidFocused[i].mode === 'lookup') {
+                if(liquidFocused[i].status === 'open' && liquidFocused[i].tableJson.keepOpen !== true) {
+                    if(isDef(liquidFocused[i].sourceData)) {
+                        if(isDef(liquidFocused[i].sourceData.parentLiquidId)) {
+                            var srcLiquid = Liquid.getLiquid(liquidFocused[i].sourceData.parentLiquidId);
+                            if(srcLiquid) {
+                                var index = liquidsToClose.indexOf(srcLiquid);
+                                if(index>=0) {
+                                    liquidsToClose.splice(index, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for(var i=0; i<liquidsToClose.length; i++) {
+            Liquid.onCloseLookup(liquidsToClose[i]);
         }
         if(glNavigations) {
             for(var i=0; i<glNavigations.length; i++) {
@@ -9338,7 +8073,7 @@ var Liquid = {
                             for(var ic=0; ic<selctionInfoObject.columns.length; ic++) {
                                 var col = Liquid.getColumn(liquid, selctionInfoObject.columns[ic]);
                                 if(col) {
-                                    desc += (ic>0 > 0 ? " | " : "") + rowFields[col.name];
+                                    desc += (ic>0 > 0 ? " - " : "") + rowFields[col.name];
                                 }
                             }
                         } else {
@@ -9360,7 +8095,7 @@ var Liquid = {
                             for(var ic=0; ic<selctionInfoObject.columns.length; ic++) {
                                 var col = Liquid.getColumn(liquid, selctionInfoObject.columns[ic]);
                                 if(col) {
-                                    desc += (ic>0 ? " | " : "") + rowFields[col.name];
+                                    desc += (ic>0 ? " - " : "") + rowFields[col.name];
                                 }
                             }
                             desc += " ]";
@@ -9377,7 +8112,7 @@ var Liquid = {
         return desc;
     },
     /**
-     * Get the current selecter row
+     * Get the selection
      * @param {liquid} the control id or the class instance (LiquidCtrl)
      * @return [ including list, excluding list ] array
      */
@@ -9386,8 +8121,20 @@ var Liquid = {
             var idsSelected = "";
             var idsUnselected = "";
             if(liquid.selection.all) {
-                // exclude list
-                idsSelected = "\"*\"";
+                // working with exclude list
+                // N.B.: Resolve anyway the selected, tho the reciver can easy walk
+                // idsSelected = "\"*\"";
+                idsSelected = "";
+                nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                for(var i=0; i<nodes.length; i++) {
+                    var value = nodes[i].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
+                    if(!isDef(liquid.selection.exclude) || (isDef(liquid.selection.exclude) && !liquid.selection.exclude.contains(value))) {
+                        if(idsSelected.length > 0) idsSelected += ",";
+                        if(typeof value === 'string') value = value.replace(/"/g, "\\\""); 
+                        idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
+                    }
+                }
+                // escluse list
                 for(var i=0; i<liquid.selection.exclude.length; i++) {
                     if(idsUnselected.length > 0) idsUnselected += ",";
                     var value = liquid.selection.exclude[i];
@@ -9395,7 +8142,7 @@ var Liquid = {
                 	idsUnselected += (value.startsWith('"') ? "" : '"') +  + value + (value.endsWith('"') ? "" : '"');
                 }
             } else {
-                // include list
+                // working with include list
                 for(var i=0; i<liquid.selection.include.length; i++) {
                     if(idsSelected.length > 0) idsSelected += ",";
                     var value = liquid.selection.include[i];
@@ -10826,7 +9573,10 @@ var Liquid = {
                     });
                 }
             } else {
-                liquid.lastMenuPopup.splice( command, 1 );
+                index = liquid.lastMenuPopup.indexOf(command);
+                if(index >= 0) {
+                    liquid.lastMenuPopup.splice( index, 1 );
+                }
                 jQ1124( command.commandsContainer ).slideUp( "fast", function() {
                     command.commandsContainer.style.display = 'none';
                     command.isOpen = false;
@@ -13480,7 +12230,7 @@ var Liquid = {
                         Liquid.addProperty(liquid, ftIndex1B, "filters", newFiltersJson);
                     } else {
                         // Add to existing group of filters
-                        Liquid.addFilterToGroup(liquid, ftIndex1B, curFilter, filtersColumns, true);
+                        LiquidEditing.addFilterToGroup(liquid, ftIndex1B, curFilter, filtersColumns, true);
                     }
                 }
             } else {
@@ -15551,7 +14301,8 @@ var Liquid = {
                 }
             }
             if(liquid===glLastFocusedLiquid) glLastFocusedLiquid = null;
-            glLiquids.splice(glLiquids.indexOf(liquid), 1);
+            var index = glLiquids.indexOf(liquid);
+            if(index >= 0) glLiquids.splice(index, 1);
             delete liquid;
         }
     },
@@ -17134,14 +15885,14 @@ var Liquid = {
                     for (var i = 0; i < event.dataTransfer.items.length; i++) {
                         if(event.dataTransfer.items[i].kind === 'file') {
                             var file = event.dataTransfer.items[i].getAsFile();
-                            Liquid.onNewWindowFromFileJson(event.target.id, "winX", event.target.id, file);
+                            LiquidEditing.onNewWindowFromFileJson(event.target.id, "winX", event.target.id, file);
                             // console.log('... file[' + i + '].name = ' + file.name);
                         }
                     }
                 } else {
                     for (var i = 0; i < event.dataTransfer.files.length; i++) {
                         var file = event.dataTransfer.files[i];
-                        Liquid.onNewWindowFromFileJson(event.target.id, "winX", event.target.id, file);
+                        LiquidEditing.onNewWindowFromFileJson(event.target.id, "winX", event.target.id, file);
                         // console.log('... file[' + i + '].name = ' + event.dataTransfer.files[i].name);
                     }
                 }
@@ -17219,128 +15970,6 @@ var Liquid = {
             }
         }
     },
-    createSystemEditorsDialog:function(liquid, resultId) {
-        var editorFromValuesCodes = { editor:{type:"values", "values":["true","false"], "codes":["1","0"] } };
-        var editorFromValues = { editor:{type:"values", "values":["S","N"] } };
-        var editorFromColumn = { editor:{type:"distinct",table:"TABLE",column:"COLUMN",idColumn:"ID",targetColumn:"TRAGET",cache:true } };
-        var editorRich = { editor:{type:"richEdit",options:"" } };
-        var editorDate = { editor:{type:"date",options:"" } };
-        var editorDateTime = { editor:{type:"datetime",options:"" } };
-        var editorCode = { editor:{type:"sunEditor",options:"", code:true} };
-        var dlg = document.getElementById("liquidEditorDialog");
-        if(!dlg) {
-            dlg = document.createElement('div');
-            dlg.id = "liquidEditorDialog";
-            dlg.className = "liquidContextMenu";
-            dlg.display = 'none';
-            dlg.innerHTML = "<div class=\"liquidEditorDialog-content\">"
-                    +"<span class=\"liquidContextMenu-close\"></span>"
-                    +"Editor:<input id=\""+resultId+"\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+""+"'/>"
-                    +"</br>"
-                    +"</br>"
-                    +"</br>"
-                    +"Commom values</br>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt1"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Edit by values list:<input readonly=readonly; id=\"opt1\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorFromValues)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt2"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Edit by codes as values list:<input readonly=readonly; id=\"opt2\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorFromValuesCodes)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt3"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Edit selecting column:<input readonly=readonly; id=\"opt3\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorFromColumn)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt4"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Rich text editor:<input readonly=readonly; id=\"opt4\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorRich)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt5"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Date editor:<input readonly=readonly; id=\"opt5\" type=\"text\" class=\"liquidSystemDialogInput\" value='"+JSON.stringify(editorDate)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt6"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Date/time editor:<input readonly=readonly; id=\"opt6\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorDateTime)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt7"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Date/time editor:<input readonly=readonly; id=\"opt6\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(editorCode)+"'/></p>"
-                    ;
-        }
-        return dlg;
-    },
-    createServerCallbackTemplate:function(liquid, itemId) {
-        var dlg = document.getElementById("liquidServerCallbackTemplate");
-        if(!dlg) {
-            dlg = document.createElement('div');
-            dlg.id = "liquidServerCallbackTemplate";
-            dlg.className = "liquidContextMenu";
-            // dlg.display = 'none';
-            var onCancelCode = "document.getElementById('liquidServerCallbackTemplate').style.display='none'";
-            var onOkCode = "";
-            var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-            var contentHTML = "<div class=\"liquidEditorDialog-content\">"
-                    + "<span class=\"liquidContextMenu-close\"></span>"
-                    + "<textarea id=\""+itemId+"\" class=\"liquidSystemDialogTextarea\" ></textarea>"
-                    + "<input class=\"liquidSystemDialogInput\" type=\"hidden\" value='"+""+onKeyPressCode+"'/>"
-                    + "<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\""+onCancelCode+"\">Close</button>"
-                    + "</div>";
-            dlg.innerHTML = contentHTML;
-        }
-        return dlg;
-    },
-    createSystemLookupDialog:function(liquid, resultId) {
-        var lookupVariable = "GLOBAL_VAR_NAME"; // by json in global var or object
-        var lookupContent = { schema:"SCHEMA", table:"TABLE", lookupField:"COLUMN", idColumn:"ID_COLUMN", tagetColumn:"TARGET_COLUMN" }; // by json content
-        var lookupShared = { lookup:"CONTROL_ID" }; // by json in other control
-        var dlg = document.getElementById("liquidLookupDialog");
-        if(!dlg) {
-            dlg = document.createElement('div');
-            dlg.id = "liquidLookupDialog";
-            dlg.className = "liquidContextMenu";
-            // dlg.display = 'none';
-            dlg.innerHTML = "<div class=\"liquidEditorDialog-content\">"
-                    +"<span class=\"liquidContextMenu-close\"></span>"
-                    +"Editor:<input id=\""+resultId+"\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+""+"'/>"
-                    +"</br>"
-                    +"</br>"
-                    +"</br>"
-                    +"Commom values</br>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt1"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Lookup by global variable:<input readonly=readonly; id=\"opt1\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(lookupVariable)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt2"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Lookup by local content:<input readonly=readonly; id=\"opt2\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(lookupContent)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt3"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Lookup by shared controlId:<input readonly=readonly; id=\"opt3\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(lookupShared)+"'/></p>"
-                    ;
-        }
-        return dlg;
-    },
-    createSystemOptionsDialog:function(liquid, resultId) {
-        var optionsFull = { options:{ lookupField:"COLUMN",targetColumn:"TARGET_COLUMN",idColumn:"ID_COLUMN",navVisible:true, autoSelect:false, status:"closed",width:"250px",height:"200px" } };
-        var optionsMinimal = { options:{ navVisible:false, autoSelect:false, width:"250px",height:"200px" } };
-        var optionsBase = { options:{ } };
-        var dlg = document.getElementById("liquidOptionsDialog");
-        if(!dlg) {
-            dlg = document.createElement('div');
-            dlg.id = "liquidOptionsDialog";
-            dlg.className = "liquidContextMenu";
-            dlg.display = 'none';
-            dlg.innerHTML = "<div class=\"liquidEditorDialog-content\">"
-                    +"<span class=\"liquidContextMenu-close\"></span>"
-                    +"Options:<input id=\""+resultId+"\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+""+"'/>"
-                    +"</br>"
-                    +"</br>"
-                    +"</br>"
-                    +"Commom values</br>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt1"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Lookup options:<input readonly=readonly; d=\"opt1\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(optionsFull)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt2"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Minimal options:<input readonly=readonly; id=\"opt2\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(optionsMinimal)+"'/></p>"
-                    +"<p style=\"width:auto\" onclick=\"Liquid.applySystemEditor('"+dlg.id+"','"+"opt3"+"','"+resultId+"')\" class=\"liquidContextMenu-item\">Base options:<input readonly=readonly; id=\"opt3\" class=\"liquidSystemDialogInput\" type=\"text\" value='"+JSON.stringify(optionsBase)+"'/></p>"
-                    ;
-        }
-        return dlg;
-    },
-    onSystemEditorClose:function(objId) {
-        var liquid = Liquid.getLiquid(objId);
-        if(liquid) {
-            liquid.gridOptions.api.stopEditing();
-        }
-    },
-    applySystemEditor:function(dlgId, optId, objId) {
-        if(dlgId) {
-            var dlg = document.getElementById(dlgId);
-            if(dlg) {
-                if(optId) {
-                    var opt = document.getElementById(optId);
-                    if(opt) {
-                        if(objId) {
-                            var obj = document.getElementById(objId);
-                            if(obj) obj.value = opt.value;
-                        }
-                    }
-                }
-            }
-        }
-    },
     createPopup:function( content, img ) {
         var popup = document.getElementById("liquidPopup");
         if(!popup) {
@@ -17363,1026 +15992,7 @@ var Liquid = {
         span.onclick = function() { popup.style.display = "none"; };
         window.onclick = function(event) { if(event.target === popup) popup.style.display = "none"; };
         return popup;
-    },
-    createContextMenu:function() {
-        var menu = document.getElementById("liquidContextMenu");
-        if(!menu) {
-            menu = document.createElement('div');
-            menu.id = "liquidContextMenu";
-            menu.className = "liquidContextMenu";
-            menu.display = 'none';
-            document.body.appendChild(menu);
-        }
-        return menu;
-    },
-    createOnTabContextMenu:function( obj ) {
-        var liquid = Liquid.getLiquid(obj);
-        if(!liquid)
-            liquid = Liquid.getLiquidByFullScan(obj);
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var ckeckImg = "<img src=\""+Liquid.getImagePath("check.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-        
-        var innerHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>"
-                +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
-                +"<p><hr size=1></p>";
-        if(liquid && liquid.controlId) {
-            innerHTML += ""            
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewGrid('"+liquid.controlId+".newGrid')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Grid"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewLayout('"+liquid.controlId+".newLayout')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Layout"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewForeignTable('"+liquid.controlId+".newForeignTable','')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Foreign Table"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewForeignTable('"+liquid.controlId+".newForeignTable','multipanel')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Multipanel"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewFilters('"+liquid.controlId+".newFilters')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Filter Group"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewFilters('"+liquid.controlId+".newFilter')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Filter Field"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewEvent('"+liquid.controlId+".newEvent')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Event"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewCommandBar('"+liquid.controlId+".newActionBar')\" >"+ckeckImg+"<a href=\"javascript:void(0)\" >Add Command Bar"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewActionBar('"+liquid.controlId+".newActionBar')\" >"+ckeckImg+"<a href=\"javascript:void(0)\" >Add Action Bar"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewColumns('"+liquid.controlId+".newColumns')\" >"+addImg+"<a href=\"javascript:void(0)\" >New columns"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onColumnsManager('"+liquid.controlId+".columnsManager')\">"+optImg+"<a href=\"javascript:void(0)\">Columns options"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
-                + (obj.classList.contains("liquidLayoutTab") ? "<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onGridOptions('"+liquid.controlId+".options','"+obj_id+"')\">"+optImg+"<a href=\"javascript:void(0)\">Grid Options"+"</a></p>" : "")
-                + (obj.classList.contains("liquidLayoutTab") ? "<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLayoutOptions('"+liquid.controlId+".options','"+obj_id+"')\">"+optImg+"<a href=\"javascript:void(0)\">Layouy Options"+"</a></p>" : "")                
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onServerCallbackTemplate('"+liquid.controlId+".template')\">"+optImg+"<a href=\"javascript:void(0)\">Get Server Callback"+"</a></p>"
-                +"<p><hr size=1></p>"        
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Save to server"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as csv"+"</a></p>"        
-                +"</div>";
-        }
-        menu.innerHTML = innerHTML;
-    },
-    createOnCommandBarContextMenu:function( obj ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-        
-        menu.innerHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>"
-                +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewCommand('"+liquid.controlId+".newCommand')\" >"+addImg+"<a href=\"javascript:void(0)\">New Command"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onServerCallbackTemplate('"+liquid.controlId+".template')\">"+optImg+"<a href=\"javascript:void(0)\">Get Server Callback"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Save to server"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"        
-                +"</div>";        
-    },
-    createOnWindowContainerContextMenu:function( obj ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var dbImg = "<img src=\""+Liquid.getImagePath("database.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var storeImg = "<img src=\""+Liquid.getImagePath("store.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-        
-        menu.innerHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>"
-                +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" title=\"Set Connection\" onclick=\"Liquid.onLiquidConnection(event)\" >"+dbImg+"<a href=\"javascript:void(0)\" >Set Connection"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" title=\"Current:"+Liquid.curDatabase+"\"onclick=\"Liquid.onSetDatabase(event)\" >"+dbImg+"<a href=\"javascript:void(0)\" >Select database"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" title=\"Current:"+Liquid.curSchema+"\" onclick=\"Liquid.onSetSchema(event)\" >"+storeImg+"<a href=\"javascript:void(0)\" >Select schema"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSearchDatabase(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on databases"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSearchSchema(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on schemas"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSearchTable(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on table"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewWindow(event, 'winX','"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New window"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewWindowFromJson(event, 'winX','"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New window from json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewWindow(event, 'formX','"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New formX"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLiquidAssets()\">"+optImg+"<a href=\"javascript:void(0)\">Manage assets"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLiquidRoles()\">"+optImg+"<a href=\"javascript:void(0)\">Manage roles"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLiquidRolesAssets()\">"+optImg+"<a href=\"javascript:void(0)\">Manage roles's assets"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLiquidUsersRoles()\">"+optImg+"<a href=\"javascript:void(0)\">Manage user's roles"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLiquidUsersAssets()\">"+optImg+"<a href=\"javascript:void(0)\">Manage user's assets"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLiquidLoginUsers()\">"+optImg+"<a href=\"javascript:void(0)\">Manage login users"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onLiquidOptions()\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
-                +"</div>";        
-    },
-    createOnFormXContextMenu:function( obj ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-        
-        menu.innerHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>"
-                +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"        
-                +"</div>";                
-    },
-    createOnGridControlContextMenu:function( obj ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";        
-        menu.innerHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>"
-                +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onNewGridLookup('"+obj.id+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Make lookup"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"        
-                +"</div>";                
-    },
-    getCheckedAttr:function( obj, def ) {
-        if(typeof obj === 'undefined') { if(def === true) return "checked"; } else { if(obj === true) return "checked"; }
-        return "";
-    },
-    createLiquidOptionsContextMenu:function( obj ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:12px; height:16px; padding-right:5px; filter:grayscale(0.5); \">";
-        var dbImg = "<img src=\""+Liquid.getImagePath("check.png")+"\" style=\"width:12px; height:16px; padding-right:5px; filter:grayscale(0.5); \">";
-        var contentHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>";        
-        var controlId = liquid.controlId;
-        var formId = controlId+".optionsForm";
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "Liquid.onContextMenuClose(); Liquid.onOptionsOk('"+formId+"','"+controlId+"');";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-        var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-        var tagetLiquid = liquid;
-        if(ftIndex1B) { // work on liquid.foreignTables[].options
-            tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-        }        
-        contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block;  \">"
-                +"<tr><td colspan=\"3\"><center>"
-                +"<span style=\"font-size:200%\">Liquid Control Options<span>"
-                +"</center></td></tr>"
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Name:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.name !== 'undefined' ? tagetLiquid.tableJson.name : '')+"\" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+""+"Control Id:"+"<input id=\"controlId\" type=\"text\" readonly=\"readonly\" disabled value=\""+(typeof tagetLiquid.controlId !== 'undefined' ? tagetLiquid.controlId : '')+"\" style=\"background-color:transparent\" "+""+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Caption:"+"<input id=\"caption\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.caption !== 'undefined' ? tagetLiquid.tableJson.caption : '')+"\" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td></tr>"
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Primary key:"+"<input id=\"primaryKey\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.primaryKey !== 'undefined' ? tagetLiquid.tableJson.primaryKey : '')+"\" list=\"primaryKeyDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"primaryKeyDataliast\"><option></option></datalist>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Lookup Field:"+"<input id=\"lookupField\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.lookupField !== 'undefined' ? tagetLiquid.tableJson.lookupField : '')+"\" list=\"lookupFieldDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"lookupFieldDataliast\"><option value=\"closed\">closed</option><option value=\"open\">open</option></datalist>"
-                +"</td><td>"
-                +"</td></tr>"        
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Mode:"+"<input id=\"status\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.status !== 'undefined' ? tagetLiquid.tableJson.status : '')+"\" list=\"statusDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"statusDataliast\"><option value=\"closed\">closed</option><option value=\"open\">open</option></datalist>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Modeless:"+"<input id=\"modeless\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.modeless, false)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Resize:"+"<input id=\"resize\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.resize !== 'undefined' ? tagetLiquid.tableJson.resize : '')+"\" list=\"resizeDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"resizeDataliast\"><option value=\"both\">both</option><option value=\" \"></option></datalist>"
-                +"</td></tr>"
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Left:"+"<input id=\"left\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.left !== 'undefined' ? tagetLiquid.tableJson.left : "")+"\" list=\"leftDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"leftDataliast\"><option value=\"center\">center</option><option value=\"\"></option></datalist>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Top:"+"<input id=\"top\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.top !== 'undefined' ? tagetLiquid.tableJson.top : "")+"\" list=\"topDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"topDataliast\"><option value=\"center\">center</option><option value=\"\"></option></datalist>"
-                +"</td><td>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Width:"+"<input id=\"width\" min=\"0\" type=\"\text\" value=\""+(typeof tagetLiquid.tableJson.width !== 'undefined' ? tagetLiquid.tableJson.width : "")+"\" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Height:"+"<input id=\"height\" min=\"0\" type=\"\text\" value=\""+(typeof tagetLiquid.tableJson.height !== 'undefined' ? tagetLiquid.tableJson.height : "")+"\" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Filter mode:"+"<input id=\"left\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.filterMode !== 'undefined' ? tagetLiquid.tableJson.filterMode : "")+"\" list=\"filterModeDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"filterModeDataliast\"><option value=\"\"></option><option value=\"client\">client</option><option value=\"client\">dynamic</option></datalist>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Sort mode:"+"<input id=\"top\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.sortMode !== 'undefined' ? tagetLiquid.tableJson.sortMode : "")+"\" list=\"sortModeDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"sortModeDataliast\"><option value=\"\"></option><option value=\"client\">client</option><option value=\"server\">server</option></datalist>"
-                +"</td><td>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Navigation bar visible:"+"<input id=\"navVisible\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.navVisible, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Checkbox selection:"+"<input id=\"checkboxSelection\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.checkboxSelection, false)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Row selection:"+"<input id=\"rowSelection\"type=\"\text\" value=\""+(typeof tagetLiquid.tableJson.rowSelection !== 'undefined' ? tagetLiquid.tableJson.rowSelection : "")+"\" list=\"rowSelectionDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"rowSelectionDataliast\"><option value=\"single\">single</option><option value=\"multiple\">multiple</option></datalist>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Row multiselect with click:"+"<input id=\"rowMultiSelectWithClick\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.rowMultiSelectWithClick, false)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Reset selection on row change:"+"<input id=\"resetSelectionOnRowChange\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.resetSelectionOnRowChange, false)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Row deselection:"+"<input id=\"rowDeselection\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.rowDeselection, false)+" "+onKeyPressCode+"/></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Auto select:"+"<input id=\"autoSelect\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.autoSelect, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Auto load:"+"<input id=\"autoLoad\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.autoLoad, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Editable:"+"<input id=\"editable\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.editable, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Edit type:"+"<input id=\"editType\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.editType !== 'undefined' ? tagetLiquid.tableJson.editType : "")+"\" list=\"editTypeDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"editTypeDataliast\"><option value=\"\"></option><option value=\"fullRow\">fullRow</option></datalist>"
-                +"</td><td>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"single click edit:"+"<input id=\"singleClickEdit\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.singleClickEdit, false)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Skip header on auto size:"+"<input id=\"skipHeaderOnAutoSize\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.skipHeaderOnAutoSize, false)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Auto size columns:"+"<input id=\"autoSizeColumns\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.autoSizeColumns, false)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Auto fit columns:"+"<input id=\"autoFitColumns\" type=\"checkbox\" v"+Liquid.getCheckedAttr(tagetLiquid.tableJson.autoFitColumns, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td></tr>"
-
-
-                +"<tr><td>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Search button on filters:"+"<input id=\"filtersSearch\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.filtersSearch, false)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Menu on grid header:"+"<input id=\"gridHeaderMenu\" type=\"checkbox\" v"+Liquid.getCheckedAttr(tagetLiquid.tableJson.gridHeaderMenu, true)+" "+onKeyPressCode+"/></p>"
-                +"</td></tr>"
-
-                
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"List Tab title:"+"<input id=\"listTabTitle\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.listTabTitle !== 'undefined' ? tagetLiquid.tableJson.listTabTitle : "Lista")+"\" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Loading Message:"+"<input id=\"loadingMessage\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.loadingMessage !== 'undefined' ? tagetLiquid.tableJson.loadingMessage : "")+"\" "+onKeyPressCode+"/></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Command bar visible:"+"<input id=\"commandBarVisible\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.commandBarVisible, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"List tab visible:"+"<input id=\"listTabVisible\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.listTabVisible, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Grids tab visible:"+"<input id=\"gridsTabVisible\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.gridsTabVisible, true)+" "+onKeyPressCode+"/></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Layouts tab visible:"+"<input id=\"layoutsTabVisible\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.layoutsTabVisible, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Documents tab visible:"+"<input id=\"documentsTabVisible\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.documentsTabVisible, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Charts tabs visible:"+"<input id=\"chartsTabVisible\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.chartsTabVisible, true)+" "+onKeyPressCode+"/></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Caption visible:"+"<input id=\"captionVisible\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.captionVisible, true)+" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td><td>"
-                +"</td></tr>"
-
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"pageSize:"+"<input id=\"pageSize\" type=\"number\" value=\""+(typeof tagetLiquid.tableJson.pageSize !== 'undefined' ? tagetLiquid.tableJson.pageSize : "")+"\" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Cache:"+"<input id=\"cache\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.cache, true)+""+onKeyPressCode+" /></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Header menu:"+"<input id=\"headerMenu\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.headerMenu, true)+" "+onKeyPressCode+"/></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"owner:"+"<input id=\"owner\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.owner !== 'undefined' ? tagetLiquid.tableJson.owner : "com.liquid.event")+"\" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Create table if missing:"+"<input id=\"createTableIfMissing\" type=\"checkbox\" "+Liquid.getCheckedAttr(tagetLiquid.tableJson.createTableIfMissing, false)+" "+onKeyPressCode+"/></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"current tab:"+"<input id=\"currentTab\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.currentTab !== 'undefined' ? tagetLiquid.tableJson.currentTab : "")+"\"/></p>"
-                +"</td><td>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"current foreign table:"+"<input id=\"currentForeignTable\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.currentForeignTable !== 'undefined' ? tagetLiquid.tableJson.currentForeignTable : "")+"\"/></p>"
-                +"</td></tr>"
-
-                +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
-
-                +"<tr><td style=\"text-align: center;\">"
-                +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\""+onCancelCode+"\">Cancel</button>"
-                +"</td><td>"
-                +"</td><td style=\"text-align: center;\">"
-                +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\""+onOkCode+"\">Ok</button>"
-                +"</td></tr>"
-
-                +"</table>"
-                +"</div>";
-
-        menu.innerHTML = contentHTML;
-        var modal_content = document.querySelector('.liquidContextMenu-content');
-        modal_content.style.margin="0 auto";
-        modal_content.style.fontSize="12px";
-        modal_content.style.position="relative";
-        modal_content.style.top="10px";
-    },
-    createLiquidGridOptionsContextMenu:function( obj, gridNameOrIndex ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:12px; height:16px; padding-right:5px; filter:grayscale(0.5); \">";
-        var dbImg = "<img src=\""+Liquid.getImagePath("check.png")+"\" style=\"width:12px; height:16px; padding-right:5px; filter:grayscale(0.5); \">";
-        var contentHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>";        
-        var controlId = liquid.controlId;
-        var formId = controlId+".gridOptionsForm";
-
-        var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-        var tagetLiquid = liquid;
-        if(ftIndex1B) { // work on liquid.foreignTables[].options
-            tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-            // console.error("ERROR: unsupported");
-            return;
-        }
-        
-        var grid = null;
-        if(typeof(gridNameOrIndex) === 'string') {
-            var gridIndex1B = Liquid.getGridIndexByName(tagetLiquid, gridNameOrIndex);
-            if(gridIndex1B) {
-                grid = tagetLiquid.tableJson.grids[gridIndex1B];
-            }
-        } else {
-            grid = tagetLiquid.tableJson.grids[gridNameOrIndex];
-        }
-        if(grid) {
-            var onCancelCode = "Liquid.onContextMenuClose();";
-            var onOkCode = "Liquid.onContextMenuClose(); Liquid.onGridOptionsOk('"+formId+"','"+controlId+"','"+grid.name+"');";
-            var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-            
-            if(!isDef(grid.image)) {
-                grid.image = {};
-            }
-            contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block;  \">"
-                    +"<tr><td colspan=\"3\"><center>"
-                    +"<span style=\"font-size:200%\">Grid Options<span>"
-                    +"</center></td></tr>"
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Name:"+"<input id=\"name\" type=\"text\" value=\""+(typeof grid.name !== 'undefined' ? grid.name : '')+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Tooltip:"+"<input id=\"tooltip\" type=\"text\" value=\""+(typeof grid.tooltip !== 'undefined' ? grid.tooltip : '')+"\" style=\"background-color:transparent\" "+""+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Caption:"+"<input id=\"title\" type=\"text\" value=\""+(typeof grid.title !== 'undefined' ? grid.title : '')+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"</td></tr>"
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Icon:"+"<input id=\"icon\" type=\"text\" value=\""+(typeof grid.icon !== 'undefined' ? grid.icon : '')+"\" list=\"primaryKeyDataliast\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"N.rows:"+"<input id=\"nRows\" type=\"number\" value=\""+(typeof grid.nRows !== 'undefined' ? grid.nRows : '')+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"N.cols:"+"<input id=\"nCols\" type=\"number\" value=\""+(typeof grid.nCols !== 'undefined' ? grid.nCols : '')+"\" "+onKeyPressCode+"/></p>"
-                    +"</td></tr>"        
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Background image:"+"<input id=\"image.url\" type=\"text\" value=\""+(typeof grid.image.url !== 'undefined' ? grid.image.url : "")+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"size:"+"<input id=\"image.size\" type=\"text\" value=\""+(typeof grid.image.size !== 'undefined' ? grid.image.size : "")+"\" list=\"sizeDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"sizeDataliast\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"contain\">contain</option><option value=\"cover\">cover</option><option value=\"inherit\">inherit</option><option value=\"initial\">initial</option><option value=\"unset\">unset</option></datalist>"
-            
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Repeat:"+"<input id=\"image.repeat\" type=\"text\" value=\""+(typeof grid.image.repeat !== 'undefined' ? grid.image.repeat : "")+"\" list=\"repeatDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"repeatDataliast\"><option value=\"\"></option><option value=\"round\">round</option><option value=\"no-repeat\">no-repeat</option><option value=\"repeat-x\">repeat-x</option><option value=\"repeat-y\">repeat-y</option></datalist>"
-                    +"</td></tr>"
-
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Position X:"+"<input id=\"image.positionX\" type=\"text\" value=\""+(typeof grid.image.positionX !== 'undefined' ? grid.image.positionX : "")+"\" list=\"positionXDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"positionXDataliast\"><option value=\"\"></option><option value=\"no-repeat\">no-repeat</option><option value=\"\"></option></datalist>"
-                    +"</td><td>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Position Y:"+"<input id=\"image.positionY\" type=\"text\" value=\""+(typeof grid.image.positionY !== 'undefined' ? grid.image.positionY : "")+"\" list=\"positionYDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"positionYDataliast\"><option value=\"\"></option><option value=\"no-repeat\">no-repeat</option><option value=\"\"></option></datalist>"
-                    +"</td></tr>"
-
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Width:"+"<input id=\"width\" type=\"text\" value=\""+(typeof grid.width !== 'undefined' ? grid.width : "")+"\" list=\"widthDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"widthDataliast\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"100%\">100%</option></datalist>"
-                    +"</td><td>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Height:"+"<input id=\"height\" type=\"text\" value=\""+(typeof grid.height !== 'undefined' ? grid.height : "")+"\" list=\"heightDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"heightDataliast\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"100%\">100%</option></datalist>"
-                    +"</td></tr>"
-
-                    +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
-
-                    +"<tr><td style=\"text-align: center;\">"
-                    +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\""+onCancelCode+"\">Cancel</button>"
-                    +"</td><td>"
-                    +"</td><td style=\"text-align: center;\">"
-                    +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\""+onOkCode+"\">Ok</button>"
-                    +"</td></tr>"
-
-                    +"</table>"
-                    +"</div>";
-
-            menu.innerHTML = contentHTML;
-            var modal_content = document.querySelector('.liquidContextMenu-content');
-            modal_content.style.margin="0 auto";
-            modal_content.style.fontSize="12px";
-            modal_content.style.position="relative";
-            modal_content.style.top="10px";
-        } else {
-            console.error("ERROR: grid '"+gridNameOrIndex+"' not found")
-        }
-    },
-    createLiquidLayoutOptionsContextMenu:function( obj, layoutNameOrIndex ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:12px; height:16px; padding-right:5px; filter:grayscale(0.5); \">";
-        var dbImg = "<img src=\""+Liquid.getImagePath("check.png")+"\" style=\"width:12px; height:16px; padding-right:5px; filter:grayscale(0.5); \">";
-        var contentHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>";        
-        var controlId = liquid.controlId;
-        var formId = controlId+".layoutOptionsForm";
-
-        var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-        var tagetLiquid = liquid;
-        if(ftIndex1B) { // work on liquid.foreignTables[].options
-            tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-        }
-        
-        var layout = null;
-        if(typeof(layoutNameOrIndex) === 'string') {
-            var layoutIndex1B = Liquid.getLayoutIndexByName(tagetLiquid, layoutNameOrIndex);
-            if(layoutIndex1B) {
-                layout = tagetLiquid.tableJson.layouts[layoutIndex1B];
-            }
-        } else {
-            layout = tagetLiquid.tableJson.layouts[layoutNameOrIndex];
-        }
-        if(layout) {
-            var onCancelCode = "Liquid.onContextMenuClose();";
-            var onOkCode = "Liquid.onContextMenuClose(); Liquid.onLayoutOptionsOk('"+formId+"','"+controlId+"','"+layout.name+"');";
-            var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-            
-            if(!isDef(layout.image)) {
-                layout.image = {};
-            }
-            contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block;  \">"
-                    +"<tr><td colspan=\"3\"><center>"
-                    +"<span style=\"font-size:200%\">Layout Options<span>"
-                    +"</center></td></tr>"
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Name:"+"<input id=\"name\" type=\"text\" value=\""+(typeof layout.name !== 'undefined' ? layout.name : '')+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Tooltip:"+"<input id=\"tooltip\" type=\"text\" value=\""+(typeof layout.tooltip !== 'undefined' ? layout.tooltip : '')+"\" style=\"background-color:transparent\" "+""+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Caption:"+"<input id=\"title\" type=\"text\" value=\""+(typeof layout.title !== 'undefined' ? layout.title : '')+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"</td></tr>"
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Icon:"+"<input id=\"icon\" type=\"text\" value=\""+(typeof layout.icon !== 'undefined' ? layout.icon : '')+"\" list=\"primaryKeyDataliast\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"N.rows:"+"<input id=\"nRows\" type=\"number\" value=\""+(typeof layout.nRows !== 'undefined' ? layout.nRows : '')+"\" "+onKeyPressCode+"/></p>"
-                    +"</td></tr>"        
-                    +"<tr><td>"
-                    +"</td><td>"
-                    +"</td><td>"
-                    +"</td></tr>"
-
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"source:"+"<input id=\"header\" type=\"text\" value=\""+(isDef(layout.header) ? layout.header : "")+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"source:"+"<input id=\"source\" type=\"text\" value=\""+(isDef(layout.source) ? layout.source : "")+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"source:"+"<input id=\"footer\" type=\"text\" value=\""+(isDef(layout.footer) ? layout.footer : "")+"\" "+onKeyPressCode+"/></p>"
-                    +"</td></tr>"
-
-                    +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"source for update row:"+"<input id=\"sourceForUpdate\" type=\"text\" value=\""+(isDef(layout.sourceForUpdate) ? layout.sourceForUpdate : "")+"\" "+onKeyPressCode+"/></p>"
-                    +"</td><td>"
-                    +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"source for new row:"+"<input id=\"sourceForInsert\" type=\"text\" value=\""+(isDef(layout.sourceForInsert) ? layout.sourceForInsert : "")+"\" "+onKeyPressCode+"/></p>"
-                    // +"<datalist id=\"sourceForInsertDataliast\"><option value=\"\"></option><option value=\"no-repeat\">/layouts/myLayoutForInsert.jsp</option><option value=\"\"></option></datalist>"
-                    +"</td></tr>"
-
-                    +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
-
-                    +"<tr><td style=\"text-align: center;\">"
-                    +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\""+onCancelCode+"\">Cancel</button>"
-                    +"</td><td>"
-                    +"</td><td style=\"text-align: center;\">"
-                    +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\""+onOkCode+"\">Ok</button>"
-                    +"</td></tr>"
-
-                    +"</table>"
-                    +"</div>";
-
-            menu.innerHTML = contentHTML;
-            var modal_content = document.querySelector('.liquidContextMenu-content');
-            modal_content.style.margin="0 auto";
-            modal_content.style.fontSize="12px";
-            modal_content.style.position="relative";
-            modal_content.style.top="10px";
-        } else {
-            console.error("ERROR: layout '"+layoutNameOrIndex+"' not found")
-        }
-    },
-    createLiquidGridFieldContextMenu:function( obj ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:12px; height:16px; padding-right:5px; filter:grayscale(0.5); \">";
-        var dbImg = "<img src=\""+Liquid.getImagePath("check.png")+"\" style=\"width:12px; height:16px; padding-right:5px; filter:grayscale(0.5); \">";
-        var contentHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>";        
-        var controlId = liquid.controlId;
-        var formId = controlId+".gridFieldForm";
-
-        var ftIndex1B = Liquid.getForeignTableIndex(liquid);
-        var tagetLiquid = liquid;
-        if(ftIndex1B) { // work on liquid.foreignTables[].options
-            // tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-            console.error("ERROR: unsupported");
-            return;
-        }
-    
-        var grid_coords = Liquid.getGridCoords(liquid, obj.id);
-        if(grid_coords) {
-            var grid = grid_coords.grid;        
-            if(grid) {
-                var gridCol = grid_coords.control;
-                var onCancelCode = "Liquid.onContextMenuClose();";
-                var onOkCode = "Liquid.onContextMenuClose(); Liquid.onGridFieldOptionsOk('"+formId+"','"+controlId+"','"+grid.name+"','"+gridCol.name+"');";
-                var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-
-
-
-                contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block;  \">"
-                        +"<tr><td colspan=\"3\"><center>"
-                        +"<span style=\"font-size:200%\">Grid Field<span>"
-                        +"</center></td></tr>"
-                        +"<tr><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Name:"+"<input id=\"name\" type=\"text\" value=\""+(typeof gridCol.name !== 'undefined' ? gridCol.name : '')+"\" "+onKeyPressCode+"/></p>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Label:"+"<input id=\"label\" type=\"text\" value=\""+(typeof gridCol.label !== 'undefined' ? gridCol.label : '')+"\" style=\"\" "+""+"/></p>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Tooltip:"+"<input id=\"tooltip\" type=\"text\" value=\""+(typeof gridCol.tooltip !== 'undefined' ? gridCol.tooltip : '')+"\" style=\"\" "+""+"/></p>"
-                        +"</td><td>"
-                        +"</td></tr>"
-
-
-                        +"<tr><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"row:"+"<input id=\"row\" type=\"number\" value=\""+(typeof gridCol.row !== 'undefined' ? gridCol.row : '')+"\" "+onKeyPressCode+"/></p>"
-                        +"</td><td>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"col:"+"<input id=\"col\" type=\"number\" value=\""+(typeof gridCol.col !== 'undefined' ? gridCol.col : '')+"\" "+onKeyPressCode+"/></p>"
-                        +"</td></tr>"        
-
-                        +"<tr><td>"            
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Field pos X:"+"<input id=\"fieldData.positionX\" type=\"text\" value=\""+(isDef(gridCol.fieldData) && isDef(gridCol.fieldData.positionX) ? gridCol.fieldData.positionX : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Field pos Y:"+"<input id=\"fieldData.positionY\" type=\"text\" value=\""+(isDef(gridCol.fieldData) && isDef(gridCol.fieldData.positionY) ? gridCol.fieldData.positionY : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Field position:"+"<input id=\"fieldData.position\" type=\"text\" value=\""+(isDef(gridCol.fieldData) && isDef(gridCol.fieldData.position) ? gridCol.fieldData.position : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td></tr>"
-
-                        +"<tr><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Field width:"+"<input id=\"fieldData.width\" type=\"text\" value=\""+(isDef(gridCol.fieldData) && isDef(gridCol.fieldData.width) ? gridCol.fieldData.width : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td><td>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Field height:"+"<input id=\"fieldData.height\" type=\"text\" value=\""+(isDef(gridCol.fieldData) && isDef(gridCol.fieldData.height) ? gridCol.fieldData.height : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td></tr>"
-
-                        +"<tr><td colspan=3>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Field style:"+"<input id=\"fieldData.style\" type=\"text\" value=\""+(isDef(gridCol.fieldData) && isDef(gridCol.fieldData.style) ? gridCol.fieldData.style : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td></tr>"
-
-
-
-
-                        +"<tr><td>"            
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Label pos X:"+"<input id=\"labelData.positionX\" type=\"text\" value=\""+(isDef(gridCol.labelData) && isDef(gridCol.labelData.positionX) ? gridCol.labelData.positionX : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Label pos Y:"+"<input id=\"labelData.positionY\" type=\"text\" value=\""+(isDef(gridCol.labelData) && isDef(gridCol.labelData.positionY) ? gridCol.labelData.positionY : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Label position:"+"<input id=\"labelData.position\" type=\"text\" value=\""+(isDef(gridCol.labelData) && isDef(gridCol.labelData.position) ? gridCol.labelData.position : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td></tr>"
-
-                        +"<tr><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Label width:"+"<input id=\"labelData.width\" type=\"text\" value=\""+(isDef(gridCol.labelData) && isDef(gridCol.labelData.width) ? gridCol.labelData.width : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td><td>"
-                        +"</td><td>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Label height:"+"<input id=\"labelData.height\" type=\"text\" value=\""+(isDef(gridCol.labelData) && isDef(gridCol.labelData.height) ? gridCol.labelData.height : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td></tr>"
-
-                        +"<tr><td colspan=3>"
-                        +"<p class=\"liquidContextMenu-item\">"+optImg+"Label style:"+"<input id=\"labelData.style\" type=\"text\" value=\""+(isDef(gridCol.labelData) && isDef(gridCol.labelData.style) ? gridCol.labelData.style : "")+"\" "+onKeyPressCode+"/></p>"
-                        +"</td></tr>"
-
-
-                        +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
-
-                        +"<tr><td style=\"text-align: center;\">"
-                        +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\""+onCancelCode+"\">Cancel</button>"
-                        +"</td><td>"
-                        +"</td><td style=\"text-align: center;\">"
-                        +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\""+onOkCode+"\">Ok</button>"
-                        +"</td></tr>"
-
-                        +"</table>"
-                        +"</div>";
-
-                menu.innerHTML = contentHTML;
-                var modal_content = document.querySelector('.liquidContextMenu-content');
-                modal_content.style.margin="0 auto";
-                modal_content.style.fontSize="12px";
-                modal_content.style.position="relative";
-                modal_content.style.top="10px";
-            } else {
-                console.error("ERROR: grid '"+obj.id+"' not found")
-            }
-        } else {
-            console.error("ERROR: grid '"+obj.id+"' not found")
-        }
-    },
-    createGeneralOptionsContextMenu:function( obj ) {
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var dbImg = "<img src=\""+Liquid.getImagePath("database.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var storeImg = "<img src=\""+Liquid.getImagePath("store.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var contentHTML = "<div class=\"liquidContextMenu-content\">" + "<span class=\"liquidContextMenu-close\"></span>";
-        
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-        var formId = "Liquid.options";
-        
-        contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidGeneralOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block; position:relative; top:10px;\">"
-                +"<tr><td colspan=\"3\"><center>"
-                +"<span style=\"font-size:200%\">Liquid Options<span>"
-                +"</center></td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Language:"+"<input id=\"lang\" type=\"text\" value=\""+(Liquid.lang ? Liquid.lang : "eng")+"\" list=\"langDataliast\" autocomplete=\"false\" /></p>"
-                +"<datalist id=\"langDataliast\"><option value=\"en\">english</option><option value=\"it\">italiano</option></datalist>"
-                +"</td><td>"
-                +"</td><td>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Current database:"+"<input id=\"curDatabase\" type=\"text\" value=\""+(Liquid.curDatabase !== 'undefined' ? Liquid.curDatabase : "")+"\" /></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Current schema:"+"<input id=\"curSchema\" type=\"text\" value=\""+(Liquid.curSchema !== 'undefined' ? Liquid.curSchema : "")+"\" /></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Clean Data:"+"<input id=\"cleanData\" type=\"checkbox\" "+Liquid.getCheckedAttr(Liquid.cleanData, true)+" /></p>"
-                +"</td><td>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Date separator:"+"<input id=\"dateSep\" type=\"text\" value=\""+(Liquid.dateSep ? Liquid.dateSep : "")+"\" /></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Time separator:"+"<input id=\"lang\" type=\"text\" value=\""+(Liquid.timeSep ? Liquid.timeSep : ":")+"\" /></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Project mode:"+"<input id=\"projectMode\" "+"disabled readonly" + " type=\"checkbox\" "+Liquid.getCheckedAttr(Liquid.projectMode, true)+" /></p>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Debug mode:"+"<input id=\"debug\" " + (Liquid.projectMode ? "" : "disabled readonly") +" type=\"checkbox\" "+Liquid.getCheckedAttr(Liquid.debug, true)+" /></p>"
-                +"</td></tr>"
-
-
-                +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
-
-                +"<tr><td style=\"text-align: center;\">"
-                +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\"Liquid.onContextMenuClose();\">Cancel</button>"
-                +"</td><td>"
-                +"</td><td style=\"text-align: center;\">"
-                +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\"Liquid.onContextMenuClose(); Liquid.onLiquidOptionsOk('"+formId+"')\">Ok</button>"
-                +"</td></tr>"
-
-                +"</table>"
-                +"</div>";
-        
-        menu.innerHTML = contentHTML;
-        var modal_content = document.querySelector('.liquidContextMenu-content');
-        modal_content.style.margin="0 auto";
-        modal_content.style.fontSize="12px";    
-        modal_content.style.position="relative";
-        modal_content.style.top="10px";
-    },
-    createConnectionContextMenu:function( obj ) {
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var dbImg = "<img src=\""+Liquid.getImagePath("database.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var storeImg = "<img src=\""+Liquid.getImagePath("store.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var contentHTML = "<div class=\"liquidContextMenu-content\">" + "<span class=\"liquidContextMenu-close\"></span>";
-
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";        
-        
-        var formId = "Liquid.connection";
-        
-        var userConnectionList = "";
-        if(Liquid.userConnectionList) {
-            for(var it=0; it<Liquid.userConnectionList.length; it++) {
-                userConnectionList += "<option value=\""+Liquid.userConnectionList[it].url+"\">"+Liquid.userConnectionList[it].name+"</option>";
-            }
-        }        
-        
-        contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidConnection\" style=\"max-height:95%; overflow:auto; display:block; position:relative; top:10px;\">"
-
-                +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:480px;\">"+Liquid.curConnectionDesc+"</p>"
-                +"</td></tr>"
-
-                +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:480px;\">"+optImg+"Driver:"+"<input id=\"curDriver\" type=\"text\" style=\"width:475px; height:32px\" value=\""+(Liquid.curDriver ? Liquid.curDriver : "")+"\" list=\"driverDataliast\" autocomplete=\"false\" /></p>"
-                +"<datalist id=\"driverDataliast\"><option value=\"oracle.jdbc.driver.OracleDriver\">Oracle</option>"
-                +"<option value=\"com.mysql.jdbc.Driver\">MySQL</option>"
-                +"<option value=\"org.postgresql.Driver\">Postgres</option>"
-                +"<option value=\"com.microsoft.sqlserver.jdbc.SQLServerDriver\">SqlServer</option></datalist>"
-                +"</td></tr>"
-
-                +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:480px;\">"+optImg+"Connection URL:"+"<input id=\"curConnectionURL\" style=\"width:475px; height:32px\" type=\"text\" value=\""+(Liquid.curConnectionURL !== 'undefined' ? Liquid.curConnectionURL : "")+"\" list=\"curConnectionURLDataliast\" autocomplete=\"false\" /></p>"
-                +"<datalist id=\"curConnectionURLDataliast\">"
-                +"<option value=\"jdbc:oracle:thin:@[host]:1521:xe,[database],[password]\">Oracle</option>"
-                +"<option value=\"jdbc:mysql://[host]:3306/[database],[user],[password]\">MySQL</option>"
-                +"<option value=\"jdbc:postgresql://[host]:5432/[database],[user],[password]\">PostGres</option>"
-                +"<option value=\"jdbc:sqlserver//[host]:1433;databaseName=[database],[user],[password]\">SQLServer</option>"
-        
-                +userConnectionList
-        
-                +"</datalist>"
-                +"</td></tr>"
-
-                +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"2\"></td></tr>"
-
-                +"<tr><td style=\"text-align: center;\">"
-                +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\"Liquid.onContextMenuClose();\">Cancel</button>"
-                +"</td><td style=\"text-align: center;\">"
-                +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\"Liquid.onContextMenuClose(); Liquid.onLiquidConnectionOk('"+formId+"')\">Ok</button>"
-                +"</td></tr>"
-
-                +"</table>"
-                +"</div>";
-        
-        menu.innerHTML = contentHTML;
-        var modal_content = document.querySelector('.liquidContextMenu-content');
-        modal_content.style.margin="0 auto";
-        modal_content.style.fontSize="12px";    
-        modal_content.style.position="relative";
-        modal_content.style.top="10px";
-        modal_content.style.width = "500px";
-    },
-    createEventContextMenu:function( obj, objId ) {
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var dbImg = "<img src=\""+Liquid.getImagePath("database.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var storeImg = "<img src=\""+Liquid.getImagePath("store.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var contentHTML = "<div class=\"liquidContextMenu-content\">" + "<span class=\"liquidContextMenu-close\"></span>";
-
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";        
-        
-        var formId = "Liquid.event";
-        contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidEvent\" style=\"max-height:95%; overflow:auto; display:block; position:relative; top:10px;\">"
-
-                +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Event:"+"<input id=\"name\" type=\"text\" style=\"width:775px; height:32px\" value=\""+(Liquid.curDriver ? Liquid.curDriver : "")+"\" list=\"nameDataliast\" autocomplete=\"false\" /></p>"
-                +"<datalist id=\"nameDataliast\">"
-                +"<option value=\"onFirstLoad\">on first time loaded control</option>"
-                +"<option value=\"onLoad\">on loaded windows</option>"
-                +"<option value=\"onRowSelected\">on row selected</option>"
-                +"<option value=\"onRowUnSelected\">on row unselected</option>"
-                +"<option value=\"onRowClicked\">on row clicked</option>"        
-                +"<option value=\"onRowRendering\">on row rendering</option>"
-                +"<option value=\"onCellClicked\">on cell clicked</option>"
-                +"<option value=\"onCellChanged\">on cell changed</option>"
-                +"<option value=\"onCellDoubleClicked\">on cell double-clicked</option>"
-                +"<option value=\"cellContextMenu\">on cell right-clicked</option>"                
-                +"<option value=\"onSelectionChanged\">on selection changed</option>"
-                +"<option value=\"onGetSelection\">on get selection</option>"
-                +"<option value=\"isRowSelectable\">is row selectable</option>"
-                +"<option value=\"onCellValueChanged\">on cell value changed</option>"
-                +"<option value=\"onSorting\">before sort</option>"
-                +"<option value=\"onSorted\">after sort</option>"
-                +"<option value=\"onInserting\">before intert row</option>"
-                +"<option value=\"onUpdating\">before update row</option>"
-                +"<option value=\"onDeleting\">before delete row</option>"
-                +"<option value=\"onInserted\">before intert row</option>"
-                +"<option value=\"onUpdated\">before update row</option>"
-                +"<option value=\"onDeleted\">before delete row</option>"
-                +"<option value=\"onRollback\">on command rollback</option>"
-                +"<option value=\"onUploadDocument\">on update DMS document</option>"
-                +"<option value=\"onDownloadDocument\">on download DMS document</option>"
-                +"<option value=\"onDeleteDocument\">on delete DMS document</option>"
-                +"<option value=\"onUpdateDocument\">on update DMS document</option>"
-                +"<option value=\"onClosing\">before close windows</option>"
-                +"<option value=\"onClosed\">after windows</option>"
-                +"</datalist>"
-                +"</td></tr>"
-
-                +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Client code:"+"<textarea id=\"client\" style=\"width:775px; height:200px\" type=\"text\" value=\""+("")+"\" placeholder=\"javascript:\" ></textarea></p>"
-                +"</td></tr>"
-                +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Server class:"+"<textarea id=\"server\" style=\"width:775px; height:60px\" type=\"text\" value=\""+("")+"\" placeholder=\"server_package.server_class\" /></textarea></p>"
-                +"</td></tr>"
-                +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Parameters:"+"<input id=\"params\" type=\"text\" style=\"width:775px; height:32px\" value=\""+("")+"\" placeholder=\"[control1, control2]\" /></p>"
-                +"<datalist id=\"driverDataliast\">"
-                +"<option value=\"empty\"> </option>"
-                +"<option value=\"controlId\">[ControlId1, ControlId2]</option>"
-                +"</td></tr>"
-
-                +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"2\"></td></tr>"
-
-                +"<tr><td style=\"text-align: center;\">"
-                +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\"Liquid.onContextMenuClose();\">Cancel</button>"
-                +"</td><td style=\"text-align: center;\">"
-                +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\"Liquid.onContextMenuClose(); Liquid.onNewEventOk('"+formId+"','"+objId+"')\">Ok</button>"
-                +"</td></tr>"
-
-                +"</table>"
-                +"</div>";
-        
-        menu.innerHTML = contentHTML;
-        var modal_content = document.querySelector('.liquidContextMenu-content');
-        modal_content.style.margin="0 auto";
-        modal_content.style.fontSize="12px";    
-        modal_content.style.position="relative";
-        modal_content.style.top="10px";
-    },
-    createOnMenuContextMenu:function( obj ) {
-        var liquid = Liquid.getLiquid(obj);
-        var menu = Liquid.createContextMenu();
-        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var ckeckImg = "<img src=\""+Liquid.getImagePath("check.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
-
-        var onCancelCode = "Liquid.onContextMenuClose();";
-        var onOkCode = "";
-        var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
-        
-        menu.innerHTML = "<div class=\"liquidContextMenu-content\">"
-                +"<span class=\"liquidContextMenu-close\"></span>"
-                +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
-                +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Sate to server"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as json"+"</a></p>"
-                +"</div>";        
-    },
-    onContextMenu:function(e) {
-        var repositionMenu = true;
-        if(e) {
-            if(e.target.classList.contains('liquidPopupCaption')
-            || e.target.classList.contains('liquidGridTablesTabs')
-            || e.target.classList.contains('liquidForeignTables') 
-            || e.target.classList.contains('liquidPopupCaptionDragger') 
-            || e.target.classList.contains('liquidForeignTablesContainer')
-            || e.target.classList.contains('liquidNavLabel')
-            || e.target.classList.contains('liquidErrorMessage')
-            || e.target.classList.contains('liquidErrorCoords')
-            || e.target.classList.contains('liquidNavPage')
-            || e.target.classList.contains('liquidLayoutRowContainer')
-            || e.target.classList.contains('liquidLayoutRowContainerDiv')
-            || e.target.classList.contains('ag-center-cols-viewport')
-            ) {
-                Liquid.createOnTabContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidMenuX') || e.target.classList.contains('liquidMenuXContainer')) {
-                Liquid.createOnMenuContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidCommandBar') || e.target.classList.contains('liquidCommandText') || e.target.classList.contains('liquidCommandImg')) {
-                Liquid.createOnCommandBarContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidWinXContainer')) {
-                Liquid.createOnWindowContainerContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidOptions')) {
-                Liquid.createLiquidOptionsContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidOptionsLayout')) {
-                Liquid.createLiquidLayoutOptionsContextMenu(e.target);                
-            } else if(e.target.classList.contains('liquidOptions')) {
-                Liquid.onGridOptions(e.target);                
-            } else if(e.target.classList.contains('liquidGeneralOptions')) {
-                Liquid.createGeneralOptionsContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidConnection')) {
-                Liquid.createConnectionContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidEvent')) {
-                Liquid.createEventContextMenu(e.target, e.target.id);
-            } else if(e.target.classList.contains('ag-cell')) {
-                return true;
-            } else if(e.target.classList.contains('ag-header-cell')) {
-                return true;
-            } else if(e.target.classList.contains('ag-header-cell')) {
-                return true;
-            } else if(e.target.classList.contains('liquidFilterLabel')) {
-                Liquid.createOnTabContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidFilterTbl')) {
-                Liquid.createOnTabContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidFilterInput')) {
-                Liquid.createOnTabContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidFiltersSpacer')) {
-                Liquid.createOnTabContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidFormX')) {
-                Liquid.createOnFormXContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidGridControl')) {
-                Liquid.createOnGridControlContextMenu(e.target);
-            } else if(e.target.classList.contains('liquidGridOptions')) {
-                Liquid.createLiquidGridOptionsContextMenu(e.target, e.target.id);
-                repositionMenu = false;                
-            } else if(e.target.classList.contains('liquidGridCell') || e.target.classList.contains('liquidGridLabel')) {
-                Liquid.createLiquidGridFieldContextMenu(e.target);
-                repositionMenu = false;                
-            } else if(e.target.classList.contains('liquidTab')) {
-                var nameItems = e.target.id.substring(1).split(".");
-                if(nameItems.length>=2) {
-                    if(nameItems[1] == "grid_tab") {
-                        Liquid.createLiquidGridOptionsContextMenu(e.target, Number(nameItems[2])-1);
-                    } else if(nameItems[1] == "layout_tab") {
-                        Liquid.createLiquidLayoutOptionsContextMenu(e.target, Number(nameItems[2])-1);
-                    } else if(nameItems[1] == "document_tab") {
-                    } else if(nameItems[1] == "chart_tab") {
-                    }
-                }
-                repositionMenu = false;
-            } else return;
-            var modal = document.getElementById('liquidContextMenu');
-            modal.style.display = "block";
-            var modal_content = document.querySelector('.liquidContextMenu-content');
-            if(modal_content) {
-                if(repositionMenu) {
-                    modal_content.style.left = (e.clientX+5)+'px';
-                    modal_content.style.top = (e.clientY+5)+'px';
-                    modal_content.style.position = "relative";
-                }
-                var span = document.getElementsByClassName("liquidContextMenu-close")[0];
-                span.onclick = function() { modal.style.display = "none"; };
-                window.onclick = function(event) { if(event.target === modal) modal.style.display = "none"; };
-                return true;
-            } else {
-                modal.style.display = "none";
-            }
-        }
-        return false;
-    },
-    onContextMenuClose:function() {
-        var span = document.getElementsByClassName("liquidContextMenu-close")[0];
-        if(span) span.click();
-    },
+    },           
     showFrame:function(frameId) {
         if(glLastFrameId) {
             if(glLastFrameId !== frameId) {
@@ -18398,102 +16008,6 @@ var Liquid = {
         jQ1124( "#"+frameId ).slideDown( "fast", function() {
             glLastFrameId = frameId;
         });
-    },
-    getServerCallbackTemplateCode:function(liquid, funcName) {
-        var out = "";
-        out += "static public String "+funcName+"(Object tbl_wrk, Object params, Object clientData, Object requestParam ) {\n";
-        out += "int retVal = 0;\n";
-        out += "String result = \"\";\n";
-        out += "String updateResults = \"\";\n";
-        out += "\n";
-        out += "if(tbl_wrk != null) {\n";
-        out += "    if(params != null) {\n";
-        out += "        // get selection in the control\n";
-        out += "            String ids = db.getSelection(tbl_wrk, params);\n";
-        out += "            long maxRows = 0;\n";
-        out += "            // read the row in the db as bean\n";
-        out += "            ArrayList<Object> beans = (ArrayList<Object>)db.get_bean(requestParam, (String)ids, \"bean\", \"all\", \"all\", maxRows);\n";
-        out += "            if(beans != null) {\n";
-        out += "                int i = 1, n = beans.size();\n";
-        out += "                for(Object bean : beans) {\n";
-        out += "                    try {\n";
-        if(liquid) {
-            out += "                        // loading bean "+liquid.controlId+" from db\n";
-            if(liquid.tableJsonSource.columns) {
-                for(var ic=0; ic<liquid.tableJsonSource.columns.length; ic++) {
-                    var col = liquid.tableJsonSource.columns[ic];
-                    var jType = "Object";
-                    if(col) {
-                        if(Liquid.isInteger(col.type)) {
-                            jType = "Long";
-                        } else if(Liquid.isFloat(col.type)) {
-                            jType = "Float";
-                        } else if(Liquid.isDate(col.type)) {
-                            jType = "java.sql.Date";
-                        } else {
-                            jType = "String";
-                        }
-                        out += "                        ";
-                        out += jType
-                        out += " " + liquid.controlId.toLowerCase() + "$" + col.name.replace(".", "_") + " = ("+jType+")utility.get(bean, \""+col.name+"\");\n";
-                    }
-                }
-            }
-        }
-        if(liquid.srcLiquid) {
-            out += "\n";
-            out += "                        // Loading parent bean "+liquid.srcLiquid.controlId+" from db\n";
-            out += "                        Object parentBean = db.load_parent_bean( bean, params, maxRows );\n";
-            if(liquid.srcLiquid.tableJsonSource.columns) {
-                for(var ic=0; ic<liquid.srcLiquid.tableJsonSource.columns.length; ic++) {
-                    var col = liquid.srcLiquid.tableJsonSource.columns[ic];
-                    var jType = "Object";
-                    if(col) {
-                        if(Liquid.isInteger(col.type)) {
-                            jType = "Long";
-                        } else if(Liquid.isFloat(col.type)) {
-                            jType = "Float";
-                        } else if(Liquid.isDate(col.type)) {
-                            jType = "java.sql.Date";
-                        } else {
-                            jType = "String";
-                        }
-                        out += "                        ";
-                        out += jType
-                        out += " " + liquid.srcLiquid.controlId.toLowerCase() + "$" + col.name.replace(".", "_") + " = ("+jType+")utility.get(bean, \""+col.name+"\");\n";
-                    }
-                }
-            }
-            out += "\n";
-        }
-        out += "\n";
-        out += "                    } catch (Throwable ex) {\n";
-        out += "                        Logger.getLogger(event.class.getName()).log(Level.SEVERE, null, ex);\n";
-        out += "                    }\n";
-        out += "\n";
-        out += "\n";
-        out += "                    /*\n";
-        out += "                    // confirmation\n";
-        out += "                    if(Messagebox.show( \"Update ?\", \"Liquid\", Messagebox.OK+Messagebox.CANCEL+Messagebox.QUESTION, 30, Messagebox.CANCEL ) == Messagebox.OK) {\n";
-        out += "\n";
-        out += "                        // update DB\n";
-        out += "                        String updateResult = db.update ( bean, tbl_wrk );\n";
-        out += "\n";
-        out += "                        // ids to refrsh in the client\n";
-        out += "                        updateResults += (updateResults.length()>0?\",\":\"\") + updateResult;\n";
-        out += "                    }\n";
-        out += "                    */\n";
-        out += "                }\n";
-        out += "            }\n";
-        out += "        }\n";
-        out += "    }\n";
-        out += "\n";
-        out += "result = \"{ \\\"result\\\":\"+retVal;\n";
-        out += "result += \",\\\"detail\\\":[\"+updateResults+\"]\";\n";
-        out += "result += \"}\";\n";
-        out += "return result;\n";
-        out += "}\n";
-        return out;
     },
     removeRuntimeProps:function(liquid) {
         return Liquid.removeRuntimeTableJsonProps(liquid.tableJson);
@@ -18534,7 +16048,7 @@ var Liquid = {
         return Liquid.onSaveTo(obj, true, false);
     },
     onSaveTo:function(obj, bDownload, bSaveToServer) {
-        Liquid.onContextMenuClose();
+        LiquidEditing.onContextMenuClose();
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             var json = null;
@@ -18636,13 +16150,101 @@ var Liquid = {
         }
     },
     onSaveToCSV:function(obj) {
-        Liquid.onContextMenuClose();
+        LiquidEditing.onContextMenuClose();
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             liquid.gridOptions.api.exportDataAsCsv();
         }
+    },
+    /**
+     * 
+     * Handle the request to the server by ajax oer websocket
+     * 
+     * @param {type} liquid : the workspace
+     * @param {type} xhr the XML Http request
+     * @param {type} method : GET or POST
+     * @param {type} url
+     * @param {type} async : true or false
+     * @param {type} data : the body data
+     * @param {type} onreadystatechange : the callback
+     * @returns {unresolved} 
+     */
+    sendRequest:function(liquid, freeParam, method, url, async, data, onreadystatechange, reason, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled) {
+        if(typeof glLiquidWebSocket !== 'undefined' && glLiquidWebSocket) {
+            // Websocket
+            var bCompress = false;
+            var token = LiquidStreamer.generate_token(32);
+            var request = JSON.stringify( { method:method, url:url, data:data, sessionId:LiquidStreamer.sessionId, token:token } );
+            var gzRequest = null;
+            if(bCompress) {
+                var gzip = new Zlib.Gzip(request);
+                gzRequest = gzip.compress();
+            } else {
+                gzRequest = request;
+            }
+            var buffer = new ArrayBuffer(4 + 2 + gzRequest.length);
+            var requestToSend = new DataView(buffer);
+            requestToSend.setUint32(0, gzRequest.length);
+            requestToSend.setUint16(4, (bCompress?1:0));
+            if(bCompress) {
+                for(var i=0; i<gzRequest.length; i++) {
+                    // requestToSend.setInt8(4+2+i, gzRequest[i]);
+                    requestToSend.setUint8(4+2+i, gzRequest[i]);
+                    // requestToSend.buffer[4+2+i] = gzRequest[i];
+                    // buffer[4+2+i] = gzRequest[i];
+                }
+            } else {
+                for(var i=0; i<gzRequest.length; i++) {
+                    // requestToSend.setInt8(4+2+i, gzRequest[i]);
+                    requestToSend.setUint8(4+2+i, gzRequest.charCodeAt(i));
+                }            
+            }
+            // create the queue object
+            var queue = LiquidStreamer.queueAppendLiquidStreamer( token, reason, onreadystatechange, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled, liquid, async );
+            // send data
+            LiquidStreamer.sendLiquidStreamer(buffer, requestToSend.byteLength, queue, async);
+        } else {
+            // Ajax
+            if(!liquid.xhr) {
+                liquid.xhr = new XMLHttpRequest();
+            }
+            if(Liquid.wait_for_xhr_ready(liquid, reason)) {
+                if(isDef(onUploadingProgress)) liquid.xhr.upload.addEventListener("progress", function(event){ onUploadingProgress(liquid, event); }, false);
+                if(isDef(onDownloadingProgress)) liquid.xhr.addEventListener("progress", function(event){ onDownloadingProgress(liquid, event); }, false);
+                if(isDef(onCompleted)) liquid.xhr.addEventListener("load", function(event){ onCompleted(liquid, event); }, false);
+                if(isDef(onFailed)) liquid.xhr.addEventListener("error", function(event){ onFailed(liquid, event); }, false);
+                if(isDef(onCancelled)) liquid.xhr.addEventListener("abort", function(event){ onCancelled(liquid, event); }, false);
+                liquid.xhr.open(method, url, async);
+                var thisLiquid = liquid;
+                if(async) {
+                    liquid.xhr.onreadystatechange = function() {
+                        return onreadystatechange(thisLiquid);
+                    }
+                }
+                liquid.xhr.send(data);
+                Liquid.release_xhr(liquid);
+                if(!async) {
+                    return onreadystatechange(liquid);
+                }
+            } else {
+                console.error("ERROR: loadData(): potential duplicate call on control '"+liquid.controlId
+                        +"'\n\nplease avoid multiple call on the same control"
+                        +"'\n\nprevoius call: "+liquid.xhrDescription
+                        +"'\n\ncurrent call: "+reason
+                        );
+                if(liquid.xhrCount < 10) {
+                    liquid.xhrCount++;
+                    setTimeout(function() { 
+                        Liquid.sendRequest(liquid, freeParam, method, url, async, data, onreadystatechange,reason, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled);
+                    }, 3000);
+                } else {
+                    alert("!!! " + liquid.controlId+" is till waiting for last operaion:"+liquid.xhrDescription+ " !!!");
+                }
+            }
+        }
     }
 };
+
 /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
 var saveAs=saveAs||function(e){"use strict";if(typeof e==="undefined"||typeof navigator!=="undefined"&&/MSIE [1-9]\./.test(navigator.userAgent)){return}var t=e.document,n=function(){return e.URL||e.webkitURL||e},r=t.createElementNS("http://www.w3.org/1999/xhtml","a"),o="download"in r,a=function(e){var t=new MouseEvent("click");e.dispatchEvent(t)},i=/constructor/i.test(e.HTMLElement)||e.safari,f=/CriOS\/[\d]+/.test(navigator.userAgent),u=function(t){(e.setImmediate||e.setTimeout)(function(){throw t},0)},s="application/octet-stream",d=1e3*40,c=function(e){var t=function(){if(typeof e==="string"){n().revokeObjectURL(e)}else{e.remove()}};setTimeout(t,d)},l=function(e,t,n){t=[].concat(t);var r=t.length;while(r--){var o=e["on"+t[r]];if(typeof o==="function"){try{o.call(e,n||e)}catch(a){u(a)}}}},p=function(e){if(/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(e.type)){return new Blob([String.fromCharCode(65279),e],{type:e.type})}return e},v=function(t,u,d){if(!d){t=p(t)}var v=this,w=t.type,m=w===s,y,h=function(){l(v,"writestart progress write writeend".split(" "))},S=function(){if((f||m&&i)&&e.FileReader){var r=new FileReader;r.onloadend=function(){var t=f?r.result:r.result.replace(/^data:[^;]*;/,"data:attachment/file;");var n=e.open(t,"_blank");if(!n)e.location.href=t;t=undefined;v.readyState=v.DONE;h()};r.readAsDataURL(t);v.readyState=v.INIT;return}if(!y){y=n().createObjectURL(t)}if(m){e.location.href=y}else{var o=e.open(y,"_blank");if(!o){e.location.href=y}}v.readyState=v.DONE;h();c(y)};v.readyState=v.INIT;if(o){y=n().createObjectURL(t);setTimeout(function(){r.href=y;r.download=u;a(r);h();c(y);v.readyState=v.DONE});return}S()},w=v.prototype,m=function(e,t,n){return new v(e,t||e.name||"download",n)};if(typeof navigator!=="undefined"&&navigator.msSaveOrOpenBlob){return function(e,t,n){t=t||e.name||"download";if(!n){e=p(e)}return navigator.msSaveOrOpenBlob(e,t)}}w.abort=function(){};w.readyState=w.INIT=0;w.WRITING=1;w.DONE=2;w.error=w.onwritestart=w.onprogress=w.onwrite=w.onabort=w.onerror=w.onwriteend=null;return m}(typeof self!=="undefined"&&self||typeof window!=="undefined"&&window||this.content);if(typeof module!=="undefined"&&module.exports){module.exports.saveAs=saveAs}else if(typeof define!=="undefined"&&define!==null&&define.amd!==null){define("FileSaver.js",function(){return saveAs})}
 
@@ -19038,11 +16640,11 @@ SystemEditor.prototype.init = function(params) {
     this.eInput = null;
     this.resultId = this.liquid.controlId+".systemEditors.result";
     if(params.colDef.cellEditorParams.type === "systemEditors") {
-        this.dlg = Liquid.createSystemEditorsDialog(this.liquid, this.resultId);
+        this.dlg = LiquidEditing.createSystemEditorsDialog(this.liquid, this.resultId);
     } else if(params.colDef.cellEditorParams.type === "systemLookups") {
-        this.dlg = Liquid.createSystemLookupDialog(this.liquid, this.resultId);
+        this.dlg = LiquidEditing.createSystemLookupDialog(this.liquid, this.resultId);
     } else if(params.colDef.cellEditorParams.type === "systemOptions") {
-        this.dlg = Liquid.createSystemOptionsDialog(this.liquid, this.resultId);
+        this.dlg = LiquidEditing.createSystemOptionsDialog(this.liquid, this.resultId);
     } else {
         console.error("ERROR: unknown system editor:"+params.colDef.cellEditorParams.type);
         return;
@@ -19243,7 +16845,7 @@ if(window.addEventListener) { window.addEventListener('click', Liquid.onClick); 
 if(window.addEventListener) { window.addEventListener('load', Liquid.startup); } else { window.attachEvent('onload', Liquid.Startup); }
 if(window.addEventListener) { window.addEventListener('keydown', Liquid.onWindowKeyDown); } else { window.attachEvent('onkeydown', Liquid.onWindowKeyDown); }
 if(window.addEventListener) { window.addEventListener('scroll', Liquid.onWindowScroll); } else { window.attachEvent('scroll', Liquid.onWindowScroll); }
-if(document.addEventListener) { document.addEventListener('contextmenu', function(e) { if(Liquid.onContextMenu(e)) e.preventDefault(); }, false ); } else { document.attachEvent('contextmenu', function() { if(Liquid.onContextMenu(window.event)) window.event.returnValue = false; }); }
+if(document.addEventListener) { document.addEventListener('contextmenu', function(e) { if(isDef(LiquidEditing)) if(LiquidEditing.onContextMenu(e)) e.preventDefault(); }, false ); } else { document.attachEvent('contextmenu', function() { if(isDef(LiquidEditing)) if(LiquidEditing.onContextMenu(window.event)) window.event.returnValue = false; }); }
 
 
 

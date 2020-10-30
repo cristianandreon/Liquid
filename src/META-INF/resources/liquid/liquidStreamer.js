@@ -158,7 +158,7 @@ var LiquidStreamer = {
             glLiquidWebSocket.close();
         glLiquidWebSocket = null;
     },
-    queueAppendLiquidStreamer:function( token, reason, callback, onProgress, onCompleted, onFailed, onCancelled, param, async ) {
+    queueAppendLiquidStreamer:function( token, reason, callback, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled, param, async ) {
         if(!glLiquidWSQueueBusy) {
             glLiquidWSQueueBusy = true;
             for(var i=0; i<glLiquidWSQueue.length; i++) {
@@ -173,7 +173,7 @@ var LiquidStreamer = {
             token:token,
             reason:reason,
             callback:callback, 
-            onProgress:onProgress, onCompleted:onCompleted, onFailed:onFailed, onCancelled:onCancelled, 
+            onUploadingProgress:onUploadingProgress, onDownloadingProgress:onDownloadingProgress, onCompleted:onCompleted, onFailed:onFailed, onCancelled:onCancelled, 
             param:param,
             async:async, pending:true, 
             tick:getCurrentTimetick(), 
@@ -181,11 +181,11 @@ var LiquidStreamer = {
         };
         // add to the queue
         glLiquidWSQueue.push( queueItem );
-        // fire onProgress
-        if(isDef(queueItem.onProgress)) {
+        // fire onUploadingProgress
+        if(isDef(queueItem.onUploadingProgress)) {
             setTimeout(function() {
                 var event = { currentTarget:{ response:""}, loaded:false, total:0, timeStamp:0, eventPhase:0 };
-                queueItem.onProgress(queueItem.param, event);
+                queueItem.onUploadingProgress(queueItem.param, event);
             }, 50);
         }
         return queueItem;
@@ -213,9 +213,9 @@ var LiquidStreamer = {
                         } else if(event.data[0] == 'P') {
                             // partial response
                             bCloseQueue = false;
-                            if(isDef(queueItem.onProgress)) {
+                            if(isDef(queueItem.onDownloadingProgress)) {
                                 var jsEvent = { currentTarget:{ response:response }, loaded:true, total:response.length, timeStamp:0, eventPhase:0 };
-                                queueItem.onProgress(queueItem.param, jsEvent);
+                                queueItem.onDownloadingProgress(queueItem.param, jsEvent);
                             }
                         } else {
                             console.error("queueProcessLiquidStreamer() unknown rensonse type: '"+event.data[0]+"'");
