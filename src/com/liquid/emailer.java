@@ -841,6 +841,23 @@ public class emailer {
         }
     }
 
+
+    /*  test cases :    
+    
+            emailer.Host = "smtp.gmail.com"; // DA SISTEMARE : tls://server";
+            emailer.Username = "utentibonus110@gmail.com";
+
+            emailer.Host = "smtp.office365.com";
+            emailer.Username = "utentibonus110@outlook.it";
+            emailer.Port = "587";
+            emailer.Password = "nico2020";
+            
+            emailer.test(emailer.Host, emailer.Port, emailer.Username, emailer.Password);
+
+            // security page
+            // https://myaccount.google.com/lesssecureapps?pli=1&rapt=AEjHL4Opv7n8ZxTGmlkVJjlIc11UDexSS2ioRPddKIkQ8jBhaBH5LBHl6eLFWTyRw_Gogw6suAo-mUtZWiBbab2n1lMxh_TxfA
+    */
+            
     /**
      * Test the emailer
      * 

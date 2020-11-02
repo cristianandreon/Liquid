@@ -2034,6 +2034,15 @@ public class event {
             try {
                 JSONObject rootJSON = new JSONObject((String) params);
                 JSONArray paramsJSON = rootJSON.getJSONArray("params");
+                // provilege first controlObject
+                for (int ip = 0; ip < paramsJSON.length(); ip++) {
+                    JSONObject paramJSON = paramsJSON.getJSONObject(ip);
+                    if (paramJSON.has(paramName)) {
+                        if (paramJSON.has("sel")) {
+                            return paramJSON.get(paramName);
+                        }
+                    }
+                }
                 for (int ip = 0; ip < paramsJSON.length(); ip++) {
                     JSONObject paramJSON = paramsJSON.getJSONObject(ip);
                     if (paramJSON.has(paramName)) {
@@ -2046,5 +2055,27 @@ public class event {
         }
         return null;
     }
+    
+    static public Object getControlObject(Object params, String controlName) {
+        if (params != null) {
+            try {
+                JSONObject rootJSON = new JSONObject((String) params);
+                JSONArray paramsJSON = rootJSON.getJSONArray("params");
+                // provilege first controlObject
+                for (int ip = 0; ip < paramsJSON.length(); ip++) {
+                    JSONObject paramJSON = paramsJSON.getJSONObject(ip);
+                    if (paramJSON.has("name")) {
+                        String cControlname =  paramJSON.getString("name");
+                        if(controlName.equalsIgnoreCase( cControlname )) {
+                            return paramJSON.get(cControlname);
+                        }
+                    }
+                }
+            } catch (JSONException ex) {
+                Logger.getLogger(event.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return null;
+    }    
 
 }

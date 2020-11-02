@@ -1550,7 +1550,9 @@ public class db {
         } finally {
             try {
                 if (conn != null) {
-                    conn.commit();
+                    if(!conn.getAutoCommit()) {
+                        conn.commit();
+                    }
                 }
             } catch (SQLException ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
@@ -2618,7 +2620,9 @@ public class db {
                             }                    
                             try {
                                 if (conn != null) {
-                                    conn.commit();
+                                    if(!conn.getAutoCommit()) {
+                                        conn.commit();
+                                    }
                                 }
                             } catch (SQLException ex) {
                                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
@@ -3839,7 +3843,9 @@ public class db {
                     psdo.close();
                 }                
                 if (conn != null) {
-                    conn.commit();
+                    if(!conn.getAutoCommit()) {
+                        conn.commit();
+                    }
                 }
                 
                 // closing the connections (with callbacks)
@@ -5683,7 +5689,9 @@ public class db {
             }
             try {
                 if (conn != null) {
-                    conn.commit();
+                    if(!conn.getAutoCommit()) {
+                        conn.commit();
+                    }
                 }
             } catch (SQLException ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
