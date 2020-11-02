@@ -902,7 +902,8 @@ public class workspace {
                         System.out.println(err);
                         return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
                     }
-                    conn.close();
+                    // closing the connections (with callbacks)
+                    connection.closeConnection(conn);
                     conn = null;
                     connToUse = connToDB = connection.getDBConnection(database);
                 }

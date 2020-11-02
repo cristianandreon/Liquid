@@ -1,9 +1,11 @@
 package com.liquid;
 
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -227,7 +229,7 @@ public class connection {
                     }
                 } else {
                     try {
-                        conn = (Connection)get_connection.invoke(database);
+                        conn = (Connection)get_connection.invoke(null, database);
                     } catch(Throwable th) {
                         conn = (Connection)get_connection.invoke(null);
                     }
@@ -399,15 +401,23 @@ public class connection {
         Connection conn = null;
         for (int ic=0; ic<jdbcSources.size(); ic++) {
             JDBCSource jdbcSource = jdbcSources.get(ic);
+            boolean connect = false;
             try {
                 
                 if(database != null && !database.isEmpty()) {
+                    if(database.equalsIgnoreCase(jdbcSource.database)) {
+                        connect = true;
+                    }
                 } else {
                     database = jdbcSource.database;
+                    connect = true;
                 }
-                conn = getLiquidDBConnection(jdbcSource, jdbcSource.driver, jdbcSource.host, jdbcSource.port, database, jdbcSource.user, jdbcSource.password);
-                if(conn != null)
-                    return new Object [] { conn, jdbcSource.driver, jdbcSource.host, jdbcSource.port, database };
+                if(connect) {
+                    conn = getLiquidDBConnection(jdbcSource, jdbcSource.driver, jdbcSource.host, jdbcSource.port, database, jdbcSource.user, jdbcSource.password);
+                    if(conn != null) {
+                        return new Object [] { conn, jdbcSource.driver, jdbcSource.host, jdbcSource.port, database };
+                    }
+                }
                 
             } catch (Throwable th) {                
                 Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, th);
@@ -462,6 +472,54 @@ public class connection {
         }
         return null;
     }
+    
+    /**
+     * Close the connection and invoke the callback
+     * @param conn
+     * @return 
+     */
+    static public boolean closeConnection(Connection conn) {
+        boolean retVal = false;
+        
+        try {
+            if(conn != null) {
+                if(!conn.isClosed()) {
+                    Class cls = null;
+                    Method method = null;        
+                    try {
+                        cls = Class.forName("app.liquid.dbx.connection");
+                        if(cls != null) {
+                            method = cls.getMethod("closeDbConnection", Connection.class);
+                        }
+                    } catch(NoSuchMethodException nsm) {
+                    } catch(ClassNotFoundException cnf) {
+                    } catch(Throwable th) {
+                    }        
+                    if(method != null) {
+                        try {
+                            retVal = (boolean)method.invoke(null, conn);
+                        } catch (IllegalAccessException ex) {
+                            Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (IllegalArgumentException ex) {
+                            Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (InvocationTargetException ex) {
+                            Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    } else {
+                        // use internal method            
+                        if (conn != null) {
+                            conn.close();
+                            retVal = true;
+                        }
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return retVal;
+    }
+    
 }
 
 

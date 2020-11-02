@@ -1215,9 +1215,11 @@ public class db {
                     if (rsdo != null) {
                         rsdo.close();
                     }
+                    rsdo = null;
                     if (psdo != null) {
                         psdo.close();
                     }
+                    rsdo = null;
                 }
 
                 //
@@ -1548,17 +1550,14 @@ public class db {
         } finally {
             try {
                 if (conn != null) {
-                    conn.close();
+                    conn.commit();
                 }
             } catch (SQLException ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
-            if (connToDB != null) 
-                try {
-                connToDB.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            // closing the connections (with callbacks)
+            connection.closeConnection(conn);
+            connection.closeConnection(connToDB);
         }
 
 
@@ -2602,13 +2601,30 @@ public class db {
                             System.err.println("// get_bean() [" + controlId + "] Error:" + e.getLocalizedMessage());
 
                         } finally {
+                            
+                            if (rsdo != null) {
+                                try {
+                                    rsdo.close();
+                                } catch (SQLException ex) {
+                                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                            if (rsdo != null) {
+                                try {
+                                    rsdo.close();
+                                } catch (SQLException ex) {
+                                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }                    
                             try {
                                 if (conn != null) {
-                                    conn.close();
+                                    conn.commit();
                                 }
                             } catch (SQLException ex) {
                                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
                             }
+                            // closing the connections (with callbacks)
+                            connection.closeConnection(conn);
                         }
                     }
                 } else {
@@ -3816,9 +3832,18 @@ public class db {
                 );
 
                 // Freee connection as soon as possible
-                if (conn != null) {
-                    conn.close();
+                if (rsdo != null) {
+                    rsdo.close();
                 }
+                if (psdo != null) {
+                    psdo.close();
+                }                
+                if (conn != null) {
+                    conn.commit();
+                }
+                
+                // closing the connections (with callbacks)
+                connection.closeConnection(conn);
                 conn = null;
 
                 if (recordset != null) {
@@ -3856,13 +3881,8 @@ public class db {
             System.err.println("// get_beans() [" + controlId + "] Error:" + e.getLocalizedMessage());
 
         } finally {
-            try {
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException ex) {
-                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            // closing the connections (with callbacks)
+            connection.closeConnection(conn);
         }
         return null;
     }
@@ -5043,8 +5063,8 @@ public class db {
                             conn.setCatalog(database);
                             String db = conn.getCatalog();
                             if (!db.equalsIgnoreCase(database)) {
-                                // set catalog not supported : connect to different DB
-                                conn.close();
+                                // closing the connections (with callbacks)
+                                connection.closeConnection(conn);
                                 conn = null;
                                 connToUse = connToDB = connection.getDBConnection(database);
                             }
@@ -5191,19 +5211,11 @@ public class db {
             retVal = "{\"error\":\"" + utility.base64Encode("Fatal error:" + th.getLocalizedMessage()) + "\"}";
 
         } finally {
-            try {
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException ex) {
-                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            if (connToDB != null) 
-                try {
-                connToDB.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            // closing the connections (with callbacks)
+            connection.closeConnection(conn);
+
+            // closing the connections (with callbacks)
+            connection.closeConnection(connToDB);
         }
         return retVal;
     }
@@ -5656,12 +5668,28 @@ public class db {
             System.err.println("// count_occurences_by_column() [" + controlId + "] Error:" + e.getLocalizedMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
+                if (rsdo != null) {
+                    rsdo.close();
                 }
             } catch (SQLException ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
+            try {
+                if (psdo != null) {
+                    psdo.close();
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            try {
+                if (conn != null) {
+                    conn.commit();
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            // closing the connections (with callbacks)
+            connection.closeConnection(conn);
         }
 
         out_string += "]";
