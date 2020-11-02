@@ -850,7 +850,7 @@ public class emailer {
             emailer.Host = "smtp.office365.com";
             emailer.Username = "utentibonus110@outlook.it";
             emailer.Port = "587";
-            emailer.Password = "nico2020";
+            emailer.Password = "";
             
             emailer.test(emailer.Host, emailer.Port, emailer.Username, emailer.Password);
 
