@@ -8652,8 +8652,10 @@ var Liquid = {
                                 }
                                 if(gotoGridIndex !== null) {
                                     if(gotoGridIndex>=0) {
-                                        Liquid.onGridTab( document.getElementById(liquid.tabList[gotoGridIndex].id) );
-                                        command.restoreView = true;
+                                        if(gotoGridIndex != liquid.currentTab) {
+                                            Liquid.onGridTab( document.getElementById(liquid.tabList[gotoGridIndex].id) );
+                                            command.restoreView = true;
+                                        }
                                     }
                                 }
                             }
@@ -8896,7 +8898,7 @@ var Liquid = {
                     }
                 // Now insensitive case
                 name = name.toUpperCase();
-                fullName = fullName.toUpperCase();
+                fullName = isDef(fullName) ? fullName.toUpperCase() : name;
                 for(var ic=0; ic<columns.length; ic++) {
                     if(typeof columns[ic] === 'object') {
                         if(columns[ic].name.toUpperCase() === name || columns[ic].name.toUpperCase() === fullName)
@@ -12488,13 +12490,29 @@ var Liquid = {
                                 var unselectionKey = selectionData[1];
                                 var columns = null;
                                 if(isDef(ftLiquid.tableJson.captionColumn)) {
-                                    columns = [ftLiquid.tableJson.captionColumn];
+                                    if(Array.isArray(ftLiquid.tableJson.captionColumn)) {
+                                        columns = ftLiquid.tableJson.captionColumn;
+                                    } else {
+                                        columns = [ ftLiquid.tableJson.captionColumn ];
+                                    }
                                 } else if(isDef(ftLiquid.tableJson.captionColumns)) {
-                                    columns = ftLiquid.tableJson.captionColumns;
+                                    if(Array.isArray(ftLiquid.tableJson.captionColumns)) {
+                                        columns = ftLiquid.tableJson.captionColumns;
+                                    } else {
+                                        columns = [ ftLiquid.tableJson.captionColumns ];
+                                    }
                                 } else if(isDef(ftLiquid.tableJson.titleColumn)) {
-                                    columns = [ftLiquid.tableJson.titleColumn];
+                                    if(Array.isArray(ftLiquid.tableJson.titleColumn)) {
+                                        columns = ftLiquid.tableJson.titleColumn;
+                                    } else {
+                                        columns = [ ftLiquid.tableJson.titleColumn ];
+                                    }
                                 } else if(isDef(ftLiquid.tableJson.titleColumns)) {
-                                    columns = ftLiquid.tableJson.titleColumns;
+                                    if(Array.isArray(ftLiquid.tableJson.titleColumns)) {
+                                        columns = ftLiquid.tableJson.titleColumns;
+                                    } else {
+                                        columns = [ ftLiquid.tableJson.titleColumns ];
+                                    }
                                 }
                                 descriptonList.push( { descriptior:"", liquid:ftLiquid, selectionKey:selectionKey, unselectionKey:unselectionKey, columns } );
                                 if(ftLiquid.controlId === rootLiquid.controlId) {

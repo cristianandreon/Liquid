@@ -496,12 +496,14 @@ public class wsStreamerClient {
         return byteStream.toByteArray();
     }
     
+
+    /**
+     * TODO : Test
+     * @param data
+     * @return
+     * @throws IOException 
+     */
     private static byte[] gunzip(byte [] data) throws IOException {
-        /*
-        for(int i=0; i<data.length; i++)
-            if(data[i] < 0) 
-                data[i] = (byte) (127 + data[i]);
-        */
         ByteArrayInputStream byteStream = new ByteArrayInputStream(data);
         try {
             GZIPInputStream zipStream = new GZIPInputStream(byteStream);
@@ -510,7 +512,17 @@ public class wsStreamerClient {
         } finally {
             byteStream.close();
         }
-        return byteStream.readAllBytes();
+        
+        
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] dataRead = new byte[1024];
+        while ((nRead = byteStream.read(dataRead, 0, dataRead.length)) != -1) {
+            buffer.write(dataRead, 0, nRead);
+        }
+        buffer.flush();
+        return buffer.toByteArray();
+          
     }
     
 

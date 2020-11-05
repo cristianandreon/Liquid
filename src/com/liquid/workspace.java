@@ -2190,6 +2190,9 @@ public class workspace {
         if (query != null && !query.isEmpty()) {
             JSONArray queryParams = new JSONArray();
             int len = query.length();
+            int curState = 0;
+            boolean newState = false;
+            JSONObject newParam = new JSONObject();
             for (int i = 0; i < len; i++) {
                 if (query.charAt(i) == '$' || query.charAt(i) == '@') {
                     i++;
@@ -2198,12 +2201,33 @@ public class workspace {
                         while (query.charAt(i) != '}' && i < len) {
                             i++;
                         }
+                        if (query.charAt(i) == ',') {
+                            newState = true;
+                        }
                         if (query.charAt(i) == '}') {
-                            String paramName = query.substring(s - 1, i + 1);
-                            JSONObject newParam = new JSONObject();
-                            newParam.put("name", paramName);
-                            newParam.put("value", "");
+                            newState = true;
+                        }
+                        if(newState) {
+                            newState = false;
+                            if(curState == 0) {
+                                String paramName = query.substring(s - 1, i + 1);
+                                newParam.put("name", paramName);
+                                newParam.put("value", "");
+                            } else if(curState == 1) {                                
+                                String paramType = query.substring(s - 1, i + 1);
+                                newParam.put("type", paramType);
+                            }
+                            curState++;
+                            s = i+1;
+                        }
+
+                        if (query.charAt(i) == '}') {
+                            // Add param
                             queryParams.put(newParam);
+                            newParam = new JSONObject();
+                            // rewind
+                            newState = false;
+                            curState = 0;
                         }
                     }
                 }
@@ -2217,7 +2241,14 @@ public class workspace {
         if (query != null && !query.isEmpty()) {
             if (queryParams != null) {
                 for (int i = 0; i < queryParams.length(); i++) {
-                    query = query.replace(queryParams.getJSONObject(i).getString("name"), queryParams.getJSONObject(i).getString("value"));
+                    String value = queryParams.getJSONObject(i).getString("value");
+                    String name = queryParams.getJSONObject(i).getString("name");
+                    if(queryParams.getJSONObject(i).has("type")) {
+                        if("REAL".equalsIgnoreCase(queryParams.getJSONObject(i).getString("type"))) {
+                            value = value.replace(",", ".");
+                        }
+                    }
+                    query = query.replace(name, value);
                 }
             }
             return query;
