@@ -1168,7 +1168,7 @@ public class utility {
     }
     
     public static String decodeHtml( String str ) {
-        if(str != null && str.isEmpty()) {
+        if(str != null && !str.isEmpty()) {
             return Jsoup.parse(str).text().replaceAll("\\<.*?>","");
         } else {
             return str;
