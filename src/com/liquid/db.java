@@ -1624,11 +1624,11 @@ public class db {
             }
             
             if(time4-time0 > TIME_MSEC_LIMIT_FOR_WARNING) {
-                System.err.println("*** WARNING : get_table_recordset() [" + controlId + "] time stats:\n"
-                        +"connectionTime:" + (time1-time0)
-                        +"metedataTime:" + (time2-time1)
-                        +"statementTime:" + (time3-time2)
-                        +"fetchTime:" + (time4-time3)
+                System.err.println("*** WARNING : get_table_recordset() [" + controlId + "] time stats:"
+                        +"\n connectionTime:" + (time1-time0)
+                        +"\n metedataTime:" + (time2-time1)
+                        +"\n statementTime:" + (time3-time2)
+                        +"\n fetchTime:" + (time4-time3)
                 );
             }
                     

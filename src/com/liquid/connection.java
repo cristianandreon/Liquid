@@ -159,63 +159,67 @@ public class connection {
             } else {
                 // Connessione specificata su sessione utente
                 if(request != null) {
-                    String curDriver = (String)request.getSession().getAttribute("GLLiquidDriver");
-                    Object curConnectionURL = request.getSession().getAttribute("GLLiquidConnectionURL");
-                    if(curDriver != null && !curDriver.isEmpty()) {
-                        if(curConnectionURL != null) {
-                            Class driverClass = null;
-                            try {
-                                driverClass = Class.forName(curDriver);
-                            } catch (Throwable th) {
-                                if(curDriver.contains("mysql")) {
-                                    try {
-                                        driverClass = Class.forName("com.mysql.jdbc.Driver");
-                                    } catch (Throwable th1) {
+                    if(request.getSession() != null) {
+                        String curDriver = (String)request.getSession().getAttribute("GLLiquidDriver");
+                        Object curConnectionURL = request.getSession().getAttribute("GLLiquidConnectionURL");
+                        if(curDriver != null && !curDriver.isEmpty()) {
+                            if(curConnectionURL != null) {
+                                Class driverClass = null;
+                                try {
+                                    driverClass = Class.forName(curDriver);
+                                } catch (Throwable th) {
+                                    if(curDriver.contains("mysql")) {
                                         try {
-                                            driverClass = Class.forName("com.mysql.cj.jdbc.Driver");
-                                        } catch (Throwable th2) {
+                                            driverClass = Class.forName("com.mysql.jdbc.Driver");
+                                        } catch (Throwable th1) {
+                                            try {
+                                                driverClass = Class.forName("com.mysql.cj.jdbc.Driver");
+                                            } catch (Throwable th2) {
+                                            }
+                                        }
+                                    } else if(curDriver.contains("mariadb")) {
+                                        try {
+                                            driverClass = Class.forName("org.mariadb.jdbc.Driver");
+                                        } catch (Throwable th1) {
+                                            try {
+                                                driverClass = Class.forName("org.mariadb.Driver");
+                                            } catch (Throwable th2) {
+                                            }
+                                        }
+                                    } else if(curDriver.contains("postgres")) {
+                                        try {
+                                            driverClass = Class.forName("org.postgresql.Driver");
+                                        } catch (Throwable th1) {
+                                        }
+                                    } else if(curDriver.contains("oracle")) {
+                                        try {
+                                            driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
+                                        } catch (Throwable th1) {
+                                        }
+                                    } else if(curDriver.contains("sqlserver")) {
+                                        try {
+                                            driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+                                        } catch (Throwable th1) {
                                         }
                                     }
-                                } else if(curDriver.contains("mariadb")) {
-                                    try {
-                                        driverClass = Class.forName("org.mariadb.jdbc.Driver");
-                                    } catch (Throwable th1) {
-                                        try {
-                                            driverClass = Class.forName("org.mariadb.Driver");
-                                        } catch (Throwable th2) {
-                                        }
-                                    }
-                                } else if(curDriver.contains("postgres")) {
-                                    try {
-                                        driverClass = Class.forName("org.postgresql.Driver");
-                                    } catch (Throwable th1) {
-                                    }
-                                } else if(curDriver.contains("oracle")) {
-                                    try {
-                                        driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
-                                    } catch (Throwable th1) {
-                                    }
-                                } else if(curDriver.contains("sqlserver")) {
-                                    try {
-                                        driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-                                    } catch (Throwable th1) {
-                                    }
                                 }
-                            }
-                            try {
-                                if(curConnectionURL instanceof ArrayList<?>) {
-                                    conn = DriverManager.getConnection( ((ArrayList<String>)curConnectionURL).get(0), ((ArrayList<String>)curConnectionURL).get(1), ((ArrayList<String>)curConnectionURL).get(2) );
-                                } else if(curConnectionURL instanceof String) {
-                                    conn = DriverManager.getConnection((String)curConnectionURL);
+                                try {
+                                    if(curConnectionURL instanceof ArrayList<?>) {
+                                        conn = DriverManager.getConnection( ((ArrayList<String>)curConnectionURL).get(0), ((ArrayList<String>)curConnectionURL).get(1), ((ArrayList<String>)curConnectionURL).get(2) );
+                                    } else if(curConnectionURL instanceof String) {
+                                        conn = DriverManager.getConnection((String)curConnectionURL);
+                                    }
+                                    if(conn == null) {
+                                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() error: failed to get connection from url");
+                                    }
+                                } catch(Throwable th2) {
+                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() error: failed to get connection from url : "+th2.getLocalizedMessage());
+                                    throw new Throwable(th2);
                                 }
-                                if(conn == null) {
-                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() error: failed to get connection from url");
-                                }
-                            } catch(Throwable th2) {
-                                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() error: failed to get connection from url : "+th2.getLocalizedMessage());
-                                throw new Throwable(th2);
                             }
                         }
+                    } else {
+                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() FATAL ERROR : unable to get session ... maybe http session listner net active");
                     }
                 }
             }

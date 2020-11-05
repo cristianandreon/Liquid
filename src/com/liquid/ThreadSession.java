@@ -7,6 +7,9 @@ package com.liquid;
 
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspWriter;
@@ -22,7 +25,12 @@ public class ThreadSession {
     //
     //
 
-    static public boolean bLocked = false;
+    /**
+     *
+     */
+
+    private static final int MAX_AVAILABLE = 1;
+    static public Semaphore bLocked = new Semaphore(MAX_AVAILABLE, true);
     
     public String browser = "";
     public long timeTick = 0;
@@ -45,11 +53,14 @@ public class ThreadSession {
     public Object workspaceOwner = null;
     
     static ArrayList<ThreadSession> threadSessionList = new ArrayList<ThreadSession>();
+    
+    static private boolean bDebug = false;
+            
+            
 
     static public void saveThreadSessionInfo ( String browser, HttpServletRequest request, HttpServletResponse response, JspWriter out ) throws InterruptedException {
-        while(bLocked) { Thread.sleep(100); }
         try {
-            bLocked = true;
+            bLocked.acquire();
             ThreadSession threadSessionInfo = new ThreadSession();
             threadSessionInfo.browser = browser;
             threadSessionInfo.request = request;
@@ -64,15 +75,27 @@ public class ThreadSession {
             threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
             threadSessionInfo.sessionId = request.getRequestedSessionId();
             threadSessionList.add(threadSessionInfo);
+            
+                    
+            if(bDebug) 
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "ThreadID:"+Thread.currentThread().getId()+" regsitered ...("+ThreadSession.threadSessionList.size()+")");
+
+            if(getThreadSessionInfo() == null) {
+                for(int i=0; i<ThreadSession.threadSessionList.size(); i++) {
+                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "#"+(i+1)+" ThreadID:"+ThreadSession.threadSessionList.get(i).threadId);
+                }
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "*** FATAL ERROR : saveThreadSessionInfo() : ThreadID:"+Thread.currentThread().getId()+" NOT ADDED" );
+                getThreadSessionInfo();
+            }
+            
         } finally {
-            bLocked = false;
+            bLocked.release();
         }
-    }    
+    }
     
     static void saveThreadSessionInfo(String browser, String sessionId, OutputStream outputStream, String token) throws InterruptedException {
-        while(bLocked) { Thread.sleep(100); }
         try {
-            bLocked = true;
+            bLocked.acquire();
             ThreadSession threadSessionInfo = new ThreadSession();
             threadSessionInfo.browser = browser;
             threadSessionInfo.request = null;
@@ -87,8 +110,10 @@ public class ThreadSession {
             threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
             threadSessionInfo.sessionId = sessionId;
             threadSessionList.add(threadSessionInfo);
+            if(bDebug) 
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, " WS ThreadID:"+Thread.currentThread().getId()+" regsitered");
         } finally {
-            bLocked = false;
+            bLocked.release();
         }
     }
     
@@ -139,18 +164,19 @@ public class ThreadSession {
         return null;
     }
     static public void removeThreadSessionInfo () throws InterruptedException {
-        while(bLocked) { Thread.sleep(100); }
         try {
-            bLocked = true;
+            bLocked.acquire();
+            if(bDebug) 
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "ThreadID:"+Thread.currentThread().getId()+" removed");
             threadSessionList.remove(getThreadSessionInfo());
         } finally {
-            bLocked = false;
+            bLocked.release();
         }
     }
     
     static public void addIncomingMessage ( String message, String cypher ) throws InterruptedException {
-        while(bLocked) { Thread.sleep(100); }
         try {
+            bLocked.acquire();
             for(ThreadSession threadSession : threadSessionList) {
                 if(threadSession.cypher.equals(cypher)) {
                     if(threadSession.incoming == null)
@@ -159,12 +185,12 @@ public class ThreadSession {
                 }
             }
         } finally {
-            bLocked = false;
+            bLocked.release();
         }
     }
     static public String getIncomingMessage ( String cypher ) throws InterruptedException {
-        while(bLocked) { Thread.sleep(100); }
         try {
+            bLocked.acquire();
             for(ThreadSession threadSession : threadSessionList) {
                 if(threadSession.cypher.equals(cypher)) {
                     if(threadSession.incoming != null) {
@@ -173,7 +199,7 @@ public class ThreadSession {
                 }
             }
         } finally {
-            bLocked = false;
+            bLocked.release();
         }
         return null;
     }
