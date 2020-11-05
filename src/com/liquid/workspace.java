@@ -280,6 +280,10 @@ public class workspace {
                 return null;
 
             } else {
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "*** ERROR ThreadID:"+Thread.currentThread().getId()+" not regsitered");
+                for(int i=0; i<ThreadSession.threadSessionList.size(); i++) {
+                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "#"+(i+1)+" ThreadID:"+ThreadSession.threadSessionList.get(i).threadId);
+                }
                 throw new Exception("LIQUID ERROR: controiId '" + this.controlId + "' current session NOT found");
             }
         } else {
