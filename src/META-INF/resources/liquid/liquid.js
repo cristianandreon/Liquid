@@ -5880,7 +5880,7 @@ var Liquid = {
                 var liquid = lookupLiquid;
                 var newValue = null;
                 var newValueId = null;
-                var lookupFieldName = isDef(liquid.tableJson.lookupField) ? liquid.tableJson.lookupField : null;
+                var lookupFieldName = isDef(liquid.tableJson.lookupField) ? liquid.tableJson.lookupField : liquid.tableJson.primaryKeyField;
                 var lookupIdColumnName = isDef(liquid.tableJson.idColumnField) ? liquid.tableJson.idColumnField : null;
                 var lookupFieldCol = Liquid.getColumn(liquid, lookupFieldName);
                 var lookupIdCol = Liquid.getColumn(liquid, lookupIdColumnName);
@@ -5892,6 +5892,8 @@ var Liquid = {
                     if(!isDef(lookupFieldCol)) {
                         console.error("ERROR: Column '"+lookupFieldName+"' NOT found in control '"+liquid.controlId+"'");   
                     }
+                } else {
+                    console.warn("WARNING: Lookuop column NOT defined in control '"+liquid.controlId+"'");   
                 }
                 if(isDef(liquid.tableJson.idColumnField)) {
                     if(!isDef(lookupIdCol)) {
@@ -12599,18 +12601,21 @@ var Liquid = {
                     if(!grid_coords.layout.resizeCounter) { // need resize ?
                         Liquid.onLayoutResize(liquid, grid_coords.layout);
                     }
+                if(isDef(Liquid.onLayoutShow))
                     Liquid.onLayoutShow(liquid, grid_coords.layout);
                 } else if(grid_coords.document) {
                     gridObject = grid_coords.document;
                     if(!grid_coords.document.resizeCounter) { // need resize ?
                         Liquid.onDocumentResize(liquid, grid_coords.document);
                     }
+                if(isDef(Liquid.onDocumentShow))
                     Liquid.onDocumentShow(liquid, grid_coords.document);
                 } else if(grid_coords.chart) {
                     gridObject = grid_coords.chart;
                     if(!grid_coords.chart.resizeCounter) { // need resize ?
                         Liquid.onChartResize(liquid, grid_coords.chart);
                     }
+                if(isDef(Liquid.onChartShow))
                     Liquid.onChartShow(liquid, grid_coords.chart);
                 }
                 if(gridObject) {
