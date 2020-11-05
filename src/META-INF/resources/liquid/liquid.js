@@ -7003,6 +7003,8 @@ var Liquid = {
                 event.response = null;
                 Liquid.registerOnUnloadPage();
                     
+                liquid.curEvent = { name:event.name, callback:callback, callbackParams:callbackParams };
+
                 var onreadystatechange = function(liquid) {
                     if(liquid.xhr.readyState === 4) {
                         if(liquid.xhr.status === 200) {                                
@@ -7118,8 +7120,8 @@ var Liquid = {
                             console.error("onEventProcess() . wrong response:" + liquid.xhr.status);
                         }
                         // excuting callback
-                        if(callback) {
-                            retVal = callback(callbackParams, httpResultJson);
+                        if(liquid.curEvent.eventCallback) {
+                            retVal = liquid.curEvent.eventCallback(liquid.curEvent.eventCallbackParam, httpResultJson);
                         }
                         if(Liquid.isSystemEvent(event)) {
                             if(liquid.currentCommand) {
@@ -12142,9 +12144,9 @@ var Liquid = {
                             if(validateResult !== null) {
                                 if(validateResult[0] >= 0) {                                    
                                     if(Liquid.isCodeEditor(col)) {
-                                        var div = document.createElement("div");
                                         /*
-                                         * NO : this destroy the format
+                                        NO : this destroy the format
+                                        var div = document.createElement("div");
                                         div.innerHTML = validateResult[1];
                                         content = div.textContent || div.innerText || "";
                                         delete div;
@@ -12669,6 +12671,8 @@ var Liquid = {
                     bRestoreList = true;
                 }
             } else {
+                // The list ...
+                liquid.currentTab = 0;
                 bRestoreList = true;
             }
         }

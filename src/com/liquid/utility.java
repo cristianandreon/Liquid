@@ -57,6 +57,7 @@ import javax.net.ssl.X509TrustManager;
 
 // comment this for java <= 7
 import java.util.Base64;
+import org.jsoup.Jsoup;
 
 public class utility {
 
@@ -1164,5 +1165,13 @@ public class utility {
             return str.toString();
         }
         return null;
+    }
+    
+    public static String decodeHtml( String str ) {
+        if(str != null && str.isEmpty()) {
+            return Jsoup.parse(str).text().replaceAll("\\<.*?>","");
+        } else {
+            return str;
+        }
     }
 }
