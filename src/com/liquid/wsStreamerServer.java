@@ -16,7 +16,9 @@ import javax.servlet.http.HttpServletRequest;
 public class wsStreamerServer {
 
     static public String AppURL = null;
+    static public String webSocketHost = null;
     static public int port = 7373;
+    
     static public boolean run = false;
     static public wsServerThread serverThread = null;
     static public String errors = "";

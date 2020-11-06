@@ -28,6 +28,30 @@
         %>
 
                 <script src="<%=path%>/liquid/liquidStreamer.js?version=<%=jssVersion%>"></script>
+                
+                <!-- setup global var -->
+                <script>
+                    <%
+                        try {
+                            if(wsStreamerServer.webSocketHost != null) 
+                                out.println("LiquidStreamer.webSocketHost = \""+wsStreamerServer.webSocketHost+"\";");
+                            if(wsStreamerServer.port > 0) 
+                                out.println("LiquidStreamer.port = "+wsStreamerServer.port+";");
+                        } catch(Exception e) {
+                            out.println("console.error(\"SERVER ERROR:"+e.getMessage()+"\");");
+                        }
+                    %>
+                </script>
+                
+                <!-- start the streamer -->
+                <script>
+                    LiquidStreamer.openLiquidStreamer();
+
+                    if(LiquidStreamer.glLiquidWebSocketRunning) {
+                        console.warn("LIQUID: Streamer is activated");
+                    }
+                </script>
+                
 
         <% } else { %>
                 <script>console.warn("LIQUID: Streamer is not running...Please see server log");</script>

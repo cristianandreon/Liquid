@@ -9,8 +9,6 @@ var glLiquidWSQueueBusy = false;
 var glLiquidWebSocket = null;
 var glLiquidWebSocketRunning = false;
 
-if(!isDef(glLiquidAppPort))
-    var glLiquidAppPort = null;
 
 var glLiquidWSQueue = [];
 
@@ -19,6 +17,9 @@ var LiquidStreamer = {
 
     waitForWebSocketTimeoutMS:5000,
     sessionId:"",
+    webSocketName:null,
+    webSocketHost:null,
+    port:null,
 
     openLiquidStreamer:function() {
         var streamerEnabled = false;
@@ -57,8 +58,16 @@ var LiquidStreamer = {
                         // Store the sessionId
                         LiquidStreamer.sessionId = xhr.responseText;                        
 
-                        // LiquidWebSocket = new WebSocket("ws://"+location.hostname+"/"+glLiquidRoot+":"+glLiquidAppPort+"");
-                        glLiquidWebSocket = new WebSocket("ws://"+location.hostname+":"+glLiquidAppPort+"");
+                        if(!isDef(LiquidStreamer.port)) 
+                            LiquidStreamer.port = 7373;
+                            
+                        if(!isDef(LiquidStreamer.webSocketHost)) 
+                            LiquidStreamer.webSocketName = "ws://"+location.hostname+":"+LiquidStreamer.port+"";
+                        else 
+                            LiquidStreamer.webSocketName = "ws://"+LiquidStreamer.webSocketHost+":"+LiquidStreamer.port+"";
+
+                        // LiquidWebSocket = new WebSocket("ws://"+location.hostname+"/"+glLiquidRoot+":"+LiquidStreamer.port+"");
+                        glLiquidWebSocket = new WebSocket(LiquidStreamer.webSocketName);
 
                         glLiquidWebSocket.binaryType = "arraybuffer";
 
@@ -110,6 +119,8 @@ var LiquidStreamer = {
                         glLiquidWebSocket.onerror = function(event) {
                             console.error("[LIQUID Streamer] : Error :"+event.code);
                             LiquidStreamer.queueProcessLiquidStreamer(null, null, event);
+                            glLiquidWebSocketRunning = false;
+                            glLiquidWebSocket = null;
                         };
 
                         glLiquidWebSocketRunning = true;
@@ -276,9 +287,3 @@ var LiquidStreamer = {
         return b.join("");
     }
 };
-
-LiquidStreamer.openLiquidStreamer();
-
-if(LiquidStreamer.glLiquidWebSocketRunning) {
-    console.warn("LIQUID: Streamer is activated");
-}

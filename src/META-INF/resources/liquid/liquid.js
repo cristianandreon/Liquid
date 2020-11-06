@@ -2332,6 +2332,8 @@ var Liquid = {
     captionIconFilter:null,
     captionIconSize:12,
     mirrorEventIntervalNs: 500*1000,
+    lookupIconSize:12,
+    filterIconSize:16,
     setLanguage:function(language) {
         var lang_list = language.split(';');
         for(var il=0; il<lang_list.length; il++) {
@@ -9339,6 +9341,15 @@ var Liquid = {
                             liquid.foreignTables[ig].contentObj.style.height = (foreignTableContainerHeight > 0 ? foreignTableContainerHeight : "0") + "px";
                     }
                 }
+                
+                if(liquid.dockerTblCenter) {
+                    if(liquid.mode != 'lookup') {
+                        if(liquid.outDivObj.offsetWidth > 0) {
+                            liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                        }
+                    }
+                }
+                
                 if(liquid.tableJson.grids) {
                     for(var ig = 0; ig < liquid.tableJson.grids.length; ig++) {
                         if(liquid.tableJson.grids[ig].containerObj) {
@@ -12799,7 +12810,9 @@ var Liquid = {
                     }
                 }
                 // restore center docker
-                liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                if(liquid.outDivObj.offsetWidth > 0) {
+                    liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                }
                 liquid.aggridContainerObj.style.height = liquid.aggridContainerLastHeight;
                 liquid.aggridContainerDocked = false;
                 liquid.currentDock = null;

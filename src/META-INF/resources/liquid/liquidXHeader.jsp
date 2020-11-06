@@ -15,7 +15,6 @@
 <!-- -->
 <script>
     var glLiquidRoot = "<%=path%>";
-    var glLiquidAppPort = <%=wsStreamerServer.port%>
 </script>
 <script src="<%=path%>/liquid/ag-grid-enterprise.min.js" type="text/javascript"></script>
 
