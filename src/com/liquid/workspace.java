@@ -2252,6 +2252,16 @@ public class workspace {
                             value = value.replace(",", ".");
                         }
                     }
+                    if(queryParams.getJSONObject(i).has("types")) {
+                        JSONArray types = queryParams.getJSONObject(i).getJSONArray("types");
+                        if(types != null) {
+                            if(types.length() > 0) {
+                                if("REAL".equalsIgnoreCase(types.getString(0))) {
+                                    value = value.replace(",", ".");
+                                }
+                            }
+                        }                        
+                    }
                     query = query.replace(name, value);
                 }
             }

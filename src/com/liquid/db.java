@@ -3515,6 +3515,32 @@ public class db {
     }
 
     /**
+     * 
+     * Load single bean for given database.schema.table + where condition as filteringColumn=filteringValue
+     * 
+     * It also load foreign tables definitions but not values
+     * 
+     * ControlId is automatically created if not exist (from databaseSchemaTable)
+     * 
+     * @param request
+     * @param databaseSchemaTable
+     * @param columns
+     * @param filteringColumn
+     * @param filteringValue
+     * @return 
+     */
+    static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, String filteringColumn, String filteringValue) {
+        ArrayList<Object> login_users = load_beans("iCenter.icenter.users", "*", filteringColumn+"="+filteringValue, 0l);
+        if(login_users != null) {
+            if(login_users.size() > 0) {
+                return (Object)login_users.get(0);
+            }
+        }
+        return null;
+    }
+
+    
+    /**
      * Create all beans from primaryKey value
      *
      *   ControlId is automatically created if not exist (from databaseSchemaTable)
