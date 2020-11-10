@@ -385,12 +385,12 @@ public class login {
                                     String sEMail = dataJson.has("email") ? dataJson.getString("email") : "";
                                     String sRegisterUserID = dataJson.has("registerUser") ? dataJson.getString("registerUser") : "";
                                     String sRegisterEMail = dataJson.has("registerEmail") ? dataJson.getString("registerEmail") : "";
-                                    String sPassword = dataJson.has("password") ? dataJson.getString("password") : "";
+                                    String sRegisterPassword = dataJson.has("registerPassword") ? dataJson.getString("registerPassword") : "";
                                     String sStatus = dataJson.has("status") ? dataJson.getString("status") : "";
                                     String sAdmin = dataJson.has("admin") ? dataJson.getString("admin") : "";
                                     String sRedirect = dataJson.has("redirect") ? dataJson.getString("redirect") : "";
                                     HttpServletRequest request = (HttpServletRequest)freeParam;
-                                    return register( application_id, domain_id, (sRegisterUserID != null && !sRegisterUserID.isEmpty() ? sRegisterUserID : sUserID), (sRegisterEMail != null && !sRegisterEMail.isEmpty() ? sRegisterEMail : sEMail), sPassword, sStatus, sAdmin, sRedirect, request );                                    
+                                    return register( application_id, domain_id, (sRegisterUserID != null && !sRegisterUserID.isEmpty() ? sRegisterUserID : sUserID), (sRegisterEMail != null && !sRegisterEMail.isEmpty() ? sRegisterEMail : sEMail), sRegisterPassword, sStatus, sAdmin, sRedirect, request );                                    
                                 }
                             }
                         }
@@ -1341,7 +1341,7 @@ public class login {
                                         newPassword = sPassword;
                                     } else {
                                         sEmailValidated = "1";
-                                        sEmailToken = "[BySentPassword]";
+                                        sEmailToken = getSaltString(32);
                                         newPassword = getSaltString(minCharsPasswords);
                                     }
 
