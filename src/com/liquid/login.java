@@ -388,9 +388,9 @@ public class login {
                                     String sRegisterPassword = dataJson.has("registerPassword") ? dataJson.getString("registerPassword") : "";
                                     String sStatus = dataJson.has("status") ? dataJson.getString("status") : "";
                                     String sAdmin = dataJson.has("admin") ? dataJson.getString("admin") : "";
-                                    String sRedirect = dataJson.has("redirect") ? dataJson.getString("redirect") : "";
+                                    String sRegisterRedirect = dataJson.has("registerRedirect") ? dataJson.getString("registerRedirect") : "";
                                     HttpServletRequest request = (HttpServletRequest)freeParam;
-                                    return register( application_id, domain_id, (sRegisterUserID != null && !sRegisterUserID.isEmpty() ? sRegisterUserID : sUserID), (sRegisterEMail != null && !sRegisterEMail.isEmpty() ? sRegisterEMail : sEMail), sRegisterPassword, sStatus, sAdmin, sRedirect, request );                                    
+                                    return register( application_id, domain_id, (sRegisterUserID != null && !sRegisterUserID.isEmpty() ? sRegisterUserID : sUserID), (sRegisterEMail != null && !sRegisterEMail.isEmpty() ? sRegisterEMail : sEMail), sRegisterPassword, sStatus, sAdmin, sRegisterRedirect, request );                                    
                                 }
                             }
                         }
