@@ -3504,6 +3504,7 @@ public class db {
      * @throws JSONException
      * @throws Throwable 
      */
+    
     static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, Object primaryKey) throws JSONException, Throwable {
         ArrayList<Object> beans = load_beans(request, databaseSchemaTable, columns, null, primaryKey, 1);
         if (beans != null) {
@@ -3530,10 +3531,10 @@ public class db {
      * @return 
      */
     static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, String filteringColumn, String filteringValue) {
-        ArrayList<Object> login_users = load_beans("iCenter.icenter.users", "*", filteringColumn+"="+filteringValue, 0l);
-        if(login_users != null) {
-            if(login_users.size() > 0) {
-                return (Object)login_users.get(0);
+        ArrayList<Object> beans = load_beans(databaseSchemaTable, columns, filteringColumn+"="+filteringValue, 1);
+        if(beans != null) {
+            if(beans.size() > 0) {
+                return (Object)beans.get(0);
             }
         }
         return null;
@@ -3702,6 +3703,8 @@ public class db {
      */    
     static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows) {
         // crea un controllo sulla tabella
+        if(databaseSchemaTable != null)
+            databaseSchemaTable = databaseSchemaTable.replace("\"", "");
         String[] tableParts = (databaseSchemaTable != null ? databaseSchemaTable.split("\\.") : null);
         String database = null, table = null, schema = null, primaryKey = null;
         String primaryKeyColumn = "";
@@ -3930,13 +3933,13 @@ public class db {
      * @return Object[] { beans, int nBeans, int nBeansLoaded, String errors, String warning }
      * 
      */
-    static public Object[] load_child_bean(Object bean, String beanName, long maxRows) {
+    static public Object[] load_child_bean(Object bean, String beanName, long maxRows) throws Exception {
         return load_bean(bean, beanName, null, maxRows);
     }
-    static public Object[] load_child_bean(Object bean, String beanName, long maxRows,long maxLevel) {
-        return load_bean( bean, beanName, maxRows, maxLevel);
+    static public Object[] load_child_bean(Object bean, String beanName, long maxRows,long maxLevel) throws Exception {
+        return load_bean( bean, beanName, maxRows, maxLevel );
     }
-    static public Object[] load_bean(Object bean, String beanName, long maxRows) {
+    static public Object[] load_bean(Object bean, String beanName, long maxRows) throws Exception {
         return load_bean(bean, beanName, null, maxRows);
     }
 
@@ -3946,7 +3949,7 @@ public class db {
      * @param bean
      * @return 
      */
-    static public Object load_parent_bean(Object bean, Object params) {
+    static public Object load_parent_bean(Object bean, Object params) throws Exception {
         return load_parent_bean(bean, params, 1);
     }
     /**
@@ -3957,7 +3960,7 @@ public class db {
      * @param maxRows max row to load (not used)
      * @return 
      */
-    static public Object load_parent_bean(Object bean, Object params, long maxRows) {
+    static public Object load_parent_bean(Object bean, Object params, long maxRows) throws Exception {
         Object[] beans_result = load_bean(bean, "$Parent", params, maxRows);
         if (beans_result != null) {
             ArrayList<Object> resultBeasns = (ArrayList<Object>) beans_result[0];
@@ -3989,7 +3992,7 @@ public class db {
             ArrayList<String> runtimeForeignTables = new ArrayList<String>();
             // adding initial table@rowId to the anti dead-loop
             runtimeForeignTables.add( String.valueOf( utility.get(bean, "$tableKey") ) );
-            return load_bean( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables);
+            return load_bean_internal( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables);
         }
         return null;
     }
@@ -4007,19 +4010,23 @@ public class db {
      * @return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
      * 
      */
-    static public Object[] load_bean(Object bean, String childBeanName, Object params, long maxRows) {
+    static public Object[] load_bean(Object bean, String childBeanName, Object params, long maxRows) throws Exception {
         if(bean != null) {
+            if(bean instanceof HttpServletRequest) {
+                throw new Exception("wrong load_bean() call ... you pass an http request as bean");
+            }
             ArrayList<String> runtimeForeignTables = new ArrayList<String>();
             int maxLevel = 0;
             // adding initial table@rowId to the anti dead-loop
-            runtimeForeignTables.add( String.valueOf( utility.get(bean, "$tableKey") ) );
-            return load_bean( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables);
+            Object tableKey = utility.get(bean, "$tableKey");
+            if(tableKey != null) runtimeForeignTables.add( String.valueOf( tableKey ) );
+            return load_bean_internal( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables);
         }
         return null;
     }
 
     /**
-     * Intelanlly used
+     * used internally
      * Load child beans defined by childBeanName foreignTable, looking inside the Object bean
      *      Need selection or rows defined in params (it comes from client)
      * 
@@ -4033,7 +4040,7 @@ public class db {
      * @return Object [] { beans, nBeans, nBeansLoaded, errors, warnings }
      * 
      */
-    static public Object[] load_bean(Object bean, String childBeanName, Object params, long maxRows, long maxLevel, long curLevel, ArrayList<String> runtimeForeignTables) {
+    static private Object[] load_bean_internal(Object bean, String childBeanName, Object params, long maxRows, long maxLevel, long curLevel, ArrayList<String> runtimeForeignTables) {
         ArrayList<Object> beans = null;
         int nBeans = 0, nBeansLoaded = 0;
         String errors = "", warnings = "";
@@ -4187,7 +4194,7 @@ public class db {
                                                             for (int ic=0; ic<beans.size(); ic++) {
                                                                 Object childBean = beans.get(ic);
                                                                 if(childBean != null) {
-                                                                    Object [] resLoad = load_bean(childBean, "*", null/*params*/, maxRows, maxLevel, curLevel+1, runtimeForeignTables);
+                                                                    Object [] resLoad = load_bean_internal(childBean, "*", null/*params*/, maxRows, maxLevel, curLevel+1, runtimeForeignTables);
                                                                     if(resLoad != null) {
                                                                         if(resLoad[0] != null) {
                                                                             // @return Object [] { beans, nBeans, nBeansLoaded, errors, warnings }

@@ -54,6 +54,9 @@ public class login {
     static public String table = null;
     static public int daysValidity = 0;
     
+    static public String [] additionalProperties = null;
+    static public String additionalPropertiesPrefix = null;
+    
     // coordinate tabella log eventi
     static public String schemaLog = null;
     static public String tableLog = null;
@@ -714,12 +717,40 @@ public class login {
                             
                             if (isLoginPassed) {
                                 String assets_id = "", assets_name = "", assets_inactive_name = "";
+                                String sAdditionalProperties = "{";
                                 
                                 if (session != null) {
                                     session.setAttribute("GLLiquidUserID", iUserId);
                                     session.setAttribute("GLLiquidAdmin", iIsAddmin);
                                     session.setAttribute("GLLiquidUserToken", token);
                                 }
+                                
+                                
+                                //
+                                // set additional properties
+                                //
+                                String sAdditionalPropertiesError = null;
+                                
+                                if(additionalProperties != null) {
+                                    try {
+                                        Object bean = db.load_bean(request, databaseSchemaTable, "*", "id", String.valueOf(iUserId));
+
+                                        for(int i=0; i<additionalProperties.length; i++) {
+                                            String prop = additionalProperties[i];
+                                            String propValue = (String)(bean != null ? utility.get(bean, prop) : "");
+
+                                            if(prop != null) {
+                                                String sessionProp = ((additionalPropertiesPrefix != null && !additionalPropertiesPrefix.isEmpty()) ? additionalPropertiesPrefix : "") + prop;
+                                                session.setAttribute(sessionProp, propValue);
+                                                sAdditionalProperties += (i>0 ? "," : "") + "\"" + prop + "\":\""+propValue+"\"";
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        sAdditionalPropertiesError = e.getLocalizedMessage();
+                                    }
+                                }
+                                
+                                sAdditionalProperties += "}";
 
                                 try {
                                     
@@ -745,6 +776,8 @@ public class login {
                                         +",\"assets_id\":\""+utility.base64Encode(assets_id)+"\""
                                         +",\"assets_name\":\""+utility.base64Encode(assets_name)+"\""
                                         +",\"assets_inactive_name\":\""+utility.base64Encode(assets_inactive_name)+"\""
+                                        +",\"additionalProperties\":"+(sAdditionalProperties)+""
+                                        + (sAdditionalPropertiesError != null ? ",\"additionalPropertiesError\":\""+(sAdditionalPropertiesError)+"\"" : "")
                                         +"}";
                             }
 
@@ -865,17 +898,19 @@ public class login {
     }
     
     static public boolean isLogged( HttpServletRequest request) {
-        HttpSession session = request.getSession();
-        try {
-            if (session != null) {
-                if(session.getAttribute("GLLiquidUserID") != null && session.getAttribute("GLLiquidToken") != null) {
-                    return true;
-                }
-            }                    
-        } catch (Throwable e) {
-            Logger.getLogger("// isLogged() error:" + e.getLocalizedMessage());
-            return false;
-        }            
+        if(request != null) {
+            HttpSession session = request.getSession();
+            try {
+                if (session != null) {
+                    if(session.getAttribute("GLLiquidUserID") != null && session.getAttribute("GLLiquidToken") != null) {
+                        return true;
+                    }
+                }                    
+            } catch (Throwable e) {
+                Logger.getLogger("// isLogged() error:" + e.getLocalizedMessage());
+                return false;
+            }
+        }
         return false;
     }
     static public String getLoggedID( HttpServletRequest request) {
