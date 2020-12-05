@@ -16265,7 +16265,7 @@ var Liquid = {
      * @param {type} async : true or false
      * @param {type} data : the body data
      * @param {type} onreadystatechange : the callback
-     * @returns {unresolved} 
+     * @returns {} 
      */
     sendRequest:function(liquid, freeParam, method, url, async, data, onreadystatechange, reason, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled) {
         if(typeof glLiquidWebSocket !== 'undefined' && glLiquidWebSocket) {
@@ -16340,7 +16340,35 @@ var Liquid = {
                 }
             }
         }
+    },
+    /**
+     * 
+     * logout the current user
+     * 
+     * @param {type} reload : if true rekiad the page
+     * @returns {} 
+     */
+    logout:function(reload) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', glLiquidServlet + '?operation=logout', false);
+        xhr.send();
+        if(xhr.status === 200) {
+            try {
+                if(xhr.responseText) {
+                    console.message(xhr.responseText);
+                } else {
+                    console.error(xhr.responseText);
+                }
+            } catch (e) {
+                console.error(xhr.responseText);
+            }
+            if(reload) {
+                Liquid.disableUnloadPagePrompt();
+                window.location.reload();
+            }
+        }
     }
+    
 };
 
 /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
