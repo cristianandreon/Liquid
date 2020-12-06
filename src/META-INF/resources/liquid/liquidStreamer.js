@@ -150,7 +150,7 @@ var LiquidStreamer = {
                     }, 3000 );
                     return 0;
                 } else {
-                    console.error("sendLiquidStreamer() timeout ... maybe StreamerServer not running");
+                    console.error("sendLiquidStreamer() timeout ... maybe StreamerServer not running or invalid url ("+(glLiquidWebSocket ? glLiquidWebSocket.url : "")+")");
                     queue.pending = false;
                     queue.timeout = true;
                     return -1;

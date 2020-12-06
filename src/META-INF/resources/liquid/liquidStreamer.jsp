@@ -12,7 +12,6 @@
 <!-- -->
 <%  String streamerLoginId = login.getLoggedID(request);
     
-
     try {
 
         // N.B.: Possibile riduzione del carico sul server salvando la sessione solo sui rami necessari (es.: exec)
@@ -34,7 +33,7 @@
                     <%
                         try {
                             if(wsStreamerServer.webSocketHost != null) 
-                                out.println("LiquidStreamer.webSocketHost = \""+wsStreamerServer.webSocketHost+"\";");
+                                out.println("LiquidStreamer.webSocketHost = \""+wsStreamerServer.webSocketHost+"\";;");
                             if(wsStreamerServer.port > 0) 
                                 out.println("LiquidStreamer.port = "+wsStreamerServer.port+";");
                         } catch(Exception e) {
