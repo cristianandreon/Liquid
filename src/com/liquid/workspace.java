@@ -2561,6 +2561,9 @@ public class workspace {
     static public String get_login_button(String name, String style, String formName, String callbackCode) {
         return get_button_control(name, style, "com.liquid.login.login", new String[]{formName}, callbackCode, true);
     }
+    static public String get_login_control(String name, String style, String formName, String callbackCode) {
+        return get_button_control(name, style, "com.liquid.login.login", new String[]{formName}, callbackCode, true);
+    }
 
     static public String get_login_code(String formName, String callbackCode) {
         return get_login_general_code("loginCmd", "com.liquid.login.login", formName, callbackCode);
@@ -2603,6 +2606,9 @@ public class workspace {
      * @return the html code of the button
      * @see workspace
      */
+    static public String get_register_button(String name, String style, String formName, String callbackCode) {
+        return get_button_control(name, style, "com.liquid.login.register", new String[]{formName}, callbackCode, true);
+    }
     static public String get_register_control(String name, String style, String formName, String callbackCode) {
         return get_button_control(name, style, "com.liquid.login.register", new String[]{formName}, callbackCode, true);
     }
@@ -2626,6 +2632,9 @@ public class workspace {
      * @return the html code of the button
      * @see workspace
      */
+    static public String get_recovery_button(String name, String style, String formName, String callbackCode) {
+        return get_button_control(name, style, "com.liquid.login.recovery", new String[]{formName}, callbackCode, true);
+    }
     static public String get_recovery_control(String name, String style, String formName, String callbackCode) {
         return get_button_control(name, style, "com.liquid.login.recovery", new String[]{formName}, callbackCode, true);
     }
@@ -2656,6 +2665,31 @@ public class workspace {
         return "";
     }
 
+    
+    
+    /**
+     * <h3>Get a button sending email</h3>
+     * <p>
+     * This method returns html code of a button for logout the user
+     *
+     * @param name the name of the button (String)
+     * @param style the css style of the button (String)
+     * @param formName the id oh the form owning the user and password html
+     * input (String)
+     * @param callbackCode your javascript callback function (String)
+     *
+     * @return the html code of the button
+     * @see workspace
+     */
+    static public String get_email_control(String name, String style, String formName, String callbackCode) {
+        return get_button_control(name, style, "com.liquid.emailer.send", new String[]{formName}, callbackCode, true);
+    }
+    static public String get_email_button(String name, String style, String formName, String callbackCode) {
+        return get_button_control(name, style, "com.liquid.emailer.send", new String[]{formName}, callbackCode, true);
+    }
+
+    
+    
     static public String get_file_content(HttpServletRequest request, String fileName) {
         return get_file_content(request, fileName, false, true);
     }

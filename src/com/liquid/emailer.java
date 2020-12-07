@@ -5,6 +5,8 @@ import static com.liquid.emailer.Host;
 import static com.liquid.emailer.Password;
 import static com.liquid.emailer.Port;
 import static com.liquid.emailer.Username;
+import static com.liquid.login.logout;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,6 +16,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.mail.*;
 import javax.mail.internet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.JspWriter;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 
 
@@ -35,6 +42,72 @@ public class emailer {
     public String AppImage = "";
     public String From = "info@liquid-framework.eu";
 
+    
+    /**
+     * send an email message (from liquid.jsp sevlet)
+     * 
+     * @return 
+     */
+    static public String send(HttpServletRequest request, HttpServletResponse response, JspWriter out) {
+        try {        
+            String RemoteIP = request.getRemoteAddr();
+            String sRedirect = null;
+            emailer emailerInstance = new emailer();
+            boolean result = emailerInstance.send(request.getParameter("to"), request.getParameter("from"), request.getParameter("subject"), request.getParameter("message"));
+            if(!result) {
+                return "{ \"result\":-1, \"error\":\""+utility.base64Encode(emailerInstance.LastError)+"\"}";
+            } else {
+                return "{ \"result\":1 }";
+            }
+        } catch (Exception e) { 
+            Logger.getLogger("// emailer.send() Error:" + e.getLocalizedMessage());
+            return "{ \"result\":-60, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+        }
+    }
+
+    /**
+     * send an email message (from execute)
+     * 
+     * @return 
+     */
+    static public String send(Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
+        try {            
+            if(params != null) {
+                HttpServletRequest request = (HttpServletRequest)freeParam;
+                JSONObject rootJson = new JSONObject((String)params);
+                if(rootJson != null) {
+                    JSONArray paramsJson  = rootJson.getJSONArray("params");
+                    for(int i=0; i<paramsJson.length(); i++) {
+                        JSONObject paramJson = (JSONObject)paramsJson.get(i);
+                        if(paramJson.has("form")) {
+                            if(paramJson.has("data")) {
+                                JSONObject dataJson = paramJson.getJSONObject("data");
+                                if(dataJson != null) {
+                                    emailer emailerInstance = new emailer();
+                                    String to = dataJson.has("to") ? dataJson.getString("to") : "";
+                                    String from = dataJson.has("from") ? dataJson.getString("from") : "";
+                                    String subject = dataJson.has("subject") ? dataJson.getString("subject") : "";
+                                    String message = dataJson.has("message") ? dataJson.getString("message") : "";
+                                    boolean result = emailerInstance.send(to, from, subject, message);
+                                    if(!result) {
+                                        return "{ \"result\":-1, \"error\":\""+utility.base64Encode(emailerInstance.LastError)+"\"}";
+                                    } else {
+                                        return "{ \"result\":1 }";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }            
+        } catch (Throwable e) {
+            if(!(e instanceof java.lang.NoSuchMethodException)) {
+                Logger.getLogger("// login() Error:" + e.getLocalizedMessage());
+            }
+        }        
+        return null;
+    }
+    
     
     /**
      * send an email message

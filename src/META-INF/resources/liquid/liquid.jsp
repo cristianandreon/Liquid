@@ -11,6 +11,7 @@
     import="com.liquid.metadata"
     import="com.liquid.utility"
     import="com.liquid.login"
+    import="com.liquid.emailer"
     import="com.liquid.ThreadSession"
     import="com.liquid.ColumnsManager"
     errorPage="" 
@@ -120,7 +121,11 @@
             // Login Service : validazione email
             response.sendRedirect( login.validate_email(request, response, out) );
 
+        } else if ("email".equalsIgnoreCase(operation)) {
+            // Emailer Service : sending
+            out.print( emailer.send(request, response, out) );
 
+            
 
         } else if ("search".equalsIgnoreCase(operation)) {
             // Search service 
