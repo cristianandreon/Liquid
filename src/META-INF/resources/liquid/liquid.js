@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.46   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  30-10-2020
+// Liquid ver.1.47   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  10-12-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -281,6 +281,9 @@ class LiquidCtrl {
                 }
             }
 
+            var isDialogX = Liquid.isDialogX(this);
+            var isFormX = Liquid.isFormX(this);
+            var isWinX = Liquid.isWinX(this);
 
             this.bRegisterControl = true;
 
@@ -292,8 +295,7 @@ class LiquidCtrl {
             // Runtime mode (no db) ?
             if(!isDef(this.tableJson.query)) {
                 if(typeof this.tableJson.table === 'undefined' || !this.tableJson.table) {
-                    var isFormX = Liquid.isFormX(this);
-                    if(isFormX) { // Runtime mode allowed
+                    if(isFormX || isDialogX) { // Runtime mode allowed
                         for (var ic = 0; ic < this.tableJson.columns.length; ic++) {
                             if(typeof this.tableJson.columns[ic].field === 'undefined')
                                 this.tableJson.columns[ic].field = String(ic + 1);
@@ -848,8 +850,6 @@ class LiquidCtrl {
                     }
                 };
 
-                var isFormX = Liquid.isFormX(this);
-                var isWinX = Liquid.isWinX(this);
 
                 var setSize = false;
                 if(this.mode === "popup") {
@@ -862,7 +862,7 @@ class LiquidCtrl {
                         setSize = true;
                     }
                 } else {
-                    if(isWinX || isFormX) {
+                    if(isWinX || isFormX || isDialogX) {
                         // Create div container
                         if(!this.outDivObj) {
                             this.outDivObj = document.createElement("div");
@@ -876,6 +876,9 @@ class LiquidCtrl {
                             } else if(isFormX) {
                             	this.outDivObj.style.position = 'absolute';
                                 this.outDivObj.className += " liquidFormX";
+                            } else if(isDialogX) {
+                            	this.outDivObj.style.position = 'fixed';
+                                this.outDivObj.className += " liquidDialogX";
                             }
                             this.outDivObjCreated = true;
                             document.body.insertBefore(this.outDivObj, document.body.firstChild);
@@ -959,6 +962,8 @@ class LiquidCtrl {
                         this.outDivObj.className += " liquidWinXTheme";
                     } else if(isFormX) {
                         this.outDivObj.className += " liquidFormXTheme";
+                    } else if(isDialogX) {
+                        this.outDivObj.className += " liquidDialogXTheme";
                     }
 
                     // link for lookup and others
@@ -10910,8 +10915,9 @@ var Liquid = {
                     
 
                     var isFormX = Liquid.isFormX(liquid);
+                    var isDialogX = Liquid.isDialogX(liquid);
                     var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
-                    if(isFormX) {
+                    if(isFormX || isDialogX) {
                         if(layout.nRows <= 0) { // all rows
                             if(nRows <= 0) nRows = 1;
                         }
@@ -11035,7 +11041,7 @@ var Liquid = {
                         Liquid.setLayoutField(liquid, layout, layout.rowsContainer[ir].containerObj, ir, layout.rowsContainer[ir].bSetup);
                         layout.rowsContainer[ir].bSetup = false;
                         var isAddingNode = Liquid.isAddingNode(liquid, layout.baseIndex1B-1+ir, nodes, true);
-                        if( layout.baseIndex1B > 0 && (layout.baseIndex1B-1+ir < liquid.nRows || isAddingNode) || isFormX ) {
+                        if( layout.baseIndex1B > 0 && (layout.baseIndex1B-1+ir < liquid.nRows || isAddingNode) || isFormX || isDialogX ) {
                             layout.rowsContainer[ir].containerObj.style.filter = "";
                             layout.rowsContainer[ir].containerObj.disabled = false;
                             layout.rowsContainer[ir].containerObj.style.pointerEvents = '';
@@ -11117,6 +11123,9 @@ var Liquid = {
     },
     isFormX:function(liquid) {
         return (liquid.mode === "formX" || liquid.mode === "FormX");
+    },
+    isDialogX:function(liquid) {
+        return (liquid.mode === "dialogX" || liquid.mode === "DialogX");
     },
     isAutoInsert:function(liquid, layout) {
         var autoInsert = false;
@@ -11558,6 +11567,7 @@ var Liquid = {
                                 value = "";
                             }
                         } else {
+                            var isDialogX = Liquid.isDialogX(liquid);
                             var isFormX = Liquid.isFormX(liquid);
                             var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
                             if(isFormX || isAutoInsert) {
@@ -11567,6 +11577,9 @@ var Liquid = {
                                     disabled = true;
                                     value = ".";
                                 }
+                            } else if(isDialogX) {
+                                disabled = false;
+                                value = "";
                             } else {
                                 disabled = true;
                                 value = "";
@@ -11612,6 +11625,34 @@ var Liquid = {
             if(obj.childNodes) {
                 for (var j = 0; j < obj.childNodes.length; j++) {
                     Liquid.setLayoutField(liquid, layout, obj.childNodes[j], iRow, bSetup);
+                }
+            }
+        }
+    },
+    /**
+     * Set the form's fields by liquid control node
+     * @param formObj the form object
+     * @param liquid the source control
+     * @param node the source node
+     * @return n/d
+     * 
+     * TODO: test
+     */
+    setFormByNode:function(formObj, liquid, node) {
+        if(formObj && liquid && node) {
+            var disabled = false;
+            frm_elements = formObj.elements;
+            if(frm_elements && frm_elements.length) {
+                for (var i = 0; i < frm_elements.length; i++) {
+                    var targetObj = frm_elements[i];
+                    var targetName = targetObj.id.toLowerCase();
+                    for(var j=0; j<liquid.tableJson.columns.length; j++) {
+                        var name = liquid.tableJson.columns[j].name;
+                        if(name.toLowerCase() == targetName) {
+                            var value = node.data[j];
+                            Liquid.setHTMLElementValue(targetObj, value, disabled);
+                        }
+                    }
                 }
             }
         }
@@ -14451,8 +14492,10 @@ var Liquid = {
             if(liquid.absoluteLoadCounter === 0) 
                 Liquid.onEvent(obj, "onFirstLoad", null, null);
             Liquid.onEvent(obj, "onLoad", null, null);
-            liquid.outDivObj.classList.remove('liquidHide');
-            liquid.outDivObj.classList.add('liquidShow');
+            if(liquid.outDivObj) {
+                liquid.outDivObj.classList.remove('liquidHide');
+                liquid.outDivObj.classList.add('liquidShow');
+            }
             jQ1124( liquid.outDivObj ).slideDown( "fast" );
             setTimeout('Liquid.onStarted(document.getElementById("' + liquid.controlId + '"))', 500);
         }
