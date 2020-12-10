@@ -2677,10 +2677,12 @@ var Liquid = {
             }
             if(liquid) {
                 var isFormX = Liquid.isFormX(liquid);
-                if(isFormX) {
-                    var formX = isFormX ? Liquid.getAddingRowAsString(liquid, liquid.addingRow) : "";
+                if(isFormX) {                    
+                    // var formX = isFormX ? Liquid.getAddingRowAsString(liquid, liquid.addingRow) : "";
+                    var formXObj = isFormX ? Liquid.getNamedRowData(liquid, liquid.addingRow) : "";                    
+                    var formX = JSON.stringify(formXObj);
                     liquidCommandParams.params.push(JSON.parse("{\"formX\":[" + formX + "] }"));
-                    }            
+                }            
                 if(liquid.modifications) {
                     liquidCommandParams.params.push({modifications: liquid.modifications});
                 }
@@ -9049,6 +9051,30 @@ var Liquid = {
         }
         return "";
     },
+    getFormElementId:function(formElement) {
+        var name = null;
+        if(formElement) {
+            name = formElement.id ? formElement.id : formElement.name;
+            var previd = formElement.getAttribute('previd');
+            if(previd) {
+                name = previd;
+            }
+            var names = name.split(".layout.");
+            if(names.length > 1) name = names[0];
+
+            var index = name.indexOf("@{");
+            if(index>=0) {
+                var subKey = name.substring(index+2);
+                index = subKey.indexOf("}");
+                if(index>=0) {
+                    var fieldKey = subKey.substring(0, index);
+                    fieldKey = fieldKey.replace(/'/g, "").replace(/"/g, "");
+                    name = fieldKey;
+                }                                
+            }
+        }
+        return name;
+    },            
     getProperty:function(propName) {
         var parts = null, obj = null;
         if(typeof propName === 'string') parts = propName.split('.');
@@ -10551,7 +10577,7 @@ var Liquid = {
         return 0;
     },
     loadLayoutsContent:function(liquid) {        
-        if(liquid.tableJson.layouts) {
+        if(isDef(liquid.tableJson.layouts)) {
             for(var il=0; il<liquid.tableJson.layouts.length; il++) {
                 var layout = liquid.tableJson.layouts[il];
                 var isAutoInsert = false
@@ -10710,13 +10736,15 @@ var Liquid = {
         }
     },
     refreshPendingLayouts:function(liquid, forceRefresh) {
-        for(var il=0; il<liquid.tableJson.layouts.length; il++) {
-            var layout = liquid.tableJson.layouts[il];
-            if(layout.pendingRefresh || forceRefresh) {
-                layout.pendingRefresh = false;
-                setTimeout(function() {
-                    Liquid.refreshLayout(liquid, layout, layout.pendingLink);
-                }, 250);
+        if(isDef(liquid.tableJson.layouts)) {
+            for(var il=0; il<liquid.tableJson.layouts.length; il++) {
+                var layout = liquid.tableJson.layouts[il];
+                if(layout.pendingRefresh || forceRefresh) {
+                    layout.pendingRefresh = false;
+                    setTimeout(function() {
+                        Liquid.refreshLayout(liquid, layout, layout.pendingLink);
+                    }, 250);
+                }
             }
         }
     },
@@ -11232,8 +11260,7 @@ var Liquid = {
                 var linkCount = 0;
                 var doc = obj.ownerDocument;
                 var win = doc.defaultView || doc.parentWindow;
-                
-                                            
+                                                            
                 if(isDef(layout.rowsContainer[iRow].incomingSource)) {
                     if(layout.rowsContainer[iRow].incomingSource != layout.rowsContainer[iRow].templateRowSource) {
                         jQ1124( layout.rowsContainer[iRow].containerObj ).slideUp( "fast", function(){ 
@@ -11288,6 +11315,7 @@ var Liquid = {
                         if(linkeCol) {
                             controlName = "col." + linkeCol.field + ".row." + (iRow + 1);
                             newId = liquid.controlId + ".layout." + layoutIndex1B + "." + controlName;
+                            obj.setAttribute('previd', obj.id);
                             obj.setAttribute('linkedfield', linkeCol.field);
                             obj.setAttribute('linkedname', linkeCol.name);
                             obj.setAttribute('linkedrow1b', iRow + 1);
@@ -11505,7 +11533,12 @@ var Liquid = {
                             layout.rowsContainer[iRow].objsReload.push(linkedObjReload);
                             layout.rowsContainer[iRow].cols.push(linkeCol);
                             Liquid.appendDependency(liquid, linkeCol, {layoutName: layout.name, objId: obj.id, iRow: iRow});
-                        } else {                            
+                        } else {
+                            if(obj.id) {
+                                if(obj.id.indexOf("@{") >= 0) {
+                                    console.error("ERROR: html element not linked : "+obj.id+" ... maybe not defined in "+liquid.controlId);
+                                }
+                            }
                             layout.rowsContainer[iRow].objs.push(null);
                             layout.rowsContainer[iRow].objsInput.push(null);
                             layout.rowsContainer[iRow].objsSource.push(null);
@@ -11638,19 +11671,49 @@ var Liquid = {
      * 
      * TODO: test
      */
-    setFormByNode:function(formObj, liquid, node) {
-        if(formObj && liquid && node) {
-            var disabled = false;
-            frm_elements = formObj.elements;
-            if(frm_elements && frm_elements.length) {
-                for (var i = 0; i < frm_elements.length; i++) {
-                    var targetObj = frm_elements[i];
-                    var targetName = targetObj.id.toLowerCase();
-                    for(var j=0; j<liquid.tableJson.columns.length; j++) {
-                        var name = liquid.tableJson.columns[j].name;
-                        if(name.toLowerCase() == targetName) {
-                            var value = node.data[j];
-                            Liquid.setHTMLElementValue(targetObj, value, disabled);
+    setForm:function(formObjOrName, obj) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var curNodes = Liquid.getCurNodes(liquid);        
+            if(curNodes) {
+                Liquid.setFormByNode(formObjOrName, liquid, curNodes[0]);
+            }
+        }
+    },
+    /**
+     * Set the form's fields by liquid control node
+     * @param formObj the form object
+     * @param liquid the source control
+     * @param node the source node
+     * @return n/d
+     * 
+     * TODO: test
+     */
+    setFormByNode:function(formObjOrName, obj, node) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var formObj = null;
+            if(formObjOrName instanceof HTMLElement) {
+                formObj = formObjOrName;
+            } else {
+                formObj = document.getElementById(formObjOrName);
+            }
+            if(formObj && liquid && node) {
+                var disabled = false;
+                frm_elements = formObj.elements;
+                if(frm_elements && frm_elements.length) {
+                    for (var i = 0; i < frm_elements.length; i++) {
+                        var targetObj = frm_elements[i];
+                        var targetName = Liquid.getFormElementId(targetObj);
+                        if(targetName) {
+                            targetName = targetName.toLowerCase();
+                            for(var j=0; j<liquid.tableJson.columns.length; j++) {
+                                var name = liquid.tableJson.columns[j].name;
+                                if(name.toLowerCase() == targetName) {
+                                    var value = node.data[j+1];
+                                    Liquid.setHTMLElementValue(targetObj, value, disabled);
+                                }
+                            }
                         }
                     }
                 }
@@ -11685,7 +11748,7 @@ var Liquid = {
                 var subKey = key.substring(index+2);
                 index = subKey.indexOf("}");
                 if(index>=0) {
-                    fieldKey = subKey.substring(0, index);
+                    var fieldKey = subKey.substring(0, index);
                     fieldKey = fieldKey.replace(/'/g, "").replace(/"/g, "");
                     var linkedCol = Liquid.getColumn(liquid, fieldKey);
                     return linkedCol;
@@ -11695,7 +11758,7 @@ var Liquid = {
     },
     getLayoutIndex:function(liquid, layoutName) {
         if(liquid) {
-            if(liquid.tableJson.layouts) {
+            if(isDef(liquid.tableJson.layouts)) {
                 for(var il=0; il<liquid.tableJson.layouts.length; il++) {
                     if(liquid.tableJson.layouts[il].name ===layoutName) return il+1;
                 }
@@ -13340,11 +13403,17 @@ var Liquid = {
     },
     // return 0 in non Input or TEXTAREA
     setHTMLElementValue:function(targetObj, value, disabled) {
-        if(targetObj) {
+        if(targetObj) {            
             if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
-                if(targetObj.type === 'number') if (isDef(value)) if(isNaN(Number(value))) value = value.replace(/\,/g, ".");
-                targetObj.value = value
-                if(isDef(disabled)) targetObj.disabled = disabled;
+                if(targetObj.type === 'checkbox') {
+                    targetObj.checked = (value === 'true' || value === true || value === '1' ? true : false);
+                } else if(targetObj.type === 'file') {
+                    console.warn("WARNING : cannot set file of a form element " + targetObj.id);
+                } else {                
+                    if(targetObj.type === 'number') if (isDef(value)) if(isNaN(Number(value))) value = value.replace(/\,/g, ".");
+                    targetObj.value = value
+                }
+                if(isDef(disabled)) targetObj.disabled = disabled;                    
                 return 1;
             } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P') {
                 jQ1124(targetObj).html(value);
@@ -13353,7 +13422,7 @@ var Liquid = {
                 if(isDef(disabled)) targetObj.disabled = disabled;
                 return 0;
             } else {
-                console.error("Unknown control type : " + itemObj.nodeName);
+                console.error("Unknown control type : " + targetObj.nodeName);
                 targetObj.innerHTML = value;
             }
         }
@@ -16252,9 +16321,9 @@ var Liquid = {
         if(liquid) {
             var json = null;
             if(liquid instanceof LiquidCtrl) {
-                json = JSON.parse(JSON.stringify(liquid.tableJsonSource));
+                json = liquid.tableJsonSource ? JSON.parse(JSON.stringify(liquid.tableJsonSource)) : null;
             } else if(liquid instanceof LiquidMenuXCtrl) {
-                json = JSON.parse(JSON.stringify(liquid.menuJsonSource));
+                json = liquid.menuJsonSource ? JSON.parse(JSON.stringify(liquid.menuJsonSource)) : null;
             }
             if(json) {
                 var token = json.token; // cave current token

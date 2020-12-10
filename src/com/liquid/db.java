@@ -56,6 +56,7 @@ public class db {
 
     static long maxQueryTimeMs = 1000;
 
+
     static public class IdsCache {
 
         public String query;
@@ -3482,6 +3483,40 @@ public class db {
             }
         }
         return new Object[] { bResult, keyValue, error };
+    }
+
+
+    /**
+     * Creane new empty bean for control
+     * 
+     * @param tblWrk    the control workspace
+     * @param targetWrk
+     * @param rowData   the initial data
+     * @return 
+     */
+
+    public static Object new_bean(Object requestParam, workspace tblWrk, JSONObject rowData) {
+        if(tblWrk != null) {
+            JSONArray foreignTablesJson = null;
+            String filteringForeignTables = "*";
+            ArrayList<String> runtimeForeignTables = null;
+            JSONArray rowsData = new JSONArray();
+            rowsData.put(rowData);
+            Object[] result = create_beans_multilevel_class_internal( tblWrk, (JSONArray)rowsData, (JSONArray)foreignTablesJson, filteringForeignTables,
+                    -1, 0, 
+                    runtimeForeignTables);
+            if(result != null) {
+                int iResult = (int) result[0];
+                ArrayList<Object> beansContent = (ArrayList<Object>) result[1];
+                String className = (String) result[4];
+                if(beansContent != null) {
+                    if(beansContent.size() > 0) {
+                        return (Object)beansContent.get(0);
+                    }
+                }
+            }
+        }
+        return null;            
     }
 
     

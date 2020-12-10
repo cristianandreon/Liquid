@@ -731,69 +731,117 @@ var LiquidEditing = {
             }
         }
     },
-    onNewWindowFromForm:function(obj_id, parentObjId) {
+    onNewControlByForm:function(obj_id, parentObjId) {
         LiquidEditing.onContextMenuClose();
         if(!glLiquidGenesisToken) {
             alert("In order to create new window you must Enable Project Mode by server-side");
             return;
         }
+        var mode = "";
         var parentObj = document.getElementById(parentObjId);
-        var width = Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5;
-        var height = Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5;
+        var width = parentObj ? Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5 : 0;
+        var height = parentObj ? Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5 : 0;
         var formName = prompt("Enter form name", "");
-        return LiquidEditing.onNewWindowFromFormProcess(obj_id, mode, parentObjId, formName);
+        return LiquidEditing.onNewControlByFormProcess(obj_id, mode, parentObjId, formName);
     },
-    onNewWindowFromFormProcess:function(obj_id, mode, parentObjId, formName) {
-        if(liquidJsonString) {
+    newControlByForm:function( formName, controlName ) {
+        if(!glLiquidGenesisToken) {
+            alert("In order to create new window you must Enable Project Mode by server-side");
+            return;
+        }
+        var obj_id = null;
+        var parentObjId = null;
+        var mode = "";
+        var parentObj = null;
+        var width = parentObj ? Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5 : 0;
+        var height = parentObj ? Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5 : 0;
+        return LiquidEditing.onNewControlByFormProcess(obj_id, mode, parentObjId, formName);
+    },
+    onNewControlByFormProcess:function(obj_id, mode, parentObjId, formName) {
+        if(formName) {
             var parentObj = document.getElementById(parentObjId);
-            var width = Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5;
-            var height = Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5;
+            var width = parentObj ? Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5 : 0;
+            var height = parentObj ? Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5 : 0;
             var formObj = document.getElementById(formName);
-            var controlId = formName.name ? formName.name : formName.id;
-            if(!controlId) {
-                controlId = "FormToControl";
-            }
-            if(controlId) {
-                var copyCounter = 1;
-                var sourceControlId = controlId;
-                var checkLiquid = true;
-                while(checkLiquid) {
-                    checkLiquid = Liquid.getLiquid(controlId);
-                    if(checkLiquid) {
-                        copyCounter++;
-                        controlId = sourceControlId+"("+copyCounter+")";
-                    }
+            if(formObj) {
+                var controlId = formName.name ? formName.name : formName.id;
+                if(!controlId) {
+                    controlId = "FormToControl";
                 }
-                
-                var liquidJson = { columns:[], createIfMissing:true };
-                var frm_elements = formObj.elements;
-                if(frm_elements && frm_elements.length) {
-                    for (var i = 0; i < frm_elements.length; i++) {
-                        var targetObj = frm_elements[i];
-                        var dataType = 1;
-                        if(targetObj === 'datetime') {
-                            var dataType = 92;
-                        } else if(targetObj === 'date') {
-                            var dataType = 6;
-                        } else if(targetObj === 'time') {
-                            var dataType = 1;
+                if(controlId) {
+                    var copyCounter = 1;
+                    var sourceControlId = controlId;
+                    var checkLiquid = true;
+                    while(checkLiquid) {
+                        checkLiquid = Liquid.getLiquid(controlId);
+                        if(checkLiquid) {
+                            copyCounter++;
+                            controlId = sourceControlId+"("+copyCounter+")";
                         }
-                        liquidJson.columns.push( { name:"", type:dataType } );
+                    }
+
+                    var liquidJson = { columns:[], createIfMissing:true };
+                    var frm_elements = formObj.elements;
+                    if(frm_elements && frm_elements.length) {
+                        for (var i = 0; i < frm_elements.length; i++) {
+                            var formElement = frm_elements[i];
+                            var dataType = 1;
+                            name = Liquid.getFormElementId(formElement);
+                            
+                            var size = 0;
+                            
+                            if(formElement.type.toLowerCase() === 'datetime') {
+                                dataType = 93;
+                            } else if(formElement.type.toLowerCase() === 'date') {
+                                dataType = 6;
+                            } else if(formElement.type.toLowerCase() === 'time') {
+                                dataType = 92;
+                            } else if(formElement.type.toLowerCase() == 'text') {
+                                size = formElement.size ? formElement.size : 512;
+                            } else if(formElement.type.toLowerCase() == 'textarea') {
+                                size = formElement.size ? formElement.size : 0;
+                            } else if(formElement.type.toLowerCase() == 'file') {
+                                size = formElement.size ? formElement.size : 0;
+                            } else if(formElement.type.toLowerCase() == 'hidden') {
+                                size = formElement.size ? formElement.size : 0;
+                            }
+                            if(name) {
+                                var bAlreadyDefined = false;
+                                for(var ic=0; ic<liquidJson.columns.length; ic++) {
+                                    if(liquidJson.columns[ic].name === name) {
+                                        bAlreadyDefined = true;
+                                        break;
+                                    }
+                                }
+                                if(!bAlreadyDefined) {
+                                    liquidJson.columns.push( { name:name, type:dataType, size:size } );
+                                }
+                            } else {
+                                console.warn('WARNING : element in the form discharged : missing name or id (see red berder)');
+                                formElement.style.border = "2px solid red";
+                            }
+                        }
+                    }
+                    liquidJson.table = controlId;
+                    liquidJson.database = Liquid.curDatabase;
+                    liquidJson.schema = Liquid.curSchema;
+
+                    // liquidJson = { database:Liquid.curDatabase, schema:Liquid.curSchema, table:table, columns:cols, caption:controlId, mode:mode, parentObjId:parentObjId, autoFitColumns:true, width:width, height:height, resize:"both", askForSave:true };
+                    if(Liquid.curDriver) liquidJson.driver = Liquid.curDriver; 
+                    if(Liquid.curConnectionURL) liquidJson.connectionURL = Liquid.curConnectionURL;
+                    liquidJson.columnsResolved = null;
+                    liquidJson.columnsResolvedBy = null;
+                    liquidJson.token = glLiquidGenesisToken;
+                    var result = new LiquidCtrl( controlId, controlId, JSON.stringify(liquidJson), 
+                                    null, 
+                                    mode, parentObjId );
+                    if(result) {
+                        Liquid.onSaveToServer(result);
+                        
                     }
                 }
-                liquidJson.table = controlId;
-                liquidJson.database = Liquid.curDatabase;
-                liquidJson.schema = Liquid.curSchema;
-                        
-                // liquidJson = { database:Liquid.curDatabase, schema:Liquid.curSchema, table:table, columns:cols, caption:controlId, mode:mode, parentObjId:parentObjId, autoFitColumns:true, width:width, height:height, resize:"both", askForSave:true };
-                if(Liquid.curDriver) liquidJson.driver = Liquid.curDriver; 
-                if(Liquid.curConnectionURL) liquidJson.connectionURL = Liquid.curConnectionURL;
-                liquidJson.columnsResolved = null;
-                liquidJson.columnsResolvedBy = null;
-                liquidJson.token = glLiquidGenesisToken;
-                new LiquidCtrl( controlId, controlId, JSON.stringify(liquidJson), 
-                                null, 
-                                mode, parentObjId );
+            } else {
+                alert("Form '"+formName+"' not found");
             }
         }
     },
@@ -1685,7 +1733,7 @@ var LiquidEditing = {
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewWindow(event, 'winX','"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New window"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewWindowFromJson(event, 'winX','"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New window from json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewWindowFromForm(event, '"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New windows by form"+"</a></p>"        
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewControlByForm(event, '"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New windows by form"+"</a></p>"        
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewWindow(event, 'formX','"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New formX"+"</a></p>"
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onLiquidAssets()\">"+optImg+"<a href=\"javascript:void(0)\">Manage assets"+"</a></p>"
@@ -2830,5 +2878,5 @@ var LiquidEditing = {
                 }
             }
         }
-    },    
+    },
 }

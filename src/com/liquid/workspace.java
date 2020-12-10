@@ -597,13 +597,14 @@ public class workspace {
      * @param request the http request (HttpServletRequest)
      * @param sFolder the folder name where reads control's json files (String)
      * @param bLaunch if true append to the list of the controls to render on
+     * @param fileNameFilter if not null filter the file name by contains func
      * web page load (boolean)
      *
      * @return the validated control json
      * @throws java.lang.Throwable
      * @see workspace
      */
-    static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch) throws Throwable {
+    static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch, String fileNameFilter) throws Throwable {
         String out_string = "";
         try {
             boolean replaceApex = true;
@@ -620,19 +621,29 @@ public class workspace {
             out_string += "\n<!-- LIQUID : loading " + result.size() + " control(s) in the folder : " + sFolder + " -->\n";
             for (String s : result) {
                 Path path = Paths.get(s);
-                Path fileName = path.getFileName();
-                String sTableJsonFile = s;
-                String controlId = getControlIdFromFile(fileName.toString());
-                if (utility.contains(controlIds, controlId)) {
-                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Duplicate control id : " + controlId);
-                    out_string += "<!-- ERROR: Duplicate controlId: " + controlId + " File:" + s + " -->\n";
-                    out_string += "<script>alert(\"Duplicate controlId:" + controlId + "\\n\\nPlease check files in the folder:" + sFolder + "\")</script>\n";
-                } else {
-                    String controlScript = get_table_control(request, controlId, sTableJsonFile, replaceApex, owner, returnType);
-                    controlIds.add(controlId);
-                    out_string += "<!-- ControlId: " + controlId + " - [ File:\"" + s + "\" ]-->\n";
-                    out_string += controlScript;
-                    out_string += "\n\n";
+                Path fileName = path.getFileName();                
+                boolean bProcess = true;
+                if(fileNameFilter != null) {
+                    if(fileName.toString().contains(fileNameFilter)) {
+                        bProcess = true;
+                    } else {
+                        bProcess = false;
+                    }
+                }
+                if(bProcess) {
+                    String sTableJsonFile = s;
+                    String controlId = getControlIdFromFile(fileName.toString());
+                    if (utility.contains(controlIds, controlId)) {
+                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Duplicate control id : " + controlId);
+                        out_string += "<!-- ERROR: Duplicate controlId: " + controlId + " File:" + s + " -->\n";
+                        out_string += "<script>alert(\"Duplicate controlId:" + controlId + "\\n\\nPlease check files in the folder:" + sFolder + "\")</script>\n";
+                    } else {
+                        String controlScript = get_table_control(request, controlId, sTableJsonFile, replaceApex, owner, returnType);
+                        controlIds.add(controlId);
+                        out_string += "<!-- ControlId: " + controlId + " - [ File:\"" + s + "\" ]-->\n";
+                        out_string += controlScript;
+                        out_string += "\n\n";
+                    }
                 }
             }
             return out_string;
@@ -642,6 +653,10 @@ public class workspace {
         }
     }
 
+    static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch ) throws Throwable {
+        return get_table_controls_in_folder( request, sFolder, bLaunch, null );
+    }
+    
     public static void search(final String pattern, final File folder, List<String> result) {
         for (final File f : folder.listFiles()) {
             if (f.isDirectory()) {
@@ -988,7 +1003,7 @@ public class workspace {
                         if (createTableIfMissing) {
                             if (!metadata.create_table(connToUse, database, schema, table, tableJson)) {
                                 // Fail
-                                String err = "database:" + database + " schema:" + schema + " Failed to create table " + table + " ... please check fields and sizes";
+                                String err = "database:" + database + " schema:" + schema + " Failed to create table " + table + " ... please check fields, sizes, data type ...";
                                 return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
                             }
                         } else {
