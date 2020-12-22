@@ -26,7 +26,7 @@ public class connection {
     	try {
             cls = Class.forName("app.liquid.dbx.connection");
             if(cls != null) {
-                method = cls.getMethod("getDBConnection");
+                method = cls.getDeclaredMethod("getDBConnection");
             }
         } catch(NoSuchMethodException nsm) {
         } catch(ClassNotFoundException cnf) {
@@ -39,6 +39,7 @@ public class connection {
             throw th.getCause();
     	}        
         if(method != null) {
+            method.setAccessible(true);
             return (Connection)method.invoke(null);
         } else {
             // use internal method
@@ -51,7 +52,7 @@ public class connection {
     	try {
             cls = Class.forName("app.liquid.dbx.connection");
             if(cls != null) {
-                method = cls.getMethod("getDBConnection", String.class);
+                method = cls.getDeclaredMethod("getDBConnection", String.class);
             }
         } catch(NoSuchMethodException nsm) {
         } catch(ClassNotFoundException cnf) {
@@ -64,6 +65,7 @@ public class connection {
             throw th.getCause();
     	}
         if(method != null) {
+            method.setAccessible(true);
             return (Connection)method.invoke(null, database);
         } else {
             // use internal method
@@ -232,9 +234,9 @@ public class connection {
                         conn = getDBConnection();
                     }
                 } else {
-                    try {
+                    if(database != null && !database.isEmpty()) {
                         conn = (Connection)get_connection.invoke(null, database);
-                    } catch(Throwable th) {
+                    } else {
                         conn = (Connection)get_connection.invoke(null);
                     }
                 }
@@ -493,7 +495,7 @@ public class connection {
                     try {
                         cls = Class.forName("app.liquid.dbx.connection");
                         if(cls != null) {
-                            method = cls.getMethod("closeDbConnection", Connection.class);
+                            method = cls.getDeclaredMethod("closeDbConnection", Connection.class);
                         }
                     } catch(NoSuchMethodException nsm) {
                     } catch(ClassNotFoundException cnf) {

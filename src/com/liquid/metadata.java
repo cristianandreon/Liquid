@@ -1603,6 +1603,7 @@ public class metadata {
                         PreparedStatement psdo = conn.prepareStatement(sql);
                         psdo.executeUpdate();
                         psdo.close();
+                        Logger.getLogger(metadata.class.getName()).log(Level.INFO, "Created database : "+database + " by driver : "+driver);
                         return true;
                     }
                 } catch (Throwable th) {

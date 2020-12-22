@@ -287,7 +287,7 @@ public class db {
                     }
                 } catch (Throwable th) {
                     final Throwable cause = th.getCause();
-                    error = th.getCause().getLocalizedMessage();
+                    error = th.getCause().getLocalizedMessage() + "(" + th.getMessage() + ")";
                     String err = "connect error : " + error + ", on controlId:" + controlId;
                     System.out.println("// LIQUID ERROR : " + err);
                     return "{\"error\":\"" + utility.base64Encode(err) + "\"}";
@@ -5824,6 +5824,66 @@ public class db {
     }
 
     /**
+     * <h3>Insert or update the bean to the database</h3>
+     * <p>
+     * This method execute an insert statement by the given bean
+     *
+     * @param bean bean to insert (Object)
+     * @param tbl_wrk the table workspace of the control (Object)
+     *
+     * @return the detail of operation as json object { "tables":[ {
+     * "table":"table name", "ids":[ list of changed primary keys ] } ]
+     * ,"foreignTables":[ { "table":"table name", "ids":[ list of changed
+     * primary keys ] } ] ,"fails":[" { "table":"table name", "ids":[ list of
+     * changed primary keys ] } ] }
+     * @see db
+     */
+    static public String insertUpdate(Object bean, Object tbl_wrk) throws JSONException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+        workspace tblWrk = (workspace)tbl_wrk;
+        String primaryKey = tblWrk.tableJson.getString("primaryKey");
+        String databaseSchemaTable = null;
+        Object primaryKeyValue = utility.get(bean, primaryKey);
+        boolean foundRow = false;
+        if(primaryKeyValue != null) {
+            String where_condition = "";
+            ArrayList<Object> selectedBeans = null;
+            boolean isEmpty = false;
+            if(primaryKeyValue instanceof String) {
+                if(((String)primaryKeyValue).isEmpty()) isEmpty = true;
+            } else if(primaryKeyValue instanceof Integer) {
+                if(((Integer)primaryKeyValue) == 0) isEmpty = true;
+            } else if(primaryKeyValue instanceof Long) {
+                if(((Long)primaryKeyValue) == 0) isEmpty = true;
+            }
+            if(!isEmpty) {
+                try {
+                    selectedBeans = load_beans((HttpServletRequest)null, tblWrk.controlId, databaseSchemaTable, "*", primaryKey, primaryKeyValue, 1);
+                } catch (Throwable ex) {}
+                if(selectedBeans != null) {
+                    if(selectedBeans.size() > 0) {
+                        Object selectedBean = selectedBeans.get(0);
+                        foundRow = true;
+                        JSONArray cols = tblWrk.tableJson.getJSONArray("columns");
+                        for (int ic = 0; ic < cols.length(); ic++) {
+                            JSONObject col = cols.getJSONObject(ic);
+                            Object oSelectedValue = utility.get(selectedBean, col.getString("name"));
+                            Object oValue = utility.get(bean, col.getString("name"));
+                            if(!oSelectedValue.equals(oValue)) {
+                                utility.setChanged(bean, col.getString("name"), true);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(foundRow) {        
+            return update(bean, tbl_wrk);
+        } else {
+            return insert(bean, tbl_wrk, null);
+        }
+    }
+    
+    /**
      * <h3>Insert the bean to the database</h3>
      * <p>
      * This method execute an insert statement by the given bean
@@ -6000,7 +6060,7 @@ public class db {
     /**
      * <h3>Update the bean to the database</h3>
      * <p>
-     * This method execute an update statement by the given bean
+     * This method execute an update statement by the given bean (on changed fileds only)
      *
      * @param bean bean to update (Object)
      * @param tbl_wrk the table workspace of the control (Object)

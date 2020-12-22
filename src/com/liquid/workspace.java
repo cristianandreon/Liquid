@@ -293,6 +293,16 @@ public class workspace {
 
     static public ArrayList<workspace> glTblWorkspaces = new ArrayList<workspace>();
 
+    static public workspace get_tbl_manager_workspace(String controlId, String controlJsonFile, Object requestParam) throws Throwable {
+        workspace targetControl = workspace.get_tbl_manager_workspace(controlId);
+        if(targetControl == null && controlJsonFile != null) {
+            // loading the control if not found in memory
+            get_table_control( (HttpServletRequest)requestParam, controlId, controlJsonFile, false, null, "json");
+            return workspace.get_tbl_manager_workspace(controlId);
+        }
+        return targetControl;
+    }
+    
     static public workspace get_tbl_manager_workspace(String controlId) {
         for (int i = 0; i < glTblWorkspaces.size(); i++) {
             workspace tblWorkspace = tblWorkspace = glTblWorkspaces.get(i);

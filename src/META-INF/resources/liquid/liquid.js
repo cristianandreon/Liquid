@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.47   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  10-12-2020
+// Liquid ver.1.48   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  22-12-2020
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -3147,6 +3147,7 @@ var Liquid = {
     },
     registerFieldChange:function(liquid, nodeId, rowId, field, oldValue, newValue) {
         if(liquid) {
+            var isFormX = Liquid.isFormX(liquid);
             if(typeof rowId !== 'undefined' && typeof newValue !== 'undefined') {
                 if(!liquid.modifications)
                     liquid.modifications = new Array();
@@ -3172,7 +3173,7 @@ var Liquid = {
                 }
                 if(!recFound) {
                     var primaryKeyFound = true;
-                    if(rowId !== null && rowId !== '') { // Verify primary key exist
+                    if(rowId !== null && rowId !== '' && nodeId != null && nodeId !='') { // Verify primary key exist
                         if(!Liquid.getNodeIndexByPrimaryKey(liquid, rowId)) {
                             primaryKeyFound = false;
                         }
@@ -3199,7 +3200,8 @@ var Liquid = {
                     }
                     */
                 }
-                if(rowId === '' || rowId === null) {
+                if(rowId === '' || rowId === null || isFormX) {
+                    // N.B.: formX work always on addingRow/addingNode
                     try {
                         if(liquid.addingNode) {
                             liquid.addingNode.data[field] = newValue;
@@ -11252,7 +11254,10 @@ var Liquid = {
             } else if(obj.nodeName.toUpperCase() === 'A' || obj.nodeName.toUpperCase() === 'BUTTON') {
                 objLinkers = [obj.innerHTML, obj.id, obj.classList];
                 objLinkersTarget = [null, null, "className"];
+            } else if(obj.nodeName.toUpperCase() === 'FORM') {
+                liquid.linkedForm = obj;
             }
+            
             if(objLinkers) {
                 var linkeCol = null;
                 var objLinkerDesc = "";
@@ -11698,6 +11703,19 @@ var Liquid = {
             } else {
                 formObj = document.getElementById(formObjOrName);
             }
+            // searching for linkedLiquid
+            var linkedLiquid = null;
+            for(var i=0; i<glLiquids.length; i++) {
+                if(glLiquids[i]) {
+                    if(glLiquids[i].linkedForm) {
+                        if(glLiquids[i].linkedForm.id === formObj.id && isDef(formObj.id)) {
+                            linkedLiquid = glLiquids[i];
+                        } else if(glLiquids[i].linkedForm.name === formObj.name && isDef(formObj.name)) {
+                            linkedLiquid = glLiquids[i];
+                        }
+                    }
+                }
+            }
             if(formObj && liquid && node) {
                 var disabled = false;
                 frm_elements = formObj.elements;
@@ -11712,6 +11730,49 @@ var Liquid = {
                                 if(name.toLowerCase() == targetName) {
                                     var value = node.data[j+1];
                                     Liquid.setHTMLElementValue(targetObj, value, disabled);
+                                    if(linkedLiquid) {
+                                        Liquid.setAddingField(linkedLiquid, name, value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if(linkedLiquid) {
+                    Liquid.resetMofifications(linkedLiquid);
+                }
+            }
+        }
+    },
+    /**
+     * Insert or update the control by a form
+     * @param liquid the source control
+     * @param formObj the form object
+     * @return n/d
+     * 
+     * TODO: test
+     */
+    updateControlByForm:function(obj, formObjOrName) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var formObj = null;
+            if(formObjOrName instanceof HTMLElement) {
+                formObj = formObjOrName;
+            } else {
+                formObj = document.getElementById(formObjOrName);
+            }
+            if(formObj && liquid) {
+                var disabled = false;
+                frm_elements = formObj.elements;
+                if(frm_elements && frm_elements.length) {
+                    for (var i = 0; i < frm_elements.length; i++) {
+                        var targetObj = frm_elements[i];
+                        var targetName = Liquid.getFormElementId(targetObj);
+                        if(targetName) {
+                            targetName = targetName.toLowerCase();
+                            for(var j=0; j<liquid.tableJson.columns.length; j++) {
+                                var name = liquid.tableJson.columns[j].name;
+                                if(name.toLowerCase() == targetName) {
                                 }
                             }
                         }
@@ -11719,7 +11780,7 @@ var Liquid = {
                 }
             }
         }
-    },
+    },            
     checkLayoutChildrenForRemove:function(liquid, obj) {
         if(obj) {
             if(obj.childNodes) {

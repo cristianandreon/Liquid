@@ -570,6 +570,15 @@ public class utility {
         }
         return false;
     }
+    static public void setChanged(Object bean, String property, boolean bChanged) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+        if (bean != null) {
+            Field field = bean.getClass().getDeclaredField(property + "$Changed");
+            if (field != null) {
+                field.setAccessible(true);
+                field.set(bean, bChanged);
+            }
+        }
+    }
 
     static private PropertyDescriptor getPropertyDescriptor(Class<?> bean, String propertyname) throws IntrospectionException {
         BeanInfo beanInfo = Introspector.getBeanInfo(bean);
