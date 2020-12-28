@@ -200,7 +200,7 @@ public class login {
                         psdoLogin.close();
                     }
                 } catch (Exception e) { 
-                    Logger.getLogger(login.class.getName()).log(Level.SEVERE, null, e);
+                    // Logger.getLogger(login.class.getName()).log(Level.SEVERE, null, e);
                 }
 
                 try {
@@ -493,6 +493,7 @@ public class login {
         ResultSet rsdoSetup = null;
         boolean doAutentication = true;
         String cLang = "it";
+        String sUserImpersonatingID = null;
 
         String Debug = null;
         String message = null;
@@ -600,6 +601,15 @@ public class login {
                         return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
 
                     } else {
+                        
+                        
+                        if(sUserID.indexOf("=") != -1) {
+                            String [] userIDS = sUserID.split("=");
+                            sUserID = userIDS[0].trim();
+                            if(userIDS.length >= 2) {
+                                sUserImpersonatingID = userIDS[1].trim();
+                            }
+                        }
 
                         if(!(sEMail != null && !sEMail.isEmpty())) {
                             sEMail = sUserID;
@@ -611,11 +621,11 @@ public class login {
 
                             // MYSQL
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`='"+sUserID.toLowerCase()+"' OR `email`='"+sUserID.toLowerCase()+"') AND (`password`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `password`='') AND `status`<>'A' AND `status`<>'D' AND `emailValidated` > 0 AND `domain_id`='" + (domain_id != null ? domain_id : "") +"' AND `application_id`='" + (application_id != null ? application_id : "") + "'";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`="+ "?" +" OR `email`="+ "?" +") AND (`password`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `password`='') AND `status`<>'A' AND `status`<>'D' AND `emailValidated`>0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
 
                             // POSTGRES
                             } else if("postgres".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"='"+sUserID.toLowerCase()+"' OR \"email\"='"+sUserID.toLowerCase()+"') AND (\"password\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \"password\"='') AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"='" + (domain_id != null ? domain_id : "")+"' AND \"application_id\"='" + (application_id != null ? application_id : "") + "'";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"="+ "?" +" OR \"email\"="+ "?" +") AND (\"password\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \"password\"='') AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
 
                             // ORACLE
                             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -625,14 +635,12 @@ public class login {
                             }
 
                             psdoLogin = conn.prepareStatement(sqlSTMT);
-                            // psdoLogin.setString(1, sPassword);
+                            psdoLogin.setString(1, sUserID.toLowerCase());
+                            psdoLogin.setString(2, sUserID.toLowerCase());
+                            psdoLogin.setString(3, (domain_id != null ? domain_id : ""));
+                            psdoLogin.setString(4, (application_id != null ? application_id : ""));
                             rsdoLogin = psdoLogin.executeQuery();
 
-                            if (rsdoLogin == null) {
-                                message = "query error!";
-                                add_event(conn, request, message, -1);
-                                return "{ \"result\":-20, \"error\":\""+utility.base64Encode(message)+"\"}";
-                            }
 
                             boolean isLoginPassed = false;
                             String strPassword = null;
@@ -646,61 +654,19 @@ public class login {
                             ///  N,B.: la funzione crypt del postgres ignora i caratteri sucessivi all'ottavo
                             //
 
-                            // Ok legge dal recordset
                             if (rsdoLogin != null) {
+                                // Ok legge dal recordset
                                 if (rsdoLogin.next()) {
                                     iIsAddmin = rsdoLogin.getInt("admin");
                                     iUserId = rsdoLogin.getInt("id");
                                     token = getSaltString(32);
                                     isLoginPassed = true;
                                 } else {
+                                    // no record : wrong password or user not defined
                                 }
+                            } else {
+                                return "{ \"result\":-30, \"error\":\""+utility.base64Encode("Unexpected null recorset")+"\"}";
                             }
-
-                            // Nessun record : login fallito
-                            if (!isLoginPassed) {
-                                int iwrongPass = 0;
-
-                                try {
-                                    if (session != null) {
-                                        iwrongPass = (int) session.getAttribute("GLLoquidWrongPassword");
-                                    }
-                                } catch (Exception e) {
-                                    iwrongPass = 0;
-                                }
-
-                                if (iwrongPass+1 >= maxWrongPasswordEvent && maxWrongPasswordEvent > 0) {
-                                    message = sUserID + "@" + domain_id + " : Utente o password errati" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
-                                    add_event(conn, request, message, -1);
-                                }
-                                if (iwrongPass+1 >= maxWrongPasswordDisable && maxWrongPasswordDisable > 0) {
-                                    message = sUserID + "@" + domain_id + " : Utente o password errati. ["+iwrongPass+1+"] Utente disabilitato" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
-                                    add_event(conn, request, message, -1);
-                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" SET status='D' WHERE id="+iUserId;
-
-                                    } else if("postgres".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" SET \"status\"='D' WHERE id="+iUserId;
-                                    }
-                                }
- 
-                                if (cLang.equalsIgnoreCase("IT")) {
-                                    message = "Utente o password errati";
-                                } else {
-                                    message = "Wrong user or password";
-                                }
-
-                                try {
-                                    iwrongPass++;
-                                    if (session != null) {
-                                        session.setAttribute("GLCNCOnlineWrongPassword", iwrongPass);
-                                    }
-                                } catch (Exception e) {
-                                }
-
-                                return "{ \"result\":-30, \"error\":\""+utility.base64Encode(message)+"\", \"wrongPassCounter\":"+iwrongPass+"}";
-                            }
-
 
                             // Verifica filtro IP                            
                             if (isLoginPassed) {
@@ -716,9 +682,69 @@ public class login {
                             }
                             
                             if (isLoginPassed) {
+                                
+                                if(sUserImpersonatingID != null && !sUserImpersonatingID.isEmpty()) {
+                                    //
+                                    // load impersonating user's data
+                                    //
+                                    try {
+
+                                        // MYSQL
+                                        if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`="+"?"+" OR `email`="+"?"+") AND `status`<>'A' AND `status`<>'D' AND `emailValidated`>=0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
+
+                                        // POSTGRES
+                                        } else if("postgres".equalsIgnoreCase(driver)) {
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"="+"?"+" OR \"email\"="+"?"+") AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">=0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
+
+                                        // ORACLE
+                                        } else if("oracle".equalsIgnoreCase(driver)) {
+
+                                        // SQL SERVER
+                                        } else if("sqlserver".equalsIgnoreCase(driver)) {
+                                        }
+                                        
+                                        psdoLogin.close();
+                                        psdoLogin = null;
+                                        rsdoLogin.close();
+                                        rsdoLogin = null;
+
+                                        psdoLogin = conn.prepareStatement(sqlSTMT);
+                                        psdoLogin.setString(1, sUserImpersonatingID.toLowerCase());
+                                        psdoLogin.setString(2, sUserImpersonatingID.toLowerCase());
+                                        psdoLogin.setString(3, (domain_id != null ? domain_id : ""));
+                                        psdoLogin.setString(4, (application_id != null ? application_id : ""));
+                                        rsdoLogin = psdoLogin.executeQuery();
+
+                                        if (rsdoLogin != null) {
+                                            if (rsdoLogin.next()) {
+                                                iIsAddmin = rsdoLogin.getInt("admin");
+                                                iUserId = rsdoLogin.getInt("id");
+                                            } else {
+                                                // no record : wrong password or user not defined
+                                                isLoginPassed = false;
+                                                if (cLang.equalsIgnoreCase("IT")) {
+                                                    message = "Utente \""+sUserImpersonatingID+"\" non trovato";
+                                                } else {
+                                                    message = "User \""+sUserImpersonatingID+"\" not found";
+                                                }
+                                                return "{ \"result\":-30, \"error\":\""+utility.base64Encode(message)+"\"}";                                                
+                                            }
+                                        } else {
+                                            return "{ \"result\":-30, \"error\":\""+utility.base64Encode("Unexpected null recorset")+"\"}";
+                                        }
+                                    } catch (Exception e) {
+                                        message = "Error reading impersonating user's data:"+e.getMessage();
+                                        System.err.println("// login() "+message);
+                                        return "{ \"result\":-21, \"error\":\""+utility.base64Encode(message)+"\"}";
+                                    }
+                                }
+                            }
+                             
+                            if (isLoginPassed) {
                                 String assets_id = "", assets_name = "", assets_inactive_name = "";
                                 String sAdditionalProperties = "{";
-                                
+                            
                                 if (session != null) {
                                     session.setAttribute("GLLiquidUserID", iUserId);
                                     session.setAttribute("GLLiquidAdmin", iIsAddmin);
@@ -780,6 +806,55 @@ public class login {
                                         + (sAdditionalPropertiesError != null ? ",\"additionalPropertiesError\":\""+(sAdditionalPropertiesError)+"\"" : "")
                                         +"}";
                             }
+                            
+                            //
+                            // login fallito
+                            //
+                            if (!isLoginPassed) {
+                                int iwrongPass = 0;
+
+                                try {
+                                    if (session != null) {
+                                        iwrongPass = (int) session.getAttribute("GLLoquidWrongPassword");
+                                    }
+                                } catch (Exception e) {
+                                    iwrongPass = 0;
+                                }
+
+                                if (iwrongPass+1 >= maxWrongPasswordEvent && maxWrongPasswordEvent > 0) {
+                                    message = sUserID + "@" + domain_id + " : Utente o password errati" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
+                                    add_event(conn, request, message, -1);
+                                }
+                                if (iwrongPass+1 >= maxWrongPasswordDisable && maxWrongPasswordDisable > 0) {
+                                    message = sUserID + "@" + domain_id + " : Utente o password errati. ["+iwrongPass+1+"] Utente disabilitato" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
+                                    add_event(conn, request, message, -1);
+                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                                        sqlSTMT = "UPDATE "+schemaTable+" SET status='D' WHERE id="+iUserId;
+
+                                    } else if("postgres".equalsIgnoreCase(driver)) {
+                                        sqlSTMT = "UPDATE "+schemaTable+" SET \"status\"='D' WHERE id="+iUserId;
+                                    }
+                                }
+ 
+                                if (cLang.equalsIgnoreCase("IT")) {
+                                    message = "Utente o password errati";
+                                } else {
+                                    message = "Wrong user or password";
+                                }
+
+                                try {
+                                    iwrongPass++;
+                                    if (session != null) {
+                                        session.setAttribute("GLCNCOnlineWrongPassword", iwrongPass);
+                                    }
+                                } catch (Exception e) {
+                                }
+
+                                return "{ \"result\":-30, \"error\":\""+utility.base64Encode(message)+"\", \"wrongPassCounter\":"+iwrongPass+"}";
+                            }
+
+
+                            
 
                         } catch (Throwable e) {
                             String err = e.getLocalizedMessage();
@@ -1713,7 +1788,6 @@ public class login {
         ResultSet rsdoSetup = null;
         boolean doAutentication = true;
         String cLang = "it";
-        String sApplicationURL = null;
                 
         HttpSession session = request.getSession();
         
@@ -1728,19 +1802,24 @@ public class login {
             int iDaysValidity = 0;
 
 
-            if(application_id == null || application_id.isEmpty())
-                application_id = (String)request.getSession().getAttribute("GLLiquidLoginApplicationId");
-            if(domain_id == null || domain_id.isEmpty())
-                domain_id = (String)request.getSession().getAttribute("GLLiquidLoginDomainId");                                        
-            if(daysValidity<=0)
-                iDaysValidity = (int)request.getSession().getAttribute("GLLiquidLoginDaysValidity");
-            else
+            if(application_id == null || application_id.isEmpty()) {
+                if(request != null) {
+                    application_id = (String)request.getSession().getAttribute("GLLiquidLoginApplicationId");
+                }
+            }
+            if(domain_id == null || domain_id.isEmpty()) {
+                if(request != null) {
+                    domain_id = (String)request.getSession().getAttribute("GLLiquidLoginDomainId");
+                }
+            }
+            if(daysValidity<=0) {
+                if(request != null) {
+                    iDaysValidity = (int)request.getSession().getAttribute("GLLiquidLoginDaysValidity");
+                }
+            } else
                 iDaysValidity = daysValidity;
 
             
-            sApplicationURL = "http://" + utility.getDomainName(request.getRequestURL().toString()) + ":" + request.getLocalPort() + request.getContextPath();
-            sApplicationURL += utility.appendURLSeparator(sApplicationURL);
-            sApplicationURL += "liquid/liquid.jsp";
 
     
             ////////////////////////////////
@@ -2094,7 +2173,7 @@ public class login {
                     FilterIPs = new ArrayList<ipFilter>();
                 }
 
-                FilterIPs.add( new ipFilter(IP, "enabled") );
+                FilterIPs.add( new ipFilter(IP, typeOf) );
             }
             
         } catch (Exception e) {
@@ -2130,10 +2209,10 @@ public class login {
                     String filterIp = FilterIPs.get(i).ip;
                     boolean match = compareIp(filterIp, IP);
                     if(FilterIPs.get(i).type == 0) {
-                        // enabled
+                        // enabled (white list)
                         if(match) return true;
                     } else {
-                        // disable
+                        // disable  (black list)
                         if(match) return false;
                     }
                 }
