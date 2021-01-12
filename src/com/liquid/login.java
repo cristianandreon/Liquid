@@ -1113,8 +1113,9 @@ public class login {
                             String ip = request.getHeader("X-FORWARDED-FOR");  
                             if (ip == null) {
                                 ip = request.getRemoteAddr();  
-                            }                            
-                            int user_id = (int)Integer.parseInt((String)request.getSession().getAttribute("GLLiquidUserID") );
+                            }
+                            Object loggedUseId = request.getSession().getAttribute("GLLiquidUserID");
+                            int user_id = (int)Integer.parseInt((String)(loggedUseId != null ? loggedUseId : "0") );
                             String schemaTable = (schemaLog != null && !schemaLog.isEmpty() ? schemaLog+".":"")+tableLog+"";
                             String sqlSTMT = null;
                             PreparedStatement psdoLogin = null;
