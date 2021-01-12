@@ -1065,7 +1065,7 @@ public class login {
                             String seqName = (schemaLog != null && !schemaLog.isEmpty() ? schemaLog+".":"")+tableLog+"_id_seq";
                             sql.add("CREATE SEQUENCE "+seqName+"");
 
-                            sql.add("CREATE TABLE IF NOT EXISTS "+tableLog+" ("
+                            sql.add("CREATE TABLE IF NOT EXISTS "+(tableIdString+schemaLog+tableIdString)+"."+(tableIdString+tableLog+tableIdString)+" ("
                                 +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
                                 +",\"user_id\" INT DEFAULT 0"
                                 +",\"event\" VARCHAR(256) NOT NULL"
@@ -1088,7 +1088,6 @@ public class login {
                                 } catch (Throwable e) {
                                     System.err.println("// setup_event() Error:" + e.getLocalizedMessage());
                                 }
-                                psdoLogin.close();
                                 psdoLogin.close();
                             }
                         }
