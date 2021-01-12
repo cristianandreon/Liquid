@@ -955,7 +955,7 @@ public class login {
                 Object loggedUseId = session.getAttribute("GLLiquidUserID");
                 String result  = null;
                 if(loggedUseId != null) {
-                    result = "{ \"result\":1, \"message\":\"" +utility.base64Encode("User "+ (int)loggedUseId+" logged out") + "\"}";
+                    result = "{ \"result\":1, \"message\":\"" +utility.base64Encode("User "+ String.valueOf(loggedUseId != null ? loggedUseId : "")+" logged out") + "\"}";
                 } else {
                     result = "{ \"result\":0, \"message\":\"" +utility.base64Encode("Not yet logged") + "\"}";
                 }
@@ -1008,7 +1008,7 @@ public class login {
             if (session != null) {
                 Object GLLiquidUserID = session.getAttribute("GLLiquidUserID");
                 if(GLLiquidUserID != null)
-                    return (int)(GLLiquidUserID);
+                    return (int)Integer.parseInt((String)GLLiquidUserID);
             }                    
         } catch (Throwable e) {
             Logger.getLogger("// getLoggedIntID() error:" + e.getLocalizedMessage());
@@ -1111,14 +1111,13 @@ public class login {
                             }
 
                             String ip = request.getHeader("X-FORWARDED-FOR");  
-                            if (ip == null) {  
+                            if (ip == null) {
                                 ip = request.getRemoteAddr();  
                             }                            
-                            int user_id = (int)request.getSession().getAttribute("GLLiquidUserID");
+                            int user_id = (int)Integer.parseInt((String)request.getSession().getAttribute("GLLiquidUserID") );
                             String schemaTable = (schemaLog != null && !schemaLog.isEmpty() ? schemaLog+".":"")+tableLog+"";
                             String sqlSTMT = null;
                             PreparedStatement psdoLogin = null;
-                            PreparedStatement psdoSetup = null;
 
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                 sqlSTMT = "INSERT INTO "+schemaTable+" (`user_id`,`event`,`ip`,`type`) VALUES (" 
@@ -1138,7 +1137,8 @@ public class login {
                             } else if("sqlserver".equalsIgnoreCase(driver)) {
                             }
                             psdoLogin = conn.prepareStatement(sqlSTMT);
-                            psdoLogin.executeUpdate();                            
+                            psdoLogin.executeUpdate();
+                            psdoLogin.close();
                         }
                     }                    
                 }
