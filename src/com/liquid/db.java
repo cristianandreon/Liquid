@@ -3612,28 +3612,30 @@ public class db {
         }
         if (tbl_wrk == null) {
             // crea il controllo
-            String[] tableParts = databaseSchemaTable.split("\\.");
-            if (tableParts.length == 1) {
-                table = tableParts[0];
-            } else if (tableParts.length == 2) {
-                table = tableParts[1];
-                schema = tableParts[0];
-            } else if (tableParts.length == 3) {
-                table = tableParts[2];
-                schema = tableParts[1];
-                database = tableParts[0];
-            }
-            if (controlId == null) {
-                controlId = workspace.getControlIdFromDatabaseSchemaTable(databaseSchemaTable);
-            }
-            String sRequest = "";
-            String parentControlId = null;
-            String sTableJson = workspace.get_default_json(request, controlId, controlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
-            tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
-            if (tbl_wrk != null) {
-                tbl_wrk.tableJson.put("isSystem", "true");
-            } else {
-                return null;
+            if(databaseSchemaTable != null) {
+                String[] tableParts = databaseSchemaTable.split("\\.");
+                if (tableParts.length == 1) {
+                    table = tableParts[0];
+                } else if (tableParts.length == 2) {
+                    table = tableParts[1];
+                    schema = tableParts[0];
+                } else if (tableParts.length == 3) {
+                    table = tableParts[2];
+                    schema = tableParts[1];
+                    database = tableParts[0];
+                }
+                if (controlId == null) {
+                    controlId = workspace.getControlIdFromDatabaseSchemaTable(databaseSchemaTable);
+                }
+                String sRequest = "";
+                String parentControlId = null;
+                String sTableJson = workspace.get_default_json(request, controlId, controlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
+                tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+                if (tbl_wrk != null) {
+                    tbl_wrk.tableJson.put("isSystem", "true");
+                } else {
+                    return null;
+                }
             }
         }
         return tbl_wrk;

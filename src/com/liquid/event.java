@@ -1992,6 +1992,15 @@ public class event {
                                         return result;
                                     }
                                 }
+                            } else {
+                                Object value = paramJSON.get(paramName);
+                                if (value instanceof JSONObject) {
+                                    return paramJSON.getJSONObject(paramName);
+                                } else {
+                                    JSONObject result = new JSONObject();
+                                    result.put(paramName, value);
+                                    return result;
+                                }
                             }
                         } else if (controlId != null && controlId.isEmpty()) {
                             if (!paramJSON.has("name")) { // exclude the "name" field, get the "name" content
