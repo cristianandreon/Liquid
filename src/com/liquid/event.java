@@ -1992,15 +1992,6 @@ public class event {
                                         return result;
                                     }
                                 }
-                            } else {
-                                Object value = paramJSON.get(paramName);
-                                if (value instanceof JSONObject) {
-                                    return paramJSON.getJSONObject(paramName);
-                                } else {
-                                    JSONObject result = new JSONObject();
-                                    result.put(paramName, value);
-                                    return result;
-                                }
                             }
                         } else if (controlId != null && controlId.isEmpty()) {
                             if (!paramJSON.has("name")) { // exclude the "name" field, get the "name" content
@@ -2028,6 +2019,23 @@ public class event {
                             }
                         } else {
                             return paramJSON.getJSONObject(paramName);
+                        }
+                    }
+                }
+                
+                // Search in param with no name
+                for (int ip = 0; ip < paramsJSON.length(); ip++) {
+                    JSONObject paramJSON = paramsJSON.getJSONObject(ip);
+                    if (paramJSON.has(paramName)) {
+                        if (!paramJSON.has("name")) {
+                            Object value = paramJSON.get(paramName);
+                            if (value instanceof JSONObject) {
+                                return paramJSON.getJSONObject(paramName);
+                            } else {
+                                JSONObject result = new JSONObject();
+                                result.put(paramName, value);
+                                return result;
+                            }
                         }
                     }
                 }
