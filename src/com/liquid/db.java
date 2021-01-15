@@ -6634,4 +6634,50 @@ public class db {
         return resultJSON.toString();
     }
 
+    
+    static public boolean setSchema( Connection conn, String engine, String schema ) {
+        String sql = null;
+        boolean retVal = false;
+                
+        String tableIdString = "";
+        
+        // oracle
+        if("oracle".equalsIgnoreCase(engine)) {
+            sql = "ALTER SESSION SET CURRENT_SCHEMA = "+schema+";";
+            
+        // postgres
+        } else if("postgres".equalsIgnoreCase(engine)) {
+            sql = "SET search_path TO \"" + schema + "\"";
+            
+        } else if("mysql".equalsIgnoreCase(engine)) {
+            sql = "USE " + tableIdString + schema + tableIdString + "";
+            
+        } else if("mysql".equalsIgnoreCase(engine)) {
+            sql = "USE " + tableIdString + schema + tableIdString + "";
+        }
+        
+        if(sql != null) {
+            if(conn != null) {
+                try {
+                    Statement stmt = conn.createStatement();
+                    boolean res = stmt.execute(sql);
+                    if(!res) {
+                        retVal = true;
+                        ResultSet rs = stmt.getResultSet();
+                        if(rs != null) {
+                            if(rs.next()) {
+                                String result = rs.getString(1);
+                                if(result != null) {
+                                }
+                            }
+                        }
+                    }
+                } catch (SQLException ex) {
+                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }            
+        }        
+        return retVal;
+    }
+    
 }
