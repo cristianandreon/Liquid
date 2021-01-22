@@ -20,6 +20,7 @@ import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import com.jcraft.jsch.SftpProgressMonitor;
 import static ch.ethz.ssh2.sftp.ErrorCodes.*;
+import java.io.OutputStream;
 import java.util.logging.Level;
 
 
@@ -133,7 +134,12 @@ public class sftpManager implements SftpProgressMonitor {
         return new Object[]{retVal, true};
     }
 
-    public long getRemoteFileSize(String host, String user, String password, String targetFile) throws JSchException, SftpException, IOException {
+    public static long getRemoteFileSize(String host, String user, String password, String targetFile) throws JSchException, SftpException, IOException {
+        sftpManager sftp = new sftpManager();
+        return sftp.getRemoteFileSizeEx(host, user, password, targetFile);
+    }
+    
+    public long getRemoteFileSizeEx(String host, String user, String password, String targetFile) throws JSchException, SftpException, IOException {
         long retVal = 0;
         int port = 22;
         String knownHostsFilename = "/home/world/.ssh/known_hosts";
@@ -196,6 +202,58 @@ public class sftpManager implements SftpProgressMonitor {
         return retVal;
     }
 
+    
+    public Object[] download(String host, String user, String password, String sourceFile, OutputStream targetFileOS) throws JSchException, SftpException, IOException, Exception {
+        long retVal = 0, fileSize = 0;
+        int port = 22;
+        String knownHostsFilename = "/home/world/.ssh/known_hosts";
+        ChannelSftp sftpChannel = null;
+
+        JSch jsch = new JSch();
+        jsch.setKnownHosts(knownHostsFilename);
+        Session session = jsch.getSession(user, host, port);
+        session.setPassword(password);
+
+        // disable host fingerprint check
+        java.util.Properties config = new java.util.Properties();
+        config.put("StrictHostKeyChecking", "no");
+        session.setConfig(config);
+
+        try {
+
+            session.connect();
+            sftpChannel = (ChannelSftp) session.openChannel("sftp");
+            sftpChannel.connect();
+
+            if (sourceFile != null) {
+                /*
+                File file = new File(sourceFile);
+                Path path = Paths.get(file.getPath());
+                BasicFileAttributeView attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+                BasicFileAttributes latt = attributes.readAttributes();
+
+
+                FileTime ctf = latt.creationTime();
+                long ct = ctf.toMillis() / 1000;
+                */
+
+            }
+
+            // checkSFTPFolderExist(sftpChannel, sourceFile);
+
+            sftpChannel.get(sourceFile, targetFileOS);
+
+            retVal = 1;
+
+        } finally {
+            sftpChannel.exit();
+            session.disconnect();
+        }
+
+        return new Object[]{retVal, true};
+    }
+    
+    
     public void init(int op, java.lang.String src, java.lang.String dest, long total) {
         glTtargetFile = dest;
         this.lastCurrentTimeMillis = System.currentTimeMillis();

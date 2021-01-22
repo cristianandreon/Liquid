@@ -20,6 +20,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -623,6 +626,17 @@ public class utility {
         }
     }
 
+    static public boolean createFolder(String folder) {
+        try {
+            Path path = Paths.get(folder);
+            Files.createDirectories(path);
+          } catch (IOException e) {
+            System.err.println("Failed to create directory!" + e.getMessage());
+            return false;
+          }
+        return true;
+    }
+  
     static public boolean fileExist(String folder) {
         if (folder != null && !folder.isEmpty()) {
             File file = new File(folder);

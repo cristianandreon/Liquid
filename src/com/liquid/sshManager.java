@@ -17,6 +17,7 @@ import ch.ethz.ssh2.ChannelCondition;
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
+import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 
@@ -277,5 +278,33 @@ public class sshManager {
             }
         }
         return ls;
+    }
+    
+    
+    static String copy_file_to_user_folder(String ip, String usr, String psw, String remoteFile, String tempFolder) throws InterruptedException {
+        sshManager ssh = new sshManager();
+        ssh.connect(ip, usr, psw);
+        String cmd = "sudo su -";
+        ssh.cmd(cmd, psw);
+        File f = new File(remoteFile);
+        String fileName = f.getName();
+        cmd = "mkdir /home/"+usr+"/"+tempFolder;
+        ssh.cmd(cmd);
+        String newRemoteFile = "/home/"+usr+"/"+tempFolder+"/"+fileName;
+        cmd = "cp "+remoteFile+" " + newRemoteFile;
+        ssh.cmd(cmd);
+        return newRemoteFile;
+    }
+    
+    static boolean remove_file_from_user_folder(String ip, String usr, String psw, String remoteFile) throws InterruptedException {
+        sshManager ssh = new sshManager();
+        ssh.connect(ip, usr, psw);
+        String cmd = "sudo su -";
+        ssh.cmd(cmd, psw);
+        File f = new File(remoteFile);
+        String fileName = f.getName();
+        cmd = "rm "+remoteFile;
+        ssh.cmd(cmd);
+        return true;
     }
 }
