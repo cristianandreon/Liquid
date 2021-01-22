@@ -1114,7 +1114,13 @@ public class login {
                                 ip = request.getRemoteAddr();  
                             }
                             Object loggedUseId = request.getSession().getAttribute("GLLiquidUserID");
-                            int user_id = (int)Integer.parseInt((String)(loggedUseId != null ? loggedUseId : "0") );
+                            int user_id = 0;
+                            if(loggedUseId instanceof Integer) {
+                                user_id = (int)(loggedUseId != null ? loggedUseId : 0) ;
+                            } else if(loggedUseId instanceof String) {
+                                user_id = (int)Integer.parseInt((String)(loggedUseId != null ? loggedUseId : "0") );                               
+                            }
+                            
                             String schemaTable = (schemaLog != null && !schemaLog.isEmpty() ? schemaLog+".":"")+tableLog+"";
                             String sqlSTMT = null;
                             PreparedStatement psdoLogin = null;
