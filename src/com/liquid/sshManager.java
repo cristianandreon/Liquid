@@ -210,7 +210,10 @@ public class sshManager {
 
     public ArrayList<String> cmd(String command) throws InterruptedException {
         return cmd(command, (String) null);
-
+    }
+    
+    public void removeLastCommand() throws InterruptedException {         
+        cmd((String)"history -d $(($HISTCMD-1))", (String) null);
     }
 
     public ArrayList<String> cmd(String command, String param) throws InterruptedException {
@@ -307,4 +310,5 @@ public class sshManager {
         ssh.cmd(cmd);
         return true;
     }
+    
 }
