@@ -138,27 +138,28 @@ public class login {
     // Please Note : to define custon connection you need to define driver, database, and schema
     //              user and or password may be null
     //
-    static public Connection getConnection() throws ClassNotFoundException, SQLException, Throwable {
+    static public Object [] getConnection() throws ClassNotFoundException, SQLException, Throwable {
         Connection conn = null;
+        Object[] connResult = null;
 
         if(connRead) {
             if(connDefined) {
                 // defined by driver/database/user
-                conn = getLiquidDBConnection(null, driver, host, port, database, user, password);
+                connResult = getLiquidDBConnection(null, driver, host, port, database, user, password);
             } else {
                 // host/driver/database NOT defined : use app.liquid.dbx or JDBCsources
-                conn = connection.getDBConnection();
+                connResult = connection.getDBConnection();
             }
         } else if(!connRead) {
             connRead = true;
             if( driver != null && database != null && schema != null && !driver.isEmpty() && !database.isEmpty() && !schema.isEmpty() ) {
                 // defined by driver/database/user
                 connDefined = true;
-                conn = getLiquidDBConnection(null, driver, host, port, database, user, password);
+                connResult = getLiquidDBConnection(null, driver, host, port, database, user, password);
             } else {
                 // host/driver/database NOT defined : use app.liquid.dbx or JDBCsources
                 connDefined = false;
-                conn = connection.getDBConnection();
+                connResult = connection.getDBConnection();
             }
             if(table == null || table.isEmpty())
                 table = "users";
@@ -179,7 +180,7 @@ public class login {
             }
         }
         
-        return conn;
+        return connResult;
     }
 
     static boolean prepare_database(Connection conn) {
@@ -512,7 +513,9 @@ public class login {
 
         try {
 
-            conn = getConnection();
+            Object [] connResult = getConnection();
+            conn = (Connection)connResult[0];
+            String connError = (String)connResult[1];
 
             if(conn != null && conn.isValid(30)) {
 
@@ -1354,7 +1357,9 @@ public class login {
                         boolean isUserIdDuplicate = false;
                         message = "";
 
-                        conn = getConnection();
+                        Object [] connResult = getConnection();
+                        conn = (Connection)connResult[0];
+                        String connError = (String)connResult[1];
 
                         if(conn != null && conn.isValid(30)) {
                         
@@ -1682,7 +1687,9 @@ public class login {
             // Recupero passord
             //
 
-            conn = getConnection();
+            Object [] connResult = getConnection();
+            conn = (Connection)connResult[0];
+            String connError = (String)connResult[1];
 
             if(conn != null && conn.isValid(30)) {
                 
@@ -1850,7 +1857,9 @@ public class login {
                         boolean isUserIdDuplicate = false;
                         message = "";
 
-                        conn = getConnection();
+                        Object [] connResult = getConnection();
+                        conn = (Connection)connResult[0];
+                        String connError = (String)connResult[1];
 
                         if(conn != null && conn.isValid(30)) {
                         
@@ -2007,7 +2016,9 @@ public class login {
             // Recupero passord
             //
 
-            conn = getConnection();
+            Object [] connResult = getConnection();
+            conn = (Connection)connResult[0];
+            String connError = (String)connResult[1];
 
             if(conn != null && conn.isValid(30)) {
                 

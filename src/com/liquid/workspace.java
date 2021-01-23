@@ -869,9 +869,10 @@ public class workspace {
 
             // Connessione al DB
             try {
-                conn = connection.getConnection(null, request, connectionDriver, connectionURL, database);
+                Object [] connResult = connection.getConnection(null, request, connectionDriver, connectionURL, database);
+                conn = (Connection)connResult[0];
                 if (conn == null) {
-                    String error = "[null connection]";
+                    String error = "[error is : "+connResult[1]+"]";
                     return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection .." + error + "\");</script>");
                 }
             } catch (Throwable th) {
@@ -934,7 +935,8 @@ public class workspace {
                     // closing the connections (with callbacks)
                     connection.closeConnection(conn);
                     conn = null;
-                    connToUse = connToDB = connection.getDBConnection(database);
+                    Object [] connResult = connection.getDBConnection(database);
+                    connToUse = connToDB = (Connection)connResult[0];
                 }
             }
 

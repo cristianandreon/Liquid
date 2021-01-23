@@ -157,7 +157,10 @@ public class metadata {
                     String db = conn.getCatalog();
                     if(!db.equalsIgnoreCase(database)) {
                         // set catalog not supported : connect to different DB
-                        connToUse = connToDB = connection.getDBConnection(database);
+                        Object [] connResult = connection.getDBConnection(database);
+                        conn = (Connection)connResult[0];
+                        String connError = (String)connResult[1];                        
+                        connToUse = connToDB = conn;
                     }
                 }
                 
@@ -863,7 +866,10 @@ public class metadata {
                 String db = conn.getCatalog();
                 if(!db.equalsIgnoreCase(database)) {
                     // set catalog not supported : connect to different DB
-                    connToUse = connToDB = connection.getDBConnection(database);
+                    Object [] connResult = connection.getDBConnection(database);
+                    conn = (Connection)connResult[0];
+                    String connError = (String)connResult[1];                                            
+                    connToUse = connToDB = conn;
                 }
             }
             if(schema == null || schema.isEmpty())
@@ -1001,7 +1007,10 @@ public class metadata {
                 String db = conn.getCatalog();
                 if(!db.equalsIgnoreCase(database)) {
                     // set catalog not supported : connect to different DB
-                    connToUse = connToDB = connection.getDBConnection(database);
+                    Object [] connResult = connection.getDBConnection(database);
+                    conn = (Connection)connResult[0];
+                    String connError = (String)connResult[1];                                            
+                    connToUse = connToDB = conn;
                 }
             }
             
@@ -1036,7 +1045,9 @@ public class metadata {
             String search = request.getParameter("search");
             
             try {
-                conn = connection.getDBConnection();
+                Object [] connResult = connection.getDBConnection(database);
+                conn = (Connection)connResult[0];
+                String connError = (String)connResult[1];                                            
                 if(conn != null) {
                     result = searchOnDatabases(database, schema, table, conn, search, out);
                 }
@@ -1493,6 +1504,7 @@ public class metadata {
                     res = psdo.executeUpdate();
                 } catch (Exception ex) {
                     Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                    System.err.println("sql:"+sql);
                 }
             }
             
@@ -1608,6 +1620,7 @@ public class metadata {
                     }
                 } catch (Throwable th) {
                     Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
+                    System.err.println("sql:"+sql);
                 }
             }
         }
@@ -1639,6 +1652,7 @@ public class metadata {
                     }
                 } catch (Throwable th) {
                     Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
+                    System.err.println("sql:"+sql);
                 }
             }
         }

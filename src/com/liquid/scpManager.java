@@ -26,7 +26,7 @@ import java.util.Properties;
  */
 public class scpManager {
     
-    public static boolean downloadFile(String user, String password, String host, int port, String remoteFile, String localFile) throws JSchException, IOException, InterruptedException {
+    public static boolean downloadFile(String user, String password, String host, int port, String remoteFile, String localFile) throws JSchException, IOException, InterruptedException, Exception {
         boolean retVal = false;
         
         Session session = createSession(user, password, host, port);
@@ -108,7 +108,7 @@ public class scpManager {
         }
     }
 
-    private static boolean copyRemoteToLocal(Session session, String from, String to) throws JSchException, IOException {
+    private static boolean copyRemoteToLocal(Session session, String from, String to) throws JSchException, IOException, Exception {
         boolean retVal = false;
     
         // exec 'scp -f rfile' remotely
@@ -181,7 +181,7 @@ public class scpManager {
             }
 
             if (checkAck(in) != 0) {
-                System.exit(0);
+                throw new Exception("Fatal error in scp ack"); // System.exit(0);
             }
 
             // send '\0'

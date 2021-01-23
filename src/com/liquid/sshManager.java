@@ -213,7 +213,7 @@ public class sshManager {
     }
     
     public void removeLastCommand() throws InterruptedException {         
-        cmd((String)"history -d $(($HISTCMD-1))", (String) null);
+        cmd((String)" history -d $(($HISTCMD-1))", (String) null);
     }
 
     public ArrayList<String> cmd(String command, String param) throws InterruptedException {
@@ -287,27 +287,37 @@ public class sshManager {
     static String copy_file_to_user_folder(String ip, String usr, String psw, String remoteFile, String tempFolder) throws InterruptedException {
         sshManager ssh = new sshManager();
         ssh.connect(ip, usr, psw);
-        String cmd = "sudo su -";
+        String cmd = " sudo su -";
         ssh.cmd(cmd, psw);
+        ssh.removeLastCommand();
+        
         File f = new File(remoteFile);
         String fileName = f.getName();
-        cmd = "mkdir /home/"+usr+"/"+tempFolder;
+        cmd = " mkdir /home/"+usr+"/"+tempFolder;
         ssh.cmd(cmd);
+        ssh.removeLastCommand();
+        
         String newRemoteFile = "/home/"+usr+"/"+tempFolder+"/"+fileName;
-        cmd = "cp "+remoteFile+" " + newRemoteFile;
+        cmd = " cp "+remoteFile+" " + newRemoteFile;
         ssh.cmd(cmd);
+        ssh.removeLastCommand();
+        
         return newRemoteFile;
     }
     
     static boolean remove_file_from_user_folder(String ip, String usr, String psw, String remoteFile) throws InterruptedException {
         sshManager ssh = new sshManager();
         ssh.connect(ip, usr, psw);
-        String cmd = "sudo su -";
+        String cmd = " sudo su -";
         ssh.cmd(cmd, psw);
+        ssh.removeLastCommand();
+        
         File f = new File(remoteFile);
         String fileName = f.getName();
-        cmd = "rm "+remoteFile;
+        cmd = " rm "+remoteFile;
         ssh.cmd(cmd);
+        ssh.removeLastCommand();
+        
         return true;
     }
     

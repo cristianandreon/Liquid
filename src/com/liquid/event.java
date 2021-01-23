@@ -1178,7 +1178,9 @@ public class event {
                     }
                 }
 
-                conn = connection.getConnection(null, request, ((workspace) tbl_wrk).tableJson);
+                Object [] connResult = connection.getConnection(null, request, ((workspace) tbl_wrk).tableJson);
+                conn = (Connection)connResult[0];
+                String connError = (String)connResult[1];
                 if (conn != null) {
                     long cRow = 0;
                     long lStartTime = 0;
@@ -1328,7 +1330,9 @@ public class event {
                 } catch (Exception e) {
                 }
 
-                conn = connection.getConnection(null, request, ((workspace) tbl_wrk).tableJson);
+                Object [] connResult = connection.getConnection(null, request, ((workspace) tbl_wrk).tableJson);
+                conn = (Connection)connResult[0];
+                String connError = (String)connResult[1];
                 if (conn != null) {
                     long cRow = 0;
                     long lStartTime = 0;

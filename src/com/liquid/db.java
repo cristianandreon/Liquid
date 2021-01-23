@@ -279,9 +279,11 @@ public class db {
             if (tbl_wrk != null) {
                 try {
                     // Connessione al DB ( da predefinita, da JSON o da sessione )
-                    conn = connection.getConnection(null, recordset_params.request, tbl_wrk.tableJson);
+                    Object [] connResult = connection.getConnection(null, recordset_params.request, tbl_wrk.tableJson);
+                    conn = (Connection)connResult[0];
+                    String connError = (String)connResult[1];
                     if (conn == null) {
-                        String err = "null DB connect on controlId:" + controlId;
+                        String err = "DB connect failed on controlId:" + controlId + "\n\nError is : "+connError;
                         System.out.println("// LIQUID ERROR : " + err);
                         return "{\"error\":\"" + utility.base64Encode(err) + "\"}";
                     }
@@ -386,7 +388,8 @@ public class db {
                         // set catalog not supported : connect to different DB
                         conn.close();
                         conn = null;
-                        connToUse = connToDB = connection.getDBConnection(database);
+                        Object [] connResult = connection.getDBConnection(database);
+                        connToUse = connToDB = (Connection)connResult[0];
                     }
                 }
                 
@@ -2383,7 +2386,9 @@ public class db {
                         // Connessione al DB ( da pr4edefinita, da JSON o da sessione )
                         try {
 
-                            conn = connection.getConnection(null, request, tbl_wrk.tableJson);
+                            Object [] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
+                            conn = (Connection)connResult[0];
+                            String connError = (String)connResult[1];
                             if (conn != null) {
                                 String columnsList = (String) queryInfo[0];
                                 String primaryKey = (String) queryInfo[1];
@@ -2595,8 +2600,8 @@ public class db {
                                 } else {
                                     System.err.println("// get_bean() null rsdo...");
                                 }
-                            } else {
-                                System.err.println("// get_bean() no connection...");
+                            } else {                                
+                                System.err.println("// get_bean() no connection ... error is : "+connError);
                             }
 
                         } catch (Throwable e) {
@@ -3853,7 +3858,9 @@ public class db {
 
             String executingQuery = "SELECT * FROM " + tbl_wrk.schemaTable + (where_condition != null ? where_condition : "");
 
-            conn = connection.getConnection(null, request, tbl_wrk.tableJson);
+            Object [] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
+            conn = (Connection)connResult[0];
+            String connError = (String)connResult[1];
 
             long lStartTime = System.currentTimeMillis();
             try {
@@ -5122,7 +5129,9 @@ public class db {
                 if (tableTransactList.transactionList != null || foreignTableTransactList.transactionList != null) {
                     try {
                         // Connessione al DB ( da predefinita, da JSON o da sessione )
-                        conn = connection.getConnection(null, request, liquid.tableJson);
+                        Object [] connResult = connection.getConnection(null, request, liquid.tableJson);
+                        conn = (Connection)connResult[0];
+                        String connError = (String)connResult[1];
                         // conn = (Connection)(liquid.get_connection != null ? liquid.get_connection.invoke(null) : null);
                     } catch (Exception ex) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
@@ -5142,7 +5151,9 @@ public class db {
                                 // closing the connections (with callbacks)
                                 connection.closeConnection(conn);
                                 conn = null;
-                                connToUse = connToDB = connection.getDBConnection(database);
+                                Object [] connResult = connection.getDBConnection(database);
+                                connToUse = connToDB = (Connection)connResult[0];
+                                
                             }
                         }
 
@@ -5638,7 +5649,9 @@ public class db {
 
             if (tbl_wrk != null) {
                 try {
-                    conn = connection.getConnection(null, request, tbl_wrk.tableJson);
+                    Object [] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
+                    conn = (Connection)connResult[0];
+                    String connError = (String)connResult[1];
                 } catch (Exception ex) {
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                 }

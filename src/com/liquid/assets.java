@@ -1,6 +1,7 @@
 package com.liquid;
 
 import com.liquid.db.beansCondition;
+import static com.liquid.login.getConnection;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -58,7 +59,7 @@ public class assets {
     // Please Note : to define custon connection you need to define driver, database, and schema
     //              user and or password may be null
     //
-    static public Connection getConnection() throws ClassNotFoundException, SQLException, Throwable {
+    static public Object [] getConnection() throws ClassNotFoundException, SQLException, Throwable {
         return login.getConnection();
     }
 
@@ -538,7 +539,9 @@ public class assets {
         
             try {
 
-                conn = getConnection();
+                Object [] connResult = getConnection();
+                conn = (Connection)connResult[0];
+                String connError = (String)connResult[1];
 
                 if(!check_assets_table_exist( conn, login.schema, assets_table )) {            
                 }
