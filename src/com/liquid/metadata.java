@@ -1296,7 +1296,7 @@ public class metadata {
                 tblHtml += "</table>";
 
             } catch(Exception ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, ex.getMessage());
             }
         }
         return tblHtml;
@@ -1371,21 +1371,14 @@ public class metadata {
             create_schema(conn, schema);
             
             String sql = "";
-            
-
-            if(isOracle) {
-        	} else if(isPostgres) {
-                    if("deploysCfg".equalsIgnoreCase(table))
-                        sql += "CREATE SEQUENCE IF NOT EXISTS \"liquidx\".\"deploysCfg_seq\";\nCOMMIT;\n";
-        	}
 
             sql += "CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ";
             
 
             if(isOracle) {
-        	} else if(isPostgres) {
+            } else if(isPostgres) {
         		sql += "(\n";
-        	}
+            }
             
             
             String primaryKey = null;
@@ -1440,7 +1433,8 @@ public class metadata {
                         // String seq_name = ((tableIdString+schema+tableIdString)+"."+(tableIdString+table+"_seq"+tableIdString));
                         // sDefault = "nextval('"+schema+"."+seq_name+"'::regclass)";
                         String seq_name = (tableIdString+table+"_seq"+tableIdString);
-                        pre_sql = "CREATE SEQUENCE IF NOT EXISTS "+seq_name+";\nCOMMIT;\n";
+                        // pre_sql = "CREATE SEQUENCE IF NOT EXISTS "+seq_name+";\nCOMMIT;\n";
+                        pre_sql = "CREATE SEQUENCE "+seq_name+";\nCOMMIT;\n";
                         sDefault = "nextval('"+seq_name+"'::regclass)";
                         typeName = "int4";
                     }
@@ -1493,7 +1487,8 @@ public class metadata {
                     psdo = conn.prepareStatement(pre_sql);
                     res = psdo.executeUpdate();
                 } catch (Exception ex) {
-                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, ex.getMessage());
+                    System.err.println("sql:"+pre_sql);
                 }
                 psdo.close();
             }
@@ -1503,7 +1498,7 @@ public class metadata {
                     psdo = conn.prepareStatement(sql);
                     res = psdo.executeUpdate();
                 } catch (Exception ex) {
-                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, ex.getMessage());
                     System.err.println("sql:"+sql);
                 }
             }
@@ -1584,7 +1579,7 @@ public class metadata {
             return true;
 
         } catch (Exception ex) {
-            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, ex.getMessage());
             
         } finally {
             if(psdo != null) psdo.close();
@@ -1619,7 +1614,7 @@ public class metadata {
                         return true;
                     }
                 } catch (Throwable th) {
-                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, th.getMessage());
                     System.err.println("sql:"+sql);
                 }
             }
@@ -1651,7 +1646,7 @@ public class metadata {
                         return true;
                     }
                 } catch (Throwable th) {
-                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, th.getMessage());
                     System.err.println("sql:"+sql);
                 }
             }
