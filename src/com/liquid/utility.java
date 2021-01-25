@@ -1140,6 +1140,9 @@ public class utility {
         return newList; 
     } 
     
+    public static String htmlEncode(String s) {
+        return htmlEncode(s, true);
+    }
     public static String htmlEncode(String s, boolean encodeSpecialChars) {
         if (s != null) {
             StringBuilder str = new StringBuilder();

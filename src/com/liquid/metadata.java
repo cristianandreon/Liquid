@@ -1707,6 +1707,10 @@ public class metadata {
     }
 
     static public String getAddColumnSQL(String driver, String database, String schema, String table, String field, String type, String size, String nullable, String autoincrement, String sDefault, String sRemarks) {
+        return getAddColumnSQL(driver, database, schema, table, field, type, size, null, nullable, autoincrement, sDefault, sRemarks);
+    }
+
+    static public String getAddColumnSQL(String driver, String database, String schema, String table, String field, String type, String size, String scale, String nullable, String autoincrement, String sDefault, String sRemarks) {
         String sql = "";
         String schemaTable = ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
 
@@ -1729,8 +1733,8 @@ public class metadata {
             sql += " ADD\n";
             sql += "(" 
                     + field 
-                    + " " + type + "("+size+") " 
-                    + (nullable != null && "Y".equalsIgnoreCase(nullable) ? "NOT NULL " : "")
+                    + ( scale != null && !scale.isEmpty() ? (" " + type + "("+size+","+scale+") ") : (" " + type + "("+size+") ") )
+                    + (nullable != null && "Y".equalsIgnoreCase(nullable) ? "" : "NOT NULL ")
                     + (sDefault != null && !sDefault.isEmpty() ? " DEFAULT " + sDefault : "")
                     + ");\n";
         }
