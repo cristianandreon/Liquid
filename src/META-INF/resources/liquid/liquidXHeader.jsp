@@ -8,7 +8,7 @@
 
 <% 
     String path = request.getContextPath(); 
-    String jssVersion = "1.46";
+    String jssVersion = "1.49";
 %>
 <!-- -->
 <!-- START of Liquid Framework - Developing version - Include Files .. Your Application root is at : "<%= path %>" -->
