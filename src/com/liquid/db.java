@@ -6283,7 +6283,7 @@ public class db {
     }
 
     /**
-     * <h3>Suncronize target table by source table, adding and removing
+     * <h3>Syncronize target table by source table, adding and removing
      * rows</h3>
      * <p>
      * This method execute a syncronization by adding and removing rows
@@ -6646,6 +6646,245 @@ public class db {
 
         return resultJSON.toString();
     }
+
+
+
+
+
+    /**
+     * <h3>Syncronize target table metadata by source table, adding and removing colums</h3>
+     * <p>
+     * This method execute a syncronization by adding and removing rows
+     *
+     * @param sourceDatabaseSchemaTable the source table (database.schema.table or schema.table or table) (String)
+     * 
+     * @param targetDatabaseSchemaTable the target table (database.schema.table or schema.table or table) (String)
+     
+     * @param jdbcSource the source connection data (JDBCSource)
+     *
+     * @param jdbcTarget the target connection data (JDBCSource)
+     *
+     * @param mode can be a list of these values: "mirror" (default mode) "all"
+     * (allow to process all rows, if no filters defined) "preview" (report the
+     * differences without perform any operations)
+     *
+     * @return the detail of operation the operation, if not preview mode as {
+     * "addedColumns":[ 1, 2, 3, ... ] ,"addedCount":n ,"deletedColumns":[ 1, 2, 3, ...
+     * ] ,"deletedCount":n }
+     * @see db
+     */
+    static public String syncronizeTableMetadata(
+            String sourceDatabaseSchemaTable, String targetDatabaseSchemaTable,
+            connection.JDBCSource jdbcSource, connection.JDBCSource jdbcTarget,
+            String mode
+    ) {
+        
+        Connection sconn = null, tconn = null;
+        String error = null;
+        
+        try {        
+                Object [] connResult = connection.getLiquidDBConnection(jdbcSource, jdbcSource.driver, jdbcSource.host, jdbcSource.port, jdbcSource.database, jdbcSource.user, jdbcSource.password, jdbcSource.service);
+                sconn = (Connection)connResult[0];
+                if (sconn == null) {
+                    return "{\"error\":\"" + utility.base64Encode((String) connResult[1]) + "\"}";
+                }
+                connResult = connection.getLiquidDBConnection(jdbcTarget, jdbcTarget.driver, jdbcTarget.host, jdbcTarget.port, jdbcTarget.database, jdbcTarget.user, jdbcTarget.password, jdbcTarget.service);
+                tconn = (Connection)connResult[0];
+                if (tconn == null) {
+                    return "{\"error\":\"" + utility.base64Encode((String) connResult[1]) + "\"}";
+                }
+
+            return syncronizeTableMetadata(sourceDatabaseSchemaTable, targetDatabaseSchemaTable, sconn, tconn, mode);
+            
+        } catch (Throwable th) {
+        } finally {
+            if(sconn != null) try {
+                sconn.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            if(tconn != null) try {
+                tconn.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return "{\"error\":\"" + utility.base64Encode("unknown error") + "\"}";
+    }
+    
+    static public String syncronizeTableMetadata(
+            String sourceDatabaseSchemaTable, String targetDatabaseSchemaTable,
+            Connection sconn, Connection tconn,
+            String mode
+    ) {
+        JSONObject resultJSON = new JSONObject();
+        String result = "";
+        String database = null, schema = null, table = null;
+        String targetTable = null, targetSchema = null, targetDatabase = null;
+        boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
+        HttpServletRequest request = null;
+        String error = "";
+        String driver = null, targetDriver = null;
+        
+        try {
+
+            String[] tableParts = sourceDatabaseSchemaTable.split("\\.");
+            if (tableParts.length == 1) {
+                table = tableParts[0];
+            } else if (tableParts.length == 2) {
+                table = tableParts[1];
+                schema = tableParts[0];
+            } else if (tableParts.length == 3) {
+                table = tableParts[2];
+                schema = tableParts[1];
+                database = tableParts[0];
+            }
+
+            tableParts = targetDatabaseSchemaTable.split("\\.");
+            if (tableParts.length == 1) {
+                targetTable = tableParts[0];
+            } else if (tableParts.length == 2) {
+                targetTable = tableParts[1];
+                targetSchema = tableParts[0];
+            } else if (tableParts.length == 3) {
+                targetTable = tableParts[2];
+                targetSchema = tableParts[1];
+                targetDatabase = tableParts[0];
+            }
+
+            
+            
+            if (sconn != null) {
+                
+                driver = getDriver(sconn);
+                
+                if (tconn != null) {
+                    targetDriver = getDriver(tconn);
+                }
+                
+
+                String itemIdString = "\"", tableIdString = "\"", asKeyword = " AS ";
+                if (driver != null && driver.toLowerCase().contains("postgres")) {
+                    isPostgres = true;
+                }
+                if (driver != null && driver.toLowerCase().contains("mysql")) {
+                    isMySQL = true;
+                }
+                if (driver != null && driver.toLowerCase().contains("mariadb")) {
+                    isMySQL = true;
+                }
+                if (driver != null && driver.toLowerCase().contains("oracle")) {
+                    isOracle = true;
+                }
+                if (driver != null && driver.toLowerCase().contains("sqlserver")) {
+                    isSqlServer = true;
+                }
+
+
+
+
+                //        
+                // Eliminazione righe non corrispondenti
+                //
+                ArrayList<String> addingColumnsLabel = new ArrayList<String>();
+                ArrayList<String> deletingColumnsLabel = new ArrayList<String>();
+
+
+                ArrayList<String> sourceColumns = metadata.getAllColumnsAsArray(database, schema, table, sconn);
+                ArrayList<String> targetColumns = metadata.getAllColumnsAsArray(targetDatabase, targetSchema, targetTable, tconn);
+
+                for(int iCol=0; iCol<sourceColumns.size(); iCol++) {
+                    if (utility.contains(targetColumns, (String) sourceColumns.get(iCol))) {
+                    } else {
+                        addingColumnsLabel.add((String) sourceColumns.get(iCol));
+                        if (mode.contains("preview")) {
+                        } else {
+                            String field = sourceColumns.get(iCol);
+                            String type = null;
+                            String size = null;
+                            String nullable = null;
+                            String autoincrement = null;
+                            String sDefault = null;
+                            String sRemarks = null;
+
+                            // TODO: isOracle for tagert
+                            metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, schema, isOracle);
+
+                            String sqlCode = metadata.getAddColumnSQL( targetDriver, targetDatabase, targetSchema, targetTable, field, mdCol.typeName, String.valueOf(mdCol.size), mdCol.isNullable ? "y":"n", mdCol.autoIncString ? "y" : "n", mdCol.columnDef, mdCol.remarks );
+                            if(sqlCode != null) {
+                                String fSqlCode = sqlCode.replace("\n", " ");
+                                fSqlCode = fSqlCode.trim();
+                                if(fSqlCode.endsWith(";")) fSqlCode = fSqlCode.substring(0, fSqlCode.length()-1);
+                                try {
+                                    Statement stmt = sconn.createStatement();
+                                    boolean res = stmt.execute(fSqlCode);
+                                    if(!res) {
+                                        ResultSet rs = stmt.getResultSet();
+                                        if(rs != null) {
+                                            if(rs.next()) {
+                                                String sql_result = rs.getString(1);
+                                                if(sql_result != null) {
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (Exception ex) {
+                                    error += "[ SQL:"+fSqlCode+"<br/>Error:"+ex.getMessage()+"]";
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+
+                if (targetColumns != null) {
+                    for (int iCol = 0; iCol < targetColumns.size(); iCol++) {
+                        boolean found = false;
+                        if (utility.contains(sourceColumns, targetColumns.get(iCol))) {
+                        } else {
+                            deletingColumnsLabel.add(targetColumns.get(iCol));
+                            if (mode.contains("preview")) {
+                            } else {
+                            }
+                        }
+                    }
+                }
+
+                resultJSON.put("deletingCount", deletingColumnsLabel.size());
+                resultJSON.put("deletingColumns", deletingColumnsLabel);
+
+                //
+                // Aggiunta righe non trovate
+                //
+                if (sourceColumns != null) {
+                    for (int i = 0; i < sourceColumns.size(); i++) {
+                        Object sourceCoulmn = (Object) sourceColumns.get(i);
+                        {
+                            // adding source table
+                            if (mode.contains("preview")) {
+                            } else {
+                            }
+                        }
+                    }
+                }
+                if (addingColumnsLabel != null) {
+                    resultJSON.put("addingCount", addingColumnsLabel.size());
+                    resultJSON.put("adddingColumns", addingColumnsLabel);
+                }
+            }
+
+            if (error != null && !error.isEmpty()) {
+                resultJSON.put("error", utility.base64Encode(error));
+            }
+
+        } catch (Throwable e) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+        }
+
+        return resultJSON.toString();
+    }
+
 
     
     static public boolean setSchema( Connection conn, String engine, String schema ) {
