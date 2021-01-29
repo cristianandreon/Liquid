@@ -6724,6 +6724,7 @@ public class db {
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         HttpServletRequest request = null;
         String error = "";
+        String preview = "";
         String driver = null, targetDriver = null;
         
         try {
@@ -6797,40 +6798,45 @@ public class db {
                     if (utility.contains(targetColumns, (String) sourceColumns.get(iCol))) {
                     } else {
                         addingColumnsLabel.add((String) sourceColumns.get(iCol));
-                        if (mode.contains("preview")) {
-                        } else {
-                            String field = sourceColumns.get(iCol);
-                            String type = null;
-                            String size = null;
-                            String nullable = null;
-                            String autoincrement = null;
-                            String sDefault = null;
-                            String sRemarks = null;
+                        String field = sourceColumns.get(iCol);
+                        String type = null;
+                        String size = null;
+                        String nullable = null;
+                        String autoincrement = null;
+                        String sDefault = null;
+                        String sRemarks = null;
 
-                            // TODO: isOracle for tagert
-                            metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, schema, isOracle);
+                        // TODO: isOracle for tagert
+                        metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, isOracle);
 
+                        if(mdCol != null) {
                             String sqlCode = metadata.getAddColumnSQL( targetDriver, targetDatabase, targetSchema, targetTable, field, mdCol.typeName, String.valueOf(mdCol.size), mdCol.isNullable ? "y":"n", mdCol.autoIncString ? "y" : "n", mdCol.columnDef, mdCol.remarks );
                             if(sqlCode != null) {
                                 String fSqlCode = sqlCode.replace("\n", " ");
                                 fSqlCode = fSqlCode.trim();
                                 if(fSqlCode.endsWith(";")) fSqlCode = fSqlCode.substring(0, fSqlCode.length()-1);
-                                try {
-                                    Statement stmt = sconn.createStatement();
-                                    boolean res = stmt.execute(fSqlCode);
-                                    if(!res) {
-                                        ResultSet rs = stmt.getResultSet();
-                                        if(rs != null) {
-                                            if(rs.next()) {
-                                                String sql_result = rs.getString(1);
-                                                if(sql_result != null) {
+                                if (mode.contains("preview")) {
+                                    preview += fSqlCode + "\n\n";
+                                } else {
+                                    try {
+                                        Statement stmt = tconn.createStatement();
+                                        boolean res = stmt.execute(fSqlCode);
+                                        if(!res) {
+                                            ResultSet rs = stmt.getResultSet();
+                                            if(rs != null) {
+                                                if(rs.next()) {
+                                                    String sql_result = rs.getString(1);
+                                                    if(sql_result != null) {
+                                                    }
                                                 }
                                             }
                                         }
+                                    } catch (Exception ex) {
+                                        error += "[ SQL:"+fSqlCode+"<br/>Error:"+ex.getMessage()+"]";
                                     }
-                                } catch (Exception ex) {
-                                    error += "[ SQL:"+fSqlCode+"<br/>Error:"+ex.getMessage()+"]";
                                 }
+                            } else {
+                                error += "[ Failed to read metadata ]";
                             }
                         }
                     }
@@ -6845,6 +6851,7 @@ public class db {
                         } else {
                             deletingColumnsLabel.add(targetColumns.get(iCol));
                             if (mode.contains("preview")) {
+                                preview += "ALTER TABLE "+targetSchema+"."+targetTable+" DROP COLUMN "+targetColumns.get(iCol) + "\n\n";                                
                             } else {
                             }
                         }
@@ -6870,16 +6877,20 @@ public class db {
                 }
                 if (addingColumnsLabel != null) {
                     resultJSON.put("addingCount", addingColumnsLabel.size());
-                    resultJSON.put("adddingColumns", addingColumnsLabel);
+                    resultJSON.put("addingColumns", addingColumnsLabel);
                 }
             }
 
             if (error != null && !error.isEmpty()) {
                 resultJSON.put("error", utility.base64Encode(error));
             }
+            if (preview != null && !preview.isEmpty()) {
+                resultJSON.put("preview", utility.base64Encode(preview));
+            }
 
-        } catch (Throwable e) {
-            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+        } catch (Throwable th) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
+            error += "[ Fatal error :"+th.getMessage()+"]";
         }
 
         return resultJSON.toString();
@@ -6895,7 +6906,7 @@ public class db {
         
         // oracle
         if("oracle".equalsIgnoreCase(engine)) {
-            sql = "ALTER SESSION SET CURRENT_SCHEMA = "+schema+";";
+            sql = "ALTER SESSION SET CURRENT_SCHEMA = "+schema+"";
             
         // postgres
         } else if("postgres".equalsIgnoreCase(engine)) {

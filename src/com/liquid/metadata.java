@@ -864,12 +864,14 @@ public class metadata {
             } else {
                 conn.setCatalog(database);
                 String db = conn.getCatalog();
-                if(!db.equalsIgnoreCase(database)) {
-                    // set catalog not supported : connect to different DB
-                    Object [] connResult = connection.getDBConnection(database);
-                    conn = (Connection)connResult[0];
-                    String connError = (String)connResult[1];                                            
-                    connToUse = connToDB = conn;
+                if(db != null && !database.trim().isEmpty()) {
+                    if(!db.equalsIgnoreCase(database)) {
+                        // set catalog not supported : connect to different DB
+                        Object [] connResult = connection.getDBConnection(database);
+                        conn = (Connection)connResult[0];
+                        String connError = (String)connResult[1];                                            
+                        connToUse = connToDB = conn;
+                    }
                 }
             }
             if(schema == null || schema.isEmpty())
@@ -1730,10 +1732,23 @@ public class metadata {
         } else if ("mariadb".equalsIgnoreCase(driver)) {
         } else if ("postgres".equalsIgnoreCase(driver)) {
         } else if ("oracle".equalsIgnoreCase(driver)) {
+            if("DATE".equalsIgnoreCase(type)) 
+                size = null;
+            
+            String dataType = "";
+            
+            if ( scale != null && !scale.isEmpty() && size != null && !size.isEmpty()) {
+                dataType = (" " + type + "("+size+","+scale+") ");
+            } else if (size != null && !size.isEmpty()) {
+                dataType = (" " + type + "("+size+") ");
+            } else {
+                dataType = (" " + type + " ");
+            }
+            
             sql += " ADD\n";
             sql += "(" 
                     + field 
-                    + ( scale != null && !scale.isEmpty() ? (" " + type + "("+size+","+scale+") ") : (" " + type + "("+size+") ") )
+                    + dataType
                     + (nullable != null && "Y".equalsIgnoreCase(nullable) ? "" : "NOT NULL ")
                     + (sDefault != null && !sDefault.isEmpty() ? " DEFAULT " + sDefault : "")
                     + ");\n";
