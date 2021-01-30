@@ -116,7 +116,7 @@ public class utility {
         return "";
     }
 
-    static public String base64Decode(String data) {
+     static public String base64Decode(String data) {
         try {
             return base64Decode(data.getBytes());
         } catch (Throwable th) {
@@ -130,13 +130,13 @@ public class utility {
             return new String(DatatypeConverter.parseBase64Binary(new String(data)));
         } catch (Throwable th) {
             try {
-                // return new String(Base64.getDecoder().decode(data));
-                throw new Throwable(); // x java 7
+                return new String(Base64.getDecoder().decode(data));
+                // throw new Throwable(); // x java 7
             } catch (Throwable th2) {
                 try {
                     return new String(org.apache.commons.codec.binary.Base64.decodeBase64(data));
                 } catch (Throwable th3) {
-                    System.err.println("Error:" + th3.getLocalizedMessage());
+                    System.err.println("Error:" + th3.getMessage());
                 }
             }
         }
@@ -1108,11 +1108,14 @@ public class utility {
         return workspace.arrayToString(objs, prefix, postfix, separator);
     }    
     public static String jsonArrayToString(JSONArray objs, String prefix, String postfix, String separator) {
-        return jsonArrayToString(objs, prefix, postfix, separator);
+        return workspace.jsonArrayToString(objs, prefix, postfix, separator);
     }
     public static ArrayList<String> jsonArrayToArrayList(JSONArray objs, String prefix, String postfix) {
-        return jsonArrayToArrayList(objs, prefix, postfix);
+        return workspace.jsonArrayToArrayList(objs, prefix, postfix);
     }    
+    public static ArrayList<String> jsonArrayToArrayList(JSONArray objs) {
+        return workspace.jsonArrayToArrayList(objs, null, null);
+    }
     static String arrayToString(ArrayList<String> columns, String prefix, String postfix, String separator) {
         return arrayToString(columns.toArray(), prefix, postfix, separator);
     }
@@ -1201,4 +1204,20 @@ public class utility {
             return str;
         }
     }
+    
+    public static String createRegexFromGlob(String glob) {
+        StringBuilder out = new StringBuilder("^");
+        for(int i = 0; i < glob.length(); ++i) {
+            final char c = glob.charAt(i);
+            switch(c) {
+                case '*': out.append(".*"); break;
+                case '?': out.append('.'); break;
+                case '.': out.append("\\."); break;
+                case '\\': out.append("\\\\"); break;
+                default: out.append(c);
+            }
+        }
+        out.append('$');
+        return out.toString();
+    }    
 }

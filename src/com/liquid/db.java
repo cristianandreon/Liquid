@@ -6664,9 +6664,9 @@ public class db {
      *
      * @param jdbcTarget the target connection data (JDBCSource)
      *
-     * @param mode can be a list of these values: "mirror" (default mode) "all"
-     * (allow to process all rows, if no filters defined) "preview" (report the
-     * differences without perform any operations)
+     * @param mode can be a list of these values: "mirror" (default mode) "all" (allow to process all rows, if no filters defined) 
+     *  "preview" (report the differences without perform any operations)
+     *  "deepMode" (compare filed's size, default, remarks, nullable, precision, scale)
      *
      * @return the detail of operation the operation, if not preview mode as {
      * "addedColumns":[ 1, 2, 3, ... ] ,"addedCount":n ,"deletedColumns":[ 1, 2, 3, ...
@@ -6791,14 +6791,109 @@ public class db {
                 ArrayList<String> deletingColumnsLabel = new ArrayList<String>();
 
 
+                if (mode.contains("callback"))
+                    Callback.send("Reading source fields " + schema + "."+ table + "...");                
                 ArrayList<String> sourceColumns = metadata.getAllColumnsAsArray(database, schema, table, sconn);
+                
+                
+                if (mode.contains("callback"))
+                    Callback.send("Reading target fields " + targetSchema + "."+ targetTable + "...");                
                 ArrayList<String> targetColumns = metadata.getAllColumnsAsArray(targetDatabase, targetSchema, targetTable, tconn);
 
+                
+                
                 for(int iCol=0; iCol<sourceColumns.size(); iCol++) {
-                    if (utility.contains(targetColumns, (String) sourceColumns.get(iCol))) {
+                    String field = sourceColumns.get(iCol);
+                    
+                    if (mode.contains("callback"))
+                        Callback.send("Comparing fields " + (iCol+1) + "/"+ sourceColumns.size() + "...");
+                    
+                    if (utility.contains(targetColumns, (String) field)) {
+                        // "deepMode" (compare filed's size, default, remarks, nullable, precision, scale)
+                        if (mode.contains("deepMode")) {
+                            boolean isFieldChanged = false;
+                            String sTypeName = null;
+                            String sNullable = null;
+                            String sColumnDef = null;
+                            String sSize = null;
+                            String sRemarks = null;
+                            String sDigits = null;
+
+                            if (mode.contains("callback"))
+                                Callback.send("Reading metadata on "+schema+"."+table+" ...");
+                            
+                            // TODO: isOracle for tagert
+                            metadata.MetaDataCol mdColS = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, isOracle);
+                            metadata.MetaDataCol mdColT = (metadata.MetaDataCol) metadata.readTableMetadata(tconn, targetDatabase, targetSchema, targetTable, field, isOracle);
+                            if(mdColS.size != mdColT.size) {
+                                isFieldChanged = true;
+                                sSize = String.valueOf(mdColT.size);
+                            }
+                            if(mdColS.isNullable != mdColT.isNullable) {
+                                isFieldChanged = true;
+                                sNullable = String.valueOf(mdColT.isNullable);
+                            }
+                            if(!mdColS.datatype.equalsIgnoreCase(mdColT.datatype)) {
+                                isFieldChanged = true;
+                                sTypeName = String.valueOf(mdColT.datatype);
+                            }
+                            if(mdColS.digits != mdColT.digits) {
+                                isFieldChanged = true;
+                                sDigits = String.valueOf(mdColT.digits);
+                            }
+                            if(mdColS.columnDef != null) {
+                                if(!mdColS.columnDef.equalsIgnoreCase(mdColT.columnDef)) {
+                                    isFieldChanged = true;
+                                    sColumnDef = mdColT.columnDef;
+                                }
+                            } else if(mdColT.columnDef != null && !mdColT.columnDef.isEmpty()) {
+                                isFieldChanged = true;
+                                sColumnDef = mdColT.columnDef;
+                            }
+                            if(mdColS.remarks != null) {
+                                if(mdColS.remarks.equalsIgnoreCase(mdColT.remarks)) {
+                                    isFieldChanged = true;
+                                    sRemarks = mdColT.remarks;
+                                }
+                            } else if(mdColT.remarks != null && !mdColT.remarks.isEmpty()) {
+                                isFieldChanged = true;
+                                sRemarks = mdColT.remarks;
+                            }
+                            if(isFieldChanged) {
+                                if (mode.contains("callback"))
+                                    Callback.send("Preparing sql on "+targetTable+"...");
+                                String sqlCode = metadata.getUpdateColumnSQL( targetDriver, targetDatabase, targetSchema, targetTable, field, sTypeName, sSize, sDigits, sNullable, sColumnDef, sRemarks );
+                                if(sqlCode != null) {
+                                    String fSqlCode = sqlCode.replace("\n", " ");
+                                    fSqlCode = fSqlCode.trim();
+                                    if(fSqlCode.endsWith(";")) fSqlCode = fSqlCode.substring(0, fSqlCode.length()-1);
+                                    if (mode.contains("preview")) {
+                                        preview += fSqlCode + "\n\n";
+                                    } else {
+                                        try {
+                                            if (mode.contains("callback"))
+                                                Callback.send("Updating "+targetTable+"...");
+                                            Statement stmt = tconn.createStatement();
+                                            boolean res = stmt.execute(fSqlCode);
+                                            if(!res) {
+                                                ResultSet rs = stmt.getResultSet();
+                                                if(rs != null) {
+                                                    if(rs.next()) {
+                                                        String sql_result = rs.getString(1);
+                                                        if(sql_result != null) {
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } catch (Exception ex) {
+                                            error += "[ SQL:"+fSqlCode+"<br/>Error:"+ex.getMessage()+"]";
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else {
                         addingColumnsLabel.add((String) sourceColumns.get(iCol));
-                        String field = sourceColumns.get(iCol);
                         String type = null;
                         String size = null;
                         String nullable = null;
@@ -6843,6 +6938,8 @@ public class db {
                 }
 
 
+                if (mode.contains("callback"))
+                    Callback.send("Analyzing missing fields " + schema + "."+ table + "...");                
 
                 if (targetColumns != null) {
                     for (int iCol = 0; iCol < targetColumns.size(); iCol++) {
@@ -6888,6 +6985,9 @@ public class db {
                 resultJSON.put("preview", utility.base64Encode(preview));
             }
 
+        if (mode.contains("callback"))
+            Callback.send("Done...");                
+            
         } catch (Throwable th) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
             error += "[ Fatal error :"+th.getMessage()+"]";

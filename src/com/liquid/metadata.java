@@ -1768,5 +1768,63 @@ public class metadata {
         
         return sql;
     }
+
+
+    static public String getUpdateColumnSQL(String driver, String database, String schema, String table, String field, String type, String size, String scale, String nullable, String sDefault, String sRemarks) {
+        String sql = "";
+        String schemaTable = ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+
+        if ("mysql".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + schemaTable;
+        } else if ("mariadb".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + schemaTable;
+        } else if ("postgres".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + schemaTable;
+        } else if ("oracle".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + schemaTable;
+        } else if ("sqlserver".equalsIgnoreCase(driver)) {
+            sql = "ALTER TABLE\n" + schemaTable;
+        }
+
+        if ("mysql".equalsIgnoreCase(driver)) {
+        } else if ("mariadb".equalsIgnoreCase(driver)) {
+        } else if ("postgres".equalsIgnoreCase(driver)) {
+        } else if ("oracle".equalsIgnoreCase(driver)) {
+            if("DATE".equalsIgnoreCase(type)) 
+                size = null;
+            
+            String dataType = "";
+            
+            if ( scale != null && !scale.isEmpty() && size != null && !size.isEmpty()) {
+                dataType = (" " + type + "("+size+","+scale+") ");
+            } else if (size != null && !size.isEmpty()) {
+                dataType = (" " + type + "("+size+") ");
+            } else if (type != null && !type.isEmpty()) {
+                dataType = (" " + type + " ");
+            }
+            
+            sql += " MODIFY\n";
+            sql += "(" 
+                    + field 
+                    + (dataType != null && !dataType.isEmpty() ? dataType : "")
+                    + (nullable != null && "Y".equalsIgnoreCase(nullable) ? "NULL " : ( nullable != null && !"Y".equalsIgnoreCase(nullable) ? "NOT NULL " : ""))
+                    + (sDefault != null && !sDefault.isEmpty() ? " DEFAULT " + sDefault : "")
+                    + ");\n";
+        }
+        
+        if(sRemarks != null && !sRemarks.isEmpty()) {
+            sql += "\n";
+            if ("mysql".equalsIgnoreCase(driver)) {
+            } else if ("mariadb".equalsIgnoreCase(driver)) {
+            } else if ("postgres".equalsIgnoreCase(driver)) {
+            } else if ("oracle".equalsIgnoreCase(driver)) {
+                sql += "COMMENT ON COLUMN "+schemaTable+"."+field
+                        +" IS "+sRemarks;
+            } else if ("sqlserver".equalsIgnoreCase(driver)) {
+            }
+        }
+        
+        return sql;
+    }
     
 }

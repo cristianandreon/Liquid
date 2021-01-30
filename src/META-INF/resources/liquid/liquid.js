@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.49   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.50   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  27-01-2020
 //  TODO : see trello.com
 //
@@ -6813,14 +6813,14 @@ var Liquid = {
     handleFormText:function(childNode) {
         if(childNode.name.toLowerCase() === 'redirect' || childNode.id.toLowerCase() === 'redirect') {
             if(childNode.value === '' || childNode.value === './') {
-                return window.location.href;
+                return btoa(window.location.href);
             } else if(childNode.value === '/') {
-                return window.location.origin;
+                return btoa(window.location.origin);
             } else {
-                return childNode.value;
+                return btoa(childNode.value);
             }
         } else {
-            return childNode.value;
+            return btoa(childNode.value);
         }
     },    
     formToObjectExchange:function(obj, targetObj) {
@@ -7351,6 +7351,7 @@ var Liquid = {
         var obj = liquidCommandParams.obj;
         var command = liquidCommandParams.command;
         var params = liquidCommandParams.params;
+        var async = isDef(command) ? (isDef(command.async) ? command.async : true) : true;
         var retVal = true;
         
         if(command.server) {
@@ -7366,10 +7367,18 @@ var Liquid = {
                 }
 
                 // Informazioni sul comando
-                var commandData = { name:command.name,  server:command.server, clientAfter:command.clientAfter, 
+                var commandData = { name:command.name, server:command.server, clientAfter:command.clientAfter, 
                                     img:command.img, size:command.size, text:command.text, labels:command.labels, isNative:command.isNative
                                     };
-                var clientData = JSON.stringify(commandData);                            
+                var clientData = JSON.stringify(commandData);
+                
+                if(!async) {
+                    if(isDef(obj)) {
+                        obj.filter = "grayscale(.5) opacity(0.5) blur(3px)";
+                        obj.disabled = true;
+                        obj.style.pointerEvents = 'none';
+                    }
+                }
 
                 // Send the request
                 Liquid.sendRequest(
@@ -7382,7 +7391,7 @@ var Liquid = {
                         + '&clientData=' + encodeURI(clientData)
                         + '&controlId=' + (liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : ""))
                         + '&owner=' + (typeof liquid !== 'undefined' && liquid ? (typeof liquid.tableJson !== 'undefined' && liquid.tableJson ? liquid.tableJson.owner : "" ) : "")
-                    , false
+                    , async
                     , "{\"params\":" + (params ? JSON.stringify(params) : "[]") + "}"
                     , Liquid.onCommandOnReadyStateChange
                     , "command "+command.name+" on "+liquid.controlId
@@ -7421,6 +7430,7 @@ var Liquid = {
         var obj = liquidCommandParams.obj;
         var command = liquidCommandParams.command;
         var params = liquidCommandParams.params;
+        var async = isDef(command) ? (isDef(command.async) ? command.async : true) : true;
         
         if(command.name) {
             var eventName = "after" + command.name + "";
@@ -7431,6 +7441,15 @@ var Liquid = {
                 console.error(e);
             }
         }
+        
+        if(!async) {
+            if(isDef(obj)) {
+                obj.filter = "";
+                obj.disabled = false;
+                obj.style.pointerEvents = '';
+            }
+        }
+        
         var refreshAllDone = false;
         var refreshDone = false;
         var isSystem = false;
