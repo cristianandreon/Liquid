@@ -833,8 +833,8 @@ public class db {
                     usingDatabase.add("USE " + tableIdString + database + tableIdString + "");
                     // usingDatabase.add("SET global sql_mode='ANSI_QUOTES'"); // altera tutte le query
                 } else if (isPostgres) {
-                    // To test
-                    usingDatabase.add("SET search_path TO \"" + database + "\",public");
+                    // in postgres cannot chamge database : open new connection for do that
+                    // usingDatabase.add("SET search_path TO \"" + schema + "\",public");
                     // usingDatabase = "\\c \""+database+"\"";
                 } else if (isOracle) {
                     // Only schema cha be changed (ALTER SESSION SET current_schema = other_user;)
@@ -1831,7 +1831,9 @@ public class db {
                     if (ich > ichs) {
                         filterOp = filterValue.substring(ichs, ich);
                         filterValue = filterValue.substring(ich);
-                    } else {
+                    } 
+                    
+                    {
                         int commaIndex = filterValue.indexOf(",");
                         if (commaIndex == 0 || commaIndex > 0 && filterValue.charAt(commaIndex - 1) != '\\') {
                             filterOp = "IN";
@@ -1962,14 +1964,18 @@ public class db {
                         //
                         // compute the value by metadata
                         //
-                        Object[] fres = format_db_value(tbl_wrk, type, nullable, filterValue, filterOp);
-                        filterValue = (String) fres[0];
-                        int filterValueType = (int) fres[1];
+                        if ("IN".equalsIgnoreCase(filterOp)) {
+                            // no format to perform
+                        } else {
+                            Object[] fres = format_db_value(tbl_wrk, type, nullable, filterValue, filterOp);
+                            filterValue = (String) fres[0];
+                            int filterValueType = (int) fres[1];
 
-                        if (filterValueType == 0) {
-                            // expression
-                            preFix = "";
-                            postFix = "";
+                            if (filterValueType == 0) {
+                                // expression
+                                preFix = "";
+                                postFix = "";
+                            }
                         }
 
                         // is operator logic not 'OR' ? closing parent
