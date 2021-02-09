@@ -45,7 +45,7 @@ public class scpManager {
         return retVal;
     }
     
-    public static boolean uploadFile(String user, String password, String host, int port, String remoteFile, String localFile) throws JSchException, IOException {
+    public static boolean uploadFile(String user, String password, String host, int port, String remoteFile, String localFile) throws JSchException, IOException, Exception {
         boolean retVal = false;
         
         Session session = createSession(user, password, host, port);
@@ -203,7 +203,7 @@ public class scpManager {
         return retVal;
     }
 
-    public static long getRemoteFileSize(String user, String password, String host, int port, String remoteFileName) throws JSchException, IOException {
+    public static long getRemoteFileSize(String user, String password, String host, int port, String remoteFileName) throws JSchException, IOException, Exception {
         Session session = createSession(user, password, host, port);
         long filesize = 0L;
         
@@ -224,40 +224,46 @@ public class scpManager {
         out.write(buf, 0, 1);
         out.flush();
 
-        while (true) {
-            int c = checkAck(in);
-            if (c != 'C') {
-                break;
-            }
-
-            // read '0644 '
-            in.read(buf, 0, 5);
-
+        try {
             while (true) {
-                if (in.read(buf, 0, 1) < 0) {
-                    // error
+                int c = checkAck(in);
+                if (c != 'C') {
                     break;
                 }
-                if (buf[0] == ' ') break;
-                filesize = filesize * 10L + (long) (buf[0] - '0');
-            }
 
-            String file = null;
-            for (int i = 0; ; i++) {
-                in.read(buf, i, 1);
-                if (buf[i] == (byte) 0x0a) {
-                    file = new String(buf, 0, i);
-                    break;
+                // read '0644 '
+                in.read(buf, 0, 5);
+
+                while (true) {
+                    if (in.read(buf, 0, 1) < 0) {
+                        // error
+                        break;
+                    }
+                    if (buf[0] == ' ') break;
+                    filesize = filesize * 10L + (long) (buf[0] - '0');
                 }
+
+                String file = null;
+                for (int i = 0; ; i++) {
+                    in.read(buf, i, 1);
+                    if (buf[i] == (byte) 0x0a) {
+                        file = new String(buf, 0, i);
+                        break;
+                    }
+                }
+                
+                // System.out.println("file-size=" + filesize + ", file=" + file);
+                return (long)filesize;
             }
-
-
-
-            channel.disconnect();
-            session.disconnect();
-        
-            // System.out.println("file-size=" + filesize + ", file=" + file);
-            return (long)filesize;
+            
+        } catch (Exception e) {
+            System.out.println(e);
+            filesize = 0;
+        } finally {
+            if(channel != null)
+                channel.disconnect();
+            if(session != null)
+                session.disconnect();
         }
         
         return 0L;
@@ -265,7 +271,7 @@ public class scpManager {
 
     
     
-    public static int checkAck(InputStream in) throws IOException {
+    public static int checkAck(InputStream in) throws IOException, Exception {
         int b = in.read();
         // b may be 0 for success,
         //          1 for error,
@@ -284,16 +290,18 @@ public class scpManager {
             while (c != '\n');
             if (b == 1) { // error
                 System.out.print(sb.toString());
+                throw new Exception(sb.toString());
             }
             if (b == 2) { // fatal error
                 System.out.print(sb.toString());
+                throw new Exception(sb.toString());
             }
         }
         return b;
     }
 
 
-    private static boolean copyLocalToRemote(Session session, String from, String to) throws JSchException, IOException {
+    private static boolean copyLocalToRemote(Session session, String from, String to) throws JSchException, IOException, Exception {
         boolean retVal = false;
         boolean ptimestamp = true;
 
@@ -345,7 +353,8 @@ public class scpManager {
         out.flush();
 
         if (checkAck(in) != 0) {
-            System.exit(0);
+            // System.exit(0);
+            return false;
         }
 
         // send a content of lfile
@@ -363,7 +372,8 @@ public class scpManager {
         out.flush();
 
         if (checkAck(in) != 0) {
-            System.exit(0);
+            // System.exit(0);
+            return false;
         }
         out.close();
 

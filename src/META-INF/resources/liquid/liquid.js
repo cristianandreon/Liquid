@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.50   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.51   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  27-01-2020
 //  TODO : see trello.com
 //
@@ -12528,6 +12528,37 @@ var Liquid = {
                                         } else if(filterMode == 'READWRITE' || filterMode == 'WRITE' || filterMode == 'RW') {
                                             element.disabled = false;
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                console.error("ERROR: setFilterMode() : column '"+columnName+"' not found in control:"+liquid.controlId);
+            }
+        } else {
+            console.error("ERROR: setFilterMode() : control '"+liquid.controlId+"' not found");
+        }
+    },
+    setFilterValues(obj, columnName, values) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var column = Liquid.getColumn(liquid, columnName);
+            if(column) {
+                var filtersJson = liquid.filtersJson[liquid.curFilter];
+                var bFoundFilter = false;
+                for(var iFilter = 0; iFilter<liquid.filtersJson.length; iFilter++) {
+                    var filtersJson = liquid.filtersJson[iFilter];
+                    if(filtersJson) {
+                        for (var i=0; i<filtersJson.columns.length; i++) {
+                            if(filtersJson.columns[i].name == columnName) {
+                                filtersJson.columns[i].valuesList = values;                               
+                                // TODO: Uppdate rlemento html
+                                var element = document.getElementById(liquid.controlId + ".filters." +(iFilter+1) + "." + filtersJson.columns[i].runtimeName + ".filter");
+                                if(element) {
+                                    bFoundFilter = true;
+                                    if(isDef(valuesList)) {
                                     }
                                 }
                             }

@@ -284,7 +284,7 @@ public class sshManager {
     }
     
     
-    static String copy_file_to_user_folder(String ip, String usr, String psw, String remoteFile, String tempFolder) throws InterruptedException {
+    static public String copy_file_to_user_folder(String ip, String usr, String psw, String remoteFile, String tempFolder) throws InterruptedException {
         sshManager ssh = new sshManager();
         ssh.connect(ip, usr, psw);
         String cmd = " sudo su -";
@@ -305,7 +305,7 @@ public class sshManager {
         return newRemoteFile;
     }
     
-    static boolean remove_file_from_user_folder(String ip, String usr, String psw, String remoteFile) throws InterruptedException {
+    static public boolean remove_file_from_user_folder(String ip, String usr, String psw, String remoteFile) throws InterruptedException {
         sshManager ssh = new sshManager();
         ssh.connect(ip, usr, psw);
         String cmd = " sudo su -";
@@ -321,4 +321,35 @@ public class sshManager {
         return true;
     }
     
+    public boolean create_folders(String folder, String user) throws InterruptedException {
+        
+        String [] folders = folder.split("/");        
+        String sCmd = null, baseFolder = "";
+        
+        for (int i=0; i<folders.length; i++) {
+            
+            try {
+                
+                if(!"home".equalsIgnoreCase(folders[i]) && !user.equalsIgnoreCase(folders[i]) && !"".equalsIgnoreCase(folders[i])) {
+                    sCmd = "mkdir -p " + baseFolder+""+folders[i];
+                    cmd(sCmd);
+                    removeLastCommand();
+
+                    sCmd = "chown " + user + " " + baseFolder+""+folders[i] + "";
+                    cmd(sCmd);
+                    removeLastCommand();
+
+                    sCmd = "chmod " + "744" + " " + baseFolder+""+folders[i] + "";
+                    cmd(sCmd); 
+                    removeLastCommand();
+                }
+                baseFolder += folders[i] + "/";
+                
+            } catch (Exception e) {
+                
+            }
+        }
+        
+        return true;
+    }    
 }
