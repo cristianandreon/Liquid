@@ -984,13 +984,18 @@ public class db {
                         }
 
                         if (preFilters != null) {
-
-                            sWhere = process_filters_json(
-                                    tbl_wrk, table, cols,
-                                    isOracle, isMySQL, isPostgres, isSqlServer,
-                                    sWhere, preFilters, null, leftJoinsMap,
-                                    tableIdString, itemIdString
-                            );
+                            try {
+                                sWhere = process_filters_json(
+                                        tbl_wrk, table, cols,
+                                        isOracle, isMySQL, isPostgres, isSqlServer,
+                                        sWhere, preFilters, null, leftJoinsMap,
+                                        tableIdString, itemIdString
+                                );
+                            } catch (Exception e) {
+                                error += "[preFilters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId+"]";
+                                System.err.println("// pre Filters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId);
+                            }
+                            
                         }
                     }
                 }
