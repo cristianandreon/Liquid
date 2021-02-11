@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.51   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.52   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  27-01-2020
 //  TODO : see trello.com
 //
@@ -9803,14 +9803,18 @@ var Liquid = {
             var inputPlaceholder = (filterObj.placeholder ? "placeholder=\"" + filterObj.placeholder + "\"" : "");
             var inputRequired = (filterObj.required ? "required=\"" + filterObj.required + "\"" : "");
             var inputAutocomplete = (filterObj.autocomplete ? "autocomplete=\"" + filterObj.autocomplete + "\"" : "");
-            var innerHTML = "<table style=\"width:100%; table-layout:fixed\"><tr>"
-                    + "<td class=\"liquidFilterLabel\" id=\""+(liquid.controlId+".filters."+filterGroupIndex+"."+filterObj.name+".label")+"\">" + Liquid.getFilterLabel(liquid, filterObj) + "</td>"
-                    + "<td class=\"liquidFilterInputTd\" id=\""+(liquid.controlId+".filters."+filterGroupIndex+"."+filterObj.name+".td")+"\">";
+            
+            var innerHTML = "";
 
             // var filterId = liquid.controlId + ".filters." +filterGroupIndex+"."+ filterObj.runtimeName + ".filter";
             
             var codeOnChange = (liquid.tableJson.filterMode == 'client' || liquid.tableJson.filterMode == "dynamic" ? " onkeyup=\"Liquid.onFilterChange(event, '"+filterObj.linkedContainerId+"');\" onchange=\"Liquid.onFilterChange(event, '"+filterObj.linkedContainerId+"');\"" : "");
 
+            if(isDef(parentNode)) {                
+                innerHTML = "<table style=\"width:100%; table-layout:fixed\"><tr>"
+                                    + "<td class=\"liquidFilterLabel\" id=\""+(liquid.controlId+".filters."+filterGroupIndex+"."+filterObj.name+".label")+"\">" + Liquid.getFilterLabel(liquid, filterObj) + "</td>"
+                                    + "<td class=\"liquidFilterInputTd\" id=\""+(liquid.controlId+".filters."+filterGroupIndex+"."+filterObj.name+".td")+"\">";
+            }
 
             if(filterObj.valuesList || filterObj.values) {
                 var values = filterObj.valuesList ? filterObj.valuesList : filterObj.values;
@@ -9857,14 +9861,22 @@ var Liquid = {
                             + "<td class=\"liquidFilterImg\">"
                             + (liquid.tableJson.filtersSearch !== false ? searchCode : "")
                             + "</td>"
-                            + "</tr></table>";
+                            + "</tr>";
+                    
                 } else {
                     // lookup created later...
                     innerHTML += "<div id=\"" + filterObj.linkedContainerId + "\"></div>";
                 }
             }
-            parentNode.innerHTML = innerHTML;
+            
+            if(isDef(parentNode)) {
+                innerHTML += "</table>";
+                parentNode.innerHTML = innerHTML;
+            }
+            
+            return innerHTML;
         }
+        return null;
     },
     createCommandButton:function(liquid, command, className) {
         if(command) {
@@ -12554,11 +12566,17 @@ var Liquid = {
                         for (var i=0; i<filtersJson.columns.length; i++) {
                             if(filtersJson.columns[i].name == columnName) {
                                 filtersJson.columns[i].valuesList = values;                               
-                                // TODO: Uppdate rlemento html
+                                // Uppdating elemento html
                                 var element = document.getElementById(liquid.controlId + ".filters." +(iFilter+1) + "." + filtersJson.columns[i].runtimeName + ".filter");
                                 if(element) {
                                     bFoundFilter = true;
-                                    if(isDef(valuesList)) {
+                                    if(isDef(values)) {
+                                        if(typeof values === "object") {
+                                            var html = Liquid.createFilterObject(liquid, null, iFilter, filtersJson.columns[i]);
+                                            element.parentNode.innerHTML = html;
+                                        } else {
+                                            console.error("ERROR: setFilterValues() : values must be an object");
+                                        }
                                     }
                                 }
                             }
@@ -12566,10 +12584,10 @@ var Liquid = {
                     }
                 }
             } else {
-                console.error("ERROR: setFilterMode() : column '"+columnName+"' not found in control:"+liquid.controlId);
+                console.error("ERROR: setFilterValues() : column '"+columnName+"' not found in control:"+liquid.controlId);
             }
         } else {
-            console.error("ERROR: setFilterMode() : control '"+liquid.controlId+"' not found");
+            console.error("ERROR: setFilterValues() : control '"+liquid.controlId+"' not found");
         }
     },
     onResetFilter:function(obj_id) {

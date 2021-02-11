@@ -1219,5 +1219,37 @@ public class utility {
         }
         out.append('$');
         return out.toString();
-    }    
+    }
+    
+    
+    /**
+     * Uopdate column attribute inside the control
+     * @param controlJSON   the control (JSONObject)
+     * @param columnName    the name of the updating column (Srting)
+     * @param attribute     the attribute to update (Srting)
+     * @param value         the nre value (Object)
+     * @return
+     * @throws JSONException 
+     */
+    static public boolean setControlColumn(JSONObject controlJSON, String columnName, String attribute, Object value) throws JSONException {
+    	boolean retVal = false;
+        if (controlJSON != null && columnName != null) {
+            if (controlJSON.has("columns")) {
+            	JSONArray columns = controlJSON.getJSONArray("columns");
+                for(int i=0; i<columns.length(); i++) {
+                	JSONObject column = columns.getJSONObject(i);
+                	if (controlJSON.has("name")) {
+                		if(columnName.equalsIgnoreCase(column.getString("name"))) {
+                            if (attribute != null) {
+                            	column.put(attribute, value);
+                            	retVal = true;
+                            }
+                		}
+                	}
+                }
+            }
+        }
+        return retVal;
+    }
+        
 }

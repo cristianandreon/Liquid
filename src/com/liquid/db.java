@@ -1985,7 +1985,16 @@ public class db {
                         }
 
 
+                        //
+                        // Escaping chars
+                        //
+                        if(filterValue.indexOf("'") >= 0) {
+                        	filterValue = filterValue.replace("'", "''");
+                        }
+                        
+                        //
                         // add where clausole
+                        //
                         sWhere += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName + itemIdString) : (filterName)) + sensitiveCasePostOp
                                 + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=")
                                 + preFix + (filterValue != null ? filterValue : "") + postFix;
