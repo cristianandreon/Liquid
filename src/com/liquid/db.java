@@ -1716,6 +1716,8 @@ public class db {
                 if (filterName != null && filterValue != null) {
                     String preFix = "'";
                     String postFix = "'";
+                    String preFixCol = "";
+                    String postFixCol = "";
                     String[] colParts = filterName.split("\\.");
                     boolean bFoundCol = false;
                     boolean filterDisabled = false;
@@ -1969,17 +1971,24 @@ public class db {
                         //
                         // compute the value by metadata
                         //
+                        int filterValueType = (int)1;
                         if ("IN".equalsIgnoreCase(filterOp)) {
                             // no format to perform
                         } else {
                             Object[] fres = format_db_value(tbl_wrk, type, nullable, filterValue, filterOp);
                             filterValue = (String) fres[0];
-                            int filterValueType = (int) fres[1];
+                            filterValueType = (int) fres[1];
 
                             if (filterValueType == 0) {
                                 // expression
                                 preFix = "";
                                 postFix = "";
+                            } else if (filterValueType == -1) {
+                                // truncate
+                                preFix = "";
+                                postFix = "";
+                                preFixCol = "TRUNC(";
+                                postFixCol = ")";
                             }
                         }
 
@@ -1993,14 +2002,16 @@ public class db {
                         //
                         // Escaping chars
                         //
-                        if(filterValue.indexOf("'") >= 0) {
-                        	filterValue = filterValue.replace("'", "''");
+                        if (filterValueType == 1) {
+                            if(filterValue.indexOf("'") >= 0) {
+                                    filterValue = filterValue.replace("'", "''");
+                            }
                         }
                         
                         //
                         // add where clausole
                         //
-                        sWhere += sensitiveCasePreOp + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName + itemIdString) : (filterName)) + sensitiveCasePostOp
+                        sWhere += sensitiveCasePreOp + preFixCol + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName + itemIdString) : (filterName)) + postFixCol + sensitiveCasePostOp
                                 + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=")
                                 + preFix + (filterValue != null ? filterValue : "") + postFix;
 
@@ -2018,8 +2029,7 @@ public class db {
                             for (int ip=0; ip<parentCount; ip++) {
                                 sWhere += ")";
                             }
-                        }
-                        
+                        }                        
                     }
                 }
             } catch (Exception e) {
@@ -5484,34 +5494,35 @@ public class db {
                 // refine
                 if (isOracle || isPostgres) {
                     if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
-                        value = "TO_DATE('" + value + "', 'YYYY-MM-DD HH24:MI:SS')";
-                        valueType = 0; // is an expression
-                        // > of means at the end of the day
-                        /*
-                        if(value != null && value.length() <= 10) {
-                        	if(">=".equalsIgnoreCase(operator) || ">".equalsIgnoreCase(operator)) {
-                        		value += "+1";
+                    	if(value.endsWith(" 0:0:0")) {
+                            value = "TO_DATE('" + value.substring(0, value.length()-6) + "','YYYY-MM-DD')";
+                            valueType = -1; // truncate
+                    	} else if(value.length() > 9) {
+                            value = "TO_DATE('" + value + "','YYYY-MM-DD HH24:MI:SS')";
+                            valueType = 0; // is an expression
+                    	} else {
+                            value = "TO_DATE('" + value + "','YYYY-MM-DD')";
+                            valueType = 0; // is an expression
                         	}
-                        }
-                        */
                     } else if (colTypes == 91) { // date
-                        value = "TO_DATE('" + value + "', 'YYYY-MM-DD')";
+                    	if(value.length() > 9) value = value.substring(0, 9);
+                        value = "TO_DATE('" + value + "','YYYY-MM-DD')";
                         valueType = 0; // is an expression
                     }
                 } else if (isMySQL) {
                     if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
-                        value = "STR_TO_DATE('" + value + "', '%Y-%m-%d %H:%i:%s')";
-                        valueType = 0; // is an expression
-                        // > of means at the end of the day
-                        /*
-                        if(value != null && value.length() <= 10) {
-                        	if(">=".equalsIgnoreCase(operator) || ">".equalsIgnoreCase(operator)) {
-                        		value += "+1";
+                    	if(value.endsWith(" 0:0:0")) {
+                            	value = "STR_TO_DATE('" + value.substring(0, value.length()-6) + "','%Y-%m-%d')";
+                            valueType = -1; // truncate
+                    	} else if(value.length() > 9) {
+                            value = "STR_TO_DATE('" + value + "','%Y-%m-%d %H:%i:%s')";
+                            valueType = 0; // is an expression
+                    	} else {
+                    		value = "STR_TO_DATE('" + value + "','%Y-%m-%d')";
+                            valueType = 0; // is an expression
                         	}
-                        }
-                        */
                     } else if (colTypes == 91) { // date
-                        value = "STR_TO_DATE('" + value + "', '%Y-%m-%d')";
+                        value = "STR_TO_DATE('" + value + "','%Y-%m-%d')";
                         valueType = 0; // is an expression
                     }
                 } else if (isSqlServer) {
@@ -6816,6 +6827,13 @@ public class db {
                 ArrayList<String> sourceColumns = metadata.getAllColumnsAsArray(database, schema, table, sconn);
                 
                 
+                if(targetDatabase != null && !targetDatabase.isEmpty()) {                    
+                } else targetDatabase = database;
+                if(targetSchema != null && !targetSchema.isEmpty()) {                    
+                } else targetSchema = schema;
+                if(targetTable != null && !targetTable.isEmpty()) {                    
+                } else targetTable = table;
+                
                 if (mode.contains("callback"))
                     Callback.send("Reading target fields " + targetSchema + "."+ targetTable + "...");                
                 ArrayList<String> targetColumns = metadata.getAllColumnsAsArray(targetDatabase, targetSchema, targetTable, tconn);
@@ -6931,7 +6949,7 @@ public class db {
                                 fSqlCode = fSqlCode.trim();
                                 if(fSqlCode.endsWith(";")) fSqlCode = fSqlCode.substring(0, fSqlCode.length()-1);
                                 if (mode.contains("preview")) {
-                                    preview += fSqlCode + "\n\n";
+                                    preview += fSqlCode + ";\n\n";
                                 } else {
                                     try {
                                         Statement stmt = tconn.createStatement();

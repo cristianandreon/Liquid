@@ -331,15 +331,15 @@ public class sshManager {
             try {
                 
                 if(!"home".equalsIgnoreCase(folders[i]) && !user.equalsIgnoreCase(folders[i]) && !"".equalsIgnoreCase(folders[i])) {
-                    sCmd = "mkdir -p " + baseFolder+""+folders[i];
+                    sCmd = " mkdir -p " + baseFolder+""+folders[i];
                     cmd(sCmd);
                     removeLastCommand();
 
-                    sCmd = "chown " + user + " " + baseFolder+""+folders[i] + "";
+                    sCmd = " chown " + user + " " + baseFolder+""+folders[i] + "";
                     cmd(sCmd);
                     removeLastCommand();
 
-                    sCmd = "chmod " + "744" + " " + baseFolder+""+folders[i] + "";
+                    sCmd = " chmod " + "744" + " " + baseFolder+""+folders[i] + "";
                     cmd(sCmd); 
                     removeLastCommand();
                 }
