@@ -8,12 +8,10 @@ package com.liquid;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
-import ch.ethz.ssh2.ChannelCondition;
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
@@ -27,7 +25,7 @@ import java.util.logging.Level;
  */
 public class sshManager {
 
-    public long delayTimeMs = 500;
+    public long delayTimeMs = 250;
 
     private Connection conn = null;
     private Session sess = null;
@@ -232,18 +230,24 @@ public class sshManager {
                     System.err.print(brErr.readLine());
                 }
 
+
+
                 writer.write(command);
                 writer.flush();
 
                 Thread.sleep(delayTimeMs);
-
+                
                 if (param != null) {
                     if (param.lastIndexOf("\n") != command.length() - 1) {
                         param += "\n";
                     }
                     sess.getStdin().write(param.getBytes());
+                    sess.getStdin().flush();
                 }
 
+                Thread.sleep(delayTimeMs);
+                
+                
                 long timeout = 10000L;
                 // sess.waitForCondition(ChannelCondition.TIMEOUT | ChannelCondition.CLOSED | ChannelCondition.EOF | ChannelCondition.EXIT_STATUS, timeout);
                 // int r = sess.waitUntilDataAvailable(timeout);
@@ -277,6 +281,7 @@ public class sshManager {
                 // sess = null;
 
             } catch (IOException e) {
+                System.err.print("cmd() error:"+e.getMessage());   
                 return null;
             }
         }
@@ -285,38 +290,48 @@ public class sshManager {
     
     
     static public String copy_file_to_user_folder(String ip, String usr, String psw, String remoteFile, String tempFolder) throws InterruptedException {
-        sshManager ssh = new sshManager();
-        ssh.connect(ip, usr, psw);
-        String cmd = " sudo su -";
-        ssh.cmd(cmd, psw);
-        ssh.removeLastCommand();
-        
-        File f = new File(remoteFile);
-        String fileName = f.getName();
-        cmd = " mkdir /home/"+usr+"/"+tempFolder;
-        ssh.cmd(cmd);
-        ssh.removeLastCommand();
-        
-        String newRemoteFile = "/home/"+usr+"/"+tempFolder+"/"+fileName;
-        cmd = " cp "+remoteFile+" " + newRemoteFile;
-        ssh.cmd(cmd);
-        ssh.removeLastCommand();
+        String newRemoteFile = null;
+        try {
+            sshManager ssh = new sshManager();
+            ssh.connect(ip, usr, psw);
+            String cmd = " sudo su -";
+            ssh.cmd(cmd, psw);
+            ssh.removeLastCommand();
+
+            File f = new File(remoteFile);
+            String fileName = f.getName();
+            cmd = " mkdir /home/"+usr+"/"+tempFolder;
+            ssh.cmd(cmd);
+            ssh.removeLastCommand();
+
+            newRemoteFile = "/home/"+usr+"/"+tempFolder+"/"+fileName;
+            cmd = " cp "+remoteFile+" " + newRemoteFile;
+            ssh.cmd(cmd);
+            ssh.removeLastCommand();
+        } catch (Exception e) {
+            System.err.print("copy_file_to_user_folder() error:"+e.getMessage());            
+        }
         
         return newRemoteFile;
     }
     
     static public boolean remove_file_from_user_folder(String ip, String usr, String psw, String remoteFile) throws InterruptedException {
-        sshManager ssh = new sshManager();
-        ssh.connect(ip, usr, psw);
-        String cmd = " sudo su -";
-        ssh.cmd(cmd, psw);
-        ssh.removeLastCommand();
-        
-        File f = new File(remoteFile);
-        String fileName = f.getName();
-        cmd = " rm "+remoteFile;
-        ssh.cmd(cmd);
-        ssh.removeLastCommand();
+        try {
+                sshManager ssh = new sshManager();
+                ssh.connect(ip, usr, psw);
+                String cmd = " sudo su -";
+                ssh.cmd(cmd, psw);
+                ssh.removeLastCommand();
+
+                File f = new File(remoteFile);
+                String fileName = f.getName();
+                cmd = " rm "+remoteFile;
+                ssh.cmd(cmd);
+                ssh.removeLastCommand();
+            } catch (Exception e) {
+                System.err.print("remove_file_from_user_folder() error:"+e.getMessage());
+                return false;
+            }
         
         return true;
     }
@@ -346,10 +361,39 @@ public class sshManager {
                 baseFolder += folders[i] + "/";
                 
             } catch (Exception e) {
-                
+                System.err.print("create_folders() error:"+e.getMessage());            
+                return false;
             }
         }
         
         return true;
+    }    
+    
+    public long getRemoteFileSize(String file) throws InterruptedException {
+        long fileSize = 0L;
+        try {        
+            String sCmd = " ls l " + file;
+            ArrayList<String> resultLines = cmd(sCmd);
+            removeLastCommand();
+            
+            if(resultLines != null) {
+                if(resultLines.size() > 0) {
+                    String line = resultLines.get(0);
+                    String [] parts = line.split(" ");
+                    // -rw-r--r-- 1 root root 36454433 Feb 18 13:45 sia.war
+                    if(parts.length >= 4) {
+                        String sSize = parts[4];
+                        if(sSize != null && !sSize.isEmpty()) {
+                            fileSize = Long.parseLong(sSize);
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.print("get_file_size() error:"+e.getMessage());
+        }
+        
+        return fileSize;
     }    
 }
