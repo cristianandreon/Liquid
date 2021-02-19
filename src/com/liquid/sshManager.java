@@ -15,8 +15,20 @@ import java.util.ArrayList;
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.Level;
 
 /**
@@ -25,7 +37,7 @@ import java.util.logging.Level;
  */
 public class sshManager {
 
-    public long delayTimeMs = 250;
+    public long delayTimeMs = 100;
 
     private Connection conn = null;
     private Session sess = null;
@@ -211,75 +223,128 @@ public class sshManager {
     }
     
     public void removeLastCommand() throws InterruptedException {         
-        cmd((String)" history -d $(($HISTCMD-1))", (String) null);
+        ArrayList<String> resultLines = cmd((String)" history -d $(($HISTCMD-1))", (String) null);
+        if(resultLines != null) {
+            for(int i=0; i<resultLines.size(); i++) {
+                if(i > 0) {
+                    // normally don't happes
+                    System.err.println("removeLastCommand() outout:"+resultLines.get(i));
+                    java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, "removeLastCommand() outout:"+resultLines.get(i));
+                }
+            }
+        }
     }
 
-    public ArrayList<String> cmd(String command, String param) throws InterruptedException {
+    public ArrayList<String> cmd(String commands, String param) throws InterruptedException {
         ArrayList<String> ls = new ArrayList<String>();
-        if (command != null) {
+        
+        String [] commands_array = commands.split("\r\n\r\n");
+        if (commands_array != null) {
             try {
-
-                if (command.lastIndexOf("\n") != command.length() - 1) {
-                    command += "\n";
-                }
-
-                while (stdout.available() > 0) {
-                    System.out.print(br.readLine());
-                }
-                while (stderr.available() > 0) {
-                    System.err.print(brErr.readLine());
-                }
-
-
-
-                writer.write(command);
-                writer.flush();
-
-                Thread.sleep(delayTimeMs);
                 
-                if (param != null) {
-                    if (param.lastIndexOf("\n") != command.length() - 1) {
-                        param += "\n";
-                    }
-                    sess.getStdin().write(param.getBytes());
-                    sess.getStdin().flush();
-                }
+                for(int ic=0; ic<commands_array.length; ic++) {
+                    String command = commands_array[ic];
 
-                Thread.sleep(delayTimeMs);
-                
-                
-                long timeout = 10000L;
-                // sess.waitForCondition(ChannelCondition.TIMEOUT | ChannelCondition.CLOSED | ChannelCondition.EOF | ChannelCondition.EXIT_STATUS, timeout);
-                // int r = sess.waitUntilDataAvailable(timeout);
-
-                long curTime = System.currentTimeMillis();
-                while (System.currentTimeMillis() - curTime < timeout) {
-                    if (stdout.available() > 0) {
-                        break;
-                    }
-                }
-
-                while (true) {
-                    if (stderr.available() > 0) {
-                        String err = brErr.readLine();
-                        System.err.println(err);
-                        java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, err);
-                    }
-                    if (stdout.available() > 0) {
-                        String line = br.readLine();
-                        if (line == null) {
-                            break;
+                    if(!command.isEmpty()) {
+                        if (command.lastIndexOf("\n") != command.length() - 1) {
+                            command += "\n";
                         }
-                        ls.add(line);
-                        System.out.println(line);
-                        java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.INFO, line);
-                    } else {
-                        break;
+
+                        while (stdout.available() > 0) {
+                            String residual = br.readLine();
+                            System.out.print(residual);
+                            java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, residual);
+                        }
+                        while (stderr.available() > 0) {
+                            String residualErr = brErr.readLine();
+                            System.err.print(residualErr);
+                            java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, residualErr);
+                        }
+
+
+
+                        writer.write(command);
+                        writer.flush();
+
+                          if (stderr.available() > 0) {
+                                String err = brErr.readLine();
+                                System.err.println(err);
+                                java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, err);
+                            }
+
+                        Thread.sleep(delayTimeMs);
+
+                        if (param != null) {
+                            if (param.lastIndexOf("\n") != command.length() - 1) {
+                                param += "\n";
+                            }
+                            sess.getStdin().write(param.getBytes());
+                            sess.getStdin().flush();
+                        }
+
+                        Thread.sleep(delayTimeMs);
+
+                        long timeout = 10000L;
+                        // sess.waitForCondition(ChannelCondition.TIMEOUT | ChannelCondition.CLOSED | ChannelCondition.EOF | ChannelCondition.EXIT_STATUS, timeout);
+                        // int r = sess.waitUntilDataAvailable(timeout);
+
+                        long curTime = System.currentTimeMillis();
+                        while (System.currentTimeMillis() - curTime < timeout) {
+                            if (stdout.available() > 0) {
+                                break;
+                            }
+                        }
+
+                        while (true) {
+                            if (stderr.available() > 0) {
+                                String err = brErr.readLine();
+                                System.err.println(err);
+                                java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, err);
+                            }
+                            if (stdout.available() > 0) {
+                                String line = br.readLine();
+                                if (line == null) {
+                                    break;
+                                }
+                                ls.add(line);
+                                System.out.println(line);
+                                java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.INFO, line);
+                            } else {
+                                break;
+                            }
+                        }
+
+                        /*                
+                        writer.write(" \n");
+                        writer.flush();
+
+                        Thread.sleep(delayTimeMs);
+                        while (true) {
+                            if (stderr.available() > 0) {
+                                String err = brErr.readLine();
+                                System.err.println(err);
+                                java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, err);
+                            }
+                            if (stdout.available() > 0) {
+                                String line = br.readLine();
+                                if (line == null) {
+                                    break;
+                                }
+                                ls.add(line);
+                                System.out.println(line);
+                                java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.INFO, line);
+                            } else {
+                                break;
+                            }
+                        }
+                        */
+
+
+                        // sess.close();
+                        // sess = null;
                     }
                 }
-                // sess.close();
-                // sess = null;
-
+            
             } catch (IOException e) {
                 System.err.print("cmd() error:"+e.getMessage());   
                 return null;
@@ -348,15 +413,12 @@ public class sshManager {
                 if(!"home".equalsIgnoreCase(folders[i]) && !user.equalsIgnoreCase(folders[i]) && !"".equalsIgnoreCase(folders[i])) {
                     sCmd = " mkdir -p " + baseFolder+""+folders[i];
                     cmd(sCmd);
-                    removeLastCommand();
 
                     sCmd = " chown " + user + " " + baseFolder+""+folders[i] + "";
                     cmd(sCmd);
-                    removeLastCommand();
 
                     sCmd = " chmod " + "744" + " " + baseFolder+""+folders[i] + "";
                     cmd(sCmd); 
-                    removeLastCommand();
                 }
                 baseFolder += folders[i] + "/";
                 
@@ -371,14 +433,15 @@ public class sshManager {
     
     public long getRemoteFileSize(String file) throws InterruptedException {
         long fileSize = 0L;
-        try {        
-            String sCmd = " ls l " + file;
+        try {
+            // FCK : need second command to carry result of the previous one
+            String sCmd = " ls -l " + file + "\r\n\r\n ";
             ArrayList<String> resultLines = cmd(sCmd);
             removeLastCommand();
             
             if(resultLines != null) {
-                if(resultLines.size() > 0) {
-                    String line = resultLines.get(0);
+                if(resultLines.size() == 3) {
+                    String line = resultLines.get(1);
                     String [] parts = line.split(" ");
                     // -rw-r--r-- 1 root root 36454433 Feb 18 13:45 sia.war
                     if(parts.length >= 4) {
@@ -395,5 +458,142 @@ public class sshManager {
         }
         
         return fileSize;
+    }
+    
+    public Date [] getRemoteFileDate(String file) throws InterruptedException {
+        Date [] date_arr = new Date[3];
+        try {
+            // FCK : need second command to carry result of the previous one
+            String sCmd = " stat " + file + "\r\n\r\n ";
+            ArrayList<String> resultLines = cmd(sCmd);
+            removeLastCommand();
+            
+            if(resultLines != null) {
+                for(int i=0; i<resultLines.size(); i++) {
+                    String line = resultLines.get(i).trim();
+                    /*
+                        File: ‘/home/ondino-renier/rilasci/bak/gedi-web.war’
+                        Size: 39314160  	Blocks: 76792      IO Block: 4096   regular file
+                      Device: fd0ah/64778d	Inode: 524383      Links: 1
+                      Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+                      Access: 2021-02-19 01:11:49.572409156 +0100
+                      Modify: 2021-02-19 01:11:49.962409164 +0100
+                      Change: 2021-02-19 13:35:49.553482727 +0100
+                    */
+                    
+                    if(line.startsWith("Access:") 
+                            || line.startsWith("Modify:") 
+                            || line.startsWith("Change:") 
+                            ) {
+                        String [] parts = line.split(" ");
+                        
+                        if(parts.length >= 4) {
+                            String sDate = parts[1] + " " + parts[2];
+                            // 2021-02-19 01:11:49.962409164
+                            try {
+                                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS");
+                                java.util.Date valueDate = dateFormat.parse(sDate);
+                                if(valueDate != null) {
+                                    if(line.startsWith("Access:")) {
+                                        date_arr[0] = valueDate;
+                                    } else if(line.startsWith("Modify:")) {
+                                        date_arr[1] = valueDate;
+                                    } else if(line.startsWith("Change:")) {
+                                        date_arr[2] = valueDate;
+                                    }
+                                }
+                            } catch(Exception ex) {                                
+                            }
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.print("get_file_size() error:"+e.getMessage());
+        }
+        
+        return date_arr;
     }    
+    
+     public boolean isRemoteFileChanged(String host, String user, String password, String sourceFile, String targetFile) throws Exception {
+        boolean isRemoteFileChanged = true;
+        try {
+            java.util.Date [] date_arr = getRemoteFileDate(targetFile);                                        
+            if(date_arr != null) {
+                File sourcefile = new File(sourceFile);
+                Path path = Paths.get(sourcefile.getPath());
+                BasicFileAttributeView attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+                BasicFileAttributes latt = attributes.readAttributes();
+                FileTime ctf = latt.lastModifiedTime();                                            
+                long ct = ctf.toMillis() / 1000;
+                long rt = date_arr[1].getTime() / 1000;
+                if (ct > (long) rt) {
+                    // file changed
+                } else {
+                    long lRetVal = getRemoteFileSize(targetFile);
+                    if(lRetVal != sourcefile.length()) {
+                        // file changed
+                    } else {
+                        // file not changed
+                        isRemoteFileChanged = false;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.print("isRemoteFileChanged() error:"+e.getMessage());
+        }
+        return isRemoteFileChanged;
+     }
+     
+    public String [] getRemoteDiskInfo() throws InterruptedException {
+        String [] info_arr = new String[10];
+        boolean bDetectedData = false;
+        int count = 0;
+        try {
+            // FCK : need second command to carry result of the previous one
+            String sCmd = " df" + "\r\n\r\n ";
+            ArrayList<String> resultLines = cmd(sCmd);
+            removeLastCommand();
+            
+            if(resultLines != null) {
+                for(int i=0; i<resultLines.size(); i++) {
+                    String line = resultLines.get(i).trim();
+                    /*
+                                            40137760  32594572   5511012  86% /
+                      none                   4093244       200   4093044   1% /dev
+                      none                   4098096         0   4098096   0% /dev/shm
+                      none                   4098096        64   4098032   1% /var/run
+                      none                   4098096         0   4098096   0% /var/lock
+                      none                   4098096         0   4098096   0% /lib/init/rw
+                      /dev/sda1               233191     48991    171759  23% /boot
+                    */
+                    
+                    if(line.startsWith("Filesystem")) {
+                        bDetectedData = true;
+                    }
+                    if(bDetectedData) {
+                        if(count == 2) {
+                            String [] parts = line.split(" ");
+                            if(parts.length >= 9) {
+                                // 1K-blocks      Used Available Use% Mounted on
+                                info_arr[0] = parts[0]; // 1K-blocks
+                                info_arr[1] = parts[2]; // Used
+                                info_arr[2] = parts[5]; // Available
+                                info_arr[3] = parts[7]; // Use
+                                info_arr[4] = parts[8]; // Mounted on
+                            }
+                        }
+                        count++;
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.print("getRemoteDiskInfo() error:"+e.getMessage());
+        }
+        
+        return info_arr;
+    }    
+     
 }

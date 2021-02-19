@@ -62,18 +62,17 @@ public class sftpManager implements SftpProgressMonitor {
             session.connect();
             sftpChannel = (ChannelSftp) session.openChannel("sftp");
             sftpChannel.connect();
-
+            
             if (sourceFile != null) {
+                
                 File file = new File(sourceFile);
                 Path path = Paths.get(file.getPath());
                 BasicFileAttributeView attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
                 BasicFileAttributes latt = attributes.readAttributes();
+                
                 glFileSize = fileSize = latt.size();
                 glSourceFile = sourceFile;
                 glTtargetFile = targetFile;
-
-                FileTime ctf = latt.creationTime();
-                long ct = ctf.toMillis() / 1000;
 
                 try {
 
@@ -86,32 +85,6 @@ public class sftpManager implements SftpProgressMonitor {
                     } catch (SftpException e) {
                         if (e.id != SSH_FX_NO_SUCH_FILE) {
                             throw e;
-                        }
-                    }
-                    
-                    if(attrs != null) {                    
-                        long remoteSize = attrs.getSize();
-                        int rt = attrs.getATime();
-                        String rts = attrs.getAtimeString();
-
-                        Date creationDate = new Date((long) ct * 1000L);
-                        System.out.println(" Local "
-                                + creationDate.getDate() + "/" + (creationDate.getMonth() + 1) + "/" + (creationDate.getYear() + 1900)
-                                + " "
-                                + creationDate.getHours() + ":" + creationDate.getMinutes() + ":" + creationDate.getSeconds()
-                        );
-
-                        creationDate = new Date((long) rt * 1000L);
-                        System.out.println(" Remote "
-                                + creationDate.getDate() + "/" + (creationDate.getMonth() + 1) + "/" + (creationDate.getYear() + 1900)
-                                + " "
-                                + creationDate.getHours() + ":" + creationDate.getMinutes() + ":" + creationDate.getSeconds()
-                        );
-
-                        if (ct > (long) rt || remoteSize != fileSize) {
-                            // file changed
-                        } else {
-                            return new Object[]{fileSize, false};
                         }
                     }
                     
@@ -132,6 +105,89 @@ public class sftpManager implements SftpProgressMonitor {
         }
 
         return new Object[]{retVal, true};
+    }
+
+    public boolean isRemoteFileChanged(String host, String user, String password, String sourceFile, String targetFile) throws JSchException, SftpException, IOException, Exception {
+        long retVal = 0, fileSize = 0;
+        int port = 22;
+        String knownHostsFilename = "/home/world/.ssh/known_hosts";
+        ChannelSftp sftpChannel = null;
+
+        JSch jsch = new JSch();
+        jsch.setKnownHosts(knownHostsFilename);
+        Session session = jsch.getSession(user, host, port);
+        session.setPassword(password);
+
+        // disable host fingerprint check
+        java.util.Properties config = new java.util.Properties();
+        config.put("StrictHostKeyChecking", "no");
+        session.setConfig(config);
+
+        try {
+
+            if (sourceFile != null) {
+                
+                session.connect();
+                sftpChannel = (ChannelSftp) session.openChannel("sftp");
+                sftpChannel.connect();
+                
+                File file = new File(sourceFile);
+                Path path = Paths.get(file.getPath());
+                BasicFileAttributeView attributes = Files.getFileAttributeView(path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+                BasicFileAttributes latt = attributes.readAttributes();
+                fileSize = latt.size();
+
+                FileTime ctf = latt.lastModifiedTime();
+                long ct = ctf.toMillis() / 1000;
+
+
+                SftpATTRS attrs = null;
+
+                try {
+
+                    attrs = sftpChannel.lstat(targetFile);
+
+                } catch (SftpException e) {
+                    if (e.id != SSH_FX_NO_SUCH_FILE) {
+                        throw e;
+                    }
+                }
+
+                if(attrs != null) {                    
+                    long remoteSize = attrs.getSize();
+                    int rt = attrs.getMTime();
+                    String rts = attrs.getAtimeString();
+
+                    Date creationDate = new Date((long) ct * 1000L);
+                    System.out.println(" Local "
+                            + creationDate.getDate() + "/" + (creationDate.getMonth() + 1) + "/" + (creationDate.getYear() + 1900)
+                            + " "
+                            + creationDate.getHours() + ":" + creationDate.getMinutes() + ":" + creationDate.getSeconds()
+                    );
+
+                    creationDate = new Date((long) rt * 1000L);
+                    System.out.println(" Remote "
+                            + creationDate.getDate() + "/" + (creationDate.getMonth() + 1) + "/" + (creationDate.getYear() + 1900)
+                            + " "
+                            + creationDate.getHours() + ":" + creationDate.getMinutes() + ":" + creationDate.getSeconds()
+                    );
+
+                    if (ct > (long) rt || remoteSize != fileSize) {
+                        // file changed
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.print("Error:" + e.getLocalizedMessage());
+        } finally {
+            sftpChannel.exit();
+            session.disconnect();
+        }
+        
+        return true;
     }
 
     public static long getRemoteFileSize(String host, String user, String password, String targetFile) throws JSchException, SftpException, IOException {
