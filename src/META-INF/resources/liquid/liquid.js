@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.52   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  27-01-2020
+// Liquid ver.1.53   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  23-02-2021
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -3914,6 +3914,7 @@ var Liquid = {
                     }
                     var editable = (liquid.tableJson.columns[ic].foreignTable ? (liquid.tableJson.columns[ic].foreignEdit === true ? true : false) : (liquid.tableJson.columns[ic].readonly === true ? false : true));
                     editable = (editable & ( (liquid.tableJson.editable === true ? true : false) || (liquid.tableJson.editable === 'true' ? true : false) )) ? true : false;
+                    editable = (editable & ( isDef(liquid.tableJson.columns[ic].lookup) ? false : true )); // N.B.: lookup cannot be changed directly referenced id will be wrong
                     var col = liquid.tableJson.columns[ic];
                     var sortComparator = null;
                     var typeColumn = null;                    
