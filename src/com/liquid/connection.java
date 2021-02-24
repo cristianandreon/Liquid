@@ -460,7 +460,11 @@ public class connection {
                 if(port == null || port.isEmpty()) port = "1521";
                 if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
                 if(jdbcSource != null) jdbcSource.driverClass = driverClass;
-                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":"+port+":"+(service != null && !service.isEmpty() ? service : "xe"),user,password);
+                
+                String serviceName = (service != null && !service.isEmpty() ? service : "xe");
+                String serviceSeparator = ":";
+                if(service.startsWith("/") || service.startsWith(":")) serviceSeparator = "";
+                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":"+port+serviceSeparator+serviceName,user,password);
             } else if("postgres".equalsIgnoreCase(driver)) {
                 if(port == null || port.isEmpty()) port = "5432";
                 if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");

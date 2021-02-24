@@ -305,9 +305,22 @@ public class sshManager {
                                 String line = br.readLine();
                                 if (line == null) {
                                     break;
+                                } else {
+                                    boolean bAddLine = true;
+                                    if(ls.size()>0) {
+                                        String last = ls.get(ls.size()-1);
+                                        if(!last.isEmpty()) {
+                                            if((int)last.charAt(last.length()-1) == 32) {
+                                                ls.set(ls.size()-1, last.substring(last.length()-1)+line);
+                                                bAddLine = false;
+                                            }
+                                        }
+                                    }
+                                    if(bAddLine) {
+                                        ls.add(line);
+                                        System.out.println(line);
+                                    }
                                 }
-                                ls.add(line);
-                                System.out.println(line);
                                 java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.INFO, line);
                             } else {
                                 break;
@@ -435,19 +448,27 @@ public class sshManager {
         long fileSize = 0L;
         try {
             // FCK : need second command to carry result of the previous one
-            String sCmd = " ls -l " + file + "\r\n\r\n ";
-            ArrayList<String> resultLines = cmd(sCmd);
+            String sCmd = " ls -l " + file;
+            ArrayList<String> resultLines = cmd(sCmd + "\r\n\r\n\n");
             removeLastCommand();
             
             if(resultLines != null) {
-                if(resultLines.size() == 3) {
-                    String line = resultLines.get(1);
-                    String [] parts = line.split(" ");
-                    // -rw-r--r-- 1 root root 36454433 Feb 18 13:45 sia.war
-                    if(parts.length >= 4) {
-                        String sSize = parts[4];
-                        if(sSize != null && !sSize.isEmpty()) {
-                            fileSize = Long.parseLong(sSize);
+                if(resultLines.size() >= 3) {
+                    for(int i=0; i<resultLines.size(); i++) {
+                        if(resultLines.get(i+1).contains(sCmd)) {
+                        } else if(resultLines.get(i+1).contains(file)) {                           
+                            String line = resultLines.get(i+1);
+                            if(line.contains(sCmd)) {
+                                String [] parts = line.split(" ");
+                                // -rw-r--r-- 1 root root 36454433 Feb 18 13:45 sia.war
+                                if(parts.length >= 4) {
+                                    String sSize = parts[4];
+                                    if(sSize != null && !sSize.isEmpty()) {
+                                        fileSize = Long.parseLong(sSize);
+                                    }
+                                }
+                                break;
+                            }
                         }
                     }
                 }
@@ -464,7 +485,7 @@ public class sshManager {
         Date [] date_arr = new Date[3];
         try {
             // FCK : need second command to carry result of the previous one
-            String sCmd = " stat " + file + "\r\n\r\n ";
+            String sCmd = " stat " + file + "\r\n\r\n\n";
             ArrayList<String> resultLines = cmd(sCmd);
             removeLastCommand();
             
@@ -552,7 +573,7 @@ public class sshManager {
         int count = 0;
         try {
             // FCK : need second command to carry result of the previous one
-            String sCmd = " df" + "\r\n\r\n ";
+            String sCmd = " df" + "\r\n\r\n\n";
             ArrayList<String> resultLines = cmd(sCmd);
             removeLastCommand();
             

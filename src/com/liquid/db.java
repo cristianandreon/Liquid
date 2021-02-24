@@ -6865,37 +6865,37 @@ public class db {
                             metadata.MetaDataCol mdColT = (metadata.MetaDataCol) metadata.readTableMetadata(tconn, targetDatabase, targetSchema, targetTable, field, isOracle);
                             if(mdColS.size != mdColT.size) {
                                 isFieldChanged = true;
-                                sSize = String.valueOf(mdColT.size);
+                                sSize = String.valueOf(mdColS.size);
                             }
                             if(mdColS.isNullable != mdColT.isNullable) {
                                 isFieldChanged = true;
-                                sNullable = String.valueOf(mdColT.isNullable);
+                                sNullable = String.valueOf(mdColS.isNullable);
                             }
                             if(!mdColS.datatype.equalsIgnoreCase(mdColT.datatype)) {
                                 isFieldChanged = true;
-                                sTypeName = String.valueOf(mdColT.datatype);
+                                sTypeName = String.valueOf(mdColS.datatype);
                             }
                             if(mdColS.digits != mdColT.digits) {
                                 isFieldChanged = true;
-                                sDigits = String.valueOf(mdColT.digits);
+                                sDigits = String.valueOf(mdColS.digits);
                             }
                             if(mdColS.columnDef != null) {
                                 if(!mdColS.columnDef.equalsIgnoreCase(mdColT.columnDef)) {
                                     isFieldChanged = true;
-                                    sColumnDef = mdColT.columnDef;
+                                    sColumnDef = mdColS.columnDef;
                                 }
                             } else if(mdColT.columnDef != null && !mdColT.columnDef.isEmpty()) {
                                 isFieldChanged = true;
-                                sColumnDef = mdColT.columnDef;
+                                sColumnDef = mdColS.columnDef;
                             }
                             if(mdColS.remarks != null) {
                                 if(mdColS.remarks.equalsIgnoreCase(mdColT.remarks)) {
                                     isFieldChanged = true;
-                                    sRemarks = mdColT.remarks;
+                                    sRemarks = mdColS.remarks;
                                 }
                             } else if(mdColT.remarks != null && !mdColT.remarks.isEmpty()) {
                                 isFieldChanged = true;
-                                sRemarks = mdColT.remarks;
+                                sRemarks = mdColS.remarks;
                             }
                             if(isFieldChanged) {
                                 if (mode.contains("callback"))

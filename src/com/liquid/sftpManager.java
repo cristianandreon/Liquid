@@ -354,7 +354,11 @@ public class sftpManager implements SftpProgressMonitor {
         } else {
             this.uploadingCurrent = glFileSize;
         }
-        Callback.send("Uploading " + glSourceFile + " to " + glTtargetFile + "<br/>Size:" + String.format("%1.2f", (float) glFileSize / 1024.0f / 1024.0f) + " MB, Transfer rate max:" + maxSpeed + " Kb/sec" + " min:" + minSpeed);
+        if(maxSpeed > 0.0 && minSpeed < 999999999.9f) {
+            Callback.send("Uploaded " + glSourceFile + " to " + glTtargetFile + "<br/>Size:" + String.format("%1.2f", (float) glFileSize / 1024.0f / 1024.0f) + " MB, Transfer rate max:" + maxSpeed + " Kb/sec" + " min:" + minSpeed);
+        } else {
+            Callback.send("Uploaded " + glSourceFile + " to " + glTtargetFile + "<br/>Size:" + String.format("%1.2f", (float) glFileSize / 1024.0f / 1024.0f) + " MB");            
+        }
     }
 
 }
