@@ -20,9 +20,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +59,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -1251,5 +1255,129 @@ public class utility {
         }
         return retVal;
     }
+
+    
+    
+    
+    
+    class FolderWatchThread extends Thread {
+
+        public String folder = null;
+        public String fileExt = null;
+
+        public Object callbackInstance = null;
+        public String callbackMethod = null;
+        private Method method = null;
         
+        public String error = "";
+
+        public boolean run = false;
+
+        public void run() {
+
+            try {
+
+                WatchService watchService = FileSystems.getDefault().newWatchService();
+
+                Path path = Paths.get(folder);
+
+                path.register(
+                        watchService, 
+                        StandardWatchEventKinds.ENTRY_CREATE, 
+                        StandardWatchEventKinds.ENTRY_DELETE, 
+                        StandardWatchEventKinds.ENTRY_MODIFY
+                );
+
+                WatchKey key;
+                
+                run = true;
+
+                if(callbackInstance != null) {
+                    try {
+                        Class cls = callbackInstance.getClass();
+                        method = cls.getMethod(callbackMethod, String.class, Object.class);
+                        if(method == null) {
+                            error += "Method "+callbackMethod+" not found.. Did you declare it publlic ?" + "\n";
+                        }
+                    } catch (Exception ex) {                
+                        error += ex.getLocalizedMessage() + "\n";
+                        Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, ex);
+                        Method[] methods = callbackMethod.getClass().getMethods();
+                        for (int i = 0; i < methods.length; i++) {
+                            System.err.println("{" + callbackMethod.getClass() + "}.Method #" + (i + 1) + ":" + methods[i].toString());
+                        }
+                    }
+                }                
+        
+                while ((key = watchService.take()) != null) {
+                    
+                    if(!run) return;
+                    
+                    for (WatchEvent<?> event : key.pollEvents()) {
+                        if(callbackInstance != null && method != null) {
+                            try {
+                                boolean retVal = (boolean) method.invoke(callbackInstance, folder+File.separator+event.context(), (Object)event.kind());
+                            } catch (Throwable th) {
+                                Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, th);
+                            }
+                        } else {
+                            System.out.println("Event kind:" + event.kind() + ". File affected: " + event.context() + ".");
+                        }
+                    }
+                    key.reset();
+                }
+
+            } catch (Exception ex) {                
+                error += ex.getLocalizedMessage() + "\n";
+                Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
+    
+    static public ArrayList<FolderWatchThread> folderWatchThreadList = new ArrayList<FolderWatchThread>();
+    
+    static public boolean startWatchFolder(String folder, String fileExt, Object callbackInstance, String callbackMethod) throws Exception {
+        try {
+            for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
+                if(folder.equalsIgnoreCase(folderWatchThread.folder)) {
+                    folderWatchThread.run = false;
+                    Thread.sleep(1000);
+                    folderWatchThread.stop();
+                    folderWatchThreadList.remove(folderWatchThread);
+                }
+            }
+        } catch (Exception ex) {                
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        FolderWatchThread folderWatchThread = new utility().new FolderWatchThread();
+        folderWatchThread.folder = folder;
+        folderWatchThread.fileExt = fileExt;
+        folderWatchThread.callbackInstance = callbackInstance;
+        folderWatchThread.callbackMethod = callbackMethod;        
+        folderWatchThreadList.add(folderWatchThread);                
+        folderWatchThread.start();        
+        return true;
+    }
+    
+    static public boolean stopWatchFolder(String folder) throws Exception {        
+        for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
+            if(folder.equalsIgnoreCase(folderWatchThread.folder)) {
+                folderWatchThread.run = false;
+                Thread.sleep(1000);
+                folderWatchThread.stop();
+                folderWatchThreadList.remove(folderWatchThread);
+                return true;
+            }        
+        }
+        return false;
+    }
+    
+    static public String statusWatchFolder(String folder) throws Exception {        
+        String out = "";
+        for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
+            out += "Folder:"+folderWatchThread.folder+ "\tstatus:"+(folderWatchThread.run ? "running" : "stopped")+ "\terror:"+folderWatchThread.error+"\n";
+        }
+        return out;
+    }
 }

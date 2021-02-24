@@ -113,77 +113,82 @@ public class Messagebox {
     static int show( String message, String title, int buttons, float autoCloseTimeSec, int autoCloseButton ) {
         int retVal = 0;
         ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
-        if(threadSession != null && threadSession.out != null || threadSession.outputStream != null) {
-            try {
-                String messageJson = "<Liquid>serverMessage:{"
-                        + "\"title\":\""+utility.base64Encode(title)+"\""
-                        + ",\"message\":\""+utility.base64Encode(message)+"\""
-                        + ",\"buttons\":"+buttons
-                        + ",\"timeout\":"+autoCloseTimeSec
-                        + ",\"timeoutButton\":\""+autoCloseButton+"\""
-                        + ",\"cypher\":\""+utility.base64Encode(threadSession.cypher)+"\""
-                        + "}</Liquid><LiquidStartResponde/>";
-                if(threadSession.out != null) {
-                    threadSession.out.print(messageJson);
-                    threadSession.out.flush();
-                }
-                if(threadSession.outputStream != null) {
-                    wsStreamerClient.send( threadSession.outputStream, messageJson, threadSession.token, "P" );
-                }
-            } catch (IOException ex) {
-                Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            // Attesa risposta
-            try {
-                long cTime = System.currentTimeMillis();
-                long cTimeChecker = System.currentTimeMillis();
-                while(System.currentTimeMillis() - cTime < timeout * 1000 || timeout <= 0) {
-                    Thread.sleep(sleepIntervelMsec);
-                    // Verifica messagi in coda
-                    if(threadSession.out != null || threadSession.outputStream != null) {
-                        boolean bStillPending = true;
-                        if(System.currentTimeMillis() - cTimeChecker > checkerIntervelMsec) {
-                            cTimeChecker = System.currentTimeMillis();
-                            try {
-                                if(threadSession.out != null) {
-                                    threadSession.out.print("<Liquid></Liquid>");
-                                    threadSession.out.flush();
-                                }
-                                if(threadSession.outputStream != null) {
-                                    wsStreamerClient.send( threadSession.outputStream, "<Liquid></Liquid>", threadSession.token, "P" );
-                                }
-                            } catch (Exception ex) {
-                                // request cancelled
-                                Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, "WARNING : MessageBox.show() : the end user has cancelled the reaquest");
-                                bStillPending = false;
-                            }
-                        }
-                        if(!bStillPending) {
-                            // No stream pending
-                            break;
-                        } else {
-                            String incomingMessage = ThreadSession.getIncomingMessage();
-                            if(incomingMessage != null) {
-                                // Processa il messaggio
-                                try {
-                                    retVal = (incomingMessage != null && !incomingMessage.isEmpty() ? Integer.parseInt(incomingMessage) : 0);
-                                } catch (Exception ex) {
-                                    retVal = -1;
-                                }
-                                ThreadSession.resetIncomingMessage();
-                                break;
-                            }
-                        }
-                    } else {
-                        // no stream
+        if(threadSession != null) {
+            if(threadSession.out != null || threadSession.outputStream != null) {
+                try {
+                    String messageJson = "<Liquid>serverMessage:{"
+                            + "\"title\":\""+utility.base64Encode(title)+"\""
+                            + ",\"message\":\""+utility.base64Encode(message)+"\""
+                            + ",\"buttons\":"+buttons
+                            + ",\"timeout\":"+autoCloseTimeSec
+                            + ",\"timeoutButton\":\""+autoCloseButton+"\""
+                            + ",\"cypher\":\""+utility.base64Encode(threadSession.cypher)+"\""
+                            + "}</Liquid><LiquidStartResponde/>";
+                    if(threadSession.out != null) {
+                        threadSession.out.print(messageJson);
+                        threadSession.out.flush();
                     }
+                    if(threadSession.outputStream != null) {
+                        wsStreamerClient.send( threadSession.outputStream, messageJson, threadSession.token, "P" );
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
+                // Attesa risposta
+                try {
+                    long cTime = System.currentTimeMillis();
+                    long cTimeChecker = System.currentTimeMillis();
+                    while(System.currentTimeMillis() - cTime < timeout * 1000 || timeout <= 0) {
+                        Thread.sleep(sleepIntervelMsec);
+                        // Verifica messagi in coda
+                        if(threadSession.out != null || threadSession.outputStream != null) {
+                            boolean bStillPending = true;
+                            if(System.currentTimeMillis() - cTimeChecker > checkerIntervelMsec) {
+                                cTimeChecker = System.currentTimeMillis();
+                                try {
+                                    if(threadSession.out != null) {
+                                        threadSession.out.print("<Liquid></Liquid>");
+                                        threadSession.out.flush();
+                                    }
+                                    if(threadSession.outputStream != null) {
+                                        wsStreamerClient.send( threadSession.outputStream, "<Liquid></Liquid>", threadSession.token, "P" );
+                                    }
+                                } catch (Exception ex) {
+                                    // request cancelled
+                                    Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, "WARNING : MessageBox.show() : the end user has cancelled the reaquest");
+                                    bStillPending = false;
+                                }
+                            }
+                            if(!bStillPending) {
+                                // No stream pending
+                                break;
+                            } else {
+                                String incomingMessage = ThreadSession.getIncomingMessage();
+                                if(incomingMessage != null) {
+                                    // Processa il messaggio
+                                    try {
+                                        retVal = (incomingMessage != null && !incomingMessage.isEmpty() ? Integer.parseInt(incomingMessage) : 0);
+                                    } catch (Exception ex) {
+                                        retVal = -1;
+                                    }
+                                    ThreadSession.resetIncomingMessage();
+                                    break;
+                                }
+                            }
+                        } else {
+                            // no stream
+                        }
+                    }
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } else {
+                // Fatal error
+                Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, "No output stream available. Cannot communicate with client");
             }
         } else {
             // Fatal error
-            Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, "No sessionInfo available. Cannot communicate with client");
+            Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, "No sessionInfo available... No HttpRequest started so cannot communicate with client");
         }
         return retVal;
     }    
