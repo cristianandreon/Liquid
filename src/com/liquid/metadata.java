@@ -1740,7 +1740,11 @@ public class metadata {
             if ( scale != null && !scale.isEmpty() && size != null && !size.isEmpty()) {
                 dataType = (" " + type + "("+size+","+scale+") ");
             } else if (size != null && !size.isEmpty()) {
-                dataType = (" " + type + "("+size+") ");
+                if(type.indexOf("(") < 0) {
+                    dataType = " " + type + "("+size+") ";
+                } else {
+                    dataType = " " + type + " ";
+                }
             } else {
                 dataType = (" " + type + " ");
             }
