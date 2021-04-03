@@ -40,7 +40,12 @@ public class connection {
     	}        
         if(method != null) {
             method.setAccessible(true);
-            return (Object [])method.invoke(null);
+            Object result = method.invoke(null);
+            if(result instanceof Object []) {
+                return (Object [])result;
+            } else {
+                return new Object [] { result, null };
+            }
         } else {
             // use internal method
             return (Object [])getLiquidDBConnection();
@@ -65,8 +70,14 @@ public class connection {
             throw th.getCause();
     	}
         if(method != null) {
-            method.setAccessible(true);
-            return (Object [])method.invoke(null, database);
+            method.setAccessible(true);    
+            Object result = method.invoke(null, database);  
+            if(result instanceof Object []) {
+                return (Object [])result;
+            } else {
+                return new Object [] { result, null };
+            }
+            
         } else {
             // use internal method
             return (Object [])getLiquidDBConnection(database);

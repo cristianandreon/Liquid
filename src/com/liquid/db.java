@@ -289,7 +289,7 @@ public class db {
                     }
                 } catch (Throwable th) {
                     final Throwable cause = th.getCause();
-                    error = th.getCause().getLocalizedMessage() + "(" + th.getMessage() + ")";
+                    error = (cause != null ? cause.getLocalizedMessage() : "") + "(" + th.getMessage() + ")";
                     String err = "connect error : " + error + ", on controlId:" + controlId;
                     System.out.println("// LIQUID ERROR : " + err);
                     return "{\"error\":\"" + utility.base64Encode(err) + "\"}";
