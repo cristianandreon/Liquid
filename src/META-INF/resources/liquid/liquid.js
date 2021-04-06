@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.53   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  23-02-2021
+// Liquid ver.1.54   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  03-04-2021
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -117,7 +117,9 @@ class LiquidCtrl {
         this.srcForeignColumn = null;
         this.srcColumn = null;
         this.rootControlId = null;
-        this.parentObjId = parentObjId;
+        
+        // not here
+        // this.parentObjId = parentObjId;
         
         if(isDef(sourceData)) {
             if(isDef(sourceData.liquidOrId)) {
@@ -275,12 +277,6 @@ class LiquidCtrl {
             this.sortColumnsMode = isDef(this.tableJson.sortColumnsMode) ? this.tableJson.sortColumnsMode : null;
 
 
-            if(isDef(this.tableJson.idColumn)) {
-                this.tableJson.idColumnField = Liquid.getColumnsField(this, this.tableJson.idColumn);
-                if(!this.tableJson.idColumnField) {
-                    console.error("ERROR: idColumn '"+this.tableJson.idColumn+"' not found on controlId:" + controlId);
-                }
-            }
 
             var isDialogX = Liquid.isDialogX(this);
             var isFormX = Liquid.isFormX(this);
@@ -452,6 +448,16 @@ class LiquidCtrl {
                 Liquid.solveSourceColumn(this, null, null);
 
                 Liquid.initializeLiquid(this);
+                
+                
+                // solving idColumn (lookuops)
+                if(isDef(this.tableJson.idColumn)) {
+                    this.tableJson.idColumnField = Liquid.getColumnsField(this, this.tableJson.idColumn);
+                    if(!this.tableJson.idColumnField) {
+                        console.error("ERROR: idColumn '"+this.tableJson.idColumn+"' not found on controlId:" + controlId);
+                    }
+                }
+                
                 
                 this.tableJsonSource = JSON.parse(JSON.stringify(this.tableJson));
 
@@ -1727,7 +1733,8 @@ class LiquidCtrl {
                         this.actionsObj.id = controlId + ".actions";
                         this.rootObj.appendChild(this.actionsObj);
                         var tbl = document.createElement("table");
-                        
+                        tbl.cellPadding = 0;
+                        tbl.cellSpacing = 0;
                         tbl.id = controlId + ".action_content";
                         tbl.className = "liquidActionBarContent";
                         var tbody = document.createElement("tbody");
@@ -3914,12 +3921,10 @@ var Liquid = {
                     }
                     var editable = (liquid.tableJson.columns[ic].foreignTable ? (liquid.tableJson.columns[ic].foreignEdit === true ? true : false) : (liquid.tableJson.columns[ic].readonly === true ? false : true));
                     editable = (editable & ( (liquid.tableJson.editable === true ? true : false) || (liquid.tableJson.editable === 'true' ? true : false) )) ? true : false;
+                    editable = (editable & ( isDef(liquid.tableJson.columns[ic].lookup) ? false : true )); // N.B.: lookup cannot be changed directly referenced id will be wrong
                     var col = liquid.tableJson.columns[ic];
                     var sortComparator = null;
                     var typeColumn = null;                    
-                    if(isDef(liquid.tableJson.columns[ic].lookup)) {
-                        editable = false; // N.B.: lookup cannot be changed directly referenced id will be wrong
-                    }
                     if(!editable) {
                         if(Liquid.debug) {
                             console.warn("LIQUID: "+liquid.controlId+" is not editable");
@@ -5782,6 +5787,7 @@ var Liquid = {
             var tbl = document.createElement("table");
             tbl.id = liquid.controlId + ".filters";
             tbl.className = "liquidFiltersTable";
+            tbl.cellPadding = 0;
             tbl.cellSpacing = 0;
             var tbody = document.createElement("tbody");
             var filterbBarToBottom = false;
@@ -5877,6 +5883,7 @@ var Liquid = {
                 tbl.id = liquid.controlId+".FilterTbl";
                 tbl.className = "liquidFilterTbl";
                 tbl.cellSpacing = 0;
+                tbl.cellPadding = 0;
                 var tbody = document.createElement("tbody");
                 liquid.filtersFirstId = null;
                 for(var r = 0; r < filterJson.nRows; r++) {
@@ -7019,8 +7026,10 @@ var Liquid = {
             if(xhr.status === 200) {
                 var event = xhr.params.event;
                 var obj = xhr.params.obj;
-                if(event.clientAfter === true || event.clientBefore === false) {
-                    Liquid.executeClientSide(liquid, "event:"+event.name, event.client, event.params, event.isNative);
+                if(isDef(event)) {
+                    if(event.clientAfter === true || event.clientBefore === false) {
+                        Liquid.executeClientSide(liquid, "event:"+event.name, event.client, event.params, event.isNative);
+                    }                                
                 }                                
                 try {
                     var httpResultJson = null;
@@ -7034,7 +7043,7 @@ var Liquid = {
                             console.error("ERROR : onEventProcess() : errore in response process:"+e+" on event "+event.name+" on control "+liquid.controlId);
                         }
 
-                        event.response = httpResultJson;
+                        if(isDef(event)) event.response = httpResultJson;
                         if(httpResultJson) {
                             if(event.name === 'onGetSelection') {
                                 try {
@@ -9283,6 +9292,7 @@ var Liquid = {
                                 liquid.outDivObjSize = { y:liquid.outDivObj.offsetTop, x:liquid.outDivObj.offsetLeft, wx:liquid.outDivObj.offsetWidth, wy:liquid.outDivObj.offsetHeight };
                         }
                     }
+                    /// if(liquid.AAA === "testGrid4 - mode:undefined - div:testGrid4") debugger;                    
                     liquid.referenceHeightObj = liquid.outDivObj;
                     if(liquid.referenceHeightObj) {
                         referenceHeight = liquid.referenceHeightObj.clientHeight;
@@ -9395,8 +9405,17 @@ var Liquid = {
                             );
 
                     if(liquid.aggridContainerObj) {
+                        if(!isDef(liquid.aggridContainerDocked) || liquid.aggridContainerDocked === false) {
                         liquid.aggridContainerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
-                        liquid.aggridContainerHeight = aggridContainerHeight;
+                            if(liquid.referenceHeightObj) {
+                                if(liquid.referenceHeightObj.offsetHeight !== referenceHeight) { // something escaped                                
+                                    var gap = liquid.referenceHeightObj.offsetHeight - referenceHeight;
+                                    aggridContainerHeight -= gap;
+                                    liquid.aggridContainerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                                }
+                            }
+                            liquid.aggridContainerHeight = aggridContainerHeight;
+                        }
                         liquid.resizeCounter++;
                     }
                     // if(liquid.controlId === 'testGrid7') debugger;
@@ -9821,7 +9840,7 @@ var Liquid = {
 
             if(filterObj.valuesList || filterObj.values) {
                 var values = filterObj.valuesList ? filterObj.valuesList : filterObj.values;
-                innerHTML += "<select id=\"" + filterObj.linkedContainerId + "\"" + codeOnChange + " class=\"liquidSelect\" >";
+                innerHTML += "<select id=\"" + filterObj.linkedContainerId + "\"" + codeOnChange + " style=\"width:97%\" class=\"liquidSelect\" >";
                 for(var i=0; i<values.length; i++) {
                     var valueObj = values[i];
                     if(valueObj) {
@@ -9831,10 +9850,13 @@ var Liquid = {
                         innerHTML += "<option " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " value=\"" + ( isDef(valueObj.value) ? valueObj.value : valueObj.label) + "\" " + selected + ">" + (valueObj.label ? valueObj.label : valueObj.value) + "</option>";
                     }
                 }
-                innerHTML += "</select>" + "</td>";
+                innerHTML += "</select>" + "</td>"
+                            + "<td class=\"liquidFilterImg\">"
+                            + "<div style=\"width:24px;\"></div>"
+                            + "</td>";
             } else if(filterObj.editor) {
                 var values = filterObj.editor.values ? filterObj.values : filterObj.editorValues;
-                innerHTML += "<select id=\"" + filterObj.linkedContainerId + "\"" + codeOnChange + " class=\"liquidSelect\" >";
+                innerHTML += "<select id=\"" + filterObj.linkedContainerId + "\"" + codeOnChange + " style=\"width:97%\" class=\"liquidSelect\" >";
                 for(var i=0; i<values.length; i++) {
                     var valueObj = values[i];
                     if(valueObj) {
@@ -9845,6 +9867,9 @@ var Liquid = {
                     }
                 }
                 innerHTML += "</select>"
+                        + "</td>"
+                        + "<td class=\"liquidFilterImg\">"
+                        + "<div style=\"width:24px;\"></div>"
                         + "</td>";
             } else {
                 if(!filterObj.lookup || typeof filterObj.lookup === 'undefined') {
@@ -9868,7 +9893,10 @@ var Liquid = {
                     
                 } else {
                     // lookup created later...
-                    innerHTML += "<div id=\"" + filterObj.linkedContainerId + "\"></div>";
+                    innerHTML += "<div id=\"" + filterObj.linkedContainerId + "\"></div>"
+                            + "<td class=\"liquidFilterImg\">"
+                            + "<div style=\"width:24px;\"></div>"
+                            + "</td>";                    ;
                 }
             }
             
@@ -9995,6 +10023,8 @@ var Liquid = {
                 var i = 0;
                 grid.id = liquid.controlId + ".grid_tab." + id + ".table";
                 var tbl = document.createElement("table");
+                tbl.cellPadding = 0;
+                tbl.cellSpacing = 0;                
                 tbl.id = grid.id;
                 tbl.style.tableLayout = 'fixed';
                 tbl.className = "liquidGridTableContainer";
@@ -12939,6 +12969,25 @@ var Liquid = {
                     Liquid.onChartShow(liquid, grid_coords.chart);
                 }
                 if(gridObject) {
+                    bRestoreList = Liquid.resizeIfDocked(liquid, gridObject);
+                } else {
+                    bRestoreList = true;
+                }
+            } else {
+                // The list ...
+                liquid.currentTab = 0;
+                bRestoreList = true;
+            }
+            if(bRestoreList) {
+                Liquid.setAggrigParent(liquid, null, null);
+            }
+            if(doResize) {
+                setTimeout(function () { Liquid.onResize(liquid); }, 50 );
+            }        
+        }
+    },resizeIfDocked:function(liquid, gridObject) {
+        var bRestoreList = false;
+        if(isDef(liquid)) {
                     if(isDef(gridObject.dock)) {
                         var parentNode = null;
                         if(gridObject.dock.side === 'left') {
@@ -12967,21 +13016,8 @@ var Liquid = {
                     } else {
                         bRestoreList = true;
                     }
-                } else {
-                    bRestoreList = true;
                 }
-            } else {
-                // The list ...
-                liquid.currentTab = 0;
-                bRestoreList = true;
-            }
-            if(bRestoreList) {
-                Liquid.setAggrigParent(liquid, null, null);
-            }
-            if(doResize) {
-                setTimeout(function () { Liquid.onResize(liquid); }, 50 );
-            }        
-        }
+        return bRestoreList;
     },
     setAggrigParent:function(obj, parentNode, dock) {
         var liquid = Liquid.getLiquid(obj);
@@ -13043,7 +13079,7 @@ var Liquid = {
                                                 } else {
                                                     label = dock.columns[j].name;
                                                     width = dock.columns[j].width;
-                                                    if(label === columns.name) {
+                                                    if(label === column.name) {
                                                         if(dock.columns[j].visible !== false) {
                                                             liquid.gridOptions.columnApi.setColumnsVisible( [agGridColumn.colId], true);
                                                         }
@@ -13126,6 +13162,14 @@ var Liquid = {
                             Liquid.refreshLayout(liquid, lay_coords.layout, false);
                             Liquid.onLayoutMode(lay_coords.layout.containerObj, null, "readonly");
                         }
+                    }
+                    if(liquid.tableJson.layouts[lay_coords.layout]) {
+                        bRestoreList = Liquid.resizeIfDocked(liquid, liquid.tableJson.layouts[lay_coords.layout]);
+                    } else {
+                        bRestoreList = true;
+                    }
+                    if(bRestoreList) {
+                        Liquid.setAggrigParent(liquid, null, null);
                     }
                 }
             }
@@ -15181,8 +15225,12 @@ var Liquid = {
                                     if(isDef(columns)) {
                                         for(var ic=0; ic<columns.length; ic++) {
                                             var colName = isDef(columns[ic].runtimeName) ? columns[ic].runtimeName : columns[ic].name;
-                                            var aliasTargetParts = lookupJson.targetColumn.split(".");
-                                            var aliasTargetColumn2 = aliasTargetParts.length > 1 ? aliasTargetParts[1] : null;
+                                            var aliasTargetParts = null;
+                                            var aliasTargetColumn2 = null;
+                                            if(isDef(lookupJson.targetColumn)) {
+                                                aliasTargetParts = lookupJson.targetColumn.split(".");
+                                                aliasTargetColumn2 = aliasTargetParts.length > 1 ? aliasTargetParts[1] : null;
+                                            }
                                             try {
                                                 var isIdColumn = (columns[ic].name === lookupJson.idColumn || columns[ic].field === lookupJson.idColumn);
                                                 var isTargetColumn = (colName === lookupJson.targetColumn || colName === aliasTargetColumn || colName === aliasTargetColumn2 || columns[ic].field === lookupJson.targetColumn);

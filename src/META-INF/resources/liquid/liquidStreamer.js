@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid Streamer ver.1.01   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 20-10-2020 - Last update  27-10-2020
+// Liquid Streamer ver.1.02   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 20-10-2020 - Last update  03-04-2021
 //  TODO : see trello.com
 //
 //
@@ -76,7 +76,7 @@ var LiquidStreamer = {
                         };
 
                         glLiquidWebSocket.onmessage = function(event){
-                            console.info("[LIQUID Streamer] : < "+event.data.length+"bytes");
+                            // console.info("[LIQUID Streamer] : < "+event.data.length+"bytes");
                             try {
                                 var dv = null;
                                 var responseBin = "";
@@ -146,7 +146,7 @@ var LiquidStreamer = {
                 var dtime = (getCurrentTimetick() - queue.tick) / 1000;
                 if(dtime < LiquidStreamer.waitForWebSocketTimeoutMS) {                
                     setTimeout( function() {
-                        LiquidStreamer.sendLiquidStreamer(data, length, async);
+                        LiquidStreamer.sendLiquidStreamer(data, length, queue, async);
                     }, 3000 );
                     return 0;
                 } else {
@@ -240,21 +240,21 @@ var LiquidStreamer = {
                                     // swap xhr to work like ajax (cannot write to readyState ... )
                                     //
                                     var liquid = queueItem.param;
-                                    var prevXhr = liquid.xhr;
                                     try {
-                                        liquid.xhr = { readyState:null, status:null, responseText: null, ws:null };
+                                        if(!isDef(liquid.xhr))
+                                            liquid.xhr = { readyState:null, status:null, responseText: null, params:{}, event:{}, ws:null };
                                         liquid.xhr.readyState = 4;
                                         liquid.xhr.status = 200;
                                         liquid.xhr.responseText = response;
                                         liquid.xhr.ws = true;
 
-                                        queueItem.callback(queueItem.param);
+                                        queueItem.callback(liquid, liquid.xhr);
                                     } catch(e) {
                                         console.error("queueProcessLiquidStreamer() error:"+e);
                                     }
-                                    liquid.xhr = prevXhr;
+ 
                                 } else {
-                                    queueItem.callback(queueItem.param);
+                                    queueItem.callback(liquid, liquid.xhr);
                                 }                                 
                             }
                         }
