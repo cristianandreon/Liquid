@@ -1699,7 +1699,7 @@ public class db {
                 String filterValue = null;
                 String filterOp = null;
                 String filterLogic = null;
-                String filterNextOp = null;
+                String filterNextLogic = null;
                 boolean filterSensitiveCase = false;
 
                 try {
@@ -1733,7 +1733,7 @@ public class db {
                 if(i+1 < filtersCols.length()) {
                     JSONObject filterNextCol = filtersCols.getJSONObject(i+1);
                     try {
-                        filterNextOp = filterNextCol.getString("op");
+                        filterNextLogic = filterNextCol.getString("op");
                     } catch (JSONException e) {
                     }
                 } 
@@ -2018,7 +2018,7 @@ public class db {
                         }
 
                         // is operator logic not 'OR' ? closing parent
-                        if("OR".equalsIgnoreCase(filterNextOp)) {
+                        if("OR".equalsIgnoreCase(filterNextLogic)) {
                             sWhere += "(";
                             parentCount++;
                         }
@@ -2042,7 +2042,7 @@ public class db {
 
                         
                         // is operator logic not 'OR' ? closing parent
-                        if(!"OR".equalsIgnoreCase(filterOp)) {
+                        if(!"OR".equalsIgnoreCase(filterLogic)) {
                             if(parentCount>0) {
                                 sWhere += ")";
                                 parentCount--;
