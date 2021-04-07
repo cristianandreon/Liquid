@@ -669,9 +669,34 @@ public class db {
                                                     }
                                                 }
                                                 if (foreignKeys != null) {
-                                                    if (foreignTable == null || foreignColumns == null || columns == null) {
+                                                    // ricerca se esiste una foreign key unica già definita ...
+                                                    if (foreignTable == null || foreignColumns == null || columns == null) {                                                        
                                                         // gia' controllato da workspace : se non risolto è una condizioni di errore
-                                                        error += " [ Control:" + tbl_wrk.controlId + " Column : " + col.getString("name") + " unresolved link : please define foreignKey in Database or in json..]";
+                                                        int nCandidateFKey = 0;
+                                                        if(foreignKeys != null) {
+                                                            if (foreignTable == null) foreignTable = colParts[0];
+                                                            for (int ifk = 0; ifk < foreignKeys.size(); ifk++) {
+                                                                ForeignKey foreignKey = foreignKeys.get(ifk);
+                                                                if (foreignKey != null) {
+                                                                    if (foreignKey.foreignTable.equalsIgnoreCase(foreignTable)) {
+                                                                        if (foreignColumns == null || utility.compare_array(foreignKey.foreignColumns, foreignColumns)) {
+                                                                            if (columns == null || utility.compare_array(foreignKey.columns, columns)) {
+                                                                                foreignIndex = ifk;
+                                                                                nCandidateFKey++;
+                                                                                break;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        if(nCandidateFKey == 0) {          
+                                                            error += " [ Control:" + tbl_wrk.controlId + " Column : " + col.getString("name") + " unresolved link .. cannot Build the JOIN : please define foreignKey in Database or in json..]";
+                                                        } else if(nCandidateFKey == 1) {
+                                                            // foreign key definita da un'altra colonna : utilizza la stessa defninizione
+                                                        } else if(nCandidateFKey > 1) {
+                                                            error += " [ Control:" + tbl_wrk.controlId + " Column : " + col.getString("name") + " more than one link .. cannot Build the JOIN : please define foreignKey in Database or in json..]";
+                                                        }
                                                     }
                                                 }
                                             }

@@ -1811,7 +1811,7 @@ public class metadata {
             sql += "(" 
                     + field 
                     + (dataType != null && !dataType.isEmpty() ? dataType : "")
-                    + (nullable != null && "Y".equalsIgnoreCase(nullable) ? "NULL " : ( nullable != null && !"Y".equalsIgnoreCase(nullable) ? "NOT NULL " : ""))
+                    + (nullable != null && "Y".equalsIgnoreCase(nullable) ? " NULL " : ( nullable != null && !"Y".equalsIgnoreCase(nullable) ? " NOT NULL " : ""))
                     + (sDefault != null && !sDefault.isEmpty() ? " DEFAULT " + sDefault : "")
                     + ");\n";
         }

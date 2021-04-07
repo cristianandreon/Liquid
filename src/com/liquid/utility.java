@@ -918,18 +918,26 @@ public class utility {
         return sTimeLeft;
     }
 
+    /**
+     * 
+     * @param columns
+     * @param checking_columns
+     * @return true if match found or checking_columns is null or empty
+     */
     static boolean compare_array(ArrayList<String> columns, ArrayList<String> checking_columns) {
-        for(int i=0; i<checking_columns.size(); i++) {
-            String v = checking_columns.get(i);
-            boolean bFound = false;
-            for(int j=0; j<columns.size(); j++) {
-                if(v.equalsIgnoreCase(columns.get(j))) {
-                    bFound = true;
-                    break;                    
+        if(checking_columns != null) {
+            for(int i=0; i<checking_columns.size(); i++) {
+                String v = checking_columns.get(i);
+                boolean bFound = false;
+                for(int j=0; j<columns.size(); j++) {
+                    if(v.equalsIgnoreCase(columns.get(j))) {
+                        bFound = true;
+                        break;                    
+                    }
                 }
+                if(!bFound) 
+                    return false;
             }
-            if(!bFound) 
-                return false;
         }
         return true;
     }

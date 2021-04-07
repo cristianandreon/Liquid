@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.54   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  03-04-2021
+// Liquid ver.1.55   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  06-04-2021
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -9292,7 +9292,7 @@ var Liquid = {
                                 liquid.outDivObjSize = { y:liquid.outDivObj.offsetTop, x:liquid.outDivObj.offsetLeft, wx:liquid.outDivObj.offsetWidth, wy:liquid.outDivObj.offsetHeight };
                         }
                     }
-                    /// if(liquid.AAA === "testGrid4 - mode:undefined - div:testGrid4") debugger;                    
+                                      
                     liquid.referenceHeightObj = liquid.outDivObj;
                     if(liquid.referenceHeightObj) {
                         referenceHeight = liquid.referenceHeightObj.clientHeight;
@@ -9408,6 +9408,7 @@ var Liquid = {
                         if(!isDef(liquid.aggridContainerDocked) || liquid.aggridContainerDocked === false) {
                         liquid.aggridContainerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
                             if(liquid.referenceHeightObj) {
+                                if(liquid.AAA === "testGrid4 - mode:undefined - div:testGrid4") debugger;
                                 if(liquid.referenceHeightObj.offsetHeight !== referenceHeight) { // something escaped                                
                                     var gap = liquid.referenceHeightObj.offsetHeight - referenceHeight;
                                     aggridContainerHeight -= gap;
@@ -16599,7 +16600,7 @@ var Liquid = {
      */
     sendRequest:function(liquid, paramsObject, method, url, async, data, onReadyStateChange, reason, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled) {
         var thisLiquid = liquid;
-        if(typeof glLiquidWebSocket !== 'undefined' && glLiquidWebSocket) {
+        if(typeof glLiquidWebSocket !== 'undefined' && glLiquidWebSocket && async == true) {
             // Websocket
             var bCompress = false;
             var token = LiquidStreamer.generate_token(32);
