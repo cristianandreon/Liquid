@@ -1235,6 +1235,11 @@ public class db {
                             if (connToUse != null) {
                                 countQuery = "SELECT COUNT(*) AS nRows FROM " + tbl_wrk.schemaTable + " " + leftJoinList + " " + sWhere;
                                 psdo = connToUse.prepareStatement(countQuery);
+                                if(sWhereParams != null) {
+                                    for (int iParam=0; iParam<sWhereParams.size(); iParam++) {
+                                        psdo.setString(iParam+1, sWhereParams.get(iParam));
+                                    }
+                                }                                
                                 rsdo = psdo.executeQuery();
                                 if (rsdo != null) {
                                     if (rsdo.next()) {
@@ -1416,7 +1421,7 @@ public class db {
                     psdo = connToUse.prepareStatement(executingQuery);
                     if(sWhereParams != null) {
                         for (int iParam=0; iParam<sWhereParams.size(); iParam++) {
-                            psdo.setString(iParam, sWhereParams.get(iParam));
+                            psdo.setString(iParam+1, sWhereParams.get(iParam));
                         }
                     }
                     rsdo = psdo.executeQuery();
@@ -2044,10 +2049,16 @@ public class db {
                         // add where clausole
                         //
                         sWhere += sensitiveCasePreOp + preFixCol + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName + itemIdString) : (filterName)) + postFixCol + sensitiveCasePostOp
-                                + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=")
-                                + preFix + ("?") + postFix;
+                                + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=");
+                                
+                        if(sWhereParams != null) {
+                            sWhere += "?";
+                            sWhereParams.add(filterValue);
+                        } else {
+                            sWhere +=  preFix + (filterValue != null ? filterValue.replace("'", "") : "") + postFix;
+                        }
+                                
                         
-                        sWhereParams.add(filterValue);
 
                         
                         // is operator logic not 'OR' ? closing parent
@@ -3936,7 +3947,7 @@ public class db {
                     psdo = conn.prepareStatement(executingQuery);
                     if(where_condition_params != null) {
                         for (int iParam=0; iParam<where_condition_params.size(); iParam++) {
-                            psdo.setString(iParam, where_condition_params.get(iParam));
+                            psdo.setString(iParam+1, where_condition_params.get(iParam));
                         }
                     }
                     rsdo = psdo.executeQuery();
