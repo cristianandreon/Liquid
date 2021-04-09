@@ -834,6 +834,7 @@ public class db {
             }
 
             boolean bCacheIdsInAvailable = false;
+            ArrayList<String> sWhereParams = new ArrayList<String>();
             String sWhere = "";
             String sSort = "";
             String sWhereIds = "";
@@ -948,7 +949,7 @@ public class db {
                                 sWhere = process_filters_json(
                                         tbl_wrk, table, cols,
                                         isOracle, isMySQL, isPostgres, isSqlServer,
-                                        sWhere, filtersCols, filtersDefinitionCols, leftJoinsMap,
+                                        sWhere, sWhereParams, filtersCols, filtersDefinitionCols, leftJoinsMap,
                                         tableIdString, itemIdString
                                 );
                             }
@@ -1013,7 +1014,7 @@ public class db {
                                 sWhere = process_filters_json(
                                         tbl_wrk, table, cols,
                                         isOracle, isMySQL, isPostgres, isSqlServer,
-                                        sWhere, preFilters, null, leftJoinsMap,
+                                        sWhere, sWhereParams, preFilters, null, leftJoinsMap,
                                         tableIdString, itemIdString
                                 );
                             } catch (Exception e) {
@@ -1413,6 +1414,11 @@ public class db {
             try {
                 if (connToUse != null) {
                     psdo = connToUse.prepareStatement(executingQuery);
+                    if(sWhereParams != null) {
+                        for (int iParam=0; iParam<sWhereParams.size(); iParam++) {
+                            psdo.setString(iParam, sWhereParams.get(iParam));
+                        }
+                    }
                     rsdo = psdo.executeQuery();
                 }
             } catch (Exception e) {
@@ -1681,7 +1687,8 @@ public class db {
     static public String process_filters_json(
             workspace tbl_wrk, String table, JSONArray cols,
             boolean isOracle, boolean isMySQL, boolean isPostgres, boolean isSqlServer,
-            String sWhere, JSONArray filtersCols, JSONArray filtersDefinitionCols, ArrayList<LeftJoinMap> leftJoinsMap,
+            String sWhere, ArrayList<String> sWhereParams,
+            JSONArray filtersCols, JSONArray filtersDefinitionCols, ArrayList<LeftJoinMap> leftJoinsMap,
             String tableIdString, String itemIdString
     ) throws JSONException {
 
@@ -2038,7 +2045,9 @@ public class db {
                         //
                         sWhere += sensitiveCasePreOp + preFixCol + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName + itemIdString) : (filterName)) + postFixCol + sensitiveCasePostOp
                                 + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=")
-                                + preFix + (filterValue != null ? filterValue : "") + postFix;
+                                + preFix + ("?") + postFix;
+                        
+                        sWhereParams.add(filterValue);
 
                         
                         // is operator logic not 'OR' ? closing parent
@@ -3799,6 +3808,10 @@ public class db {
      * 
      */    
     static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows) {
+        return load_beans(request, controlId, databaseSchemaTable, columns, where_condition, null, maxRows);        
+    }
+    
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, ArrayList<String> where_condition_params, long maxRows) {
         // crea un controllo sulla tabella
         if(databaseSchemaTable != null)
             databaseSchemaTable = databaseSchemaTable.replace("\"", "");
@@ -3921,6 +3934,11 @@ public class db {
             try {
                 if (conn != null) {
                     psdo = conn.prepareStatement(executingQuery);
+                    if(where_condition_params != null) {
+                        for (int iParam=0; iParam<where_condition_params.size(); iParam++) {
+                            psdo.setString(iParam, where_condition_params.get(iParam));
+                        }
+                    }
                     rsdo = psdo.executeQuery();
                 }
             } catch (Exception e) {
@@ -6380,6 +6398,8 @@ public class db {
         String database = null, schema = null, table = null;
         String targetTable = null, targetSchema = null, targetDatabase = null;
         String sourceControlId = null, targetControlId = null, where_condition_source = "", where_condition_target = "", error = "";
+        ArrayList<String> where_condition_source_params = new ArrayList<String>();
+        ArrayList<String> where_condition_target_params = new ArrayList<String>();
         String sourcePrimaryKey = null, targetPrimaryKey = null, targetPrimaryKeyForCompare = null;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         HttpServletRequest request = null;
@@ -6471,7 +6491,8 @@ public class db {
                             JSONArray filtersCols = wrapFilters(sourceRowsFilters);
                             where_condition_source = process_filters_json(source_tbl_wrk, table, cols,
                                     isOracle, isMySQL, isPostgres, isSqlServer,
-                                    where_condition_source, filtersCols, null, leftJoinsMap,
+                                    where_condition_source, where_condition_source_params,
+                                    filtersCols, null, leftJoinsMap,
                                     tableIdString, itemIdString
                             );
                         }
@@ -6500,7 +6521,7 @@ public class db {
                             JSONArray filtersCols = wrapFilters(targetRowsFilters);
                             where_condition_target = process_filters_json(source_tbl_wrk, targetTable, cols,
                                     isOracle, isMySQL, isPostgres, isSqlServer,
-                                    where_condition_target, filtersCols, null, leftJoinsMap,
+                                    where_condition_target, where_condition_target_params, filtersCols, null, leftJoinsMap,
                                     tableIdString, itemIdString
                             );
                         }
