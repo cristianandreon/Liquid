@@ -6,9 +6,12 @@ import static com.liquid.workspace.check_database_definition;
 import com.liquid.metadata.ForeignKey;
 
 import java.beans.IntrospectionException;
+import java.io.ByteArrayInputStream;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -834,7 +837,7 @@ public class db {
             }
 
             boolean bCacheIdsInAvailable = false;
-            ArrayList<String> sWhereParams = new ArrayList<String>();
+            ArrayList<Object> sWhereParams = new ArrayList<Object>();
             String sWhere = "";
             String sSort = "";
             String sWhereIds = "";
@@ -1237,7 +1240,7 @@ public class db {
                                 psdo = connToUse.prepareStatement(countQuery);
                                 if(sWhereParams != null) {
                                     for (int iParam=0; iParam<sWhereParams.size(); iParam++) {
-                                        psdo.setString(iParam+1, sWhereParams.get(iParam));
+                                        set_statement_param( psdo, iParam+1, sWhereParams.get(iParam) );
                                     }
                                 }                                
                                 rsdo = psdo.executeQuery();
@@ -1421,7 +1424,7 @@ public class db {
                     psdo = connToUse.prepareStatement(executingQuery);
                     if(sWhereParams != null) {
                         for (int iParam=0; iParam<sWhereParams.size(); iParam++) {
-                            psdo.setString(iParam+1, sWhereParams.get(iParam));
+                            set_statement_param( psdo, iParam+1, sWhereParams.get(iParam) );
                         }
                     }
                     rsdo = psdo.executeQuery();
@@ -1692,7 +1695,7 @@ public class db {
     static public String process_filters_json(
             workspace tbl_wrk, String table, JSONArray cols,
             boolean isOracle, boolean isMySQL, boolean isPostgres, boolean isSqlServer,
-            String sWhere, ArrayList<String> sWhereParams,
+            String sWhere, ArrayList<Object> sWhereParams,
             JSONArray filtersCols, JSONArray filtersDefinitionCols, ArrayList<LeftJoinMap> leftJoinsMap,
             String tableIdString, String itemIdString
     ) throws JSONException {
@@ -2005,6 +2008,8 @@ public class db {
                             sWhere += "\nWHERE ";
                         }
 
+                        Object filterValueObject = toJavaType(type, (Object)filterValue);
+                        
                         //
                         // compute the value by metadata
                         //
@@ -2053,7 +2058,7 @@ public class db {
                                 
                         if(sWhereParams != null) {
                             sWhere += "?";
-                            sWhereParams.add(filterValue);
+                            sWhereParams.add(filterValueObject);
                         } else {
                             sWhere +=  preFix + (filterValue != null ? filterValue.replace("'", "") : "") + postFix;
                         }
@@ -3949,6 +3954,9 @@ public class db {
                         for (int iParam=0; iParam<where_condition_params.size(); iParam++) {
                             psdo.setString(iParam+1, where_condition_params.get(iParam));
                         }
+                    } else {
+                        // TODO: Migliramento sicurezza nel caso di stringa malformata
+                        // N.B.: Gestione degli apici a carico della chiamante (SQL Ignection)
                     }
                     rsdo = psdo.executeQuery();
                 }
@@ -6409,8 +6417,8 @@ public class db {
         String database = null, schema = null, table = null;
         String targetTable = null, targetSchema = null, targetDatabase = null;
         String sourceControlId = null, targetControlId = null, where_condition_source = "", where_condition_target = "", error = "";
-        ArrayList<String> where_condition_source_params = new ArrayList<String>();
-        ArrayList<String> where_condition_target_params = new ArrayList<String>();
+        ArrayList<Object> where_condition_source_params = new ArrayList<Object>();
+        ArrayList<Object> where_condition_target_params = new ArrayList<Object>();
         String sourcePrimaryKey = null, targetPrimaryKey = null, targetPrimaryKeyForCompare = null;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         HttpServletRequest request = null;
@@ -7136,6 +7144,141 @@ public class db {
             }            
         }        
         return retVal;
+    }
+
+    public static boolean isNumeric(int sqlType) {
+            return Types.BIT == sqlType || Types.BIGINT == sqlType || Types.DECIMAL == sqlType ||
+                            Types.DOUBLE == sqlType || Types.FLOAT == sqlType || Types.INTEGER == sqlType ||
+                            Types.NUMERIC == sqlType || Types.REAL == sqlType || Types.SMALLINT == sqlType ||
+                            Types.TINYINT == sqlType;
+    }
+    
+    private static boolean isLongType(int type) {
+        boolean isValidLongType = type == Types.BIGINT || type == Types.INTEGER || type == Types.SMALLINT || type == Types.TINYINT;
+
+        // Oracle
+        isValidLongType |= type == Types.NUMERIC;
+
+        return isValidLongType;
+    }
+    
+    
+    public static Object toJavaType(int typeCode, Object value) {
+        switch (typeCode) {
+            case Types.ARRAY:
+                return (Array)value;
+            case Types.BIGINT:
+                if(value instanceof String) {
+                    return (Long)Long.parseLong((String)value);
+                } else if(value instanceof Double) {
+                    return (Long)((Double)value).longValue();
+                } else if(value instanceof Float) {
+                    return (Long)((Float)value).longValue();
+                } else {
+                    return (Long)value;
+                }
+            case Types.BINARY:
+                return (byte[])value;
+            case Types.BIT:
+                return (boolean)value;
+            case Types.BLOB:
+                return (Blob)value;
+            case Types.BOOLEAN:
+                return (boolean)value;
+            case Types.CHAR:
+                return (String)value;
+            case Types.CLOB:
+                return (Clob)value;
+            // case Types.DATALINK:
+            case Types.DATE:
+                return (java.sql.Date)value;
+            case Types.DECIMAL:
+                return (java.math.BigDecimal)value;
+            // case Types.DISTINCT:
+            case Types.DOUBLE:
+                return (Double)value;
+            case Types.FLOAT:
+                return (Float)value;
+            case Types.INTEGER:
+                return (Integer)value;
+            // case Types.JAVA_OBJECT:
+            // case Types.LONGNVARCHAR:
+            // case Types.LONGVARBINARY:
+            case Types.LONGVARCHAR:
+                return (String)value;
+            // case Types.NCHAR:
+            // case Types.NCLOB:
+            // case Types.NULL:
+            case Types.NUMERIC:
+                return (java.math.BigDecimal)value;
+            // case Types.NVARCHAR:
+            // case Types.OTHER:
+            case Types.REAL:
+                return (Float)value;
+            case Types.REF:
+                return (Ref)value;
+            // case Types.REF_CURSOR:
+            // case Types.ROWID:
+            case Types.SMALLINT:
+                return (Short)value;
+            // case Types.SQLXML:
+            case Types.STRUCT:
+                return (Struct)value;
+            case Types.TIME:
+                return (java.sql.Time)value;
+            case Types.TIME_WITH_TIMEZONE:
+                return (java.sql.Time)value;
+            case Types.TIMESTAMP:
+                return (java.sql.Timestamp)value;
+            case Types.TIMESTAMP_WITH_TIMEZONE:
+                return (java.sql.Timestamp)value;
+            case Types.TINYINT:
+                return (Byte)value;
+            // case Types.VARBINARY:
+            case Types.VARCHAR:
+                return (String)value;
+            default:
+                return (String)value;
+        }
+    }    
+    
+    public static void set_statement_param( PreparedStatement psdo, int iParam, Object Param ) throws SQLException {
+        if(psdo != null) {
+            if(Param == null) {
+                int sqltype = 1;
+                psdo.setNull(iParam, sqltype);
+            } else if (Param instanceof String) {
+                psdo.setString(iParam, (String)Param);
+            } else if (Param instanceof Integer) {
+                psdo.setInt(iParam, (Integer)Param);
+            } else if (Param instanceof Long) {
+                psdo.setLong(iParam, (Long)Param);
+            } else if (Param instanceof java.math.BigDecimal) {
+                psdo.setBigDecimal(iParam, (java.math.BigDecimal)Param);
+            } else if (Param instanceof Double) {
+                psdo.setDouble(iParam, (Double)Param);
+            } else if (Param instanceof Double) {
+                psdo.setDouble(iParam, (Double)Param);
+            } else if (Param instanceof Float) {
+                psdo.setFloat(iParam, (Float)Param);
+            } else if (Param instanceof Boolean) {
+                psdo.setBoolean(iParam, (Boolean)Param);
+            } else if (Param instanceof java.sql.Time) {
+                psdo.setTime(iParam, (java.sql.Time)Param);
+            } else if (Param instanceof java.sql.Date) {
+                psdo.setDate(iParam, (java.sql.Date)Param);
+            } else if (Param instanceof java.sql.Timestamp) {
+                psdo.setTimestamp(iParam, (java.sql.Timestamp)Param);
+            } else if (Param instanceof Blob) {
+                psdo.setBlob(iParam, (Blob)Param);
+            } else if (Param instanceof Clob) {
+                psdo.setClob(iParam, (Clob)Param);
+            } else if (Param instanceof Byte) {
+                psdo.setByte(iParam, (Byte)Param);
+            } else if (Param instanceof byte []) {
+                psdo.setBinaryStream(iParam, new ByteArrayInputStream((byte [])Param));
+            }
+        }
     }
     
 }
