@@ -2070,7 +2070,7 @@ public class db {
                         
                         // is operator logic not 'OR' ? closing parent
                         if(!"OR".equalsIgnoreCase(filterLogic)) {
-                            if(parentCount>0) {
+                            if(parentesisCount>0) {
                                 sWhere += ")";
                                 parentesisCount--;
                             }
