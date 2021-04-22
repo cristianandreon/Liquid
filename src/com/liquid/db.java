@@ -1701,7 +1701,7 @@ public class db {
     ) throws JSONException {
 
         String error = "";
-        int parentCount = 0;
+        int parentesisCount = 0;
 
         for (int i = 0; i < filtersCols.length(); i++) {
             JSONObject filtersCol = filtersCols.getJSONObject(i);
@@ -2035,9 +2035,11 @@ public class db {
                         }
 
                         // is operator logic not 'OR' ? closing parent
-                        if("OR".equalsIgnoreCase(filterNextLogic)) {
-                            sWhere += "(";
-                            parentCount++;
+                        if("OR".equalsIgnoreCase(filterNextOp)) {
+                            if(parentesisCount == 0) {
+                                sWhere += "(";
+                                parentesisCount++;
+                            }
                         }
 
 
@@ -2070,13 +2072,13 @@ public class db {
                         if(!"OR".equalsIgnoreCase(filterLogic)) {
                             if(parentCount>0) {
                                 sWhere += ")";
-                                parentCount--;
+                                parentesisCount--;
                             }
                         }
 
                         // is the last Filter ? closing open parents
-                        if(i >= filtersCols.length()) {
-                            for (int ip=0; ip<parentCount; ip++) {
+                        if(i+1 >= filtersCols.length()) {
+                            for (int ip=0; ip<parentesisCount; ip++) {
                                 sWhere += ")";
                             }
                         }                        
