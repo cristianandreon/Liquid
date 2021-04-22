@@ -2034,7 +2034,8 @@ public class db {
                             }
                         }
 
-                        // is operator logic not 'OR' ? closing parent
+                        
+                        // is next operator logic not 'OR' ? closing parent
                         if("OR".equalsIgnoreCase(filterNextLogic)) {
                             if(parentesisCount == 0) {
                                 sWhere += "(";
