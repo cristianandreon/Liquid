@@ -9411,8 +9411,10 @@ var Liquid = {
                                 if(liquid.AAA === "testGrid4 - mode:undefined - div:testGrid4") debugger;
                                 if(liquid.referenceHeightObj.offsetHeight !== referenceHeight) { // something escaped                                
                                     var gap = liquid.referenceHeightObj.offsetHeight - referenceHeight;
-                                    aggridContainerHeight -= gap;
-                                    liquid.aggridContainerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                                    if(gap<=4) {
+                                        aggridContainerHeight -= gap;
+                                        liquid.aggridContainerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                                    }
                                 }
                             }
                             liquid.aggridContainerHeight = aggridContainerHeight;
