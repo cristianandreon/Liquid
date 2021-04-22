@@ -39,6 +39,11 @@
 <script src="<%=path%>/liquid/gzip.min.js"></script>
 
 
+<!-- Popup -->
+<link href="<%=path%>/liquid/popup/popup.css?version=<%=jssVersion%>" rel="stylesheet">
+<script src="<%=path%>/liquid/popup/popup.js?version=<%=jssVersion%>"></script>
+
+
 <link rel="stylesheet" href="<%=path%>/liquid/liquid.css?version=<%=jssVersion%>" type='text/css' />
 <script type="text/javascript" src="<%=path%>/liquid/liquid.js?version=<%=jssVersion%>"></script>
 <!-- -->

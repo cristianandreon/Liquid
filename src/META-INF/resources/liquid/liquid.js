@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.55   Copyright 2020 Cristian Andreon - cristianandreon.eu
+// Liquid ver.1.56   Copyright 2020 Cristian Andreon - cristianandreon.eu
 //  First update 04-01-2020 - Last update  06-04-2021
 //  TODO : see trello.com
 //
@@ -14408,7 +14408,22 @@ var Liquid = {
             xhr.send();
         }
     },            
-    dialogBox:function(parentObj, title, message, onOk, onCancel) {
+     /**
+      * 
+      * @param {type} htmlId
+      * @param {type} callback (function callbackDialog(btnName) ... )
+      * @returns {dialog gabdler)
+      */
+    Popup:function( htmlId, callback ) {
+        
+        var dialog = new Pupup(htmlId, callback);
+
+        // Show Dialog Box
+	dialog.showDialog();
+        
+        return dialog;
+        
+    },dialogBox:function(parentObj, title, message, onOk, onCancel) {
         var buttons = [ ];        
         if(onOk) buttons.push( { 
             text: (isDef(onOk.text) ? onOk.text : "Ok"), 

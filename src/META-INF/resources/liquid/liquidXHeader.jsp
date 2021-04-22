@@ -40,6 +40,11 @@
 <script src="<%=path%>/liquid/gzip.min.js"></script>
 
 
+<!-- Popup -->
+<link href="<%=path%>/liquid/popup/popup.css?version=<%=jssVersion%>" rel="stylesheet">
+<script src="<%=path%>/liquid/popup/popup.js?version=<%=jssVersion%>"></script>
+
+
 <!-- -->
 <!-- Client side files -->
 <!-- -->
