@@ -44,7 +44,7 @@ public class event {
          * @return less than 0 for fail, 0 for none, greater than 0 for success
          * @see db
          */
-        public int callback(Object p1, Object p2, Object p3, Object p4, Object p5);
+        public String callback(Object p1, Object p2, Object p3, Object p4, Object p5);
     }
 
     static public String execute(HttpServletRequest request, JspWriter out) {
@@ -104,8 +104,6 @@ public class event {
                         return process_next_event(retVal, tbl_wrk, params, clientData, (Object) request);
                     } catch (Exception e) {
                     }
-
-                    return retVal;
                 }
 
             } catch (InvocationTargetException ite) {

@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.56   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  06-04-2021
+// Liquid ver.1.57   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  28-04-2021
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -287,7 +287,9 @@ class LiquidCtrl {
             if(typeof this.tableJson.tableJsonVariableName !== 'undefined')
                 this.tableJsonVariableName = this.tableJson.tableJsonVariableName;
             else
-                this.tableJsonVariableName = Liquid.getGlobalVarByContent(tableJsonString);
+                if(tableJsonString)
+                    if(tableJsonString.charAt(0) != "{")
+                        this.tableJsonVariableName = Liquid.getGlobalVarByContent(tableJsonString);
 
             // Runtime mode (no db) ?
             if(!isDef(this.tableJson.query)) {
@@ -1747,7 +1749,7 @@ class LiquidCtrl {
                             bt.style.borderStyle = "solid";
                             // div.onmouseover = Liquid.toolbarButtonMouseOver
                             // div.onmouseout = Liquid.toolbarButtonMouseOut
-                            bt.onclick = Liquid.onCommandBarClick;
+                            bt.onclick = Liquid.onCommandBarClickDeferred;
                             bt.style.pointerEvents = 'all';
                             bt.style.cursor = 'pointer';
                             bt.id = controlId + ".action." + this.tableJson.actions[i].name;
@@ -3920,14 +3922,14 @@ var Liquid = {
                         }
                     }
                     var editable = (liquid.tableJson.columns[ic].foreignTable ? (liquid.tableJson.columns[ic].foreignEdit === true ? true : false) : (liquid.tableJson.columns[ic].readonly === true ? false : true));
-                    editable = (editable & ( (liquid.tableJson.editable === true ? true : false) || (liquid.tableJson.editable === 'true' ? true : false) )) ? true : false;
-                    editable = (editable & ( isDef(liquid.tableJson.columns[ic].lookup) ? false : true )); // N.B.: lookup cannot be changed directly referenced id will be wrong
+                    editable = (editable && ( (liquid.tableJson.editable === true ? true : false) || (liquid.tableJson.editable === 'true' ? true : false) )) ? true : false;
+                    editable = (editable && ( isDef(liquid.tableJson.columns[ic].lookup) ? false : true )); // N.B.: lookup cannot be changed directly referenced id will be wrong
                     var col = liquid.tableJson.columns[ic];
                     var sortComparator = null;
                     var typeColumn = null;                    
                     if(!editable) {
                         if(Liquid.debug) {
-                            console.warn("LIQUID: "+liquid.controlId+" is not editable");
+                            console.warn("LIQUID: "+liquid.controlId+"."+liquid.tableJson.columns[ic].name+" is not editable");
                         }
                     }                    
                     if(Liquid.isFloat(col.type)) {
@@ -7976,7 +7978,15 @@ var Liquid = {
                                 if(clientFunc && typeof clientFunc === "function") {
                                     retVal = clientFunc(liquid, liquidCommandParams);
                                 } else if(typeof clients[i] === "string" && clients[i]) {
-                                    try { retVal = eval(clients[i]); } catch(e) { if(isNative===true) {} else { console.error("ERROR: on control:"+liquid.controlId+" at "+sourceDesciption+"\nAn error occours in function:'" + clients[i]+"' ..\nError:"+e); } }
+                                    var clientCode = null;
+                                    try { clientCode = atob(clients[i]); } catch(e) { clientCode = clients[i]; }
+                                    try { 
+                                        retVal = eval(clientCode);
+                                    }  catch(e) { 
+                                        if(isNative===true) {} else { 
+                                            console.error("ERROR: on control:"+liquid.controlId+" at "+sourceDesciption+"\nAn error occours in function:'" + clientCode+"' ..\nError:"+e); 
+                                        } 
+                                    }
                                 }
                             } catch(e) {
                                 console.error("Error in Function :" + clients[i]+" error:"+e);
@@ -9595,11 +9605,20 @@ var Liquid = {
             }
         }
     },
+    onCommandBarClickDeferred:function(event) {
+        var obj = this;
+        setTimeout(function() {
+            Liquid.onCommandBarClickProcess(obj, event);
+        }, 100);
+    },
     onCommandBarClick:function(event) {
-        var nameItems = this.id.split(".");
+        return Liquid.onCommandBarClickProcess(this, event);
+    },
+    onCommandBarClickProcess:function(obj, event) {
+        var nameItems = obj.id.split(".");
         if(nameItems.length > 2) {
             var cmdName = nameItems[2];
-            var liquid = Liquid.getLiquid(this);
+            var liquid = Liquid.getLiquid(obj);
             if(liquid) {
                 try {
                     if(isDef(liquid.gridOptions)) {
@@ -9607,7 +9626,7 @@ var Liquid = {
                             var editingcells = liquid.gridOptions.api.getEditingCells();
                             if(editingcells && editingcells.length) {
                                 liquid.gridOptions.api.stopEditing();
-                                liquid.pendingCommand = {commandBar: true, commandName: cmdName, obj: this};
+                                liquid.pendingCommand = {commandBar: true, commandName: cmdName, obj: obj};
                                 return;
                             }
                         }

@@ -1023,8 +1023,8 @@ public class db {
                             } catch (Exception e) {
                                 error += "[preFilters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId+"]";
                                 System.err.println("// pre Filters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId);
-                            }
-                            
+                                throw new Exception(e);
+                            }                            
                         }
                     }
                 }
@@ -1698,7 +1698,7 @@ public class db {
             String sWhere, ArrayList<Object> sWhereParams,
             JSONArray filtersCols, JSONArray filtersDefinitionCols, ArrayList<LeftJoinMap> leftJoinsMap,
             String tableIdString, String itemIdString
-    ) throws JSONException {
+    ) throws JSONException, Exception {
 
         String error = "";
         int parentesisCount = 0;
@@ -1799,6 +1799,9 @@ public class db {
                                 // filterName = colAlias != null ? colAlias : filterName;
                                 bFoundCol = true;
                                 break;
+                            } else if((table+"."+filterName).equalsIgnoreCase(colName)) {
+                                bFoundCol = true;
+                                break;
                             }
                         }
                         
@@ -1841,17 +1844,23 @@ public class db {
                         // undetected case
                     }
 
-                    if (col != null) {
-                        try {
-                            type = col.getInt("type");
-                        } catch (Exception e) {
-                        }
-                        try {
-                            nullable = col.getBoolean("nullable");
-                        } catch (Exception e) {
+                    if(bFoundCol) {
+                        if (col != null) {
+                            try {
+                                type = col.getInt("type");
+                            } catch (Exception e) {
+                            }
+                            try {
+                                nullable = col.getBoolean("nullable");
+                            } catch (Exception e) {
+                            }
+                        } else {
+                            String err = " Filters Error: column '" + filterName + "' not defined on control " +tbl_wrk.controlId+ "]";
+                            error += err;
+                            System.err.println(err);
                         }
                     } else {
-                        String err = " Filters Error: column '" + filterName + "' not defined" + "]";
+                        String err = " Filters Error: column '" + filterName + "' not found on control " +tbl_wrk.controlId+ "]";
                         error += err;
                         System.err.println(err);
                     }
@@ -1983,6 +1992,8 @@ public class db {
                             }
                         }
                     }
+                    
+                    boolean bUseParams = true;
 
                     String sensitiveCasePreOp = "";
                     String sensitiveCasePostOp = "";
@@ -1990,9 +2001,13 @@ public class db {
                         if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
                             // numeric                                                
                         } else {
-                            filterValue = filterValue.toLowerCase();
-                            sensitiveCasePreOp = "lower(";
-                            sensitiveCasePostOp = ")";
+                            if(bFoundCol) {
+                                filterValue = filterValue.toLowerCase();
+                                sensitiveCasePreOp = "lower(";
+                                sensitiveCasePostOp = ")";
+                            } else {
+                                // Non si sa che colonna è : lower su dato numero costituisce eccezione
+                            }
                         }
                     }
 
@@ -2008,14 +2023,36 @@ public class db {
                             sWhere += "\nWHERE ";
                         }
 
-                        Object filterValueObject = toJavaType(type, (Object)filterValue);
+                        // Formattazione del dato
+                        Object filterValueObject = null;
+                        if ("IN".equalsIgnoreCase(filterOp)) {
+                            // Conversione in Array
+                            String [] filterValues = filterValue.split(",");
+                            ArrayList<Object> filterValueObjects = new ArrayList<Object>();
+                            for(int iv=0; iv<filterValues.length; iv++) {
+                                String val = filterValues[iv];
+                                filterValueObjects.add( toJavaType(type, (Object)val) );                                
+                            }
+                            filterValueObject = (Object)filterValueObjects;
+                        } else{
+                            filterValueObject = toJavaType(type, (Object)filterValue);
+                        }
+                        
+                        
                         
                         //
                         // compute the value by metadata
                         //
                         int filterValueType = (int)1;
                         if ("IN".equalsIgnoreCase(filterOp)) {
-                            // no format to perform
+                            //
+                            // Un disastro con i parametri ....
+                            // e = (PSQLException) org.postgresql.util.PSQLException: ERROR: operator does not exist: bigint = bigint[] Hint: No operator matches the given name and argument types. You might need to add explicit type casts. Position: 78
+                            //
+                            bUseParams = false;
+                            preFix = "(";
+                            postFix = ")";
+                            
                         } else {
                             Object[] fres = format_db_value(tbl_wrk, type, nullable, filterValue, filterOp);
                             filterValue = (String) fres[0];
@@ -2049,7 +2086,7 @@ public class db {
                         //
                         if (filterValueType == 1) {
                             if(filterValue.indexOf("'") >= 0) {
-                                    filterValue = filterValue.replace("'", "''");
+                                filterValue = filterValue.replace("'", "''");
                             }
                         }
                         
@@ -2059,8 +2096,8 @@ public class db {
                         sWhere += sensitiveCasePreOp + preFixCol + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName + itemIdString) : (filterName)) + postFixCol + sensitiveCasePostOp
                                 + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=");
                                 
-                        if(sWhereParams != null) {
-                            sWhere += "?";
+                        if(bUseParams &&  sWhereParams != null) {
+                            sWhere += preFix + ("?") + postFix;
                             sWhereParams.add(filterValueObject);
                         } else {
                             sWhere +=  preFix + (filterValue != null ? filterValue.replace("'", "") : "") + postFix;
@@ -2088,6 +2125,7 @@ public class db {
             } catch (Exception e) {
                 error += " Filters Error:" + e.getLocalizedMessage() + "]";
                 System.err.println("// " + e.getLocalizedMessage());
+                throw new Exception(e);
             }
         }
 
@@ -4916,7 +4954,7 @@ public class db {
      */    
     static public String processModification(Object p1, Object p2, Object p3, Object p4, Object p5, String type) {
         Connection conn = null, connToDB = null, connToUse = null;
-        String retVal = "";
+        String retVal = "", retValCbk = "";
         int nForeignUpdates = 0, nUpdates = 0;
         ArrayList<String> foreignTableUpdates = new ArrayList<>();
         ArrayList<String> tableUpdates = new ArrayList<>();
@@ -5050,8 +5088,10 @@ public class db {
                                             }
                                             if (p5 != null) {
                                                 try {
-                                                    ((event.eventCallback) p5).callback(p1, p2, p3, p4, (Object) modificationJSON);
+                                                    String resCbk = ((event.eventCallback)p5).callback(p1, p2, p3, p4, (Object) modificationJSON);
+                                                    retValCbk += (resCbk != null ? resCbk : "");
                                                 } catch (Throwable th) {
+                                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
                                                 }
                                             }
 
@@ -5374,6 +5414,7 @@ public class db {
                                     + "], \"fails\":["
                                     + workspace.arrayToString(modificationsFaild.toArray(), null, null, ",")
                                     + "]"
+                                    + ",\"client\":"+"\""+retValCbk+"\""
                                     + "}";
 
                         } catch (Throwable th) {
@@ -6550,6 +6591,7 @@ public class db {
                     } catch (Exception e) {
                         error += "[Filters Error:" + e.getLocalizedMessage() + "]" + "[Driver:" + source_tbl_wrk.driverClass + "]";
                         System.err.println("// Filters Error:" + e.getLocalizedMessage());
+                        throw new Exception(e);
                     }
 
                     if (where_condition_target == null || where_condition_target.isEmpty()) {
@@ -7243,7 +7285,50 @@ public class db {
             default:
                 return (String)value;
         }
-    }    
+    }
+    
+    
+    private static String javaToSQLName( Object Param ) {
+        if(Param == null) {
+            return "";
+        } else if (Param instanceof String) {
+            return "varchar";
+        } else if (Param instanceof Integer) {
+            return "int4";
+        } else if (Param instanceof Long) {
+            return "int8";
+        } else if (Param instanceof java.math.BigDecimal) {
+            return "???";
+        } else if (Param instanceof Double) {
+            return "float8";
+        } else if (Param instanceof Float) {
+            return "float4";
+        } else if (Param instanceof Boolean) {
+            return "bool";
+        } else if (Param instanceof java.sql.Time) {
+            return "TIME";
+        } else if (Param instanceof java.sql.Date) {
+            return "DATE";
+        } else if (Param instanceof java.sql.Timestamp) {
+            return "TIMESTAMP";
+        } else if (Param instanceof Blob) {
+            return "BINARY";
+        } else if (Param instanceof Clob) {
+            return "BINARY";
+        } else if (Param instanceof Byte) {
+            return "BINARY";
+        } else if (Param instanceof Array) {
+            return "ARRAY";
+        } else if (Param instanceof ArrayList) {
+            return "ARRAY";
+        } else {
+            return "";
+        }
+    }
+
+    
+    
+    
     
     public static void set_statement_param( PreparedStatement psdo, int iParam, Object Param ) throws SQLException {
         if(psdo != null) {
@@ -7258,8 +7343,6 @@ public class db {
                 psdo.setLong(iParam, (Long)Param);
             } else if (Param instanceof java.math.BigDecimal) {
                 psdo.setBigDecimal(iParam, (java.math.BigDecimal)Param);
-            } else if (Param instanceof Double) {
-                psdo.setDouble(iParam, (Double)Param);
             } else if (Param instanceof Double) {
                 psdo.setDouble(iParam, (Double)Param);
             } else if (Param instanceof Float) {
@@ -7278,8 +7361,17 @@ public class db {
                 psdo.setClob(iParam, (Clob)Param);
             } else if (Param instanceof Byte) {
                 psdo.setByte(iParam, (Byte)Param);
-            } else if (Param instanceof byte []) {
-                psdo.setBinaryStream(iParam, new ByteArrayInputStream((byte [])Param));
+            } else if (Param instanceof Array) {
+                psdo.setArray(iParam, (Array)Param);
+            } else if (Param instanceof ArrayList) {
+                if(Param != null) {
+                    if(((ArrayList) Param).size() > 0) {
+                        Object firstObject = ((ArrayList<Object>)Param).get(0);
+                        String typeName = javaToSQLName(firstObject);
+                        java.sql.Array arrayParam = psdo.getConnection().createArrayOf(typeName, ((ArrayList<Object>)Param).toArray() );
+                        psdo.setArray(iParam, arrayParam);
+                    }
+                }
             }
         }
     }
