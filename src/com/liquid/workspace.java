@@ -409,7 +409,6 @@ public class workspace {
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id
-     * {@link controlId}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -430,7 +429,6 @@ public class workspace {
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id
-     * {@link controlId}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -451,7 +449,6 @@ public class workspace {
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id
-     * {@link controlId}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -473,7 +470,6 @@ public class workspace {
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id
-     * {@link controlId}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -497,7 +493,6 @@ public class workspace {
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id
-     * {@link controlId}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -536,7 +531,6 @@ public class workspace {
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id
-     * {@link controlId}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -557,7 +551,6 @@ public class workspace {
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id
-     * {@link controlId}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -579,7 +572,6 @@ public class workspace {
     /**
      * <h3>Register a control in order to use it in the browser</h3>
      * The controlId argument must specify an absolute control id
-     * {@link controlId}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -889,12 +881,15 @@ public class workspace {
 
             String driver = db.getDriver(conn);
             if ("mysql".equalsIgnoreCase(driver)) {
+                defaultSchema = null;
             } else if ("mariadb".equalsIgnoreCase(driver)) {
+                defaultSchema = null;
             } else if ("postgres".equalsIgnoreCase(driver)) {
-                defaultSchema = conn.getMetaData().getUserName();
+                defaultSchema = null;
             } else if ("oracle".equalsIgnoreCase(driver)) {
                 defaultSchema = conn.getMetaData().getUserName();
             } else if ("sqlserver".equalsIgnoreCase(driver)) {
+                defaultSchema = null;
             }
 
             // aggiunto per oracle
@@ -1151,7 +1146,6 @@ public class workspace {
                         JSONObject col = cols.getJSONObject(ic);
                         String[] colParts = col.getString("name").split("\\.");
 
-                        String foreignColumn = null, column = null;
                         ArrayList<String> foreignColumns = new ArrayList<String>();
                         ArrayList<String> columns = new ArrayList<String>();
 
@@ -1161,17 +1155,19 @@ public class workspace {
                             foreignTable = null;
                         }
                         try {
-                            if (col.has("foreignColumn")) {
+                            if (col.has("foreignColumns")) {
                                 JSONArray json_foreign_columns = null;
                                 try {
-                                    col.getJSONArray("foreignColumn");
+                                    col.getJSONArray("foreignColumns");
                                 } catch (Exception e) {
                                 }
                                 if (json_foreign_columns != null) {
                                     for (int ia = 0; ia < json_foreign_columns.length(); ia++) {
                                         foreignColumns.add(json_foreign_columns.getString(ia));
                                     }
-                                } else {
+                                }
+                            } else {
+                                if (col.has("foreignColumn")) {
                                     foreignColumns.add(col.getString("foreignColumn"));
                                 }
                             }
@@ -1180,17 +1176,19 @@ public class workspace {
                         }
 
                         try {
-                            if (col.has("column")) {
+                            if (col.has("columns")) {
                                 JSONArray json_columns = null;
                                 try {
-                                    json_columns = col.getJSONArray("column");
+                                    json_columns = col.getJSONArray("columns");
                                 } catch (Exception e) {
                                 }
                                 if (json_columns != null) {
                                     for (int ia = 0; ia < json_columns.length(); ia++) {
                                         foreignColumns.add(json_columns.getString(ia));
                                     }
-                                } else {
+                                }
+                            } else {
+                                if (col.has("column")) {
                                     columns.add(col.getString("column"));
                                 }
                             }
@@ -1201,7 +1199,7 @@ public class workspace {
                         if (colParts.length > 1) { // campo esterno ...
                             if (!colParts[0].equalsIgnoreCase(table)) {
                                 int foreignIndex = -1;
-                                if (foreignTable == null || foreignColumn == null || column == null) {
+                                if (foreignTable == null || foreignColumns == null || columns == null) {
                                     if (foreignKeysOnTable == null) {
                                         try {
                                             foreignKeysOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
@@ -1209,6 +1207,8 @@ public class workspace {
                                             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                                         }
                                     }
+
+                                    // lettura delle foreignKey e set foreignColumn/column se non gia' definiti
                                     if (foreignKeysOnTable != null) {
                                         for (int ifk = 0; ifk < foreignKeysOnTable.size(); ifk++) {
                                             metadata.ForeignKey foreignKey = foreignKeysOnTable.get(ifk);
@@ -1218,24 +1218,20 @@ public class workspace {
                                                         col.put("foreignTable", foreignKey.foreignTable);
                                                         foreignTable = foreignKey.foreignTable;
                                                     }
-                                                    if (foreignKey.foreignColumns.size() > 1) {
-                                                        if (foreignColumn == null) {
-                                                            col.put("foreignColumn", foreignKey.foreignColumns);
+                                                    if (foreignColumns == null) {
+                                                        if (foreignKey.foreignColumns.size() > 1) {
+                                                            col.put("foreignColumns", foreignKey.foreignColumns);
                                                             foreignColumns = foreignKey.foreignColumns;
-                                                        }
-                                                    } else {
-                                                        if (foreignColumn == null) {
+                                                        } else {
                                                             col.put("foreignColumn", foreignKey.foreignColumns.get(0));
                                                             foreignColumns = foreignKey.foreignColumns;
                                                         }
                                                     }
-                                                    if (foreignKey.foreignColumns.size() > 1) {
-                                                        if (column == null) {
-                                                            col.put("column", foreignKey.columns);
+                                                    if (columns == null) {
+                                                        if (foreignKey.foreignColumns.size() > 1) {
+                                                            col.put("columns", foreignKey.columns);
                                                             columns = foreignKey.columns;
-                                                        }
-                                                    } else {
-                                                        if (column == null) {
+                                                        } else {
                                                             col.put("column", foreignKey.columns.get(0));
                                                             columns = foreignKey.columns;
                                                         }
@@ -1246,9 +1242,9 @@ public class workspace {
                                         }
                                     }
                                 }
-                                if (foreignTable != null && foreignColumn != null && column != null) {
+                                if (foreignTable != null && foreignColumns != null && columns != null) {
                                     if (foreignKeysOnTable != null) {
-                                        if (foreignTable != null && foreignColumn != null && column != null) {
+                                        if (foreignTable != null && foreignColumns != null && columns != null) {
                                             for (int ifk = 0; ifk < foreignKeysOnTable.size(); ifk++) {
                                                 metadata.ForeignKey foreignKey = foreignKeysOnTable.get(ifk);
                                                 if (foreignKey != null) {
@@ -1269,7 +1265,7 @@ public class workspace {
                                             foreignKeysOnTable = new ArrayList<metadata.ForeignKey>();
                                         }
                                         foreignIndex = foreignKeysOnTable.size();
-                                        foreignKeysOnTable.add(new metadata.ForeignKey(foreignTable, foreignColumn, column, null));
+                                        foreignKeysOnTable.add(new metadata.ForeignKey(foreignTable, foreignColumns, columns, null));
                                     }
                                 }
                             }
@@ -2461,7 +2457,7 @@ public class workspace {
 
     /**
      * <h3>Register a button in order to use it in the browser</h3>
-     * The name argument must specify an absolute button name {@link controlId}.
+     * The name argument must specify an absolute button name.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -2478,7 +2474,7 @@ public class workspace {
 
     /**
      * <h3>Register a button in order to use it in the browser</h3>
-     * The name argument must specify an absolute button name {@link controlId}.
+     * The name argument must specify an absolute button name
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -2496,7 +2492,7 @@ public class workspace {
 
     /**
      * <h3>Register a button in order to use it in the browser</h3>
-     * The name argument must specify an absolute button name {@link controlId}.
+     * The name argument must specify an absolute button name.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -2515,7 +2511,7 @@ public class workspace {
 
     /**
      * <h3>Register a button in order to use it in the browser</h3>
-     * The name argument must specify an absolute button name {@link controlId}.
+     * The name argument must specify an absolute button name}.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser
@@ -2537,7 +2533,7 @@ public class workspace {
     // Aggiunge un oggetto botton_control, raffinando il Json e ritornando l' html per il client
     /**
      * <h3>Register a button in order to use it in the browser</h3>
-     * The name argument must specify an absolute button name {@link controlId}.
+     * The name argument must specify an absolute button name.
      * <p>
      * This method returns validate and formattated json for to be rendered in
      * the browser

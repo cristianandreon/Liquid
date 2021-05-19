@@ -2679,7 +2679,7 @@ var Liquid = {
                         }
                     }
                     if(duplicateFound) {
-                        var msg = "duplicate column "+tableJson.columns[j].name+" on control : "+liquid.controlId;
+                        var msg = "duplicate column "+tableJson.columns[j].name+" (label:"+tableJson.columns[j].label+") on control : "+liquid.controlId;
                         alert("ERROR Detected :\n\n"+msg);
                         console.error("ERROR : "+msg);
                         return false;
@@ -5970,7 +5970,7 @@ var Liquid = {
                                                         var selNodes = targetLiquid.gridOptions.api.getSelectedNodes();
                                                         if(selNodes && selNodes.length) {
                                                             selNodes[0].setDataValue(col.field, newValue);
-                                                            // Liquid.registerFieldChange(liquid, null, selNodes[node].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], col.field, null, newValue);
+                                                            Liquid.registerFieldChange(liquid, null, selNodes[0].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], col.field, null, newValue);
                                                             Liquid.updateDependencies(targetLiquid, col, null);
                                                         }
                                                     }
@@ -14755,7 +14755,7 @@ var Liquid = {
                 liquid.obscuringLastFilter = document.body.webkitFilter;
                 document.body.webkitFilter = 'blur(5px)';
                 document.body.insertBefore(liquid.obscuringObj, document.body.firstChild);
-                liquid.focusedZIndex = 100000;
+                liquid.focusedZIndex = 130;
                 liquid.zIndex = liquid.focusedZIndex;
 
             } else {
@@ -14770,7 +14770,7 @@ var Liquid = {
                 liquid.outDivObj.classList.add('liquidShow');
             }
             jQ1124( liquid.outDivObj ).slideDown( "fast" );
-            setTimeout('Liquid.onStarted(document.getElementById("' + liquid.controlId + '"))', 500);
+            setTimeout(function() { Liquid.onStarted(document.getElementById(liquid.controlId)); }, 500);
         }
     },
     onStarted:function(obj) {
@@ -15245,20 +15245,33 @@ var Liquid = {
                                             var columns = grid.columns;
                                             parentGridName = grid.name;
                                             if(isDef(columns)) {
+                                                var isTargetColumnFound = false, isSourceColumnFound = false;
                                                 for(var ic=0; ic<columns.length; ic++) {
                                                     try {
-                                                        if( columns[ic].name === aliasTargetColumn || columns[ic].name === lookupJson.TargetColumn || columns[ic].field === lookupJson.targetColumn) {
+                                                        if( columns[ic].name === aliasTargetColumn || columns[ic].name === lookupJson.targetColumn || columns[ic].field === lookupJson.targetColumn) {
                                                             // link to tagret                                                
                                                             if(!isDef(targetColumnLinkedObjIds)) targetColumnLinkedObjIds = [];
                                                             targetColumnLinkedObjIds.push(columns[ic].linkedObj.id);
+                                                            isTargetColumnFound = true;
                                                         }
                                                         if(columns[ic].name === aliasIdColumn || columns[ic].name === lookupJson.idColumn || columns[ic].field === lookupJson.idColumn) {
                                                             // link to external column                                                 
                                                             if(!isDef(idColumnLinkedObjIds)) idColumnLinkedObjIds = [];
                                                             idColumnLinkedObjIds.push(columns[ic].linkedObj.id);
+                                                            isSourceColumnFound = true;
                                                         }
                                                     } catch (e) {
                                                         console.error(e);
+                                                    }
+                                                }
+                                                if(!isTargetColumnFound) {
+                                                    if(isDef(lookupJson.targetColumn)) {
+                                                        console.debug("DEBUG : unable to find target column \"" + lookupJson.targetColumn + "\" on control:" + controlId + " field:" + lookupControlId + " check:" + fieldDescription);
+                                                    }
+                                                }
+                                                if(!isSourceColumnFound) {
+                                                    if(isDef(lookupJson.idColumn)) {
+                                                        console.debug("DEBUG : unable to find id column \"" + lookupJson.idColumn + "\" on control:" + controlId + " field:" + lookupControlId + " check:" + fieldDescription);
                                                     }
                                                 }
                                             }
@@ -15271,38 +15284,34 @@ var Liquid = {
                                     var aliasTargetColumn = liquid.tableJson.table + "." + lookupJson.targetColumn;
                                     var targetColumns = [];
                                     if(isDef(columns)) {
-                                        for(var ic=0; ic<columns.length; ic++) {
+                                        for (var ic = 0; ic < columns.length; ic++) {
                                             var colName = isDef(columns[ic].runtimeName) ? columns[ic].runtimeName : columns[ic].name;
                                             var aliasTargetParts = null;
                                             var aliasTargetColumn2 = null;
-                                            if(isDef(lookupJson.targetColumn)) {
+                                            if (isDef(lookupJson.targetColumn)) {
                                                 aliasTargetParts = lookupJson.targetColumn.split(".");
                                                 aliasTargetColumn2 = aliasTargetParts.length > 1 ? aliasTargetParts[1] : null;
                                             }
                                             try {
-                                                var isIdColumn = (columns[ic].name === lookupJson.idColumn || columns[ic].field === lookupJson.idColumn);
+                                                var isIdColumnDefined = isDef(lookupJson.idColumn);
                                                 var isTargetColumn = (colName === lookupJson.targetColumn || colName === aliasTargetColumn || colName === aliasTargetColumn2 || columns[ic].field === lookupJson.targetColumn);
-                                                
-                                                if(isTargetColumn) {
+
+                                                if (isTargetColumn) {
                                                     liquid.tableJson.columns[ic].isReflected = true;
                                                     targetColumns.push(columns[ic]);
+
+                                                    if (isIdColumnDefined) {
+                                                        if (!idColumnLinkedFields) idColumnLinkedFields = [];
+                                                        idColumnLinkedFields.push({
+                                                            controlId: liquid.controlId,
+                                                            targetField: columns[ic].field,
+                                                            targetFieldName: columns[ic].name
+                                                        });
+                                                    }
                                                 }
-                                                
-                                                if(isIdColumn) {
-                                                    if(!idColumnLinkedFields) idColumnLinkedFields = [];
-                                                    idColumnLinkedFields.push( { controlId: liquid.controlId, field: columns[ic].field, name:columns[ic].name, targetField:null, targetFieldName:null } );
-                                                }
+
                                             } catch (e) {
                                                 console.error(e);
-                                            }
-                                        }
-                                        // Link the target columns...
-                                        if(idColumnLinkedFields) {
-                                            for(var ic=0; ic<idColumnLinkedFields.length; ic++) {
-                                                if( ic < targetColumns.length ) {
-                                                    idColumnLinkedFields[ic].targetField = targetColumns[ic].field;
-                                                    idColumnLinkedFields[ic].targetFieldName = targetColumns[ic].name;
-                                                }
                                             }
                                         }
                                     }

@@ -559,23 +559,18 @@ public class db {
                             try {
                                 String fcolumnsKey = null;
                                 if (col.has("foreignColumns")) {
-                                    fcolumnsKey = "foreignColumns";
-                                } else if (col.has("foreignColumn")) {
-                                    fcolumnsKey = "foreignColumn";
-                                }
-                                if(fcolumnsKey != null) {
                                     JSONArray json_foreign_columns = null;
                                     try {
-                                        json_foreign_columns = col.getJSONArray(fcolumnsKey);
+                                        json_foreign_columns = col.getJSONArray("foreignColumns");
                                     } catch (Exception e) {
                                     }
                                     if (json_foreign_columns != null) {
                                         for (int ia = 0; ia < json_foreign_columns.length(); ia++) {
                                             foreignColumns.add(json_foreign_columns.getString(ia));
                                         }
-                                    } else {
-                                        foreignColumns.add(col.getString(fcolumnsKey));
                                     }
+                                } else if (col.has("foreignColumn")) {
+                                    foreignColumns.add(col.getString("foreignColumn"));
                                 }
                             } catch (Exception e) {
                                 foreignColumns = null;
@@ -591,23 +586,18 @@ public class db {
                             try {
                                 String columnsKey = null;
                                 if (col.has("columns")) {
-                                    columnsKey = "columns";
-                                } else if (col.has("column")) {
-                                    columnsKey = "column";
-                                }
-                                if(columnsKey != null) {
                                     JSONArray json_columns = null;
                                     try {
-                                        json_columns = col.getJSONArray(columnsKey);
+                                        json_columns = col.getJSONArray("columns");
                                     } catch (Exception e) {
                                     }
                                     if (json_columns != null) {
                                         for (int ia = 0; ia < json_columns.length(); ia++) {
                                             foreignColumns.add(json_columns.getString(ia));
                                         }
-                                    } else {
-                                        columns.add(col.getString(columnsKey));
                                     }
+                                } else if (col.has("column")) {
+                                    columns.add(col.getString("column"));
                                 }
                             } catch (Exception e) {
                                 columns = null;
@@ -646,6 +636,8 @@ public class db {
                                         if (column_list.length() > 0) {
                                             colMode = "";
                                         }
+
+                                        String sourceFieldName = col.has("runtimeName") ? col.getString("runtimeName") : col.getString("name");
 
                                         if (colParts.length > 1) {
                                             // campo esterno ?
@@ -2407,7 +2399,7 @@ public class db {
      * <p>
      * This method get bean from the primary key list, creating it at runtime
      *
-     * @param requestParam the Http requet (HttpServletRequest)
+     * @param request the Http requet (HttpServletRequest)
      * @param ids the comma separated string of the primary keys (String)
      * @param format the format of the output, may by : * all o full, for all
      * columns of the control: jsonObject, for data in json format (array of
@@ -3614,9 +3606,9 @@ public class db {
 
     /**
      * Creane new empty bean for control
-     * 
+     *
+     * @param requestParam
      * @param tblWrk    the control workspace
-     * @param targetWrk
      * @param rowData   the initial data
      * @return 
      */

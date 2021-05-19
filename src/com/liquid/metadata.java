@@ -338,7 +338,7 @@ public class metadata {
                 long msTrace = System.currentTimeMillis();
 
                 if (metaDataTableSchema == null) {
-                    metaDataTableSchema = conn.getMetaData().getUserName();
+                    metaDataTableSchema = null; // conn.getMetaData().getSchemaTerm();
                 }
 
                 if (schema == null || schema.isEmpty()) {
@@ -784,7 +784,8 @@ public class metadata {
             if(database == null || database.isEmpty())
                 database = conn.getCatalog();
             if(schema == null || schema.isEmpty())
-                 schema = conn.getMetaData().getUserName();
+                 schema = null; // conn.getMetaData().getSchemaTerm();
+
             DatabaseMetaData dm = conn.getMetaData();
             ResultSet rs = dm.getTables(database, schema, null, types );
             if(rs != null) {
@@ -823,7 +824,7 @@ public class metadata {
             if(database == null || database.isEmpty())
                 database = conn.getCatalog();
             if(schema == null || schema.isEmpty())
-                 schema = conn.getMetaData().getUserName();
+                 schema = null; // conn.getMetaData().getSchemaTerm();
             
             DatabaseMetaData dm = conn.getMetaData();
             ResultSet rs = dm.getColumns(database, schema, tableName, null);
@@ -875,7 +876,7 @@ public class metadata {
                 }
             }
             if(schema == null || schema.isEmpty())
-                schema = connToUse.getMetaData().getUserName();
+                schema = null; // connToUse.getMetaData().getSchemaTerm();
             
             if(tableName != null && !tableName.isEmpty()) {
                 DatabaseMetaData dm = connToUse.getMetaData();
@@ -923,7 +924,7 @@ public class metadata {
             if(database == null || database.isEmpty())
                 database = conn.getCatalog();
             if(schema == null || schema.isEmpty())
-                 schema = conn.getMetaData().getUserName();
+                 schema = null; // conn.getMetaData().getSchemaTerm();
             if(table != null && !table.isEmpty()) {
                 ArrayList<ForeignKey> foreignKeys = getForeignKeyData(database, schema, table, conn);
                 if(foreignKeys != null) {
