@@ -2089,7 +2089,7 @@ public class db {
                                 + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=");
                                 
                         if(bUseParams &&  sWhereParams != null) {
-                            sWhere += preFix + ("?") + postFix;
+                            sWhere += "?";
                             sWhereParams.add(filterValueObject);
                         } else {
                             sWhere +=  preFix + (filterValue != null ? filterValue.replace("'", "") : "") + postFix;
