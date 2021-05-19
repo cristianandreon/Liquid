@@ -10097,11 +10097,11 @@ var Liquid = {
                                     Liquid.createGridField(liquid, td, grid, grid.columns[i]);
                                     if(isDef(grid.columns[i].width)) {
                                         td.style.width = Liquid.getCSSDim(grid.columns[i].width);
-                                        td.style.display = "block";
+                                        // td.style.display = "block";
                                     }
                                     if(isDef(grid.columns[i].height)) {
                                         td.style.height = grid.columns[i].height;
-                                        td.style.display = "block";
+                                        // td.style.display = "block";
                                     }
                                 }
                             }
@@ -10242,6 +10242,7 @@ var Liquid = {
                 var toolTip = Liquid.getColumnTooltip(liquid, col);
                 if(isDef(col.query) || isDef(gridObj.query)) {
                     if(!isDef(inputHeight) || inputHeight == '') inputHeight = "height:100%;";
+                    if(!inputWidth) inputWidth = "width: calc(100% - 10px);"
                     innerHTML += "<div"
                             + " id=\"" + itemId + "\""
                             + " class=\""+itemClass + "\""
@@ -10252,6 +10253,7 @@ var Liquid = {
                 } else if( (col && isDef(col.lookup)) || (isDef(gridObj.lookup)) ) {
                     // innerHTML += "<div id=\"" + itemId + "\" class=\""+itemClass+"\" title=\""+toolTip+"\"></div>";
                     // if(!isDef(inputHeight) || inputHeight == '') inputHeight = "height:100%;";
+                    // if(!inputWidth) inputWidth = "width: calc(100% - 10px);"
                     innerHTML += "<div"
                             + " id=\"" + itemId + "\""
                             + " class=\""+itemClass + "\""
@@ -10259,6 +10261,7 @@ var Liquid = {
                             + " title=\""+toolTip + "\""
                             + "></div>";
                 } else if(Liquid.isSunEditor(col) || Liquid.isSunEditor(gridObj)) {
+                    if(!inputWidth) inputWidth = "width: calc(100% - 10px);"
                     innerHTML += "<div"
                             + " id=\"" + itemId + "\""
                             + " class=\"liquidGridControl "+itemClass+" "+(gridObj.zoomable===true ? "liquidGridControlZoomable":"") + "\""
