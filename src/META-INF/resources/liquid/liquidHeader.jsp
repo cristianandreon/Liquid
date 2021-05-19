@@ -8,7 +8,7 @@
 
 <% 
     String path = request.getContextPath(); 
-    String jssVersion = "1.57";
+    String jssVersion = "1.58";
 %>
 <!-- -->
 <!-- START of Liquid Framework Include Files .. Your Application root is at : "<%= path %>" -->
@@ -46,6 +46,11 @@
 
 <link rel="stylesheet" href="<%=path%>/liquid/liquid.css?version=<%=jssVersion%>" type='text/css' />
 <script type="text/javascript" src="<%=path%>/liquid/liquid.js?version=<%=jssVersion%>"></script>
+<script type="text/javascript" src="/liquid/liquidEditing.js?version=<%=jssVersion%>"></script>
+
+<!-- Strumenti di seleazione -->
+<%@ include file="/liquid/liquidSelector.jsp" %>
+
 <!-- -->
 <!-- END of Liquid Framework include files -->
 <!-- -->

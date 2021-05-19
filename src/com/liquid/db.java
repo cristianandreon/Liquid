@@ -5602,7 +5602,7 @@ public class db {
                     if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
                     	if(value.endsWith(" 0:0:0")) {
                             value = "TO_DATE('" + value.substring(0, value.length()-6) + "','YYYY-MM-DD')";
-                            valueType = -1; // truncate
+                            valueType = 0; // is an expression
                     	} else if(value.length() > 9) {
                             value = "TO_DATE('" + value + "','YYYY-MM-DD HH24:MI:SS')";
                             valueType = 0; // is an expression

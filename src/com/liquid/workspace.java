@@ -1668,82 +1668,95 @@ public class workspace {
                 }
                 if (commands != null) {
                     for (int ic = 0; ic < commands.length(); ic++) {
-                        JSONObject cmd = commands.getJSONObject(ic);
-                        if (cmd != null) {
-                            JSONArray labels = null;
-                            JSONArray assets = null;
-                            int size = 0;
-                            String cmdName = null, img = null, text = null, rollback = null, rollbackImg = null, asset = null, assetsOp = null, mismatching_assets = null;
-                            boolean bServerDefined = false;
-                            boolean hasActiveAsset = true;
-                            try {
-                                cmdName = cmd.getString("name");
-                            } catch (Exception ex) {
-                            }
-                            try {
-                                img = cmd.getString("img");
-                            } catch (Exception ex) {
-                                img = null;
-                            }
-                            try {
-                                rollback = cmd.getString("rollback");
-                            } catch (Exception ex) {
-                                rollback = null;
-                            }
-                            try {
-                                rollbackImg = cmd.getString("rollbackImg");
-                            } catch (Exception ex) {
-                                rollbackImg = null;
-                            }
-                            try {
-                                text = cmd.getString("text");
-                            } catch (Exception ex) {
-                                text = null;
-                            }
-                            try {
-                                labels = cmd.getJSONArray("labels");
-                            } catch (Exception ex) {
-                                labels = null;
-                            }
-                            try {
-                                size = cmd.getInt("size");
-                            } catch (Exception ex) {
-                                size = 0;
-                            }
-                            try {
-                                bServerDefined = cmd.has("server");
-                            } catch (Exception ex) {
-                            }
-                            try {
-                                assetsOp = cmd.getString("assetsOp");
-                            } catch (Exception ex) {
-                                assetsOp = null;
-                            }
-                            try {
-                                assets = cmd.getJSONArray("assets");
-                            } catch (Exception ex) {
-                                assets = null;
-                            }
-                            try {
-                                asset = cmd.getString("asset");
-                            } catch (Exception ex) {
-                                asset = null;
-                            }
+                        Object oCmd = commands.get(ic);
+                        String cmdName = null, img = null, text = null, rollback = null, rollbackImg = null, asset = null, assetsOp = null, mismatching_assets = null;
+                        boolean bServerDefined = false;
+                        boolean hasActiveAsset = true;
+                        JSONObject cmd = null;
+                        int size = 0;
+                        JSONArray labels = null;
+                        JSONArray assets = null;
 
-                            if (asset != null && !asset.isEmpty()) {
-                                if (assets == null) {
-                                    assets = new JSONArray();
+                        if(oCmd instanceof JSONObject) {
+                            cmd = commands.getJSONObject(ic);
+                            if (cmd != null) {
+                                try {
+                                    cmdName = cmd.getString("name");
+                                } catch (Exception ex) {
                                 }
-                                assets.put(asset);
-                            }
+                                try {
+                                    img = cmd.getString("img");
+                                } catch (Exception ex) {
+                                    img = null;
+                                }
+                                try {
+                                    rollback = cmd.getString("rollback");
+                                } catch (Exception ex) {
+                                    rollback = null;
+                                }
+                                try {
+                                    rollbackImg = cmd.getString("rollbackImg");
+                                } catch (Exception ex) {
+                                    rollbackImg = null;
+                                }
+                                try {
+                                    text = cmd.getString("text");
+                                } catch (Exception ex) {
+                                    text = null;
+                                }
+                                try {
+                                    labels = cmd.getJSONArray("labels");
+                                } catch (Exception ex) {
+                                    labels = null;
+                                }
+                                try {
+                                    size = cmd.getInt("size");
+                                } catch (Exception ex) {
+                                    size = 0;
+                                }
+                                try {
+                                    bServerDefined = cmd.has("server");
+                                } catch (Exception ex) {
+                                }
+                                try {
+                                    assetsOp = cmd.getString("assetsOp");
+                                } catch (Exception ex) {
+                                    assetsOp = null;
+                                }
+                                try {
+                                    assets = cmd.getJSONArray("assets");
+                                } catch (Exception ex) {
+                                    assets = null;
+                                }
+                                try {
+                                    asset = cmd.getString("asset");
+                                } catch (Exception ex) {
+                                    asset = null;
+                                }
 
-                            try {
-                                Object[] res_asset = com.liquid.assets.is_asset_active(request, assets, assetsOp);
-                                hasActiveAsset = (boolean) res_asset[0];
-                                mismatching_assets = (String) res_asset[1];
-                            } catch (Exception ex) {
-                            }
+                                if (asset != null && !asset.isEmpty()) {
+                                    if (assets == null) {
+                                        assets = new JSONArray();
+                                    }
+                                    assets.put(asset);
+                                }
 
+                                try {
+                                    Object[] res_asset = com.liquid.assets.is_asset_active(request, assets, assetsOp);
+                                    hasActiveAsset = (boolean) res_asset[0];
+                                    mismatching_assets = (String) res_asset[1];
+                                } catch (Exception ex) {
+                                }
+                            }
+                        } else if(oCmd instanceof String) {
+                            cmdName = (String)oCmd;
+                            if(!cmdName.isEmpty()) {
+                                hasActiveAsset = true;
+                                cmd = new JSONObject("{\"name\":\"" + cmdName + "\"}");
+                            }
+                        }
+
+                        if(cmdName != null) {
                             if (hasActiveAsset) {
                                 if ("insert".equalsIgnoreCase(cmdName) || "create".equalsIgnoreCase(cmdName)) {
                                     if (!bServerDefined) {
@@ -1860,14 +1873,17 @@ public class workspace {
                                     bPastedRowActive = true;
                                 }
 
-                                new_commands.put(cmd);
+                                if(cmd != null)
+                                    new_commands.put(cmd);
                             } else {
                                 // skipped
                                 new_commands.put(new JSONObject("{ \"cmd_" + cmdName + "_comment\":\"mismatching asset:" + mismatching_assets + "\"}"));
                             }
                         }
                     }
-                    tableJson.put("commands", new_commands);
+                    if(new_commands != null) {
+                        tableJson.put("commands", new_commands);
+                    }
                 }
 
                 String sOwner = null;
@@ -2762,7 +2778,7 @@ public class workspace {
             if (br == null) {
                 URLClassLoader urlClassLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
                 for (URL url : urlClassLoader.getURLs()) {
-                    if (url.getPath().contains("Liquid.jar")) {
+                    if (url.getPath().contains("Liquid.jar") || url.getPath().contains("liquid.jar")) {
                         try {
                             fullFileName = "jar:file:" + url.getPath() + "!/META-INF/resources" + fileName;
                             URL inputURL = new URL(fullFileName);

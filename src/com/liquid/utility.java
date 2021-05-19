@@ -1351,7 +1351,7 @@ public class utility {
                 if(folder.equalsIgnoreCase(folderWatchThread.folder)) {
                     folderWatchThread.run = false;
                     Thread.sleep(1000);
-                    folderWatchThread.stop();
+                    folderWatchThread.interrupt();
                     folderWatchThreadList.remove(folderWatchThread);
                 }
             }
@@ -1373,7 +1373,7 @@ public class utility {
             if(folder.equalsIgnoreCase(folderWatchThread.folder)) {
                 folderWatchThread.run = false;
                 Thread.sleep(1000);
-                folderWatchThread.stop();
+                folderWatchThread.interrupt();
                 folderWatchThreadList.remove(folderWatchThread);
                 return true;
             }        

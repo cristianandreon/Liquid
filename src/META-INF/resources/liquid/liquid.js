@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
-// Liquid ver.1.57   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  28-04-2021
+// Liquid ver.1.58   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  18-05-2021
 //  TODO : see trello.com
 //
 // *** File internal priority *** 
@@ -824,12 +824,12 @@ class LiquidCtrl {
                         if(typeof this.tableJson.height !== 'undefined') this.outDivObj.style.height = Liquid.getCSSDim(this.tableJson.height);
                         var winHeight = window.innerHeight;
                         var winWidth = window.innerWidth;
-                        if(this.tableJson.top === "center") {
+                        if(this.tableJson.top === "center" || this.tableJson.position === "center" || this.tableJson.centered === true) {
                             this.outDivObj.style.top = (scrollTop + winHeight/2.0 - (this.outDivObj.clientHeight > 0 ? this.outDivObj.clientHeight:this.tableJson.height.replace("px",""))/2)+'px';
                         } else {
                             this.outDivObj.style.top = ((this.tableJson.top ? this.tableJson.top : Liquid.defaultWinXTop) + scrollTop) + 'px';
                         }                        
-                        if(this.tableJson.left === "center") {
+                        if(this.tableJson.left === "center" || this.tableJson.position === "center" || this.tableJson.centered === true) {
                             this.outDivObj.style.left = (scrollLeft + winWidth/2.0 - (this.outDivObj.clientWidth > 0 ? this.outDivObj.clientWidth:this.tableJson.width.replace("px",""))/2)+'px';
                         } else {
                             this.outDivObj.style.left = (this.tableJson.left ? this.tableJson.left : Liquid.defaultWinXLeft)+'px';
@@ -1037,22 +1037,6 @@ class LiquidCtrl {
                         }
                     }
 
-                    if(this.tableJson.modeless || this.tableJson.modless) {
-                        this.obscuringObj = document.createElement("div");
-                        this.obscuringObj.style.position = 'fixed';
-                        this.obscuringObj.style.height = this.obscuringObj.style.width = '100%';
-                        this.obscuringObj.style.top = this.obscuringObj.style.left = '0';
-                        this.obscuringObj.style.backgroundColor = 'rgba(127,127,127,0.7)';
-                        this.obscuringObj.style.zIndex = 99000;
-                        this.outDivObj.style.zIndex = this.zIndex = 132;
-                        this.obscuringLastFilter = document.body.webkitFilter;
-                        document.body.webkitFilter = 'blur(5px)';
-                        document.body.insertBefore(this.obscuringObj, document.body.firstChild);
-                        this.focusedZIndex = 100000;
-                        this.zIndex = this.focusedZIndex;
-                    } else {
-                        this.focusedZIndex = 30000;
-                    }
 
                     // Foreign table
                     this.lastForeignTabSelected = null;
@@ -9268,10 +9252,12 @@ var Liquid = {
                             }, 200, function(){ liquid.isAnimating = false; } );
                         } else {
                             if(!liquid.isAnimating) {
-                                liquid.outDivObj.style.left = "0px";
-                                liquid.outDivObj.style.top = "0px";
-                                liquid.outDivObj.style.width = (liquid.parentObj.offsetWidth-3)+"px";
-                                liquid.outDivObj.style.height = (liquid.parentObj.offsetHeight-3)+"px";
+                                if(liquid.parentObj) {
+                                    liquid.outDivObj.style.left = "0px";
+                                    liquid.outDivObj.style.top = "0px";
+                                    liquid.outDivObj.style.width = (liquid.parentObj.offsetWidth - 3) + "px";
+                                    liquid.outDivObj.style.height = (liquid.parentObj.offsetHeight - 3) + "px";
+                                }
                             }
                         }
                         
@@ -11498,7 +11484,7 @@ var Liquid = {
                                             ,onShow:function(o, $input, event) {
                                                 var opt = { lang:Liquid.lang };
                                                 jQ1124(dpControlName).datetimepicker("option", opt);
-                                                jQ1124(dpControlName).css('z-index', 90000);
+                                                jQ1124(dpControlName).css('z-index', 99900);
                                                 this.setOptions(opt);
                                                 console.log(jQ1124(dpControlName).css('z-index'));
                                             }
@@ -12374,7 +12360,7 @@ var Liquid = {
                             Liquid.onCloseRichField(obj);
                         };
                         liquid.suneditorDiv.className = "liquidRichEditorContainer";
-                        liquid.suneditorDiv.style.zIndex = 91000;
+                        liquid.suneditorDiv.style.zIndex = 99100;
 
                         liquid.suneditorCen = document.createElement('center');
                         liquid.suneditorDiv.appendChild(liquid.suneditorCen);
@@ -14488,7 +14474,7 @@ var Liquid = {
         if(!dialogConfirm) {
             dialogConfirm = document.createElement('div');
             dialogConfirm.id = "dialog-box";
-            dialogConfirm.style.zIndex = 99000;
+            dialogConfirm.style.zIndex = 99100;
             dialogConfirm.style.display = "none";
             if(parentObj) parentObj.appendChild(dialogConfirm);
             else document.body.appendChild(dialogConfirm);
@@ -14751,6 +14737,31 @@ var Liquid = {
     onStart:function(obj) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
+
+            if(liquid.tableJson.modeless || liquid.tableJson.modless) {
+                var id = "Liquid.backgroud.dlg";
+                liquid.obscuringObj = document.getElementById(id);
+                if(!liquid.obscuringObj) {
+                    liquid.obscuringObj = document.createElement("div");
+                    liquid.obscuringObj.id = id;
+                }
+                liquid.obscuringObj.style.display = '';
+                liquid.obscuringObj.style.position = 'fixed';
+                liquid.obscuringObj.style.height = liquid.obscuringObj.style.width = '100%';
+                liquid.obscuringObj.style.top = liquid.obscuringObj.style.left = '0';
+                liquid.obscuringObj.style.backgroundColor = 'rgba(127,127,127,0.7)';
+                liquid.obscuringObj.style.zIndex = 99;
+                liquid.outDivObj.style.zIndex = liquid.zIndex = 132;
+                liquid.obscuringLastFilter = document.body.webkitFilter;
+                document.body.webkitFilter = 'blur(5px)';
+                document.body.insertBefore(liquid.obscuringObj, document.body.firstChild);
+                liquid.focusedZIndex = 100000;
+                liquid.zIndex = liquid.focusedZIndex;
+
+            } else {
+                liquid.focusedZIndex = 30000;
+            }
+
             if(liquid.absoluteLoadCounter === 0) 
                 Liquid.onEvent(obj, "onFirstLoad", null, null);
             Liquid.onEvent(obj, "onLoad", null, null);

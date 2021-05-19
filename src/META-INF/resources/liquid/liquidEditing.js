@@ -166,7 +166,7 @@ var LiquidEditing = {
             }            
             selectorLiquid.tableJson.table = table;
             Liquid.loadData(selectorLiquid, null, "newGrid");
-            selectorLiquid.onPostClosed = "Liquid.onNewGridProcess('"+obj_id+"',"+ftIndex1B+")";            
+            selectorLiquid.onPostClosed = "LiquidEditing.onNewGridProcess('"+obj_id+"',"+ftIndex1B+")";
             if(typeof event === 'object') event.stopPropagation();
         }
     },    
@@ -570,7 +570,7 @@ var LiquidEditing = {
             selectorLiquid.tableJson.schema = Liquid.curSchema;
             selectorLiquid.tableJson.table = "";
             Liquid.loadData(selectorLiquid, null, "newWindow");
-            selectorLiquid.onPostClosed = "Liquid.onNewWindowProcess('"+obj_id+"'"+",'"+(mode?mode:'winX')+"','"+(parentObjId?parentObjId:'WinXContainer')+"')";
+            selectorLiquid.onPostClosed = "LiquidEditing.onNewWindowProcess('"+obj_id+"'"+",'"+(mode?mode:'winX')+"','"+(parentObjId?parentObjId:'WinXContainer')+"')";
             if(typeof event === 'object') event.stopPropagation();
         } else console.error("ERROR: selector module not found");
     },
@@ -593,7 +593,7 @@ var LiquidEditing = {
                             selectorLiquid.tableJson.schema = Liquid.curSchema;
                             selectorLiquid.tableJson.table = table;
                             Liquid.loadData(selectorLiquid, null, "newWindow");
-                            selectorLiquid.onPostClosed = "Liquid.onNewWindowProcess2('"+obj_id+"','"+mode+"','"+parentObjId+"','"+table+"')";
+                            selectorLiquid.onPostClosed = "LiquidEditing.onNewWindowProcess2('"+obj_id+"','"+mode+"','"+parentObjId+"','"+table+"')";
                             if(typeof event === 'object') event.stopPropagation();
                         } else {
                             
