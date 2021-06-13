@@ -5,7 +5,11 @@
     import="javax.servlet.http.*"
     import="javax.servlet.jsp.*"
     errorPage="" 
-    %><%!
+    %><%--
+  ~ Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+  --%>
+
+<%!
     %><%
     %>
 <html>
@@ -48,7 +52,7 @@
                 if(!owner) owner = 'com.liquid.event.getDocuemnts';
                 if(owner) { }
 
-                var groupingColumn = null;                
+                var groupingColumn = chart.groupingColumn;
                 var labelsArray = [];
                 if(chart.rows === '*') {
                     nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
@@ -86,11 +90,6 @@
                     chart.labelCol = Liquid.getColumn(liquid, chart.labelColumn);
                 }
 
-                if(columns.length == 1) {
-                    if(!Liquid.isNumeric(columns[0].type)) {
-                        groupingColumn = columns[0].name;
-                    }                        
-                }
                 var chartType = chart.type;
                 if(chartType === '' || chartType==='pie') chartType = 'doughnut';
                 if(chartType === '' || chartType==='histogram') chartType = 'bar';
@@ -99,8 +98,9 @@
                 var defaultBackgroundColor = [ 'rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)', 'rgba(153, 102, 255, 0.2)', 'rgba(123, 82, 235, 0.4)', 'rgba(255, 120, 50, 0.2)', 'rgba(255, 00, 00, 0.6)', 'rgba(200, 00, 00, 0.6)', 'rgba(80, 00, 00, 0.6)', 'rgba(200, 50, 00, 0.3)' ];
                 var defaultBorderColor = [ 'rgba(255,99,132,1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(103, 52, 235, 1)','rgba(255, 80, 30, 1)','rgba(255, 00, 00, .5)','rgba(155, 55, 55, .5)','rgba(80, 20, 00, .5)','rgba(220, 50, 20, 0.7)' ];
                 var datasetList = [];
+                var datasetLabels = null;
                 var labelsList = [];
-                
+
                 if(groupingColumn) {
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', glLiquidServlet + '?operation=countOccurences&controlId=' + liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : '')
@@ -143,33 +143,34 @@
                             var backgroundColor = [];
                             var borderColor = [];
                             var nodeKeys = [];
+
                             for(var iN=0; iN<nodes.length; iN++) {
                                 var data = nodes[iN].data[ columns[ic].field ];
                                 try { nodeKeys.push( Number(data) ); } catch (e) { }
                                 var dataLabel = (columns[ic].label ? columns[ic].label : columns[ic].name);
                                 var labelDefined = false;
-                                if(ic == 0) {
-                                    if(chart.labelCol) {
-                                        labelsList.push( nodes[iN].data[ chart.labelCol ] );
-                                    } else {
-                                        labelsList.push( iN === 0 ? dataLabel : "" );
-                                    }
+                                if(chart.labelCol) {
+                                    labelsList.push( nodes[iN].data[ chart.labelCol.field ] );
+                                } else {
+                                    labelsList.push( columns[ic].name );
                                 }
                                 backgroundColor.push(ic < defaultBackgroundColor.length ? defaultBackgroundColor[ic] : '');
                                 borderColor.push(ic < defaultBorderColor.length ? defaultBorderColor[ic] : '');
                             }
                             var dataChartType = types[ic] ? types[ic] : chartType;
-                            datasetList.push( {  barPercentage: 0.5, barThickness: 6, maxBarThickness: 8, minBarLength: 2
-                                                ,data: nodeKeys, type: dataChartType, label: datasetLabel
-                                                ,backgroundColor:backgroundColor, borderColor:borderColor
-                                                ,order:ic+1
-                                            } );
+                            datasetList.push( {
+                                    // barPercentage: 0.5, barThickness: 6, maxBarThickness: 8, minBarLength: 2
+                                    data: nodeKeys
+                                    ,label: dataLabel
+                                    ,backgroundColor:backgroundColor, borderColor:borderColor
+                                    ,order:ic+1
+                            }
+                            );
                         }
                     }
                 }
-                
-                
-                    
+
+
                 
                 var chartTitle = chart.title?chart.title:"";
 
@@ -179,7 +180,12 @@
                     if (!glChartObj) {
                         glChartObj = new Chart(ctx, {
                             type: chartType,
-                            data: { datasets: datasetList, labels: labelsList },
+                            data: {
+                                datasets: datasetList
+                                ,labels: labelsList
+                                ,backgroundColor:backgroundColor
+                                ,borderColor:borderColor
+                            },
                             options: {
                                 responsive: true,
                                 legend: {
@@ -197,6 +203,9 @@
                         });
                     } else {
                         glChartObj.data.datasets = datasetList;
+                        if(datasetLabels) glChartObj.data.labels = datasetLabels;
+                        glChartObj.data.backgroundColor = backgroundColor;
+                        glChartObj.data.borderColor = borderColor;
                         glChartObj.update();
                     }
                 }

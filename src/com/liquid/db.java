@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
 package com.liquid;
 
 import static com.liquid.event.forwardEvent;
@@ -6,7 +10,6 @@ import static com.liquid.workspace.check_database_definition;
 import com.liquid.metadata.ForeignKey;
 
 import java.beans.IntrospectionException;
-import java.io.ByteArrayInputStream;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -26,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -651,6 +655,13 @@ public class db {
                                                                     if (utility.compare_array(foreignKey.foreignColumns, foreignColumns)) {
                                                                         if (utility.compare_array(foreignKey.columns, columns)) {
                                                                             foreignIndex = ifk;
+                                                                            // Aggiunta coordinate link se assenti (derivata dalla foreign ket)
+                                                                            if(foreignColumns.size() == 0) {
+                                                                                foreignColumns.addAll(foreignKey.foreignColumns);
+                                                                            }
+                                                                            if(columns.size() == 0) {
+                                                                                columns.addAll(foreignKey.columns);
+                                                                            }
                                                                             break;
                                                                         }
                                                                     }
@@ -945,8 +956,8 @@ public class db {
                                         tbl_wrk, table, cols,
                                         isOracle, isMySQL, isPostgres, isSqlServer,
                                         sWhere, sWhereParams, filtersCols, filtersDefinitionCols, leftJoinsMap,
-                                        tableIdString, itemIdString
-                                );
+                                        tableIdString, itemIdString,
+                                        recordset_params.request);
                             }
 
                             try {
@@ -1010,8 +1021,8 @@ public class db {
                                         tbl_wrk, table, cols,
                                         isOracle, isMySQL, isPostgres, isSqlServer,
                                         sWhere, sWhereParams, preFilters, null, leftJoinsMap,
-                                        tableIdString, itemIdString
-                                );
+                                        tableIdString, itemIdString,
+                                        recordset_params.request);
                             } catch (Exception e) {
                                 error += "[preFilters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId+"]";
                                 System.err.println("// pre Filters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId);
@@ -1689,8 +1700,8 @@ public class db {
             boolean isOracle, boolean isMySQL, boolean isPostgres, boolean isSqlServer,
             String sWhere, ArrayList<Object> sWhereParams,
             JSONArray filtersCols, JSONArray filtersDefinitionCols, ArrayList<LeftJoinMap> leftJoinsMap,
-            String tableIdString, String itemIdString
-    ) throws JSONException, Exception {
+            String tableIdString, String itemIdString,
+            HttpServletRequest request) throws JSONException, Exception {
 
         String error = "";
         int parentesisCount = 0;
@@ -1720,6 +1731,7 @@ public class db {
                 try {
                     if (!filtersCol.isNull("value")) {
                         filterValue = filtersCol.getString("value");
+                        filterValue = solveVariableField( filterValue, request);
                     }
                 } catch (JSONException e) {
                 }
@@ -1991,7 +2003,15 @@ public class db {
                     String sensitiveCasePostOp = "";
                     if (!filterSensitiveCase) {
                         if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                            // numeric                                                
+                            // numeric
+                        } else if (type == 6 || type == 92 || type == 93) {
+                            //
+                            // date datetime
+                            //
+                            // N.B.: o si utilizzazno i parametri e si converse la saatringa filtro in java.util.timestamp o java.util.date
+                            //          o si utilizza il to_date() come espressione e non come stringa 'to_date()'
+                            //
+                            bUseParams = false;
                         } else {
                             if(bFoundCol) {
                                 filterValue = filterValue.toLowerCase();
@@ -2023,11 +2043,10 @@ public class db {
                             ArrayList<Object> filterValueObjects = new ArrayList<Object>();
                             for(int iv=0; iv<filterValues.length; iv++) {
                                 String val = filterValues[iv];
-                                filterValueObjects.add( toJavaType(type, (Object)val) );                                
+                                filterValueObjects.add( toJavaType(type, (Object)val, null, -1 ) );
                             }
                             filterValueObject = (Object)filterValueObjects;
                         } else{
-                            filterValueObject = toJavaType(type, (Object)filterValue);
                         }
                         
                         
@@ -2049,6 +2068,9 @@ public class db {
                             Object[] fres = format_db_value(tbl_wrk, type, nullable, filterValue, filterOp);
                             filterValue = (String) fres[0];
                             filterValueType = (int) fres[1];
+
+                            // uso dei parametri : conversione del dato in formato java
+                            filterValueObject = toJavaType(type, (Object)filterValue, (String)fres[0], (int)fres[1]);
 
                             if (filterValueType == 0) {
                                 // expression
@@ -2092,7 +2114,7 @@ public class db {
                             sWhere += "?";
                             sWhereParams.add(filterValueObject);
                         } else {
-                            sWhere +=  preFix + (filterValue != null ? filterValue.replace("'", "") : "") + postFix;
+                            sWhere +=  preFix + (filterValue != null ? filterValue : "") + postFix;
                         }
                                 
                         
@@ -5610,7 +5632,7 @@ public class db {
                 } else if (isMySQL) {
                     if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
                     	if(value.endsWith(" 0:0:0")) {
-                            	value = "STR_TO_DATE('" + value.substring(0, value.length()-6) + "','%Y-%m-%d')";
+                            value = "STR_TO_DATE('" + value.substring(0, value.length()-6) + "','%Y-%m-%d')";
                             valueType = -1; // truncate
                     	} else if(value.length() > 9) {
                             value = "STR_TO_DATE('" + value + "','%Y-%m-%d %H:%i:%s')";
@@ -6548,8 +6570,8 @@ public class db {
                                     isOracle, isMySQL, isPostgres, isSqlServer,
                                     where_condition_source, where_condition_source_params,
                                     filtersCols, null, leftJoinsMap,
-                                    tableIdString, itemIdString
-                            );
+                                    tableIdString, itemIdString,
+                                    request);
                         }
                     } catch (Exception e) {
                         error += "[Filters Error:" + e.getLocalizedMessage() + "]" + "[Driver:" + source_tbl_wrk.driverClass + "]";
@@ -6577,8 +6599,8 @@ public class db {
                             where_condition_target = process_filters_json(source_tbl_wrk, targetTable, cols,
                                     isOracle, isMySQL, isPostgres, isSqlServer,
                                     where_condition_target, where_condition_target_params, filtersCols, null, leftJoinsMap,
-                                    tableIdString, itemIdString
-                            );
+                                    tableIdString, itemIdString,
+                                    request);
                         }
                     } catch (Exception e) {
                         error += "[Filters Error:" + e.getLocalizedMessage() + "]" + "[Driver:" + source_tbl_wrk.driverClass + "]";
@@ -7200,7 +7222,7 @@ public class db {
     }
     
     
-    public static Object toJavaType(int typeCode, Object value) {
+    public static Object toJavaType(int typeCode, Object value, String expression, int type) {
         switch (typeCode) {
             case Types.ARRAY:
                 return (Array)value;
@@ -7262,13 +7284,29 @@ public class db {
             case Types.STRUCT:
                 return (Struct)value;
             case Types.TIME:
-                return (java.sql.Time)value;
+                if(value instanceof java.sql.Time) {
+                    return (java.sql.Time)value;
+                } else {
+                    return (String) expression;
+                }
             case Types.TIME_WITH_TIMEZONE:
-                return (java.sql.Time)value;
+                if(value instanceof java.sql.Time) {
+                    return (java.sql.Time)value;
+                } else {
+                    return (String) expression;
+                }
             case Types.TIMESTAMP:
-                return (java.sql.Timestamp)value;
+                if(value instanceof java.sql.Timestamp) {
+                    return (java.sql.Timestamp)value;
+                } else {
+                    return (String) expression;
+                }
             case Types.TIMESTAMP_WITH_TIMEZONE:
-                return (java.sql.Timestamp)value;
+                if(value instanceof java.sql.Timestamp) {
+                    return (java.sql.Timestamp) value;
+                } else {
+                    return (String) expression;
+                }
             case Types.TINYINT:
                 return (Byte)value;
             // case Types.VARBINARY:
@@ -7367,5 +7405,34 @@ public class db {
             }
         }
     }
-    
+
+
+
+    static public String solveVariableField( String value, HttpServletRequest request) throws Exception {
+        if (value != null && !value.isEmpty()) {
+            String currentValue = "";
+            for (int i = 0; i < value.length(); i++) {
+                if ((value.charAt(i) == '$' || value.charAt(i) == '%') && value.charAt(i + 1) == '{') {
+                    i += 2;
+                    int s = i;
+                    while (value.charAt(i) != '}' && i < value.length()) {
+                        i++;
+                    }
+                    String cVar = value.substring(s, i);
+                    if (!cVar.isEmpty()) {
+                        Object oVar = request.getSession().getAttribute(cVar);
+                        String cVarValue = (String) String.valueOf(oVar);
+                        currentValue += (cVarValue != null ? cVarValue : "");
+                    }
+                } else {
+                    currentValue += value.charAt(i);
+                }
+            }
+
+            return currentValue;
+        }
+
+        return value;
+    }
+
 }

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
 package com.liquid;
 
 import com.liquid.python.python;
@@ -1055,7 +1059,7 @@ public class event {
             String bkColDefault = colDefault;
             colDefault = "";
             for (int i = 0; i < bkColDefault.length(); i++) {
-                if (bkColDefault.charAt(i) == '$' && bkColDefault.charAt(i + 1) == '{') {
+                if ((bkColDefault.charAt(i) == '$' || bkColDefault.charAt(i) == '%') && bkColDefault.charAt(i + 1) == '{') {
                     i += 2;
                     int s = i;
                     while (bkColDefault.charAt(i) != '}' && i < bkColDefault.length()) {
@@ -1133,6 +1137,8 @@ public class event {
         }
         return "";
     }
+
+
 
     //
     // Evento di SISTEMA onInserting : creazione iniziale del record senza scrittura nel DB

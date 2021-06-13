@@ -1,15 +1,9 @@
-//////////////////////////////////////////////////////////////////////////
-//
-// Liquid for Editing ver.1.02   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 05-10-2020 - Last update  10-12-2020
-//  TODO : see trello.com
-//
-// 
-// 
-// 
+/*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
 
 var LiquidEditing = {
-    version: 1.01,
+    version: 1.02,
     controlid:"Liquid framework for Editing",
     
     
@@ -2879,4 +2873,114 @@ var LiquidEditing = {
             }
         }
     },
+
+    onSaveToServer:function(obj) {
+        return LiquidEditing.onSaveTo(obj, false, true);
+    },
+    onSaveToJSON:function(obj) {
+        return LiquidEditing.onSaveTo(obj, true, false);
+    },
+    onSaveTo:function(obj, bDownload, bSaveToServer) {
+        LiquidEditing.onContextMenuClose();
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var json = null;
+            if(liquid instanceof LiquidCtrl) {
+                json = liquid.tableJsonSource ? JSON.parse(JSON.stringify(liquid.tableJsonSource)) : null;
+            } else if(liquid instanceof LiquidMenuXCtrl) {
+                json = liquid.menuJsonSource ? JSON.parse(JSON.stringify(liquid.menuJsonSource)) : null;
+            }
+            if(json) {
+                var token = json.token; // cave current token
+                Liquid.removeRuntimeTableJsonProps(json);
+                if(bSaveToServer) {
+                    // controllo presenza file, set se fila nuovo
+                    if(typeof liquid.controlId === 'undefined' || !liquid.controlId) {
+                        liquid.controlId = ""
+                            + (json.database ? json.database+"." : "")
+                            + (json.schema ? json.schema+"." : "")
+                            + (json.table ? json.table+"." : "")
+                            + "";
+                    }
+                    if(typeof json.sourceFileName === 'undefined' || !json.sourceFileName) {
+                        json.sourceFileName = btoa(liquid.controlId + ".json");
+                    }
+                }
+                // var link=window.URL.createObjectURL(jsonBlob); // window.location=link;
+                var fileName = liquid.controlId+".json";
+                var tableJsonString = JSON.stringify(json);
+
+                if(bDownload) {
+                    var jsonBlob = new Blob([ tableJsonString ], {type: "text/plain;charset=utf-8"});
+                    saveAs(jsonBlob, fileName);
+                }
+                if(bSaveToServer) {
+                    json.token = token; // need current token
+                    Liquid.registerOnUnloadPage();
+                    if(!liquid.xhr)
+                        liquid.xhr = new XMLHttpRequest();
+                    if(Liquid.wait_for_xhr_ready(liquid), "save to server") {
+                        try {
+                            Liquid.startWaiting(liquid);
+                            liquid.xhr.open('POST', glLiquidServlet + '?operation=setJson'
+                                +'&controlId=' + (typeof json.registerControlId !== "undefined" ? json.registerControlId : liquid.controlId)
+                                +'&token=' + (typeof token !== "undefined" ? token : "")
+                                , true);
+
+                            var command = { name:"saveTo" };
+                            liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "onSaveTo", e, null, null); }, false);
+                            liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "onSaveTo", e, null, null); }, false);
+                            liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onSaveTo", e, null, null); }, false);
+                            liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onSaveTo", e, null, null); }, false);
+                            liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onSaveTo", e, null, null); }, false);
+
+                            liquid.xhr.send(tableJsonString);
+                            liquid.xhr.onreadystatechange = function() {
+                                if(liquid.xhr.readyState === 4) {
+                                    Liquid.release_xhr(liquid);
+                                    Liquid.stopWaiting(liquid);
+                                    if(liquid.xhr.status === 200) {
+                                        // \b \f \n \r \t
+                                        var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                                        responseText = Liquid.getXHRResponse(responseText);
+                                        httpResultJson = JSON.parse(responseText);
+                                        if(httpResultJson) {
+                                            var anyMessage = false;
+                                            if(httpResultJson.error) {
+                                                var err = null;
+                                                try { err = atob(httpResultJson.error); } catch(e) { err = httpResultJson.error; }
+                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "ERROR", err, { text:"OK", func:function() { } }, null);
+                                                anyMessage = true;
+                                            } else if(httpResultJson.warning) {
+                                                var warn = null;
+                                                try { warn = atob(httpResultJson.warning); } catch(e) { warn = httpResultJson.warning; }
+                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "WARNING", warn, { text:"OK", func:function() { } }, null);
+                                                anyMessage = true;
+                                            } else if(httpResultJson.message) {
+                                                var msg = null;
+                                                try { msg = atob(httpResultJson.message); } catch(e) { msg = httpResultJson.message; }
+                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "MESSAGE", msg, { text:"OK", func:function() { } }, null);
+                                                anyMessage = true;
+                                            }
+                                            if(httpResultJson.client) {
+                                                Liquid.executeClientSide(liquid, "Save json response:", httpResultJson.client, null, true);
+                                            }
+                                            if(httpResultJson.result>0) {
+                                                Liquid.setAskForSave(liquid, false);
+                                            }
+                                        }
+                                    } else {
+                                        console.error("ERROR : wring response:"+liquid.xhr.status);
+                                    }
+                                }
+                            };
+                        } catch (e) {
+                            console.error("ERROR : "+e);
+                        }
+                    }
+                }
+            }
+        }
+    },
+
 }
