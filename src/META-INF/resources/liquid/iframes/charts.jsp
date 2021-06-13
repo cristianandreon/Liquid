@@ -1,10 +1,10 @@
-<%@ page 
-    language="java" 
-    contentType="text/html; charset=iso-8859-1" 
+<%@ page
+    language="java"
+    contentType="text/html; charset=iso-8859-1"
     import="javax.servlet.*"
     import="javax.servlet.http.*"
     import="javax.servlet.jsp.*"
-    errorPage="" 
+    errorPage=""
     %><%--
   ~ Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
   --%>
@@ -18,26 +18,26 @@
         <script src="../.././liquid/Chart.js"></script>
         <link rel="stylesheet" href="../.././liquid/liquid.css" type='text/css' />
         <link rel="stylesheet" href="/LiquidX/liquid.css" type='text/css' />
-        <script lang="javascript">            
-                       
+        <script lang="javascript">
+
             var glLiquidServlet = "";
             var glChart = null;
             var glChartName = null;
             var glChartObj = null;
             var Liquid = window.parent.Liquid;
-            
+
             function onLoad() {
-                // init ... 
+                // init ...
                 const urlParams = new URLSearchParams(window.location.search);
                 glChartName = urlParams.get('docName');
                 glControlId = urlParams.get('controlId');
             }
-            
-            
+
+
             function addDocuemnts( docItems ) {
                 var table = document.getElementById("liquidChartX.table");
             }
-            
+
             function addDocuemnt( docItem ) {
                 if(docItem) {
                     var container = document.getElementById("liquidChartX.container");
@@ -45,7 +45,7 @@
                     } else console.error("ERROR: target table not found")
                 }
             }
-            
+
             function loadChart( liquid, chart, nodes, mode ) {
                 var owner = liquid.tableJson.owner + ".getDocuemnts";
                 if(chart.owner) owner = chart.owner;
@@ -91,15 +91,19 @@
                 }
 
                 var chartType = chart.type;
-                if(chartType === '' || chartType==='pie') chartType = 'doughnut';
-                if(chartType === '' || chartType==='histogram') chartType = 'bar';
+                if(chartType === '' || chartType.toLowerCase()==='pie') {
+                    chartType = 'doughnut';
+                }
+                if(chartType === '' || chartType.toLowerCase()==='histogram') {
+                    chartType = 'bar';
+                }
                 /* 'line','bar',horizontalBar','verticalBar','radar','doughnut','polar area','bubble','scatter' */
-                
+
                 var defaultBackgroundColor = [ 'rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)', 'rgba(153, 102, 255, 0.2)', 'rgba(123, 82, 235, 0.4)', 'rgba(255, 120, 50, 0.2)', 'rgba(255, 00, 00, 0.6)', 'rgba(200, 00, 00, 0.6)', 'rgba(80, 00, 00, 0.6)', 'rgba(200, 50, 00, 0.3)' ];
                 var defaultBorderColor = [ 'rgba(255,99,132,1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(103, 52, 235, 1)','rgba(255, 80, 30, 1)','rgba(255, 00, 00, .5)','rgba(155, 55, 55, .5)','rgba(80, 20, 00, .5)','rgba(220, 50, 20, 0.7)' ];
                 var datasetList = [];
                 var datasetLabels = null;
-                var labelsList = [];
+                var labels = [];
 
                 if(groupingColumn) {
                     var xhr = new XMLHttpRequest();
@@ -121,10 +125,10 @@
                                             var label = rs["1"];
                                             var value = rs["2"];
                                             nodeKeys.push( value );
-                                            labelsList.push( label );
+                                            labels.push(label);
                                         }
                                     }
-                                    datasetList.push( { data: nodeKeys, backgroundColor: defaultBackgroundColor, borderColor: defaultBorderColor } );                                    
+                                    datasetList.push( { data: nodeKeys, backgroundColor: defaultBackgroundColor, borderColor: defaultBorderColor } );
                                 } else {
                                     console.error("ERROR : Undetected result in SelectEditor()...");
                                 }
@@ -138,6 +142,15 @@
                     }
                 } else {
                     if(nodes) {
+
+                        for(var iN=0; iN<nodes.length; iN++) {
+                            if(chart.labelCol) {
+                                labels.push( nodes[iN].data[ chart.labelCol.field ] );
+                            } else {
+                                labels.push( "" );
+                            }
+                        }
+
                         for(var ic=0; ic<columns.length; ic++) {
                             var datasetLabel = (columns[ic].label ? columns[ic].label : columns[ic].name);
                             var backgroundColor = [];
@@ -149,11 +162,6 @@
                                 try { nodeKeys.push( Number(data) ); } catch (e) { }
                                 var dataLabel = (columns[ic].label ? columns[ic].label : columns[ic].name);
                                 var labelDefined = false;
-                                if(chart.labelCol) {
-                                    labelsList.push( nodes[iN].data[ chart.labelCol.field ] );
-                                } else {
-                                    labelsList.push( columns[ic].name );
-                                }
                                 backgroundColor.push(ic < defaultBackgroundColor.length ? defaultBackgroundColor[ic] : '');
                                 borderColor.push(ic < defaultBorderColor.length ? defaultBorderColor[ic] : '');
                             }
@@ -163,7 +171,8 @@
                                     data: nodeKeys
                                     ,label: dataLabel
                                     ,backgroundColor:backgroundColor, borderColor:borderColor
-                                    ,order:ic+1
+                                    ,order:ic
+                                    ,yAxisID: 'y' + ic
                             }
                             );
                         }
@@ -171,8 +180,35 @@
                 }
 
 
-                
                 var chartTitle = chart.title?chart.title:"";
+
+
+                // Multiasse ?
+                var scales = {
+                    yAxes: [
+                        {
+                            id:"y0",
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                        }
+                    ]
+                };
+
+                if(columns.length > 1) {
+                    for (var ic = 1; ic < columns.length; ic++) {
+                        scales.yAxes.push ({
+                            id:'y' + ic,
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        });
+                    }
+                }
+
 
                 var chartObj = document.getElementById("LiquidChartX.Chart");
                 if(chartObj) {
@@ -182,9 +218,7 @@
                             type: chartType,
                             data: {
                                 datasets: datasetList
-                                ,labels: labelsList
-                                ,backgroundColor:backgroundColor
-                                ,borderColor:borderColor
+                                ,labels: labels
                             },
                             options: {
                                 responsive: true,
@@ -198,21 +232,23 @@
                                 animation: {
                                     animateScale: true,
                                     animateRotate: true
-                                }
+                                },
+                                scales: scales,
+                                stacked: false,
                             }
                         });
                     } else {
                         glChartObj.data.datasets = datasetList;
-                        if(datasetLabels) glChartObj.data.labels = datasetLabels;
+                        glChartObj.data.labels = labels;
                         glChartObj.data.backgroundColor = backgroundColor;
                         glChartObj.data.borderColor = borderColor;
                         glChartObj.update();
                     }
                 }
             }
-            
-            
-        </script>        
+
+
+        </script>
     </head>
     <body onload="onLoad();">
         <div id="liquidChartX.container" class="liquidChartX" style=" ">

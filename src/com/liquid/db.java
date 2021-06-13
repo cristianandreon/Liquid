@@ -2251,6 +2251,8 @@ public class db {
                             if (isCrossTableService) {
                                 int ic = targetColumnIndex;
                                 if (colTypes[ic] == 8) {
+                                    fieldValue = rsdo.getString(columns_alias[0]);
+                                    /*
                                     double dFieldValue = rsdo.getDouble(columns_alias[0]);
                                     if (colDigits[ic] < 0) {
                                         fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
@@ -2258,6 +2260,7 @@ public class db {
                                         nf.setMaximumFractionDigits(colDigits[ic]);
                                         fieldValue = nf.format(dFieldValue);
                                     }
+                                    */
                                 } else if (colTypes[ic] == 91) { //date
                                     try {
                                         java.sql.Date dbSqlDate = rsdo.getDate("columnName");
@@ -5735,6 +5738,10 @@ public class db {
         return value;
     }
      */
+
+
+
+
     static public String count_occurences_by_column(HttpServletRequest request, String operation, JspWriter out) {
         Connection conn = null;
         String executingQuery = null;
@@ -5871,12 +5878,64 @@ public class db {
                     if (!check_database_definition(conn, database)) {
                         System.out.println("LIQUID WARNING : database defined by driver :" + conn.getCatalog() + " requesting database:" + database);
                     }
-                    executingQuery = "SELECT " + itemIdString + targetColumn + itemIdString + ",count(*) from " + tableIdString + targetSchema + tableIdString + "." + tableIdString + targetTable + tableIdString + " GROUP BY " + itemIdString + targetColumn + itemIdString + "";
+
+
+
+
+                    JSONArray preFilters = null;
+
+                    try {
+                        preFilters = (tbl_wrk != null ? tbl_wrk.tableJson.getJSONArray("preFilters") : null);
+                    } catch (Exception e) {
+                    }
+
+                    String sWhere = "";
+                    ArrayList<Object> sWhereParams = new ArrayList<Object>();
+
+                    // Filtri sovrascritti in sessione
+                    if (request.getSession() != null) {
+                        Object sPrefilters = request.getSession().getAttribute(tbl_wrk.controlId + ".preFilters");
+                        if (sPrefilters != null) {
+                            preFilters = (JSONArray) sPrefilters;
+                        }
+
+                        ArrayList<LeftJoinMap> leftJoinsMap = null;
+
+                        if (preFilters != null) {
+                            try {
+                                sWhere = process_filters_json(
+                                        tbl_wrk, table, cols,
+                                        isOracle, isMySQL, isPostgres, isSqlServer,
+                                        sWhere, sWhereParams, preFilters, null, leftJoinsMap,
+                                        tableIdString, itemIdString,
+                                        request);
+                            } catch (Exception e) {
+                                error += "[preFilters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId+"]";
+                                System.err.println("// pre Filters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId);
+                                throw new Exception(e);
+                            }
+                        }
+                    }
+
+
+
+
+                    executingQuery = "SELECT " + itemIdString + targetColumn + itemIdString + ",count(*)"
+                            + " FROM " + tableIdString + targetSchema + tableIdString + "." + tableIdString + targetTable + tableIdString
+                            + sWhere
+                            + " GROUP BY " + itemIdString + targetColumn + itemIdString + "";
 
                     lStartTime = System.currentTimeMillis();
                     try {
                         if (conn != null) {
                             psdo = conn.prepareStatement(executingQuery);
+
+                            if(sWhereParams != null) {
+                                for (int iParam=0; iParam<sWhereParams.size(); iParam++) {
+                                    set_statement_param( psdo, iParam+1, sWhereParams.get(iParam) );
+                                }
+                            }
+
                             rsdo = psdo.executeQuery();
                         }
                     } catch (Exception e) {
