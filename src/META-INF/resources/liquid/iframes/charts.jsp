@@ -250,7 +250,7 @@
 
         </script>
     </head>
-    <body onload="onLoad();">
+    <body onload="onLoad();" style="margin: 0px; padding: 0px;border-left: 2px solid whitesmoke; border-right: 2px solid whitesmoke;">
         <div id="liquidChartX.container" class="liquidChartX" style=" ">
             <canvas id="LiquidChartX.Chart" style="width:100%; height:100%;"></canvas>
         </div>
