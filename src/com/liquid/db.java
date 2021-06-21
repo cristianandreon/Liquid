@@ -5,6 +5,7 @@
 package com.liquid;
 
 import static com.liquid.event.forwardEvent;
+import static com.liquid.login.schema;
 import static com.liquid.utility.searchProperty;
 import static com.liquid.workspace.check_database_definition;
 import com.liquid.metadata.ForeignKey;
@@ -3862,6 +3863,11 @@ public class db {
         return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
     }
 
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String where_condition, long maxRows) {
+        return load_beans(request, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
+    }
+
+
     /**
      * Create all beans from given where condition
      * 
@@ -6369,6 +6375,118 @@ public class db {
         }
         return null;
     }
+
+
+
+    /**
+     * Aggiornamento diretto del bean senza workspace
+     *
+     * @param bean
+     * @return
+     */
+    static public String update(Connection conn, Object bean, String databaseSchemaTable, String primaryKey) {
+        try {
+            if (bean != null && databaseSchemaTable != null && primaryKey != null) {
+                PreparedStatement psdo = null;
+                String sModifications = "";
+                String database = null, schema = null, table = null, sFields = "";
+
+                Object primaryKeyValue = null;
+
+                DateFormat dateFormat = new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
+                DateFormat dateTimeFormat = new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy HH" + workspace.timeSep + "mm" + workspace.timeSep + "ss.SS");
+
+
+                Field[] fields = bean.getClass().getDeclaredFields();
+                Field fieldFound = null;
+                for (Field f : fields) {
+                    String fieldName = f.getName();
+                    String[] colParts = fieldName.split("\\$");
+                    if (colParts.length > 1) {
+                        fieldName = "";
+                        for (int ip = 0; ip < colParts.length; ip++) {
+                            fieldName += (fieldName.length() > 0 ? "$" : "") + colParts[ip];
+
+                            int colType = 0;
+                            String colName = fieldName;
+
+                            // String beanColName = (colRuntimeName != null ? colRuntimeName.replaceAll("\\.", "\\$") : (colName != null ? colName.replaceAll("\\.", "\\$") : null));
+
+                            try {
+
+                                Object fieldData = utility.get(bean, fieldName);
+
+                                if (fieldData instanceof Date) { //date
+                                    java.sql.Date dbSqlDate = (java.sql.Date) fieldData;
+
+                                } else if (fieldData instanceof Time) { //date
+                                    java.sql.Time dbSqlTime = (java.sql.Time) fieldData;
+
+                                } else if (fieldData instanceof Timestamp) { //date
+                                    fieldData = fieldData != null ? dateTimeFormat.format(fieldData) : null;
+                                }
+
+                                if (fieldName.equals(primaryKey)) {
+                                    primaryKeyValue = fieldData;
+                                } else {
+                                    boolean isChanged = utility.isChanged(bean, primaryKey);
+                                    if (isChanged) {
+                                        sFields += (sFields.length() > 0 ? "," : "") + fieldName + "=?";
+                                    }
+                                }
+                            } catch (Exception ex) {
+                                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, "// ERROR in bean:" + bean.getClass().getName() + " prop.:" + colName + " error:" + ex.getLocalizedMessage());
+                            }
+                        }
+
+
+                        if (primaryKeyValue != null) {
+
+                            try {
+
+                                String[] tableParts = databaseSchemaTable.split("\\.");
+                                if (tableParts.length == 1) {
+                                    table = tableParts[0];
+                                } else if (tableParts.length == 2) {
+                                    table = tableParts[1];
+                                    schema = tableParts[0];
+                                } else if (tableParts.length == 3) {
+                                    table = tableParts[2];
+                                    schema = tableParts[1];
+                                    database = tableParts[0];
+                                }
+
+                                String sql = "UPDATE " + schema + "." + table + " SET " + fields + " WHERE " + primaryKey + "=" + primaryKeyValue;
+
+                                psdo = conn.prepareStatement(sql);
+                                int res = psdo.executeUpdate();
+
+                                return "{\"res\":"+res+"}";
+
+                            } catch (Throwable th) {
+
+                                return "{\"res\":-1, \"error\":\""+th.getMessage()+"\"}";
+
+                            } finally {
+                                if(psdo != null)
+                                    psdo.close();
+                            }
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception ex) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return null;
+    }
+
+
+
+
+
 
     /**
      * <h3>Insert the bean to the database</h3>

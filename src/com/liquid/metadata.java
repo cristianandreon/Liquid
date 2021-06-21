@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
 package com.liquid;
 
 import java.io.IOException;
@@ -1334,6 +1338,18 @@ public class metadata {
                             return true;
                     }
                 }
+                /* NO : pericoloso ritornare la tabella su un altro schema
+                if(rs != null) rs.close();
+                rs = dm.getTables(db, null, null, null );
+                if(rs != null) {
+                    while (rs.next()) {
+                        String resultSchema = rs.getString("TABLE_SCHEM");
+                        String resultTable = rs.getString("TABLE_NAME");
+                        if(resultTable != null && table.equalsIgnoreCase(resultTable))
+                            return true;
+                    }
+                }
+                */
             }
         } finally {
             if(rs != null) rs.close();

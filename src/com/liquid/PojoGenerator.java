@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -262,7 +266,7 @@ public class PojoGenerator {
             classBody += "\n\t" + sb.toString();
             return CtMethod.make(sb.toString(), declaringClass);
         } catch(Throwable th) {
-            System.err.println("// PojoGenerator.generate() Error:" + th.getLocalizedMessage());
+            System.err.println("// PojoGenerator.generateGenericChangeSetter() Error:" + th.getLocalizedMessage());
         }
         return null;
     }    
@@ -321,7 +325,7 @@ public class PojoGenerator {
             return CtMethod.make(sb.toString(), declaringClass);
 
         } catch(Throwable th) {
-            System.err.println("// PojoGenerator.generate() Error:" + th.getLocalizedMessage());
+            System.err.println("// PojoGenerator.generateGenericSetter() Error:" + th.getLocalizedMessage());
         }
         return null;
     }

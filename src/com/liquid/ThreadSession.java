@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -73,7 +77,7 @@ public class ThreadSession {
             threadSessionInfo.threadName = threadSessionInfo.thread.getName();
             threadSessionInfo.threadId = threadSessionInfo.thread.getId();
             threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
-            threadSessionInfo.sessionId = request.getRequestedSessionId();
+            threadSessionInfo.sessionId = request != null ? request.getRequestedSessionId() : null;
             threadSessionList.add(threadSessionInfo);
             
                     

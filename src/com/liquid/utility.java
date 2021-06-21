@@ -1,17 +1,14 @@
+/*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
 package com.liquid;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -28,9 +25,9 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.text.DateFormatSymbols;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,7 +60,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 // comment this for java <= 7
-import java.util.Base64;
 import org.jsoup.Jsoup;
 
 public class utility {
@@ -1039,10 +1035,53 @@ public class utility {
         return event.append_error_to_result(error, result);
     }
 
+    public static String replace_values(String sourceContnet, HashMap<String, String> values) {
+        Set<String> keys = values.keySet();
+        Iterator it = keys.iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            sourceContnet = sourceContnet.replace((String)pair.getKey(), (String)pair.getValue());
+        }
+        return sourceContnet;
+    }
 
 
-    
-    
+
+
+    public static boolean set_file_content(String fileName, String fileContent) {
+        BufferedWriter out = null;
+        File myObj = new File(fileName);
+
+        try {
+
+            if (myObj.createNewFile()) {
+                System.out.println("File created: " + myObj.getName());
+            } else {
+                System.out.println("File already exists.");
+            }
+            out = new BufferedWriter(new FileWriter(fileName));
+            out.write(fileContent);
+
+        } catch (IOException e) {
+            System.out.println("set_file_content() error: "+e.getMessage());
+            return false;
+        } finally {
+            if(out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    System.out.println("set_file_content() error: "+e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+        return true;
+    }
+
+
+
+
+
     static class MyErrorHandler implements ErrorHandler {
 
         public void warning(SAXParseException e) throws SAXException {
@@ -1088,6 +1127,13 @@ public class utility {
             }
         }
         return "";
+    }
+
+    public static String getFileContent(String fileName) {
+        return workspace.get_file_content((HttpServletRequest) null, fileName, false, false);
+    }
+    public static String get_file_content(String fileName) {
+        return workspace.get_file_content((HttpServletRequest) null, fileName, false, false);
     }
 
     public static String getArchiveFile(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
@@ -1155,10 +1201,13 @@ public class utility {
         } 
         return newList; 
     } 
-    
+
+
+
     public static String htmlEncode(String s) {
         return htmlEncode(s, true);
     }
+
     public static String htmlEncode(String s, boolean encodeSpecialChars) {
         if (s != null) {
             StringBuilder str = new StringBuilder();
@@ -1388,4 +1437,17 @@ public class utility {
         }
         return out;
     }
+
+
+    /**
+     *
+     * @param month (1 based)
+     * @param lang ("IT" / "ENG")
+     * @return
+     */
+    public static String getMonthName(int month, String lang) {
+        DateFormatSymbols dateFormatSymbols = new DateFormatSymbols("IT".equalsIgnoreCase(lang) ? Locale.ITALIAN : Locale.ENGLISH);
+        return dateFormatSymbols.getMonths()[month-1];
+    }
+
 }
