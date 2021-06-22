@@ -1036,11 +1036,15 @@ public class utility {
     }
 
     public static String replace_values(String sourceContnet, HashMap<String, String> values) {
-        Set<String> keys = values.keySet();
-        Iterator it = keys.iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            sourceContnet = sourceContnet.replace((String)pair.getKey(), (String)pair.getValue());
+        Iterator it = values.entrySet().iterator();
+        Map.Entry pair = null;
+        try {
+            while (it.hasNext()) {
+                pair = (Map.Entry) it.next();
+                sourceContnet = sourceContnet.replace((String) pair.getKey(), (String) pair.getValue());
+            }
+        } catch(Exception e) {
+            Logger.getLogger("replace_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
         }
         return sourceContnet;
     }
