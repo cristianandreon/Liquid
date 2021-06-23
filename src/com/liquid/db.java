@@ -6397,12 +6397,44 @@ public class db {
                 DateFormat dateTimeFormat = new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy HH" + workspace.timeSep + "mm" + workspace.timeSep + "ss.SS");
 
 
+                String itemIdString = "\"", tableIdString = "\"";
+                String dbProductName = conn.getMetaData().getDatabaseProductName();
+                boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
+                String driverClass = conn != null ? conn.getClass().getName() : null;
+
+                if ((driverClass != null && driverClass.toLowerCase().contains("postgres.")) || dbProductName.toLowerCase().contains("postgres")) {
+                    isPostgres = true;
+                }
+                if ((driverClass != null && driverClass.toLowerCase().contains("mysql.")) || dbProductName.toLowerCase().contains("mysql")) {
+                    isMySQL = true;
+                }
+                if ((driverClass != null && driverClass.toLowerCase().contains("mariadb.")) || dbProductName.toLowerCase().contains("mariadb")) {
+                    isMySQL = true;
+                }
+                if ((driverClass != null && driverClass.toLowerCase().contains("oracle.")) || (dbProductName != null && dbProductName.toLowerCase().contains("oracle"))) {
+                    isOracle = true;
+                }
+                if ((driverClass != null && driverClass.toLowerCase().contains("sqlserver.")) || (dbProductName != null && dbProductName.toLowerCase().contains("sqlserver"))) {
+                    isSqlServer = true;
+                }
+
+                if (isMySQL) {
+                    itemIdString = "`";
+                    tableIdString = "";
+                } else {
+                    itemIdString = "\"";
+                    tableIdString = "\"";
+                }
+
+
                 Field[] fields = bean.getClass().getDeclaredFields();
                 Field fieldFound = null;
+                ArrayList<Object> params = new ArrayList<Object>();
+
                 for (Field f : fields) {
                     String fieldName = f.getName();
                     String[] colParts = fieldName.split("\\$");
-                    if (colParts.length > 1) {
+                    if (colParts.length == 1) {
                         fieldName = "";
                         for (int ip = 0; ip < colParts.length; ip++) {
                             fieldName += (fieldName.length() > 0 ? "$" : "") + colParts[ip];
@@ -6429,49 +6461,56 @@ public class db {
                                 if (fieldName.equals(primaryKey)) {
                                     primaryKeyValue = fieldData;
                                 } else {
-                                    boolean isChanged = utility.isChanged(bean, primaryKey);
+                                    boolean isChanged = utility.isChanged(bean, fieldName);
                                     if (isChanged) {
-                                        sFields += (sFields.length() > 0 ? "," : "") + fieldName + "=?";
+                                        sFields += (sFields.length() > 0 ? "," : "") + (itemIdString + fieldName + itemIdString) + "=?";
+                                        params.add(utility.get(bean, fieldName));
                                     }
                                 }
                             } catch (Exception ex) {
                                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, "// ERROR in bean:" + bean.getClass().getName() + " prop.:" + colName + " error:" + ex.getLocalizedMessage());
                             }
                         }
+                    }
+                }
 
 
-                        if (primaryKeyValue != null) {
+                if (primaryKeyValue != null) {
 
-                            try {
+                    try {
 
-                                String[] tableParts = databaseSchemaTable.split("\\.");
-                                if (tableParts.length == 1) {
-                                    table = tableParts[0];
-                                } else if (tableParts.length == 2) {
-                                    table = tableParts[1];
-                                    schema = tableParts[0];
-                                } else if (tableParts.length == 3) {
-                                    table = tableParts[2];
-                                    schema = tableParts[1];
-                                    database = tableParts[0];
-                                }
+                        String[] tableParts = databaseSchemaTable.split("\\.");
+                        if (tableParts.length == 1) {
+                            table = tableParts[0];
+                        } else if (tableParts.length == 2) {
+                            table = tableParts[1];
+                            schema = tableParts[0];
+                        } else if (tableParts.length == 3) {
+                            table = tableParts[2];
+                            schema = tableParts[1];
+                            database = tableParts[0];
+                        }
 
-                                String sql = "UPDATE " + schema + "." + table + " SET " + fields + " WHERE " + primaryKey + "=" + primaryKeyValue;
+                        String sql = "UPDATE " + schema + "." + table + " SET " + sFields + " WHERE " + primaryKey + "=" + primaryKeyValue;
 
-                                psdo = conn.prepareStatement(sql);
-                                int res = psdo.executeUpdate();
+                        psdo = conn.prepareStatement(sql);
 
-                                return "{\"res\":"+res+"}";
-
-                            } catch (Throwable th) {
-
-                                return "{\"res\":-1, \"error\":\""+th.getMessage()+"\"}";
-
-                            } finally {
-                                if(psdo != null)
-                                    psdo.close();
+                        if(params != null) {
+                            for(int ip=0; ip<params.size(); ip++) {
+                                psdo.setObject(ip+1, params.get(ip));
                             }
                         }
+                        int res = psdo.executeUpdate();
+
+                        return "{\"res\":"+res+"}";
+
+                    } catch (Throwable th) {
+
+                        return "{\"res\":-1, \"error\":\""+th.getMessage()+"\"}";
+
+                    } finally {
+                        if(psdo != null)
+                            psdo.close();
                     }
                 }
             }

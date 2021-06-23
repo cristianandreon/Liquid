@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -9,11 +13,6 @@ package com.liquid;
  *
  * @author Cristitan
  */
-
-/*
- * Copyright Javelin Software, All rights reserved.
- */
-
 
 import java.util.*;
 import java.text.*;
@@ -446,8 +445,11 @@ public class DateUtil {
         }
         if (value instanceof java.sql.Timestamp) {
             return (java.sql.Timestamp) value;
-        }
-        if (value instanceof String) {
+        } else if (value instanceof java.util.Date) {
+            return new java.sql.Timestamp(((java.util.Date)value).getTime());
+        } else if (value instanceof java.sql.Date) {
+            return new java.sql.Timestamp(((java.sql.Date)value).getTime());
+        } else if (value instanceof String) {
             if ("".equals((String) value)) {
                 return null;
             }
