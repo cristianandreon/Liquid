@@ -25,8 +25,10 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.text.DateFormat;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -626,6 +628,11 @@ public class utility {
         }
     }
 
+    static public String getFolderFromFile(String fileName) {
+        File file = new File(fileName);
+        return file.getParentFile().getAbsolutePath();
+    }
+
     static public boolean createFolder(String folder) {
         try {
             Path path = Paths.get(folder);
@@ -1082,9 +1089,18 @@ public class utility {
         return true;
     }
 
+    public static Date addToDate(Date cDate, int days) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(cDate);
+        cal.add(Calendar.DATE, days); //minus number would decrement the days
+        return cal.getTime();
+    }
 
 
-
+    public static String dateToString(Date cDate, String format) {
+        DateFormat dateFormat = format != null ? new SimpleDateFormat(format) : new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
+        return dateFormat.format( cDate );
+    }
 
     static class MyErrorHandler implements ErrorHandler {
 
