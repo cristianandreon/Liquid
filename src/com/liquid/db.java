@@ -7315,6 +7315,9 @@ public class db {
                     }
                 }
 
+                if(sourceColumns.size() == 0) {
+                    error += "[ Failed to read source table ]";
+                }
 
                 if (mode.contains("callback"))
                     Callback.send("Analyzing missing fields " + schema + "."+ table + "...");                
