@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -68,6 +72,7 @@ public class net {
 
             // Supporto SSL
             if (baseURL.startsWith("https://")) {
+                // Https
                 HttpsURLConnection conn = (HttpsURLConnection) myUrl.openConnection();
 
                 SSLContext sc = SSLContext.getInstance("SSL");
@@ -79,13 +84,14 @@ public class net {
                 if (postData != null) {
                     conn.setRequestMethod("POST");
                     conn.setDoOutput(true);
+                    wr = conn.getOutputStream();
                 }
 
-                wr = conn.getOutputStream();
 
                 conns = conn;
 
             } else {
+                // Http
                 HttpURLConnection conn = (HttpURLConnection) myUrl.openConnection();
 
                 process_header_params(headers, conn);
@@ -93,9 +99,9 @@ public class net {
                 if (postData != null) {
                     conn.setRequestMethod("POST");
                     conn.setDoOutput(true);
+                    wr = conn.getOutputStream();
                 }
 
-                wr = conn.getOutputStream();
 
                 connh = conn;
             }
