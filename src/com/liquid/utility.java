@@ -1089,7 +1089,7 @@ public class utility {
         return true;
     }
 
-    public static Date addToDate(Date cDate, int days) {
+    public static java.util.Date addToDate(Date cDate, int days) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(cDate);
         cal.add(Calendar.DATE, days); //minus number would decrement the days
