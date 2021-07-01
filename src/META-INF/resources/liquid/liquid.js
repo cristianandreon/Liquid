@@ -2,6 +2,13 @@
  * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
  */
 
+// mnemonics flags
+// requireSelected selection of row is required, don't consider caret as current row
+
+// N.B.: Link to external control by : @controlId o url( controlId )
+// N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
+
+
 // mnemonics flags 
 // requireSelected selection of row is required, don't consider caret as current row
 
@@ -2175,7 +2182,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.46,
+    version: 1.47,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -4247,6 +4254,8 @@ var Liquid = {
                         if(httpResultJson.error) {
                             try { console.error("[SERVER] ERROR:" + atob(httpResultJson.error) + " on loadData() on control "+liquid.controlId); } catch(e) { debugger; }
                             Liquid.setErrorDiv(liquid, httpResultJson.error);
+                        } else {
+                            Liquid.setErrorDiv(liquid, "");
                         }
                         if(httpResultJson.warning) {
                             try { console.warn("[SERVER] WARNING:" + atob(httpResultJson.warning));  } catch(e) { debugger; }
@@ -4258,6 +4267,7 @@ var Liquid = {
                                 console.info("[SERVER] MESSAGE:" + msg);
                                 Liquid.dialogBox(null, title, msg, { text:"OK", func:function() { } }, null);
                             } catch(e) { debugger; }
+                        } else {
                         }
                     }
                 } catch (e) {
@@ -9975,7 +9985,7 @@ var Liquid = {
                         var sourceCol = null;
                         var lookupControlId = liquid.controlId + ("filters_"+(i+1)+"_"+filterJson.columns[ic].name).replace(/\./g, "_");
                         if(!Liquid.startLookup(liquid.controlId, sourceCol, lookupControlId, filterJson.columns[ic].linkedContainerId, filterJson.columns[ic].lookup, filterJson.columns[ic].lookupField, filterJson.columns[ic].options, 'filter', "filter field", null)) {
-                            // TODO: normal filer?
+                            // TODO: normal filter?
                         }
                     }
                 }
@@ -15216,6 +15226,8 @@ var Liquid = {
                             // lookupJson.autoLoad = false;
                             if(isDef(json.lookupField))
                                 lookupJson.lookupFiled = json.lookupField;
+                            if(isDef(json.lookupId))
+                                lookupJson.lookupId = json.lookupId;
                             if(isDef(lookupField))
                                 lookupJson.lookupFiled = lookupField;
                             if(isDef(options)) {
