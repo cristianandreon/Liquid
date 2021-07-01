@@ -1901,6 +1901,8 @@ public class db {
                                     ich += 3;
                                 } else if (filterValue.startsWith("LIKE ")) {
                                     ich += 5;
+                                } else if (filterValue.startsWith("FULLLIKE ")) {
+                                    ich += 9;
                                 } else {
                                     bScan = false;
                                 }
@@ -1990,21 +1992,35 @@ public class db {
                         }
                     }
 
-                    if ("LIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
+                    if ("LIKE".equalsIgnoreCase(filterOp) || "FULLLIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
                         if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
                             // numeric : like unsupported
                             filterOp = "=";
                         } else {
                             filterOp = "LIKE";
                             if (filterValue != null && !filterValue.isEmpty()) {
-                                preFix = (filterValue.charAt(0) != '%' ? "'%" : "'");
-                                postFix = (filterValue.length() > 0 ? (filterValue.charAt(filterValue.length() - 1) != '%' ? "%'" : "'") : "'");
+                                filterValue = (filterValue.charAt(0) != '%' ? "%" : "") + filterValue;
+                                filterValue = filterValue + (filterValue.length() > 0 ? (filterValue.charAt(filterValue.length() - 1) != '%' ? "%" : "") : "");
                             } else {
+                                //
                                 // no value : assume like "" as no filter
+                                //
                                 filterDisabled = true;
                             }
                         }
                     }
+
+                    if ("".equalsIgnoreCase(filterOp) || "=".equalsIgnoreCase(filterOp) ||  "==".equalsIgnoreCase(filterOp)) {
+                        if (filterValue != null && !filterValue.isEmpty()) {
+                        } else {
+                            //
+                            // no value : assume like "" as no filter
+                            //
+                            filterDisabled = true;
+                        }
+                    }
+
+
                     if (">".equalsIgnoreCase(filterOp)) {
                         if (col != null) {
                             if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {

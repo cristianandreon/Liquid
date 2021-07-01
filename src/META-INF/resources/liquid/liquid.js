@@ -5871,6 +5871,12 @@ var Liquid = {
                 tbl.cellPadding = 0;
                 var tbody = document.createElement("tbody");
                 liquid.filtersFirstId = null;
+
+                if(isDef(filterJson.rows))
+                    filterJson.nRows = filterJson.rows;
+                if(isDef(filterJson.cols))
+                    filterJson.nCols = filterJson.cols;
+
                 for(var r = 0; r < filterJson.nRows; r++) {
                     var tr = document.createElement("tr");
                     for(var c = 0; c < filterJson.nCols; c++) {
@@ -15029,12 +15035,19 @@ var Liquid = {
                 }
                 if(bHideMissing) {
                     for(var ic=0; ic<targetJson.columns.length; ic++) {
-                        targetJson.columns[ic].visible = false;
+                        targetJson.columns[ic].toHide = true;
                     }
                 }
                 for(var ic=0; ic<targetJson.columns.length; ic++) {
                     if(Liquid.getColumnFromColumns(sourceJson.table, sourceColumns, targetJson.columns[ic].name)) {
-                        delete targetJson.columns[ic].visible;
+                        delete targetJson.columns[ic].toHide;
+                    }
+                }
+                if(bHideMissing) {
+                    for(var ic=0; ic<targetJson.columns.length; ic++) {
+                        if(targetJson.columns[ic].toHide) {
+                            targetJson.columns[ic].visible = false;
+                        }
                     }
                 }
             }
