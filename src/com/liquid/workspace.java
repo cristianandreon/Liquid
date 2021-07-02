@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
 package com.liquid;
 
 import com.google.gson.Gson;
@@ -2740,13 +2744,15 @@ public class workspace {
     static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean replaceApex) {
         String fileContent = "", lineContent;
         String fullFileName = null;
+        String foundFileName = null;
         try {
             String clsPath = workspace.class.getClassLoader().getResource("").getPath();
             String fullPath = URLDecoder.decode(clsPath, "UTF-8");
             String pathArr[] = fullPath.split("/WEB-INF/classes/");
             fullPath = pathArr[0];
             String path = request != null ? request.getSession().getServletContext().getRealPath("/") : fullPath;
-            BufferedReader br = null;
+            boolean fileFound = false;
+
             String localFileName = fileName;
             if (localFileName.charAt(0) == File.separatorChar || localFileName.charAt(0) == '/') {
                 localFileName = localFileName.substring(1);
@@ -2759,19 +2765,18 @@ public class workspace {
             } else {
                 fullFileName = path + (path.charAt(path.length() - 1) != File.separatorChar ? File.separatorChar : "") + localFileName;
             }
-            try {
-                br = new BufferedReader(new FileReader(fullFileName));
-            } catch (FileNotFoundException ex) {
-            }
 
-            if (br == null) {
-                try {
-                    br = new BufferedReader(new FileReader(localFileName));
-                } catch (FileNotFoundException ex) {
+            fileFound = utility.fileExist(fullFileName);
+            if (fileFound) {
+                foundFileName = fullFileName;
+                } else {
+                fileFound = utility.fileExist(localFileName);
+                if (fileFound) {
+                    foundFileName = localFileName;
                 }
             }
 
-            if (br == null) {
+            if (!fileFound) {
                 URLClassLoader urlClassLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
                 for (URL url : urlClassLoader.getURLs()) {
                     if (url.getPath().contains("Liquid.jar") || url.getPath().contains("liquid.jar")) {
@@ -2781,14 +2786,9 @@ public class workspace {
                             if (inputURL != null) {
                                 JarURLConnection conn = (JarURLConnection) inputURL.openConnection();
                                 if (conn != null) {
-                                    InputStream in = conn.getInputStream();
-                                    // InputStream in = workspace.class.getClassLoader().getResourceAsStream(inputFile); 
-                                    // in = workspace.class.getResourceAsStream(inputFile); 
-                                    if (in != null) {
-                                        br = new BufferedReader(new InputStreamReader(in));
-                                        if (br != null) {
-                                            break;
-                                        }
+                                    fileFound = utility.fileExist(conn.getJarFileURL().getFile());
+                                    if(fileFound) {
+                                        foundFileName = conn.getJarFileURL().getFile();
                                     }
                                 }
                             }
@@ -2798,11 +2798,8 @@ public class workspace {
                     }
                 }
             }
-            if (br != null) {
-                while ((lineContent = br.readLine()) != null) {
-                    fileContent += lineContent;
-                }
-                br.close();
+            if (fileFound) {
+                fileContent = new String( Files.readAllBytes(new File(foundFileName).toPath()) );
             }
         } catch (Throwable ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
@@ -2815,7 +2812,7 @@ public class workspace {
                         JSONObject json = new JSONObject(fileContent);
                         if (json != null) {
                             json.put("sourceFileName", utility.base64Encode(fileName));
-                            json.put("sourceFullFileName", utility.base64Encode(fullFileName));
+                            json.put("sourceFullFileName", utility.base64Encode(foundFileName));
                             json.put("token", genesisToken);
                             fileContent = json.toString();
                         }
