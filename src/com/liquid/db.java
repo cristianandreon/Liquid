@@ -803,7 +803,10 @@ public class db {
                                             col.put("alias", column_alias);
                                             cols.put(ic, col);
                                         } else {
-                                            targetColumnIndex = ic;
+                                            // Imposta l'indice targetColumnIndex
+                                            if(colName.equalsIgnoreCase(targetColumn)) {
+                                                targetColumnIndex = ic;
+                                            }
                                         }
 
                                         if (bAddColumnToList) {
@@ -1432,7 +1435,9 @@ public class db {
 
             // salvataggio in sessione
             if (recordset_params.bSaveQueryInfo) {
-                set_query_info(recordset_params.request, tbl_wrk, column_list, column_alias_list, primaryKey, dbPrimaryKey, workingTable, leftJoinList, sWhere, sSort, limitString, itemIdString);
+                if (!isCrossTableService) {
+                    set_query_info(recordset_params.request, tbl_wrk, column_list, column_alias_list, primaryKey, dbPrimaryKey, workingTable, leftJoinList, sWhere, sSort, limitString, itemIdString);
+                }
             }
 
             lStartTime = System.currentTimeMillis();
@@ -2315,35 +2320,30 @@ public class db {
                                 int ic = targetColumnIndex;
                                 if (colTypes[ic] == 8) {
                                     fieldValue = rsdo.getString(columns_alias[0]);
-                                    /*
-                                    double dFieldValue = rsdo.getDouble(columns_alias[0]);
-                                    if (colDigits[ic] < 0) {
-                                        fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
-                                    } else {
-                                        nf.setMaximumFractionDigits(colDigits[ic]);
-                                        fieldValue = nf.format(dFieldValue);
-                                    }
-                                    */
                                 } else if (colTypes[ic] == 91) { //date
                                     try {
-                                        java.sql.Date dbSqlDate = rsdo.getDate("columnName");
+                                        java.sql.Date dbSqlDate = rsdo.getDate(columns_alias[0]);
                                         fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
                                     } catch (Exception e) {
-                                        fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000";
+                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                                        throw new Exception(e);
                                     }
                                 } else if (colTypes[ic] == 92) { //time
                                     try {
-                                        java.sql.Time dbSqlTime = rsdo.getTime("columnName");
+                                        java.sql.Time dbSqlTime = rsdo.getTime(columns_alias[0]);
                                         fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
                                     } catch (Exception e) {
-                                        fieldValue = "00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                                        throw new Exception(e);
                                     }
                                 } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
                                     try {
-                                        java.sql.Time dbSqlDateTime = rsdo.getTime("columnName");
+                                        java.sql.Time dbSqlDateTime = rsdo.getTime(columns_alias[0]);
                                         fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
                                     } catch (Exception e) {
-                                        fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                        // fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                                        throw new Exception(e);
                                     }
                                 } else {
                                     fieldValue = rsdo.getString(columns_alias[0]).replace("\"", "\\\"");

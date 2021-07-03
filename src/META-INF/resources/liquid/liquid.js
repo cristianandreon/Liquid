@@ -5775,7 +5775,7 @@ var Liquid = {
             tbl.cellPadding = 0;
             tbl.cellSpacing = 0;
             var tbody = document.createElement("tbody");
-            var filterbBarToBottom = false;
+            var filterbBarToBottom = true;
             var tr = null;
             var trFilterBar = Liquid.createFiltersBar(liquid);
             
@@ -9895,26 +9895,45 @@ var Liquid = {
                         + "</td>";
             } else {
                 if(!filterObj.lookup || typeof filterObj.lookup === 'undefined') {
-                    var searchCode = "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" src=\""+Liquid.getImagePath("search.png")+"\" onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterObj.linkedContainerId + "')\" style=\"padding-top:1; cursor:pointer\" width=\"16\" height=\"16\">";
+                    var tooltip = Liquid.lang === 'eng' ? "Get all dinstinct values" : "Ottiene tutti i valori distinti";
+                    var searchCode = "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" " +
+                        "class=\"liquidFilterBt\" " +
+                        "title=\""+tooltip+"\" " +
+                        "src=\""+Liquid.getImagePath("search.png")+"\" " +
+                        "onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterObj.linkedContainerId + "')\" " +
+                        "style=\"padding-top:1; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\" " +
+                        ">";
 
-                    innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete 
-                            + " value=\"\" id=\"" + filterObj.linkedContainerId + "\""
-                            + " type=\"" + inputType + "\""
-                            + " class=\"liquidFilterInput\""
-                            + onkeyupCode + onChangeCode
-                            + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
-                            + " data-rel=\"\""
-                            + " onmousedown=\"this.setAttribute('rel',this.value); this.value =''\""
-                            + " onblur=\"this.value=this.getAttribute('rel');\""
-                            + "/>"
-                            + "<div style=\"display:inline-block; margin-left:-22px;\">"
-                            + "<img src=\""+Liquid.getImagePath("delete.png")+"\" onClick=\"Liquid.onResetFilter('" + filterObj.linkedContainerId + "')\" style=\"top:4px; right:7px; position:relative; cursor:pointer\" width=\"16\" height=\"16\">"
-                            + "</div>"
-                            + "</td>"
-                            + "<td class=\"liquidFilterImg\">"
-                            + (liquid.tableJson.filtersSearch !== false ? searchCode : "")
-                            + "</td>"
-                            + "</tr>";
+                    var onMouseDownCode = "";
+                    var onBlurCode = "";
+                    if(filterObj.comboBox == true || filterObj.combobox == true) {
+                        onMouseDownCode = " onmousedown=\"this.setAttribute('rel',this.value); this.placeholder=this.value; this.value =''\"";
+                        onBlurCode = " onblur=\"this.value=this.getAttribute('rel');\"";
+                    }
+
+                    var tooltip = Liquid.lang === 'eng' ? "Reset filter field" : "Reimposta il filtro";
+                    innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
+                        + " value=\"\" id=\"" + filterObj.linkedContainerId + "\""
+                        + " type=\"" + inputType + "\""
+                        + " class=\"liquidFilterInput\""
+                        + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
+                        + " data-rel=\"\""
+                        + onkeyupCode + onChangeCode
+                        + onMouseDownCode
+                        + onBlurCode
+                        + "/>"
+                        + "<div style=\"display:inline-block; margin-left:-22px;\">"
+                        + "<img src=\""+Liquid.getImagePath("delete.png")+"\" "
+                        + "class=\"liquidFilterBt\" "
+                        + "title=\""+tooltip+"\" "
+                        + "onClick=\"Liquid.onResetFilter('" + filterObj.linkedContainerId + "')\" "
+                        + "style=\"top:4px; right:7px; position:relative; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\">"
+                        + "</div>"
+                        + "</td>"
+                        + "<td class=\"liquidFilterImg\">"
+                        + (liquid.tableJson.filtersSearch !== false ? searchCode : "")
+                        + "</td>"
+                        + "</tr>";
                     
                 } else {
                     // lookup created later...
