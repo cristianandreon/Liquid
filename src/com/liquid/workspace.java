@@ -2788,7 +2788,22 @@ public class workspace {
                                 if (conn != null) {
                                     fileFound = utility.fileExist(conn.getJarFileURL().getFile());
                                     if(fileFound) {
-                                        foundFileName = conn.getJarFileURL().getFile();
+                                        // Files.readAllBytes (usato per i file binari) non supporta la lettura dentro il .jar
+                                        InputStream in = conn.getInputStream();
+                                        if (in != null) {
+                                            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+                                            if (br != null) {
+                                                while ((lineContent = br.readLine()) != null) {
+                                                    fileContent += lineContent;
+                                                }
+                                                br.close();
+                                                //
+                                                // N.B.: cannot track internal file
+                                                // if(trackFileName ...
+                                                //
+                                                return fileContent;
+                                            }
+                                        }                                        
                                     }
                                 }
                             }
