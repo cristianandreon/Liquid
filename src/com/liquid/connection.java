@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
+ */
+
 package com.liquid;
 
 
@@ -138,9 +142,9 @@ public class connection {
     //
     static public Object [] getConnection( Method get_connection, HttpServletRequest request, JSONObject tableJson ) throws Throwable  {
         String driver = null, connectionURL = null, database = null;
-        try { driver = tableJson.getString("driver"); } catch(Exception e) {}
-        try { connectionURL = tableJson.getString("connectionURL"); } catch(Exception e) {}        
-        try { database = tableJson.getString("database"); } catch(Exception e) {}
+        try { driver = tableJson.has("driver") ? tableJson.getString("driver") : null; } catch(Exception e) {}
+        try { connectionURL = tableJson.has("connectionURL") ? tableJson.getString("connectionURL") : null; } catch(Exception e) {}
+        try { database = tableJson.has("database") ? tableJson.getString("database") : null; } catch(Exception e) {}
         return getConnection(get_connection, request, driver, connectionURL, database );
     }
     

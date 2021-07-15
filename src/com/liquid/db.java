@@ -803,7 +803,10 @@ public class db {
                                             col.put("alias", column_alias);
                                             cols.put(ic, col);
                                         } else {
-                                            targetColumnIndex = ic;
+                                            // Imposta l'indice targetColumnIndex
+                                            if(colName.equalsIgnoreCase(targetColumn)) {
+                                                targetColumnIndex = ic;
+                                            }
                                         }
 
                                         if (bAddColumnToList) {
@@ -953,12 +956,18 @@ public class db {
                                     }
                                 }
 
-                                sWhere = process_filters_json(
+                                Object [] resWhere = process_filters_json(
                                         tbl_wrk, table, cols,
                                         isOracle, isMySQL, isPostgres, isSqlServer,
                                         sWhere, sWhereParams, filtersCols, filtersDefinitionCols, leftJoinsMap,
                                         tableIdString, itemIdString,
                                         recordset_params.request);
+
+                                String errorWhere = (String)resWhere[1];
+                                if(errorWhere != null && !errorWhere.isEmpty())
+                                    error += "[" + errorWhere + "]";
+
+                                sWhere = (String)resWhere[2];
                             }
 
                             try {
@@ -1018,12 +1027,19 @@ public class db {
 
                         if (preFilters != null) {
                             try {
-                                sWhere = process_filters_json(
+                                Object [] resWhere = process_filters_json(
                                         tbl_wrk, table, cols,
                                         isOracle, isMySQL, isPostgres, isSqlServer,
                                         sWhere, sWhereParams, preFilters, null, leftJoinsMap,
                                         tableIdString, itemIdString,
                                         recordset_params.request);
+
+                                String errorWhere = (String)resWhere[1];
+                                if(errorWhere != null && !errorWhere.isEmpty())
+                                    error += "[" + errorWhere + "]";
+
+                                sWhere = (String)resWhere[2];
+
                             } catch (Exception e) {
                                 error += "[preFilters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId+"]";
                                 System.err.println("// pre Filters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId);
@@ -1419,7 +1435,9 @@ public class db {
 
             // salvataggio in sessione
             if (recordset_params.bSaveQueryInfo) {
-                set_query_info(recordset_params.request, tbl_wrk, column_list, column_alias_list, primaryKey, dbPrimaryKey, workingTable, leftJoinList, sWhere, sSort, limitString, itemIdString);
+                if (!isCrossTableService) {
+                    set_query_info(recordset_params.request, tbl_wrk, column_list, column_alias_list, primaryKey, dbPrimaryKey, workingTable, leftJoinList, sWhere, sSort, limitString, itemIdString);
+                }
             }
 
             lStartTime = System.currentTimeMillis();
@@ -1696,7 +1714,7 @@ public class db {
     // filtersCols = definizione del filtro nella richiesta (il filtro corrente passato dalla pagina web)
     // filtersDefinitionCols = definizione delle colonne del filtro corrente (nel setup del controllo)
     //
-    static public String process_filters_json(
+    static public Object [] process_filters_json(
             workspace tbl_wrk, String table, JSONArray cols,
             boolean isOracle, boolean isMySQL, boolean isPostgres, boolean isSqlServer,
             String sWhere, ArrayList<Object> sWhereParams,
@@ -1706,6 +1724,7 @@ public class db {
 
         String error = "";
         int parentesisCount = 0;
+        int result = 0;
 
         for (int i = 0; i < filtersCols.length(); i++) {
             JSONObject filtersCol = filtersCols.getJSONObject(i);
@@ -1716,6 +1735,7 @@ public class db {
                 String filterTable = null;
                 String filterName = null;
                 String filterValue = null;
+                boolean filterValueIsSet = false;
                 String filterOp = null;
                 String filterLogic = null;
                 String filterNextLogic = null;
@@ -1733,6 +1753,7 @@ public class db {
                     if (!filtersCol.isNull("value")) {
                         filterValue = filtersCol.getString("value");
                         filterValue = solveVariableField( filterValue, request);
+                        filterValueIsSet = true;
                     }
                 } catch (JSONException e) {
                 }
@@ -1758,7 +1779,7 @@ public class db {
                     }
                 } 
 
-                if (filterName != null && filterValue != null) {
+                if (filterName != null && filterValueIsSet) {
                     String preFix = "'";
                     String postFix = "'";
                     String preFixCol = "";
@@ -1870,62 +1891,73 @@ public class db {
                         System.err.println(err);
                     }
 
-                    int ich = 0, nch = filterValue.length();
-                    while (ich < nch && filterValue.charAt(ich) == ' ') {
-                        ich++;
-                    }
-                    int ichs = ich;
-                    boolean bScan = true;
-                    if (ich < nch) {
-                        while (bScan) {
-                            if (filterValue.charAt(ich) == '<' || filterValue.charAt(ich) == '>' || filterValue.charAt(ich) == '=' || filterValue.charAt(ich) == '%' || filterValue.charAt(ich) == '!') {
-                                ich++;
-                            } else if (filterValue.startsWith("IN ")) {
-                                ich += 3;
-                            } else if (filterValue.startsWith("LIKE ")) {
-                                ich += 5;
-                            } else {
-                                bScan = false;
+                    if(filterValue != null) {
+                        int ich = 0, nch = filterValue.length();
+                        while (ich < nch && filterValue.charAt(ich) == ' ') {
+                            ich++;
+                        }
+                        int ichs = ich;
+                        boolean bScan = true;
+                        if (ich < nch) {
+                            while (bScan) {
+                                if (filterValue.charAt(ich) == '<' || filterValue.charAt(ich) == '>' || filterValue.charAt(ich) == '=' || filterValue.charAt(ich) == '%' || filterValue.charAt(ich) == '!') {
+                                    ich++;
+                                } else if (filterValue.startsWith("IN ")) {
+                                    ich += 3;
+                                } else if (filterValue.startsWith("LIKE ")) {
+                                    ich += 5;
+                                } else if (filterValue.startsWith("FULLLIKE ")) {
+                                    ich += 9;
+                                } else {
+                                    bScan = false;
+                                }
                             }
                         }
+                        if (ich > ichs) {
+                            filterOp = filterValue.substring(ichs, ich);
+                            filterValue = filterValue.substring(ich);
+                        }
                     }
-                    if (ich > ichs) {
-                        filterOp = filterValue.substring(ichs, ich);
-                        filterValue = filterValue.substring(ich);
-                    } 
-                    
-                    {
+
+                    boolean bUseParams = true;
+
+                    if(filterValue != null) {
                         int commaIndex = filterValue.indexOf(",");
                         if (commaIndex == 0 || commaIndex > 0 && filterValue.charAt(commaIndex - 1) != '\\') {
                             filterOp = "IN";
                         }
-                    }
 
-                    if (filterValue.indexOf("*") >= 0) {
-                        if (filterOp == null || filterOp.isEmpty()) {
-                            filterOp = "LIKE";
-                            filterValue = filterValue.replaceAll("\\*", "%");
+                        if (filterValue.indexOf("*") >= 0) {
+                            if (filterOp == null || filterOp.isEmpty()) {
+                                filterOp = "LIKE";
+                                filterValue = filterValue.replaceAll("\\*", "%");
+                            }
                         }
-                    }
 
-                    if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
-                        if (filterValue.indexOf(",") >= 0) {
-                            filterOp = "IN";
+                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                            if (filterValue.indexOf(",") >= 0) {
+                                filterOp = "IN";
+                            }
                         }
-                    }
 
-                    if ("null".equalsIgnoreCase(filterValue)) {
-                        if ("=".equalsIgnoreCase(filterOp) || "like".equalsIgnoreCase(filterOp) || "fulllike".equalsIgnoreCase(filterOp) || filterOp == null || filterOp.isEmpty()) {
-                            filterOp = "IS";
+                        if ("null".equalsIgnoreCase(filterValue)) {
+                            if ("=".equalsIgnoreCase(filterOp) || "like".equalsIgnoreCase(filterOp) || "fulllike".equalsIgnoreCase(filterOp) || filterOp == null || filterOp.isEmpty()) {
+                                filterOp = "IS";
+                                filterValue = "NULL";
+                                preFix = " ";
+                                postFix = "";
+                            }
+                        } else if ("\"null\"".equals(filterValue)) {
                             filterValue = "NULL";
-                            preFix = " ";
-                            postFix = "";
+                        } else if ("\"NULL\"".equals(filterValue)) {
+                            filterValue = "NULL";
                         }
-                    } else if ("\"null\"".equals(filterValue)) {
-                        filterValue = "NULL";
-                    } else if ("\"NULL\"".equals(filterValue)) {
+                    } else {
+                        // wrap to is null
+                        filterOp = "IS";
                         filterValue = "NULL";
                     }
+
 
                     if ("IS".equalsIgnoreCase(filterOp)) {
                         if ("NULL".equalsIgnoreCase(filterValue)) {
@@ -1933,6 +1965,7 @@ public class db {
                             postFix = "";
                         }
                     }
+
                     if ("IN".equalsIgnoreCase(filterOp)) {
                         preFix = "(";
                         postFix = ")";
@@ -1964,21 +1997,35 @@ public class db {
                         }
                     }
 
-                    if ("LIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
+                    if ("LIKE".equalsIgnoreCase(filterOp) || "FULLLIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
                         if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
                             // numeric : like unsupported
                             filterOp = "=";
                         } else {
                             filterOp = "LIKE";
                             if (filterValue != null && !filterValue.isEmpty()) {
-                                preFix = (filterValue.charAt(0) != '%' ? "'%" : "'");
-                                postFix = (filterValue.length() > 0 ? (filterValue.charAt(filterValue.length() - 1) != '%' ? "%'" : "'") : "'");
+                                filterValue = (filterValue.charAt(0) != '%' ? "%" : "") + filterValue;
+                                filterValue = filterValue + (filterValue.length() > 0 ? (filterValue.charAt(filterValue.length() - 1) != '%' ? "%" : "") : "");
                             } else {
+                                //
                                 // no value : assume like "" as no filter
+                                //
                                 filterDisabled = true;
                             }
                         }
                     }
+
+                    if ("".equalsIgnoreCase(filterOp) || "=".equalsIgnoreCase(filterOp) ||  "==".equalsIgnoreCase(filterOp)) {
+                        if (filterValue != null && !filterValue.isEmpty()) {
+                        } else {
+                            //
+                            // no value : assume like "" as no filter
+                            //
+                            filterDisabled = true;
+                        }
+                    }
+
+
                     if (">".equalsIgnoreCase(filterOp)) {
                         if (col != null) {
                             if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
@@ -1998,8 +2045,10 @@ public class db {
                         }
                     }
                     
-                    boolean bUseParams = true;
 
+                    //
+                    // Sensitive case ?
+                    //
                     String sensitiveCasePreOp = "";
                     String sensitiveCasePostOp = "";
                     if (!filterSensitiveCase) {
@@ -2015,7 +2064,8 @@ public class db {
                             bUseParams = false;
                         } else {
                             if(bFoundCol) {
-                                filterValue = filterValue.toLowerCase();
+                                if(filterValue != null)
+                                    filterValue = filterValue.toLowerCase();
                                 sensitiveCasePreOp = "lower(";
                                 sensitiveCasePostOp = ")";
                             } else {
@@ -2023,6 +2073,19 @@ public class db {
                             }
                         }
                     }
+
+
+                    //
+                    // Numeric ?
+                    //
+                    if (bUseParams) {
+                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                            // numeric
+                        }
+                    }
+
+
+
 
                     if (!filterDisabled) {
 
@@ -2040,13 +2103,15 @@ public class db {
                         Object filterValueObject = null;
                         if ("IN".equalsIgnoreCase(filterOp)) {
                             // Conversione in Array
-                            String [] filterValues = filterValue.split(",");
-                            ArrayList<Object> filterValueObjects = new ArrayList<Object>();
-                            for(int iv=0; iv<filterValues.length; iv++) {
-                                String val = filterValues[iv];
-                                filterValueObjects.add( toJavaType(type, (Object)val, null, -1 ) );
+                            if(filterValue != null) {
+                                String[] filterValues = filterValue.split(",");
+                                ArrayList<Object> filterValueObjects = new ArrayList<Object>();
+                                for (int iv = 0; iv < filterValues.length; iv++) {
+                                    String val = filterValues[iv];
+                                    filterValueObjects.add(toJavaType(type, (Object) val, null, -1));
+                                }
+                                filterValueObject = (Object) filterValueObjects;
                             }
-                            filterValueObject = (Object)filterValueObjects;
                         } else{
                         }
                         
@@ -2100,8 +2165,10 @@ public class db {
                         // Escaping chars
                         //
                         if (filterValueType == 1) {
-                            if(filterValue.indexOf("'") >= 0) {
-                                filterValue = filterValue.replace("'", "''");
+                            if(filterValue != null) {
+                                if (filterValue.indexOf("'") >= 0) {
+                                    filterValue = filterValue.replace("'", "''");
+                                }
                             }
                         }
                         
@@ -2144,7 +2211,7 @@ public class db {
             }
         }
 
-        return sWhere;
+        return new Object [] { result, error, sWhere };
     }
 
     // Read the resultset... used internally
@@ -2253,35 +2320,30 @@ public class db {
                                 int ic = targetColumnIndex;
                                 if (colTypes[ic] == 8) {
                                     fieldValue = rsdo.getString(columns_alias[0]);
-                                    /*
-                                    double dFieldValue = rsdo.getDouble(columns_alias[0]);
-                                    if (colDigits[ic] < 0) {
-                                        fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
-                                    } else {
-                                        nf.setMaximumFractionDigits(colDigits[ic]);
-                                        fieldValue = nf.format(dFieldValue);
-                                    }
-                                    */
                                 } else if (colTypes[ic] == 91) { //date
                                     try {
-                                        java.sql.Date dbSqlDate = rsdo.getDate("columnName");
+                                        java.sql.Date dbSqlDate = rsdo.getDate(columns_alias[0]);
                                         fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
                                     } catch (Exception e) {
-                                        fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000";
+                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                                        throw new Exception(e);
                                     }
                                 } else if (colTypes[ic] == 92) { //time
                                     try {
-                                        java.sql.Time dbSqlTime = rsdo.getTime("columnName");
+                                        java.sql.Time dbSqlTime = rsdo.getTime(columns_alias[0]);
                                         fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
                                     } catch (Exception e) {
-                                        fieldValue = "00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                                        throw new Exception(e);
                                     }
                                 } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
                                     try {
-                                        java.sql.Time dbSqlDateTime = rsdo.getTime("columnName");
+                                        java.sql.Time dbSqlDateTime = rsdo.getTime(columns_alias[0]);
                                         fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
                                     } catch (Exception e) {
-                                        fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                        // fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                                        throw new Exception(e);
                                     }
                                 } else {
                                     fieldValue = rsdo.getString(columns_alias[0]).replace("\"", "\\\"");
@@ -5909,12 +5971,18 @@ public class db {
 
                         if (preFilters != null) {
                             try {
-                                sWhere = process_filters_json(
+                                Object [] resWhere = process_filters_json(
                                         tbl_wrk, table, cols,
                                         isOracle, isMySQL, isPostgres, isSqlServer,
                                         sWhere, sWhereParams, preFilters, null, leftJoinsMap,
                                         tableIdString, itemIdString,
                                         request);
+
+                                String errorWhere = (String)resWhere[1];
+                                if(errorWhere != null && !errorWhere.isEmpty())
+                                    error += "[" + errorWhere + "]";
+                                sWhere = (String)resWhere[2];
+
                             } catch (Exception e) {
                                 error += "[preFilters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId+"]";
                                 System.err.println("// pre Filters Error:" + e.getLocalizedMessage() + " on control:"+tbl_wrk.controlId);
@@ -6782,12 +6850,18 @@ public class db {
                         if (sourceRowsFilters != null) {
                             JSONArray cols = source_tbl_wrk.tableJson.getJSONArray("columns");
                             JSONArray filtersCols = wrapFilters(sourceRowsFilters);
-                            where_condition_source = process_filters_json(source_tbl_wrk, table, cols,
+                            Object [] resWhere = process_filters_json(source_tbl_wrk, table, cols,
                                     isOracle, isMySQL, isPostgres, isSqlServer,
                                     where_condition_source, where_condition_source_params,
                                     filtersCols, null, leftJoinsMap,
                                     tableIdString, itemIdString,
                                     request);
+
+                            String errorWhere = (String)resWhere[1];
+                            if(errorWhere != null && !errorWhere.isEmpty())
+                                error += "[" + errorWhere + "]";
+
+                            where_condition_target = (String)resWhere[2];
                         }
                     } catch (Exception e) {
                         error += "[Filters Error:" + e.getLocalizedMessage() + "]" + "[Driver:" + source_tbl_wrk.driverClass + "]";
@@ -6812,11 +6886,17 @@ public class db {
                         if (targetRowsFilters != null) {
                             JSONArray cols = target_tbl_wrk.tableJson.getJSONArray("columns");
                             JSONArray filtersCols = wrapFilters(targetRowsFilters);
-                            where_condition_target = process_filters_json(source_tbl_wrk, targetTable, cols,
+                            Object [] resWhere = process_filters_json(source_tbl_wrk, targetTable, cols,
                                     isOracle, isMySQL, isPostgres, isSqlServer,
                                     where_condition_target, where_condition_target_params, filtersCols, null, leftJoinsMap,
                                     tableIdString, itemIdString,
                                     request);
+
+                            String errorWhere = (String)resWhere[1];
+                            if(errorWhere != null && !errorWhere.isEmpty())
+                                error += "[" + errorWhere + "]";
+
+                            where_condition_target = (String)resWhere[2];
                         }
                     } catch (Exception e) {
                         error += "[Filters Error:" + e.getLocalizedMessage() + "]" + "[Driver:" + source_tbl_wrk.driverClass + "]";
@@ -7629,7 +7709,7 @@ public class db {
 
     static public String solveVariableField( String value, HttpServletRequest request) throws Exception {
         if (value != null && !value.isEmpty()) {
-            String currentValue = "";
+            String currentValue = null;
             for (int i = 0; i < value.length(); i++) {
                 if ((value.charAt(i) == '$' || value.charAt(i) == '%') && value.charAt(i + 1) == '{') {
                     i += 2;
@@ -7640,10 +7720,16 @@ public class db {
                     String cVar = value.substring(s, i);
                     if (!cVar.isEmpty()) {
                         Object oVar = request.getSession().getAttribute(cVar);
-                        String cVarValue = (String) String.valueOf(oVar);
-                        currentValue += (cVarValue != null ? cVarValue : "");
+                        String cVarValue = oVar != null ? (String) String.valueOf(oVar) : null;
+                        if(cVarValue != null) {
+                            if(currentValue == null)
+                                currentValue = "";
+                            currentValue += cVarValue;
+                        }
                     }
                 } else {
+                    if(currentValue == null)
+                        currentValue = "";
                     currentValue += value.charAt(i);
                 }
             }

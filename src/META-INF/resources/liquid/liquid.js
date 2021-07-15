@@ -2,6 +2,13 @@
  * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
  */
 
+// mnemonics flags
+// requireSelected selection of row is required, don't consider caret as current row
+
+// N.B.: Link to external control by : @controlId o url( controlId )
+// N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
+
+
 // mnemonics flags 
 // requireSelected selection of row is required, don't consider caret as current row
 
@@ -2175,7 +2182,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.46,
+    version: 1.47,
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -4247,6 +4254,8 @@ var Liquid = {
                         if(httpResultJson.error) {
                             try { console.error("[SERVER] ERROR:" + atob(httpResultJson.error) + " on loadData() on control "+liquid.controlId); } catch(e) { debugger; }
                             Liquid.setErrorDiv(liquid, httpResultJson.error);
+                        } else {
+                            Liquid.setErrorDiv(liquid, "");
                         }
                         if(httpResultJson.warning) {
                             try { console.warn("[SERVER] WARNING:" + atob(httpResultJson.warning));  } catch(e) { debugger; }
@@ -4258,6 +4267,7 @@ var Liquid = {
                                 console.info("[SERVER] MESSAGE:" + msg);
                                 Liquid.dialogBox(null, title, msg, { text:"OK", func:function() { } }, null);
                             } catch(e) { debugger; }
+                        } else {
                         }
                     }
                 } catch (e) {
@@ -5765,7 +5775,7 @@ var Liquid = {
             tbl.cellPadding = 0;
             tbl.cellSpacing = 0;
             var tbody = document.createElement("tbody");
-            var filterbBarToBottom = false;
+            var filterbBarToBottom = true;
             var tr = null;
             var trFilterBar = Liquid.createFiltersBar(liquid);
             
@@ -5861,6 +5871,12 @@ var Liquid = {
                 tbl.cellPadding = 0;
                 var tbody = document.createElement("tbody");
                 liquid.filtersFirstId = null;
+
+                if(isDef(filterJson.rows))
+                    filterJson.nRows = filterJson.rows;
+                if(isDef(filterJson.cols))
+                    filterJson.nCols = filterJson.cols;
+
                 for(var r = 0; r < filterJson.nRows; r++) {
                     var tr = document.createElement("tr");
                     for(var c = 0; c < filterJson.nCols; c++) {
@@ -9879,26 +9895,45 @@ var Liquid = {
                         + "</td>";
             } else {
                 if(!filterObj.lookup || typeof filterObj.lookup === 'undefined') {
-                    var searchCode = "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" src=\""+Liquid.getImagePath("search.png")+"\" onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterObj.linkedContainerId + "')\" style=\"padding-top:1; cursor:pointer\" width=\"16\" height=\"16\">";
+                    var tooltip = Liquid.lang === 'eng' ? "Get all dinstinct values" : "Ottiene tutti i valori distinti";
+                    var searchCode = "<img id=\"" + liquid.controlId + "." + filterObj.name + ".filter.search\" " +
+                        "class=\"liquidFilterBt\" " +
+                        "title=\""+tooltip+"\" " +
+                        "src=\""+Liquid.getImagePath("search.png")+"\" " +
+                        "onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterObj.linkedContainerId + "')\" " +
+                        "style=\"padding-top:1; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\" " +
+                        ">";
 
-                    innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete 
-                            + " value=\"\" id=\"" + filterObj.linkedContainerId + "\""
-                            + " type=\"" + inputType + "\""
-                            + " class=\"liquidFilterInput\""
-                            + onkeyupCode + onChangeCode
-                            + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
-                            + " data-rel=\"\""
-                            + " onmousedown=\"this.setAttribute('rel',this.value); this.value =''\""
-                            + " onblur=\"this.value=this.getAttribute('rel');\""
-                            + "/>"
-                            + "<div style=\"display:inline-block; margin-left:-22px;\">"
-                            + "<img src=\""+Liquid.getImagePath("delete.png")+"\" onClick=\"Liquid.onResetFilter('" + filterObj.linkedContainerId + "')\" style=\"top:4px; right:7px; position:relative; cursor:pointer\" width=\"16\" height=\"16\">"
-                            + "</div>"
-                            + "</td>"
-                            + "<td class=\"liquidFilterImg\">"
-                            + (liquid.tableJson.filtersSearch !== false ? searchCode : "")
-                            + "</td>"
-                            + "</tr>";
+                    var onMouseDownCode = "";
+                    var onBlurCode = "";
+                    if(filterObj.comboBox == true || filterObj.combobox == true) {
+                        onMouseDownCode = " onmousedown=\"this.setAttribute('rel',this.value); this.placeholder=this.value; this.value =''\"";
+                        onBlurCode = " onblur=\"this.value=this.getAttribute('rel');\"";
+                    }
+
+                    var tooltip = Liquid.lang === 'eng' ? "Reset filter field" : "Reimposta il filtro";
+                    innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
+                        + " value=\"\" id=\"" + filterObj.linkedContainerId + "\""
+                        + " type=\"" + inputType + "\""
+                        + " class=\"liquidFilterInput\""
+                        + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
+                        + " data-rel=\"\""
+                        + onkeyupCode + onChangeCode
+                        + onMouseDownCode
+                        + onBlurCode
+                        + "/>"
+                        + "<div style=\"display:inline-block; margin-left:-22px;\">"
+                        + "<img src=\""+Liquid.getImagePath("delete.png")+"\" "
+                        + "class=\"liquidFilterBt\" "
+                        + "title=\""+tooltip+"\" "
+                        + "onClick=\"Liquid.onResetFilter('" + filterObj.linkedContainerId + "')\" "
+                        + "style=\"top:4px; right:7px; position:relative; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\">"
+                        + "</div>"
+                        + "</td>"
+                        + "<td class=\"liquidFilterImg\">"
+                        + (liquid.tableJson.filtersSearch !== false ? searchCode : "")
+                        + "</td>"
+                        + "</tr>";
                     
                 } else {
                     // lookup created later...
@@ -9975,7 +10010,7 @@ var Liquid = {
                         var sourceCol = null;
                         var lookupControlId = liquid.controlId + ("filters_"+(i+1)+"_"+filterJson.columns[ic].name).replace(/\./g, "_");
                         if(!Liquid.startLookup(liquid.controlId, sourceCol, lookupControlId, filterJson.columns[ic].linkedContainerId, filterJson.columns[ic].lookup, filterJson.columns[ic].lookupField, filterJson.columns[ic].options, 'filter', "filter field", null)) {
-                            // TODO: normal filer?
+                            // TODO: normal filter?
                         }
                     }
                 }
@@ -15019,12 +15054,19 @@ var Liquid = {
                 }
                 if(bHideMissing) {
                     for(var ic=0; ic<targetJson.columns.length; ic++) {
-                        targetJson.columns[ic].visible = false;
+                        targetJson.columns[ic].toHide = true;
                     }
                 }
                 for(var ic=0; ic<targetJson.columns.length; ic++) {
                     if(Liquid.getColumnFromColumns(sourceJson.table, sourceColumns, targetJson.columns[ic].name)) {
-                        delete targetJson.columns[ic].visible;
+                        delete targetJson.columns[ic].toHide;
+                    }
+                }
+                if(bHideMissing) {
+                    for(var ic=0; ic<targetJson.columns.length; ic++) {
+                        if(targetJson.columns[ic].toHide) {
+                            targetJson.columns[ic].visible = false;
+                        }
                     }
                 }
             }
@@ -15216,6 +15258,8 @@ var Liquid = {
                             // lookupJson.autoLoad = false;
                             if(isDef(json.lookupField))
                                 lookupJson.lookupFiled = json.lookupField;
+                            if(isDef(json.lookupId))
+                                lookupJson.lookupId = json.lookupId;
                             if(isDef(lookupField))
                                 lookupJson.lookupFiled = lookupField;
                             if(isDef(options)) {

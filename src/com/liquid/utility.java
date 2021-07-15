@@ -118,6 +118,32 @@ public class utility {
         return "";
     }
 
+    static public String base64EncodeURLSafe(byte[] data) {
+        if (data == null) {
+            return "";
+        }
+        try {
+            return DatatypeConverter.printBase64Binary(data);
+        } catch (Throwable th) {
+            try {
+                if (javaVersion >= 8) {
+                    return new String(Base64.getUrlEncoder().encode(data));
+                    // throw new Throwable(); // x java 7
+                } else {
+                    throw new Throwable();  // x java 7
+                }
+            } catch (Throwable th2) {
+                try {
+                    return new String(org.apache.commons.codec.binary.Base64.encodeBase64URLSafe(data));
+                } catch (Throwable th3) {
+                    System.err.println("Error:" + th3.getLocalizedMessage() + "Please try adding apache commons-codes.jar to your project");
+                }
+            }
+        }
+        return "";
+    }
+
+
      static public String base64Decode(String data) {
         try {
             return base64Decode(data.getBytes());
@@ -1089,7 +1115,7 @@ public class utility {
         return true;
     }
 
-    public static Date addToDate(Date cDate, int days) {
+    public static java.util.Date addToDate(Date cDate, int days) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(cDate);
         cal.add(Calendar.DATE, days); //minus number would decrement the days
