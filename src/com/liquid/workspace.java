@@ -2838,7 +2838,8 @@ public class workspace {
             }
         }
         if (replaceApex) {
-            fileContent = fileContent.replace("'", "\\'");
+            // fileContent = fileContent.replace("'", "\\'");
+            fileContent = utility.base64Encode(fileContent);
         }
 
         return fileContent;
