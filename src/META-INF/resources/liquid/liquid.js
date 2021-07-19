@@ -14881,7 +14881,7 @@ var Liquid = {
             return;
         }
         var jsonString = null;
-        try { err = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
+        try { jsonString = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
         new LiquidCtrl(controlId, controlId, jsonString);
     },
     /**
@@ -14897,7 +14897,7 @@ var Liquid = {
         }
 
         var jsonString = null;
-        try { err = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
+        try { jsonString = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
 
     	var retVal = null;
         var refControlId = controlId.replace(/\./g, "-");
@@ -14938,7 +14938,7 @@ var Liquid = {
         var retVal = null;
 
         var jsonString = null;
-        try { err = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
+        try { jsonString = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
 
         if(!isDef(parentId)) {
             parentId = 'WinXContainer';
