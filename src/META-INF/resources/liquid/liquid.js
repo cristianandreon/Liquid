@@ -16,7 +16,7 @@
 // N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
 
 
-
+/* */
 var glLiquidStartupTables = [];
 var glLiquidStartupMenuX = [];
 var glLiquidStartupWinX = [];
