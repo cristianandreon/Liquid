@@ -16,6 +16,31 @@
 // N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
 
 
+/* */
+
+//
+// Liquid ver.1.59   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  19-07-2021
+//  TODO : see trello.com
+//
+// *** File internal priority ***
+//
+//  1°  project LiquidX (DEVELOPING)
+//  2°  project Liquid  (inside JAR)
+//  3°  project LiquidD (BACKUP)
+//
+//
+//
+// *** Automatic event firing ***
+//
+//      suppose a command named "my_command", the event's processor strip underline and make first char to uppercase :
+//
+//      call beforeMyCommand() event before executing "my_command"
+//      call afterMyCommand()  event after executed "my_command"
+//
+//  in other words add "before" / "after" and then make toCamelCase()
+//
+
 
 var glLiquidStartupTables = [];
 var glLiquidStartupMenuX = [];
@@ -14847,27 +14872,33 @@ var Liquid = {
     /**
      * Start a control as Fixed control
      * @param {controlId} the control id
-     * @param {jsonString} the control definition json (string)
+     * @param {jsonStringOrB64Enc} the control definition json (clean string or base64 encoded)
      * @return {} n/d
      */
-    startControl:function(controlId, jsonString) {
+    startControl:function(controlId, jsonStringOrB64Enc) {
         if(!document.body) {
-            glLiquidStartupTables.push( { controlId:controlId, json:jsonString } );
+            glLiquidStartupTables.push( { controlId:controlId, json:jsonStringOrB64Enc } );
             return;
         }
+        var jsonString = null;
+        try { err = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
         new LiquidCtrl(controlId, controlId, jsonString);
     },
     /**
      * Start a control as popup
      * @param {controlId} the control id
-     * @param {jsonString} the control definition json (string)
+     * @param {jsonStringOrB64Enc} the control definition json (clean string or base64 encoded)
      * @return {} n/d
      */
-    startPopup:function(controlId, jsonString) {
+    startPopup:function(controlId, jsonStringOrB64Enc) {
         if(!document.body) {
-            glLiquidStartupPopup.push( { controlId:controlId, jsonString:jsonString } );
+            glLiquidStartupPopup.push( { controlId:controlId, jsonString:jsonStringOrB64Enc } );
             return;
         }
+
+        var jsonString = null;
+        try { err = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
+
     	var retVal = null;
         var refControlId = controlId.replace(/\./g, "-");
         var liquid = Liquid.getLiquid(refControlId);
@@ -14897,14 +14928,18 @@ var Liquid = {
     /**
      * Start a control as winX
      * @param {controlId} the control id
-     * @param {jsonString} the control definition (json string)
+     * @param {jsonStringOrB64Enc} the control definition json (clean string or base64 encoded)
      * @param {parentId} the id of the html parent object
      * @param {status} the initial status of the winX (maximized, iconic, restored)
      * @param {options} overlay the options of the winX (json string)
      * @return {} n/d
      */
-    startWinX:function(controlId, jsonString, parentId, status, options) {
+    startWinX:function(controlId, jsonStringOrB64Enc, parentId, status, options) {
         var retVal = null;
+
+        var jsonString = null;
+        try { err = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
+
         if(!isDef(parentId)) {
             parentId = 'WinXContainer';
         }
