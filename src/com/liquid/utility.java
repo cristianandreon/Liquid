@@ -17,14 +17,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
@@ -669,7 +663,56 @@ public class utility {
           }
         return true;
     }
-  
+
+    /**
+     * Set file or folder writable setting owner and group if not null
+     *
+     * @param fileName
+     * @param owner
+     * @param group
+     * @return true if success
+     */
+    static public boolean setWritable(String fileName, String owner, String group) {
+        boolean retVal = false;
+        File file = new File(fileName);
+        if (file != null) {
+            retVal = true;
+
+            file.setReadable(true, true);
+            file.setExecutable(true, true);
+            file.setWritable(true, true);
+
+            if(group != null) {
+                Path path = file.toPath();
+                FileOwnerAttributeView view = Files.getFileAttributeView(path, FileOwnerAttributeView.class);
+                UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+                GroupPrincipal groupPrincipal = null;
+                try {
+                    groupPrincipal = lookupService.lookupPrincipalByGroupName(group);
+                    Files.getFileAttributeView(file.toPath(), PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS).setGroup(groupPrincipal);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    retVal = false;
+                }
+            }
+            if(owner != null) {
+                Path path = file.toPath();
+                FileOwnerAttributeView view = Files.getFileAttributeView(path, FileOwnerAttributeView.class);
+                UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+                UserPrincipal userPrincipal = null;
+                try {
+                    userPrincipal = lookupService.lookupPrincipalByName(owner);
+                    Files.getFileAttributeView(file.toPath(), PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS).setOwner(userPrincipal);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    retVal = false;
+                }
+            }
+        }
+        return retVal;
+    }
+
+
     static public boolean fileExist(String folder) {
         if (folder != null && !folder.isEmpty()) {
             File file = new File(folder);
