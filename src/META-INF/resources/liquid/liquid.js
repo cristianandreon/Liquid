@@ -19,8 +19,8 @@
 /* */
 
 //
-// Liquid ver.1.59   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  19-07-2021
+// Liquid ver.1.60   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  05-08-2021
 //  TODO : see trello.com
 //
 // *** File internal priority ***
@@ -15432,14 +15432,15 @@ var Liquid = {
     /**
      * Start a control as menuX
      * @param {outDivObjOrId} the id or html element of the html parent object
-     * @param {menuJson} the control definition json (string)
+     * @param {menuJsonStringOrB64Enc} the control definition json (string)
      * @return {} n/d
      */
-    startMenuX:function(outDivObjOrId, menuJson, options) {
+    startMenuX:function(outDivObjOrId, menuJsonStringOrB64Enc, options) {
         if(!document.body) {
             glLiquidStartupMenuX.push( { outDivObjOrId:outDivObjOrId, menuJson:menuJson, options:options } );
             return;
         }
+        try { menuJson = atob(menuJsonStringOrB64Enc); } catch(e) { menuJson = menuJsonStringOrB64Enc; }
         return new LiquidMenuXCtrl(outDivObjOrId, menuJson, options);
     },    
     buildMenuXAccordion:function(liquid, accordion, parentObj, level) {

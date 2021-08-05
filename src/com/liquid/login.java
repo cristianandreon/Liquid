@@ -511,6 +511,12 @@ public class login {
         if(domain_id == null || domain_id.isEmpty())
             domain_id = (String)request.getSession().getAttribute("GLLiquidLoginDomainId");                                        
 
+        
+        sUserID = utility.base64Decode(sUserID);
+        sEMail = utility.base64Decode(sEMail);
+        sPassword = utility.base64Decode(sPassword);
+        sRedirect = utility.base64Decode(sRedirect);
+                
         try {
 
             Object [] connResult = getConnection();
@@ -1316,6 +1322,11 @@ public class login {
                 sRedirect = request.getRequestURL().toString();
             }
 
+            
+            sEMail = utility.base64Decode(sEMail);
+            sUserID = utility.base64Decode(sUserID);
+
+                
             /////////////////////////////////////////////
             // Registrazione
             //

@@ -6,6 +6,7 @@ import static com.liquid.emailer.Password;
 import static com.liquid.emailer.Port;
 import static com.liquid.emailer.Username;
 import static com.liquid.login.logout;
+import com.sun.mail.util.MailSSLSocketFactory;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -126,13 +127,10 @@ public class emailer {
         
         LastError = "";
         String sFrom = (pFrom != null && !pFrom.isEmpty() ? pFrom : From);
-
+        Properties properties = System.getProperties();
  
 
         try {
-
-            Properties properties = System.getProperties();
-
 
             // Setup mail server
             properties.put("mail.transport.protocol", Protocol);
@@ -141,6 +139,16 @@ public class emailer {
             properties.put("mail.smtp.port", Port);
             properties.put("mail.smtp.auth", Auth);
             properties.put("mail.smtp.ssl.trust", "*");
+
+
+            properties.put("mail.smtps.ssl.checkserveridentity", "false");
+            properties.put("mail.smtps.ssl.trust", "*");
+             
+            MailSSLSocketFactory sf = new MailSSLSocketFactory();
+            sf.setTrustAllHosts(true); 
+            properties.put("mail.imap.ssl.trust", "*");
+            properties.put("mail.imap.ssl.socketFactory", sf);
+
 
             javax.mail.Authenticator auth = new SMTPAuthenticator();
 
@@ -157,10 +165,25 @@ public class emailer {
                 bAutenticated = true;
             }
 
-        } catch (Exception e) {
-            Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "send() Error:" + e.getLocalizedMessage());
-            LastError = "[Sending mail Exception:" + e.getMessage() + "]";
-            bAutenticated = false;
+        } catch (Exception e0) {
+
+            Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "send() Error:" + e0.getLocalizedMessage());
+            
+            try {
+            
+                properties.put("mail.smtp.starttls.enable", "false");
+            
+                transport = session.getTransport(Protocol);
+                transport.connect(Host, Username, Password);
+                transport.close();
+                bAutenticated = true;
+        
+        
+            } catch (Exception e) {
+                Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "send() Error:" + e.getLocalizedMessage());
+                LastError = "[Sending mail Exception:" + e.getMessage() + "]";
+                bAutenticated = false;
+            }
         }
  
 
