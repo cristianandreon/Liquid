@@ -14494,7 +14494,23 @@ var Liquid = {
         
         return dialog;
         
-    },dialogBox:function(parentObj, title, message, onOk, onCancel) {
+    },
+
+    /**
+        if(title.indexOf("QUESTION")>=0) icon = Liquid.getImagePath("question.png");
+        if(title.indexOf("ERROR")>=0) icon = Liquid.getImagePath("error.png");
+        if(title.indexOf("WARNING")>=0) icon = Liquid.getImagePath("warning.png");
+        if(title.indexOf("INFO")>=0) icon = Liquid.getImagePath("info.png");
+        if(title.indexOf("DEBUG")>=0) icon = Liquid.getImagePath("debug.png");
+
+     * @param parentObj
+     * @param title
+     * @param message
+     * @param onOk
+     * @param onCancel
+     * @returns {n|d}
+     */
+    dialogBox:function(parentObj, title, message, onOk, onCancel) {
         var buttons = [ ];        
         if(onOk) buttons.push( { 
             text: (isDef(onOk.text) ? onOk.text : "Ok"), 
