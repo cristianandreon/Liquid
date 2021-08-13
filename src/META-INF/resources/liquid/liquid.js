@@ -19,8 +19,8 @@
 /* */
 
 //
-// Liquid ver.1.60   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  05-08-2021
+// Liquid ver.1.61   Copyright 2020 Cristian Andreon - cristianandreon.eu
+//  First update 04-01-2020 - Last update  13-08-2021
 //  TODO : see trello.com
 //
 // *** File internal priority ***
@@ -14510,6 +14510,9 @@ var Liquid = {
      * @param onCancel
      * @returns {n|d}
      */
+    messageBox:function(parentObj, title, message, onOk, onCancel) {
+        return dialogBox(parentObj, title, message, onOk, onCancel);
+    },
     dialogBox:function(parentObj, title, message, onOk, onCancel) {
         var buttons = [ ];        
         if(onOk) buttons.push( { 
