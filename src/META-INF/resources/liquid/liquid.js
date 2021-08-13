@@ -14511,7 +14511,7 @@ var Liquid = {
      * @returns {n|d}
      */
     messageBox:function(parentObj, title, message, onOk, onCancel) {
-        return dialogBox(parentObj, title, message, onOk, onCancel);
+        return Liquid.dialogBox(parentObj, title, message, onOk, onCancel);
     },
     dialogBox:function(parentObj, title, message, onOk, onCancel) {
         var buttons = [ ];        
