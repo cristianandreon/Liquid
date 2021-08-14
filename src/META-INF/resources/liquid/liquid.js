@@ -14518,7 +14518,7 @@ var Liquid = {
         if(onOk) buttons.push( { 
             text: (isDef(onOk.text) ? onOk.text : "Ok"), 
             click: function() { 
-                try { (isDef(onOk) ? (isDef(onOk.func) ? onOk.func() : (typeof onOk === 'function' ? Ok() : "")) : ""); } catch (e) { console.error("ERROR:"+e); }
+                try { (isDef(onOk) ? (isDef(onOk.func) ? onOk.func() : (typeof onOk === 'function' ? onOk() : "")) : ""); } catch (e) { console.error("ERROR:"+e); }
                 jQ1124( this ).dialog( "close" ); 
             } 
         } );
@@ -16094,6 +16094,106 @@ var Liquid = {
             }
         }
     },
+    saveUserData:function(field, value, note, callback) {
+        if(field) {
+            if(glLiquidDBEnable) {
+                var date = new Date();
+                Liquid.getDB();
+                if(glLiquidDB) {
+                    glLiquidDB.transaction(function (tx) {
+                        try {
+                            var sql = "INSERT INTO USERDATA (field,value,note,date) VALUES ("
+                                + ",'" + btoa(field)+"'"
+                                + ",'" + btoa(JSON.stringify(value))+"'"
+                                + ",'" + btoa(note) + "'"
+                                + ",'" + date.toISOString() + "'"
+                                + ")";
+                            tx.executeSql(sql, [], function (tx, results) {
+                                Liquid.saveUserDataDone(field, callback);
+                            }, function (tx, results) {
+                                console.error(results);
+                            });
+                        } catch(e) { console.error("ERROR: "+e); }
+                    }, null);
+                } else if(glLiquidIDB) {
+                    var transaction = glLiquidIDB.transaction(["USERDATA"], "readwrite");
+                    var objectStore = transaction.objectStore("USERDATA");
+                    var data = { field:btoa(field), value:btoa(JSON.stringify(value)), note:btoa(note), date:date.toISOString() };
+                    var request = objectStore.add(data);
+                    if(request.readyState === 'done') {
+                        Liquid.saveUserDateDone(field, callback);
+                    } else {
+                        request.onerror = function(event) {
+                            console.error("IndexedDB error:"+event.target.error.message);
+                        };
+                        request.onsuccess = function(event) {
+                            Liquid.saveUserDateDone(field, callback);
+                        };
+                    }
+                }
+            }
+        }
+    },
+    saveUserDateDone:function(field, callback) {
+        if(field) {
+            var msg = Liquid.lang === 'eng' ? ("user data "+field + "written") : ("Dati utente "+(field)+" scritti");
+            Liquid.showToast("LIQUID", msg, "success");
+        }
+        if(callback)
+            callback();
+    },
+    readUserData:function(field, callback) {
+        if(field) {
+            let fieldB64 = btoa(field);
+            if(glLiquidDBEnable) {
+                Liquid.getDB();
+                if(glLiquidDB) {
+                    glLiquidDB.transaction(function (tx) {
+                        tx.executeSql("SELECT * FROM USERDATA WHERE field='"+fieldB64+"'", [], function (tx, results) {
+                            for (var i=0; i<results.rows.length; i++) {
+                                Liquid.readUserDataExec( results.rows.item(i).Id, results.rows.item(i).field, results.rows.item(i).value, callback );
+                            }
+                        }, null);
+                    });
+                } else if(glLiquidIDB) {
+                    var transaction = glLiquidIDB.transaction(["USERDATA"], "readwrite");
+                    var objectStore = transaction.objectStore("USERDATA");
+                    var request = objectStore.getAll();
+                    if(request.readyState === 'done') {
+                        Liquid.readUserDataProcessCursors(fieldB64, request.result, callback);
+                    } else {
+                        request.onerror = function(event) {
+                            console.error("ERROR: readUserData() error: "+event);
+                        };
+                        request.onsuccess = function(event) {
+                            Liquid.readUserDataProcessCursors(fieldB64, event.target.result, callback);
+                        };
+                    }
+                }
+            }
+        }
+    },
+    readUserDataProcessCursors:function(fieldB64, cursors, callback) {
+        for(var ic=0; ic<cursors.length; ic++) {
+            let cursor = cursors[ic];
+            if (cursor) {
+                if(fieldB64 == cursor.field) {
+                    Liquid.readUserDataExec(cursor.Id, cursor.field, cursor.value, cursor.note, cursor.date, callback);
+                }
+            }
+        }
+    },
+    readUserDataExec:function(id, field, value, note, date, callback) {
+        if(id) {
+            if(field) {
+                if(callback) {
+                    callback(atob(field), atob(value), atob(note), date);
+                }
+            } else {
+                console.error("ERROR: readUserData(): controlId "+controlId+" not found");
+            }
+        }
+    },
     getDB:function() {
         if(glLiquidDBEnable) {
             if(!glLiquidDB) {
@@ -16102,7 +16202,8 @@ var Liquid = {
                     if(glLiquidDB) {
                         glLiquidDB.transaction(function (tx) {
                             tx.executeSql('CREATE TABLE IF NOT EXISTS WORKERS (id INTEGER PRIMARY KEY,userId TEXT,status TEXT,controlId TEXT,command TEXT, date DATETIME)'); 
-                            tx.executeSql('CREATE TABLE IF NOT EXISTS CLIPBOARD (id INTEGER PRIMARY KEY,controlId TEXT,columns TEXT, rows TEXT, date DATETIME)'); 
+                            tx.executeSql('CREATE TABLE IF NOT EXISTS CLIPBOARD (id INTEGER PRIMARY KEY,controlId TEXT,columns TEXT, rows TEXT, date DATETIME)');
+                            tx.executeSql('CREATE TABLE IF NOT EXISTS USERDATA (id INTEGER PRIMARY KEY,field TEXT,note TEXT, value TEXT, date DATETIME)');
                         }, null);
                     }
                 } else {
@@ -16143,6 +16244,14 @@ var Liquid = {
                                         objStoreClipboard.createIndex("controlId", "controlId", { unique: false });
                                         objStoreClipboard.createIndex("columns", "command", { unique: false });
                                         objStoreClipboard.createIndex("rows", "rows", { unique: false });
+                                        objStoreClipboard.createIndex("date", "date", { unique: false });
+                                    }
+                                    if (!glLiquidIDB.objectStoreNames.contains('USERDATA')) {
+                                        var objStoreClipboard = glLiquidIDB.createObjectStore("USERDATA", { autoIncrement : true } );
+                                        objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement:true});
+                                        objStoreClipboard.createIndex("field", "controlId", { unique: false });
+                                        objStoreClipboard.createIndex("note", "command", { unique: false });
+                                        objStoreClipboard.createIndex("value", "rows", { unique: false });
                                         objStoreClipboard.createIndex("date", "date", { unique: false });
                                     }
                                 } catch(e) {
