@@ -9,18 +9,14 @@
 // N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
 
 
-// mnemonics flags 
-// requireSelected selection of row is required, don't consider caret as current row
-
-// N.B.: Link to external control by : @controlId o url( controlId )
-// N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
-
 
 /* */
 
 //
-// Liquid ver.1.61   Copyright 2020 Cristian Andreon - cristianandreon.eu
-//  First update 04-01-2020 - Last update  13-08-2021
+// Liquid ver.1.62
+//
+//  First update 04-01-2020 - Last update  15-08-2021
+//
 //  TODO : see trello.com
 //
 // *** File internal priority ***
@@ -16094,6 +16090,9 @@ var Liquid = {
             }
         }
     },
+    writeUserData:function(field, value, note, callback) {
+        return this.saveUserData(field, value, note, callback);
+    },
     saveUserData:function(field, value, note, callback) {
         if(field) {
             if(glLiquidDBEnable) {
@@ -16103,7 +16102,7 @@ var Liquid = {
                     glLiquidDB.transaction(function (tx) {
                         try {
                             var sql = "INSERT INTO USERDATA (field,value,note,date) VALUES ("
-                                + ",'" + btoa(field)+"'"
+                                + "'" + btoa(field)+"'"
                                 + ",'" + btoa(JSON.stringify(value))+"'"
                                 + ",'" + btoa(note) + "'"
                                 + ",'" + date.toISOString() + "'"
@@ -16121,28 +16120,33 @@ var Liquid = {
                     var data = { field:btoa(field), value:btoa(JSON.stringify(value)), note:btoa(note), date:date.toISOString() };
                     var request = objectStore.add(data);
                     if(request.readyState === 'done') {
-                        Liquid.saveUserDateDone(field, callback);
+                        Liquid.saveUserDataDone(field, callback);
                     } else {
                         request.onerror = function(event) {
                             console.error("IndexedDB error:"+event.target.error.message);
                         };
                         request.onsuccess = function(event) {
-                            Liquid.saveUserDateDone(field, callback);
+                            Liquid.saveUserDataDone(field, callback);
                         };
                     }
                 }
             }
         }
     },
-    saveUserDateDone:function(field, callback) {
-        if(field) {
-            var msg = Liquid.lang === 'eng' ? ("user data "+field + "written") : ("Dati utente "+(field)+" scritti");
-            Liquid.showToast("LIQUID", msg, "success");
-        }
-        if(callback)
+    saveUserDataDone:function(field, callback) {
+        if(callback) {
             callback();
+        } else {
+            if (field) {
+                var msg = Liquid.lang === 'eng' ? ("user data " + field + "written") : ("Dati utente " + (field) + " scritti");
+                Liquid.showToast("LIQUID", msg, "success");
+            }
+        }
     },
     readUserData:function(field, callback) {
+        return this.loadUserData(field, callback);
+    },
+    loadUserData:function(field, callback) {
         if(field) {
             let fieldB64 = btoa(field);
             if(glLiquidDBEnable) {
@@ -16151,7 +16155,7 @@ var Liquid = {
                     glLiquidDB.transaction(function (tx) {
                         tx.executeSql("SELECT * FROM USERDATA WHERE field='"+fieldB64+"'", [], function (tx, results) {
                             for (var i=0; i<results.rows.length; i++) {
-                                Liquid.readUserDataExec( results.rows.item(i).Id, results.rows.item(i).field, results.rows.item(i).value, callback );
+                                Liquid.readUserDataExec( results.rows.item(i).id, results.rows.item(i).field, results.rows.item(i).value, results.rows.item(i).note, results.rows.item(i).date, callback );
                             }
                         }, null);
                     });
