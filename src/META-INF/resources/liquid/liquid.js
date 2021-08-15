@@ -16101,14 +16101,21 @@ var Liquid = {
                 if(glLiquidDB) {
                     glLiquidDB.transaction(function (tx) {
                         try {
-                            var sql = "INSERT INTO USERDATA (field,value,note,date) VALUES ("
+                            let valueB64 = btoa(JSON.stringify(value));
+                            let noteB64 = btoa(JSON.stringify(note));
+                            var sqlDelete = "DELETE FROM USERDATA WHERE field='" + btoa(field)+"'";
+                            var sqlInsert = "INSERT INTO USERDATA (field,value,note,date) VALUES ("
                                 + "'" + btoa(field)+"'"
-                                + ",'" + btoa(JSON.stringify(value))+"'"
-                                + ",'" + btoa(note) + "'"
+                                + ",'" + valueB64 + "'"
+                                + ",'" + noteB64 + "'"
                                 + ",'" + date.toISOString() + "'"
-                                + ")";
-                            tx.executeSql(sql, [], function (tx, results) {
-                                Liquid.saveUserDataDone(field, callback);
+                                + ");";
+                            tx.executeSql(sqlDelete, [], function (tx, results) {
+                                tx.executeSql(sqlInsert, [], function (tx, results) {
+                                    Liquid.saveUserDataDone(field, callback);
+                                }, function (tx, results) {
+                                    console.error(results);
+                                });
                             }, function (tx, results) {
                                 console.error(results);
                             });
@@ -16138,7 +16145,7 @@ var Liquid = {
             callback();
         } else {
             if (field) {
-                var msg = Liquid.lang === 'eng' ? ("user data " + field + "written") : ("Dati utente " + (field) + " scritti");
+                var msg = Liquid.lang === 'eng' ? ("Data saved") : ("Dati salvati");
                 Liquid.showToast("LIQUID", msg, "success");
             }
         }
