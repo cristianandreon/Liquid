@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.62
+// Liquid ver.1.63
 //
-//  First update 04-01-2020 - Last update  15-08-2021
+//  First update 04-01-2020 - Last update  17-08-2021
 //
 //  TODO : see trello.com
 //
@@ -2204,6 +2204,7 @@ class LiquidMenuXCtrl {
 var Liquid = {
 
     version: 1.47,
+    appTitle:"LIQUID",
     controlid:"Liquid framework",
     debug:false,
     debugWorker:false,
@@ -8461,7 +8462,7 @@ var Liquid = {
                         var selNodes = Liquid.getCurNodes(liquid);
                         if(!selNodes || selNodes.length === 0) {
                             var msg = Liquid.lang === 'eng' ? ("No items selected") : ("Nessuna riga selezionata" );
-                            Liquid.showToast("LIQUID", msg, "warning");
+                            Liquid.showToast(Liquid.appTitle, msg, "warning");
                             return;
                         }
                     }
@@ -8472,7 +8473,7 @@ var Liquid = {
                                 var selNodes = Liquid.getCurNodes(parentLiquid);
                                 if(!selNodes || selNodes.length === 0) {
                                     var msg = Liquid.lang === 'eng' ? ("No items selected on parent") : ("Nessuna riga selezionata in "+parentLiquid.controlId );
-                                    Liquid.showToast("LIQUID", msg, "warning");
+                                    Liquid.showToast(Liquid.appTitle, msg, "warning");
                                     return;
                                 }
                             }
@@ -15976,10 +15977,10 @@ var Liquid = {
         var selNodes = liquid.gridOptions.api.getSelectedNodes();
         if(selNodes.length>0) {
             var msg = Liquid.lang === 'eng' ? ("Copied "+selNodes.length + "item(s)") : ("Copiat"+(selNodes.length===1?"a":"e")+" "+selNodes.length + " rig"+(selNodes.length===1 ? "a":"he") );
-            Liquid.showToast("LIQUID", msg, "success");
+            Liquid.showToast(Liquid.appTitle, msg, "success");
         } else {
             var msg = Liquid.lang === 'eng' ? ("No items selected") : ("Nessuna riga selezionata" );
-            Liquid.showToast("LIQUID", msg, "warning");
+            Liquid.showToast(Liquid.appTitle, msg, "warning");
         }
     },
     pasteFromClipBorad:function(liquid) {
@@ -16146,7 +16147,7 @@ var Liquid = {
         } else {
             if (field) {
                 var msg = Liquid.lang === 'eng' ? ("Data saved") : ("Dati salvati");
-                Liquid.showToast("LIQUID", msg, "success");
+                Liquid.showToast(Liquid.appTitle, msg, "success");
             }
         }
     },
@@ -17115,10 +17116,10 @@ SelectEditor.prototype.init = function(params) {
                         var values = params.colDef.cellEditorParams.values
                         if(values.length>0) {
                             var msg = Liquid.lang === 'eng' ? ("Reading "+this.liquid.tableJson.table+"."+this.column+" done</br></br>Found "+values.length + "item(s)") : ("Lettura "+this.liquid.tableJson.table+"."+this.column+" completata</br></br>Trovat"+(values.length===1?"a":"e")+" "+values.length + " rig"+(values.length===1 ? "a":"he") );
-                            Liquid.showToast("LIQUID", msg, "success");
+                            Liquid.showToast(Liquid.appTitle, msg, "success");
                         } else {
                             var msg = Liquid.lang === 'eng' ? ("Reading "+this.liquid.tableJson.table+"."+this.column+" done</br></br>No items found") : ("Lettura "+this.liquid.tableJson.table+"."+this.column+" completata</br></br>Nessuna riga trovata" );
-                            Liquid.showToast("LIQUID", msg, "warning");
+                            Liquid.showToast(Liquid.appTitle, msg, "warning");
                         }
                     }
 
