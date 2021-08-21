@@ -140,7 +140,8 @@ public class utility {
 
      static public String base64Decode(String data) {
         try {
-            return base64Decode(data.getBytes());
+            if(data != null)
+                return base64Decode(data.getBytes());
         } catch (Throwable th) {
             System.err.println("Error:" + th.getLocalizedMessage() + "Please try adding apache commons-codes.jar to your project");
         }
