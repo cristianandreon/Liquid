@@ -3783,7 +3783,8 @@ var Liquid = {
             if(!isDef(liquid.tableJson.columns)) {
                 liquid.tableJson.columns = [];
             }
-            
+
+            /* Keep field column map 1:1
             var loop = 0;
             while(loop<liquid.tableJson.columns.length) {
                 if(liquid.tableJson.columns[0].visible === false) {
@@ -3794,6 +3795,7 @@ var Liquid = {
                 }
                 loop++;
             }
+            */
         }
 
         if(!isDef(liquid.tableJson.primaryKeyField)) {
