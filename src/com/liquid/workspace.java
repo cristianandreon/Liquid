@@ -760,9 +760,13 @@ public class workspace {
             try {
                 tableJson = sTableJson != null ? new JSONObject(sTableJson) : null;
             } catch (Exception e) {
-                String err = "source json string is ivalid on control:" + controlId;
-                System.out.println(err);
-                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                try {
+                    tableJson = sTableJson != null ? new JSONObject(utility.base64Decode(sTableJson)) : null;
+                } catch (Exception e2) {
+                    String err = "source json string is NOT valid on control:" + controlId + " .. error is : "+e2.getMessage();
+                    System.out.println(err);
+                    return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                }
             }
 
             if (tableJson != null) {
@@ -2769,7 +2773,7 @@ public class workspace {
             fileFound = utility.fileExist(fullFileName);
             if (fileFound) {
                 foundFileName = fullFileName;
-                } else {
+            } else {
                 fileFound = utility.fileExist(localFileName);
                 if (fileFound) {
                     foundFileName = localFileName;
@@ -2815,6 +2819,10 @@ public class workspace {
             }
             if (fileFound) {
                 fileContent = new String( Files.readAllBytes(new File(foundFileName).toPath()) );
+            } else {
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "get_file_content() : File not found!");
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "fullFileName:"+fullFileName);
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "localFileName:"+localFileName);
             }
         } catch (Throwable ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
