@@ -1138,7 +1138,7 @@ public class utility {
             if (myObj.createNewFile()) {
                 System.out.println("File created: " + myObj.getName());
             } else {
-                System.out.println("File already exists.");
+                // System.out.println("File already exists.");
             }
             out = new BufferedWriter(new FileWriter(fileName));
             out.write(fileContent);
