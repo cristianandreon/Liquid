@@ -2790,8 +2790,8 @@ public class workspace {
                             if (inputURL != null) {
                                 JarURLConnection conn = (JarURLConnection) inputURL.openConnection();
                                 if (conn != null) {
-                                    fileFound = utility.fileExist(conn.getJarFileURL().getFile());
-                                    if(fileFound) {
+                                    boolean insideFileFound = utility.fileExist(conn.getJarFileURL().getFile());
+                                    if(insideFileFound) {
                                         // Files.readAllBytes (usato per i file binari) non supporta la lettura dentro il .jar
                                         InputStream in = conn.getInputStream();
                                         if (in != null) {
