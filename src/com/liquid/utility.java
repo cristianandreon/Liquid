@@ -654,10 +654,24 @@ public class utility {
         return file.getParentFile().getAbsolutePath();
     }
 
+
     static public boolean createFolder(String folder) {
+        return createFolder(folder, false, false, false);
+    }
+
+    static public boolean createFolder(String folder, boolean foreignRead, boolean foreignWrite, boolean foreignExec) {
         try {
             Path path = Paths.get(folder);
             Files.createDirectories(path);
+            File file = new File(folder);
+            if(file != null) {
+                file.setReadable(true, foreignRead);
+                file.setWritable(true, foreignWrite);
+                file.setExecutable(true, foreignExec);
+            } else {
+                System.err.println("Failed to access created directory!" + folder);
+                return false;
+            }
           } catch (IOException e) {
             System.err.println("Failed to create directory!" + e.getMessage());
             return false;
@@ -1131,15 +1145,27 @@ public class utility {
 
     public static boolean set_file_content(String fileName, String fileContent) {
         BufferedWriter out = null;
-        File myObj = new File(fileName);
+        File f = new File(fileName);
 
         try {
 
-            if (myObj.createNewFile()) {
-                System.out.println("File created: " + myObj.getName());
-            } else {
-                // System.out.println("File already exists.");
+            if (!f.exists()) {
+                if (f.createNewFile()) {
+                    System.out.println("File created: " + f.getName());
+                } else {
+                    System.out.println("set_file_content() connot create file: "+fileName);
+                    return false;
+                }
             }
+            if(!f.canRead()) {
+                System.out.println("set_file_content() connot read file: "+fileName);
+                return false;
+            }
+            if(!f.canWrite()) {
+                System.out.println("set_file_content() connot write file: " + fileName);
+                return false;
+            }
+
             out = new BufferedWriter(new FileWriter(fileName));
             out.write(fileContent);
 
