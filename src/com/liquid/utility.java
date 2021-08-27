@@ -1132,7 +1132,7 @@ public class utility {
         try {
             while (it.hasNext()) {
                 pair = (Map.Entry) it.next();
-                sourceContnet = sourceContnet.replace((String) pair.getKey(), (String) pair.getValue());
+                sourceContnet = sourceContnet.replace((String) "${"+pair.getKey()+"}", (String) pair.getValue());
             }
         } catch(Exception e) {
             Logger.getLogger("replace_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
