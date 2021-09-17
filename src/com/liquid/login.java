@@ -803,7 +803,7 @@ public class login {
                                     return "{ \"result\":-31, \"error\":\""+utility.base64Encode(error)+"\"}";
                                 }
                                 
-                                add_event(conn, request, sUserID + "@" + domain_id + ":LOGIN", 0);
+                                add_event(conn, request, sUserID + ":LOGIN", 0);
 
                                 return "{ \"result\":1, \"token\":\""+token+"\""
                                         +",\"addmin\":"+iIsAddmin+""
@@ -831,11 +831,11 @@ public class login {
                                 }
 
                                 if (iwrongPass+1 >= maxWrongPasswordEvent && maxWrongPasswordEvent > 0) {
-                                    message = sUserID + "@" + domain_id + " : Utente o password errati" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
+                                    message = sUserID + " : Utente o password errati" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
                                     add_event(conn, request, message, -1);
                                 }
                                 if (iwrongPass+1 >= maxWrongPasswordDisable && maxWrongPasswordDisable > 0) {
-                                    message = sUserID + "@" + domain_id + " : Utente o password errati. ["+iwrongPass+1+"] Utente disabilitato" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
+                                    message = sUserID + " : Utente o password errati. ["+iwrongPass+1+"] Utente disabilitato" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
                                     add_event(conn, request, message, -1);
                                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                         sqlSTMT = "UPDATE "+schemaTable+" SET status='D' WHERE id="+iUserId;
