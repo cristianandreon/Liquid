@@ -2841,6 +2841,7 @@ public class workspace {
                         }
                     } catch (JSONException ex) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "fileName:"+fileName);
                     }
                 }
             }
