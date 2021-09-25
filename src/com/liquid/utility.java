@@ -1140,7 +1140,78 @@ public class utility {
         return sourceContnet;
     }
 
+    /**
+     *
+     * @param values
+     * @return
+     */
+    public static JSONObject put_json_values(JSONObject sourceObject, HashMap<String, String> values) {
+        Iterator it = values.entrySet().iterator();
+        Map.Entry pair = null;
+        try {
+            while (it.hasNext()) {
+                pair = (Map.Entry) it.next();
+                if(!sourceObject.has(String.valueOf(pair.getKey()))) {
+                    sourceObject.put(String.valueOf(pair.getKey()), pair.getValue());
+                }
+            }
+        } catch(Exception e) {
+            Logger.getLogger("put_json_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
+        }
+        return sourceObject;
+    }
 
+    /**
+     *
+     * @param values
+     * @return
+     */
+    public static String get_html_set_input_values(HashMap<String, String> values) {
+        Iterator it = values.entrySet().iterator();
+        Map.Entry pair = null;
+        String out = "";
+        try {
+            while (it.hasNext()) {
+                pair = (Map.Entry) it.next();
+                String val = null;
+                if(pair.getValue() instanceof Float || pair.getValue() instanceof Double) {
+                    val = String.format("0.3f", pair.getValue());
+                } else {
+                    val = String.valueOf(pair.getValue());
+                }
+                out += "try { document.getElementById(\""+ String.valueOf(pair.getKey()) + "\").value=\""+val+"\"; } catch(e) { console.error(e); }";
+            }
+        } catch(Exception e) {
+            Logger.getLogger("get_html_set_input_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
+        }
+        return out;
+    }
+
+    /**
+     *
+     * @param values
+     * @return
+     */
+    public static String get_html_set_js_params_values(HashMap<String, String> values) {
+        Iterator it = values.entrySet().iterator();
+        Map.Entry pair = null;
+        String out = "";
+        try {
+            while (it.hasNext()) {
+                pair = (Map.Entry) it.next();
+                String val = null;
+                if(pair.getValue() instanceof Float || pair.getValue() instanceof Double) {
+                    val = String.format("0.3f", pair.getValue());
+                } else {
+                    val = String.valueOf(pair.getValue());
+                }
+                out += ",\""+ String.valueOf(pair.getKey()) + "\" : \""+val+"\"";
+            }
+        } catch(Exception e) {
+            Logger.getLogger("get_html_set_js_params_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
+        }
+        return out;
+    }
 
 
     public static boolean set_file_content(String fileName, String fileContent) {
