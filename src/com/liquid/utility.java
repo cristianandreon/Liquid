@@ -926,6 +926,33 @@ public class utility {
         return insertCount;
     }
 
+
+    /**
+     * Aggiorna l'oggetto json "target" usando i valori in "source" elencati da "map"
+     *
+     * @param map
+     * @param source
+     * @param target
+     * @return
+     * @throws Exception
+     */
+    public static int mergeJsonObjectByMap(HashMap<String, String> map, JSONObject source, JSONObject target) throws Exception {
+        int insertCount = 0;
+        Iterator it = map.entrySet().iterator();
+        Map.Entry pair = null;
+        while (it.hasNext()) {
+            pair = (Map.Entry) it.next();
+            String key = (String) pair.getKey();
+            if (source.has(key)) {
+                Object obj = source.get(key);
+                target.put(key, obj);
+                insertCount++;
+            }
+        }
+        return insertCount;
+    }
+
+
     static javax.net.ssl.TrustManager[] trustAllCerts = null;
 
     public static void disableCertificateValidation() {
@@ -1162,11 +1189,56 @@ public class utility {
     }
 
     /**
-     *
+     *  Genera il codice js per il set dei noedi HTML dai valori nel server
+     * @param values    : mappa chiave-valore
+     * @param sourceJson : se valorizzato costituisce la sorgente dei valori
+     * @return
+     */
+    public static String get_html_set_input_values(HashMap<String, String> values, JSONObject sourceJson) {
+        Iterator it = values.entrySet().iterator();
+        Map.Entry pair = null;
+        String out = "";
+        try {
+            while (it.hasNext()) {
+                pair = (Map.Entry) it.next();
+                String val = null;
+
+                if(sourceJson != null) {
+                    String key = String.valueOf(pair.getKey());
+                    if(sourceJson.has(key)) {
+                        Object oval = sourceJson.get(key);
+                        val = String.valueOf(oval);
+                    }
+                } else {
+                    if (pair.getValue() instanceof Float || pair.getValue() instanceof Double) {
+                        val = String.format("0.3f", pair.getValue());
+                    } else {
+                        val = String.valueOf(pair.getValue());
+                    }
+                }
+                String varName = ("gl_"+pair.getKey()).replace(".", "_");
+                varName = toCamelCase(varName);
+                out += "try { if(typeof "+varName+" === 'undefined') { "+varName+"='"+val+"'; } document.getElementById(\""+ String.valueOf(pair.getKey()) + "\").value="+varName+"; } catch(e) { console.error(e); }\n";
+            }
+        } catch(Exception e) {
+            Logger.getLogger("get_html_set_input_values").log(Level.SEVERE, e, null);
+        }
+        return out;
+    }
+    public static String get_html_set_input_values(HashMap<String, String> values) {
+        return get_html_set_input_values(values, null);
+    }
+
+
+
+
+
+    /**
+     *  Genera il codice js per il get dei noedi HTML e set dei valori nel server (che vivono nel client)
      * @param values
      * @return
      */
-    public static String get_html_set_input_values(HashMap<String, String> values) {
+    public static String get_html_get_input_values(HashMap<String, String> values) {
         Iterator it = values.entrySet().iterator();
         Map.Entry pair = null;
         String out = "";
@@ -1179,16 +1251,19 @@ public class utility {
                 } else {
                     val = String.valueOf(pair.getValue());
                 }
-                out += "try { document.getElementById(\""+ String.valueOf(pair.getKey()) + "\").value=\""+val+"\"; } catch(e) { console.error(e); }";
+                String varName = ("gl_"+pair.getKey()).replace(".", "_");
+                varName = toCamelCase(varName);
+                out += "try { if(typeof "+varName+" === 'undefined') { "+varName+"=''; } "+varName+"=( document.getElementById(\"" + String.valueOf(pair.getKey()) + "\") ? document.getElementById(\"" + String.valueOf(pair.getKey()) + "\").value : null); } catch(e) { console.error(e); }\n";
             }
         } catch(Exception e) {
-            Logger.getLogger("get_html_set_input_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
+            Logger.getLogger("get_html_get_input_values").log(Level.SEVERE, e, null);
         }
         return out;
     }
 
+
     /**
-     *
+     *  genera l'elenco di proprieta' dentro un oggetto js (,"prop":"value")
      * @param values
      * @return
      */
@@ -1199,19 +1274,44 @@ public class utility {
         try {
             while (it.hasNext()) {
                 pair = (Map.Entry) it.next();
-                String val = null;
-                if(pair.getValue() instanceof Float || pair.getValue() instanceof Double) {
-                    val = String.format("0.3f", pair.getValue());
-                } else {
-                    val = String.valueOf(pair.getValue());
-                }
-                out += ",\""+ String.valueOf(pair.getKey()) + "\" : \""+val+"\"";
+                String val = "( document.getElementById(\""+ String.valueOf(pair.getKey()) + "\") ? document.getElementById(\""+ String.valueOf(pair.getKey()) + "\").value : null )";
+                out += ",\""+ String.valueOf(pair.getKey()) + "\" : "+val+"\n";
             }
         } catch(Exception e) {
-            Logger.getLogger("get_html_set_js_params_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
+            Logger.getLogger("get_html_set_js_params_values").log(Level.SEVERE, e, null);
         }
         return out;
     }
+
+
+
+
+    /**
+     *  genera l'elenco di proprieta' dentro un oggetto json stringa (,"prop":"value")
+     * @param values
+     * @return
+     */
+    public static String get_json_string_values(HashMap<String, String> values, JSONObject sourceJson) {
+        Iterator it = values.entrySet().iterator();
+        Map.Entry pair = null;
+        String out = "";
+        try {
+            while (it.hasNext()) {
+                pair = (Map.Entry) it.next();
+                String key = String.valueOf(pair.getKey());
+                if(sourceJson.has(key)) {
+                    String val = String.valueOf(sourceJson.get(key));
+                    out += ",\"" + key + "\" : \"" + val + "\"";
+                }
+            }
+        } catch(Exception e) {
+            Logger.getLogger("get_json_string_values").log(Level.SEVERE, e, null);
+        }
+        return out;
+    }
+
+
+
 
 
     public static boolean set_file_content(String fileName, String fileContent) {
@@ -1637,4 +1737,19 @@ public class utility {
         return dateFormatSymbols.getMonths()[month-1];
     }
 
+    public static String toCamelCase( String var ) {
+        String out = "";
+        String [] list = var.split("_");
+        for(int i=0; i<list.length; i++) {
+            if(i>0)
+                out += capitalizeFirstLetter(list[i]);
+            else
+                out += list[i];
+        }
+        return out;
+    }
+
+    public static String capitalizeFirstLetter(String s) {
+        return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "");
+    };
 }
