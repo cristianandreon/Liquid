@@ -117,6 +117,26 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" exported="" scope="PROVIDED" name="lib" level="project" />
+    <orderEntry type="module-library" exported="">
+      <library name="ganymed-ssh2-262.jar">
+        <CLASSES>
+          <root url="file:///Users/administrator/Workspaces/workspacevl/Liquid/WEB-INF/lib/ganymed-ssh2-262.jar" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library name="jsch-0.1.55.jar">
+        <CLASSES>
+          <root url="file:///Users/administrator/Workspaces/workspacevl/Liquid/WEB-INF/lib/jsch-0.1.55.jar" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="library" name="org.eclipse.jst.j2ee.internal.module.container" level="application" />
+    <orderEntry type="jdk" jdkName="JavaSE-1.7" jdkType="JavaSDK" />
+    <orderEntry type="library" name="com.genuitec.runtime.library/com.genuitec.generic_6.0" level="application" />
   </component>
 </module>
