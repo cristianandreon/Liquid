@@ -1219,7 +1219,7 @@ public class utility {
                 }
                 String varName = ("gl_"+pair.getKey()).replace(".", "_");
                 varName = toCamelCase(varName);
-                out += "try { if(typeof "+varName+" === 'undefined') { "+varName+"='"+val+"'; } document.getElementById(\""+ String.valueOf(pair.getKey()) + "\").value="+varName+"; } catch(e) { console.error(e); }\n";
+                out += "try { if(typeof "+varName+" === 'undefined') { "+varName+"='"+val+"'; } Liquid.setHTMLElementValue(document.getElementById(\""+ String.valueOf(pair.getKey()) + "\"), '"+varName+"'); } catch(e) { console.error(e); }\n";
             }
         } catch(Exception e) {
             Logger.getLogger("get_html_set_input_values").log(Level.SEVERE, e, null);

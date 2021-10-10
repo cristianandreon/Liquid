@@ -13633,7 +13633,7 @@ var Liquid = {
         if(targetObj) {            
             if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
                 if(targetObj.type === 'checkbox') {
-                    targetObj.checked = (value === 'true' || value === true || value === '1' ? true : false);
+                    targetObj.checked = (value === 'true' || value === 'Y' || value === 'y' || value === 'S' || value === 's' || value === true || value === '1' ? true : false);
                 } else if(targetObj.type === 'file') {
                     console.warn("WARNING : cannot set file of a form element " + targetObj.id);
                 } else {                
