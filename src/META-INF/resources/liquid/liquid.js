@@ -3173,7 +3173,7 @@ var Liquid = {
             }
         }
         return div;
-    },    
+    },
     getStatusDiv:function(liquid) {
         var outDiv = null;
         if(liquid) {
@@ -3186,6 +3186,61 @@ var Liquid = {
     resetStatusDiv:function(liquid) {
         var outDiv = Liquid.getStatusDiv(liquid);
         if(outDiv) outDiv.innerHTML = "";
+    },
+    fill_data_list:function(obj, data, prop, propForValue, className) {
+        try {
+            if (obj) {
+                obj.innerHTML="";
+                if(data) {
+                    for (let i = 0; i < data.length; i++) {
+                        let opt = document.createElement("option");
+                        opt.id = obj.id + ".opt" + (i+1);
+                        opt.className = className ? className : "";
+                        if(prop) {
+                            opt.innerHTML = data[i][prop] ? data[i][prop] : "";
+                            if(propForValue) {
+                                opt.dataset.value = data[i][propForValue] ? data[i][propForValue] : "";
+                            }
+                        }
+                        obj.appendChild(opt);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("ERROR on fill_data_list() : "+e);
+        }
+    },
+    get_datalist_value:function(obj, data, prop, propForValue, className) {
+        try {
+            if (obj) {
+                if(obj.list) {
+                    for (let i = 0; i < obj.list.children.length; i++) {
+                        let opt = obj.list.children[i];
+                        if(opt.value == obj.value) {
+                            return opt.dataset.value;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("ERROR on fill_data_list() : "+e);
+        }
+    },
+    translate_data_list:function(data, prop, propVal, outProp) {
+        try {
+            if(data) {
+                for (let i = 0; i < data.length; i++) {
+                    if(prop) {
+                        if( data[i][prop] == propVal ) {
+                            return data[i][outProp];
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("ERROR on translate_data_list() : "+e);
+        }
+        return null;
     },
     processXHRMessagesFromServer:function( liquid, obj, commandOrEvent, showErrors, showWarnings, showMessages ) {
         if(isDef(obj.error)) {
