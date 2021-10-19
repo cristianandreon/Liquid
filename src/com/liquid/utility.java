@@ -728,9 +728,9 @@ public class utility {
     }
 
 
-    static public boolean fileExist(String folder) {
-        if (folder != null && !folder.isEmpty()) {
-            File file = new File(folder);
+    static public boolean fileExist(String fileName) {
+        if (fileName != null && !fileName.isEmpty()) {
+            File file = new File(fileName);
             return file.isFile();
         } else {
             return false;
