@@ -2244,7 +2244,7 @@ public class db {
             boolean bStoreIds,
             boolean isCrossTableService,
             int targetColumnIndex
-    ) throws SQLException {
+    ) throws SQLException, JSONException {
         int addedRow = 0;
         StringBuilder out_string = new StringBuilder("");
         StringBuilder out_codes_string = new StringBuilder("");
@@ -2270,17 +2270,22 @@ public class db {
                 colNullable = new boolean[cols.length()];
             }
             for (int ic = 0; ic < cols.length(); ic++) {
+                JSONObject col = cols.getJSONObject(ic);
                 try {
                     colTypes[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("type"));
                 } catch (Exception e) {
                 }
                 try {
-                    colPrecs[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("precision"));
+                    if(col.has("precision")) {
+                        colPrecs[ic] = Integer.parseInt(col.getString("precision"));
+                    }
                 } catch (Exception e) {
                     colPrecs[ic] = -1;
                 }
                 try {
-                    colDigits[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("digits"));
+                    if(col.has("digits")) {
+                        colDigits[ic] = Integer.parseInt(String.valueOf(col.get("digits")));
+                    }
                 } catch (Exception e) {
                     colDigits[ic] = -1;
                 }
@@ -2934,6 +2939,7 @@ public class db {
         PojoGenerator pojoGenerator = null;
         String sPojoMode = "";
         String errors = "";
+        int res = 1;
 
         try {
 
@@ -3497,12 +3503,13 @@ public class db {
             } else {
                 // no pojo created ... pit fall
                 errors += "[SERVER ERROR]: unable to create class:" + className;
+                res = -1;
             }
             
             //
             // set the result
             //
-            beanResult[0] = 1;
+            beanResult[0] = res;
             beanResult[1] = rowsObject;
             beanResult[2] = level;
             beanResult[3] = errors;
@@ -4169,6 +4176,8 @@ public class db {
                         // Updating the foreignTables (some info may be added)
                         try { tbl_wrk.tableJson.put("foreignTables", foreignTablesJson); } catch (Exception e) { }
                         return (ArrayList<Object>) beanResult[1];
+                    } else {
+                        throw new Exception("Create bean error:"+beanResult[3]);
                     }
                 }
             }
