@@ -297,6 +297,15 @@ public class workspace {
 
     static public ArrayList<workspace> glTblWorkspaces = new ArrayList<workspace>();
 
+    /**
+     * Crea un controllo da una stringa json
+     *
+     * @param controlId
+     * @param controlJsonFile
+     * @param requestParam
+     * @return
+     * @throws Throwable
+     */
     static public workspace get_tbl_manager_workspace(String controlId, String controlJsonFile, Object requestParam) throws Throwable {
         workspace targetControl = workspace.get_tbl_manager_workspace(controlId);
         if(targetControl == null && controlJsonFile != null) {
@@ -306,7 +315,13 @@ public class workspace {
         }
         return targetControl;
     }
-    
+
+    /**
+     * restituisce il workspace di un controllo
+     *
+     * @param controlId
+     * @return
+     */
     static public workspace get_tbl_manager_workspace(String controlId) {
         for (int i = 0; i < glTblWorkspaces.size(); i++) {
             workspace tblWorkspace = tblWorkspace = glTblWorkspaces.get(i);
@@ -317,6 +332,10 @@ public class workspace {
         return null;
     }
 
+    /**
+     * Stampa tutti i controlli su una stringa
+     * @return
+     */
     static public String dump_tbl_manager_workspace() {
         String outString = "";
         for (int i = 0; i < glTblWorkspaces.size(); i++) {
@@ -1495,6 +1514,13 @@ public class workspace {
                                                     String sDefault = col.getString("default");
                                                     if (sDefault == null || sDefault.isEmpty()) {
                                                         bStoreDefualt = true;
+                                                    } else {
+                                                        sDefault = db.solveVariableField( sDefault, request);
+                                                        if (sDefault == null || sDefault.isEmpty()) {
+                                                            bStoreDefualt = true;
+                                                        } else {
+                                                            col.put("default", sDefault);
+                                                        }
                                                     }
                                                 } else {
                                                     bStoreDefualt = true;

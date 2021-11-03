@@ -814,6 +814,10 @@ public class db {
                                                 column_alias_list += ",";
                                             }
                                             column_alias_list += column_alias;
+                                        } else {
+                                            // Colonna non trovata
+                                            String msg = "ControId:" + tblWrkDesc + " column '"+targetColumn+"' not found";
+                                            error += "[" + msg + "]";
                                         }
                                     }
                                 }

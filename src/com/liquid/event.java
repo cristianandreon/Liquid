@@ -1276,6 +1276,9 @@ public class event {
 
                     return retVal;
                 }
+            } else {
+                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, "");
+                retVal = "{\"error\":\"" + utility.base64Encode("Error: workspace not found") + "\"}";
             }
         } catch (Throwable th) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);

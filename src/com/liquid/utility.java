@@ -915,6 +915,14 @@ public class utility {
         return new Object[]{true};
     }
 
+    /**
+     * Aggiunge l'oggetto json target
+     *
+     * @param source
+     * @param target
+     * @return
+     * @throws Exception
+     */
     public static int mergeJsonObject(JSONObject source, JSONObject target) throws Exception {
         int insertCount = 0;
         for (Object keyObject : JSONObject.getNames(source)) {
@@ -926,6 +934,24 @@ public class utility {
         return insertCount;
     }
 
+    /**
+     * Aggiunge l'oggetto json target
+     *
+     * @param ssource
+     * @param starget
+     * @return
+     * @throws Exception
+     */
+    public static String mergeJsonObject(String ssource, String starget) throws Exception {
+        JSONObject source = new JSONObject(ssource);
+        JSONObject target = new JSONObject(starget);
+        for (Object keyObject : JSONObject.getNames(source)) {
+            String key = (String) keyObject;
+            Object obj = source.get(key);
+            target.put(key, obj);
+        }
+        return target.toString();
+    }
 
     /**
      * Aggiorna l'oggetto json "target" usando i valori in "source" elencati da "map"
