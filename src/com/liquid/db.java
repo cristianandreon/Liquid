@@ -644,7 +644,9 @@ public class db {
 
                                         String sourceFieldName = col.has("runtimeName") ? col.getString("runtimeName") : col.getString("name");
 
-                                        if (colParts.length > 1) {
+                                        if (    (colParts.length > 1) ||
+                                                (foreignTable != null && foreignColumns != null && columns != null)
+                                        ) {
                                             // campo esterno ?
                                             if (!colParts[0].equalsIgnoreCase(table)) {
                                                 if (foreignIndex < 0) {
@@ -709,35 +711,52 @@ public class db {
                                             }
                                         }
                                         if (foreignTable != null) {
-                                            String leftJoinKey = foreignTable + "_" + utility.arrayToString(foreignColumns, null, null, ",") + "_" + utility.arrayToString(columns, null, null, ",");
-                                            String leftJoinAlias = ("B" + String.valueOf(foreignIndex + 1));
-                                            /*foreignTable+"_"+(leftJoinsMap.size()+1)*/
-                                            if (!LeftJoinMap.getByKey(leftJoinsMap, leftJoinKey)) {
-                                                if (leftJoinList.length() > 0) {
-                                                    leftJoinList += "\n";
-                                                }
-                                                int foreignColumnsSize = foreignColumns.size();
-                                                int columnsSize = columns.size();
-                                                for (int ilj = 0; ilj < Math.max(foreignColumnsSize, columnsSize); ilj++) {
-                                                    String foreignColumn = (ilj < foreignColumnsSize ? foreignColumns.get(ilj) : foreignColumns.get(foreignColumnsSize - 1));
-                                                    String column = (ilj < columnsSize ? columns.get(ilj) : columns.get(columnsSize - 1));
-                                                    if (ilj == 0) {
-                                                        leftJoinList += "LEFT JOIN "
-                                                                + (schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "")
-                                                                + (tableIdString + foreignTable + tableIdString) + asKeyword + leftJoinAlias
-                                                                + " ON "
-                                                                + leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString)
-                                                                + "="
-                                                                + table + "." + (tableIdString + column + tableIdString);
-                                                        leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable));
-                                                    } else {
-                                                        leftJoinList += " AND "
-                                                                + (schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "")
-                                                                + (tableIdString + foreignTable + tableIdString) + asKeyword + leftJoinAlias
-                                                                + " ON "
-                                                                + leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString)
-                                                                + "="
-                                                                + table + "." + (tableIdString + column + tableIdString);
+                                            String leftJoinKey = null;
+                                            String leftJoinAlias = null;
+                                            if(foreignIndex < 0) {
+                                                error += " [ Control:" + tbl_wrk.controlId + " Column : " + col.getString("name") + " has foreignIndex invalid please check foreignTable/foreignColumn/column fields]";
+                                                bAddColumnToList = false;
+                                            } else {
+                                                leftJoinKey = foreignTable + "_" + utility.arrayToString(foreignColumns, null, null, ",") + "_" + utility.arrayToString(columns, null, null, ",");
+                                                leftJoinAlias = ("B" + String.valueOf(foreignIndex + 1));
+                                                /*foreignTable+"_"+(leftJoinsMap.size()+1)*/
+                                                if (!LeftJoinMap.getByKey(leftJoinsMap, leftJoinKey)) {
+                                                    if (leftJoinList.length() > 0) {
+                                                        leftJoinList += "\n";
+                                                    }
+                                                    int foreignColumnsSize = foreignColumns.size();
+                                                    int columnsSize = columns.size();
+                                                    for (int ilj = 0; ilj < Math.max(foreignColumnsSize, columnsSize); ilj++) {
+                                                        String foreignColumn = (ilj < foreignColumnsSize ? foreignColumns.get(ilj) : null);
+                                                        String column = (ilj < columnsSize ? columns.get(ilj) : null);
+
+                                                        if (foreignColumn == null || foreignColumn.isEmpty()) {
+                                                            error += " [ Control:" + tbl_wrk.controlId + " Column:" + col.getString("name") + " Please check field 'foreignColumn', it's NOT defined..]";
+                                                            bAddColumnToList = false;
+                                                        }
+                                                        if (column == null || column.isEmpty()) {
+                                                            error += " [ Control:" + tbl_wrk.controlId + " Column:" + col.getString("name") + " Please check field 'column', it's NOT defined..]";
+                                                            bAddColumnToList = false;
+                                                        }
+
+                                                        if (ilj == 0) {
+                                                            leftJoinList += "LEFT JOIN "
+                                                                    + (schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "")
+                                                                    + (tableIdString + foreignTable + tableIdString) + asKeyword + leftJoinAlias
+                                                                    + " ON "
+                                                                    + leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString)
+                                                                    + "="
+                                                                    + table + "." + (tableIdString + column + tableIdString);
+                                                            leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable));
+                                                        } else {
+                                                            leftJoinList += " AND "
+                                                                    + (schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "")
+                                                                    + (tableIdString + foreignTable + tableIdString) + asKeyword + leftJoinAlias
+                                                                    + " ON "
+                                                                    + leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString)
+                                                                    + "="
+                                                                    + table + "." + (tableIdString + column + tableIdString);
+                                                        }
                                                     }
                                                 }
                                             }
@@ -827,6 +846,7 @@ public class db {
                 } catch (Exception e) {
                     error += " [ Columns Error:" + e.getLocalizedMessage() + "]";
                     System.err.println("// " + e.getLocalizedMessage());
+                    return "{\"error\":\"" + ("Internal Error : "+ error + "") + "\"}";
                 }
 
             } else {

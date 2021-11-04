@@ -11950,6 +11950,66 @@ var Liquid = {
         }
     },
     /**
+     * Set the form's fields by liquid control node
+     * @param formObj the form object
+     * @param liquid the source control
+     * @param key the primary key value
+     * @return n/d
+     *
+     * TODO: test
+     */
+    setFormByKey:function(formObjOrName, obj, key) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var formObj = null;
+            if(formObjOrName instanceof HTMLElement) {
+                formObj = formObjOrName;
+            } else {
+                formObj = document.getElementById(formObjOrName);
+            }
+            // searching for linkedLiquid
+            var linkedLiquid = null;
+            for(var i=0; i<glLiquids.length; i++) {
+                if(glLiquids[i]) {
+                    if(glLiquids[i].linkedForm) {
+                        if(glLiquids[i].linkedForm.id === formObj.id && isDef(formObj.id)) {
+                            linkedLiquid = glLiquids[i];
+                        } else if(glLiquids[i].linkedForm.name === formObj.name && isDef(formObj.name)) {
+                            linkedLiquid = glLiquids[i];
+                        }
+                    }
+                }
+            }
+            if(formObj && liquid && key) {
+                var disabled = false;
+                var node = Liquid.getNodeByPrimaryKey(liquid, key);
+                frm_elements = formObj.elements;
+                if(frm_elements && frm_elements.length) {
+                    for (var i = 0; i < frm_elements.length; i++) {
+                        var targetObj = frm_elements[i];
+                        var targetName = Liquid.getFormElementId(targetObj);
+                        if(targetName) {
+                            targetName = targetName.toLowerCase();
+                            for(var j=0; j<liquid.tableJson.columns.length; j++) {
+                                var name = liquid.tableJson.columns[j].name;
+                                if(name.toLowerCase() == targetName) {
+                                    var value = node.data[j+1];
+                                    Liquid.setHTMLElementValue(targetObj, value, disabled);
+                                    if(linkedLiquid) {
+                                        Liquid.setAddingField(linkedLiquid, name, value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if(linkedLiquid) {
+                    Liquid.resetMofifications(linkedLiquid);
+                }
+            }
+        }
+    },
+    /**
      * Insert or update the control by a form
      * @param liquid the source control
      * @param formObj the form object
@@ -12074,7 +12134,20 @@ var Liquid = {
             }
         }
         return 0;
-    },            
+    },
+    getNodeByPrimaryKey:function(liquid, key) {
+        var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+        if(isDef(nodes) && nodes.length > 0) {
+            for(var ind = 0; ind < nodes.length; ind++) {
+                var data = nodes[ind].data;
+                var id = data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
+                if(id)
+                    if(key === id)
+                        return nodes[ind];
+            }
+        }
+        return 0;
+    },
     onLayoutFieldClick:function(event) {
         if(event) {
             var liquid = Liquid.getLiquid(event.target);
