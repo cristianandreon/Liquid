@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -1969,9 +1970,13 @@ public class db {
                             filterValue = "NULL";
                         }
                     } else {
-                        // wrap to is null
-                        filterOp = "IS";
-                        filterValue = "NULL";
+                        // wrap to is null ... id not numeric
+                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                            filterValue = "0";
+                        } else {
+                            filterOp = "IS";
+                            filterValue = "NULL";
+                        }
                     }
 
 
@@ -2152,7 +2157,7 @@ public class db {
                             filterValueType = (int) fres[1];
 
                             // uso dei parametri : conversione del dato in formato java
-                            filterValueObject = toJavaType(type, (Object)filterValue, (String)fres[0], (int)fres[1]);
+                            filterValueObject = toJavaType(type, (Object)filterValue, (String)fres[0], (int)fres[1], true);
 
                             if (filterValueType == 0) {
                                 // expression
@@ -7589,67 +7594,150 @@ public class db {
 
         return isValidLongType;
     }
-    
-    
-    public static Object toJavaType(int typeCode, Object value, String expression, int type) {
+
+    /**
+     *
+     * @param typeCode
+     * @param value
+     * @param expression
+     * @param type
+     * @param wrapNullToZero
+     * @return
+     */
+    public static Object toJavaType(int typeCode, Object value, String expression, int type, boolean wrapNullToZero) throws Exception {
         switch (typeCode) {
             case Types.ARRAY:
-                return (Array)value;
+                return (Array) value;
             case Types.BIGINT:
-                if(value instanceof String) {
-                    return (Long)Long.parseLong((String)value);
-                } else if(value instanceof Double) {
-                    return (Long)((Double)value).longValue();
-                } else if(value instanceof Float) {
-                    return (Long)((Float)value).longValue();
+                if (value instanceof String) {
+                    if (wrapNullToZero)
+                        if (value == null || ((String) value).isEmpty() || "NULL".equalsIgnoreCase((String) value))
+                            return new Long(0);
+                    return (Long) Long.parseLong((String) value);
+                } else if (value instanceof Double) {
+                    return (Long) ((Double) value).longValue();
+                } else if (value instanceof Float) {
+                    return (Long) ((Float) value).longValue();
                 } else {
-                    return (Long)value;
+                    return (Long) value;
                 }
             case Types.BINARY:
-                return (byte[])value;
-            case Types.BIT:
-                return (boolean)value;
+                return (byte[]) value;
             case Types.BLOB:
-                return (Blob)value;
+                return (Blob) value;
+            case Types.BIT:
             case Types.BOOLEAN:
-                return (boolean)value;
+                if (value instanceof String) {
+                    if (wrapNullToZero)
+                        if (value == null || ((String) value).isEmpty() || "NULL".equalsIgnoreCase((String) value))
+                            return false;
+                    if ("1".equalsIgnoreCase((String) value) || "S".equalsIgnoreCase((String) value) || "Y".equalsIgnoreCase((String) value))
+                        return true;
+                    else
+                        return false;
+                } else if (value instanceof Double) {
+                    return ((Double) value).doubleValue() > 0.0 ? true : false;
+                } else if (value instanceof Float) {
+                    return ((Float) value).doubleValue() > 0.0f ? true : false;
+                } else {
+                    return (boolean) value;
+                }
             case Types.CHAR:
-                return (String)value;
+                return (String) value;
             case Types.CLOB:
-                return (Clob)value;
+                return (Clob) value;
             // case Types.DATALINK:
             case Types.DATE:
-                return (java.sql.Date)value;
+                if (value instanceof String) {
+                    // TODO: cost to date ...
+                    throw new Exception("CAST not developed...");
+                } else {
+                    return (java.sql.Date) value;
+                }
+            case Types.NUMERIC:
             case Types.DECIMAL:
-                return (java.math.BigDecimal)value;
-            // case Types.DISTINCT:
+                if (value instanceof String) {
+                    if (wrapNullToZero)
+                        if (value == null || ((String) value).isEmpty() || "NULL".equalsIgnoreCase((String) value))
+                            return new java.math.BigDecimal(0);
+                    return (java.math.BigDecimal) new java.math.BigDecimal(String.valueOf(value));
+                } else if (value instanceof Double) {
+                    return (java.math.BigDecimal) new java.math.BigDecimal(((Double) value).doubleValue());
+                } else if (value instanceof Float) {
+                    return (java.math.BigDecimal) new java.math.BigDecimal(((Float) value).doubleValue());
+                } else {
+                    return (java.math.BigDecimal) value;
+                }
+                // case Types.DISTINCT:
             case Types.DOUBLE:
-                return (Double)value;
+                if (value instanceof String) {
+                    if (wrapNullToZero)
+                        if (value == null || ((String) value).isEmpty() || "NULL".equalsIgnoreCase((String) value))
+                            return new Double(0);
+                    return (Double) Double.parseDouble((String) value);
+                } else if (value instanceof Double) {
+                    return (Double) ((Double) value).doubleValue();
+                } else if (value instanceof Float) {
+                    return (Double) ((Float) value).doubleValue();
+                } else {
+                    return (Double) value;
+                }
+            case Types.REAL:
             case Types.FLOAT:
-                return (Float)value;
+                if (value instanceof String) {
+                    if (wrapNullToZero)
+                        if (value == null || ((String) value).isEmpty() || "NULL".equalsIgnoreCase((String) value))
+                            return new Float(0);
+                    return (Float) Float.parseFloat((String) value);
+                } else if (value instanceof Double) {
+                    return (Float) ((Double) value).floatValue();
+                } else if (value instanceof Float) {
+                    return (Float) ((Float) value).floatValue();
+                } else {
+                    return (Float) value;
+                }
             case Types.INTEGER:
-                return (Integer)value;
-            // case Types.JAVA_OBJECT:
-            // case Types.LONGNVARCHAR:
-            // case Types.LONGVARBINARY:
+                if (value instanceof String) {
+                    if (wrapNullToZero)
+                        if (value == null || ((String) value).isEmpty() || "NULL".equalsIgnoreCase((String) value))
+                            return new Integer(0);
+                    return (Integer) Integer.parseInt((String) value);
+                } else if (value instanceof Double) {
+                    return (Integer) ((Double) value).intValue();
+                } else if (value instanceof Float) {
+                    return (Integer) ((Float) value).intValue();
+                } else {
+                    return (Integer) value;
+                }
+                // case Types.JAVA_OBJECT:
+                // case Types.LONGNVARCHAR:
+                // case Types.LONGVARBINARY:
             case Types.LONGVARCHAR:
-                return (String)value;
+                return (String) value;
             // case Types.NCHAR:
             // case Types.NCLOB:
             // case Types.NULL:
-            case Types.NUMERIC:
-                return (java.math.BigDecimal)value;
             // case Types.NVARCHAR:
             // case Types.OTHER:
-            case Types.REAL:
-                return (Float)value;
-            case Types.REF:
-                return (Ref)value;
             // case Types.REF_CURSOR:
             // case Types.ROWID:
-            case Types.SMALLINT:
-                return (Short)value;
             // case Types.SQLXML:
+            // case Types.VARBINARY:
+            case Types.REF:
+                return (Ref) value;
+            case Types.SMALLINT:
+                if (value instanceof String) {
+                    if (wrapNullToZero)
+                        if (value == null || ((String) value).isEmpty() || "NULL".equalsIgnoreCase((String) value))
+                            return new Short((short) 0);
+                    return (Short) Short.parseShort((String) value);
+                } else if (value instanceof Double) {
+                    return (Short) ((Double) value).shortValue();
+                } else if (value instanceof Float) {
+                    return (Short) ((Float) value).shortValue();
+                } else {
+                    return (Short) value;
+                }
             case Types.STRUCT:
                 return (Struct)value;
             case Types.TIME:
@@ -7678,14 +7766,17 @@ public class db {
                 }
             case Types.TINYINT:
                 return (Byte)value;
-            // case Types.VARBINARY:
             case Types.VARCHAR:
                 return (String)value;
             default:
                 return (String)value;
         }
     }
-    
+
+    public static Object toJavaType(int typeCode, Object value, String expression, int type) throws Exception {
+        return toJavaType(typeCode, value, expression, type, false);
+    }
+
     
     private static String javaToSQLName( Object Param ) {
         if(Param == null) {
@@ -7697,7 +7788,7 @@ public class db {
         } else if (Param instanceof Long) {
             return "int8";
         } else if (Param instanceof java.math.BigDecimal) {
-            return "???";
+            return "NUMBER";
         } else if (Param instanceof Double) {
             return "float8";
         } else if (Param instanceof Float) {

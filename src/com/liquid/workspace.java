@@ -1487,7 +1487,7 @@ public class workspace {
 
                                                 col.put("nullable", mdCol.isNullable);
                                                 col.put("autoIncString", mdCol.autoIncString);
-                                                col.put("remarks", mdCol.remarks);
+                                                col.put("remarks", utility.base64Encode(mdCol.remarks));
 
                                                 boolean bStoreDigits = false;
                                                 if (col.has("digits")) {

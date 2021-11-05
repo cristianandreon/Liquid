@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.67
+// Liquid ver.1.68
 //
-//  First update 04-01-2020 - Last update  04-11-2021
+//  First update 04-01-2020 - Last update  05-11-2021
 //
 //  TODO : see trello.com
 //
@@ -9205,7 +9205,7 @@ var Liquid = {
                 tooltipField += "nullable: "+(isDef(col.nullable)?col.nullable:"N/D") + "\n";
                 tooltipField += "default: "+(isDef(col.default)?col.default:"N/D") + "\n";
                 tooltipField += "autoIncString: "+(isDef(col.autoIncString)?col.autoIncString:"N/D") + "\n";
-                tooltipField += "remarks: "+(isDef(col.remarks)?col.remarks:"N/D") + "\n";
+                tooltipField += "remarks: "+(isDef(col.remarks)?atob(col.remarks):"N/D") + "\n";
                 tooltipField += "required: "+(isDef(col.required)?col.required:"N/D") + "\n";
                 if(col.requiredByDB === true) {
                     tooltipField += "required by db: "+(isDef(col.requiredByDB)?col.requiredByDB:"N/D") + "\n";
@@ -10856,23 +10856,24 @@ var Liquid = {
                     if(layout.source !== 'undefined' && layout.source) {
                         layout.containerObj.innerHTML = "Loading \""+layout.source+"\"...";
                         try {
+                            // layput type list
                             var sources = [
-                                 { key:"source", def:null }
-                                ,{ key:"sourceForInsert", def:"source"  }
-                                ,{ key:"sourceForUpdate", def:"source"  }
-                                ,{ key:"header", def:null  }
-                                ,{ key:"footer", def:null  }
-                                ,{ key:"headerForInsert", def:null  }
-                                ,{ key:"footerForInsert", def:null  }
-                                ,{ key:"headerForUpdate", def:null  }
-                                ,{ key:"footerForUpdate", def:null  }
+                                 { key:"source", def:null }                 // the row
+                                ,{ key:"sourceForInsert", def:"source"  }   // the inserting row
+                                ,{ key:"sourceForUpdate", def:"source"  }   // the updating row
+                                ,{ key:"header", def:null  }                // the header
+                                ,{ key:"footer", def:null  }                // the footer
+                                ,{ key:"headerForInsert", def:null  }       // the header whwn inserting row
+                                ,{ key:"footerForInsert", def:null  }       // the header whwn inserting row
+                                ,{ key:"headerForUpdate", def:null  }       // the footer whwn updating row
+                                ,{ key:"footerForUpdate", def:null  }       // the footer whwn updating row
                                 ];
                             layout.templateRows = [];
                             // need rendered html to compute height
-                            lastDisplay = layout.containerObj.style.display;
+                            var lastDisplay = layout.containerObj.style.display;
                             layout.containerObj.style.display = "";
                             for (var is=0; is<sources.length; is++) {
-                                source = layout[sources[is].key];
+                                var source = layout[sources[is].key];
                                 if(isDef(source)) {
                                     if(source.startsWith("url(")) {
                                         var jsonURL = source.substring(4);
@@ -10885,6 +10886,7 @@ var Liquid = {
                                             try {
                                                 if(xhr.responseText) {
                                                     layout.containerObj.innerHTML = xhr.responseText;
+                                                    var scripts = null;
                                                     var height = Liquid.getItemsMaxHeight(layout.containerObj);
                                                     var rootObj = document.createElement("div");
                                                     rootObj.className = "liquidLayoutRowContainerDiv";
@@ -10892,8 +10894,19 @@ var Liquid = {
                                                     while(layout.containerObj.childNodes.length) {
                                                         rootObj.appendChild(layout.containerObj.childNodes[0]);
                                                     }
-                                                    layout.pageLoaded = true;                                                    
-                                                    layout.templateRows.push( { key:sources[is].key, templateRow:rootObj, isAutoInsert:isAutoInsert, isFormX:isFormX, mode:mode, source:source, height:height } );
+                                                    for(var inode=0; inode<rootObj.childNodes.length; inode++) {
+                                                        var child = rootObj.childNodes[inode];
+                                                        if (nodeName(child, "script") &&
+                                                            (!child.type || child.type.toLowerCase() === "text/javascript")) {
+                                                            if(!scripts) scripts = [];
+                                                            scripts.push(child.text);
+                                                            try {
+                                                                eval(child.text);
+                                                            } catch(e) { console.error(e); }
+                                                        }
+                                                    }
+                                                    layout.pageLoaded = true;
+                                                    layout.templateRows.push( { key:sources[is].key, templateRow:rootObj, isAutoInsert:isAutoInsert, isFormX:isFormX, mode:mode, source:source, height:height, scripts:scripts } );
                                                     layout.containerObj.innerHTML = "";
                                                 } else console.error("ERROR: No response reading :"+jsonURL+" of controlId:"+liquid.controlId);
                                             } catch (e) { console.error(e); }
@@ -10914,6 +10927,16 @@ var Liquid = {
                                         // while(layout.containerObj.childNodes.length) {
                                         rootObj.appendChild(layout.containerObj.childNodes[0]);
 
+                                        if(idDef(layout.height)) {
+                                            if(isNumber(layout.height)) {
+                                                layout.height = Number(layout.height);
+                                            } else {
+                                                var calHeight = Number(evalute(layout.height));
+                                                if(isNumber(calHeight)) {
+                                                    layout.height = calHeight;
+                                                }
+                                            }
+                                        }
                                         layout.templateRows.push( { key:sources[is].key, templateRow:rootObj, isAutoInsert:isAutoInsert, isFormX:isFormX, mode:mode, source:layout.source, height:height } );
                                         layout.pageLoaded = true;
                                     }
@@ -11274,7 +11297,7 @@ var Liquid = {
                         var templateRowSource = templateRowSourceResult[0]
                         var isAdding = templateRowSourceResult[1] || isFormX;
                         var bCreateRow = false;
-                        
+
                         if(layout.rowsContainer.length < ir+1) {
                             bCreateRow = true;
                         } else {
@@ -11523,6 +11546,29 @@ var Liquid = {
         }
         return [ null, -1 ];
     },
+    getTemplateRowScripts:function (liquid, layout, ir) {
+        if(liquid) {
+            if(layout) {
+                var nodes = null;
+                try { nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren; } catch(e) {}
+                var isAddingNode = Liquid.isAddingNode(liquid, ir, nodes, true);
+                if(isAddingNode)
+                    if(layout.templateRows.length > 1)
+                        if(layout.templateRows[1])
+                            if(layout.templateRows[1].script)
+                                return layout.templateRows[1].scripts;
+
+                if(isDef(layout.rowsContainer))
+                    if(ir < layout.rowsContainer.length)
+                        if(layout.rowsContainer[ir])
+                            if(layout.rowsContainer[ir].isUpdating)
+                                return layout.templateRows[2].scripts;
+
+                return layout.templateRows[0].scripts;
+            }
+        }
+        return null;
+    },
     setLayoutField:function(liquid, layout, obj, iRow, bSetup) {
         if(obj) {
             var objLinkers = null;
@@ -11638,7 +11684,7 @@ var Liquid = {
 
                             if(linkeCol.remarks) {
                                 if(!isDef(obj.title)) {
-                                    obj.title = linkeCol.remarks;
+                                    obj.title = atob(linkeCol.remarks);
                                 }
                             }
 
@@ -14082,6 +14128,9 @@ var Liquid = {
             }
         }
         return false;
+    },
+    isNumber:function(n) {
+        return !isNaN(parseFloat(n)) && isFinite(n);
     },
     isNumeric:function(type) {
         if(type === "3" || type === "4" || type === "7" || type === "8"  || type === "-5" || type === "-6" || type === "-7")
@@ -17918,6 +17967,10 @@ var LZW = {
         return result;
     }
 };
+
+function nodeName(elem, name) {
+    return elem.nodeName && elem.nodeName.toUpperCase() === name.toUpperCase();
+}
 
 function deepClone(obj, hash = new WeakMap()) {
     if (Object(obj) !== obj || obj instanceof Function) return obj;
