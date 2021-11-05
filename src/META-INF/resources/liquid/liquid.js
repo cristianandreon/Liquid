@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.66
+// Liquid ver.1.67
 //
-//  First update 04-01-2020 - Last update  03-11-2021
+//  First update 04-01-2020 - Last update  04-11-2021
 //
 //  TODO : see trello.com
 //
@@ -579,7 +579,8 @@ class LiquidCtrl {
                                         if(isDef(liquid.tableJson.layouts)) {
                                             for(var il=0; il<liquid.tableJson.layouts.length; il++) {
                                                 var layout = liquid.tableJson.layouts[il];
-                                                layout.currentRow1B = event.node.rowIndex+1
+                                                layout.currentRow1B = event.node.rowIndex+1 - (layout.baseIndex1B-1);
+                                                layout.currentAbsoluteRow1B = event.node.rowIndex+1;
                                             }
                                         }
                                         Liquid.updateStatusBar(liquid);
@@ -1477,6 +1478,7 @@ class LiquidCtrl {
                                     layout.resizeCounter = 0;
                                     layout.pageLoaded = false;
                                     layout.pendingLink = true;
+                                    layout.baseIndex1B = 1;
                                     layout.currentRow1B = 0;
                                     layout.currentAbsoluteRow1B = 0;
                                     layout.containerObj = document.createElement("div");
@@ -1844,7 +1846,7 @@ class LiquidCtrl {
                     if(this.tableJson) {
                         if(this.tableJson.autoLoad !== false || isRebuilding === true) {
                             if(isFormX) { 
-                                // no data to load
+                                // no data to load ? no load data from recordset
                             } else {
                                 Liquid.loadData(this, null, "start");
                                 hasLoadedData = true;
@@ -4254,6 +4256,11 @@ var Liquid = {
                             result.retVal = 1;
                             liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
                             liquid.lastSelectedId = null;
+                            // check
+                            if(liquid.addingNode) {
+                                console.error("ERROR: loadData inside insert command overlay addingNode");
+                                liquid.addingNode = null;
+                            }
                         }
 
                         if(liquid.nRows <= 0) {
@@ -4288,7 +4295,10 @@ var Liquid = {
 
                         // restore previous selection
                         bFoundSelection = Liquid.setSelctions(liquid, selNodes);
-                        if((!bFoundSelection && selNodes && selNodes.length > 0) || (anyFieldsChange) ) {
+                        if((!bFoundSelection && selNodes && selNodes.length > 0)
+                            || (anyFieldsChange)
+                            || (bFirstTimeLoad)
+                        ) {
                             var refreshReason = "";
                             if(!bFoundSelection && selNodes && selNodes.length > 0) {
                                 reason = "unselect";
@@ -4365,6 +4375,15 @@ var Liquid = {
 
 
                 if(bFirstTimeLoad) {
+                    if(typeof liquid.pendingFunc !== 'undefined' && liquid.pendingFunc) {
+                        for(var ipf=0; ipf<liquid.pendingFunc.length; ipf++) {
+                            if(liquid.pendingFunc[ipf]) {
+                                liquid.pendingFunc[ipf]();
+                                liquid.pendingFunc[ipf] = null;
+                            }
+                        }
+                        liquid.pendingFunc = null;
+                    }
                 } else {
                     if(bFoundSelection === false) {
                         if(isDef(liquid.tableJson.autoSelect)) {
@@ -4401,6 +4420,10 @@ var Liquid = {
                     Liquid.refreshPendingLayouts(liquid, true);
                 }
 
+                if(bFirstTimeLoad) {
+                    Liquid.onEvent(liquid, "onLoadData", null, null);
+                }
+
             } else {
                 console.error("loadData() . wrong response:" + xhr.status);
             }
@@ -4431,6 +4454,12 @@ var Liquid = {
                 if(liquid.linkedLiquids)
                     Liquid.refreshLinkedLiquids(liquid);
                 }
+                // check
+                if(liquid.addingNode) {
+                    console.error("ERROR: loadData inside insert command overlay addingNode");
+                    liquid.addingNode = null;
+                }
+
                 return;
             }
         }        
@@ -4631,7 +4660,6 @@ var Liquid = {
                         // liquid.xhr.onreadystatechange = onreadystatechange;
                         // liquid.xhr.send(sFiltersJson);                        
                     }
-
                 }
             } catch (e) { 
                 console.error("ERROR: loadData() on control '"+liquid.controlId+"' : "+e); 
@@ -7146,17 +7174,19 @@ var Liquid = {
                                 for(var ir = 0; ir < httpResultJson.resultSet.length; ir++) {
                                     var fieldSet = httpResultJson.resultSet[ir];
                                     var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
-                                    liquid.addingRow[primaryKeyField] = fieldSet[primaryKeyField];
-                                    for(var prop in fieldSet) {
-                                        if(liquid.addingRow[prop] !== fieldSet[prop]) {
-                                            if(liquid.addingRow[prop] !== fieldSet[prop]) {
-                                                // Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.__objectId : null, liquid.addingRow[primaryKeyField], prop, liquid.addingRow[prop], fieldSet[prop]);
-                                                liquid.addingRow[prop] = fieldSet[prop];
+                                    if(liquid.addingRow) {
+                                        liquid.addingRow[primaryKeyField] = fieldSet[primaryKeyField];
+                                        for (var prop in fieldSet) {
+                                            if (liquid.addingRow[prop] !== fieldSet[prop]) {
+                                                if (liquid.addingRow[prop] !== fieldSet[prop]) {
+                                                    // Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[primaryKeyField], prop, liquid.addingRow[prop], fieldSet[prop]);
+                                                    liquid.addingRow[prop] = fieldSet[prop];
+                                                }
                                             }
                                         }
-                                    }
+                                    } else console.warn("WARNING : no adding row on event "+event.name+" on control "+liquid.controlId + " .. please check event "+event.server);
                                 }
-                            } else console.warn("WARNING : no fields value on event "+event.name+" on control "+liquid.controlId + " .. please check event "+event.servero);
+                            } else console.warn("WARNING : no fields value on event "+event.name+" on control "+liquid.controlId + " .. please check event "+event.server);
                         } else console.error("ERROR : invalid fields value on event "+event.name+" on control "+liquid.controlId + " .. please check event "+event.server);
                     } else if(event.name === 'onPastedRow') {
                         if(httpResultJson.tables) {
@@ -7594,7 +7624,7 @@ var Liquid = {
                                     if(modification.nodeId) {
                                         // if(ids.indexOf(modification.rowId) < 0) {
                                         if(liquid.addingNode) {
-                                            if(liquid.addingNode.__objectId === modification.nodeId) {
+                                            if(liquid.addingNode.id === modification.nodeId) {
                                                 if(ids) {
                                                     if(ids.length) {
                                                         var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
@@ -8473,7 +8503,7 @@ var Liquid = {
     restoreLayouts:function(liquid) {
         if(isDef(liquid.tableJson.layouts) && liquid.tableJson.layouts.length > 0) {
             for(var ig = 0; ig < liquid.tableJson.layouts.length; ig++) {
-                Liquid.onLayoutMode(liquid.tableJson.layouts[ig].layoutTabObj, null, "readonly");
+                Liquid.onLayoutMode(liquid.tableJson.layouts[ig].layoutTabObj, liquid.tableJson.layouts[ig].currentRow1B-1, "readonly");
             }
         }
     },
@@ -8503,10 +8533,16 @@ var Liquid = {
             if((command.confirm ? confirm(command.confirm) : true)) {
                 var liquid = Liquid.getLiquid(obj);
                 // wrap to more specific and already defined command
-                if(command.name === "return") {
-                    if(isDef(liquid.currentCommand)) {
-                        if(liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update") {
+                if(command.name === "return" || command.name === "cancel") {
+                    if (isDef(liquid.currentCommand)) {
+                        if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update") {
                             command = liquid.currentCommand.rollbackCommand;
+                        }
+                    }
+                } else if(command.name === "ok") {
+                    if(isDef(liquid.currentCommand)) {
+                        if(liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update" || liquid.currentCommand.name === "paste") {
+                            command = liquid.currentCommand;
                         }
                     }
                 } else if(command.name === "insert" || command.name === "update") {
@@ -8618,6 +8654,8 @@ var Liquid = {
                             }
                         }
                         liquid.addingRow = null;
+                        liquid.addingNode = null;
+
                         // refresh row on grid and layouts
                         Liquid.refreshGrids(liquid, null, "rollback");
                         Liquid.resetLayoutsContent(liquid, true);
@@ -8847,8 +8885,20 @@ var Liquid = {
                             command.curLayoutIndex = gotoLayoutIndex;
                             if(isDef(liquid.tableJson.layouts) && liquid.tableJson.layouts.length > 0) {
                                 if(gotoLayoutIndex < 0) gotoLayoutIndex = 0;
-                                // set isUpdating flag in the layouts row
-                                if(command.name === "update") {
+
+                                if(command.name === "insert") {
+                                    var nRows = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length + (liquid.addingNode ? 0 : 1);
+                                    for(var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                                        var layout = liquid.tableJson.layouts[il];
+                                        layout.baseIndex1B = (nRows - layout.nRows) + 1;
+                                        layout.currentRow1B = nRows - (layout.baseIndex1B-1);
+                                        layout.currentAbsoluteRow1B = nRows;
+                                        layout.currentCommandRow1B = layout.currentRow1B;
+                                    }
+                                }
+
+                                // set isUpdating/isAdding flag in the layouts row
+                                if(command.name === "update" || command.name === "insert") {
                                     var templateIndex = 2;
                                     for(var il = 0; il < liquid.tableJson.layouts.length; il++) {
                                         var layout = liquid.tableJson.layouts[il];
@@ -8857,21 +8907,23 @@ var Liquid = {
                                                 if(layout.rowsContainer) {
                                                     if(layout.currentRow1B) {
                                                         layout.currentCommandRow1B = layout.currentRow1B;
-                                                        layout.rowsContainer[layout.currentCommandRow1B-1].isUpdating = true;
-                                                        layout.rowsContainer[layout.currentCommandRow1B-1].isAdding = false;
                                                         layout.rowsContainer[layout.currentCommandRow1B-1].incomingSource = layout.templateRows[templateIndex].source;
                                                         Liquid.refreshLayout(liquid, layout, false);
                                                     }
                                                 }
                                             }
                                         }
-                                    }
-                                }
-                                if(command.name === "insert") {
-                                    nRows = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length;
-                                    for(var il = 0; il < liquid.tableJson.layouts.length; il++) {
-                                        var layout = liquid.tableJson.layouts[il];
-                                        layout.currentCommandRow1B = nRows;
+                                        if(layout.rowsContainer) {
+                                            if (layout.currentCommandRow1B) {
+                                                if (command.name === "update") {
+                                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = true;
+                                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
+                                                } else if (command.name === "insert") {
+                                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
+                                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = true;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 if(gotoLayoutIndex !== null) {
@@ -9188,7 +9240,31 @@ var Liquid = {
             }
         }
         return name;
-    },            
+    },
+    setProperty:function(obj, propName, propValue) {
+        var liquid = Liquid.getLiquid(obj);
+        if (liquid) {
+            if (liquid.tableJson) {
+                try {
+                    liquid.tableJson[propName] = propValue;
+                    if (propName == "autoInsert") {
+                        if (propValue == false) {
+                            if (isDef(liquid.currentCommand)) {
+                                if (liquid.currentCommand.name === "insert") {
+                                    // rollback
+                                    Liquid.onButton(liquid, {name: "return"});
+                                }
+                            }
+                        } else {
+                            Liquid.onButton(liquid, {name: "insert"});
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+    },
     getProperty:function(propName) {
         var parts = null, obj = null;
         if(typeof propName === 'string') parts = propName.split('.');
@@ -10858,8 +10934,10 @@ var Liquid = {
                             var isFormX = Liquid.isFormX(liquid);
                             var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
                             if(isFormX || isAutoInsert === true) mode = "write";
-                            if(layout.currentRow1) 
+                            if(layout.currentRow1B)
                                 Liquid.onLayoutMode(layout.containerObj, layout.currentRow1B-1, mode);
+                            else
+                                Liquid.onLayoutMode(layout.containerObj, null, mode);
                             if(layout.rowsContainer) {
                                 for(var ir=0; ir<layout.rowsContainer.length; ir++) {
                                     layout.rowsContainer[ir].isUpdating = false;
@@ -10904,6 +10982,8 @@ var Liquid = {
                                             // check is some node own content to recover (like foreign table moved across parent)
                                             Liquid.checkLayoutChildrenForRemove(liquid, layout.rowsContainer[ir].containerObj);
                                             layout.rowsContainer[ir].containerObj.innerHTML = "";
+                                            layout.rowsContainer[ir].containerObj.parentNode.removeChild(layout.rowsContainer[ir].containerObj);
+                                            layout.rowsContainer[ir].containerObj = null;
                                         }
                                         delete layout.rowsContainer[ir];
                                     } else {
@@ -11818,7 +11898,7 @@ var Liquid = {
                                     value = liquid.addingRow[linkedField];
                                 } else {
                                     disabled = true;
-                                    value = ".";
+                                    value = "";
                                 }
                             } else if(isDialogX) {
                                 disabled = false;
@@ -11881,7 +11961,7 @@ var Liquid = {
      * 
      * TODO: test
      */
-    setForm:function(formObjOrName, obj) {
+    setFormX:function(formObjOrName, obj) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             var curNodes = Liquid.getCurNodes(liquid);        
@@ -11896,10 +11976,10 @@ var Liquid = {
      * @param liquid the source control
      * @param node the source node
      * @return n/d
-     * 
+     *
      * TODO: test
      */
-    setFormByNode:function(formObjOrName, obj, node) {
+    setFormXByNode:function(formObjOrName, obj, node) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             var formObj = null;
@@ -11947,7 +12027,35 @@ var Liquid = {
                     Liquid.resetMofifications(linkedLiquid);
                 }
             }
+        } else {
+            console.error("ERROR: setForm() : control '" + obj + "' not found");
         }
+    },
+    setForm:function(formObjOrName, obj) {
+        return Liquid.setFormX(formObjOrName, obj);
+    },
+    setFormByNode:function(formObjOrName, obj, node) {
+        return Liquid.setFormXByNode(formObjOrName, obj, node);
+    },
+    /**
+     * Set the dialog's fields by liquid control node
+     * @param formObj the form object
+     * @param liquid the source control
+     * @param key the primary key value
+     * @return n/d
+     */
+    setDialogXByNone:function(formObjOrName, obj, node) {
+        return Liquid.setFormXByNone(formObjOrName, obj, node);
+    },
+    /**
+     * Set the dialog's fields by liquid control node
+     * @param formObj the form object
+     * @param liquid the source control
+     * @param key the primary key value
+     * @return n/d
+     */
+    setDialogXByKey:function(formObjOrName, obj, key) {
+        return Liquid.setFormXByKey(formObjOrName, obj, key);
     },
     /**
      * Set the form's fields by liquid control node
@@ -11955,10 +12063,8 @@ var Liquid = {
      * @param liquid the source control
      * @param key the primary key value
      * @return n/d
-     *
-     * TODO: test
      */
-    setFormByKey:function(formObjOrName, obj, key) {
+    setFormXByKey:function(formObjOrName, obj, key) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             var formObj = null;
@@ -11966,6 +12072,12 @@ var Liquid = {
                 formObj = formObjOrName;
             } else {
                 formObj = document.getElementById(formObjOrName);
+            }
+            if(liquid.loadCounter <= 0) {
+                if(!isDef(liquid.pendingFunc))
+                    liquid.pendingFunc = [];
+                liquid.pendingFunc.push( function() { Liquid.setFormXByKey(formObjOrName, obj, key); } );
+                return false;
             }
             // searching for linkedLiquid
             var linkedLiquid = null;
@@ -11983,30 +12095,38 @@ var Liquid = {
             if(formObj && liquid && key) {
                 var disabled = false;
                 var node = Liquid.getNodeByPrimaryKey(liquid, key);
-                frm_elements = formObj.elements;
-                if(frm_elements && frm_elements.length) {
-                    for (var i = 0; i < frm_elements.length; i++) {
-                        var targetObj = frm_elements[i];
-                        var targetName = Liquid.getFormElementId(targetObj);
-                        if(targetName) {
-                            targetName = targetName.toLowerCase();
-                            for(var j=0; j<liquid.tableJson.columns.length; j++) {
-                                var name = liquid.tableJson.columns[j].name;
-                                if(name.toLowerCase() == targetName) {
-                                    var value = node.data[j+1];
-                                    Liquid.setHTMLElementValue(targetObj, value, disabled);
-                                    if(linkedLiquid) {
-                                        Liquid.setAddingField(linkedLiquid, name, value);
+                if(node) {
+                    frm_elements = formObj.elements;
+                    if (frm_elements && frm_elements.length) {
+                        for (var i = 0; i < frm_elements.length; i++) {
+                            var targetObj = frm_elements[i];
+                            var targetName = Liquid.getFormElementId(targetObj);
+                            if (targetName) {
+                                targetName = targetName.toLowerCase();
+                                for (var j = 0; j < liquid.tableJson.columns.length; j++) {
+                                    var name = liquid.tableJson.columns[j].name;
+                                    if (name.toLowerCase() == targetName) {
+                                        var value = node.data[j + 1];
+                                        Liquid.setHTMLElementValue(targetObj, value, disabled);
+                                        if (linkedLiquid) {
+                                            Liquid.setAddingField(linkedLiquid, name, value);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                } else {
+                    console.error("ERROR: setFormByKey() : control '" + obj + "' : node not found by key :"+key);
+                    if(!liquid.tableJson.autoLoad)
+                        console.error("Try to enable 'autoLoad'");
                 }
                 if(linkedLiquid) {
                     Liquid.resetMofifications(linkedLiquid);
                 }
             }
+        } else {
+            console.error("ERROR: setFormByKey() : control '" + obj + "' not found");
         }
     },
     /**
@@ -12127,10 +12247,12 @@ var Liquid = {
         if(isDef(nodes) && nodes.length > 0) {
             for(var ind = 0; ind < nodes.length; ind++) {
                 var data = nodes[ind].data;
-                var id = data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
-                if(id) 
-                    if(key === id) 
-                        return ind+1;
+                if(data) {
+                    var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                    if (id)
+                        if (key === id)
+                            return ind + 1;
+                }
             }
         }
         return 0;
@@ -12146,7 +12268,7 @@ var Liquid = {
                         return nodes[ind];
             }
         }
-        return 0;
+        return null;
     },
     onLayoutFieldClick:function(event) {
         if(event) {
@@ -12161,7 +12283,7 @@ var Liquid = {
                         var linkedRow1B = obj.getAttribute('linkedrow1b');
                         var firstNodeId = lay_coord.layout.firstNodeId;
                         var baseIndex1B = Liquid.getNodeIndex(liquid, firstNodeId);
-                        lay_coord.layout.currentRow1B = (linkedRow1B - baseIndex1B)+1;
+                        lay_coord.layout.currentRow1B = Number(linkedRow1B) - (baseIndex1B ? baseIndex1B-1 : 0);
                         lay_coord.layout.currentAbsoluteRow1B = linkedRow1B;
                     }
                 }
@@ -12245,7 +12367,7 @@ var Liquid = {
                                     if(validateResult !== null) {
                                         if(validateResult[0] >= 0) {
                                             //newValue = validateResult[1];
-                                            Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.__objectId : null, liquid.addingRow[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], linkedField, null, newValue);
+                                            Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], linkedField, null, newValue);
                                             Liquid.updateDependencies(liquid, col, null, event);
                                         }
                                     }
@@ -12260,7 +12382,7 @@ var Liquid = {
                                                     if(validateResult[0] >= 0) {
                                                         // newValue = validateResult[1];
                                                         nodes[baseIndex1B-1+linkedRow1B-1].setDataValue(linkedField, validateResult[1]);
-                                                        Liquid.registerFieldChange(liquid, null, data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], linkedField, null, newValue);
+                                                        Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], linkedField, null, newValue);
                                                         Liquid.updateDependencies(liquid, col, null, event);
                                                     }
                                                 }
@@ -14173,11 +14295,12 @@ var Liquid = {
                             node.setSelected(true);
                             Liquid.processNodeSelected(liquid, node, node.isSelected());
                         }
-                        // update current row in layputs
+                        // update current row in layouts
                         if(isDef(liquid.tableJson.layouts)) {
                             for(var il=0; il<liquid.tableJson.layouts.length; il++) {
                                 var layout = liquid.tableJson.layouts[il];
-                                layout.currentRow1B = foundRow1B;
+                                layout.currentRow1B = foundRow1B - (layout.baseIndex1B-1);
+                                layout.currentAbsoluteRow1B = foundRow1B;
                             }
                         }
                         if(isDef(liquid.currentCommand) && (liquid.currentCommand.name === "" || liquid.currentCommand.name === "update")
@@ -14342,47 +14465,53 @@ var Liquid = {
         if(liquid) {
             if(liquid.addingNode === null || typeof liquid.addingNode === 'undefined') { 
                 // if not already done
-                var res = liquid.gridOptions.api.updateRowData({add: [liquid.addingRow]});
-                if(res) {
-                    if(liquid.gridOptions) {
-                        if(liquid.gridOptions.api) {
-                            try {
-                                liquid.addingNode = res.add[0];
-                                liquid.gridOptions.api.deselectAll();
-                            } catch (e) {
-                                console.error(e);
+                if(!liquid.currentCommand) {
+                    console.error("ERROR: onPreparedRow event outside command");
+                } else {
+                    var res = liquid.gridOptions.api.updateRowData({add: [liquid.addingRow]});
+                    if (res) {
+                        if (liquid.gridOptions) {
+                            if (liquid.gridOptions.api) {
+                                try {
+                                    liquid.addingNode = res.add[0];
+                                    liquid.gridOptions.api.deselectAll();
+                                } catch (e) {
+                                    console.error(e);
+                                }
                             }
                         }
-                    }
-                    var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                    if(isDef(nodes) && nodes.length > 0) {
-                        nodes[nodes.length - 1].setSelected(true);
-                        liquid.gridOptions.api.ensureIndexVisible(nodes[nodes.length - 1].rowIndex, "bottom");
-                        // register modifications
-                        for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {
-                            var col = liquid.tableJson.columns[ic];
-                            if(col.isReflected !== true || isDef(col.default)) {
-                                var validateResult = Liquid.validateField(liquid, col, liquid.addingRow[col.field]);
-                                if(validateResult !== null) {
-                                    if(validateResult[0] >= 0) {
-                                        liquid.addingRow[col.field] = validateResult[1];
-                                        if(bRegisterModify !== false)
-                                            Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.__objectId : null, liquid.addingRow[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], col.field, null, liquid.addingRow[col.field]);
-                                        Liquid.updateDependencies(liquid, col, null, null);
-                                    } else { // break here
-                                        retVal = false;
-                                        break;
+                        if (liquid.addingRow) {
+                            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                            if (isDef(nodes) && nodes.length > 0) {
+                                nodes[nodes.length - 1].setSelected(true);
+                                liquid.gridOptions.api.ensureIndexVisible(nodes[nodes.length - 1].rowIndex, "bottom");
+                                // register modifications
+                                for (var ic = 0; ic < liquid.tableJson.columns.length; ic++) {
+                                    var col = liquid.tableJson.columns[ic];
+                                    if (col.isReflected !== true || isDef(col.default)) {
+                                        var validateResult = Liquid.validateField(liquid, col, liquid.addingRow[col.field]);
+                                        if (validateResult !== null) {
+                                            if (validateResult[0] >= 0) {
+                                                liquid.addingRow[col.field] = validateResult[1];
+                                                if (bRegisterModify !== false)
+                                                    Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], col.field, null, liquid.addingRow[col.field]);
+                                                Liquid.updateDependencies(liquid, col, null, null);
+                                            } else { // break here
+                                                retVal = false;
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
+                        // liquid.nRows = nodes.length;
+                        // recompute selection (incule/excluded)
+                        Liquid.processNodeSelected(liquid, liquid.addingNode, true);
+
+                        // Disable all foreign tables children of
+                        Liquid.setForeignTablesDisableCascade(liquid);
                     }
-                    // liquid.nRows = nodes.length;
-                    // recompute selection (incule/excluded)
-                    Liquid.processNodeSelected(liquid, liquid.addingNode, true);
-                    
-                    // Disable all foreign tables children of
-                    Liquid.setForeignTablesDisableCascade(liquid);                    
                 }
             }
         }
@@ -14489,48 +14618,52 @@ var Liquid = {
     },
     processNodeSelected:function(liquid, node, bSelected) {
         if(liquid) {
-            var id = node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
-            var __objectId = node.__objectId;
-            var index = null;
-            if(liquid.selection.all) {
-                if(bSelected) {
-                    if(liquid.gridOptions.rowSelection === "multiple") {
-                        index = liquid.selection.exclude.indexOf(id);
-                        if(index >= 0) liquid.selection.exclude.splice(index, 1);
-                        index = liquid.selection.excludeObjectId.indexOf(__objectId);
-                        if(index >= 0) liquid.selection.excludeObjectId.splice(index, 1);
+            if(node) {
+                if (node.data) {
+                    var id = node.data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                    var __objectId = node.__objectId;
+                    var index = null;
+                    if (liquid.selection.all) {
+                        if (bSelected) {
+                            if (liquid.gridOptions.rowSelection === "multiple") {
+                                index = liquid.selection.exclude.indexOf(id);
+                                if (index >= 0) liquid.selection.exclude.splice(index, 1);
+                                index = liquid.selection.excludeObjectId.indexOf(__objectId);
+                                if (index >= 0) liquid.selection.excludeObjectId.splice(index, 1);
+                            }
+                        } else {
+                            index = liquid.selection.exclude.indexOf(id);
+                            if (index < 0) liquid.selection.exclude.push(id);
+                            index = liquid.selection.excludeObjectId.indexOf(__objectId);
+                            if (index < 0) liquid.selection.excludeObjectId.push(__objectId);
+                            if (liquid.selection.exclude.length >= liquid.nRows) {
+                                liquid.selection.all = false;
+                                liquid.selection.include = [];
+                                liquid.selection.includeObjectId = [];
+                                liquid.selection.exclude = [];
+                                liquid.selection.excludeObjectId = [];
+                            }
+                        }
+                    } else {
+                        if (bSelected) {
+                            if (liquid.gridOptions.rowSelection !== "multiple") {
+                                liquid.selection.include = [];
+                                liquid.selection.includeObjectId = [];
+                            }
+                            index = liquid.selection.include.indexOf(id);
+                            if (index < 0) liquid.selection.include.push(id);
+                            index = liquid.selection.include.indexOf(__objectId);
+                            if (index < 0) liquid.selection.includeObjectId.push(__objectId);
+                        } else {
+                            index = liquid.selection.include.indexOf(id);
+                            if (index >= 0) liquid.selection.include.splice(index, 1);
+                            index = liquid.selection.include.indexOf(__objectId);
+                            if (index < 0) liquid.selection.includeObjectId.splice(index, 1);
+                        }
                     }
-                } else {                    
-                    index = liquid.selection.exclude.indexOf(id);
-                    if(index < 0) liquid.selection.exclude.push(id);
-                    index = liquid.selection.excludeObjectId.indexOf(__objectId);
-                    if(index < 0) liquid.selection.excludeObjectId.push(__objectId);
-                    if(liquid.selection.exclude.length >= liquid.nRows) {
-                        liquid.selection.all = false;
-                        liquid.selection.include = [];
-                        liquid.selection.includeObjectId = [];
-                        liquid.selection.exclude = [];
-                        liquid.selection.excludeObjectId = [];
-                    }
-                }
-            } else {
-                if(bSelected) {
-                    if(liquid.gridOptions.rowSelection !== "multiple") {
-                        liquid.selection.include = [];
-                        liquid.selection.includeObjectId = [];
-                    }
-                    index = liquid.selection.include.indexOf(id);
-                    if(index < 0) liquid.selection.include.push(id);
-                    index = liquid.selection.include.indexOf(__objectId);
-                    if(index < 0) liquid.selection.includeObjectId.push(__objectId);                    
-                } else {                    
-                    index = liquid.selection.include.indexOf(id);
-                    if(index >= 0) liquid.selection.include.splice(index, 1);
-                    index = liquid.selection.include.indexOf(__objectId);
-                    if(index < 0) liquid.selection.includeObjectId.splice(index, 1);
+                    // console.debug( " SELECTION : ALL:"+liquid.selection.all+" - INCLUDE:"+liquid.selection.include + " - EXCLUDE:"+liquid.selection.exclude );
                 }
             }
-            // console.debug( " SELECTION : ALL:"+liquid.selection.all+" - INCLUDE:"+liquid.selection.include + " - EXCLUDE:"+liquid.selection.exclude );
         }
     },
     resumeNodeSelected:function(liquid) {

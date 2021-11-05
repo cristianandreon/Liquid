@@ -1765,14 +1765,11 @@ public class db {
                 String filterNextLogic = null;
                 boolean filterSensitiveCase = false;
 
-                try {
-                    filterTable = filtersCol.getString("table");
-                } catch (JSONException e) {
-                }
-                try {
-                    filterName = filtersCol.getString("name");
-                } catch (JSONException e) {
-                }
+                filterTable = filtersCol.has("table") ? filtersCol.getString("table") : filterTable;
+
+                filterName = filtersCol.has("name") ? filtersCol.getString("name") : filterName;
+                filterName = filtersCol.has("col") ? filtersCol.getString("col") : filterName;
+
                 try {
                     if (!filtersCol.isNull("value")) {
                         filterValue = filtersCol.getString("value");
@@ -1781,19 +1778,14 @@ public class db {
                     }
                 } catch (JSONException e) {
                 }
-                try {
-                    filterOp = filtersCol.getString("op");
-                } catch (JSONException e) {
-                }
-                try {
-                    filterLogic = filtersCol.getString("logic");
-                } catch (JSONException e) {
-                }
-                try {
-                    filterSensitiveCase = filtersCol.getBoolean("sensitiveCase");
-                } catch (JSONException e) {
-                }
-                
+
+                filterOp = filtersCol.has("op") ? filtersCol.getString("op") : filterOp;
+
+                filterLogic = filtersCol.has("logic") ? filtersCol.getString("logic") : filterLogic;
+
+                filterSensitiveCase = filtersCol.has("sensitiveCase") ? filtersCol.getBoolean("sensitiveCase") : filterSensitiveCase;
+
+
                 // is next operator a logic 'OR' ? .. start and opening parent
                 if(i+1 < filtersCols.length()) {
                     JSONObject filterNextCol = filtersCols.getJSONObject(i+1);
@@ -3673,7 +3665,10 @@ public class db {
                             try {
                                 keyValue = row.getString(tbl_wrk.tableJson.getString("primaryKey"));
                             } catch (Exception e) {
-                                keyValue = row.getString(tbl_wrk.tableJson.getString("primaryKeyField"));
+                                try {
+                                    keyValue = row.getString(tbl_wrk.tableJson.getString("primaryKeyField"));
+                                } catch (Exception e2) {
+                                }
                             }
                         }
                         
@@ -3688,7 +3683,26 @@ public class db {
                             try {
                                 value = row.getString(colName);
                             } catch (Exception e) {
-                                value = row.getString(field);
+                                try {
+                                    value = row.getString(field);
+                                } catch (Exception e2) {
+                                    // take from modifications
+                                    try {
+                                        if(row.has("fields")) {
+                                            JSONArray rowFields = row.getJSONArray("fields");
+                                            for (int iF=0; iF<rowFields.length(); iF++) {
+                                                JSONObject rowField = rowFields.getJSONObject(iF);
+                                                if(rowField.has(("field"))) {
+                                                    if(field.equalsIgnoreCase( rowField.getString("field") )) {
+                                                        value = rowField.getString("value");
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (Exception e3) {
+                                    }
+                                }
                             }
 
                             String[] colParts = colName.split("\\.");
@@ -3732,13 +3746,19 @@ public class db {
      * @return 
      */
 
-    public static Object new_bean(Object requestParam, workspace tblWrk, JSONObject rowData) {
+    public static Object new_bean(Object requestParam, workspace tblWrk, JSONObject rowData) throws JSONException {
         if(tblWrk != null) {
+            JSONArray rowsData = new JSONArray();
+            if(rowData.has("params")) {
+                JSONObject rowDataMod = com.liquid.event.getJSONObject(rowData.toString(), "modifications");
+                // Da modification a rowData .. a carico della ricevente
+                rowsData.put(rowDataMod);
+            } else {
+                rowsData.put(rowData);
+            }
             JSONArray foreignTablesJson = null;
             String filteringForeignTables = "*";
             ArrayList<String> runtimeForeignTables = null;
-            JSONArray rowsData = new JSONArray();
-            rowsData.put(rowData);
             Object[] result = create_beans_multilevel_class_internal( tblWrk, (JSONArray)rowsData, (JSONArray)foreignTablesJson, filteringForeignTables,
                     -1, 0, 
                     runtimeForeignTables);
@@ -3756,6 +3776,23 @@ public class db {
         return null;            
     }
 
+    /**
+     *
+     * @param requestParam
+     * @param tblWrk
+     * @param rowData
+     * @return
+     * @throws JSONException
+     */
+    public static Object new_bean(Object requestParam, workspace tblWrk, Object rowData) throws JSONException {
+        if(rowData instanceof String) {
+            return new_bean(requestParam, tblWrk, new JSONObject((String)rowData));
+        } else if(rowData instanceof JSONObject) {
+            return new_bean(requestParam, tblWrk, (JSONObject)rowData);
+        } else {
+            return null;
+        }
+    }
     
     
     /**

@@ -392,7 +392,9 @@ public class utility {
                         } else {
                             try {
                                 field.set(bean, Integer.parseInt((String) value));
-                            } catch(Exception e) {}
+                            } catch(Exception e) {
+                                Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
+                            }
                         }
                     } else if (value instanceof Object) {
                         field.set(bean, (Integer) value);
@@ -1157,6 +1159,18 @@ public class utility {
      */
     static public String transfer_result_to_results(String retValToTransfer, String retValTarget) throws JSONException {
         return event.transfer_result_to_results(retValToTransfer, retValTarget);
+    }
+
+
+    /**
+     * Get id of created record from result string
+     * @param result
+     * @return
+     * @throws JSONException
+     */
+    static public Object get_result_id(String result) throws JSONException {
+        JSONObject resultJson = new JSONObject(result);
+        return (Object)((JSONObject) resultJson.getJSONArray("tables").get(0)).getJSONArray("ids").get(0);
     }
 
 
