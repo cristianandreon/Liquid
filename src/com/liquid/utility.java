@@ -9,6 +9,7 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -57,6 +58,8 @@ import javax.net.ssl.X509TrustManager;
 
 // comment this for java <= 7
 import org.jsoup.Jsoup;
+
+import static com.liquid.workspace.GLLang;
 
 public class utility {
 
@@ -1083,6 +1086,45 @@ public class utility {
         }
         return true;
     }
+
+    static public boolean compare_json(Object jo1, Object jo2, ArrayList<String> excludingProps) throws JSONException {
+        if (jo1 == jo2) return true;
+        if (jo2 == null) return false;
+        if (jo1.getClass() != jo2.getClass()) {
+            return false;
+        }
+        if(jo1 instanceof JSONObject) {
+            JSONArray names = ((JSONObject)jo1).names();
+            for(int io=0; io<names.length(); io++) {
+                String name = names.getString(io);
+                if(!contains(excludingProps, name)){
+                    Object o1 = ((JSONObject)jo1).get(name);
+                    Object o2 = ((JSONObject)jo2).get(name);
+                    if(o1 instanceof JSONObject) {
+                        return compare_json((JSONObject)o1, (JSONObject)jo2, excludingProps);
+                    } else if(o1 instanceof JSONArray) {
+                        JSONArray oa1 = (JSONArray)o1;
+                        JSONArray oa2 = (JSONArray)o2;
+                        for(int j=0; j<oa1.length(); j++) {
+                            o1 = oa1.get(j);
+                            o2 = oa2.get(j);
+                            if(o1 instanceof JSONObject) {
+                                if(!compare_json((JSONObject)o1, (JSONObject)o2, excludingProps)){
+                                    return false;
+                                }
+                            }
+                        }
+                    } else {
+                        return o1.equals(o2);
+                    }
+                }
+            }
+        } else if(jo1 instanceof Object) {
+            return jo1.equals(jo2);
+        }
+        return false;
+    }
+
 
  static private String transfer_client_to_result(Object clientToTransfer, String result) throws JSONException {
         JSONObject retValJSON = new JSONObject(result);

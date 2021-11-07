@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -386,12 +387,16 @@ public class workspace {
      * @see workspace
      */
     static public String enableProjectMode(JspWriter out) {
+        return enableProjectMode(out,false);
+    }
+    static public String enableProjectMode(JspWriter out, boolean keepMetadata) {
         try {
             projectMode = true;
             genesisToken = login.getSaltString(32);
             // reset metadata cache
-            metadata.invalidateMetadata();
-
+            if(!keepMetadata) {
+                metadata.invalidateMetadata();
+            }
             if (out != null) {
                 out.print("\n<!-- LIQUID : Enabling Project Mode -->\n");
                 out.print("<script>");
@@ -400,9 +405,7 @@ public class workspace {
                 out.print("\n<!-- LIQUID : Editing support -->\n");
                 out.print("<script type=\"text/javascript\" src=\"/liquid/liquidEditing.js?version=<%=jssVersion%>\"></script>");
                 out.print("\n");
-
             }
-
             return genesisToken;
         } catch (IOException ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
@@ -757,8 +760,10 @@ public class workspace {
                             // owner is queue of Object
                             tblWorkspace.setOwner(owner);
 
-                            String warn = "Get controlId '" + controlId + "' from the cache...";
-                            System.out.println(warn);
+                            if(projectMode) {
+                                String warn = "LIQUID ProjectMode : Get controlId '" + controlId + "' from the cache...";
+                                System.out.println(warn);
+                            }
 
                             // script avvio client side o json
                             if ("json".equalsIgnoreCase(returnType)) {
@@ -2112,6 +2117,17 @@ public class workspace {
 
                     tblWorkspace.sourceTableJsonHash = sourceTableJsonHash;
 
+                    //
+                    // Modalita' progettazione :
+                    // Aggiunta del genesisToken  ( per abilitare la scrittura del controllo su file nel server )
+                    //
+                    if(tblWorkspace.tableJson.has("trackFileName")) {
+                        boolean trackFileName = tblWorkspace.tableJson.getBoolean("trackFileName");
+                        if (trackFileName) {
+                            tblWorkspace.tableJson.put("token", genesisToken);
+                        }
+                    }
+
                     if (tblWorkspace.token == null || tblWorkspace.token.isEmpty()) {
                         tblWorkspace.token = token;
                         // set thre token in the json
@@ -2122,7 +2138,9 @@ public class workspace {
 
                     if (!tblWorkspace.tableJson.equals(tableJson)) {
                         if (tblWorkspace.tableJson != null) {
-                            System.out.println("WARNING : Overwrited Configuration of control : " + controlId);
+                            if(!utility.compare_json(tblWorkspace.tableJson, tableJson, new ArrayList<String>( Arrays.asList("cypher","token" ) ))) {
+                                System.out.println("WARNING : Overwrited Configuration of control : " + controlId);
+                            }
                         }
 
                         // Keep server side define (es.: query / connectionURL)
@@ -2860,9 +2878,9 @@ public class workspace {
                     try {
                         JSONObject json = new JSONObject(fileContent);
                         if (json != null) {
+                            json.put("trackFileName", true);
                             json.put("sourceFileName", utility.base64Encode(fileName));
                             json.put("sourceFullFileName", utility.base64Encode(foundFileName));
-                            json.put("token", genesisToken);
                             fileContent = json.toString();
                         }
                     } catch (JSONException ex) {

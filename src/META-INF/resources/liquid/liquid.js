@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.68
+// Liquid ver.1.69
 //
-//  First update 04-01-2020 - Last update  05-11-2021
+//  First update 04-01-2020 - Last update  07-11-2021
 //
 //  TODO : see trello.com
 //
@@ -91,6 +91,9 @@ class LiquidCtrl {
         } else {
             this.outDivId = outDivObjOrId;
             this.outDivObj = document.getElementById(this.outDivId);
+            if(!this.outDivObj) {
+                console.error("ERROR: creating control "+outDivObjOrId+": html node not found ... please check node (with id=\""+outDivObjOrId+"\") exist in the DOM");
+            }
         }
 
         // help debugger
@@ -1265,8 +1268,7 @@ class LiquidCtrl {
                     this.dockerTbl.cellSpacing = 0;
                     this.dockerTbl.id = controlId + ".docker";
                     this.dockerTbl.className = "liquidDocker";
-                    // this.dockerTbl.style.height = "100%";
-                    
+
                     var tbody = document.createElement("tbody");
                     var tr = document.createElement("tr");
                     var td = document.createElement("td");
@@ -1353,13 +1355,13 @@ class LiquidCtrl {
                             ,ghost: true 
                             ,resize: function( event, ui ) {
                                 thisLiquid.dockerTblLeft.style.width = ui.size.width + "px";
-                                thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
-                                // thisLiquid.dockerTblCenter.style.height = Math.max(thisLiquid.dockerTblLeft.clientHeight, thisLiquid.dockerTblRight.clientHeight) + "px";
+                                // thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                thisLiquid.dockerTblCenter.style.width = "calc(100% - "+(thisLiquid.dockerTblRight.offsetWidth + thisLiquid.dockerTblLeft.offsetWidth) + "px)";
                             }
                             ,stop: function( event, ui ) {
                                 if(thisLiquid.dockerTblLeft.offsetWidth <= 10) thisLiquid.dockerTblLeft.style.width = "2px";
-                                thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
-                                // thisLiquid.dockerTblCenter.style.height = Math.max(thisLiquid.dockerTblLeft.clientHeight, thisLiquid.dockerTblRight.clientHeight) + "px";
+                                // thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                thisLiquid.dockerTblCenter.style.width = "calc(100% - "+(thisLiquid.dockerTblRight.offsetWidth + thisLiquid.dockerTblLeft.offsetWidth) + "px)";
                             }
                         } );
                     }
@@ -1370,14 +1372,14 @@ class LiquidCtrl {
                             ,ghost: true 
                             ,resize: function( event, ui ) {
                                 thisLiquid.dockerTblRight.style.width = ui.size.width + "px";
-                                thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
-                                // thisLiquid.dockerTblCenter.style.height = Math.min(thisLiquid.dockerTblLeft.clientHeight, thisLiquid.dockerTblRight.clientHeight) + "px";
+                                // thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                thisLiquid.dockerTblCenter.style.width = "calc(100% - "+(thisLiquid.dockerTblRight.offsetWidth + thisLiquid.dockerTblLeft.offsetWidth) + "px)";
                             }
                             ,stop: function( event, ui ) {
                                 if(thisLiquid.dockerTblRight.offsetWidth <= 10) thisLiquid.dockerTblRight.style.width = "2px";
                                 thisLiquid.dockerTblRight.style.left = '';
-                                thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
-                                // thisLiquid.dockerTblCenter.style.height = Math.min(thisLiquid.dockerTblLeft.clientHeight, thisLiquid.dockerTblRight.clientHeight) + "px";
+                                // thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
+                                thisLiquid.dockerTblCenter.style.width = "calc(100% - "+(thisLiquid.dockerTblRight.offsetWidth + thisLiquid.dockerTblLeft.offsetWidth) + "px)";
                             }
                         } );
                     }
@@ -1614,7 +1616,10 @@ class LiquidCtrl {
                                 if(typeof this.tableJson.height !== 'undefined') {
                                     this.aggridContainerObj.style.height = Liquid.getCSSDim(this.tableJson.height);
                                 } else {
-                                    if(this.outDivObj) this.aggridContainerObj.style.height = this.outDivObj.offsetWidth / 2.0;
+                                    if(this.outDivObj) {
+                                        // this.aggridContainerObj.style.height = this.outDivObj.offsetWidth / 2.0;
+                                        this.aggridContainerObj.style.height = $(this.outDivObj).height();
+                                    }
                                 }                                
                             }
                         }
@@ -1652,8 +1657,8 @@ class LiquidCtrl {
                                 + "<div class=\"liquidNavPages\">";
                         if(this.pageSize>0) {
                             navHTML += "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".first\" title=\""+Liquid.paginationTitleFirst+"\" onclick=\"Liquid.onBtFirst(this)\"> &#x21f1; </a>"
-                                    + "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".prev\" title=\""+Liquid.paginationTitleNext+"\" onclick=\"Liquid.onBtPrevious(this)\"> &#x2191 </a>"
-                                    + "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".next\" title=\""+Liquid.paginationTitlePrevious+"\" onclick=\"Liquid.onBtNext(this)\"> &#x2193; </a>"
+                                    + "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".prev\" title=\""+Liquid.paginationTitlePrevious+"\" onclick=\"Liquid.onBtPrevious(this)\"> &#x2191 </a>"
+                                    + "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".next\" title=\""+Liquid.paginationTitleNext+"\" onclick=\"Liquid.onBtNext(this)\"> &#x2193; </a>"
                                     + "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".last\" title=\""+Liquid.paginationTitleLast+"\" onclick=\"Liquid.onBtLast(this)\"> &#x21f2; </a>";
                         }
                         navHTML += "</div>"
@@ -2685,9 +2690,11 @@ var Liquid = {
                     var duplicateFound = false;
                     if(tableJson.columns[i].name.toLowerCase() === tableJson.columns[j].name.toLowerCase()) {
                         if(isDef(tableJson.columns[i].label) && isDef(tableJson.columns[j].label)) {
-                            if(tableJson.columns[i].label.toLowerCase() === tableJson.columns[j].label.toLowerCase()) {
+                            if (tableJson.columns[i].label.toLowerCase() === tableJson.columns[j].label.toLowerCase()) {
                                 duplicateFound = true;
                             }
+                        } else if(isDef(tableJson.columns[i].label) && !isDef(tableJson.columns[j].label)) {
+                        } else if(!isDef(tableJson.columns[i].label) && isDef(tableJson.columns[j].label)) {
                         } else {
                             duplicateFound = true;
                         }
@@ -8899,7 +8906,12 @@ var Liquid = {
 
                                 // set isUpdating/isAdding flag in the layouts row
                                 if(command.name === "update" || command.name === "insert") {
-                                    var templateIndex = 2;
+                                    var templateIndex = 0;
+                                    if(command.name === "update") {
+                                        templateIndex = 2;
+                                    } else if(command.name === "insert") {
+                                        templateIndex = 1;
+                                    }
                                     for(var il = 0; il < liquid.tableJson.layouts.length; il++) {
                                         var layout = liquid.tableJson.layouts[il];
                                         if(isDef(layout.templateRows[templateIndex].source)) {
@@ -9474,7 +9486,8 @@ var Liquid = {
                                       
                     liquid.referenceHeightObj = liquid.outDivObj;
                     if(liquid.referenceHeightObj) {
-                        referenceHeight = liquid.referenceHeightObj.clientHeight;
+                        // referenceHeight = liquid.referenceHeightObj.clientHeight;
+                        referenceHeight = $(liquid.referenceHeightObj).height();
                         if(referenceHeight <= 0) {
                             if(!liquid.isResizing) {
 
@@ -9494,7 +9507,8 @@ var Liquid = {
                                     node = node.parentNode;
                                     if(node.nodeName === "HTML") break;
                                 }
-                                referenceHeight = liquid.referenceHeightObj.clientHeight;
+                                // referenceHeight = liquid.referenceHeightObj.clientHeight;
+                                referenceHeight = $(liquid.referenceHeightObj).height();
                                 for(var inode=0; inode<nodesVisibilityFitted.length; inode++) {
                                     nodesVisibilityFitted[inode].node.style.display = 'none';
                                     nodesVisibilityFitted[inode].node.style.visibility = nodesVisibilityFitted[inode].visibility;
@@ -9512,7 +9526,8 @@ var Liquid = {
                         lastDisplay = liquid.referenceHeightObj.style.display;
                         lastPos = liquid.referenceHeightObj.style.position;
                         lastLeft = liquid.referenceHeightObj.style.left;
-                        if(liquid.referenceHeightObj.clientHeight <= 0) {
+                        referenceHeight = $(liquid.referenceHeightObj).height();
+                        if(referenceHeight <= 0) {
                             liquid.referenceHeightObj.style.display = "block";
                             liquid.referenceHeightObj.style.position = "absolute";
                             liquid.referenceHeightObj.style.left = "+9999em";
@@ -9633,7 +9648,8 @@ var Liquid = {
                 if(liquid.dockerTblCenter) {
                     if(liquid.mode != 'lookup') {
                         if(liquid.outDivObj.offsetWidth > 0) {
-                            liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                            // liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                            liquid.dockerTblCenter.style.width = "calc(100% - "+(liquid.dockerTblRight.offsetWidth + liquid.dockerTblLeft.offsetWidth) + "px)";
                         }
                     }
                 }
@@ -10886,7 +10902,7 @@ var Liquid = {
                                             try {
                                                 if(xhr.responseText) {
                                                     layout.containerObj.innerHTML = xhr.responseText;
-                                                    var scripts = null;
+                                                    var scripts = [];
                                                     var height = Liquid.getItemsMaxHeight(layout.containerObj);
                                                     var rootObj = document.createElement("div");
                                                     rootObj.className = "liquidLayoutRowContainerDiv";
@@ -10894,19 +10910,10 @@ var Liquid = {
                                                     while(layout.containerObj.childNodes.length) {
                                                         rootObj.appendChild(layout.containerObj.childNodes[0]);
                                                     }
-                                                    for(var inode=0; inode<rootObj.childNodes.length; inode++) {
-                                                        var child = rootObj.childNodes[inode];
-                                                        if (nodeName(child, "script") &&
-                                                            (!child.type || child.type.toLowerCase() === "text/javascript")) {
-                                                            if(!scripts) scripts = [];
-                                                            scripts.push(child.text);
-                                                            try {
-                                                                eval(child.text);
-                                                            } catch(e) { console.error(e); }
-                                                        }
-                                                    }
+                                                    Liquid.searchForScripts(rootObj, scripts);
+                                                    if(!scripts.length) scripts = null;
                                                     layout.pageLoaded = true;
-                                                    layout.templateRows.push( { key:sources[is].key, templateRow:rootObj, isAutoInsert:isAutoInsert, isFormX:isFormX, mode:mode, source:source, height:height, scripts:scripts } );
+                                                    layout.templateRows.push( { key:sources[is].key, templateRow:rootObj, isAutoInsert:isAutoInsert, isFormX:isFormX, mode:mode, source:source, height:height, scripts:scripts, scriptsToExec:(scripts?true:false) } );
                                                     layout.containerObj.innerHTML = "";
                                                 } else console.error("ERROR: No response reading :"+jsonURL+" of controlId:"+liquid.controlId);
                                             } catch (e) { console.error(e); }
@@ -11133,10 +11140,18 @@ var Liquid = {
 
                         if(isInserting) {
                             templateHeader = layout.templateRows[5];
+                            if(!templateHeader)
+                                templateHeader = layout.templateRows[3];
                             templateFooter = layout.templateRows[6];
+                            if(!templateFooter)
+                                templateFooter = layout.templateRows[4];
                         } else if(isUpdating) {
                             templateHeader = layout.templateRows[7];
+                            if(!templateHeader)
+                                templateHeader = layout.templateRows[3];
                             templateFooter = layout.templateRows[8];
+                            if(!templateFooter)
+                                templateFooter = layout.templateRows[4];
                         } else {
                             templateHeader = layout.templateRows[3];
                             templateFooter = layout.templateRows[4];
@@ -11175,25 +11190,28 @@ var Liquid = {
                             // scroll listner
                             if(layout.bodyContainerObj.addEventListener) { layout.bodyContainerObj.addEventListener('scroll', Liquid.onLayourScroll); } else { layout.bodyContainerObj.attachEvent('scroll', Liquid.onLayourScroll); }
                         }
-                    }                    
+                    }
                     
                     var nRows = 0;
                     if(typeof layout.nRows !== 'undefined' && (layout.nRows === 0 || layout.nRows === 'auto')) {
                         if(layout.bodyContainerObj && layout.bodyContainerObj.offsetWidth > 0 && layout.bodyContainerObj.offsetHeight > 0) {
                             layout.itemsMaxHeight = layout.templateRows[0].height;
-                            if(layout.itemsMaxHeight > 0)
-                                if(layout.overflow === 'clamp') {
-                                    layout.nRows = Math.floor(layout.bodyContainerObj.clientHeight / layout.itemsMaxHeight);
-                                    if(layout.nRows <= 0) layout.nRows = 1;
-                                    layout.itemsMaxHeight = layout.bodyContainerObj.clientHeight / layout.nRows;
+                            var referenceHeight = $(layout.bodyContainerObj).height();
+                            if (layout.itemsMaxHeight > 0) {
+                                if (layout.overflow === 'clamp') {
+                                    layout.nRows = Math.floor(referenceHeight / layout.itemsMaxHeight);
+                                    if (layout.nRows <= 0) layout.nRows = 1;
+                                    layout.itemsMaxHeight = referenceHeight / layout.nRows;
                                 } else {
-                                    layout.nRows = Math.round(layout.bodyContainerObj.clientHeight / layout.itemsMaxHeight);
+                                    layout.nRows = Math.round(referenceHeight / layout.itemsMaxHeight);
                                 }
-                            else
+                            } else {
                                 layout.nRows = 1;
-                            if(layout.nRows < 1)
+                            }
+                            if(layout.nRows < 1) {
                                 layout.nRows = 1;
-                            layout.itemsMaxHeight = layout.bodyContainerObj.clientHeight / layout.nRows;
+                            }
+                            layout.itemsMaxHeight = referenceHeight / layout.nRows;
                         } else {
                             /// setTimeout(function(){ Liquid.linkLayoutToFields(liquid, layout, layout.bodyContainerObj, bSetup); }, 3000);
                             return;
@@ -11226,8 +11244,9 @@ var Liquid = {
                                 return;
                             }
                         }
+                        var referenceHeight = $(layout.bodyContainerObj).height();
                         if(layout.nRows > 0) {
-                            layout.itemsMaxHeight = layout.bodyContainerObj.clientHeight / nRows;
+                            layout.itemsMaxHeight = referenceHeight / nRows;
                         } else {
                             layout.itemsMaxHeight = "auto";
                         }
@@ -11287,10 +11306,12 @@ var Liquid = {
 
                     if(updateBodyHeight) {
                         layout.bodyContainerObj.style.height = "calc(100% - "+(layout.headerContainerObj.offsetHeight+layout.footerContainerObj.offsetHeight)+"px)";
+                        layout.bodyContainerObj.style.minHeight = "calc(100% - "+(layout.headerContainerObj.offsetHeight+layout.footerContainerObj.offsetHeight)+"px)";
+                        layout.itemsMaxHeight = layout.itemsMaxHeight - (layout.headerContainerObj.offsetHeight+layout.footerContainerObj.offsetHeight) / nRows;
                     }
-                    
-                    
-                    // Duplicate body contents
+                    //
+                    // Clone body template contents to rows
+                    //
                     for(var ir=0; ir<nRows; ir++) {
                         var templateRowSourceResult = Liquid.getTemplateRowSource(liquid, layout, layout.baseIndex1B-1+ir );
                         var templateRow = Liquid.getTemplateRow(liquid, layout, layout.baseIndex1B-1+ir );
@@ -11351,10 +11372,11 @@ var Liquid = {
                             }
                         }
                     }
-                    
+
                     if(layout.nRows <= 0) { // all rows : baseIndex1B = 1
                         layout.baseIndex1B = 1;
-                    } else { // nRows from cur nodes
+                    } else {
+                        // nRows from cur nodes
                         layout.baseIndex1B = Liquid.getNodeIndex(liquid, layout.firstNodeId);
                     }
                     
@@ -11372,8 +11394,9 @@ var Liquid = {
                             layout.rowsContainer[ir].containerObj.style.filter = "";
                             layout.rowsContainer[ir].containerObj.disabled = false;
                             layout.rowsContainer[ir].containerObj.style.pointerEvents = '';
-                            
+                            //
                             // Firing event onRowRendering
+                            //
                             Liquid.onEvent(layout.rowsContainer[ir].containerObj, "onRowRendering", { 
                                 layout:layout, 
                                 layoutRow:(ir+1), 
@@ -11404,12 +11427,20 @@ var Liquid = {
                                 }
                             }
                         }
-                    }                    
+                    }
                 }
                 layout.pendingLink = false;
                 layout.pendingRefresh = false;                
             }
         }
+
+
+        // esecuzione sripts header / body / footer
+        Liquid.executeTemplateRowScript(liquid, layout, 'header' );
+        for(var ir=0; ir<nRows; ir++) {
+            Liquid.executeTemplateRowScript(liquid, layout, layout.baseIndex1B-1+ir );
+        }
+        Liquid.executeTemplateRowScript(liquid, layout, 'footer' );
 
         var setMode = true;
         if(slideDownContainerObjs) {
@@ -11546,28 +11577,75 @@ var Liquid = {
         }
         return [ null, -1 ];
     },
-    getTemplateRowScripts:function (liquid, layout, ir) {
+    getTemplateRowData:function (liquid, layout, ir) {
         if(liquid) {
             if(layout) {
-                var nodes = null;
-                try { nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren; } catch(e) {}
-                var isAddingNode = Liquid.isAddingNode(liquid, ir, nodes, true);
-                if(isAddingNode)
-                    if(layout.templateRows.length > 1)
-                        if(layout.templateRows[1])
-                            if(layout.templateRows[1].script)
-                                return layout.templateRows[1].scripts;
+                if(ir === 'header') {
+                    if (layout.templateRows)
+                        if (layout.templateRows[3])
+                            return layout.templateRows[3];
 
-                if(isDef(layout.rowsContainer))
-                    if(ir < layout.rowsContainer.length)
-                        if(layout.rowsContainer[ir])
-                            if(layout.rowsContainer[ir].isUpdating)
-                                return layout.templateRows[2].scripts;
+                } else if(ir === 'footer') {
+                    if (layout.templateRows)
+                        if (layout.templateRows[4])
+                            return layout.templateRows[4];
 
-                return layout.templateRows[0].scripts;
+                } else {
+                    var nodes = null;
+                    try {
+                        nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                    } catch (e) {
+                    }
+                    var isAddingNode = Liquid.isAddingNode(liquid, ir, nodes, true);
+                    if (isAddingNode)
+                        if (layout.templateRows.length > 1)
+                            if (layout.templateRows[1])
+                                return layout.templateRows[1];
+
+                    if (isDef(layout.rowsContainer))
+                        if (ir < layout.rowsContainer.length)
+                            if (layout.rowsContainer[ir])
+                                if (layout.rowsContainer[ir].isUpdating)
+                                    return layout.templateRows[2];
+
+                    return layout.templateRows[0];
+                }
             }
         }
         return null;
+    },
+    executeTemplateRowScript:function(liquid, layout, ir ) {
+        var templateRowData = Liquid.getTemplateRowData(liquid, layout, ir);
+        if (templateRowData) {
+            if (templateRowData.scripts) {
+                if (templateRowData.scriptsToExec) {
+                    for (var is = 0; is < templateRowData.scripts.length; is++) {
+                        try {
+                            eval(templateRowData.scripts[is]);
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                    templateRowData.scriptsToExec = false;
+                }
+            }
+        }
+    },
+    searchForScripts:function(rootObj, scripts) {
+        var found = 0;
+        for(var inode=0; inode<rootObj.childNodes.length; inode++) {
+            var child = rootObj.childNodes[inode];
+            if (nodeName(child, "script") && (!child.type || child.type.toLowerCase() === "text/javascript")) {
+                if(scripts) scripts.push(child.text);
+                found++;
+            }
+            if(child.childNodes) {
+                if(child.childNodes.length) {
+                    found += Liquid.searchForScripts(child, scripts);
+                }
+            }
+        }
+        return found;
     },
     setLayoutField:function(liquid, layout, obj, iRow, bSetup) {
         if(obj) {
@@ -13559,7 +13637,8 @@ var Liquid = {
                 }
                 // restore center docker
                 if(liquid.outDivObj.offsetWidth > 0) {
-                    liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                    // liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                    liquid.dockerTblCenter.style.width = "calc(100% - "+(liquid.dockerTblRight.offsetWidth + liquid.dockerTblLeft.offsetWidth) + "px)";
                 }
                 liquid.aggridContainerObj.style.height = liquid.aggridContainerLastHeight;
                 liquid.aggridContainerDocked = false;
@@ -13791,7 +13870,12 @@ var Liquid = {
                 }
             }
         }
-    },            
+    },
+    reloadAll:function(obj, event, reason) {
+        var liquid = Liquid.getLiquid(obj);
+        Liquid.loadData(liquid, null, "reloadAll");
+        Liquid.refreshAll(liquid, event, reason);
+    },
     refreshAll:function(obj, event, reason) {
         var liquid = Liquid.getLiquid(obj);
         Liquid.refreshGrids(liquid, event ? event.data : null, reason);
