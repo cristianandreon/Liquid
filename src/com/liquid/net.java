@@ -150,7 +150,10 @@ public class net {
 
             outString.set(0, resultString.toString());
 
-            System.out.println("Response Code : " + responseCode + " size: " + resultString.length() + " time:" + (float) (System.currentTimeMillis() - lastTime) / 1000.0f + " sec");
+            String sInfo = "Response Code : " + responseCode + " size: " + resultString.length() + " time:" + (float) (System.currentTimeMillis() - lastTime) / 1000.0f + " sec";
+            Logger.getLogger(net.class.getName()).log(Level.INFO, sInfo);
+            // System.out.println(sInfo);
+
 
         } catch (MalformedURLException ex) {
             Logger.getLogger(net.class.getName()).log(Level.SEVERE, null, ex);
