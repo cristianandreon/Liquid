@@ -10843,7 +10843,13 @@ var Liquid = {
     },
     getLayoutCoords:function(liquid, obj) {
         if(liquid && obj) {
-            var nameItems = obj instanceof HTMLElement ? obj.id.split(".") : obj.split(".");
+            var nameItems = null;
+            if(obj instanceof HTMLElement) {
+                var objId = obj.getAttribute('newid');
+                if(objId) nameItems = objId.split(".");
+            } else {
+                nameItems = obj.split(".");
+            }
             if(nameItems && nameItems.length > 2) {
                 if(!isNaN(nameItems[2])) {
                     var layoutIndex = nameItems[2] - 1;
@@ -11727,27 +11733,42 @@ var Liquid = {
                     
                     if(linkCount) {
                         if(linkeCol) {
+                            var prevId = obj.getAttribute('previd', obj.id);
                             controlName = "col." + linkeCol.field + ".row." + (iRow + 1);
+
                             newId = liquid.controlId + ".layout." + layoutIndex1B + "." + controlName;
-                            obj.setAttribute('previd', obj.id);
+
+                            obj.setAttribute('previd', (obj.id ? obj.id : "unk"));
+                            obj.setAttribute('newid', newId);
                             obj.setAttribute('linkedfield', linkeCol.field);
                             obj.setAttribute('linkedname', linkeCol.name);
                             obj.setAttribute('linkedrow1b', iRow + 1);
-                            obj.onchange = function (event) {
-                                Liquid.onLayoutFieldChange(event);
-                            };
-                            obj.onclick = function (event) {
-                                Liquid.onLayoutFieldClick(event);
-                            };                            
+
+                            if(!prevId) {
+                                obj.addEventListener('change', Liquid.onLayoutFieldChange);
+                                // obj.onchange = function (event) { Liquid.onLayoutFieldChange(event); };
+
+                                if(obj.onclick) console.info("onclick:"+obj.onclick);
+                                // obj.addEventListener('click', Liquid.onLayoutFieldClick);
+
+                                var prevFunc = (obj.onclick ? obj.onclick : null);
+                                obj.onclick = function (event) { Liquid.onLayoutFieldClick(event); if (prevFunc) prevFunc(event); }
+                            }
+
                             var linkedObj = obj;
                             var linkedObjInput = null;
                             var linkedObjSource = null;
                             var linkedObjReset = null;
                             var linkedObjReload = null;
                             var otherObj = null;
-                            while ((otherObj = win.document.getElementById(newId)) !== null)
-                                newId += ".copy";
-                            obj.id = newId;
+
+                            if(layout.nRows > 1) {
+                                if (!obj.id) {
+                                    while ((otherObj = win.document.getElementById(newId)) !== null)
+                                        newId += ".copy";
+                                    if (obj.id) obj.id = newId;
+                                }
+                            }
                             
                             obj.title = ""+linkeCol.name+"";
                             
@@ -11966,20 +11987,25 @@ var Liquid = {
                             if(obj) {
                                 // Append only record link
                                 if(!isDef(layout.noneCounter)) layout.noneCounter = 1;
+                                var prevId = obj.getAttribute('previd', obj.id);
+
                                 obj.setAttribute('linkedrow1b', iRow + 1);
                                 controlName = "col." + "none" + (layout.noneCounter++)+ ".row." + (iRow + 1);
                                 newId = liquid.controlId + ".layout." + layoutIndex1B + "." + controlName;
+                                obj.setAttribute('previd', prevId);
+                                obj.setAttribute('newid', newId);
                                 obj.setAttribute('linkedid', newId);
                                 obj.setAttribute('name', obj.id);
-                                obj.id = newId;                                
-                                
-                                if(!obj.id) {
-                                    obj.id = newId;
+
+                                if(layout.nRows > 1) {
+                                    if (!obj.id) obj.id = newId;
                                 }
-                                if(!obj.onclick) {
-                                    obj.onclick = function (event) {
-                                        Liquid.onLayoutFieldClick(event);
-                                    };                                    
+
+                                if(!prevId) {
+                                    if(obj.onclick) console.info("onclick:"+obj.onclick);
+                                    // obj.addEventListener('click', Liquid.onLayoutFieldClick);
+                                    var prevFunc = (obj.onclick ? obj.onclick : null);
+                                    obj.onclick = function (event) { Liquid.onLayoutFieldClick(event); if (prevFunc) prevFunc(event); }
                                 }
                             }
                         }
@@ -14367,7 +14393,8 @@ var Liquid = {
             }
             if(data) {
                 if(col) {
-                    if(isDef(newValue)) {                            
+                    if(isDef(newValue)) {
+                        data[col.field] = newValue;
                     }
                     return data[col.field];
                 } else {
@@ -14377,8 +14404,10 @@ var Liquid = {
         }
     },
     getField:function(liquidControlOrId, field) {
+        Liquid.fieldService(liquidControlOrId, field);
     },
     setField:function(liquidControlOrId, field, value) {
+        Liquid.fieldService(liquidControlOrId, field, value);
     },
     insertRow:function(liquidControlOrId) {
         if(liquidControlOrId) {
@@ -14543,6 +14572,27 @@ var Liquid = {
                     if(foundRow1B) {
                         return foundRow1B;
                     }
+                }
+            }
+        }
+    },
+    insertRowByData:function(obj, columns, rows) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            Liquid.pasteFromClipBoradExec(liquid, liquid.controlId, btoa(columns), btoa(rows));
+        }
+    },
+    insertRowByControl:function(obj, targetObj) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var targetLquid = Liquid.getLiquid(targetObj);
+            if(liquid) {
+                var selNodes = Liquid.getCurNodes(liquid);
+                var columns = [];
+                var rows = [];
+                if(selNodes) {
+                    // if (Liquid.copyToClipBorad(liquid))
+                    Liquid.pasteFromClipBoradExec(liquid, targetLquid.controlId, btoa(columns), btoa(rows));
                 }
             }
         }
