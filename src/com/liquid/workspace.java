@@ -762,7 +762,7 @@ public class workspace {
 
                             if(projectMode) {
                                 String warn = "LIQUID ProjectMode : Get controlId '" + controlId + "' from the cache...";
-                                System.out.println(warn);
+                                // System.out.println(warn);
                             }
 
                             // script avvio client side o json

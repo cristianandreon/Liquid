@@ -609,6 +609,8 @@ public class metadata {
             // SMALLINT	short	Integer
             // INTEGER	int	Integer
             return Integer.class;
+        } else if(type == -7) {
+            return Boolean.class;
         } else if(type == -5) {
             // BIGINT	long	Long     
             return Long.class;
@@ -626,8 +628,12 @@ public class metadata {
             return java.sql.Timestamp.class;
         } else if(type == 91) {
             return java.sql.Date.class;
+        } else if(type == 12) {
+            return String.class;
+        } else {
+            System.err.println("getJavaClass() : undetected type:"+type);
+            return String.class;
         }
-        return String.class;
     }
 
         

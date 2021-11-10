@@ -1212,7 +1212,14 @@ public class utility {
      */
     static public Object get_result_id(String result) throws JSONException {
         JSONObject resultJson = new JSONObject(result);
-        return (Object)((JSONObject) resultJson.getJSONArray("tables").get(0)).getJSONArray("ids").get(0);
+        JSONArray tbls = (JSONArray)resultJson.getJSONArray("tables");
+        if(tbls != null && tbls.length() > 0) {
+            JSONArray ids = ((JSONObject)tbls.get(0)).getJSONArray("ids");
+            if(ids != null && ids.length() > 0) {
+                return ids.get(0);
+            }
+        }
+        return null;
     }
 
 

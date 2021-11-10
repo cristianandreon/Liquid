@@ -3680,11 +3680,11 @@ public class db {
                         for (int ic = 0; ic < cols.length(); ic++) {
                             String colName = cols.getJSONObject(ic).has("runtimeName") ? cols.getJSONObject(ic).getString("runtimeName") : cols.getJSONObject(ic).getString("name");
                             String field = null, value = null;
+                            boolean autoIncString = cols.getJSONObject(ic).has("autoIncString") ? cols.getJSONObject(ic).getBoolean("autoIncString") : false;
 
                             try {
                                 field = cols.getJSONObject(ic).getString("field");
-                            } catch (Exception e) {
-                                /* value = String.valueOf(ic+1); */ }
+                            } catch (Exception e) { /* value = String.valueOf(ic+1); */ }
                             try {
                                 value = row.getString(colName);
                             } catch (Exception e) {
@@ -3718,17 +3718,19 @@ public class db {
                                     colName = colName.replaceAll("\\.", "\\$");
                                 }
                             }
-                            try {
-                                utility.set(obj, colName, value);
-                            } catch (Throwable th) {
-                                error = "[ ERROR setting " + colName + " : " + th.getLocalizedMessage() + "]";
-                                Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
-                                bResult = false;
-                            }
-                            try {                               
-                                utility.set(obj, colName + "$Changed", false);
-                            } catch (Throwable th) {
-                                error = "[ ERROR setting " + colName + "$Changed" + " : " + th.getLocalizedMessage() + "]";
+                            if(!autoIncString) {
+                                try {
+                                    utility.set(obj, colName, value);
+                                } catch (Throwable th) {
+                                    error = "[ ERROR setting " + colName + " : " + th.getLocalizedMessage() + "]";
+                                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
+                                    bResult = false;
+                                }
+                                try {
+                                    utility.set(obj, colName + "$Changed", false);
+                                } catch (Throwable th) {
+                                    error = "[ ERROR setting " + colName + "$Changed" + " : " + th.getLocalizedMessage() + "]";
+                                }
                             }
                         }
                     }
@@ -5824,8 +5826,14 @@ public class db {
             }
             valueType = colTypes; // is a number
             
-        } else if (colTypes == -7) { // 
-            value = value.isEmpty() ? null : value;
+        } else if (colTypes == -7) { // boolean
+            if(value == null || value.isEmpty() || "0".equalsIgnoreCase(value) || "n".equalsIgnoreCase(value)  || "off".equalsIgnoreCase(value)) {
+                value = "false";
+            } else if("1".equalsIgnoreCase(value) || "y".equalsIgnoreCase(value)  || "on".equalsIgnoreCase(value)) {
+                value = "true";
+            } else {
+                value = "false";
+            }
         }
 
         return new Object[]{value, valueType};

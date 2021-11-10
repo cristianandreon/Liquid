@@ -211,6 +211,9 @@ public class TransactionList {
                     } else if (value_type == -5) {
                         // bigint number
                         stmt.setLong(ip, Long.parseLong(params.get(ic)));
+                    } else if (value_type == -7) {
+                        // boolean
+                        stmt.setBoolean(ip, "true".equalsIgnoreCase(params.get(ic)) ? true : false);
                     } else {
                         // unknown : srting
                         stmt.setString(ip, params.get(ic));
