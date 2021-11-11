@@ -605,7 +605,7 @@ public class metadata {
      * @return the CLass mathcing the type
      */
     static public Class getJavaClass(int type) {                                               
-        if(type == 2 || type == 4 || type == -5 || type == -6 || type == 5 || type == -7) {
+        if(type == 2 || type == 4 || type == -5 || type == -6 || type == 5) {
             // SMALLINT	short	Integer
             // INTEGER	int	Integer
             return Integer.class;

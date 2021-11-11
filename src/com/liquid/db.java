@@ -5,7 +5,6 @@
 package com.liquid;
 
 import static com.liquid.event.forwardEvent;
-import static com.liquid.login.schema;
 import static com.liquid.utility.searchProperty;
 import static com.liquid.workspace.check_database_definition;
 import com.liquid.metadata.ForeignKey;
@@ -16,7 +15,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -3431,10 +3429,11 @@ public class db {
                         // String primaryKeyValue = null;
 
                         // Valorizza le proprietà corrispondenti ai campi
-                        Object[] resSet = set_bean_by_json_resultset(obj, tbl_wrk, row);
+                        Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row);
                         if (resSet != null) {
                             if (!(boolean) resSet[0]) {
                                 errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[2]) + "]";
+                                res = -1;
                             }
                             
                             //
@@ -3444,7 +3443,8 @@ public class db {
                             utility.set(obj, "$tableKey", (String)(table+"@"+primaryKeyValue) );
                             
                         } else {
-                            errors += "[Nulll result setting row " + (ir + 1) + "/" + (rowsJson.length()) + "]";
+                            errors += "[Null result setting row " + (ir + 1) + "/" + (rowsJson.length()) + "]";
+                            res = -1;
                         }
 
                         //
@@ -3654,7 +3654,7 @@ public class db {
      * @param row
      * @return Object [] { bResult, keyValue, error }
      */
-    static public Object[] set_bean_by_json_resultset(Object obj, workspace tbl_wrk, JSONObject row) {
+    static public Object[] set_bean_by_json_row_data(Object obj, workspace tbl_wrk, JSONObject row) {
         boolean bResult = false;
         String keyValue = null;
         String error = "";
@@ -3679,17 +3679,18 @@ public class db {
                         
                         for (int ic = 0; ic < cols.length(); ic++) {
                             String colName = cols.getJSONObject(ic).has("runtimeName") ? cols.getJSONObject(ic).getString("runtimeName") : cols.getJSONObject(ic).getString("name");
-                            String field = null, value = null;
                             boolean autoIncString = cols.getJSONObject(ic).has("autoIncString") ? cols.getJSONObject(ic).getBoolean("autoIncString") : false;
+                            String field = null;
+                            Object value = null;
 
                             try {
                                 field = cols.getJSONObject(ic).getString("field");
                             } catch (Exception e) { /* value = String.valueOf(ic+1); */ }
                             try {
-                                value = row.getString(colName);
+                                value = row.get(colName);
                             } catch (Exception e) {
                                 try {
-                                    value = row.getString(field);
+                                    value = row.get(field);
                                 } catch (Exception e2) {
                                     // take from modifications
                                     try {
@@ -3757,9 +3758,17 @@ public class db {
         if(tblWrk != null) {
             JSONArray rowsData = new JSONArray();
             if(rowData.has("params")) {
-                JSONObject rowDataMod = com.liquid.event.getJSONObject(rowData.toString(), "modifications");
-                // Da modification a rowData .. a carico della ricevente
-                rowsData.put(rowDataMod);
+                JSONObject rowDataMod = com.liquid.event.getJSONObject(rowData.toString(), "formX");
+                if(rowDataMod != null) {
+                    // Da modification a rowData .. a carico della ricevente
+                    rowsData.put(rowDataMod);
+                } else {
+                    rowDataMod = com.liquid.event.getJSONObject(rowData.toString(), "modifications");
+                      // Da modification a rowData .. a carico della ricevente
+                    if(rowDataMod.has("fields")) {
+                        rowsData.put(rowDataMod);
+                    }
+                }
             } else {
                 rowsData.put(rowData);
             }
@@ -4509,7 +4518,7 @@ public class db {
                                                         for (int ir = 0; ir < nBeans; ir++) {
                                                             JSONObject row = rowsJson.getJSONObject(ir);
                                                             tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
-                                                            Object[] resSet = set_bean_by_json_resultset(obj, tbl_wrk, row);
+                                                            Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row);
                                                             if (resSet != null) {
                                                                 if (!(boolean) resSet[0]) {
                                                                     errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[1]) + "]";

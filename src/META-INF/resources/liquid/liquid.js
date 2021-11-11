@@ -528,6 +528,11 @@ class LiquidCtrl {
                             // filterParams: { comparator: myDateComparator },
                             suppressMenu: false
                         },
+                        'booleanColumn': {
+                            // filter: 'agDateColumnFilter',
+                            // filterParams: { comparator: myDateComparator },
+                            suppressMenu: false
+                        },
                         'stringColumn': {
                             // filter: 'agDateColumnFilter',
                             // filterParams: { comparator: myDateComparator },
@@ -3918,6 +3923,10 @@ var Liquid = {
                     } else if(Liquid.isDate(liquid.tableJson.columns[ic].type)) { // datetime, date, timestamp
                         cellEditor = DateEditor;
                         cellEditorParams = { liquid:liquid };
+                    } else if(Liquid.isBoolean(liquid.tableJson.columns[ic].type)) { // datetime, date, timestamp
+                        cellRenderer = function(params) {
+                            return '<input type="checkbox" style="display: inline-table; position: relative; " '+(params.value=='f'?'':'checked')+' />';
+                        };
                     }
                     if(isDef(liquid.tableJson.columns[ic].editor)) {
                         if(liquid.tableJson.columns[ic].editor.type === 'all' || liquid.tableJson.columns[ic].editor.type === 'distinct'
@@ -4006,6 +4015,9 @@ var Liquid = {
                     } else if(Liquid.isNumeric(col.type)) {
                         sortComparator = function(a, b) { return (Number(a) > Number(b) ? 1 : (Number(a) < Number(b) ? -1 : 0)); };
                         typeColumn = "numericColumn";
+                    } else if(Liquid.isBoolean(col.type)) {
+                        sortComparator = function(a, b) { return (Number(a) > Number(b) ? 1 : (Number(a) < Number(b) ? -1 : 0)); };
+                        typeColumn = "booleanColumn";
                     } else if(Liquid.isDate(col.type)) {
                         sortComparator = function(a, b) { 
                             var dateA = Liquid.toDate(a); 
@@ -4018,7 +4030,8 @@ var Liquid = {
                         typeColumn = "stringColumn";
                     }
 
-                    var colData = {headerName: isDef(liquid.tableJson.columns[ic].label) ? liquid.tableJson.columns[ic].label : liquid.tableJson.columns[ic].name
+                    var colData = {
+                         headerName: isDef(liquid.tableJson.columns[ic].label) ? liquid.tableJson.columns[ic].label : liquid.tableJson.columns[ic].name
                         ,field: (liquid.tableJson.columns[ic].field ? liquid.tableJson.columns[ic].field : liquid.tableJson.columns[ic].name.replace(/\./g, "_"))
                         ,type: typeColumn
                         ,width: Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0)
@@ -7373,7 +7386,17 @@ var Liquid = {
                 if(liquid.tableJson.commands) {
                     for(var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
                         var command = liquid.tableJson.commands[icmd];
+                        var commandDetected = false;
                         if(commandName === command.name) {
+                            commandDetected = true;
+                        } else if(commandName === "ok" || commandName === "return" || commandName === "cancel") {
+                            if(isDef(liquid.currentCommand)) {
+                                if(liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update" || liquid.currentCommand.name === "delete") {
+                                    commandDetected = true;
+                                }
+                            }
+                        }
+                        if(commandDetected) {
                             if(isDef(liquid.currentCommand)) {
                                 if (liquid.currentCommand.name === command.name) {
                                     return Liquid.onButton(liquid, liquid.currentCommand);
@@ -14337,13 +14360,19 @@ var Liquid = {
         return !isNaN(parseFloat(n)) && isFinite(n);
     },
     isNumeric:function(type) {
-        if(type === "3" || type === "4" || type === "7" || type === "8"  || type === "-5" || type === "-6" || type === "-7")
+        if(type === "3" || type === "4" || type === "7" || type === "8"  || type === "-5" || type === "-6")
+            return true;
+        else
+            return false;
+    },
+    isBoolean:function(type) {
+        if(type === "-7")
             return true;
         else
             return false;
     },
     isInteger:function(type) {
-        if(type === "2" || type === "4" || type === "5" || type === "-5" || type === "-6" || type === "-7")
+        if(type === "2" || type === "4" || type === "5" || type === "-5" || type === "-6")
             return true;
         else
             return false;
@@ -14378,7 +14407,7 @@ var Liquid = {
         } else if(type === "2" || type === "4" || type === "-5" || type === "-6" || type === "5") {
             return "Integer";
         } else if(type === "-7") {
-            return "Bit";
+            return "Boolean";
         } else if(type === "-15" || type === "-16") {
             return "varchar";
         } else if(type === "1" || type === "12" || type === "-1" || type === "-9"  || type === "-16" || type === "-150") {
@@ -14469,11 +14498,12 @@ var Liquid = {
             var liquid = Liquid.getLiquid(liquidControlOrId);
             var data = null;
             var col =  null;
+            var selNodes = null;
             if(liquidControlOrId instanceof HTMLElement) {
                 foundRow1B = liquidControlOrId.getAttribute('linkedrow1b');
                 if(foundRow1B) {
-                    nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                    data = nodes[foundRow1B-1].data;
+                    selNodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                    data = selNodes[foundRow1B-1].data;
                     col = Liquid.getColumn(liquid, field);
                 }
             } else {
@@ -14488,7 +14518,12 @@ var Liquid = {
             if(data) {
                 if(col) {
                     if(isDef(newValue)) {
-                        data[col.field] = newValue;
+                        if (data[col.field] != newValue) {
+                            data[col.field] = newValue;
+                            Liquid.registerFieldChange(liquid, selNodes ? selNodes[0].id : null, data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], col.field, null, data[col.field]);
+                            Liquid.updateDependencies(liquid, col, null, null);
+                            setTimeout( function() { Liquid.refreshGrids(liquid, null, "setField"); Liquid.refreshLayouts(liquid, false); }, 50);
+                        }
                     }
                     return data[col.field];
                 } else {

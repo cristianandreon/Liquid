@@ -13,6 +13,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -371,26 +372,55 @@ public class utility {
             try {
                 if (propType.equals(Boolean.class) || propType.equals(boolean.class)) {
                     if (value instanceof String) {
-                        if (value == null || ((String) value).isEmpty()
-                                || "0".equalsIgnoreCase((String) value) || "false".equalsIgnoreCase((String) value)
-                                || "N".equalsIgnoreCase((String) value) || "no".equalsIgnoreCase((String) value)
-                                || "zero".equalsIgnoreCase((String) value) || "empty".equalsIgnoreCase((String) value)) {
-                            if (propType.equals(Boolean.class)) {
-                                field.set(bean, new Boolean(false));
-                            } else {
-                                field.set(bean, false);
-                            }
-                        } else if (propType.equals(Boolean.class)) {
-                            field.set(bean, new Boolean(true));
-                        } else {
+                        if (value != null && !((String) value).isEmpty() && (
+                                        "on".equalsIgnoreCase((String) value) ||
+                                                "true".equalsIgnoreCase((String) value) ||
+                                                "1".equalsIgnoreCase((String) value) ||
+                                                "s".equalsIgnoreCase((String) value) ) ) {
                             field.set(bean, true);
+                        } else {
+                            field.set(bean, false);
                         }
-                    } else if (value instanceof Object) {
+                    } else if (value instanceof Boolean) {
                         field.set(bean, (Boolean) value);
+                    } else if (value instanceof Integer) {
+                        if ( value != null && ((Integer)value) > 0) {
+                            field.set(bean, true);
+                        } else {
+                            field.set(bean, false);
+                        }
+                    } else if (value instanceof Long) {
+                        if ( value != null && ((Long)value) > 0) {
+                            field.set(bean, true);
+                        } else {
+                            field.set(bean, false);
+                        }
+                    } else if (value instanceof Float) {
+                        if ( value != null && ((Float)value) > 0.0f) {
+                            field.set(bean, true);
+                        } else {
+                            field.set(bean, false);
+                        }
+                    } else if (value instanceof Double) {
+                        if ( value != null && ((Double)value) > 0.0f) {
+                            field.set(bean, true);
+                        } else {
+                            field.set(bean, false);
+                        }
+                    } else if (value instanceof BigDecimal) {
+                        if ( value != null && ((BigDecimal)value).intValue() > 0) {
+                            field.set(bean, true);
+                        } else {
+                            field.set(bean, false);
+                        }
                     }
                 } else if (propType.equals(Integer.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
+                            field.set(bean, new Integer(0));
+                        } else if ("on".equalsIgnoreCase((String)value) || "true".equalsIgnoreCase((String)value) || "y".equalsIgnoreCase((String)value) ||  "n".equalsIgnoreCase((String)value)) {
+                            field.set(bean, new Integer(1));
+                        } else if ("off".equalsIgnoreCase((String)value) || "false".equalsIgnoreCase((String)value) || "n".equalsIgnoreCase((String)value)) {
                             field.set(bean, new Integer(0));
                         } else {
                             try {
