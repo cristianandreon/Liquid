@@ -6721,7 +6721,7 @@ public class db {
     }
 
     // Wrappers
-    static public String getSelection(Object tbl_wrk, Object params) {
+    static public String getSelection(Object tbl_wrk, Object params) throws Exception {
         return workspace.getSelection(tbl_wrk, (String) params);
     }
 

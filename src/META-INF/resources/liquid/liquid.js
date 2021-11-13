@@ -7374,10 +7374,10 @@ var Liquid = {
      * @param {commandName} the name of the command to execute
      * @return {} n/d
      */
-    command:function(obj, commandName) { // aux entry
-        return Liquid.onCommand(obj, commandName);
+    command:function(obj, commandName, commandPostFunc) { // aux entry
+        return Liquid.onCommand(obj, commandName, commandPostFunc);
     },
-    onCommand:function(obj, commandName) { // aux entry
+    onCommand:function(obj, commandName, commandPostFunc) { // aux entry
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             if(isDef(liquid.tableJson)) {
@@ -7389,6 +7389,7 @@ var Liquid = {
                         var commandDetected = false;
                         if(commandName === command.name) {
                             commandDetected = true;
+                            command.postFunc = commandPostFunc;
                         } else if(commandName === "ok" || commandName === "return" || commandName === "cancel") {
                             if(isDef(liquid.currentCommand)) {
                                 if(liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update" || liquid.currentCommand.name === "delete") {
@@ -7399,11 +7400,13 @@ var Liquid = {
                         if(commandDetected) {
                             if(isDef(liquid.currentCommand)) {
                                 if (liquid.currentCommand.name === command.name) {
+                                    liquid.currentCommand.postFunc = commandPostFunc;
                                     return Liquid.onButton(liquid, liquid.currentCommand);
                                 }
                             }
                             isCommandFound = true;
                             command.step = Liquid.CMD_EXECUTE;
+                            command.postFunc = commandPostFunc;
                             var eventName = "before" + commandName;
                             var eventData = null;
                             var defaultRetval = null;
@@ -7818,6 +7821,14 @@ var Liquid = {
             if(liquid instanceof LiquidCtrl) {
                 Liquid.refreshAll(liquid, null, "onCommandDone");
             }
+        }
+        if(isDef(command.postFunc)) {
+            try {
+                commandPostFunc();
+            } catch(e) {
+                console.error(e);
+            }
+            command.postFunc = null;
         }
     },
     /**

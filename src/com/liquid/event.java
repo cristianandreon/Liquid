@@ -563,14 +563,14 @@ public class event {
     //
     // Callback varie di test
     //
-    static public String echo(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
+    static public String echo(Object tbl_wrk, Object params, Object clientData, Object freeParam) throws Exception {
         return testEvent(tbl_wrk, params, clientData, freeParam);
     }
 
     // ES.: Funzione di collaudo generica della callback
     static boolean glEnable = true;
 
-    static public String testEvent(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
+    static public String testEvent(Object tbl_wrk, Object params, Object clientData, Object freeParam) throws Exception {
         String result = "{ \"result\":1";
         result += ",\"timecode\":" + System.currentTimeMillis();
         result += ",\"message\":\"testEvent(): ";
@@ -612,7 +612,7 @@ public class event {
         return result;
     }
 
-    static public String testBean(Object tbl_wrk, Object params, Object clientData, Object requestParam) {
+    static public String testBean(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
         String result = "{ \"result\":1";
         result += ",\"timecode\":" + System.currentTimeMillis();
         result += ",\"message\":\"testBean(): ";
@@ -767,7 +767,7 @@ public class event {
         return result;
     }
 
-    static public String testParentBean(Object tbl_wrk, Object params, Object clientData, Object requestParam) {
+    static public String testParentBean(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
         String result = "{ \"result\":1";
         String updateResults = "";
 
@@ -829,7 +829,7 @@ public class event {
         return result;
     }
 
-    static public String testScript(Object tbl_wrk, Object params, Object clientData, Object requestParam) {
+    static public String testScript(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
         String resultJson = "{ \"result\":1,\"message\":\"";
         String updateResults = "";
 
@@ -876,7 +876,7 @@ public class event {
         return resultJson;
     }
 
-    static public String testEventX(Object tbl_wrk, Object params, Object clientData, Object requestParam) {
+    static public String testEventX(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
         if (params != null) {
             if (tbl_wrk != null) {
                 HttpServletRequest request = (HttpServletRequest) requestParam;

@@ -3238,7 +3238,7 @@ public class workspace {
      * @return comma separated values string, null if no selection defined
      * @see workspace
      */
-    static public String getSelection(String controlId, String params) {
+    static public String getSelection(String controlId, String params) throws Exception {
         try {
             JSONArray paramsJson = (JSONArray) (new JSONObject(params)).getJSONArray("params");
             for (int i = 0; i < paramsJson.length(); i++) {
@@ -3250,11 +3250,21 @@ public class workspace {
                         if (obj.has("name")) {
                             if (obj.getString("name").equalsIgnoreCase(controlId)) {
                                 String prefix = "";
-                                if (obj.has("ids")) {
-                                    // All o lista inclusione
-                                    ids = obj.getString("ids");
-                                } else if (obj.has("sel")) {
-                                    ids = obj.getString("sel");
+                                if (obj.has("ids") || obj.has("sel")) {
+                                    String key = null;
+                                    if (obj.has("ids")) {
+                                        key = "ids";
+                                    } else if (obj.has("sel")) {
+                                        key = "sel";
+                                    }
+                                    Object oids = obj.get(key);
+                                    if(oids instanceof JSONArray) {
+                                        return utility.jsonArrayToString((JSONArray)oids, null, null, ",");
+                                    } else if(oids instanceof String) {
+                                        return obj.getString("sel");
+                                    } else {
+                                        throw new Exception("getSelection() : unsupported case");
+                                    }
                                 }
                                 if (obj.has("unsel")) {
                                     // Lista exclusione
@@ -3360,7 +3370,7 @@ public class workspace {
     }
 
     // Wrappers
-    static public String getSelection(Object tbl_wrk, String params) {
+    static public String getSelection(Object tbl_wrk, String params) throws Exception {
         return getSelection(((workspace) tbl_wrk).controlId, params);
     }
 
