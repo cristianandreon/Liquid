@@ -93,7 +93,7 @@ public class TransactionList {
                 sql += ") VALUES (";
                 for (int ic = 0; ic < transaction.values.size(); ic++) {
                     String apex = transaction.valueTypes.get(ic) == 0 ? "" : "'";
-                    sql += (ic > 0 ? "," : "") + (transaction.values.get(ic) != null ? (apex + transaction.values.get(ic) + apex) : "null");
+                    sql += (ic > 0 ? "," : "") + (transaction.values.get(ic) != null ? (apex + transaction.values.get(ic) + apex) : "NULL");
                 }
                 sql += ")";
             } else if ("update".equalsIgnoreCase(transaction.type)) {
@@ -103,7 +103,7 @@ public class TransactionList {
                     String apex = transaction.valueTypes.get(ic) == 0 ? "" : "'";
                     sql += (ic > 0 ? "," : "") + itemIdString + transaction.columns.get(ic) + itemIdString;
                     sql += "=";
-                    sql += (transaction.values.get(ic) != null ? (apex + transaction.values.get(ic) + apex) : "null");
+                    sql += (transaction.values.get(ic) != null ? (apex + transaction.values.get(ic) + apex) : "NULL");
                     sql += "";
                 }
                 sql += " WHERE ";

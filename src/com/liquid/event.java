@@ -613,6 +613,8 @@ public class event {
     }
 
     static public String testBean(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
+        HttpServletRequest request = (HttpServletRequest)requestParam;
+
         String result = "{ \"result\":1";
         result += ",\"timecode\":" + System.currentTimeMillis();
         result += ",\"message\":\"testBean(): ";
@@ -645,7 +647,6 @@ public class event {
         String beanMessage = "";
         if (params != null) {
             if (tbl_wrk != null) {
-                HttpServletRequest request = (HttpServletRequest) requestParam;
                 String ids = db.getSelection(tbl_wrk, params);
                 int maxRows = 0;
 
@@ -671,15 +672,15 @@ public class event {
                             //      Ritorna { int nBeans, int nBeansLoaded, String errors, String warning }
                             Object[] loadBeasnResult = null;
 
-                            loadBeasnResult = db.load_bean(bean, "UTENTI", maxRows);
-                            loadBeasnResult = db.load_bean(bean, "DOMAINS", maxRows);
-                            loadBeasnResult = db.load_bean(bean, "QUOTES_DETAIL", maxRows);
+                            loadBeasnResult = db.load_bean(bean, "UTENTI", maxRows, request);
+                            loadBeasnResult = db.load_bean(bean, "DOMAINS", maxRows, request);
+                            loadBeasnResult = db.load_bean(bean, "QUOTES_DETAIL", maxRows, request);
 
                             // ES.: Caricamento foreign tables 2° livello per tutte le righe di QUOTES_DETAIL
                             ArrayList<Object> beansQD = (ArrayList<Object>) utility.get(bean, "QUOTES_DETAIL");
                             if (beansQD != null) {
                                 for (Object beanQD : beansQD) {
-                                    loadBeasnResult = db.load_bean(beanQD, "MATERIALS", maxRows);
+                                    loadBeasnResult = db.load_bean(beanQD, "MATERIALS", maxRows, request);
                                 }
                             }
 
@@ -770,6 +771,7 @@ public class event {
     static public String testParentBean(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
         String result = "{ \"result\":1";
         String updateResults = "";
+        HttpServletRequest request = (HttpServletRequest)requestParam;
 
         result += ",\"message\":\"testParentBean(): ";
 
@@ -789,11 +791,11 @@ public class event {
                             // ES.: Caricamento foreign tables parent
                             // N.B.: La selezione corrente del client risiede in params (String as getJSONArray)
                             //      Ritorna { int nBeans, int nBeansLoaded, String errors, String warning }
-                            Object parentLevel1Bean = db.load_parent_bean(bean, params, maxRows);
+                            Object parentLevel1Bean = db.load_parent_bean(bean, params, maxRows, request);
 
-                            Object parentLevel2Bean = db.load_parent_bean(parentLevel1Bean, params, maxRows);
+                            Object parentLevel2Bean = db.load_parent_bean(parentLevel1Bean, params, maxRows, request);
 
-                            Object parentLevel3Bean = db.load_parent_bean(parentLevel2Bean, params, maxRows);
+                            Object parentLevel3Bean = db.load_parent_bean(parentLevel2Bean, params, maxRows, request);
 
                             // ES.: Stampa risultati
                             result += " bean #" + String.valueOf(i++) + "/" + String.valueOf(n)
@@ -830,6 +832,7 @@ public class event {
     }
 
     static public String testScript(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
+        HttpServletRequest request = (HttpServletRequest)requestParam;
         String resultJson = "{ \"result\":1,\"message\":\"";
         String updateResults = "";
 
@@ -851,7 +854,7 @@ public class event {
                             // ES.: Caricamento foreign tables parent
                             // N.B.: La selezione corrente del client risiede in params (String as getJSONArray)
                             //      Ritorna { int nBeans, int nBeansLoaded, String errors, String warning }
-                            Object[] loadBeasnResult = db.load_bean(bean, "$Parent", params, maxRows);
+                            Object[] loadBeasnResult = db.load_bean(bean, "$Parent", params, maxRows, request);
 
                             // ES.: Stampa risultati
                             result += " bean #" + String.valueOf(i++) + "/" + String.valueOf(n)

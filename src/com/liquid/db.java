@@ -2808,7 +2808,7 @@ public class db {
                                             //
                                             //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
                                             //
-                                            Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, foreignTables, level, maxRows);
+                                            Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, foreignTables, level, maxRows, request);
                                             if (beanResult != null) {
                                                 resultBean = (int) beanResult[0];
                                                 if (resultBean > 0) {
@@ -2887,9 +2887,9 @@ public class db {
      * 
      * @return [ int result, Object [] beans, int level, String error, String className };
      */
-    static public Object[] create_beans_multilevel_class(workspace tbl_wrk, JSONArray rowsJson, JSONArray foreignTablesJson, String filteringForeignTables, int level, long maxRows) {
+    static public Object[] create_beans_multilevel_class(workspace tbl_wrk, JSONArray rowsJson, JSONArray foreignTablesJson, String filteringForeignTables, int level, long maxRows, HttpServletRequest request) {
         ArrayList<String> runtimeForeignTables = new ArrayList<String>();
-        return create_beans_multilevel_class_internal( tbl_wrk, rowsJson, foreignTablesJson, filteringForeignTables, level, maxRows, runtimeForeignTables );
+        return create_beans_multilevel_class_internal( tbl_wrk, rowsJson, foreignTablesJson, filteringForeignTables, level, maxRows, runtimeForeignTables, request );
     }
     
     /**
@@ -2952,7 +2952,9 @@ public class db {
             workspace tbl_wrk, JSONArray rowsJson, 
             JSONArray foreignTablesJson, String filteringForeignTables, 
             int level, long maxRows, 
-            ArrayList<String> runtimeForeignTables) {
+            ArrayList<String> runtimeForeignTables,
+            HttpServletRequest request
+    ) {
         
         Object[] beanResult = new Object[]{0, null, 0, null, null};
         PojoGenerator pojoGenerator = null;
@@ -2988,7 +2990,6 @@ public class db {
                 }
             }
 
-            
             try {
                 cols = tbl_wrk.tableJson.getJSONArray("columns");
             } catch (Exception e) {
@@ -3347,7 +3348,7 @@ public class db {
                                         //
                                         // Create the bean (empty) from the control ft_tbl_wrk
                                         //
-                                        Object[] ftBeanResult = create_beans_multilevel_class_internal( ft_tbl_wrk, ftRowsJson, foreignTableForeignTablesJson, foreignTableForeignTables, level + 1, maxRows, runtimeForeignTables );
+                                        Object[] ftBeanResult = create_beans_multilevel_class_internal( ft_tbl_wrk, ftRowsJson, foreignTableForeignTablesJson, foreignTableForeignTables, level + 1, maxRows, runtimeForeignTables, request );
                                         if (ftBeanResult != null) {
                                             int ftResult = (int) ftBeanResult[0];
                                             ArrayList<Object> ftBeansContent = (ArrayList<Object>) ftBeanResult[1];
@@ -3429,7 +3430,7 @@ public class db {
                         // String primaryKeyValue = null;
 
                         // Valorizza le proprietà corrispondenti ai campi
-                        Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row);
+                        Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, request);
                         if (resSet != null) {
                             if (!(boolean) resSet[0]) {
                                 errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[2]) + "]";
@@ -3500,7 +3501,7 @@ public class db {
                                 //
                                 // Create the bean from the paretn control 'parent_tbl_wrk'
                                 //
-                                Object[] parentBeanResult = create_beans_multilevel_class(parent_tbl_wrk, parentRowsJson, null, null, -1, maxRows);
+                                Object[] parentBeanResult = create_beans_multilevel_class(parent_tbl_wrk, parentRowsJson, null, null, -1, maxRows, request);
                                 if (parentBeanResult != null) {
                                     int parentResult = (int) parentBeanResult[0];
                                     ArrayList<Object> parentBeansContent = (ArrayList<Object>) parentBeanResult[1];
@@ -3654,7 +3655,7 @@ public class db {
      * @param row
      * @return Object [] { bResult, keyValue, error }
      */
-    static public Object[] set_bean_by_json_row_data(Object obj, workspace tbl_wrk, JSONObject row) {
+    static public Object[] set_bean_by_json_row_data(Object obj, workspace tbl_wrk, JSONObject row, HttpServletRequest request) {
         boolean bResult = false;
         String keyValue = null;
         String error = "";
@@ -3681,16 +3682,21 @@ public class db {
                             String colName = cols.getJSONObject(ic).has("runtimeName") ? cols.getJSONObject(ic).getString("runtimeName") : cols.getJSONObject(ic).getString("name");
                             boolean autoIncString = cols.getJSONObject(ic).has("autoIncString") ? cols.getJSONObject(ic).getBoolean("autoIncString") : false;
                             String field = null;
+                            String defaultValue = null;
                             Object value = null;
 
                             try {
                                 field = cols.getJSONObject(ic).getString("field");
                             } catch (Exception e) { /* value = String.valueOf(ic+1); */ }
+
+                            boolean hasValue = false;
                             try {
                                 value = row.get(colName);
+                                hasValue = true;
                             } catch (Exception e) {
                                 try {
                                     value = row.get(field);
+                                    hasValue = true;
                                 } catch (Exception e2) {
                                     // take from modifications
                                     try {
@@ -3701,6 +3707,7 @@ public class db {
                                                 if(rowField.has(("field"))) {
                                                     if(field.equalsIgnoreCase( rowField.getString("field") )) {
                                                         value = rowField.getString("value");
+                                                        hasValue = true;
                                                         break;
                                                     }
                                                 }
@@ -3711,26 +3718,44 @@ public class db {
                                 }
                             }
 
-                            String[] colParts = colName.split("\\.");
-                            if (colParts.length > 1) {
-                                if (table.equalsIgnoreCase(colParts[0])) {
-                                    colName = colParts[1];
-                                } else {
-                                    colName = colName.replaceAll("\\.", "\\$");
-                                }
+                            /*
+                            N.B.: La risoluzione del campo defaul è delegata al DB, non al bean
+                            if(!hasValue) {
+                                try {
+                                    defaultValue = cols.getJSONObject(ic).getString("default");
+                                    if(defaultValue != null) {
+                                        defaultValue = solveVariableField(defaultValue, request);
+                                        if(defaultValue != null) {
+                                            value = defaultValue;
+                                            hasValue = true;
+                                        }
+                                    }
+                                } catch (Exception e) { }
                             }
-                            if(!autoIncString) {
-                                try {
-                                    utility.set(obj, colName, value);
-                                } catch (Throwable th) {
-                                    error = "[ ERROR setting " + colName + " : " + th.getLocalizedMessage() + "]";
-                                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
-                                    bResult = false;
+                            */
+
+                            if(hasValue) {
+                                String[] colParts = colName.split("\\.");
+                                if (colParts.length > 1) {
+                                    if (table.equalsIgnoreCase(colParts[0])) {
+                                        colName = colParts[1];
+                                    } else {
+                                        colName = colName.replaceAll("\\.", "\\$");
+                                    }
                                 }
-                                try {
-                                    utility.set(obj, colName + "$Changed", false);
-                                } catch (Throwable th) {
-                                    error = "[ ERROR setting " + colName + "$Changed" + " : " + th.getLocalizedMessage() + "]";
+                                if (!autoIncString) {
+                                    try {
+                                        utility.set(obj, colName, value);
+                                    } catch (Throwable th) {
+                                        error = "[ ERROR setting " + colName + " : " + th.getLocalizedMessage() + "]";
+                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
+                                        bResult = false;
+                                    }
+                                    try {
+                                        utility.set(obj, colName + "$Changed", false);
+                                    } catch (Throwable th) {
+                                        error = "[ ERROR setting " + colName + "$Changed" + " : " + th.getLocalizedMessage() + "]";
+                                    }
                                 }
                             }
                         }
@@ -3756,6 +3781,7 @@ public class db {
 
     public static Object new_bean(Object requestParam, workspace tblWrk, JSONObject rowData) throws JSONException {
         if(tblWrk != null) {
+            HttpServletRequest request = (HttpServletRequest)requestParam;
             JSONArray rowsData = new JSONArray();
             if(rowData.has("params")) {
                 JSONObject rowDataMod = com.liquid.event.getJSONObject(rowData.toString(), "formX");
@@ -3777,7 +3803,9 @@ public class db {
             ArrayList<String> runtimeForeignTables = null;
             Object[] result = create_beans_multilevel_class_internal( tblWrk, (JSONArray)rowsData, (JSONArray)foreignTablesJson, filteringForeignTables,
                     -1, 0, 
-                    runtimeForeignTables);
+                    runtimeForeignTables,
+                    request
+            );
             if(result != null) {
                 int iResult = (int) result[0];
                 ArrayList<Object> beansContent = (ArrayList<Object>) result[1];
@@ -4248,7 +4276,7 @@ public class db {
                     try { foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
 
                     //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
-                    Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows);
+                    Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
                     if ((int) beanResult[0] >= 0) {
                         // Updating the foreignTables (some info may be added)
                         try { tbl_wrk.tableJson.put("foreignTables", foreignTablesJson); } catch (Exception e) { }
@@ -4281,14 +4309,14 @@ public class db {
      * @return Object[] { beans, int nBeans, int nBeansLoaded, String errors, String warning }
      * 
      */
-    static public Object[] load_child_bean(Object bean, String beanName, long maxRows) throws Exception {
-        return load_bean(bean, beanName, null, maxRows);
+    static public Object[] load_child_bean(Object bean, String beanName, long maxRows, HttpServletRequest request) throws Exception {
+        return load_bean(bean, beanName, null, maxRows, request);
     }
-    static public Object[] load_child_bean(Object bean, String beanName, long maxRows,long maxLevel) throws Exception {
-        return load_bean( bean, beanName, maxRows, maxLevel );
+    static public Object[] load_child_bean(Object bean, String beanName, long maxRows,long maxLevel, HttpServletRequest request) throws Exception {
+        return load_bean( bean, beanName, maxRows, maxLevel, request );
     }
-    static public Object[] load_bean(Object bean, String beanName, long maxRows) throws Exception {
-        return load_bean(bean, beanName, null, maxRows);
+    static public Object[] load_bean(Object bean, String beanName, long maxRows, HttpServletRequest request) throws Exception {
+        return load_bean(bean, beanName, null, maxRows, request);
     }
 
     /**
@@ -4297,8 +4325,8 @@ public class db {
      * @param bean
      * @return 
      */
-    static public Object load_parent_bean(Object bean, Object params) throws Exception {
-        return load_parent_bean(bean, params, 1);
+    static public Object load_parent_bean(Object bean, Object params, HttpServletRequest request) throws Exception {
+        return load_parent_bean(bean, params, 1, request);
     }
     /**
      * Load parent bean of 'bean'
@@ -4308,8 +4336,8 @@ public class db {
      * @param maxRows max row to load (not used)
      * @return 
      */
-    static public Object load_parent_bean(Object bean, Object params, long maxRows) throws Exception {
-        Object[] beans_result = load_bean(bean, "$Parent", params, maxRows);
+    static public Object load_parent_bean(Object bean, Object params, long maxRows, HttpServletRequest request) throws Exception {
+        Object[] beans_result = load_bean(bean, "$Parent", params, maxRows, request);
         if (beans_result != null) {
             ArrayList<Object> resultBeasns = (ArrayList<Object>) beans_result[0];
             if (resultBeasns != null) {
@@ -4335,12 +4363,12 @@ public class db {
      * @param maxLevel
      * @return 
      */
-    static public Object[] load_bean(Object bean, String childBeanName, Object params, long maxRows, long maxLevel) {
+    static public Object[] load_bean(Object bean, String childBeanName, Object params, long maxRows, long maxLevel, HttpServletRequest request) {
         if(bean != null) {
             ArrayList<String> runtimeForeignTables = new ArrayList<String>();
             // adding initial table@rowId to the anti dead-loop
             runtimeForeignTables.add( String.valueOf( utility.get(bean, "$tableKey") ) );
-            return load_bean_internal( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables);
+            return load_bean_internal( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables, request);
         }
         return null;
     }
@@ -4358,7 +4386,7 @@ public class db {
      * @return { ArrayList<Object> beans, int nBeans, int nBeansLoaded, String errors, String warning }
      * 
      */
-    static public Object[] load_bean(Object bean, String childBeanName, Object params, long maxRows) throws Exception {
+    static public Object[] load_bean(Object bean, String childBeanName, Object params, long maxRows, HttpServletRequest request) throws Exception {
         if(bean != null) {
             if(bean instanceof HttpServletRequest) {
                 throw new Exception("wrong load_bean() call ... you pass an http request as bean");
@@ -4368,7 +4396,7 @@ public class db {
             // adding initial table@rowId to the anti dead-loop
             Object tableKey = utility.get(bean, "$tableKey");
             if(tableKey != null) runtimeForeignTables.add( String.valueOf( tableKey ) );
-            return load_bean_internal( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables);
+            return load_bean_internal( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables, request);
         }
         return null;
     }
@@ -4388,7 +4416,7 @@ public class db {
      * @return Object [] { beans, nBeans, nBeansLoaded, errors, warnings }
      * 
      */
-    static private Object[] load_bean_internal(Object bean, String childBeanName, Object params, long maxRows, long maxLevel, long curLevel, ArrayList<String> runtimeForeignTables) {
+    static private Object[] load_bean_internal(Object bean, String childBeanName, Object params, long maxRows, long maxLevel, long curLevel, ArrayList<String> runtimeForeignTables, HttpServletRequest request) {
         ArrayList<Object> beans = null;
         int nBeans = 0, nBeansLoaded = 0;
         String errors = "", warnings = "";
@@ -4518,7 +4546,7 @@ public class db {
                                                         for (int ir = 0; ir < nBeans; ir++) {
                                                             JSONObject row = rowsJson.getJSONObject(ir);
                                                             tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
-                                                            Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row);
+                                                            Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, request);
                                                             if (resSet != null) {
                                                                 if (!(boolean) resSet[0]) {
                                                                     errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[1]) + "]";
@@ -4542,7 +4570,7 @@ public class db {
                                                             for (int ic=0; ic<beans.size(); ic++) {
                                                                 Object childBean = beans.get(ic);
                                                                 if(childBean != null) {
-                                                                    Object [] resLoad = load_bean_internal(childBean, "*", null/*params*/, maxRows, maxLevel, curLevel+1, runtimeForeignTables);
+                                                                    Object [] resLoad = load_bean_internal(childBean, "*", null/*params*/, maxRows, maxLevel, curLevel+1, runtimeForeignTables, request);
                                                                     if(resLoad != null) {
                                                                         if(resLoad[0] != null) {
                                                                             // @return Object [] { beans, nBeans, nBeansLoaded, errors, warnings }
@@ -6290,15 +6318,22 @@ public class db {
      * @see db
      */
     static public String insert(Object bean, Object tbl_wrk) {
-        return insert(bean, tbl_wrk, null);
+        return insert(null, bean, tbl_wrk, null);
+    }
+    static public String insert(Object requestParam, Object bean, Object tbl_wrk) {
+        return insert(requestParam, bean, tbl_wrk, null);
     }
     static public String insert(Object bean, Object tbl_wrk, String foreignTables) {
+        return insert(null, bean, tbl_wrk, foreignTables);
+    }
+    static public String insert(Object requestParam, Object bean, Object tbl_wrk, String foreignTables) {
         String result = null;
         try {
             if(tbl_wrk != null) {
                 if(bean != null) {
                     String sModifications = "";
                     String sFields = "";
+                    HttpServletRequest request = (HttpServletRequest)requestParam;
                     workspace tblWrk = (workspace) tbl_wrk;
                     JSONArray cols = tblWrk.tableJson.getJSONArray("columns");
 
@@ -6306,6 +6341,8 @@ public class db {
                         JSONObject col = cols.getJSONObject(ic);
                         Object oFieldValue = utility.get(bean, col.getString("name"));
                         String fieldValue = null;
+                        boolean setFieldValue = true;
+
                         if(oFieldValue != null) {
                             if(oFieldValue instanceof Date || oFieldValue instanceof Timestamp) {
                                 // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
@@ -6316,11 +6353,26 @@ public class db {
                             }
                         } else { 
                             fieldValue = null;
-                        }                        
-                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
-                                
-                        sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
+                            if(col.has("default")) {
+                                String defaultValue = col.getString("default");
+                                if (defaultValue != null) {
+                                    // N.B.: lascia il campo non assegnato, sarà risolto dal db
+                                    setFieldValue = false;
+                                    /*
+                                    defaultValue = solveVariableField(defaultValue, request);
+                                    if (defaultValue != null) {
+                                    }
+                                    */
+                                }
+                            }
+                        }
+
+                        if(setFieldValue) {
+                            fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                            sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
+                        }
                     }
+
                     sModifications += "{\"rowId\":\"\",\"fields\":[" + sFields + "]}";
 
                     String insertingParams = "{ \"params\":[{\"modifications\":[" + sModifications + "] } ] }";
@@ -6443,6 +6495,7 @@ public class db {
             }
         } catch (Exception ex) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+            result = utility.append_error_to_result( utility.base64Encode(ex.getLocalizedMessage()), result);
         }
         return result;
     }
@@ -6806,7 +6859,7 @@ public class db {
             String targetDatabaseSchemaTable, String targetRowsFilters,
             String columnsRelation
     ) {
-        return syncronizeTable(databaseSchemaTable, sourceRowsFilters, targetDatabaseSchemaTable, targetRowsFilters, columnsRelation, null, null, "mirror");
+        return syncronizeTable(databaseSchemaTable, sourceRowsFilters, targetDatabaseSchemaTable, targetRowsFilters, columnsRelation, null, null, "mirror", null);
     }
 
     /**
@@ -6844,7 +6897,8 @@ public class db {
             String targetDatabaseSchemaTable, String sTargetRowsFilters,
             String sColumnsRelation,
             String methodGetPrimaryKey, Object instanceGetPrimaryKey,
-            String mode
+            String mode,
+             HttpServletRequest request
     ) {
         JSONObject resultJSON = new JSONObject();
         String result = "";
@@ -6855,7 +6909,6 @@ public class db {
         ArrayList<Object> where_condition_target_params = new ArrayList<Object>();
         String sourcePrimaryKey = null, targetPrimaryKey = null, targetPrimaryKeyForCompare = null;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
-        HttpServletRequest request = null;
         ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap>();
         Method mGetPrimaryKey = null;
 
@@ -7091,7 +7144,7 @@ public class db {
                                 if (mode.contains("preview")) {
                                 } else {
                                     JSONArray rowsJson = null;
-                                    Object[] beanResult = create_beans_multilevel_class(target_tbl_wrk, rowsJson, null, "*", 0, 1);
+                                    Object[] beanResult = create_beans_multilevel_class(target_tbl_wrk, rowsJson, null, "*", 0, 1, request);
                                     if (beanResult != null) {
                                         int ftResult = (int) beanResult[0];
                                         newBean = ((ArrayList<Object>) beanResult[1]).get(0);

@@ -110,7 +110,7 @@ public class system_command {
                                                 if(table != null && !table.isEmpty()) {
                                                     
                                                     // load bean of foreign table
-                                                    loadBeasnResult = db.load_bean( bean, table, maxRows );
+                                                    loadBeasnResult = db.load_bean( bean, table, maxRows, request );
 
                                                     ArrayList<Object> beans_lev1 = (ArrayList<Object>)loadBeasnResult[0];
                                                     for(Object bean_lev1 : beans_lev1) {

@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.70
+// Liquid ver.1.71
 //
-//  First update 04-01-2020 - Last update  10-11-2021
+//  First update 04-01-2020 - Last update  15-11-2021
 //
 //  TODO : see trello.com
 //
@@ -81,8 +81,13 @@ class LiquidCtrl {
 
         // try {
         var retVal = this;
-        
-        
+
+
+
+        if(this.outDivObj) {
+            Liquid.cleanNodes(this);
+        }
+
         // Container
         this.outDivObjOrId = outDivObjOrId;
         if(outDivObjOrId && typeof outDivObjOrId === "object" && outDivObjOrId.nodeType === 1) {
@@ -417,7 +422,9 @@ class LiquidCtrl {
                 var controlDetected = false;
                 for(var i=0; i<glLiquids.length; i++) {
                     if(glLiquids[i].controlId == controlId) {
+                        Liquid.destroy(glLiquids[i]);
                         delete glLiquids[i];
+                        glLiquids[i] = null;
                         if(!controlDetected) {
                             glLiquids[i] = this;
                             controlDetected = true;
@@ -2343,6 +2350,31 @@ var Liquid = {
             }
         }
         return null;
+    },
+    isAlive:function(liquid) {
+        if(liquid) {
+            if(liquid.outDivObj) {
+                var node = liquid.outDivObj;
+                while(node != null && node != document.body) {
+                    node = node.parentNode;
+                }
+                if(node) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    },
+    cleanNodes:function(liquid) {
+        if(liquid) {
+            if (liquid.outDivObj) {
+                while (liquid.outDivObj.firstChild) {
+                    liquid.outDivObj.removeChild(liquid.outDivObj.firstChild);
+                }
+                liquid.outDivObj.parentNode.removeChild(liquid.outDivObj);
+                liquid.outDivObj = null;
+            }
+        }
     },
     getLiquid:function(searchingNameOrObject) {
         try {
@@ -7830,6 +7862,13 @@ var Liquid = {
             }
             command.postFunc = null;
         }
+
+        var isFormX = Liquid.isFormX(liquid);
+        var isAutoInsert = Liquid.isAutoInsert(liquid);
+        if(isFormX || isAutoInsert) {
+            Liquid.autoInsert(liquid);
+        }
+
     },
     /**
      * Enable a command
@@ -15464,13 +15503,9 @@ var Liquid = {
                     }
                 }
             }
-            if(liquid.outDivObj)
-                liquid.outDivObj.innerHTML='';
-            if(liquid.outDivObjCreated) {
-                if(liquid.outDivObj) {
-                    liquid.outDivObj.parentNode.removeChild(liquid.outDivObj);
-                    liquid.outDivObj = null;
-                }
+            if(liquid.outDivObj) {
+                Liquid.cleanNodes(liquid);
+                liquid.outDivObj = null;
             }
             if(liquid===glLastFocusedLiquid) glLastFocusedLiquid = null;
             var index = glLiquids.indexOf(liquid);
@@ -15600,7 +15635,7 @@ var Liquid = {
     	var retVal = null;
         var refControlId = controlId.replace(/\./g, "-");
         var liquid = Liquid.getLiquid(refControlId);
-        if(!liquid) {
+        if(!liquid || !Liquid.isAlive(liquid)) {
             if(!jsonString) {
                 var err = "missing control definition:"+refControlId;
                 console.error("ERROR: "+err);
@@ -15662,7 +15697,7 @@ var Liquid = {
         }
         var refControlId = controlId.replace(/\./g, "-");
         var liquid = Liquid.getLiquid(refControlId);
-        if(!liquid) {
+        if(!liquid || !Liquid.isAlive(liquid)) {
             if(!jsonString) {
                 var err = "missing control definition:"+refControlId;
                 console.error("ERROR: "+err);
