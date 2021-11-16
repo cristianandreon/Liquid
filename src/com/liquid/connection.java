@@ -24,6 +24,12 @@ import org.json.JSONObject;
 
 public class connection {
 
+    /**
+     * Get connection from class "app.liquid.dbx.connection.getDBConnection" defined in the main project or in sub project
+     *
+     * @return
+     * @throws Throwable
+     */
     static public Object [] getDBConnection() throws Throwable {
         Class cls = null;
         Method method = null;        
@@ -55,6 +61,14 @@ public class connection {
             return (Object [])getLiquidDBConnection();
         }
     }
+
+    /**
+     * Get connection from class "app.liquid.dbx.connection.getDBConnection" defined in the main project or in sub project
+     *
+     * @param database
+     * @return
+     * @throws Throwable
+     */
     static public Object [] getDBConnection(String database) throws Throwable {
         Class cls = null;
         Method method = null;
@@ -89,7 +103,15 @@ public class connection {
     }
     
     
-    // Servizio impostazione della connessione
+
+    /**
+     *
+     * Set the connection from parameter in the request ("driver", "connectionURL")
+     *
+     * @param request
+     * @param out
+     * @return
+     */
     static public String setConnectionString( HttpServletRequest request, JspWriter out ) {
         String result = "", curDriver = null, curConnectionURL = null;
         try {
@@ -108,9 +130,15 @@ public class connection {
         return result;
     }
     
-    //
-    // Reading connection fron the request
-    //
+
+    /**
+     *
+     * Reading connection from the request
+     *
+     * @param request
+     * @param out
+     * @return
+     */
     static public String getConnectionString( HttpServletRequest request, JspWriter out ) {
         String result = "";
         try {

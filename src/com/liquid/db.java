@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -1772,7 +1773,10 @@ public class db {
                 try {
                     if (!filtersCol.isNull("value")) {
                         filterValue = filtersCol.getString("value");
-                        filterValue = solveVariableField( filterValue, request);
+                        //
+                        // N.B.: risolve le variabili di sessione
+                        //
+                        filterValue = solveVariableField( filterValue, request, true );
                         filterValueIsSet = true;
                     }
                 } catch (JSONException e) {
@@ -3724,7 +3728,7 @@ public class db {
                                 try {
                                     defaultValue = cols.getJSONObject(ic).getString("default");
                                     if(defaultValue != null) {
-                                        defaultValue = solveVariableField(defaultValue, request);
+                                        defaultValue = solveVariableField(defaultValue, request, false);
                                         if(defaultValue != null) {
                                             value = defaultValue;
                                             hasValue = true;
@@ -3744,18 +3748,26 @@ public class db {
                                     }
                                 }
                                 if (!autoIncString) {
+                                } else {
                                     try {
-                                        utility.set(obj, colName, value);
-                                    } catch (Throwable th) {
-                                        error = "[ ERROR setting " + colName + " : " + th.getLocalizedMessage() + "]";
-                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
-                                        bResult = false;
+                                        if (Long.parseLong(String.valueOf(value)) > 0) {
+                                        }
+                                    } catch (Exception e) {
+                                        // Formula su auto incrementante ...
+                                        value = null;
                                     }
-                                    try {
-                                        utility.set(obj, colName + "$Changed", false);
-                                    } catch (Throwable th) {
-                                        error = "[ ERROR setting " + colName + "$Changed" + " : " + th.getLocalizedMessage() + "]";
-                                    }
+                                }
+                                try {
+                                    utility.set(obj, colName, value);
+                                } catch (Throwable th) {
+                                    error = "[ ERROR setting " + colName + " : " + th.getLocalizedMessage() + "]";
+                                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
+                                    bResult = false;
+                                }
+                                try {
+                                    utility.set(obj, colName + "$Changed", false);
+                                } catch (Throwable th) {
+                                    error = "[ ERROR setting " + colName + "$Changed" + " : " + th.getLocalizedMessage() + "]";
                                 }
                             }
                         }
@@ -5081,6 +5093,114 @@ public class db {
     }
 
     /**
+     * Insert row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param Fields
+     * @param Values
+     * @return Object [] (boolean, int)
+     * @throws Throwable
+     */
+    static public Object [] insert_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values ) throws Throwable {
+        boolean retVal = false;
+        int new_id = 0;
+
+        Connection conn = null;
+        String sSTMTUpdate = null;
+
+        if(DatabaseSchemaTable == null || Fields == null || Values == null) {
+            return new Object [] { false, -1 };
+        }
+        if(Fields.length > Values.length) {
+            return new Object [] { false, -1 };
+        }
+
+        try {
+
+            Object [] connResult = connection.getDBConnection();
+            conn = (Connection)connResult[0];
+            String connError = (String)connResult[1];
+
+
+            if (conn != null) {
+                sSTMTUpdate = "INSERT INTO "+DatabaseSchemaTable+" (";
+
+                for(int i=0; i<Fields.length; i++) {
+                    sSTMTUpdate += (i > 0 ? "," : "") + Fields[i];
+                }
+                sSTMTUpdate += ") VALUES (";
+                for(int i=0; i<Fields.length; i++) {
+                    sSTMTUpdate += (i > 0 ? "," : "") + "?";
+                }
+                sSTMTUpdate += ")";
+
+                PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
+
+                for(int i=0; i<Values.length; i++) {
+                    if(i < Fields.length) {
+                        Object val = Values[i];
+                        if (val instanceof Integer) {
+                            sqlSTMTUpdate.setInt((i + 1), (int) val);
+                        } else if (val instanceof Long) {
+                            sqlSTMTUpdate.setLong((i + 1), (long) val);
+                        } else if (val instanceof Float) {
+                            sqlSTMTUpdate.setFloat((i + 1), (float) val);
+                        } else if (val instanceof Double) {
+                            sqlSTMTUpdate.setDouble((i + 1), (double) val);
+                        } else if (val instanceof Date) {
+                            sqlSTMTUpdate.setDate((i + 1), (Date) val);
+                        } else if (val instanceof Timestamp) {
+                            sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
+                        } else if (val instanceof String) {
+                            sqlSTMTUpdate.setString((i + 1), (String) val);
+                        }
+                    }
+                }
+
+                int res = sqlSTMTUpdate.executeUpdate();
+                if (res < 0) {
+                    System.err.println("Error updating db");
+                    retVal = false;
+                } else {
+                    ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
+                    if (rs != null && rs.next()) {
+                        new_id = rs.getInt(1);
+                        retVal = true;
+                    }
+                    if (rs != null)
+                        rs.close();
+                }
+                sqlSTMTUpdate.close();
+                sqlSTMTUpdate = null;
+            }
+
+
+        } catch (Exception e) {
+            System.err.println("add_auction_event() error : "+e.getMessage());
+            retVal = false;
+
+            try {
+                if (conn != null)
+                    conn.rollback();
+            } catch (Throwable e2) {
+            }
+
+        } finally {
+            try {
+                if (conn != null)
+                    conn.close();
+            } catch (Throwable e2) {
+            }
+            conn = null;
+        }
+
+        return new Object [] { retVal, new_id } ;
+    }
+
+
+    /**
      * <h3>Insert a record in a table</h3>
      * <p>
      * This method is used internally to insert a record
@@ -5768,6 +5888,17 @@ public class db {
         return value;
     }
 
+
+    /**
+     * Convert value to be written in database
+     *
+     * @param tbl_wrk
+     * @param colTypes
+     * @param nullable
+     * @param value
+     * @param operator
+     * @return
+     */
     static public Object[] format_db_value(workspace tbl_wrk, int colTypes, boolean nullable, String value, String operator) {
 
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
@@ -5798,12 +5929,13 @@ public class db {
             if (value != null) {
                 // refine
                 if (isOracle || isPostgres) {
-                    if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
+                    if (colTypes == 6 || colTypes == 93) { // date, datetime
                     	if(value.endsWith(" 0:0:0")) {
                             value = "TO_DATE('" + value.substring(0, value.length()-6) + "','YYYY-MM-DD')";
                             valueType = 0; // is an expression
                     	} else if(value.length() > 9) {
-                            value = "TO_DATE('" + value + "','YYYY-MM-DD HH24:MI:SS')";
+                            // value = "TO_DATE('" + value + "','YYYY-MM-DD HH24:MI:SS')";
+                            value = "TO_TIMESTAMP('" + value + "','YYYY-MM-DD HH24:MI:SS')";
                             valueType = 0; // is an expression
                     	} else {
                             value = "TO_DATE('" + value + "','YYYY-MM-DD')";
@@ -6359,7 +6491,7 @@ public class db {
                                     // N.B.: lascia il campo non assegnato, sarà risolto dal db
                                     setFieldValue = false;
                                     /*
-                                    defaultValue = solveVariableField(defaultValue, request);
+                                    defaultValue = solveVariableField(defaultValue, request, false);
                                     if (defaultValue != null) {
                                     }
                                     */
@@ -7938,11 +8070,52 @@ public class db {
 
 
 
-    static public String solveVariableField( String value, HttpServletRequest request) throws Exception {
+    static public String solveVariableField( String value, HttpServletRequest request, boolean solveSessionVars) throws Exception {
+        //
+        // varibili di sessione e altre dipendenti dal client
+        //
+        if(solveSessionVars) {
+            int nReplaced = 0;
+            if (value != null && !value.isEmpty()) {
+                String currentValue = null;
+                for (int i = 0; i < value.length(); i++) {
+                    if ((value.charAt(i) == '$' || value.charAt(i) == '%') && value.charAt(i + 1) == '{') {
+                        i += 2;
+                        int s = i;
+                        while (value.charAt(i) != '}' && i < value.length()) {
+                            i++;
+                        }
+                        String cVar = value.substring(s, i);
+                        if (!cVar.isEmpty()) {
+                            Object oVar = request.getSession().getAttribute(cVar);
+                            String cVarValue = oVar != null ? (String) String.valueOf(oVar) : null;
+                            if (cVarValue != null) {
+                                if (currentValue == null)
+                                    currentValue = "";
+                                currentValue += cVarValue;
+                                nReplaced++;
+                            }
+                        }
+                    } else {
+                        if (currentValue == null)
+                            currentValue = "";
+                        currentValue += value.charAt(i);
+                        nReplaced++;
+                    }
+                }
+                value = currentValue;
+            }
+        }
+        //
+        // varibili nel server
+        //
         if (value != null && !value.isEmpty()) {
             String currentValue = null;
+            int nReplaced = 0;
+            int ss = 0;
             for (int i = 0; i < value.length(); i++) {
                 if ((value.charAt(i) == '$' || value.charAt(i) == '%') && value.charAt(i + 1) == '{') {
+                    ss = i;
                     i += 2;
                     int s = i;
                     while (value.charAt(i) != '}' && i < value.length()) {
@@ -7950,22 +8123,36 @@ public class db {
                     }
                     String cVar = value.substring(s, i);
                     if (!cVar.isEmpty()) {
-                        Object oVar = request.getSession().getAttribute(cVar);
-                        String cVarValue = oVar != null ? (String) String.valueOf(oVar) : null;
-                        if(cVarValue != null) {
-                            if(currentValue == null)
+                        if("CURRENT_TIMESTAMP".equalsIgnoreCase(cVar)) {
+                            SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy H:mm:ss.SSS");
+                            String cVarValue = df.format(new Date(System.currentTimeMillis()));
+                            if (cVarValue != null) {
+                                if (currentValue == null)
+                                    currentValue = "";
+                                currentValue += cVarValue;
+                                nReplaced++;
+                            }
+                        } else if("currentTimeMillis".equalsIgnoreCase(cVar)) {
+                            String cVarValue = String.valueOf(System.currentTimeMillis());
+                            if (cVarValue != null) {
+                                if (currentValue == null)
+                                    currentValue = "";
+                                currentValue += cVarValue;
+                                nReplaced++;
+                            }
+                        } else {
+                            if (currentValue == null)
                                 currentValue = "";
-                            currentValue += cVarValue;
+                            currentValue += value.substring(ss, i+1);
                         }
                     }
                 } else {
-                    if(currentValue == null)
+                    if (currentValue == null)
                         currentValue = "";
                     currentValue += value.charAt(i);
                 }
             }
-
-            return currentValue;
+            value = currentValue;
         }
 
         return value;

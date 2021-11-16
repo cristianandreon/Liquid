@@ -7,8 +7,6 @@ package com.liquid;
 import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.JarURLConnection;
@@ -765,13 +763,32 @@ public class workspace {
                                 // System.out.println(warn);
                             }
 
+
+                            //
+                            // Praparazione risposta per il client
+                            //
+                            JSONObject tableJsonForClient = new JSONObject(tblWorkspace.tableJson.toString());
+
+
+                            //
+                            // Rosoluzione dei campi variabili (es. variabili di sessione) sull'oggetto da consegnare al client
+                            //
+                            int nVars = solveClientSideVariableFields(tableJsonForClient, request);
+                            tblWorkspace.tableJson.put("nVars", nVars);
+
+
+                            //
                             // script avvio client side o json
+                            //
                             if ("json".equalsIgnoreCase(returnType)) {
-                                result = tblWorkspace.clientTableJson;
+                                result = tableJsonForClient.toString();
+                                // result = tblWorkspace.clientTableJson;
                             } else if ("js".equalsIgnoreCase(returnType)) {
-                                result = "<script>" + getJSVariableFromControlId(controlId) + "={controlId:\"" + controlId + "\",json:'" + tblWorkspace.clientTableJson.replace("'", "\\'") + "'};</script>";
+                                result = "<script>" + getJSVariableFromControlId(controlId) + "={controlId:\"" + controlId + "\",json:'" + tableJsonForClient.toString().replace("'", "\\'") + "'};</script>";
+                                // result = "<script>" + getJSVariableFromControlId(controlId) + "={controlId:\"" + controlId + "\",json:'" + tblWorkspace.clientTableJson.replace("'", "\\'") + "'};</script>";
                             } else {
-                                result = "<script>glLiquidStartupTables.push({controlId:\"" + controlId + "\",json:'" + tblWorkspace.clientTableJson.replace("'", "\\'") + "'});</script>";
+                                result = "<script>glLiquidStartupTables.push({controlId:\"" + controlId + "\",json:'" + tableJsonForClient.toString().replace("'", "\\'") + "'});</script>";
+                                // result = "<script>glLiquidStartupTables.push({controlId:\"" + controlId + "\",json:'" + tblWorkspace.clientTableJson.replace("'", "\\'") + "'});</script>";
                             }
                             return result;
                         }
@@ -1514,23 +1531,24 @@ public class workspace {
                                                 //
                                                 // Save default in the database if not overwrited by json
                                                 //
-                                                boolean bStoreDefualt = false;
+                                                boolean bStoreMetadataDefualt = false;
                                                 if (col.has("default")) {
                                                     String sDefault = col.getString("default");
                                                     if (sDefault == null || sDefault.isEmpty()) {
-                                                        bStoreDefualt = true;
+                                                        bStoreMetadataDefualt = true;
                                                     } else {
-                                                        sDefault = db.solveVariableField( sDefault, request);
-                                                        if (sDefault == null || sDefault.isEmpty()) {
-                                                            bStoreDefualt = true;
+                                                        String sDefaultSolved = db.solveVariableField( sDefault, request, false );
+                                                        if (sDefaultSolved == null || sDefaultSolved.isEmpty()) {
+                                                            // N.B.: Lascia il default non risolto : sarà risolto a tempo debito
+                                                            // bStoreMetadataDefualt = true;
                                                         } else {
-                                                            col.put("default", sDefault);
+                                                            col.put("default", sDefaultSolved);
                                                         }
                                                     }
                                                 } else {
-                                                    bStoreDefualt = true;
+                                                    bStoreMetadataDefualt = true;
                                                 }
-                                                if (bStoreDefualt) {
+                                                if (bStoreMetadataDefualt) {
                                                     col.put("default", (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null));
                                                 }
 
@@ -2201,10 +2219,22 @@ public class workspace {
                 }
             }
 
+            //
+            // Praparazione risposta per il client
+            //
             JSONObject tableJsonForClient = new JSONObject(tableJson.toString());
 
+
             //
-            // ConnectionURL is managed at server side only, it may be including account data and musto not be passed to the client
+            // Rosoluzione dei campi variabili (es. variabili di sessione) sull'oggetto da consegnare al client
+            //
+            int nVars = solveClientSideVariableFields(tableJsonForClient, request);
+            tableJson.put("nVars", nVars);
+
+
+
+            //
+            // ConnectionURL is managed at server side only, it may be including account data and must not be passed to the client
             // QueryK is managed by server side only
             //
             for (String serverPriorityKey : serverPriorityKeys) {
@@ -2279,6 +2309,71 @@ public class workspace {
                 ThreadSession.removeThreadSessionInfo();
             }
         }
+    }
+
+
+    /**
+     * Risolve i campi varaibili collegati alle variabile ${} e %{}
+     *
+     * @param tableJsonForClient
+     * @param request
+     * @return
+     * @throws Exception
+     */
+    private static int solveClientSideVariableFields(JSONObject tableJsonForClient, HttpServletRequest request) throws Exception {
+        int solvedCount = 0;
+        if(tableJsonForClient.has("columns")) {
+            JSONArray cols = tableJsonForClient.getJSONArray("columns");
+            for(int ic=0; ic<cols.length(); ic++) {
+                JSONObject col = cols.getJSONObject(ic);
+                String [] keys = new String [] { "default" };
+                for(String key : Arrays.asList(keys)) {
+                    solvedCount += solveClientSideVariableFieldsKey(col, key, request);
+                }
+            }
+        }
+        if(tableJsonForClient.has("events")) {
+            JSONArray events = tableJsonForClient.getJSONArray("events");
+            for(int ic=0; ic<events.length(); ic++) {
+                JSONObject event = events.getJSONObject(ic);
+                String [] keys = new String [] { "server", "client" };
+                for(String key : Arrays.asList(keys)) {
+                    solvedCount += solveClientSideVariableFieldsKey(event, key, request);
+                }
+            }
+        }
+        if(tableJsonForClient.has("commands")) {
+            JSONArray commands = tableJsonForClient.getJSONArray("commands");
+            for(int ic=0; ic<commands.length(); ic++) {
+                JSONObject command = commands.getJSONObject(ic);
+                String [] keys = new String [] { "server", "client" };
+                for(String key : Arrays.asList(keys)) {
+                    solvedCount += solveClientSideVariableFieldsKey(command, key, request);
+                }
+            }
+        }
+        return solvedCount;
+    }
+
+    static public int solveClientSideVariableFieldsKey(JSONObject obj, String key, HttpServletRequest request) throws Exception {
+        int solvedCount = 0;
+        if(obj != null) {
+            if (obj.has(key)) {
+                String def = obj.getString(key);
+                if (def != null) {
+                    if (def.indexOf("${") >= 0 || def.indexOf("%{") >= 0) {
+                        String defSolved = db.solveVariableField(def, request, true);
+                        if (defSolved != null) {
+                            if (!defSolved.equals(def)) {
+                                solvedCount++;
+                                obj.put(key, defSolved);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return solvedCount;
     }
 
     static public JSONArray build_query_params(String query) throws JSONException {

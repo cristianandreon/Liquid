@@ -10,11 +10,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.logging.Level;
@@ -1038,6 +1036,19 @@ public class event {
         return "{ \"result\":0, \"error\":\"" + utility.base64Encode(error) + "\"}";
     }
 
+
+    /**
+     * Solve the field by the database engine
+     *
+     * @param conn
+     * @param col
+     * @param colTypes
+     * @param colPrecs
+     * @param defaultVlaue
+     * @param request
+     * @return
+     * @throws Exception
+     */
     static public String setFieldAsDefault(Connection conn, JSONObject col, int colTypes, int colPrecs, String defaultVlaue, HttpServletRequest request) throws Exception {
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
@@ -1104,7 +1115,9 @@ public class event {
                         rsdo = psdo.executeQuery();
 
                         if (rsdo != null) {
+
                             while (rsdo.next()) {
+
                                 if (colTypes == 8) {
                                     double dFieldValue = rsdo.getDouble(1);
                                     if (colPrecs < 0) {
@@ -1113,6 +1126,22 @@ public class event {
                                         nf.setMaximumFractionDigits(colPrecs);
                                         fieldValue = nf.format(dFieldValue);
                                     }
+
+                                } else if (colTypes == 6 || colTypes == 93) {
+                                    Timestamp ts = rsdo.getTimestamp(1);
+                                    SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy H:mm:ss.SSS");
+                                    fieldValue = df.format(ts);
+
+                                } else if (colTypes == 91) {
+                                    java.sql.Date dt = rsdo.getDate(1);
+                                    SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy");
+                                    fieldValue = df.format(dt);
+
+                                } else if (colTypes == 92) {
+                                    Time tt = rsdo.getTime(1);
+                                    SimpleDateFormat df = new SimpleDateFormat("H:mm:ss.SSS");
+                                    fieldValue = df.format(tt);
+
                                 } else {
                                     fieldValue = rsdo.getString(1);
                                 }

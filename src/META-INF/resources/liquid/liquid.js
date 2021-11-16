@@ -7475,6 +7475,14 @@ var Liquid = {
                         eventName = eventName.toCamelCase();
                         Liquid.onEvent(obj, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bAlwaysCallback);
                         command.step = 0;
+                    } else {
+                        if(isDef(commandPostFunc)) {
+                            try {
+                                commandPostFunc();
+                            } catch(e) {
+                                console.error(e);
+                            }
+                        }
                     }
                 }
             } else if(isDef(liquid.menuJson)) {
@@ -7856,19 +7864,23 @@ var Liquid = {
         }
         if(isDef(command.postFunc)) {
             try {
-                commandPostFunc();
+                command.postFunc();
             } catch(e) {
                 console.error(e);
             }
             command.postFunc = null;
         }
-
-        var isFormX = Liquid.isFormX(liquid);
-        var isAutoInsert = Liquid.isAutoInsert(liquid);
-        if(isFormX || isAutoInsert) {
-            Liquid.autoInsert(liquid);
+        if(command) {
+            if(command.name) {
+                if(command.name != 'insert') {
+                    var isFormX = Liquid.isFormX(liquid);
+                    var isAutoInsert = Liquid.isAutoInsert(liquid);
+                    if (isFormX || isAutoInsert) {
+                        Liquid.autoInsert(liquid);
+                    }
+                }
+            }
         }
-
     },
     /**
      * Enable a command
