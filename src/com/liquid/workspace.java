@@ -2352,6 +2352,21 @@ public class workspace {
                 }
             }
         }
+        //
+        // NO : sono risolti lato server di volta in volta
+        //
+        /*
+        if(tableJsonForClient.has("preFilters")) {
+            JSONArray preFilters = tableJsonForClient.getJSONArray("preFilters");
+            for(int ic=0; ic<preFilters.length(); ic++) {
+                JSONObject preFilter = preFilters.getJSONObject(ic);
+                String [] keys = new String [] { "value", "name" };
+                for(String key : Arrays.asList(keys)) {
+                    solvedCount += solveClientSideVariableFieldsKey(preFilter, key, request);
+                }
+            }
+        }
+        */
         return solvedCount;
     }
 
