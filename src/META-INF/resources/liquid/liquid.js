@@ -5246,6 +5246,10 @@ var Liquid = {
             } else {
                 if(isDef(bReloadAlways)) {
                     Liquid.loadData(liquid, null, "executeFilter/reload");
+                } else {
+                    if(liquid.loadCounter <= 0) {
+                        Liquid.loadData(liquid, null, "executeFilter/reload");
+                    }
                 }
             }
         };
@@ -11298,6 +11302,17 @@ var Liquid = {
 
                     layout.firstNodeId = curNodes && curNodes.length ? curNodes[0].id : null;
                     Liquid.linkLayoutToFields(liquid, layout, layout.containerObj, bSetup);
+
+
+                    var bRestoreList = false;
+                    if(layout) {
+                        bRestoreList = Liquid.resizeIfDocked(liquid, layout);
+                    } else {
+                        bRestoreList = true;
+                    }
+                    if(bRestoreList) {
+                        Liquid.setAggrigParent(liquid, null, null);
+                    }
                 }
             }
         }
@@ -12241,7 +12256,7 @@ var Liquid = {
                     linkedRow1B = Number(linkedRow1B);
                     if(linkedRow1B === iRow + 1) {
                         var baseIndex1B = layout.baseIndex1B;
-                        var disabled = false;
+                        var disabled = true;
                         var nodes = null;
                         if(isDef(liquid.gridOptions)) {
                             if(isDef(liquid.gridOptions.api)) {
@@ -12266,15 +12281,17 @@ var Liquid = {
                             var isFormX = Liquid.isFormX(liquid);
                             var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
                             if(isFormX || isAutoInsert) {
-                                if(liquid.addingRow) {
+                                if (liquid.addingRow) {
+                                    disabled = false;
                                     value = liquid.addingRow[linkedField];
                                 } else {
                                     disabled = true;
                                     value = "";
                                 }
-                            } else if(isDialogX) {
+                            }
+                            if(layout.rowsContainer[iRow].isAdding) {
                                 disabled = false;
-                                value = "";
+                                value = liquid.addingRow[linkedField];
                             } else {
                                 disabled = true;
                                 value = "";
@@ -13741,35 +13758,35 @@ var Liquid = {
     },resizeIfDocked:function(liquid, gridObject) {
         var bRestoreList = false;
         if(isDef(liquid)) {
-                    if(isDef(gridObject.dock)) {
-                        var parentNode = null;
-                        if(gridObject.dock.side === 'left') {
-                            liquid.dockerTblLeft.style.display = '';
-                            parentNode = liquid.dockerTblLeft;
-                            if(isDef(gridObject.dock.size)) {
-                                liquid.dockerTblLeft.style.width = gridObject.dock.size;
-                            }
-                            if(isDef(gridObject.dock.minSize)) {
-                                if(liquid.dockerTblLeft.style.offsetWidth < gridObject.dock.minSize) {
-                                    liquid.dockerTblLeft.style.width = gridObject.dock.minSize;
-                                }
-                            }
-                        } else if(gridObject.dock.side === 'right') {
-                            liquid.dockerTblRight.style.display = '';
-                            parentNode = liquid.dockerTblRight;
-                        }
-                        if(isDef(gridObject.dock.size)) {                                
-                            parentNode.style.width = gridObject.dock.size;
-                        }
-                        if(parentNode) {
-                            Liquid.setAggrigParent(liquid, parentNode, gridObject.dock);
-                        } else {
-                            bRestoreList = true;
-                        }
-                    } else {
-                        bRestoreList = true;
+            if(isDef(gridObject.dock)) {
+                var parentNode = null;
+                if(gridObject.dock.side === 'left') {
+                    liquid.dockerTblLeft.style.display = '';
+                    parentNode = liquid.dockerTblLeft;
+                    if(isDef(gridObject.dock.size)) {
+                        liquid.dockerTblLeft.style.width = gridObject.dock.size;
                     }
+                    if(isDef(gridObject.dock.minSize)) {
+                        if(liquid.dockerTblLeft.style.offsetWidth < gridObject.dock.minSize) {
+                            liquid.dockerTblLeft.style.width = gridObject.dock.minSize;
+                        }
+                    }
+                } else if(gridObject.dock.side === 'right') {
+                    liquid.dockerTblRight.style.display = '';
+                    parentNode = liquid.dockerTblRight;
                 }
+                if(isDef(gridObject.dock.size)) {
+                    parentNode.style.width = gridObject.dock.size;
+                }
+                if(parentNode) {
+                    Liquid.setAggrigParent(liquid, parentNode, gridObject.dock);
+                } else {
+                    bRestoreList = true;
+                }
+            } else {
+                bRestoreList = true;
+            }
+        }
         return bRestoreList;
     },
     setAggrigParent:function(obj, parentNode, dock) {
@@ -13850,6 +13867,13 @@ var Liquid = {
                     }
                     dock.parentNode = parentNode;
                     liquid.currentDock = dock;
+
+                    // put the list visible
+                    if(liquid.tableJson.listTabVisible === false) {
+                        console.info("LIQUID: force visibility of list on control '"+liquid.controlId+"'");
+                        liquid.aggridContainerObj.style.visibility = 'visible';
+                        liquid.aggridContainerObj.style.display = '';
+                    }
                 }
                 parentNode.appendChild(liquid.listObj);
                 /*
@@ -14064,6 +14088,13 @@ var Liquid = {
                         try { itemObj.draggable = false; } catch (e) { }
                         try { itemObj.parentNode.draggable = false; } catch (e) { }
                         try { itemObj.parentNode.parentNode.draggable = false; } catch (e) { }
+                        try {
+                            if(itemObj.type == "checkbox") {
+                                if(itemObj.onclick) {
+                                    itemObj.onclick = null;
+                                }
+                            }
+                        } catch (e) { }
                         if(itemResetObj) { itemResetObj.disabled = false; itemResetObj.style.filter = ''; itemResetObj.style.width = '16px'; }
                         if(itemReloadObj) { itemReloadObj.disabled = false; itemReloadObj.style.filter = ''; itemReloadObj.style.width = '16px'; }
                         if(itemObj.classList.contains("liquidLookup")) {
@@ -14087,8 +14118,14 @@ var Liquid = {
                         try { itemObj.parentNode.draggable = true; } catch (e) { }
                         try { itemObj.parentNode.parentNode.draggable = true; } catch (e) { }
                         try { if(Liquid.projectMode) itemObj.draggable = true; } catch (e) { }
-                        if(itemResetObj) { itemResetObj.disabled = false; itemResetObj.style.filter = ''; itemResetObj.style.width = '0px'; }
-                        if(itemReloadObj) { itemReloadObj.disabled = false; itemReloadObj.style.filter = ''; itemReloadObj.style.width = '0px'; }
+                        try {
+                            if(itemObj.type == "checkbox") {
+                                itemObj.disabled = false;
+                                itemObj.onclick = function() { return false };
+                            }
+                        } catch (e) { }
+                        if(itemResetObj) { itemResetObj.disabled = true; itemResetObj.style.filter = ''; itemResetObj.style.width = '0px'; }
+                        if(itemReloadObj) { itemReloadObj.disabled = true; itemReloadObj.style.filter = ''; itemReloadObj.style.width = '0px'; }
                         if(mode === "delete") {
                             itemObj.classList.add('liquidGridControlDel');
                         } else {
@@ -14328,13 +14365,21 @@ var Liquid = {
                     if(targetObj.type === 'number') if (isDef(value)) if(isNaN(Number(value))) value = value.replace(/\,/g, ".");
                     targetObj.value = value
                 }
-                if(isDef(disabled)) targetObj.disabled = disabled;                    
+                if(isDef(disabled)) {
+                    if(targetObj.type !== "checkbox") {
+                        targetObj.disabled = disabled;
+                    }
+                }
                 return 1;
             } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P') {
                 jQ1124(targetObj).html(value);
                 // targetObj.innertHTML = value;
                 // targetObj.innerText = String(value);
-                if(isDef(disabled)) targetObj.disabled = disabled;
+                if(isDef(disabled)) {
+                    if(targetObj.type !== "checkbox") {
+                        targetObj.disabled = disabled;
+                    }
+                }
                 return 0;
             } else {
                 console.error("Unknown control type : " + targetObj.nodeName);
