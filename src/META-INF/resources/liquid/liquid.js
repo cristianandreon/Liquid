@@ -11889,7 +11889,7 @@ var Liquid = {
             } else if(obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
                 objLinkers = [obj.innerHTML, obj.id, obj.classList];
                 objLinkersTarget = [null, null, "className"];
-            } else if(obj.nodeName.toUpperCase() === 'A' || obj.nodeName.toUpperCase() === 'BUTTON') {
+            } else if(obj.nodeName.toUpperCase() === 'A' || obj.nodeName.toUpperCase() === 'BUTTON' || obj.nodeName.toUpperCase() === 'IMG') {
                 objLinkers = [obj.innerHTML, obj.id, obj.classList];
                 objLinkersTarget = [null, null, "className"];
             } else if(obj.nodeName.toUpperCase() === 'FORM') {
@@ -14375,6 +14375,14 @@ var Liquid = {
                 jQ1124(targetObj).html(value);
                 // targetObj.innertHTML = value;
                 // targetObj.innerText = String(value);
+                if(isDef(disabled)) {
+                    if(targetObj.type !== "checkbox") {
+                        targetObj.disabled = disabled;
+                    }
+                }
+                return 0;
+            } else if(targetObj.nodeName.toUpperCase() === 'IMG') {
+                jQ1124(targetObj).attr("src", value);
                 if(isDef(disabled)) {
                     if(targetObj.type !== "checkbox") {
                         targetObj.disabled = disabled;

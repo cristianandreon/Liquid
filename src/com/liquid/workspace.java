@@ -744,7 +744,7 @@ public class workspace {
                 }
             }
 
-            // Is in cache and updated ?
+            // Is in cache and updated ? // auto_bid_max // 7800359548847180201
             long sourceTableJsonHash = workspace.getHash(sTableJson);
             if (cacheEnabled) {
                 tblWorkspace = workspace.get_tbl_manager_workspace(controlId);
@@ -791,6 +791,39 @@ public class workspace {
                                 // result = "<script>glLiquidStartupTables.push({controlId:\"" + controlId + "\",json:'" + tblWorkspace.clientTableJson.replace("'", "\\'") + "'});</script>";
                             }
                             return result;
+
+                        } else {
+                            //
+                            // Contenuto modificato : distruzione di tutti i controlli nidificati (es. foreign tables)
+                            //
+                            if(tblWorkspace.tableJson.has("foreignTables")) {
+                                JSONArray fts = tblWorkspace.tableJson.getJSONArray("foreignTables");
+                                if(fts != null) {
+                                    for(int ift=0; ift<fts.length(); ift++) {
+                                        JSONObject ft = fts.getJSONObject(ift);
+                                        if(ft != null) {
+                                            if(ft.has("foreignTable")) {
+                                                if(ft.has("foreignColumn")) {
+                                                    if(ft.has("column")) {
+                                                        String sFt = ft.getString("foreignTable");
+                                                        String sFc = ft.getString("foreignColumn");
+                                                        String c = ft.getString("column");
+                                                        // bids$auction_id$id@NewBid
+                                                        String resettingControlId = sFt+"$"+sFc+"$"+c+"@"+tblWorkspace.controlId;
+                                                        for (int i = 0; i < glTblWorkspaces.size(); i++) {
+                                                            tblWorkspace = glTblWorkspaces.get(i);
+                                                            if (tblWorkspace.controlId.equalsIgnoreCase(resettingControlId)) {
+                                                                tblWorkspace.sourceTableJsonHash = -1;
+                                                                // "*INVALIDATED-BY-"+tblWorkspace.controlId+"*";
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
