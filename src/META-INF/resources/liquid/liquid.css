@@ -180,6 +180,9 @@ html, body { height: 100% }
 .liquidDockerChild { display: block; width: 100%; }
 .liquidDockerHContainer { width: 100%; border: 0px solid red; display: block; }
 .liquidDockerVContainer { height: auto; border: 0px solid blue; display: block; }
+.liquidDockerVContainerLeft { border-right: 1px solid lightgray; }
+.liquidDockerVContainerCenter { }
+.liquidDockerVContainerRight { border-left: 1px solid lightgray; }
 .liquidCombo { background-color: rgba(213, 225, 232, 0.45); }
 .liquidComboClosed { border:1px solid lightGray; box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
 .liquidComboOpened {  }

@@ -323,9 +323,31 @@ public class workspace {
      */
     static public workspace get_tbl_manager_workspace(String controlId) {
         for (int i = 0; i < glTblWorkspaces.size(); i++) {
-            workspace tblWorkspace = tblWorkspace = glTblWorkspaces.get(i);
-            if (tblWorkspace.controlId.equalsIgnoreCase(controlId)) {
-                return tblWorkspace;
+            workspace tblWorkspace = glTblWorkspaces.get(i);
+            if(tblWorkspace != null) {
+                if (tblWorkspace.controlId.equalsIgnoreCase(controlId)) {
+                    return tblWorkspace;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * restituisce il workspace di un controllo
+     *
+     * @param databaseSchemaTable
+     * @return
+     */
+    static public workspace get_tbl_manager_workspace_from_db(String databaseSchemaTable) {
+        String srcDatabaseSchemaTable = liquidize.liquidizeString(databaseSchemaTable, controlIdSeparator);
+        for (int i = 0; i < glTblWorkspaces.size(); i++) {
+            workspace tblWorkspace = glTblWorkspaces.get(i);
+            if(tblWorkspace != null) {
+                String wrkDatabaseSchemaTable = liquidize.liquidizeString(tblWorkspace.databaseSchemaTable, controlIdSeparator);
+                if (wrkDatabaseSchemaTable.equalsIgnoreCase(srcDatabaseSchemaTable)) {
+                    return tblWorkspace;
+                }
             }
         }
         return null;
@@ -814,6 +836,7 @@ public class workspace {
                                                             tblWorkspace = glTblWorkspaces.get(i);
                                                             if (tblWorkspace.controlId.equalsIgnoreCase(resettingControlId)) {
                                                                 tblWorkspace.sourceTableJsonHash = -1;
+                                                                glTblWorkspaces.set(i, null);
                                                                 // "*INVALIDATED-BY-"+tblWorkspace.controlId+"*";
                                                             }
                                                         }
@@ -2164,56 +2187,58 @@ public class workspace {
 
             for (int i = 0; i < glTblWorkspaces.size(); i++) {
                 tblWorkspace = glTblWorkspaces.get(i);
-                if (tblWorkspace.controlId.equalsIgnoreCase(controlId)) {
+                if(tblWorkspace != null) {
+                    if (tblWorkspace.controlId.equalsIgnoreCase(controlId)) {
 
-                    tblWorkspace.sourceTableJsonHash = sourceTableJsonHash;
+                        tblWorkspace.sourceTableJsonHash = sourceTableJsonHash;
 
-                    //
-                    // Modalita' progettazione :
-                    // Aggiunta del genesisToken  ( per abilitare la scrittura del controllo su file nel server )
-                    //
-                    if(tblWorkspace.tableJson.has("trackFileName")) {
-                        boolean trackFileName = tblWorkspace.tableJson.getBoolean("trackFileName");
-                        if (trackFileName) {
-                            tblWorkspace.tableJson.put("token", genesisToken);
-                        }
-                    }
-
-                    if (tblWorkspace.token == null || tblWorkspace.token.isEmpty()) {
-                        tblWorkspace.token = token;
-                        // set thre token in the json
-                        tableJson.put("token", token);
-                    } else {
-                        tableJson.put("token", tblWorkspace.token);
-                    }
-
-                    if (!tblWorkspace.tableJson.equals(tableJson)) {
-                        if (tblWorkspace.tableJson != null) {
-                            if(!utility.compare_json(tblWorkspace.tableJson, tableJson, new ArrayList<String>( Arrays.asList("cypher","token" ) ))) {
-                                System.out.println("WARNING : Overwrited Configuration of control : " + controlId);
+                        //
+                        // Modalita' progettazione :
+                        // Aggiunta del genesisToken  ( per abilitare la scrittura del controllo su file nel server )
+                        //
+                        if (tblWorkspace.tableJson.has("trackFileName")) {
+                            boolean trackFileName = tblWorkspace.tableJson.getBoolean("trackFileName");
+                            if (trackFileName) {
+                                tblWorkspace.tableJson.put("token", genesisToken);
                             }
                         }
 
-                        // Keep server side define (es.: query / connectionURL)
-                        recoveryKeyFromServer(tblWorkspace.tableJson, tableJson);
+                        if (tblWorkspace.token == null || tblWorkspace.token.isEmpty()) {
+                            tblWorkspace.token = token;
+                            // set thre token in the json
+                            tableJson.put("token", token);
+                        } else {
+                            tableJson.put("token", tblWorkspace.token);
+                        }
 
-                        tblWorkspace.tableJson = tableJson;
+                        if (!tblWorkspace.tableJson.equals(tableJson)) {
+                            if (tblWorkspace.tableJson != null) {
+                                if (!utility.compare_json(tblWorkspace.tableJson, tableJson, new ArrayList<String>(Arrays.asList("cypher", "token")))) {
+                                    System.out.println("WARNING : Overwrited Configuration of control : " + controlId);
+                                }
+                            }
+
+                            // Keep server side define (es.: query / connectionURL)
+                            recoveryKeyFromServer(tblWorkspace.tableJson, tableJson);
+
+                            tblWorkspace.tableJson = tableJson;
+                        }
+
+                        // Add this session to workspace
+                        tblWorkspace.addSession(ThreadSession.getThreadSessionInfo());
+
+                        // owner is queue of Object
+                        tblWorkspace.setOwner(owner);
+
+                        tblWorkspace.driverClass = connToUse != null ? connToUse.getClass().getName() : null;
+                        tblWorkspace.defaultDatabase = defaultDatabase;
+                        tblWorkspace.defaultSchema = defaultSchema;
+                        tblWorkspace.dbProductName = dbProductName;
+                        workspace.setDatabaseShemaTable(tblWorkspace);
+                        System.out.println("/* LIQUID INFO : control : " + controlId + " driverClass:" + tblWorkspace.driverClass + " dbProductName:" + dbProductName + "*/");
+                        bFoundWorkspace = true;
+                        break;
                     }
-
-                    // Add this session to workspace
-                    tblWorkspace.addSession(ThreadSession.getThreadSessionInfo());
-
-                    // owner is queue of Object
-                    tblWorkspace.setOwner(owner);
-
-                    tblWorkspace.driverClass = connToUse != null ? connToUse.getClass().getName() : null;
-                    tblWorkspace.defaultDatabase = defaultDatabase;
-                    tblWorkspace.defaultSchema = defaultSchema;
-                    tblWorkspace.dbProductName = dbProductName;
-                    workspace.setDatabaseShemaTable(tblWorkspace);
-                    System.out.println("/* LIQUID INFO : control : " + controlId + " driverClass:" + tblWorkspace.driverClass + " dbProductName:" + dbProductName + "*/");
-                    bFoundWorkspace = true;
-                    break;
                 }
             }
 
@@ -2233,7 +2258,6 @@ public class workspace {
 
                 boolean bRemoceSession = false;
                 try {
-
                     // Add this session to workspace
                     tblWorkspace.addSession(ThreadSession.getThreadSessionInfo());
 
@@ -2243,7 +2267,17 @@ public class workspace {
                     workspace.setDatabaseShemaTable(tblWorkspace);
                     // tblWorkspace.get_connection assegnato a default_connection
                     System.out.println("/* LIQUID INFO : new control : " + controlId + " driverClass:" + tblWorkspace.driverClass + " dbProductName:" + dbProductName + "*/");
-                    glTblWorkspaces.add(tblWorkspace);
+
+                    boolean bFound = false;
+                    for(int ifree=0; ifree<glTblWorkspaces.size(); ifree++) {
+                        if(glTblWorkspaces.get(ifree) == null) {
+                            glTblWorkspaces.set(ifree, tblWorkspace);
+                            bFound = true;
+                            break;
+                        }
+                    }
+                    if(!bFound)
+                        glTblWorkspaces.add(tblWorkspace);
 
                 } finally {
                     if (bRemoceSession) {
@@ -2400,6 +2434,29 @@ public class workspace {
             }
         }
         */
+
+        //
+        // Foreign tables ...
+        //
+        if(tableJsonForClient.has("foreignTables")) {
+            JSONArray foreignTables = tableJsonForClient.getJSONArray("foreignTables");
+            for(int ift=0; ift<foreignTables.length(); ift++) {
+                JSONObject foreignTable = foreignTables.getJSONObject(ift);
+                if (foreignTable.has("options")) {
+                    JSONObject options = foreignTable.getJSONObject("options");
+                    if (options.has("columns")) {
+                        JSONArray cols = options.getJSONArray("columns");
+                        for (int ic = 0; ic < cols.length(); ic++) {
+                            JSONObject col = cols.getJSONObject(ic);
+                            String[] keys = new String[]{"default"};
+                            for (String key : Arrays.asList(keys)) {
+                                solvedCount += solveClientSideVariableFieldsKey(col, key, request);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return solvedCount;
     }
 
@@ -2600,10 +2657,14 @@ public class workspace {
                     workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null && !tblWrk.isEmpty() ? tblWrk : controlId);
                     if (tbl_wrk == null) {
                         // Nessuna definizione predefinita : costruzione connessione minima
-                        String sTableJson = "{\"table\":\"" + table + "\",\"columns\":\"*\"}";
+                        String sTableJson = "{\"table\":\"" + table.replace("\"", "") + "\",\"columns\":\"*\"}";
                         JSONObject tableJson = new JSONObject(sTableJson);
-                        tableJson.put("database", database);
-                        tableJson.put("schema", schema);
+                        if(database != null) {
+                            tableJson.put("database", database.replace("\"", ""));
+                        }
+                        if(schema != null) {
+                            tableJson.put("schema", schema.replace("\"", ""));
+                        }
                         if (sRequest != null && !sRequest.isEmpty()) {
                             //
                             // Unione voci nella request ... es.: commands, filter, etc... deveno essere validate dal server
@@ -3514,7 +3575,11 @@ public class workspace {
 
     // Wrappers
     static public String getSelection(Object tbl_wrk, String params) throws Exception {
-        return getSelection(((workspace) tbl_wrk).controlId, params);
+        if(tbl_wrk instanceof String) {
+            return getSelection((String)tbl_wrk, params);
+        } else {
+            return getSelection(((workspace) tbl_wrk).controlId, params);
+        }
     }
 
     static public long getSelectionCount(Object tbl_wrk, String params) {

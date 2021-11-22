@@ -361,28 +361,23 @@ public class db {
                     table = tbl_wrk.tableJson.getString("table");
                 } catch (Exception e) {
                 }
-                try {
+                if(tbl_wrk.tableJson.has("view")) {
                     view = tbl_wrk.tableJson.getString("view");
-                } catch (Exception e) {
                 }
-                try {
+                if(tbl_wrk.tableJson.has("columns")) {
                     cols = tbl_wrk.tableJson.getJSONArray("columns");
-                } catch (Exception e) {
                 }
-                try {
+                if(tbl_wrk.tableJson.has("primaryKey")) {
                     primaryKey = tbl_wrk.tableJson.getString("primaryKey");
-                } catch (Exception e) {
                 }
-                try {
+                if(tbl_wrk.tableJson.has("query")) {
                     query = tbl_wrk.tableJson.getString("query");
                     if(query != null) {
                         query = utility.base64Decode(query);
                     }
-                } catch (Exception e) {
                 }
-                try {
+                if(tbl_wrk.tableJson.has("token")) {
                     token = tbl_wrk.tableJson.getString("token");
-                } catch (Exception e) {
                 }
 
                 // set the connection
@@ -1566,23 +1561,36 @@ public class db {
                 int[] colDigits = new int[cols.length()];
                 boolean[] colNullable = new boolean[cols.length()];
                 for (int ic = 0; ic < cols.length(); ic++) {
-                    try {
-                        colTypes[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("type"));
-                    } catch (Exception e) {
+
+                    JSONObject col = cols.getJSONObject(ic);
+
+                    if(col.has("type")) {
+                        colTypes[ic] = Integer.parseInt(col.getString("type"));
                     }
-                    try {
-                        colPrecs[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("precision"));
-                    } catch (Exception e) {
+                    if(col.has("precision")) {
+                        colPrecs[ic] = Integer.parseInt(col.getString("precision"));
+                    } else {
                         colPrecs[ic] = -1;
                     }
-                    try {
-                        colNullable[ic] = cols.getJSONObject(ic).getBoolean("nullable");
-                    } catch (Exception e) {
+                    if(col.has("nullable")) {
+                        colNullable[ic] = col.getBoolean("nullable");
+                    } else {
                         colNullable[ic] = true;
                     }
-                    try {
-                        colDigits[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("digits"));
-                    } catch (Exception e) {
+                    if(col.has("digits")) {
+                        try {
+                            Object digits = col.get("digits");
+                            if(digits instanceof String) {
+                                colDigits[ic] = Integer.parseInt((String)digits);
+                            } else if(digits instanceof Integer) {
+                                colDigits[ic] = (int)digits;
+                            } else {
+                                colDigits[ic] = -1;
+                            }
+                        } catch(Exception e) {
+                            int lb = 1;
+                        }
+                    } else {
                         colDigits[ic] = -1;
                     }
                 }
@@ -1817,18 +1825,16 @@ public class db {
                             col = cols.getJSONObject(ic);
                             String colName = null;
                             String colTable = null;
-                            try {
+
+                            if(col.has("foreignTable")) {
                                 colTable = col.getString("foreignTable");
-                            } catch (Exception e) {
                             }
-                            try {
+                            if(col.has("name")) {
                                 colName = col.getString("name");
-                            } catch (Exception e) {
                             }
                             String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
-                            try {
+                            if(col.has("alias")) {
                                 colAlias = col.getString("alias");
-                            } catch (Exception e) {
                             }
 
                             
@@ -2401,6 +2407,7 @@ public class db {
                                             if (colDigits[ic] < 0) {
                                                 fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
                                             } else {
+                                                nf.setGroupingUsed(false);
                                                 nf.setMaximumFractionDigits(colDigits[ic]);
                                                 fieldValue = nf.format(dFieldValue);
                                             }
@@ -2993,22 +3000,17 @@ public class db {
                     sPojoMode += " ReadOnly";
                 }
             }
-
-            try {
+            if(tbl_wrk.tableJson.has("columns")) {
                 cols = tbl_wrk.tableJson.getJSONArray("columns");
-            } catch (Exception e) {
             }
-            try {
+            if(tbl_wrk.tableJson.has("table")) {
                 table = tbl_wrk.tableJson.getString("table");
-            } catch (Exception e) {
             }
-            try {
+            if(tbl_wrk.tableJson.has("primaryKey")) {
                 primaryKey = tbl_wrk.tableJson.getString("primaryKey");
-            } catch (Exception e) {
             }
-            try {
+            if(tbl_wrk.tableJson.has("parent")) {
                 parentControlId = tbl_wrk.tableJson.getString("parent");
-            } catch (Exception e) {
             }
 
             Map<String, Class<?>> props = new HashMap<String, Class<?>>();
@@ -3802,9 +3804,11 @@ public class db {
                     rowsData.put(rowDataMod);
                 } else {
                     rowDataMod = com.liquid.event.getJSONObject(rowData.toString(), "modifications");
+                    if(rowDataMod != null) {
                       // Da modification a rowData .. a carico della ricevente
-                    if(rowDataMod.has("fields")) {
-                        rowsData.put(rowDataMod);
+                        if(rowDataMod.has("fields")) {
+                            rowsData.put(rowDataMod);
+                        }
                     }
                 }
             } else {
@@ -3849,16 +3853,37 @@ public class db {
             return null;
         }
     }
-    
-    
+
+
+    /**
+     * Load single bean for given workspace and primaryKey
+     *
+     * @param tbl_wrk
+     * @param primaryKey
+     * @return
+     * @throws Throwable
+     */
+    public static Object load_bean(workspace tbl_wrk, Object primaryKey) throws Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest)null, tbl_wrk.controlId, null, null, null, primaryKey, 1);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
+
+
+
+
     /**
      * Load single bean for given database.schema.table + primaryKey
-     * 
+     *
      * It also load foreign tables definitions but not values
-     * 
+     *
      * ControlId is automatically created if not exist (from databaseSchemaTable)
-     * 
-     * 
+     *
+     *
      * @param request
      * @param databaseSchemaTable
      * @param columns
@@ -3869,7 +3894,6 @@ public class db {
      * @throws JSONException
      * @throws Throwable 
      */
-    
     static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, Object primaryKey) throws JSONException, Throwable {
         ArrayList<Object> beans = load_beans(request, databaseSchemaTable, columns, null, primaryKey, 1);
         if (beans != null) {
@@ -3936,6 +3960,10 @@ public class db {
             if (tbl_wrk == null) {
                 runtimeControlId = workspace.getControlIdFromTable(databaseSchemaTable);
                 tbl_wrk = workspace.get_tbl_manager_workspace(runtimeControlId);
+                if (tbl_wrk == null) {
+                    runtimeControlId = workspace.getControlIdFromTable(databaseSchemaTable);
+                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db(runtimeControlId);
+                }
             }
         } else {
             tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
@@ -4047,6 +4075,16 @@ public class db {
      */
     static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition, long maxRows) {
         return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
+    }
+
+    static public Object load_bean(String databaseSchemaTable, String columns, String where_condition) {
+        ArrayList<Object> beans = load_beans((HttpServletRequest) null, (String) columns, databaseSchemaTable, null, where_condition, 1);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
     }
 
     static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String where_condition, long maxRows) {
@@ -4285,7 +4323,9 @@ public class db {
                     // try { foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables"); } catch(Exception e) {}
                     // Array foreign tables di partenza
                     JSONArray foreignTablesJson = null;
-                    try { foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
+                    if(tbl_wrk.tableJson.has("foreignTables")) {
+                        foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables");
+                    }
 
                     //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
                     Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
@@ -5238,6 +5278,19 @@ public class db {
         return processModification(p1, p2, p3, p4, p5, "update");
     }
 
+
+
+    public static String updateField(workspace wrk, Object key_id, String status, Object requestParam) throws Throwable {
+        if (wrk != null) {
+            Object bidBean = db.load_bean((HttpServletRequest) requestParam, "cnconline.bids", null, (Object) key_id);
+            if (bidBean != null) {
+                utility.set(bidBean, "status", "R");
+                return db.update(bidBean, wrk);
+            }
+        }
+        return null;
+    }
+
     /**
      * <h3>Delete a record in a table</h3>
      * <p>
@@ -5330,9 +5383,8 @@ public class db {
                 }
 
                 boolean isSystem = false;
-                try {
-                    liquid.tableJson.getBoolean("isSystem");
-                } catch (JSONException e) {
+                if(liquid.tableJson.has("isSystem")) {
+                    isSystem = liquid.tableJson.getBoolean("isSystem");
                 }
                 if (isSystem) {
                     // Persistenza non attiva
@@ -5360,9 +5412,8 @@ public class db {
                             JSONArray modificationsJSON = paramJSON.getJSONArray("modifications");
 
                             String jsonType = null;
-                            try {
+                            if(paramJSON.has("type")) {
                                 jsonType = paramJSON.getString("type");
-                            } catch (JSONException e) {
                             }
                             String sType = type != null ? type : (paramJSON.has("type") ? paramJSON.getString("type") : "1");
 
@@ -5371,18 +5422,29 @@ public class db {
                                 int[] colPrecs = new int[cols.length()];
                                 int[] colDigits = new int[cols.length()];
                                 for (int ic = 0; ic < cols.length(); ic++) {
+                                    JSONObject col = cols.getJSONObject(ic);
                                     try {
-                                        colTypes[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("type"));
+                                        colTypes[ic] = Integer.parseInt(col.getString("type"));
                                     } catch (NumberFormatException | JSONException e) {
                                     }
-                                    try {
-                                        colPrecs[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("precision"));
-                                    } catch (NumberFormatException | JSONException e) {
+                                    if(col.has("precision")) {
+                                        Object precision = col.get("precision");
+                                        if(precision instanceof String) {
+                                            colPrecs[ic] = Integer.parseInt((String)precision);
+                                        } else {
+                                            colPrecs[ic] = (int)precision;
+                                        }
+                                    } else {
                                         colPrecs[ic] = -1;
                                     }
-                                    try {
-                                        colDigits[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("digits"));
-                                    } catch (NumberFormatException | JSONException e) {
+                                    if(col.has("digits")) {
+                                        Object digit = col.get("digits");
+                                        if(digit instanceof String){
+                                            colDigits[ic] = Integer.parseInt((String) digit);
+                                        } else {
+                                            colDigits[ic] = (int)digit;
+                                        }
+                                    } else {
                                         colDigits[ic] = -1;
                                     }
                                 }
@@ -5455,26 +5517,24 @@ public class db {
 
                                                                     if (!autoIncString) {
 
-                                                                        try {
+                                                                        if(col.has("foreignTable")) {
                                                                             foreignTable = col.getString("foreignTable");
-                                                                        } catch (Exception e) {
                                                                         }
-                                                                        try {
+                                                                        if(col.has("foreignColumn")) {
                                                                             foreignColumn = col.getString("foreignColumn");
-                                                                        } catch (Exception e) {
                                                                         }
-                                                                        try {
-                                                                            foreignEdit = col.getString("foreignEdit");
-                                                                        } catch (Exception e) {
+                                                                        if(col.has("foreignEdit")) {
+                                                                            Object foreignOEdit = col.get("foreignEdit");
+                                                                            if(foreignOEdit instanceof String) {
+                                                                                foreignEdit = col.getString("foreignEdit");
+                                                                            } else if(foreignOEdit instanceof Boolean) {
+                                                                                foreignBEdit = col.getBoolean("foreignEdit");
+                                                                            }
                                                                         }
-                                                                        try {
-                                                                            foreignBEdit = col.getBoolean("foreignEdit");
-                                                                        } catch (Exception e) {
-                                                                        }
-                                                                        try {
+                                                                        if(col.has("column")) {
                                                                             sourceColumn = col.getString("column");
-                                                                        } catch (Exception e) {
                                                                         }
+
 
                                                                         //
                                                                         // compute the value by metadata
@@ -5918,7 +5978,7 @@ public class db {
         if ((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("sqlserver.")) || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("sqlserver"))) {
             isSqlServer = true;
         }
-        int valueType = 1; // srting
+        int valueType = 1; // string
         
         if (colTypes == 8 || colTypes == 7) { // float
             value = value.replace(",", ".");
@@ -5971,6 +6031,9 @@ public class db {
                         valueType = 0; // is an expression
                     }
                 }
+            } else {
+                // preserva il tipo dato
+                valueType = colTypes;
             }
         } else if (colTypes == 92) { // time
             // TODO: 24/09/2020 Test to do
@@ -5987,6 +6050,9 @@ public class db {
                     value = "CONVERT(DATETIME,'" + value + ")";
                     valueType = 1; // is an expression
                 }
+            } else {
+                // preserva il tipo dato
+                valueType = colTypes;
             }
         } else if (colTypes == 8 || colTypes == 7 || colTypes == 4 || colTypes == 3 || colTypes == -5 || colTypes == -6 || colTypes == -7) {
             // numeric
@@ -6005,7 +6071,7 @@ public class db {
             }
         }
 
-        return new Object[]{value, valueType};
+        return new Object [] { value, valueType };
     }
 
     /* Only Java 8
@@ -6370,9 +6436,13 @@ public class db {
      * changed primary keys ] } ] }
      * @see db
      */
-    static public String save(Object bean, Object tbl_wrk) {
-        return insert(bean, tbl_wrk);
+    static public String save(Object bean, Object tbl_wrk) throws JSONException, NoSuchFieldException, IllegalAccessException {
+        if(tbl_wrk instanceof String) {
+            tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String)tbl_wrk);
+        }
+        return insertUpdate(bean, tbl_wrk);
     }
+
 
     /**
      * <h3>Insert or update the bean to the database</h3>
@@ -6417,10 +6487,12 @@ public class db {
                         JSONArray cols = tblWrk.tableJson.getJSONArray("columns");
                         for (int ic = 0; ic < cols.length(); ic++) {
                             JSONObject col = cols.getJSONObject(ic);
-                            Object oSelectedValue = utility.get(selectedBean, col.getString("name"));
-                            Object oValue = utility.get(bean, col.getString("name"));
-                            if(!oSelectedValue.equals(oValue)) {
-                                utility.setChanged(bean, col.getString("name"), true);
+                            String colName = col.getString("name");
+                            if(utility.has(bean, colName)) {
+                                Object oSelectedValue = utility.get(selectedBean, colName);
+                                if(!utility.equals(oSelectedValue, utility.get(bean, colName))) {
+                                    utility.setChanged(bean, colName, true);
+                                }
                             }
                         }
                     }
@@ -6462,6 +6534,11 @@ public class db {
         String result = null;
         try {
             if(tbl_wrk != null) {
+
+                if(tbl_wrk instanceof String) {
+                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String)tbl_wrk);
+                }
+
                 if(bean != null) {
                     String sModifications = "";
                     String sFields = "";
@@ -6624,6 +6701,9 @@ public class db {
                         }
                     }
                 }
+            } else {
+                String error = "controlId is missing";
+                result = utility.append_error_to_result( utility.base64Encode(error), result);
             }
         } catch (Exception ex) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
@@ -6652,6 +6732,11 @@ public class db {
         try {
             if (bean != null) {
                 if (tbl_wrk != null) {
+
+                    if(tbl_wrk instanceof String) {
+                        tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String)tbl_wrk);
+                    }
+
                     String sModifications = "";
                     String sFields = "";
                     workspace tblWrk = (workspace) tbl_wrk;

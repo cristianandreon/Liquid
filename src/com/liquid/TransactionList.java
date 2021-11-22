@@ -8,7 +8,10 @@ package com.liquid;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -128,10 +131,10 @@ public class TransactionList {
         return null;
     }
 
-    Object[] executeSQL(workspace tbl_wrk, int i, Connection conn, int RETURN_TYPE) throws SQLException {
+    Object[] executeSQL(workspace tbl_wrk, int i, Connection conn, int RETURN_TYPE) throws SQLException, ParseException {
         String sql = "";
         if (i < transactionList.size()) {
-            ArrayList<String> params = new ArrayList<String>();
+            ArrayList<Object> params = new ArrayList<Object>();
             TransactionList transaction = transactionList.get(i);
             String itemIdString = "\"", tableIdString = "\"";
             if (tbl_wrk.driverClass.contains(".mysql") || tbl_wrk.driverClass.contains(".mariadb")) {
@@ -193,30 +196,70 @@ public class TransactionList {
                 if (value_type == 0) {
                     // espression : not here, stmt aspect value not expression
                 } else {
+                    Object oParam = params.get(ic);
                     if (value_type == 1) {
                         // srting
-                        stmt.setString(ip, params.get(ic));
-                    } else if (value_type == 4) {
+                        stmt.setString(ip, (String)params.get(ic));
+                    } else if (value_type == 4 || value_type == 3) {
                         // Integer number
-                        stmt.setInt(ip, Integer.parseInt(params.get(ic)));
-                    } else if (value_type == 3) {
-                        // number
-                        stmt.setInt(ip, Integer.parseInt(params.get(ic)));
+                        if(oParam instanceof String) {
+                            stmt.setInt(ip, Integer.parseInt((String)oParam));
+                        } else {
+                            stmt.setInt(ip, (Integer)oParam);
+                        }
                     } else if (value_type == 7) {
                         // Float
-                        stmt.setFloat(ip, Float.parseFloat(params.get(ic)));
+                        if(oParam instanceof String) {
+                            stmt.setFloat(ip, Float.parseFloat((String)oParam));
+                        } else {
+                            stmt.setFloat(ip, (Float)oParam);
+                        }
                     } else if (value_type == 8) {
                         // Double
-                        stmt.setDouble(ip, Double.parseDouble(params.get(ic)));
+                        if(oParam instanceof String) {
+                            stmt.setDouble(ip, Double.parseDouble((String)oParam));
+                        } else {
+                            stmt.setDouble(ip, (Double)oParam);
+                        }
                     } else if (value_type == -5) {
                         // bigint number
-                        stmt.setLong(ip, Long.parseLong(params.get(ic)));
+                        if(oParam instanceof String) {
+                            stmt.setLong(ip, Long.parseLong((String)oParam));
+                        } else {
+                            stmt.setLong(ip, (Long)oParam);
+                        }
                     } else if (value_type == -7) {
                         // boolean
-                        stmt.setBoolean(ip, "true".equalsIgnoreCase(params.get(ic)) ? true : false);
+                        if(oParam instanceof String) {
+                            stmt.setBoolean(ip, ("true".equalsIgnoreCase((String)oParam) ? true : false));
+                        } else {
+                            stmt.setBoolean(ip, ((Boolean)oParam ? true : false));
+                        }
+                    } else if (value_type == 6  || value_type == 93) { // timestamp
+                        if(oParam instanceof String) {
+                            stmt.setTimestamp(ip, DateUtil.toTimestamp(oParam));
+                        } else {
+                            stmt.setTimestamp(ip, (Timestamp)oParam);
+                        }
+                    } else if (value_type == 91) { // date
+                        if(oParam instanceof String) {
+                            stmt.setDate(ip, DateUtil.toDate(oParam));
+                        } else if(oParam instanceof java.util.Date) {
+                            stmt.setDate(ip, new java.sql.Date( ((java.util.Date)oParam).getTime() ));
+                        } else if(oParam instanceof java.sql.Date) {
+                            stmt.setDate(ip, (java.sql.Date) oParam);
+                        } else {
+                            stmt.setDate(ip, DateUtil.toDate(oParam));
+                        }
+                    } else if (value_type == 92) { // time
+                        if(oParam instanceof String) {
+                            stmt.setTime(ip, DateUtil.getTime(oParam));
+                        } else {
+                            stmt.setTime(ip, (java.sql.Time)oParam);
+                        }
                     } else {
                         // unknown : srting
-                        stmt.setString(ip, params.get(ic));
+                        stmt.setString(ip, String.valueOf(params.get(ic)));
                         String col = transaction.columns.get(ic);
                         Logger.getLogger(db.class.getName()).log(Level.SEVERE, "At field " + transaction.table + "." + col + " datatype undetected:" + value_type);
                     }

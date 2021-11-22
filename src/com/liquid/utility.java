@@ -79,6 +79,14 @@ public class utility {
         return Integer.parseInt(version);
     }
 
+    static public boolean equals(Object o1, Object o2) {
+        if(o1 == null && o2 != null) {
+            return true;
+        } else {
+            return o1.equals(o2);
+        }
+    }
+
     static public String base64Encode(String data) {
         if (data == null || data.isEmpty()) {
             return "";
@@ -601,6 +609,19 @@ public class utility {
             Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th);
         }
         return null;
+    }
+
+    static public boolean has(Object bean, String property) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+        try {
+            if (bean != null) {
+                Field field = bean.getClass().getDeclaredField(property );
+                if (field != null) {
+                    return true;
+                }
+            }
+        } catch (Throwable th) {
+        }
+        return false;
     }
 
     static public boolean isChanged(Object bean, String property) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
