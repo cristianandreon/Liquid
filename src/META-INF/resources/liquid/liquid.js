@@ -7594,6 +7594,7 @@ var Liquid = {
                                 }
                             }
                         }
+
                         if(commandDetected) {
                             if(isDef(liquid.currentCommand)) {
                                 if (liquid.currentCommand.name === command.name) {
@@ -7958,8 +7959,9 @@ var Liquid = {
                                 // remove node
                                 if(command.response.details) {
                                     // cause row reselection and grid/layout refresh
-                                    Liquid.onDeletedRow(liquid);
-                                    refreshDone = true;
+                                    if(Liquid.onDeletedRow(liquid)) {
+                                        refreshDone = true;
+                                    }
                                 }
                             } else {
                                 if(command.name === "insert") {
@@ -7971,7 +7973,14 @@ var Liquid = {
                                         // Increase nRows manually
                                         liquid.nRows++;
                                     }
+                                    // Update the selection
+                                    if(liquid.addingNode) {
+                                        Liquid.processNodeSelected(liquid, liquid.addingNode, liquid.addingNode.isSelected());
+                                    } else {
+                                        Liquid.processNodeSelected(liquid, null);
+                                    }
                                 }
+
                                 // reset addingNode/Row
                                 liquid.addingNode = null;
                                 liquid.addingRow = null;
@@ -8003,7 +8012,16 @@ var Liquid = {
                             }
                         }
                     } else if(command.name === "delete") {
-                        Liquid.onDeletedRow(liquid);
+                        // Autoinsert ?
+                        if(liquid.tableJson.autoInsertIfMissing === true) {
+                            liquid.autoInsertIfMissing = true;
+                        }
+                        if(Liquid.onDeletedRow(liquid)) {
+                            // update done
+                        } else {
+                            // ricaricamento
+                            Liquid.loadData(liquid, ids, "onCommandDone");
+                        }
                     }
                 }
                 if(command.name === "insert") { 
@@ -9271,9 +9289,11 @@ var Liquid = {
                                                         if (layout.rowsContainer) {
                                                             if (layout.rowsContainer.length>0) {
                                                                 if (layout.currentRow1B > 0) {
-                                                                    layout.currentCommandRow1B = layout.currentRow1B;
-                                                                    layout.rowsContainer[layout.currentCommandRow1B - 1].incomingSource = layout.templateRows[templateIndex].source;
-                                                                    Liquid.refreshLayout(liquid, layout, false);
+                                                                    if(layout.rowsContainer[layout.currentCommandRow1B - 1]) {
+                                                                        layout.currentCommandRow1B = layout.currentRow1B;
+                                                                        layout.rowsContainer[layout.currentCommandRow1B - 1].incomingSource = layout.templateRows[templateIndex].source;
+                                                                        Liquid.refreshLayout(liquid, layout, false);
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -9284,12 +9304,14 @@ var Liquid = {
                                         if(layout.rowsContainer) {
                                             if(layout.rowsContainer.length > 0) {
                                                 if (layout.currentCommandRow1B > 0) {
-                                                    if (command.name === "update") {
-                                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = true;
-                                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
-                                                    } else if (command.name === "insert") {
-                                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
-                                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = true;
+                                                    if(layout.rowsContainer[layout.currentCommandRow1B - 1]) {
+                                                        if (command.name === "update") {
+                                                            layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = true;
+                                                            layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
+                                                        } else if (command.name === "insert") {
+                                                            layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
+                                                            layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = true;
+                                                        }
                                                     }
                                                 }
                                             }
@@ -12982,7 +13004,13 @@ var Liquid = {
                             if(obj) {
                                 if(obj.nodeName.toUpperCase()==='INPUT' || obj.nodeName.toUpperCase()==='TEXTAREA') {
                                     if(obj.type === 'checkbox') {
-                                        newValue = obj.checked ? true : false;
+                                        if(Liquid.isBoolean(col.type)) {
+                                            newValue = obj.checked ? true : false;
+                                        } else if(Liquid.isNumeric(col.type)) {
+                                            newValue = obj.checked ? "1" : "0";
+                                        } else {
+                                            newValue = obj.checked ? "Y" : "N";
+                                        }
                                     } else if(obj.type === 'file') {
                                         // look to column definition of control
                                         linkToFile = false;
@@ -15340,8 +15368,10 @@ var Liquid = {
                     Liquid.refreshAll(liquid, null, "selectionChange");
                 }
                 liquid.nRows = nodes.length;
+                return true;
             }
         }
+        return false;
     },
     getSelectedNodes:function(obj) {
         var selNodes = null;
@@ -15447,12 +15477,12 @@ var Liquid = {
                             }
                             index = liquid.selection.include.indexOf(id);
                             if (index < 0) liquid.selection.include.push(id);
-                            index = liquid.selection.include.indexOf(__objectId);
+                            index = liquid.selection.includeObjectId.indexOf(__objectId);
                             if (index < 0) liquid.selection.includeObjectId.push(__objectId);
                         } else {
                             index = liquid.selection.include.indexOf(id);
                             if (index >= 0) liquid.selection.include.splice(index, 1);
-                            index = liquid.selection.include.indexOf(__objectId);
+                            index = liquid.selection.includeObjectId.indexOf(__objectId);
                             if (index < 0) liquid.selection.includeObjectId.splice(index, 1);
                         }
                     }

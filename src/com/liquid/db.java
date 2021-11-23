@@ -997,7 +997,7 @@ public class db {
                                 String sIdsList = "";
                                 String apex = "";
 
-                                if (iTypePrimaryKey == 3 || iTypePrimaryKey == 4 || iTypePrimaryKey == 7 || iTypePrimaryKey == 8 || iTypePrimaryKey == -5 || iTypePrimaryKey == -6 || iTypePrimaryKey == -7) {
+                                if (iTypePrimaryKey == 3 || iTypePrimaryKey == 4 || iTypePrimaryKey == 7 || iTypePrimaryKey == 8 || iTypePrimaryKey == -5 || iTypePrimaryKey == -6) {
                                     // numeric
                                 } else {
                                     apex = "'";
@@ -1959,7 +1959,7 @@ public class db {
                             }
                         }
 
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                             if (filterValue.indexOf(",") >= 0) {
                                 filterOp = "IN";
                             }
@@ -1979,7 +1979,7 @@ public class db {
                         }
                     } else {
                         // wrap to is null ... id not numeric
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                             filterValue = "0";
                         } else {
                             filterOp = "IS";
@@ -1999,7 +1999,7 @@ public class db {
                         preFix = "(";
                         postFix = ")";
                         if (filterValue == null || filterValue.isEmpty()) {
-                            if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                            if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                                 preFix = "";
                                 postFix = "";
                                 filterValue = "NULL";
@@ -2007,7 +2007,7 @@ public class db {
                                 filterValue = "''";
                             }
                         } else {
-                            if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                            if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                                 // numeric
                             } else {
                                 filterValue = "'" + filterValue + "'";
@@ -2027,7 +2027,7 @@ public class db {
                     }
 
                     if ("LIKE".equalsIgnoreCase(filterOp) || "FULLLIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                             // numeric : like unsupported
                             filterOp = "=";
                         } else {
@@ -2057,7 +2057,7 @@ public class db {
 
                     if (">".equalsIgnoreCase(filterOp)) {
                         if (col != null) {
-                            if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                            if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                                 // numeric
                             } else {
                                 // > 0 applicato alle stringhe -> NOT null
@@ -2081,7 +2081,7 @@ public class db {
                     String sensitiveCasePreOp = "";
                     String sensitiveCasePostOp = "";
                     if (!filterSensitiveCase) {
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                             // numeric
                         } else if (type == 6 || type == 92 || type == 93) {
                             //
@@ -2108,7 +2108,7 @@ public class db {
                     // Numeric ?
                     //
                     if (bUseParams) {
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6 || type == -7) {
+                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                             // numeric
                         }
                     }
@@ -6054,7 +6054,7 @@ public class db {
                 // preserva il tipo dato
                 valueType = colTypes;
             }
-        } else if (colTypes == 8 || colTypes == 7 || colTypes == 4 || colTypes == 3 || colTypes == -5 || colTypes == -6 || colTypes == -7) {
+        } else if (colTypes == 8 || colTypes == 7 || colTypes == 4 || colTypes == 3 || colTypes == -5 || colTypes == -6) {
             // numeric
             if (value == null || value.isEmpty()) {
                 value = "0";
@@ -6062,9 +6062,9 @@ public class db {
             valueType = colTypes; // is a number
             
         } else if (colTypes == -7) { // boolean
-            if(value == null || value.isEmpty() || "0".equalsIgnoreCase(value) || "n".equalsIgnoreCase(value)  || "off".equalsIgnoreCase(value)) {
+            if(value == null || value.isEmpty() || "0".equalsIgnoreCase(value) || "n".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)|| "false".equalsIgnoreCase(value)) {
                 value = "false";
-            } else if("1".equalsIgnoreCase(value) || "y".equalsIgnoreCase(value)  || "on".equalsIgnoreCase(value)) {
+            } else if("1".equalsIgnoreCase(value) || "y".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value)|| "true".equalsIgnoreCase(value)) {
                 value = "true";
             } else {
                 value = "false";
