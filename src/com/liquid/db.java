@@ -409,21 +409,17 @@ public class db {
                 String isSystemLiquid = workspace.isSystemLiquid(tbl_wrk.tableJson);
                 boolean bUserFieldIdentificator = true;
 
-                try {
+                if(tbl_wrk.tableJson.has("selectDatabases")) {
                     targetDatabase = tbl_wrk.tableJson.getString("selectDatabases");
-                } catch (Exception e) {
                 }
-                try {
+                if(tbl_wrk.tableJson.has("selectSchemas")) {
                     targetSchema = tbl_wrk.tableJson.getString("selectSchemas");
-                } catch (Exception e) {
                 }
-                try {
+                if(tbl_wrk.tableJson.has("selectTables")) {
                     targetTable = tbl_wrk.tableJson.getString("selectTables");
-                } catch (Exception e) {
                 }
-                try {
+                if(tbl_wrk.tableJson.has("selectViews")) {
                     targetView = tbl_wrk.tableJson.getString("selectViews");
-                } catch (Exception e) {
                 }
 
                 // Gestione chiamata dal servizio "editor" sulla cella
@@ -1767,6 +1763,7 @@ public class db {
                 String filterTable = null;
                 String filterName = null;
                 String filterValue = null;
+                Object oFilterValue = null;
                 boolean filterValueIsSet = false;
                 String filterOp = null;
                 String filterLogic = null;
@@ -1780,12 +1777,17 @@ public class db {
 
                 try {
                     if (!filtersCol.isNull("value")) {
-                        filterValue = filtersCol.getString("value");
-                        //
-                        // N.B.: risolve le variabili di sessione
-                        //
-                        filterValue = solveVariableField( filterValue, request, true );
-                        filterValueIsSet = true;
+                        oFilterValue = filtersCol.get("value");
+                        if(oFilterValue instanceof String) {
+                            filterValue = filtersCol.getString("value");
+                            //
+                            // N.B.: risolve le variabili di sessione
+                            //
+                            filterValue = solveVariableField(filterValue, request, true);
+                            filterValueIsSet = true;
+                        } else if(oFilterValue instanceof JSONArray) {
+                            filterValueIsSet = true;
+                        }
                     }
                 } catch (JSONException e) {
                 }
@@ -1800,9 +1802,8 @@ public class db {
                 // is next operator a logic 'OR' ? .. start and opening parent
                 if(i+1 < filtersCols.length()) {
                     JSONObject filterNextCol = filtersCols.getJSONObject(i+1);
-                    try {
-                        filterNextLogic = filterNextCol.getString("op");
-                    } catch (JSONException e) {
+                    if(filterNextCol.has("logic")) {
+                        filterNextLogic = filterNextCol.getString("logic");
                     }
                 } 
 
@@ -1948,6 +1949,8 @@ public class db {
 
                     if(filterValue != null) {
                         int commaIndex = filterValue.indexOf(",");
+
+                        // ?!?!?! Danger ?!?!?!
                         if (commaIndex == 0 || commaIndex > 0 && filterValue.charAt(commaIndex - 1) != '\\') {
                             filterOp = "IN";
                         }
@@ -1977,6 +1980,20 @@ public class db {
                         } else if ("\"NULL\"".equals(filterValue)) {
                             filterValue = "NULL";
                         }
+
+                    } else if(oFilterValue instanceof JSONArray) {
+                        // Se array -> l'operatore diventa 'IN'
+                        JSONArray filterValueArray = ((JSONArray) oFilterValue);
+                        filterValue = "";
+                        for (int ifv = 0; ifv < filterValueArray.length(); ifv++) {
+                            filterValue += (ifv > 0 ? "," : "") + String.valueOf(filterValueArray.get(ifv));
+                        }
+                        if(filterOp == null || filterOp.isEmpty()) {
+                            filterOp = "IN";
+                        }
+                        preFix = "";
+                        postFix = "";
+
                     } else {
                         // wrap to is null ... id not numeric
                         if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
@@ -2005,12 +2022,6 @@ public class db {
                                 filterValue = "NULL";
                             } else {
                                 filterValue = "''";
-                            }
-                        } else {
-                            if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
-                                // numeric
-                            } else {
-                                filterValue = "'" + filterValue + "'";
                             }
                         }
                     }
@@ -2137,9 +2148,16 @@ public class db {
                                 ArrayList<Object> filterValueObjects = new ArrayList<Object>();
                                 for (int iv = 0; iv < filterValues.length; iv++) {
                                     String val = filterValues[iv];
+
+                                    if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
+                                        // numeric
+                                    } else {
+                                        val = "'" + val + "'";
+                                    }
                                     filterValueObjects.add(toJavaType(type, (Object) val, null, -1));
                                 }
                                 filterValueObject = (Object) filterValueObjects;
+                                filterValue = utility.objArrayToString(filterValueObjects, null, null, ",");
                             }
                         } else{
                         }
@@ -2195,8 +2213,11 @@ public class db {
                         //
                         if (filterValueType == 1) {
                             if(filterValue != null) {
-                                if (filterValue.indexOf("'") >= 0) {
-                                    filterValue = filterValue.replace("'", "''");
+                                if ("IN".equalsIgnoreCase(filterOp)) {
+                                } else {
+                                    if (filterValue.indexOf("'") >= 0) {
+                                        filterValue = filterValue.replace("'", "''");
+                                    }
                                 }
                             }
                         }
@@ -2218,7 +2239,7 @@ public class db {
 
                         
                         // is operator logic not 'OR' ? closing parent
-                        if(!"OR".equalsIgnoreCase(filterLogic)) {
+                        if(!"OR".equalsIgnoreCase(filterLogic) && filterNextLogic == null) {
                             if(parentesisCount>0) {
                                 sWhere += ")";
                                 parentesisCount--;
@@ -6069,6 +6090,7 @@ public class db {
             } else {
                 value = "false";
             }
+            valueType = colTypes; // is a boolean
         }
 
         return new Object [] { value, valueType };
@@ -6548,37 +6570,40 @@ public class db {
 
                     for (int ic = 0; ic < cols.length(); ic++) {
                         JSONObject col = cols.getJSONObject(ic);
-                        Object oFieldValue = utility.get(bean, col.getString("name"));
-                        String fieldValue = null;
-                        boolean setFieldValue = true;
+                        String propName = col.getString("name");
 
-                        if(oFieldValue != null) {
-                            if(oFieldValue instanceof Date || oFieldValue instanceof Timestamp) {
-                                // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
-                                DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-                                fieldValue = dateFormat.format(oFieldValue);
-                            } else { 
-                                fieldValue = String.valueOf(oFieldValue);
-                            }
-                        } else { 
-                            fieldValue = null;
-                            if(col.has("default")) {
-                                String defaultValue = col.getString("default");
-                                if (defaultValue != null) {
-                                    // N.B.: lascia il campo non assegnato, sarà risolto dal db
-                                    setFieldValue = false;
-                                    /*
-                                    defaultValue = solveVariableField(defaultValue, request, false);
+                        if(utility.has(bean, propName)) {
+                            Object oFieldValue = utility.get(bean, propName);
+                            String fieldValue = null;
+                            boolean setFieldValue = true;
+
+                            if (oFieldValue != null) {
+                                if (oFieldValue instanceof Date || oFieldValue instanceof Timestamp) {
+                                    // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
+                                    DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                                    fieldValue = dateFormat.format(oFieldValue);
+                                } else {
+                                    fieldValue = String.valueOf(oFieldValue);
+                                }
+                            } else {
+                                fieldValue = null;
+                                if (col.has("default")) {
+                                    String defaultValue = col.getString("default");
                                     if (defaultValue != null) {
+                                        // N.B.: lascia il campo non assegnato, sarà risolto dal db
+                                        setFieldValue = false;
+                                        /*
+                                        defaultValue = solveVariableField(defaultValue, request, false);
+                                        if (defaultValue != null) {
+                                        }
+                                        */
                                     }
-                                    */
                                 }
                             }
-                        }
-
-                        if(setFieldValue) {
-                            fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
-                            sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
+                            if(setFieldValue) {
+                                fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                                sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
+                            }
                         }
                     }
 
@@ -6756,33 +6781,37 @@ public class db {
 
                         if (beanColName != null) {
                             try {
-                                Object fieldData = utility.get(bean, beanColName);
 
-                                if (colType == 91) { //date
-                                    try {
-                                        java.sql.Date dbSqlDate = (java.sql.Date) fieldData;
-                                        fieldData = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
-                                    } catch (Exception e) {
-                                    }
-                                } else if (colType == 92) { //time
-                                    try {
-                                        java.sql.Time dbSqlTime = (java.sql.Time) fieldData;
-                                        fieldData = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
-                                    } catch (Exception e) {
-                                    }
-                                } else if (colType == 6 || colType == 93) { // datetime
-                                    try {
-                                        fieldData = fieldData != null ? dateTimeFormat.format(fieldData) : null;
-                                    } catch (Exception e) {
-                                    }
-                                }
+                                if(utility.has(bean, beanColName)) {
 
-                                if (colName.equals(primaryKey)) {
-                                    primaryKeyValue = fieldData;
-                                } else {
-                                    boolean isChanged = utility.isChanged(bean, beanColName);
-                                    if (isChanged) {
-                                        sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + (fieldData != null ? fieldData : "") + "\"}";
+                                    Object fieldData = utility.get(bean, beanColName);
+
+                                    if (colType == 91) { //date
+                                        try {
+                                            java.sql.Date dbSqlDate = (java.sql.Date) fieldData;
+                                            fieldData = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
+                                        } catch (Exception e) {
+                                        }
+                                    } else if (colType == 92) { //time
+                                        try {
+                                            java.sql.Time dbSqlTime = (java.sql.Time) fieldData;
+                                            fieldData = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
+                                        } catch (Exception e) {
+                                        }
+                                    } else if (colType == 6 || colType == 93) { // datetime
+                                        try {
+                                            fieldData = fieldData != null ? dateTimeFormat.format(fieldData) : null;
+                                        } catch (Exception e) {
+                                        }
+                                    }
+
+                                    if (colName.equals(primaryKey)) {
+                                        primaryKeyValue = fieldData;
+                                    } else {
+                                        boolean isChanged = utility.isChanged(bean, beanColName);
+                                        if (isChanged) {
+                                            sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + (fieldData != null ? fieldData : "") + "\"}";
+                                        }
                                     }
                                 }
                             } catch (Exception ex) {
@@ -8164,10 +8193,10 @@ public class db {
             if (value != null && !value.isEmpty()) {
                 String currentValue = null;
                 for (int i = 0; i < value.length(); i++) {
-                    if ((value.charAt(i) == '$' || value.charAt(i) == '%') && value.charAt(i + 1) == '{') {
+                    if (i<value.length() && (value.charAt(i) == '$' || value.charAt(i) == '%') && (i+1<value.length() && value.charAt(i + 1) == '{') ) {
                         i += 2;
                         int s = i;
-                        while (value.charAt(i) != '}' && i < value.length()) {
+                        while (i < value.length() && value.charAt(i) != '}') {
                             i++;
                         }
                         String cVar = value.substring(s, i);
@@ -8199,7 +8228,7 @@ public class db {
             int nReplaced = 0;
             int ss = 0;
             for (int i = 0; i < value.length(); i++) {
-                if ((value.charAt(i) == '$' || value.charAt(i) == '%') && value.charAt(i + 1) == '{') {
+                if (i<value.length() && (value.charAt(i) == '$' || value.charAt(i) == '%') && (i+1<value.length() && value.charAt(i + 1) == '{') ) {
                     ss = i;
                     i += 2;
                     int s = i;

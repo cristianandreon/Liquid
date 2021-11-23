@@ -834,10 +834,12 @@ public class workspace {
                                                         String resettingControlId = sFt+"$"+sFc+"$"+c+"@"+tblWorkspace.controlId;
                                                         for (int i = 0; i < glTblWorkspaces.size(); i++) {
                                                             tblWorkspace = glTblWorkspaces.get(i);
-                                                            if (tblWorkspace.controlId.equalsIgnoreCase(resettingControlId)) {
-                                                                tblWorkspace.sourceTableJsonHash = -1;
-                                                                glTblWorkspaces.set(i, null);
-                                                                // "*INVALIDATED-BY-"+tblWorkspace.controlId+"*";
+                                                            if(tblWorkspace != null) {
+                                                                if (tblWorkspace.controlId.equalsIgnoreCase(resettingControlId)) {
+                                                                    tblWorkspace.sourceTableJsonHash = -1;
+                                                                    glTblWorkspaces.set(i, null);
+                                                                    // "*INVALIDATED-BY-"+tblWorkspace.controlId+"*";
+                                                                }
                                                             }
                                                         }
                                                     }

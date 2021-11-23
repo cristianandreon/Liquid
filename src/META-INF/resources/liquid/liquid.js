@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.73
+// Liquid ver.1.74
 //
-//  First update 04-01-2020 - Last update  22-11-2021
+//  First update 04-01-2020 - Last update  23-11-2021
 //
 //  TODO : see trello.com
 //
@@ -2335,6 +2335,7 @@ var Liquid = {
     mirrorEventIntervalNs: 500*1000,
     lookupIconSize:12,
     filterIconSize:16,
+    RenameUnlinkedObjectID:false,
     setLanguage:function(language) {
         var lang_list = language.split(';');
         for(var il=0; il<lang_list.length; il++) {
@@ -4522,10 +4523,6 @@ var Liquid = {
                     Liquid.refreshPendingLayouts(liquid, true);
                 }
 
-                if(bFirstTimeLoad) {
-                    Liquid.onEvent(liquid, "onLoadData", null, null);
-                }
-
 
                 if(liquid.autoInsertIfMissing === true) {
                     if(liquid.nRows === 0) {
@@ -4533,6 +4530,10 @@ var Liquid = {
                         Liquid.onButton(liquid, {name: "insert"});
                     }
                     liquid.autoInsertIfMissing = false;
+                }
+
+                if(bFirstTimeLoad) {
+                    Liquid.onEvent(liquid, "onLoadData", null, null);
                 }
 
             } else {
@@ -11279,7 +11280,8 @@ var Liquid = {
         if(liquid && obj) {
             var nameItems = null;
             if(obj instanceof HTMLElement) {
-                var objId = obj.getAttribute('newid');
+                // var objId = obj.getAttribute('newid');
+                var objId = obj.id;
                 if(objId) nameItems = objId.split(".");
             } else {
                 nameItems = obj.split(".");
@@ -11494,11 +11496,19 @@ var Liquid = {
         }
     },
     refreshLayouts:function(liquid, bSetup) {
-        if(liquid.tableJson.layouts) {
-            if(liquid.tableJson.layouts.length > 0) {
-                for(var il = 0; il < liquid.tableJson.layouts.length; il++) {
-                    var layout = liquid.tableJson.layouts[il];
-                    Liquid.refreshLayout(liquid, layout, bSetup);
+        if(liquid) {
+            if (liquid.tableJson.layouts) {
+                if (liquid.tableJson.layouts.length > 0) {
+                    for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                        var layout = liquid.tableJson.layouts[il];
+                        Liquid.refreshLayout(liquid, layout, bSetup);
+                    }
+                }
+            }
+            if(bSetup == false) { // on first refresh node are visible...
+                if(!isDef(liquid.onLoadLayoutFired)) {
+                    liquid.onLoadContentFired = true;
+                    Liquid.onEvent(liquid, "onLoadLayout", null, null);
                 }
             }
         }
@@ -12218,6 +12228,9 @@ var Liquid = {
                             obj.setAttribute('linkedname', linkeCol.name);
                             obj.setAttribute('linkedrow1b', iRow + 1);
 
+                            // We need uniquie id
+                            obj.id =  newId;
+
                             if(!prevId) {
                                 // obj.addEventListener('change', Liquid.onLayoutFieldChange);
                                 var prevOnchangeFunc = (obj.onchange ? obj.onchange : null);
@@ -12478,7 +12491,9 @@ var Liquid = {
                             layout.rowsContainer[iRow].cols.push(linkeCol);
                         }
                     } else {
+                        //
                         // object not linked, may be action item like buttons
+                        //
                         if(bSetup) {
                             if(obj) {
 
@@ -12498,10 +12513,20 @@ var Liquid = {
                                 obj.setAttribute('linkedrow1b', iRow + 1);
                                 controlName = "col." + "none" + (layout.noneCounter++)+ ".row." + (iRow + 1);
                                 newId = liquid.controlId + ".layout." + layoutIndex1B + "." + controlName;
+
                                 obj.setAttribute('previd', prevId);
                                 obj.setAttribute('newid', newId);
                                 obj.setAttribute('linkedid', newId);
                                 obj.setAttribute('name', obj.id);
+
+                                // we need unique id ... only in linked to field nodes
+                                if(obj.id) {
+                                    if (Liquid.RenameUnlinkedObjectID) {
+                                        obj.id = newId;
+                                    }
+                                } else {
+                                    // leave empty
+                                }
 
                                 if(layout.nRows > 1) {
                                     if (!obj.id) obj.id = newId;
@@ -12956,7 +12981,8 @@ var Liquid = {
     },
     onLayoutFieldClick:function(event) {
         if(event) {
-            var objId = event.target.getAttribute('newid');
+            // var objId = event.target.getAttribute('newid');
+            var objId = event.target.id;
             var liquid = Liquid.getLiquid(objId);
             if(liquid) {
                 var lay_coord = Liquid.getLayoutCoords(liquid, event.target);
@@ -12977,7 +13003,8 @@ var Liquid = {
     },
     onLayoutFieldChange:function(event) {
         if(event) {
-            var objId = event.target.getAttribute('newid');
+            // var objId = event.target.getAttribute('newid');
+            var objId = event.target.id;
             var liquid = Liquid.getLiquid(objId);
             if(liquid) {
                 var lay_coord = Liquid.getLayoutCoords(liquid, event.target);

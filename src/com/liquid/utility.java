@@ -1605,7 +1605,10 @@ public class utility {
     static String arrayToString(ArrayList<String> columns, String prefix, String postfix, String separator) {
         return arrayToString(columns.toArray(), prefix, postfix, separator);
     }
-    
+    static String objArrayToString(ArrayList<Object> columns, String prefix, String postfix, String separator) {
+        return arrayToString(columns.toArray(), prefix, postfix, separator);
+    }
+
     public static boolean contains(ArrayList<Object> controlIds, Object controlId) {
         for(int i=0; i<controlIds.size(); i++) {
         	if(String.valueOf(controlIds.get(i)).equals(String.valueOf(controlId))) return true;
