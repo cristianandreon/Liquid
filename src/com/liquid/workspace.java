@@ -392,6 +392,7 @@ public class workspace {
         try {
             hostName = InetAddress.getLocalHost().getHostName();
             if(hostName.equalsIgnoreCase(onlyToHost)) {
+                System.out.println("LIQUID: Enabling project mode by worning in host "+onlyToHost);
                 return enableProjectMode(out, keepMetadata);
             }
         } catch (UnknownHostException e) {

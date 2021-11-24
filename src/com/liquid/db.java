@@ -65,6 +65,7 @@ public class db {
     static long maxQueryTimeMs = 1000;
 
 
+
     static public class IdsCache {
 
         public String query;
@@ -5294,6 +5295,236 @@ public class db {
     public static String insertFields(Object p1, Object p2, Object p3, Object p4, Object p5) {
         return processModification(p1, p2, p3, p4, p5, "insert");
     }
+
+
+
+
+    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String key ) throws Throwable {
+        boolean retVal = false;
+        int new_id = 0;
+        Object keyValue = null;
+
+        Connection conn = null;
+        String sSTMTUpdate = null;
+
+        if(DatabaseSchemaTable == null || Fields == null || Values == null) {
+            return new Object [] { false, -1 };
+        }
+        if(Fields.length > Values.length) {
+            return new Object [] { false, -1 };
+        }
+
+        try {
+
+            Object [] connResult = connection.getDBConnection();
+            conn = (Connection)connResult[0];
+            String connError = (String)connResult[1];
+
+
+            if (conn != null) {
+                sSTMTUpdate = "UPDATE "+DatabaseSchemaTable+" SET ";
+
+
+                for(int i=0, ia=0; i<Fields.length; i++) {
+                    if(key.equalsIgnoreCase(Fields[i])) {
+                        keyValue = Values[i];
+                    } else {
+                        sSTMTUpdate += (ia > 0 ? "," : "");
+                        sSTMTUpdate += Fields[i];
+                        sSTMTUpdate += "=?";
+                        ia++;
+                    }
+                }
+
+                if(keyValue instanceof String) {
+                    keyValue = "'" + keyValue + "'";
+                }
+                sSTMTUpdate += " WHERE "+key+"=?";
+
+                PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
+
+                int ip=1;
+                for(int i=0; i<Values.length; i++) {
+                    if(key.equalsIgnoreCase(Fields[i])) {
+                    } else {
+                        if (i < Fields.length) {
+                            Object val = Values[i];
+                            if (val instanceof Integer) {
+                                sqlSTMTUpdate.setInt((ip), (int) val);
+                            } else if (val instanceof Long) {
+                                sqlSTMTUpdate.setLong((ip), (long) val);
+                            } else if (val instanceof Float) {
+                                sqlSTMTUpdate.setFloat((ip), (float) val);
+                            } else if (val instanceof Double) {
+                                sqlSTMTUpdate.setDouble((ip), (double) val);
+                            } else if (val instanceof Date) {
+                                sqlSTMTUpdate.setDate((ip), (Date) val);
+                            } else if (val instanceof Timestamp) {
+                                sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
+                            } else if (val instanceof String) {
+                                sqlSTMTUpdate.setString((ip), (String) val);
+                            }
+                        }
+                        ip++;
+                    }
+                }
+
+                // primary key
+                Object val = keyValue;
+                // ip++;
+                if (val instanceof Integer) {
+                    sqlSTMTUpdate.setInt((ip), (int) val);
+                } else if (val instanceof Long) {
+                    sqlSTMTUpdate.setLong((ip), (long) val);
+                } else if (val instanceof Float) {
+                    sqlSTMTUpdate.setFloat((ip), (float) val);
+                } else if (val instanceof Double) {
+                    sqlSTMTUpdate.setDouble((ip), (double) val);
+                } else if (val instanceof Date) {
+                    sqlSTMTUpdate.setDate((ip), (Date) val);
+                } else if (val instanceof Timestamp) {
+                    sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
+                } else if (val instanceof String) {
+                    sqlSTMTUpdate.setString((ip), (String) val);
+                }
+
+
+                int res = sqlSTMTUpdate.executeUpdate();
+                if (res < 0) {
+                    System.err.println("Error updating db");
+                    retVal = false;
+                } else {
+                    ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
+                    if (rs != null && rs.next()) {
+                        new_id = rs.getInt(1);
+                        retVal = true;
+                    }
+                    if (rs != null)
+                        rs.close();
+                }
+                sqlSTMTUpdate.close();
+                sqlSTMTUpdate = null;
+            }
+
+
+        } catch (Exception e) {
+            System.err.println("add_auction_event() error : "+e.getMessage());
+            retVal = false;
+
+            try {
+                if (conn != null)
+                    conn.rollback();
+            } catch (Throwable e2) {
+            }
+
+        } finally {
+            try {
+                if (conn != null)
+                    conn.close();
+            } catch (Throwable e2) {
+            }
+            conn = null;
+        }
+
+        return new Object [] { retVal, new_id } ;
+    }
+
+
+    /**
+     * Update bean to DB
+     *
+     * @param bean
+     * @param databaseSchemaTable
+     * @param key   the primary key property name
+     */
+    public static Object [] update(Object bean, String DatabaseSchemaTable, String key) throws Throwable {
+            boolean retVal = false;
+            int new_id = 0;
+
+            Connection conn = null;
+            String sSTMTUpdate = null;
+
+            if(DatabaseSchemaTable == null || bean == null || key == null) {
+                return new Object [] { false, -1 };
+            }
+
+            try {
+
+                Object [] connResult = connection.getDBConnection();
+                conn = (Connection)connResult[0];
+                String connError = (String)connResult[1];
+
+
+                if (conn != null) {
+                    sSTMTUpdate = "UPDATE "+DatabaseSchemaTable+" (";
+
+                    // TODO : walk bean propery
+
+                    PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
+
+                    /*
+                    for(int i=0; i<Values.length; i++) {
+                        if(i < Fields.length) {
+                            Object val = Values[i];
+                            if (val instanceof Integer) {
+                                sqlSTMTUpdate.setInt((i + 1), (int) val);
+                            } else if (val instanceof Long) {
+                                sqlSTMTUpdate.setLong((i + 1), (long) val);
+                            } else if (val instanceof Float) {
+                                sqlSTMTUpdate.setFloat((i + 1), (float) val);
+                            } else if (val instanceof Double) {
+                                sqlSTMTUpdate.setDouble((i + 1), (double) val);
+                            } else if (val instanceof Date) {
+                                sqlSTMTUpdate.setDate((i + 1), (Date) val);
+                            } else if (val instanceof Timestamp) {
+                                sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
+                            } else if (val instanceof String) {
+                                sqlSTMTUpdate.setString((i + 1), (String) val);
+                            }
+                        }
+                    }
+                    */
+
+                    int res = sqlSTMTUpdate.executeUpdate();
+                    if (res < 0) {
+                        System.err.println("Error updating db");
+                        retVal = false;
+                    } else {
+                        ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
+                        if (rs != null && rs.next()) {
+                            new_id = rs.getInt(1);
+                            retVal = true;
+                        }
+                        if (rs != null)
+                            rs.close();
+                    }
+                    sqlSTMTUpdate.close();
+                    sqlSTMTUpdate = null;
+                }
+
+
+            } catch (Exception e) {
+                System.err.println("add_auction_event() error : "+e.getMessage());
+                retVal = false;
+
+                try {
+                    if (conn != null)
+                        conn.rollback();
+                } catch (Throwable e2) {
+                }
+
+            } finally {
+                try {
+                    if (conn != null)
+                        conn.close();
+                } catch (Throwable e2) {
+                }
+                conn = null;
+            }
+
+            return new Object [] { retVal, new_id } ;
+        }
+
 
     /**
      * <h3>Update a record in a table</h3>
