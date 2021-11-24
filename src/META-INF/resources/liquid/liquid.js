@@ -6924,6 +6924,12 @@ var Liquid = {
                         liquid.FTTabList[foundTab1B-1].originalParent.appendChild(contentObj);
                         if(isDef(liquid.FTTabList[foundTab1B-1].currentParent)) delete liquid.FTTabList[foundTab1B-1].currentParent;
                         contentObj.setAttribute('parented', null);
+                        // Restore control height
+                        var pheight = contentObj.getAttribute('pheight');
+                        if(pheight) {
+                            contentObj.setAttribute('pheight', null);
+                            contentObj.style.height = pheight;
+                        }
                     } else {
                         var newParent = document.getElementById(newParentId);
                         if(isDef(liquid.FTTabList[foundTab1B-1].currentParent)) {
@@ -6936,10 +6942,14 @@ var Liquid = {
                                     // liquid.FTTabList[foundTab1B-1].currentParent.style.display = 'none';
                                     if (isDef(liquid.FTTabList[foundTab1B - 1].currentParent)) delete liquid.FTTabList[foundTab1B - 1].currentParent;
                                 } else {
+                                    contentObj.style.display = '';
+                                    Liquid.onForeignTableResize(liquid, contentObj);
+                                    /*
                                     if(contentObj.style.display == 'none') {
                                         jQ1124(contentObj).slideDown("fast", function () {
                                         });
                                     }
+                                    */
                                 }
                                 return;
                             } else {
@@ -6948,7 +6958,15 @@ var Liquid = {
                         }
                         newParent.appendChild(contentObj);
                         contentObj.setAttribute('parented', newParent.id);
+                        // store original control height
+                        contentObj.setAttribute('pheight',  contentObj.style.height);
+                        // var new_pos = (contentObj.offsetTop - contentObj.parentNode.offsetTop);
+                        // contentObj.style.height = "calc(100% - "+new_pos+"px)";
                         liquid.FTTabList[foundTab1B-1].currentParent = newParent;
+                        Liquid.onForeignTablePostProcess(contentObj);
+                        contentObj.style.display = '';
+                        Liquid.onForeignTableResize(liquid, contentObj);
+                        /*
                         jQ1124( contentObj ).slideDown( "fast", function() {
                             Liquid.onForeignTablePostProcess(contentObj);
                         } );
@@ -6957,10 +6975,28 @@ var Liquid = {
                             jQ1124(contentObj).slideDown("fast", function () {
                             });
                         }
+                     */
                     }
                 }
             } else {
                 console.error("ERROR: setParentForeignTable(): currentForeignTable not found:"+currentForeignTable);
+            }
+        }
+    },
+    onForeignTableResize:function(liquid, foreignTableContentObj, foreignTableContainerHeight) {
+        if(liquid) {
+            if (foreignTableContentObj) {
+                if (foreignTableContentObj.getAttribute('parented')) {
+                    // Fit control height parented
+                    var new_pos = Liquid.getRelativePositionTop(foreignTableContentObj);
+                    if(new_pos >= 0) {
+                        foreignTableContentObj.style.height = "calc(100% - " + new_pos + "px)";
+                    }
+                } else {
+                    if(isDef(foreignTableContainerHeight)) {
+                        foreignTableContentObj.style.height = (foreignTableContainerHeight > 0 ? foreignTableContainerHeight : "0") + "px";
+                    }
+                }
             }
         }
     },
@@ -8734,6 +8770,18 @@ var Liquid = {
         }
         return "";
     },
+    getRelativePositionTop:function(obj) {
+        var parentNode = obj;
+        var top = parentNode.offsetTop;
+        while ((parentNode = parentNode.parentNode) && parentNode == document.body) {
+            if(parentNode) {
+                if(parentNode.offsetTop) {
+                    top += parentNode.offsetTop;
+                }
+            }
+        }
+        return top;
+    },
     /**
      * Set the control as current (focused)
      * @param {obj} the control id or the class instance (LiquidCtrl)
@@ -9662,6 +9710,11 @@ var Liquid = {
             if (liquid.tableJson) {
                 try {
                     liquid.tableJson[propName] = propValue;
+                    try {
+                        if(isDef(liquid[propName])) {
+                            liquid[propName] = propValue;
+                        }
+                    } catch (e) {}
                     if (propName == "autoInsert") {
                         if (propValue == false) {
                             if (isDef(liquid.currentCommand)) {
@@ -10074,8 +10127,7 @@ var Liquid = {
                             + Number(isDef(liquid.actionsObj) ? liquid.actionsObjHeight : 0)
                             ;
                     for(var ig = 0; ig < liquid.foreignTables.length; ig++) {
-                        if(liquid.foreignTables[ig].contentObj)
-                            liquid.foreignTables[ig].contentObj.style.height = (foreignTableContainerHeight > 0 ? foreignTableContainerHeight : "0") + "px";
+                        Liquid.onForeignTableResize(liquid, liquid.foreignTables[ig].ContentObj, foreignTableContainerHeight);
                     }
                 }
                 
@@ -14493,8 +14545,10 @@ var Liquid = {
     },
     reloadAll:function(obj, event, reason) {
         var liquid = Liquid.getLiquid(obj);
-        liquid.onceRefreshAll = true;
-        Liquid.loadData(liquid, null, reason);
+        if (liquid) {
+            liquid.onceRefreshAll = true;
+            Liquid.loadData(liquid, null, reason);
+        }
     },
     refreshAll:function(obj, event, reason) {
         var liquid = Liquid.getLiquid(obj);

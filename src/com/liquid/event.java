@@ -95,18 +95,20 @@ public class event {
 
                 // get instance and method
                 Object[] result = get_method_by_class_name(className, tbl_wrk, owner);
-                Object classInstance = result[0];
-                Method method = (Method) result[1];
+                if(result != null) {
+                    Object classInstance = result[0];
+                    Method method = (Method) result[1];
 
-                if (method != null && classInstance != null) {
-                    retVal = (String) method.invoke(classInstance, tbl_wrk, params, clientData, (Object) request);
-
-                    // executing events as syncronous chain
-                    try {
-                        return process_next_event(retVal, tbl_wrk, params, clientData, (Object) request);
-                    } catch (Exception e) {
+                    if (method != null && classInstance != null) {
+                        retVal = (String) method.invoke(classInstance, tbl_wrk, params, clientData, (Object) request);
                     }
                 }
+                // executing events as syncronous chain
+                try {
+                    return process_next_event(retVal, tbl_wrk, params, clientData, (Object) request);
+                } catch (Exception e) {
+                }
+
 
             } catch (InvocationTargetException ite) {
                 final Throwable cause = ite.getTargetException();

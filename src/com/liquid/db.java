@@ -542,16 +542,21 @@ public class db {
                             ArrayList<String> columns = new ArrayList<String>();
                             int foreignIndex = -1;
 
-                            try {
-                                colName = col.getString("name");
-                            } catch (Exception e) {
-                                colName = null;
+                            if(col.has("name")) {
+                                try {
+                                    colName = col.getString("name");
+                                } catch (Exception e) {
+                                    colName = null;
+                                }
                             }
-                            try {
-                                foreignTable = col.getString("foreignTable");
-                            } catch (Exception e) {
-                                foreignTable = null;
+                            if(col.has("foreignTable")) {
+                                try {
+                                    foreignTable = col.getString("foreignTable");
+                                } catch (Exception e) {
+                                    foreignTable = null;
+                                }
                             }
+
                             try {
                                 String fcolumnsKey = null;
                                 if (col.has("foreignColumns")) {
@@ -572,10 +577,12 @@ public class db {
                                 foreignColumns = null;
                             }
 
-                            try {
-                                colQuery = col.getString("query");
-                            } catch (Exception e) {
-                                colQuery = null;
+                            if(col.has("query")) {
+                                try {
+                                    colQuery = col.getString("query");
+                                } catch (Exception e) {
+                                    colQuery = null;
+                                }
                             }
                             
                             
@@ -955,9 +962,11 @@ public class db {
 
                                 if (requestJson.has("curFilter")) {
                                     curFilter = requestJson.getInt("curFilter");
-                                    try {
-                                        filtersDefinition = tbl_wrk.tableJson.getJSONArray("filters");
-                                    } catch (Exception e) {
+                                    if (requestJson.has("filters")) {
+                                        try {
+                                            filtersDefinition = tbl_wrk.tableJson.getJSONArray("filters");
+                                        } catch (Exception e) {
+                                        }
                                     }
                                     try {
                                         filtersDefinitionCols = (filtersDefinition != null ? filtersDefinition.getJSONObject(curFilter).getJSONArray("columns") : null);
@@ -985,9 +994,11 @@ public class db {
                                 sWhere = (String)resWhere[2];
                             }
 
-                            try {
-                                filtersIds = requestJson.getJSONArray("ids");
-                            } catch (Exception e) {
+                            if(requestJson.has("ids")) {
+                                try {
+                                    filtersIds = requestJson.getJSONArray("ids");
+                                } catch (Exception e) {
+                                }
                             }
                             if (filtersIds != null) {
                                 String sIdsList = "";
@@ -1561,7 +1572,11 @@ public class db {
                     JSONObject col = cols.getJSONObject(ic);
 
                     if(col.has("type")) {
-                        colTypes[ic] = Integer.parseInt(col.getString("type"));
+                        try {
+                            colTypes[ic] = Integer.parseInt(col.getString("type"));
+                        } catch(Exception e) {
+                            error += "ERROR: invalid datatype at controlId:"+tbl_wrk.controlId+" field:"+col.getString("name")+" Error:" + e.getLocalizedMessage();
+                        }
                     }
                     if(col.has("precision")) {
                         colPrecs[ic] = Integer.parseInt(col.getString("precision"));

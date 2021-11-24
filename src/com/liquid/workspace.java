@@ -3715,28 +3715,26 @@ public class workspace {
         boolean isSystemLiquid = false;
         if (tableJson != null) {
             String selectDatabases = null, selectSchemas = null, selectTables = null, selectViews = null, selectColumns = null, selectForeignKeys = null;
+
             try {
-                selectDatabases = tableJson.getString("selectDatabases");
-            } catch (Exception e) {
-            }
-            try {
-                selectSchemas = tableJson.getString("selectSchemas");
-            } catch (Exception e) {
-            }
-            try {
-                selectTables = tableJson.getString("selectTables");
-            } catch (Exception e) {
-            }
-            try {
-                selectViews = tableJson.getString("selectViews");
-            } catch (Exception e) {
-            }
-            try {
-                selectColumns = tableJson.getString("selectColumns");
-            } catch (Exception e) {
-            }
-            try {
-                selectForeignKeys = tableJson.getString("selectForeignKeys");
+                if(tableJson.has("selectDatabases")) {
+                    selectDatabases = tableJson.getString("selectDatabases");
+                }
+                if(tableJson.has("selectSchemas")) {
+                    selectSchemas = tableJson.getString("selectSchemas");
+                }
+                if(tableJson.has("selectTables")) {
+                    selectTables = tableJson.getString("selectTables");
+                }
+                if(tableJson.has("selectViews")) {
+                    selectViews = tableJson.getString("selectViews");
+                }
+                if(tableJson.has("selectColumns")) {
+                    selectColumns = tableJson.getString("selectColumns");
+                }
+                if(tableJson.has("selectForeignKeys")) {
+                    selectForeignKeys = tableJson.getString("selectForeignKeys");
+                }
             } catch (Exception e) {
             }
             if (selectDatabases != null && !selectDatabases.isEmpty()) {
