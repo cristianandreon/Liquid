@@ -13,7 +13,7 @@
 /* */
 
 //
-// Liquid ver.1.74
+// Liquid ver.1.75
 //
 //  First update 04-01-2020 - Last update  23-11-2021
 //
@@ -8074,13 +8074,11 @@ var Liquid = {
                 // Process result ids to read from server
                 //
                 if(command.response) {
-                    if(command.response.details) {
-                        // Process result ids to read from server
-                        Liquid.process_ids_to_reload(liquid, command, [] );
-                        if(ids) {
-                            if(ids.length) {
-                                Liquid.loadData(liquid, ids, "onCommandDone");
-                            }
+                    // Process result ids to read from server
+                    Liquid.process_ids_to_reload(liquid, command, [] );
+                    if(ids) {
+                        if(ids.length) {
+                            Liquid.loadData(liquid, ids, "onCommandDone");
                         }
                     }
                 }
@@ -8210,36 +8208,70 @@ var Liquid = {
                 if(command) {
                     if(command.response) {
                         var details = null;
-                        if(command.response.details instanceof Array) {
-                            details = command.response.details;
+                        if(isDef(command.response.details)) {
+                            if (command.response.details instanceof Array) {
+                                details = command.response.details;
+                            } else {
+                                details = [command.response.details];
+                            }
                         } else {
-                            details = [ command.response.details ];
+                            details = [ { tables:null, foreignTables:null, fails:null } ];
+                            if(isDef(command.tables)) {
+                                details[0].tables = command.tables;
+                            }
+                            if(isDef(command.foreignTables)) {
+                                details[0].foreignTables = command.foreignTables;
+                            }
+                            if(isDef(command.fails)) {
+                                details[0].fails = command.fails;
+                            }
                         }
-                        for (var i=0; i<details.length; i++) {
-                            var detail = details[i];
-                            if(detail) {
-                                if(detail.tables) {
-                                    for(var it=0; it<detail.tables.length; it++) {
-                                        if(detail.tables[it].table === liquid.tableJson.table || detail.tables[it].table === liquid.tableJson.schema+"."+liquid.tableJson.table) {
-                                            if(detail.tables[it].ids) {
-                                                for(var iid=0; iid< detail.tables[it].ids.length; iid++) {
-                                                    ids.push(detail.tables[it].ids[iid]);
+                        if(details) {
+                            for (var i = 0; i < details.length; i++) {
+                                var detail = details[i];
+                                if (detail) {
+                                    if (detail.tables) {
+                                        for (var it = 0; it < detail.tables.length; it++) {
+                                            if (detail.tables[it].table === liquid.tableJson.table || detail.tables[it].table === liquid.tableJson.schema + "." + liquid.tableJson.table) {
+                                                if (detail.tables[it].ids) {
+                                                    for (var iid = 0; iid < detail.tables[it].ids.length; iid++) {
+                                                        ids.push(detail.tables[it].ids[iid]);
+                                                    }
+                                                    if (!detail.tables[it].ids || !detail.tables[it].ids.length) {
+                                                        if (command.name === "insert") {
+                                                            // inserted record in foreign table. but no id generated : reloading...
+                                                            Liquid.loadData(liquid, null, "reloading all rows after insert (no ids returned)");
+                                                        }
+                                                    }
                                                 }
-                                                if(!detail.tables[it].ids || !detail.tables[it].ids.length) {
-                                                    if(command.name === "insert") {
-                                                        // inserted record in foreign table. but no id generated : reloading...
-                                                        Liquid.loadData(liquid, null, "reloading all rows after insert (no ids returned)");
+                                            }
+                                            // Search on nested control
+                                            if (liquid.foreignTables) {
+                                                for (var ift = 0; ift < liquid.foreignTables.length; ift++) {
+                                                    var tbl = liquid.foreignTables[ift].foreignTable;
+                                                    var schemaTbl = liquid.tableJson.schema + "." + liquid.foreignTables[ift].foreignTable;
+                                                    if (tbl == detail.tables[it].table || schemaTbl == detail.tables[it].table) {
+                                                        var ftLiquid = Liquid.getLiquid(liquid.foreignTables[ift].foreignTableControlId);
+                                                        if (ftLiquid) {
+                                                            var localIds = [];
+                                                            for (var iid = 0; iid < detail.tables[it].ids.length; iid++) {
+                                                                localIds.push(detail.tables[it].ids[iid]);
+                                                            }
+                                                            if (localIds.length) {
+                                                                Liquid.loadData(ftLiquid, localIds, "reloading all rows after command");
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                                if(detail.foreignTables) {
-                                    for(var it=0; it<detail.foreignTables.length; it++) {
-                                        if(!detail.foreignTables[it].ids || !detail.foreignTables[it].ids.length) {
-                                            if(command.name === "insert") {
-                                                // inserted record in foreign table. but no id generated : reloading...
+                                    if (detail.foreignTables) {
+                                        for (var it = 0; it < detail.foreignTables.length; it++) {
+                                            if (!detail.foreignTables[it].ids || !detail.foreignTables[it].ids.length) {
+                                                if (command.name === "insert") {
+                                                    // inserted record in foreign table. but no id generated : reloading...
+                                                }
                                             }
                                         }
                                     }

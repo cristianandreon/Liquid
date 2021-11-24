@@ -5822,6 +5822,7 @@ public class db {
                             }
 
                             retVal = "{"
+                                    + "\"details\":[ {"
                                     + "\"tables\":["
                                     + workspace.arrayToString(tableUpdates.toArray(), null, null, ",")
                                     + "], \"foreignTables\":["
@@ -5830,6 +5831,8 @@ public class db {
                                     + workspace.arrayToString(modificationsFaild.toArray(), null, null, ",")
                                     + "]"
                                     + ",\"client\":"+"\""+retValCbk+"\""
+                                    + "}"
+                                    + "]"
                                     + "}";
 
                         } catch (Throwable th) {
