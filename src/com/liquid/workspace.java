@@ -9,10 +9,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.net.URLDecoder;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -390,8 +387,17 @@ public class workspace {
         cacheEnabled = false;
     }
 
-    static public String enableProjectMode() {
-        return enableProjectMode(null);
+    static public String enableProjectMode(JspWriter out, boolean keepMetadata, String onlyToHost) {
+        String hostName = null;
+        try {
+            hostName = InetAddress.getLocalHost().getHostName();
+            if(hostName.equalsIgnoreCase(onlyToHost)) {
+                return enableProjectMode(out, keepMetadata);
+            }
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
