@@ -9,7 +9,6 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -59,8 +58,6 @@ import javax.net.ssl.X509TrustManager;
 
 // comment this for java <= 7
 import org.jsoup.Jsoup;
-
-import static com.liquid.workspace.GLLang;
 
 public class utility {
 
@@ -1454,6 +1451,75 @@ public class utility {
 
 
 
+    public static class DataListCache {
+        public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
+        public ArrayList<Object> beans = null;
+    }
+    static ArrayList<DataListCache> glDataListCache = new ArrayList<DataListCache>();
+
+
+    public static DataListCache get_datalist_from_cahce(String databaseSchemaTable, String codeColumn, String descColumn, String where) {
+        for(int i=0; i<glDataListCache.size(); i++) {
+            DataListCache dataListCache = glDataListCache.get(i);
+            if(dataListCache != null) {
+                if(databaseSchemaTable.equalsIgnoreCase(dataListCache.databaseSchemaTable)) {
+                    if(codeColumn.equalsIgnoreCase(dataListCache.codeColumn)) {
+                        if(descColumn.equalsIgnoreCase(dataListCache.descColumn)) {
+                            if ((where == null && dataListCache.where == null) || (where != null && where.equalsIgnoreCase(dataListCache.where)) ) {
+                                return dataListCache;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) {
+        return get_datalist_from_table( datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, chacheIt);
+    }
+
+    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String tooltipColumn, String where, String emptyRow, boolean chacheIt) {
+        String out = "";
+
+        ArrayList<Object> beans = null;
+        DataListCache dataListCache = get_datalist_from_cahce(databaseSchemaTable, codeColumn, descColumn, where);
+        if(dataListCache != null) {
+            beans = dataListCache.beans;
+        } else {
+            beans = db.load_beans(databaseSchemaTable, ""+codeColumn+","+descColumn, where, 0);
+        }
+        out += "<datalist id=\""+datalistId+"\">";
+        if(emptyRow != null) {
+            out += "<option title=\""+("")+"\" disabled selected value> " + emptyRow + " </option>";
+        }
+        if(beans != null) {
+            for (int i = 0; i < beans.size(); i++) {
+                String code = (codeColumn != null ? (String) utility.get(beans.get(i), codeColumn) : null);
+                String desc = (descColumn != null ? (String) utility.get(beans.get(i), descColumn) : null);
+                String tooltip = (tooltipColumn != null ? (String) utility.get(beans.get(i), tooltipColumn) : null);
+                out += "<option title=\""+(tooltip != null ? tooltip : "")+"\" value=\"" + code + "\" > " + desc + " </option>";
+            }
+        }
+        out += "</datalist>";
+        if(dataListCache == null) {
+            if (chacheIt) {
+                dataListCache = new DataListCache();
+                dataListCache.databaseSchemaTable = databaseSchemaTable;
+                dataListCache.codeColumn = codeColumn;
+                dataListCache.descColumn = descColumn;
+                dataListCache.where = where;
+                dataListCache.beans = beans;
+                glDataListCache.add(dataListCache);
+            }
+        }
+        return out;
+    }
+
+    public static void resetDatalistCache() {
+        glDataListCache.clear();
+    }
 
     public static boolean set_file_content(String fileName, String fileContent) {
         BufferedWriter out = null;

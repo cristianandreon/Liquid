@@ -350,7 +350,15 @@ public class PojoGenerator {
     
     private static CtClass resolveCtClass(Class clazz) throws NotFoundException {
         ClassPool pool = ClassPool.getDefault();
-        return pool.get(clazz.getName());
+        try {
+            return pool.get(clazz.getName());
+        } catch (Exception e) {
+            e.printStackTrace();
+            if(clazz.getName().equalsIgnoreCase("java.sql.Timestamp")) {
+            } else {
+            }
+        }
+        return null;
     }
 }
 

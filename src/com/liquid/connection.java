@@ -288,6 +288,9 @@ public class connection {
                 }
                 conn = (Connection)connResult[0];
                 errors = (String)connResult[1];
+                if(conn == null) {
+                    // ???
+                }
             }
     	} catch(Throwable th) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);

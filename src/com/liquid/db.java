@@ -2248,7 +2248,7 @@ public class db {
                             sWhere += "?";
                             sWhereParams.add(filterValueObject);
                         } else {
-                            sWhere +=  preFix + (filterValue != null ? filterValue : "") + postFix;
+                            sWhere +=  preFix + (filterValue != null ? filterValue : "NULL") + postFix;
                         }
                                 
                         
@@ -2477,7 +2477,7 @@ public class db {
                                             }
                                         }
                                         // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
-                                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "NULL";
                                         out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
                                     }
                                 }
@@ -3021,7 +3021,7 @@ public class db {
             ArrayList<Object> ftBeansContentList = new ArrayList<Object>();
             ArrayList<Object> rowsObject = new ArrayList<Object>();
             Class<?> clazz = null;
-            String className = "" + tbl_wrk.controlId + "";
+            String className = "" + tbl_wrk.controlId.replace(".", "_") + "";
 
             JSONArray cols = null;
             String table = null;
@@ -5202,10 +5202,15 @@ public class db {
 
 
             if (conn != null) {
+                String [] dbParts = DatabaseSchemaTable.split("\\.");
+                if(dbParts.length >= 3) {
+                    DatabaseSchemaTable = dbParts[1]+"."+dbParts[2];
+                }
+
                 sSTMTUpdate = "INSERT INTO "+DatabaseSchemaTable+" (";
 
                 for(int i=0; i<Fields.length; i++) {
-                    sSTMTUpdate += (i > 0 ? "," : "") + Fields[i];
+                    sSTMTUpdate += (i > 0 ? "," : "") + "\"" + Fields[i] + "\"";
                 }
                 sSTMTUpdate += ") VALUES (";
                 for(int i=0; i<Fields.length; i++) {
@@ -5226,12 +5231,18 @@ public class db {
                             sqlSTMTUpdate.setFloat((i + 1), (float) val);
                         } else if (val instanceof Double) {
                             sqlSTMTUpdate.setDouble((i + 1), (double) val);
-                        } else if (val instanceof Date) {
-                            sqlSTMTUpdate.setDate((i + 1), (Date) val);
+                        } else if (val instanceof java.util.Date) {
+                            sqlSTMTUpdate.setDate((i + 1), (new java.sql.Date(((java.util.Date) val).getTime())) );
+                        } else if (val instanceof java.sql.Date) {
+                            sqlSTMTUpdate.setDate((i + 1), (java.sql.Date)val);
                         } else if (val instanceof Timestamp) {
                             sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
                         } else if (val instanceof String) {
                             sqlSTMTUpdate.setString((i + 1), (String) val);
+                        } else if (val instanceof Boolean) {
+                            sqlSTMTUpdate.setBoolean((i + 1), (boolean) val);
+                        } else {
+                            System.err.println("insert_row() invalid obejct type : "+ val.getClass().getName());
                         }
                     }
                 }
@@ -5255,7 +5266,7 @@ public class db {
 
 
         } catch (Exception e) {
-            System.err.println("add_auction_event() error : "+e.getMessage());
+            System.err.println("insert_row() error : "+e.getMessage());
             retVal = false;
 
             try {
@@ -5322,6 +5333,11 @@ public class db {
 
 
             if (conn != null) {
+                String [] dbParts = DatabaseSchemaTable.split("\\.");
+                if(dbParts.length >= 3) {
+                    DatabaseSchemaTable = dbParts[1]+"."+dbParts[2];
+                }
+
                 sSTMTUpdate = "UPDATE "+DatabaseSchemaTable+" SET ";
 
 
@@ -5330,7 +5346,7 @@ public class db {
                         keyValue = Values[i];
                     } else {
                         sSTMTUpdate += (ia > 0 ? "," : "");
-                        sSTMTUpdate += Fields[i];
+                        sSTMTUpdate += "\"" + Fields[i] + "\"";
                         sSTMTUpdate += "=?";
                         ia++;
                     }
@@ -5339,7 +5355,7 @@ public class db {
                 if(keyValue instanceof String) {
                     keyValue = "'" + keyValue + "'";
                 }
-                sSTMTUpdate += " WHERE "+key+"=?";
+                sSTMTUpdate += " WHERE \""+key+"\"=?";
 
                 PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
 
@@ -5357,12 +5373,18 @@ public class db {
                                 sqlSTMTUpdate.setFloat((ip), (float) val);
                             } else if (val instanceof Double) {
                                 sqlSTMTUpdate.setDouble((ip), (double) val);
-                            } else if (val instanceof Date) {
+                            } else if (val instanceof java.util.Date) {
+                                sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())) );
+                            } else if (val instanceof java.sql.Date) {
                                 sqlSTMTUpdate.setDate((ip), (Date) val);
                             } else if (val instanceof Timestamp) {
                                 sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
                             } else if (val instanceof String) {
                                 sqlSTMTUpdate.setString((ip), (String) val);
+                            } else if (val instanceof Boolean) {
+                                sqlSTMTUpdate.setBoolean((ip), (boolean) val);
+                            } else {
+                                System.err.println("update_row() invalid obejct type : "+ val.getClass().getName());
                             }
                         }
                         ip++;
@@ -5380,12 +5402,18 @@ public class db {
                     sqlSTMTUpdate.setFloat((ip), (float) val);
                 } else if (val instanceof Double) {
                     sqlSTMTUpdate.setDouble((ip), (double) val);
-                } else if (val instanceof Date) {
+                } else if (val instanceof java.util.Date) {
+                    sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())) );
+                } else if (val instanceof java.sql.Date) {
                     sqlSTMTUpdate.setDate((ip), (Date) val);
                 } else if (val instanceof Timestamp) {
                     sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
                 } else if (val instanceof String) {
                     sqlSTMTUpdate.setString((ip), (String) val);
+                } else if (val instanceof Boolean) {
+                    sqlSTMTUpdate.setBoolean((ip), (boolean) val);
+                } else {
+                    System.err.println("update_row() invalid obejct type : "+ val.getClass().getName());
                 }
 
 
@@ -5408,7 +5436,7 @@ public class db {
 
 
         } catch (Exception e) {
-            System.err.println("add_auction_event() error : "+e.getMessage());
+            System.err.println("update_row() error : "+e.getMessage());
             retVal = false;
 
             try {
@@ -5431,10 +5459,10 @@ public class db {
 
 
     /**
-     * Update bean to DB
+     * TODO ... Update bean to DB
      *
      * @param bean
-     * @param databaseSchemaTable
+     * @param DatabaseSchemaTable
      * @param key   the primary key property name
      */
     public static Object [] update(Object bean, String DatabaseSchemaTable, String key) throws Throwable {
@@ -5504,7 +5532,7 @@ public class db {
 
 
             } catch (Exception e) {
-                System.err.println("add_auction_event() error : "+e.getMessage());
+                System.err.println("update() error : "+e.getMessage());
                 retVal = false;
 
                 try {
@@ -6256,7 +6284,7 @@ public class db {
 
         if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
             value = getLocalDate(value, colTypes, nullable);
-            if (value != null) {
+            if (value != null && !value.isEmpty()) {
                 // refine
                 if (isOracle || isPostgres) {
                     if (colTypes == 6 || colTypes == 93) { // date, datetime
@@ -6308,7 +6336,7 @@ public class db {
         } else if (colTypes == 92) { // time
             // TODO: 24/09/2020 Test to do
             value = getLocalTime(value, colTypes, nullable);
-            if (value != null) {
+            if (value != null && !value.isEmpty()) {
                 // refine
                 if (isOracle || isPostgres) {
                     value = "TO_DATE('" + value + "', 'HH24:MI:SS')";
