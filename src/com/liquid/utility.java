@@ -1492,14 +1492,14 @@ public class utility {
         }
         out += "<datalist id=\""+datalistId+"\">";
         if(emptyRow != null) {
-            out += "<option title=\""+("")+"\" disabled selected value> " + emptyRow + " </option>";
+            out += "<option title=\""+("")+"\" selected value=\""+emptyRow+"\">" + " " + "</option>";
         }
         if(beans != null) {
             for (int i = 0; i < beans.size(); i++) {
                 String code = (codeColumn != null ? (String) utility.get(beans.get(i), codeColumn) : null);
                 String desc = (descColumn != null ? (String) utility.get(beans.get(i), descColumn) : null);
                 String tooltip = (tooltipColumn != null ? (String) utility.get(beans.get(i), tooltipColumn) : null);
-                out += "<option title=\""+(tooltip != null ? tooltip : "")+"\" value=\"" + code + "\" > " + desc + " </option>";
+                out += "<option title=\""+(tooltip != null ? tooltip.replace("\"", "'") : "")+"\" value=\"" + code + "\" > " + desc + " </option>";
             }
         }
         out += "</datalist>";

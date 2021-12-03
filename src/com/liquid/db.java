@@ -217,7 +217,7 @@ public class db {
      */
     static public String get_table_recordset(ParamsUtil.get_recordset_params recordset_params, JspWriter out) {
         Connection conn = null, connToDB = null, connToUse = null;
-        String executingQuery = null, executingQueryForCache = null;
+        String executingQuery = null, executingQueryForCache = null, runtimeQuery = null;
         String countQuery = null;
         String out_string = "", out_values_string = "", out_codes_string = "", error = "", warning = "", message = "", title = "";
         PreparedStatement psdo = null;
@@ -1351,17 +1351,23 @@ public class db {
                                     }
                                 }
                             }
+
                             Object retVal = null;
-                            if (bOnRetrieveFound) {
-                                // Evento definito : passa il controllo alla classe defnitia in "server" nell' evento
-                                if (serverClassName != null && !serverClassName.isEmpty()) {
-                                    retVal = forwardEvent("onRetrieve", tbl_wrk, (String) serverClassName, (Object) executingQuery /*params*/, (Object) nRows/*clientData*/, (Object) recordset_params.request);
+                            try {
+                                if (bOnRetrieveFound) {
+                                    // Evento definito : passa il controllo alla classe defnitia in "server" nell' evento
+                                    if (serverClassName != null && !serverClassName.isEmpty()) {
+                                        retVal = forwardEvent("onRetrieve", tbl_wrk, (String) serverClassName, (Object) executingQuery /*params*/, (Object) nRows/*clientData*/, (Object) recordset_params.request);
+                                    }
+                                } else {
+                                    // Evento di systema sulla classe owner (se definito)
+                                    if (owner != null) {
+                                        retVal = forwardEvent("onRetrieve", tbl_wrk, (Object) owner, (Object) executingQuery /*params*/, (Object) nRows/*clientData*/, (Object) recordset_params.request);
+                                    }
                                 }
-                            } else {
-                                // Evento di systema sulla classe owner (se definito)
-                                if (owner != null) {
-                                    retVal = forwardEvent("onRetrieve", tbl_wrk, (Object) owner, (Object) executingQuery /*params*/, (Object) nRows/*clientData*/, (Object) recordset_params.request);
-                                }
+                            } catch(Exception e) {
+                                error += "onRetrive Error:" + e.getLocalizedMessage();
+                                System.err.println("// onRetrive() Error:" + e.getLocalizedMessage());
                             }
 
                             if (retVal != null) {
@@ -1476,6 +1482,8 @@ public class db {
                             set_statement_param( psdo, iParam+1, sWhereParams.get(iParam) );
                         }
                     }
+
+                    runtimeQuery = psdo.toString();
                     rsdo = psdo.executeQuery();
                 }
             } catch (Exception e) {
@@ -1696,7 +1704,8 @@ public class db {
                 String base64Title = "";
 
                 try {
-                    base64Query = utility.base64Encode(executingQuery != null && !executingQuery.isEmpty() ? executingQuery : "N/D");
+                    // Query comprensiva dei parametry
+                    base64Query = utility.base64Encode(runtimeQuery != null && !runtimeQuery.isEmpty() ? runtimeQuery : "N/D");
                 } catch (Throwable e) {
                 }
                 try {
@@ -5231,12 +5240,12 @@ public class db {
                             sqlSTMTUpdate.setFloat((i + 1), (float) val);
                         } else if (val instanceof Double) {
                             sqlSTMTUpdate.setDouble((i + 1), (double) val);
+                        } else if (val instanceof Timestamp) {
+                            sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
                         } else if (val instanceof java.util.Date) {
                             sqlSTMTUpdate.setDate((i + 1), (new java.sql.Date(((java.util.Date) val).getTime())) );
                         } else if (val instanceof java.sql.Date) {
                             sqlSTMTUpdate.setDate((i + 1), (java.sql.Date)val);
-                        } else if (val instanceof Timestamp) {
-                            sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
                         } else if (val instanceof String) {
                             sqlSTMTUpdate.setString((i + 1), (String) val);
                         } else if (val instanceof Boolean) {
@@ -5308,8 +5317,16 @@ public class db {
     }
 
 
-
-
+    /**
+     * TODO: addition where conditions
+     *
+     * @param DatabaseSchemaTable
+     * @param Fields
+     * @param Values
+     * @param key
+     * @return
+     * @throws Throwable
+     */
     static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String key ) throws Throwable {
         boolean retVal = false;
         int new_id = 0;
@@ -5353,7 +5370,7 @@ public class db {
                 }
 
                 if(keyValue instanceof String) {
-                    keyValue = "'" + keyValue + "'";
+                    keyValue = "" + keyValue + "";
                 }
                 sSTMTUpdate += " WHERE \""+key+"\"=?";
 
@@ -5373,12 +5390,12 @@ public class db {
                                 sqlSTMTUpdate.setFloat((ip), (float) val);
                             } else if (val instanceof Double) {
                                 sqlSTMTUpdate.setDouble((ip), (double) val);
+                            } else if (val instanceof Timestamp) {
+                                sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
                             } else if (val instanceof java.util.Date) {
                                 sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())) );
                             } else if (val instanceof java.sql.Date) {
                                 sqlSTMTUpdate.setDate((ip), (Date) val);
-                            } else if (val instanceof Timestamp) {
-                                sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
                             } else if (val instanceof String) {
                                 sqlSTMTUpdate.setString((ip), (String) val);
                             } else if (val instanceof Boolean) {
@@ -5402,12 +5419,12 @@ public class db {
                     sqlSTMTUpdate.setFloat((ip), (float) val);
                 } else if (val instanceof Double) {
                     sqlSTMTUpdate.setDouble((ip), (double) val);
+                } else if (val instanceof Timestamp) {
+                    sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
                 } else if (val instanceof java.util.Date) {
                     sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())) );
                 } else if (val instanceof java.sql.Date) {
                     sqlSTMTUpdate.setDate((ip), (Date) val);
-                } else if (val instanceof Timestamp) {
-                    sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
                 } else if (val instanceof String) {
                     sqlSTMTUpdate.setString((ip), (String) val);
                 } else if (val instanceof Boolean) {
@@ -5502,10 +5519,10 @@ public class db {
                                 sqlSTMTUpdate.setFloat((i + 1), (float) val);
                             } else if (val instanceof Double) {
                                 sqlSTMTUpdate.setDouble((i + 1), (double) val);
-                            } else if (val instanceof Date) {
-                                sqlSTMTUpdate.setDate((i + 1), (Date) val);
                             } else if (val instanceof Timestamp) {
                                 sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
+                            } else if (val instanceof Date) {
+                                sqlSTMTUpdate.setDate((i + 1), (Date) val);
                             } else if (val instanceof String) {
                                 sqlSTMTUpdate.setString((i + 1), (String) val);
                             }
@@ -7184,14 +7201,15 @@ public class db {
 
                                 Object fieldData = utility.get(bean, fieldName);
 
-                                if (fieldData instanceof Date) { //date
+                                if (fieldData instanceof Timestamp) { //date
+                                    fieldData = fieldData != null ? dateTimeFormat.format(fieldData) : null;
+
+                                } else if (fieldData instanceof Date) { //date
                                     java.sql.Date dbSqlDate = (java.sql.Date) fieldData;
 
                                 } else if (fieldData instanceof Time) { //date
                                     java.sql.Time dbSqlTime = (java.sql.Time) fieldData;
 
-                                } else if (fieldData instanceof Timestamp) { //date
-                                    fieldData = fieldData != null ? dateTimeFormat.format(fieldData) : null;
                                 }
 
                                 if (fieldName.equals(primaryKey)) {
