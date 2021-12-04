@@ -1280,6 +1280,7 @@ public class db {
 
                 if (query != null && !query.isEmpty()) {
                 } else {
+                    String runtimeCountQuery = null;
                     try {
                         if (table != null && !table.isEmpty()) {
                             if (connToUse != null) {
@@ -1289,7 +1290,8 @@ public class db {
                                     for (int iParam=0; iParam<sWhereParams.size(); iParam++) {
                                         set_statement_param( psdo, iParam+1, sWhereParams.get(iParam) );
                                     }
-                                }                                
+                                }
+                                runtimeCountQuery = psdo.toString();
                                 rsdo = psdo.executeQuery();
                                 if (rsdo != null) {
                                     if (rsdo.next()) {
@@ -1299,8 +1301,8 @@ public class db {
                             }
                         }
                     } catch (Throwable e) {
-                        error += "Count Error:" + e.getLocalizedMessage() + countQuery + "[Driver:" + tbl_wrk.driverClass + "] controlId:" + controlId;
-                        System.err.println("// Count Error:" + e.getLocalizedMessage() + countQuery);
+                        error += "Count Error:" + e.getLocalizedMessage() + runtimeCountQuery + "[Driver:" + tbl_wrk.driverClass + "] controlId:" + controlId;
+                        System.err.println("// Count Error:" + e.getLocalizedMessage() + runtimeCountQuery);
                     }
                     if (rsdo != null) {
                         rsdo.close();
@@ -1488,7 +1490,7 @@ public class db {
                 }
             } catch (Exception e) {
                 error += " [" + (tblWrkDesc) + "] Query Error:" + e.getLocalizedMessage() + " executingQuery:" + executingQuery + "]" + "[Driver:" + tbl_wrk.driverClass + "]";
-                System.err.println(executingQuery);
+                System.err.println(runtimeQuery);
                 System.err.println("// Error:" + e.getLocalizedMessage());
             }
             lQueryTime = System.currentTimeMillis();
@@ -1787,6 +1789,8 @@ public class db {
             try {
                 String filterTable = null;
                 String filterName = null;
+                String filterNameAliased = null;
+                String filterFullName = null;
                 String filterValue = null;
                 Object oFilterValue = null;
                 boolean filterValueIsSet = false;
@@ -1799,6 +1803,8 @@ public class db {
 
                 filterName = filtersCol.has("name") ? filtersCol.getString("name") : filterName;
                 filterName = filtersCol.has("col") ? filtersCol.getString("col") : filterName;
+                filterNameAliased = filterName;
+                filterFullName = filterName;
 
                 try {
                     if (!filtersCol.isNull("value")) {
@@ -1896,7 +1902,7 @@ public class db {
                                 if (isPostgres || isOracle) {
                                     // mette l'alias
                                     String colAlias = (filterTable != null ? LeftJoinMap.getAlias(leftJoinsMap, filterTable) : tableIdString + table + tableIdString) + "." + itemIdString + colParts[1] + itemIdString;
-                                    filterName = colAlias != null ? colAlias : filterName;
+                                    filterNameAliased = colAlias != null ? colAlias : filterName;
                                 } else {
                                 }
                                 filterTable = "";
@@ -1908,13 +1914,24 @@ public class db {
                         for (int ic = 0; ic < cols.length(); ic++) {
                             col = cols.getJSONObject(ic);
                             String colName = null;
-                            try {
+                            if (col.has("name")) {
                                 colName = col.getString("name");
-                            } catch (Exception e) {
+                                if (filterFullName.equalsIgnoreCase(colName)) {
+                                    bFoundCol = true;
+                                    break;
+                                }
                             }
-                            if (filterName.equalsIgnoreCase(colName)) {
-                                bFoundCol = true;
-                                break;
+                        }
+                        if(!bFoundCol) {
+                            for (int ic = 0; ic < cols.length(); ic++) {
+                                col = cols.getJSONObject(ic);
+                                if(col.has("name")) {
+                                    String colName = col.getString("name");
+                                    if (filterName.equalsIgnoreCase(colName)) {
+                                        bFoundCol = true;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -2250,20 +2267,26 @@ public class db {
                         //
                         // add where clausole
                         //
-                        sWhere += sensitiveCasePreOp + preFixCol + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterName + itemIdString) : (filterName)) + postFixCol + sensitiveCasePostOp
+                        sWhere += sensitiveCasePreOp
+                                + preFixCol
+                                + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterNameAliased + itemIdString) : (filterNameAliased))
+                                + postFixCol
+                                + sensitiveCasePostOp
                                 + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=");
                                 
                         if(bUseParams &&  sWhereParams != null) {
                             sWhere += "?";
                             sWhereParams.add(filterValueObject);
                         } else {
-                            sWhere +=  preFix + (filterValue != null ? filterValue : "NULL") + postFix;
+                            sWhere +=  preFix +
+                                    (filterValue != null ? filterValue : "NULL")
+                                    + postFix;
                         }
                                 
                         
 
                         
-                        // is operator logic not 'OR' ? closing parent
+                        // is operator logic not 'OR' ? close the parent
                         if(!"OR".equalsIgnoreCase(filterLogic) && filterNextLogic == null) {
                             if(parentesisCount>0) {
                                 sWhere += ")";
