@@ -6849,10 +6849,18 @@ public class db {
     static public String insert(Object requestParam, Object bean, Object tbl_wrk, String foreignTables) {
         String result = null;
         try {
-            if(tbl_wrk != null) {
+            if (tbl_wrk != null) {
 
-                if(tbl_wrk instanceof String) {
-                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String)tbl_wrk);
+                if (tbl_wrk instanceof String) {
+                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String) tbl_wrk);
+                }
+
+                String table = "";
+                String[] schemaTableParts = ((workspace) tbl_wrk).schemaTable.split("\\.");
+                if (schemaTableParts.length == 1) {
+                    table = schemaTableParts[0];
+                } else if (schemaTableParts.length >= 2) {
+                    table = schemaTableParts[1];
                 }
 
                 if(bean != null) {
@@ -6862,41 +6870,49 @@ public class db {
                     workspace tblWrk = (workspace) tbl_wrk;
                     JSONArray cols = tblWrk.tableJson.getJSONArray("columns");
 
+                    //
+                    // Copy values from beans to "modifications"...
+                    //
                     for (int ic = 0; ic < cols.length(); ic++) {
                         JSONObject col = cols.getJSONObject(ic);
                         String propName = col.getString("name");
 
-                        if(utility.has(bean, propName)) {
-                            Object oFieldValue = utility.get(bean, propName);
-                            String fieldValue = null;
-                            boolean setFieldValue = true;
+                        String [] propNameParts = propName.split("\\.");
 
-                            if (oFieldValue != null) {
-                                if (oFieldValue instanceof Date || oFieldValue instanceof Timestamp) {
-                                    // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
-                                    DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-                                    fieldValue = dateFormat.format(oFieldValue);
+                        if( propNameParts.length == 1 || (propNameParts.length > 1 && table.equalsIgnoreCase(propNameParts[0])) ) {
+
+                            if(utility.has(bean, propName)) {
+                                Object oFieldValue = utility.get(bean, propName);
+                                String fieldValue = null;
+                                boolean setFieldValue = true;
+
+                                if (oFieldValue != null) {
+                                    if (oFieldValue instanceof Date || oFieldValue instanceof Timestamp) {
+                                        // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
+                                        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                                        fieldValue = dateFormat.format(oFieldValue);
+                                    } else {
+                                        fieldValue = String.valueOf(oFieldValue);
+                                    }
                                 } else {
-                                    fieldValue = String.valueOf(oFieldValue);
-                                }
-                            } else {
-                                fieldValue = null;
-                                if (col.has("default")) {
-                                    String defaultValue = col.getString("default");
-                                    if (defaultValue != null) {
-                                        // N.B.: lascia il campo non assegnato, sarà risolto dal db
-                                        setFieldValue = false;
-                                        /*
-                                        defaultValue = solveVariableField(defaultValue, request, false);
+                                    fieldValue = null;
+                                    if (col.has("default")) {
+                                        String defaultValue = col.getString("default");
                                         if (defaultValue != null) {
+                                            // N.B.: lascia il campo non assegnato, sarà risolto dal db
+                                            setFieldValue = false;
+                                            /*
+                                            defaultValue = solveVariableField(defaultValue, request, false);
+                                            if (defaultValue != null) {
+                                            }
+                                            */
                                         }
-                                        */
                                     }
                                 }
-                            }
-                            if(setFieldValue) {
-                                fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
-                                sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
+                                if(setFieldValue) {
+                                    fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                                    sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
+                                }
                             }
                         }
                     }

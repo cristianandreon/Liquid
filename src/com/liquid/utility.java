@@ -565,6 +565,7 @@ public class utility {
      */
     static public Object get(Object bean, String property) {
         try {
+            property = property.replace("\\.", "$");
             String clasName = bean.getClass().getName();
             if (clasName.equalsIgnoreCase("java.util.ArrayList") || clasName.equalsIgnoreCase("java.util.List")) {
                 // wrap to bean
@@ -611,7 +612,7 @@ public class utility {
     static public boolean has(Object bean, String property) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
         try {
             if (bean != null) {
-                Field field = bean.getClass().getDeclaredField(property );
+                Field field = bean.getClass().getDeclaredField(property.replace("\\.", "$") );
                 if (field != null) {
                     return true;
                 }
@@ -1260,11 +1261,34 @@ public class utility {
      */
     static public Object get_result_id(String result) throws JSONException {
         JSONObject resultJson = new JSONObject(result);
-        JSONArray tbls = (JSONArray)resultJson.getJSONArray("tables");
-        if(tbls != null && tbls.length() > 0) {
-            JSONArray ids = ((JSONObject)tbls.get(0)).getJSONArray("ids");
-            if(ids != null && ids.length() > 0) {
-                return ids.get(0);
+        if(resultJson != null) {
+            if(resultJson.has("tables")) {
+                JSONArray tbls = (JSONArray) resultJson.getJSONArray("tables");
+                if (tbls != null && tbls.length() > 0) {
+                    JSONArray ids = ((JSONObject) tbls.get(0)).getJSONArray("ids");
+                    if (ids != null && ids.length() > 0) {
+                        return ids.get(0);
+                    }
+                }
+            } else if(resultJson.has("details")) {
+                JSONArray details = (JSONArray) resultJson.getJSONArray("details");
+                if(details != null) {
+                    for(int id=0; id<details.length(); id++) {
+                        Object detail = details.get(id);
+                        if(detail instanceof JSONObject) {
+                            JSONObject detailJson = (JSONObject)detail;
+                            if(detailJson.has("tables")) {
+                                JSONArray tbls = (JSONArray) detailJson.getJSONArray("tables");
+                                if (tbls != null && tbls.length() > 0) {
+                                    JSONArray ids = ((JSONObject) tbls.get(0)).getJSONArray("ids");
+                                    if (ids != null && ids.length() > 0) {
+                                        return ids.get(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         return null;

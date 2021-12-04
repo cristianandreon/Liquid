@@ -2423,6 +2423,19 @@ var Liquid = {
             }
         }
     },
+    getParentNode:function(obj, dataSetValue) {
+        while(obj) {
+            for(var i=0; i<obj.childNodes.length; i++) {
+                if (obj.childNodes[i].dataset) {
+                    if (obj.childNodes[i].dataset.value == dataSetValue) {
+                        return obj.childNodes[i];
+                    }
+                }
+            }
+            obj = obj.parentNode;
+            if(obj==document.body) return;
+        }
+    },
     getLiquid: function (searchingNameOrObject) {
         try {
             if (searchingNameOrObject) {
@@ -18582,14 +18595,20 @@ var Liquid = {
      * 
      * Handle the request to the server by ajax oer websocket
      * 
-     * @param {type} liquid : the workspace
-     * @param {type} xhr the XML Http request
-     * @param {type} method : GET or POST
-     * @param {type} url
-     * @param {type} async : true or false
-     * @param {type} data : the body data
-     * @param {type} onreadystatechange : the callback
-     * @returns {} 
+     * @param liquid
+     * @param paramsObject
+     * @param method
+     * @param url
+     * @param async
+     * @param data
+     * @param onReadyStateChange
+     * @param reason
+     * @param onUploadingProgress
+     * @param onDownloadingProgress
+     * @param onCompleted
+     * @param onFailed
+     * @param onCancelled
+     * @returns {*}
      */
     sendRequest:function(liquid, paramsObject, method, url, async, data, onReadyStateChange, reason, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled) {
         var thisLiquid = liquid;
@@ -18711,7 +18730,7 @@ var Liquid = {
             }
         }
     }
-    
+
 };
 
 /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
