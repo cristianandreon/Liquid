@@ -1138,6 +1138,10 @@ class LiquidCtrl {
                                                         this.foreignTables[ic].contentObj.setAttribute('controlwidth', this.foreignTables[ic].options.width);
                                                     if (isDef(this.foreignTables[ic].options.height))
                                                         this.foreignTables[ic].contentObj.setAttribute('controlheight', this.foreignTables[ic].options.height);
+                                                    if (isDef(this.foreignTables[ic].options.padding))
+                                                        this.foreignTables[ic].contentObj.style.padding = this.foreignTables[ic].options.padding;
+                                                    if (isDef(this.foreignTables[ic].options.margin))
+                                                        this.foreignTables[ic].contentObj.style.margin = this.foreignTables[ic].options.margin;
                                                 }
                                                 this.FTTabList.push( {
                                                     name:ftName,
@@ -1539,7 +1543,14 @@ class LiquidCtrl {
                                     layout.containerObj.className = "liquidLayoutContainer";
                                     layout.containerObj.id = controlId + ".layout_tab." + (il+1) + ".content";
                                     layout.containerObj.style.display = "none";
-                                    
+
+                                    if(isDef(layout.padding)) {
+                                        layout.containerObj.style.padding = layout.padding;
+                                    }
+                                    if(isDef(layout.margin)) {
+                                        layout.containerObj.style.margin = layout.margin;
+                                    }
+
                                     jQ1124(layout.containerObj).on("visibilityChanged", function(event) {
                                         Liquid.onLayoutShow(event);
                                     });
@@ -4995,6 +5006,7 @@ var Liquid = {
                         + "&targetDatabase=" + (typeof liquid.tableJson.database !== 'undefined' ? liquid.tableJson.database : "")
                         + "&targetSchema=" + (typeof liquid.tableJson.schema !== 'undefined' ? liquid.tableJson.schema : "")
                         + "&targetTable=" + (typeof liquid.tableJson.table !== 'undefined' ? liquid.tableJson.table : "")
+                        + "&service=" + "render"
                         + (!liquid.tableJson.columnsResolved ? '&columnsResolved=false' : '')
                         , liquid.tableJson.loadDataSync === true ? false : true
                         , sFiltersJson
@@ -7266,8 +7278,12 @@ var Liquid = {
                 if (foreignTableContentObj.getAttribute('parented')) {
                     // Fit control height parented
                     var new_pos = Liquid.getRelativePositionTop(foreignTableContentObj);
+                    var style = window.getComputedStyle(foreignTableContentObj);
+                    var gap_top = style.marginTop ? style.marginTop.replace("px","") : 0;
+                    var gap_bottom = style.marginBottom ? style.marginBottom.replace("px","") : 0;
+                    var gap = (gap_top ? Number(gap_top) : 0) + (gap_bottom ? Number(gap_bottom) : 0);
                     if (new_pos >= 0) {
-                        foreignTableContentObj.style.height = "calc(100% - " + new_pos + "px)";
+                        foreignTableContentObj.style.height = "calc(100% - " + (new_pos + gap) + "px)";
                     }
                 } else {
                     if (isDef(foreignTableContainerHeight)) {
@@ -12536,15 +12552,21 @@ var Liquid = {
             }
         }
         if (setMode) {
-            if (layout.currentRow1B) {
-                var mode = "readonly";
-                if (layout.rowsContainer[layout.currentRow1B - 1]) {
-                    mode = layout.rowsContainer[layout.currentRow1B - 1].isAdding || layout.rowsContainer[layout.currentRow1B - 1].isUpdating ? "write" : "readonly";
-                }
-                Liquid.onLayoutMode(layout.layoutTabObj, layout.currentRow1B - 1, mode);
-            } else {
-                if (Liquid.isAddingNode(liquid, layout.baseIndex1B - 1 + ir, nodes, true)) {
-                    Liquid.onLayoutMode(layout.layoutTabObj, 0, "write");
+            for (var ir = 0; ir < nRows; ir++) {
+                var absRowIndex = layout.baseIndex1B - 1 + ir;
+                var rowIndex1B = ir+1;
+                if (layout.currentRow1B) {
+                    var mode = "readonly";
+                    if (layout.baseIndex1B == rowIndex1B && layout.rowsContainer[layout.currentRow1B - 1]) {
+                        mode = layout.rowsContainer[layout.currentRow1B - 1].isAdding || layout.rowsContainer[layout.currentRow1B - 1].isUpdating ? "write" : "readonly";
+                    }
+                    Liquid.onLayoutMode(layout.layoutTabObj, rowIndex1B-1, mode);
+                } else {
+                    if (Liquid.isAddingNode(liquid, rowIndex1B-1, nodes, true)) {
+                        Liquid.onLayoutMode(layout.layoutTabObj, rowIndex1B-1, "write");
+                    } else {
+                        Liquid.onLayoutMode(layout.layoutTabObj, rowIndex1B-1, "readonly");
+                    }
                 }
             }
         }
@@ -13115,6 +13137,7 @@ var Liquid = {
                 var linkedRow1B = obj.getAttribute('linkedRow1b');
                 var linkedInputId = obj.getAttribute('linkedinputid');
                 if (linkedField) {
+                    var type = liquid.tableJson.columns[Number(linkedField)-1].type;
                     linkedRow1B = Number(linkedRow1B);
                     if (linkedRow1B === iRow + 1) {
                         var baseIndex1B = layout.baseIndex1B;
@@ -13172,7 +13195,9 @@ var Liquid = {
                             }
                         }
                         if (targetObj) {
-                            // Liquid.setHTMLElementValue(targetObj, value, disabled);
+                            if(Liquid.isDate(type)) {
+                                if(value=="NULL") value = "";
+                            }
                             Liquid.setHTMLElementValue(targetObj, value);
                             if (typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
                                 layout.firstObjId = targetObj.id;
@@ -13265,8 +13290,12 @@ var Liquid = {
                             targetName = targetName.toLowerCase();
                             for (var j = 0; j < liquid.tableJson.columns.length; j++) {
                                 var name = liquid.tableJson.columns[j].name;
+                                var type = liquid.tableJson.columns[j].type;
                                 if (name.toLowerCase() == targetName) {
                                     var value = node.data[j + 1];
+                                    if(Liquid.isDate(type)) {
+                                        if(value=="NULL") value = "";
+                                    }
                                     Liquid.setHTMLElementValue(targetObj, value, disabled);
                                     if (linkedLiquid) {
                                         Liquid.setAddingField(linkedLiquid, name, value);
@@ -13360,8 +13389,12 @@ var Liquid = {
                                 targetName = targetName.toLowerCase();
                                 for (var j = 0; j < liquid.tableJson.columns.length; j++) {
                                     var name = liquid.tableJson.columns[j].name;
+                                    var type = liquid.tableJson.columns[j].type;
                                     if (name.toLowerCase() == targetName) {
                                         var value = node.data[j + 1];
+                                        if(Liquid.isDate(type)) {
+                                            if(value=="NULL") value = "";
+                                        }
                                         Liquid.setHTMLElementValue(targetObj, value, disabled);
                                         if (linkedLiquid) {
                                             Liquid.setAddingField(linkedLiquid, name, value);
@@ -15250,6 +15283,7 @@ var Liquid = {
                         if(iCol < liquid.tableJson.columns.length) {
                             if(Liquid.isDate(liquid.tableJson.columns[iCol].type)) {
                                 value = data[liquid.tableJson.columns[iCol].field];
+                                if(value=="NULL") value = "";
                             } else {
                                 value = data[liquid.tableJson.columns[iCol].field];
                             }                            

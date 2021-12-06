@@ -16,6 +16,7 @@ import org.json.JSONObject;
 public class ParamsUtil {
     
     public class get_recordset_params {
+        public String service;
         String controlId = null;
         String tblWrk = null;
         String sCacheIds = null;
@@ -57,17 +58,19 @@ public class ParamsUtil {
                         try { cacheIds = "auto".equalsIgnoreCase(sCacheIds) ? 2 : cacheIds; } catch (Exception e) {}
                     } catch (Exception e) {}
                     try { columnsResolved = request.getParameter("columnsResolved"); } catch (Exception e) {}
-                    try { startRow = Integer.parseInt((String) request.getParameter("startRow")); } catch (Exception e) {}
-                    try { endRow = Integer.parseInt((String) request.getParameter("endRow")); } catch (Exception e) {}
-                    try { pageStart = Integer.parseInt((String) request.getParameter("page")); } catch (NumberFormatException e) {}
-                    try { pageSize = Integer.parseInt((String) request.getParameter("pageSize")); } catch (NumberFormatException e) {}
+                    try { startRow = Integer.parseInt((String) request.getParameter("startRow")); } catch (NumberFormatException e) {}
+                    try { endRow = Integer.parseInt((String) request.getParameter("endRow")); } catch (NumberFormatException e) {}
+                    try { pageStart = Integer.parseInt((String) request.getParameter("page")); } catch (NumberFormatException e) { pageStart = 0; }
+                    try { pageSize = Integer.parseInt((String) request.getParameter("pageSize")); } catch (NumberFormatException e) { }
 
-                    try { targetDatabase = (String) request.getParameter("targetDatabase"); } catch (NumberFormatException e) {}
-                    try { targetSchema = (String) request.getParameter("targetSchema"); } catch (NumberFormatException e) {}
-                    try { targetTable = (String) request.getParameter("targetTable"); } catch (NumberFormatException e) {}
-                    try { targetColumn = (String) request.getParameter("targetColumn"); } catch (NumberFormatException e) {}
-                    try { targetMode = (String) request.getParameter("targetMode"); } catch (NumberFormatException e) {}
-                    try { idColumn = (String) request.getParameter("idColumn"); } catch (NumberFormatException e) {}
+                    try { targetDatabase = (String) request.getParameter("targetDatabase"); } catch (Exception e) {}
+                    try { targetSchema = (String) request.getParameter("targetSchema"); } catch (Exception e) {}
+                    try { targetTable = (String) request.getParameter("targetTable"); } catch (Exception e) {}
+                    try { targetColumn = (String) request.getParameter("targetColumn"); } catch (Exception e) {}
+                    try { targetMode = (String) request.getParameter("targetMode"); } catch (Exception e) {}
+                    try { idColumn = (String) request.getParameter("idColumn"); } catch (Exception e) {}
+                    try { service = (String) request.getParameter("service"); } catch (Exception e) {}
+
                     try { applicationRoot = request.getContextPath(); } catch (Exception e) { }
 
                     sRequest = workspace.get_request_content(request);
