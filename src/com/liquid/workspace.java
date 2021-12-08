@@ -342,7 +342,7 @@ public class workspace {
             workspace tblWorkspace = glTblWorkspaces.get(i);
             if(tblWorkspace != null) {
                 String wrkDatabaseSchemaTable = liquidize.liquidizeString(tblWorkspace.databaseSchemaTable, controlIdSeparator);
-                if (wrkDatabaseSchemaTable.equalsIgnoreCase(srcDatabaseSchemaTable)) {
+                if(utility.compare_db_schema_table(wrkDatabaseSchemaTable, srcDatabaseSchemaTable)) {
                     return tblWorkspace;
                 }
             }
@@ -3454,40 +3454,65 @@ public class workspace {
     static public String getSelection(String controlId, String params) throws Exception {
         try {
             JSONArray paramsJson = (JSONArray) (new JSONObject(params)).getJSONArray("params");
+            String [] controlIdParts = controlId.split("\\.");
             for (int i = 0; i < paramsJson.length(); i++) {
                 Object ojson = paramsJson.get(i);
                 if (ojson instanceof JSONObject) {
                     JSONObject obj = (JSONObject) paramsJson.get(i);
                     String ids = null;
+                    boolean bFoundControl = false;
                     if (obj != null) {
                         if (obj.has("name")) {
                             if (obj.getString("name").equalsIgnoreCase(controlId)) {
-                                String prefix = "";
-                                if (obj.has("ids") || obj.has("sel")) {
-                                    String key = null;
-                                    if (obj.has("ids")) {
-                                        key = "ids";
-                                    } else if (obj.has("sel")) {
-                                        key = "sel";
+                                bFoundControl = true;
+                            }
+                        }
+                        // Ricerca per nome tabella
+                        if(!bFoundControl) {
+                            if (obj.has("table")) {
+                                if(controlIdParts.length == 1) {
+                                    if (obj.getString("table").equalsIgnoreCase(controlId)) {
+                                        bFoundControl = true;
                                     }
-                                    Object oids = obj.get(key);
-                                    if(oids instanceof JSONArray) {
-                                        return utility.jsonArrayToString((JSONArray)oids, null, null, ",");
-                                    } else if(oids instanceof String) {
-                                        return obj.getString("sel");
-                                    } else {
-                                        throw new Exception("getSelection() : unsupported case");
+                                } else if(controlIdParts.length > 1) {
+                                    if (obj.getString("table").equalsIgnoreCase(controlIdParts[controlIdParts.length-1])) {
+                                        if (obj.has("schema")) {
+                                            if (obj.getString("schema").equalsIgnoreCase(controlIdParts[controlIdParts.length-2])) {
+                                                bFoundControl = true;
+                                            }
+                                        } else {
+                                            bFoundControl = true;
+                                        }
                                     }
                                 }
-                                if (obj.has("unsel")) {
-                                    // Lista exclusione
-                                    ids = obj.getString("unsel");
-                                    prefix = "!";
+                            }
+                        }
+                        if(bFoundControl) {
+                            String prefix = "";
+                            if (obj.has("ids") || obj.has("sel")) {
+                                String key = null;
+                                if (obj.has("ids")) {
+                                    key = "ids";
+                                } else if (obj.has("sel")) {
+                                    key = "sel";
                                 }
-                                if (ids != null && ids.length() >= 2) {
-                                    ids = ids.substring(1, ids.length() - 1);
-                                    return prefix + ids;
+                                Object oids = obj.get(key);
+                                if(oids instanceof JSONArray) {
+                                    return utility.jsonArrayToString((JSONArray)oids, null, null, ",");
+                                } else if(oids instanceof String) {
+                                    return obj.getString("sel");
+                                } else {
+                                    throw new Exception("getSelection() : unsupported case");
                                 }
+                            }
+                            if (obj.has("unsel")) {
+                                // Lista exclusione
+                                ids = obj.getString("unsel");
+                                prefix = "!";
+                            }
+                            if (ids != null && ids.length() >= 2) {
+                                ids = ids.substring(1, ids.length() - 1);
+                                return prefix + ids;
                             }
                         }
                     }

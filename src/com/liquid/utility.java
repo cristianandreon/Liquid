@@ -429,7 +429,15 @@ public class utility {
                             field.set(bean, new Integer(0));
                         } else {
                             try {
-                                field.set(bean, Integer.parseInt((String) value));
+                                if(value != null) {
+                                    if(!"null".equalsIgnoreCase(String.valueOf(value))) {
+                                        field.set(bean, Integer.parseInt((String) value));
+                                    } else {
+                                        field.set(bean, null);
+                                    }
+                                } else {
+                                    field.set(bean, null);
+                                }
                             } catch(Exception e) {
                                 Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
                             }
@@ -440,7 +448,11 @@ public class utility {
                 } else if (propType.equals(Long.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
-                            field.set(bean, new Long(0));
+                            if(!"null".equalsIgnoreCase(String.valueOf(value))) {
+                                field.set(bean, new Long(0));
+                            } else {
+                                field.set(bean, null);
+                            }
                         } else {
                             try {
                                 field.set(bean, Long.parseLong((String) value));
@@ -452,7 +464,11 @@ public class utility {
                 } else if (propType.equals(Float.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
-                            field.set(bean, new Float(0.0f));
+                            if(!"null".equalsIgnoreCase(String.valueOf(value))) {
+                                field.set(bean, new Float(0.0f));
+                            } else {
+                                field.set(bean, null);
+                            }
                         } else {
                             try {
                                 field.set(bean, Float.valueOf(((String) value).replaceAll(",", ".")));
@@ -464,7 +480,11 @@ public class utility {
                 } else if (propType.equals(java.lang.Double.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
-                            field.set(bean, new Double(0.0));
+                            if(!"null".equalsIgnoreCase(String.valueOf(value))) {
+                                field.set(bean, new Double(0.0));
+                            } else {
+                                field.set(bean, null);
+                            }
                         } else {
                             try {
                                 field.set(bean, Double.valueOf(((String) value).replaceAll(",", ".")));
@@ -609,15 +629,19 @@ public class utility {
         return null;
     }
 
-    static public boolean has(Object bean, String property) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    static public boolean has(Object bean, String property) {
         try {
             if (bean != null) {
                 Field field = bean.getClass().getDeclaredField(property.replace("\\.", "$") );
                 if (field != null) {
                     return true;
                 }
+
             }
+        } catch (Exception e) {
+            // Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
         } catch (Throwable th) {
+            Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th);
         }
         return false;
     }
@@ -1472,7 +1496,36 @@ public class utility {
         return out;
     }
 
-
+    public static boolean compare_db_schema_table(String databaseSchemaTable, String searchingDatabaseSchemaTable) {
+        String [] wrkDatabaseSchemaTableParts = databaseSchemaTable.split("\\.");
+        String [] searchingDatabaseSchemaTableParts = searchingDatabaseSchemaTable.split("\\.");
+        if(searchingDatabaseSchemaTableParts.length == 1) {
+            if(wrkDatabaseSchemaTableParts.length >= 1) {
+                if(searchingDatabaseSchemaTableParts[0].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length-1])) {
+                    return true;
+                }
+            }
+        } else if(searchingDatabaseSchemaTableParts.length == 2) {
+            if(wrkDatabaseSchemaTableParts.length >= 2) {
+                if(searchingDatabaseSchemaTableParts[1].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length-1])) {
+                    if(searchingDatabaseSchemaTableParts[0].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length-2])) {
+                        return true;
+                    }
+                }
+            }
+        } else if(searchingDatabaseSchemaTableParts.length >= 3) {
+            if (wrkDatabaseSchemaTableParts.length >= 3) {
+                if (searchingDatabaseSchemaTableParts[2].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length - 1])) {
+                    if (searchingDatabaseSchemaTableParts[1].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length - 2])) {
+                        if (searchingDatabaseSchemaTableParts[0].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length - 3])) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
 
     public static class DataListCache {
@@ -1522,7 +1575,7 @@ public class utility {
             for (int i = 0; i < beans.size(); i++) {
                 String code = (codeColumn != null ? (String) utility.get(beans.get(i), codeColumn) : null);
                 String desc = (descColumn != null ? (String) utility.get(beans.get(i), descColumn) : null);
-                String tooltip = (tooltipColumn != null ? (String) utility.get(beans.get(i), tooltipColumn) : null);
+                String tooltip = (tooltipColumn != null ? (String) (utility.has(beans.get(i), tooltipColumn) ? utility.get(beans.get(i), tooltipColumn) : null) : null);
                 out += "<option title=\""+(tooltip != null ? tooltip.replace("\"", "'") : "")+"\" value=\"" + code + "\" > " + desc + " </option>";
             }
         }
@@ -1598,6 +1651,10 @@ public class utility {
     public static String dateToString(Date cDate, String format) {
         DateFormat dateFormat = format != null ? new SimpleDateFormat(format) : new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
         return dateFormat.format( cDate );
+    }
+    public static String dateToString(long cDate, String format) {
+        DateFormat dateFormat = format != null ? new SimpleDateFormat(format) : new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
+        return dateFormat.format( new Date (cDate) );
     }
 
     static class MyErrorHandler implements ErrorHandler {
@@ -1705,7 +1762,16 @@ public class utility {
         }
         return false;
     }
-    
+
+    public static boolean contains(ArrayList<Object> beans, Object bean, String Key) {
+        Object keyVal = utility.get(bean, Key);
+        for(int i=0; i<beans.size(); i++) {
+            Object val = utility.get(beans, Key);
+            if(keyVal.equals(val)) return true;
+        }
+        return false;
+    }
+
     public static boolean contains(List<String> controlIds, String controlId) {
         for(int i=0; i<controlIds.size(); i++) {
             if(controlIds.get(i).equalsIgnoreCase(controlId)) return true;

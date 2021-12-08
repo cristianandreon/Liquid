@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.76
+// Liquid ver.1.77
 //
-//  First update 04-01-2020 - Last update  29-11-2021
+//  First update 04-01-2020 - Last update  08-12-2021
 //
 //  TODO : see trello.com
 //
@@ -2647,6 +2647,8 @@ var Liquid = {
                             liquidCommandParams.params.push(
                                 JSON.parse(
                                     "{\"name\":\"" + pLiquid.controlId + "\""
+                                    + ",\"table\":\"" + pLiquid.tableJson.table + "\""
+                                    + ",\"schema\":\"" + pLiquid.tableJson.schema + "\""
                                     + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "")
                                     + (idsUnselected ? ",\"unsel\":[" + idsUnselected + "]" : "")
                                     + "}"
@@ -2655,6 +2657,7 @@ var Liquid = {
                         } catch (e) {
                             console.error(e);
                         }
+                        Liquid.addForeignTableCommandParam(pLiquid, liquidCommandParams.params);
                         if (!liquidCommandParams.liquid.controlId)
                             liquidCommandParams.liquid.controlId = liquid.controlId;
                     } else {
@@ -2741,6 +2744,8 @@ var Liquid = {
                             liquidCommandParams.params.push(
                                 JSON.parse(
                                     "{\"name\":\"" + liquid.controlId + "\""
+                                    + ",\"table\":\"" + liquid.tableJson.table + "\""
+                                    + ",\"schema\":\"" + liquid.tableJson.schema + "\""
                                     + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "")
                                     + (idsUnselected ? ",\"unsel\":[" + idsUnselected + "]" : "")
                                     + "}"
@@ -2763,6 +2768,8 @@ var Liquid = {
                                             liquidCommandParams.params.push(
                                                 JSON.parse(
                                                     "{\"name\":\"" + curLiquid.controlId + "\""
+                                                    + ",\"table\":\"" + curLiquid.tableJson.table + "\""
+                                                    + ",\"schema\":\"" + curLiquid.tableJson.schema + "\""
                                                     + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "")
                                                     + (idsUnselected ? ",\"unsel\":[" + idsUnselected + "]" : "")
                                                     + "}"
@@ -2777,12 +2784,38 @@ var Liquid = {
                                 }
                             }
                         }
+                        Liquid.addForeignTableCommandParam(liquid, liquidCommandParams.params);
                     }
                 }
             }
             return liquidCommandParams;
         }
-        ;
+    },
+    addForeignTableCommandParam:function(pLiquid, params) {
+        if (pLiquid && params) {
+            if (isDef(pLiquid.foreignTables)) {
+                for (var il = 0; il < pLiquid.foreignTables.length; il++) {
+                    if (pLiquid.foreignTables[il].controlId) {
+                        var childLiquid = Liquid.getLiquid(pLiquid.foreignTables[il].controlId);
+                        if (childLiquid) {
+                            var selectionData = Liquid.getSelectedPrimaryKeys(childLiquid);
+                            var idsSelected = selectionData[0];
+                            var idsUnselected = selectionData[1];
+                            params.push(
+                                JSON.parse(
+                                    "{\"name\":\"" + childLiquid.controlId + "\""
+                                    + ",\"table\":\"" + childLiquid.tableJson.table + "\""
+                                    + ",\"schema\":\"" + childLiquid.tableJson.schema + "\""
+                                    + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "")
+                                    + (idsUnselected ? ",\"unsel\":[" + idsUnselected + "]" : "")
+                                    + "}"
+                                )
+                            );
+                        }
+                    }
+                }
+            }
+        }
     },
     buildQueryParam: function (liquid, queryParams) {
         if (isDef(queryParams)) {
@@ -8068,6 +8101,8 @@ var Liquid = {
                     }
                 }
             }
+        } else {
+            console.error("ERROR: controlId:" + obj + " not found");
         }
     },
     //

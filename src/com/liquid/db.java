@@ -568,11 +568,6 @@ public class db {
                                         json_foreign_columns = col.getJSONArray("foreignColumns");
                                     } catch (Exception e) {
                                     }
-                                    if (json_foreign_columns != null) {
-                                        for (int ia = 0; ia < json_foreign_columns.length(); ia++) {
-                                            foreignColumns.add(json_foreign_columns.getString(ia));
-                                        }
-                                    }
                                 } else if (col.has("foreignColumn")) {
                                     foreignColumns.add(col.getString("foreignColumn"));
                                 }
@@ -596,11 +591,6 @@ public class db {
                                     try {
                                         json_columns = col.getJSONArray("columns");
                                     } catch (Exception e) {
-                                    }
-                                    if (json_columns != null) {
-                                        for (int ia = 0; ia < json_columns.length(); ia++) {
-                                            foreignColumns.add(json_columns.getString(ia));
-                                        }
                                     }
                                 } else if (col.has("column")) {
                                     columns.add(col.getString("column"));
@@ -751,9 +741,6 @@ public class db {
                                                             leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable));
                                                         } else {
                                                             leftJoinList += " AND "
-                                                                    + (schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "")
-                                                                    + (tableIdString + foreignTable + tableIdString) + asKeyword + leftJoinAlias
-                                                                    + " ON "
                                                                     + leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString)
                                                                     + "="
                                                                     + table + "." + (tableIdString + column + tableIdString);
@@ -4134,7 +4121,7 @@ public class db {
                 String sTableJson = workspace.get_default_json(request, controlId, controlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
                 tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
                 if (tbl_wrk != null) {
-                    tbl_wrk.tableJson.put("isSystem", "true");
+                    tbl_wrk.tableJson.put("loadedIndirectly", "true");
                 } else {
                     return null;
                 }
@@ -6855,7 +6842,11 @@ public class db {
         if(tbl_wrk instanceof String) {
             tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String)tbl_wrk);
         }
-        return insertUpdate(bean, tbl_wrk);
+        if(tbl_wrk != null) {
+            return insertUpdate(bean, tbl_wrk);
+        } else {
+            return null;
+        }
     }
 
 
@@ -6905,7 +6896,11 @@ public class db {
                             String colName = col.getString("name");
                             if(utility.has(bean, colName)) {
                                 Object oSelectedValue = utility.get(selectedBean, colName);
-                                if(!utility.equals(oSelectedValue, utility.get(bean, colName))) {
+                                Object curValue = utility.get(bean, colName);
+                                if( (oSelectedValue == null && curValue != null) || (oSelectedValue != null && curValue == null) ) {
+                                    utility.setChanged(bean, colName, true);
+                                } else if(oSelectedValue == null && curValue == null) {
+                                } else if(!utility.equals(oSelectedValue, curValue)) {
                                     utility.setChanged(bean, colName, true);
                                 }
                             }
