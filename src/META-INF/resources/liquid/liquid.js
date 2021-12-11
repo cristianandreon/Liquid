@@ -1084,10 +1084,10 @@ class LiquidCtrl {
                             this.foreignTablesVisible = typeof this.tableJson.foreignTablesVisible !== "undefined" ? this.tableJson.foreignTablesVisible : true;
 
                             if(this.foreignTablesVisible != false) {
-                                this.foreignTablesObj = document.createElement("div");
-                                this.foreignTablesObj.id = controlId + ".foreignTable.tabs";
-                                this.foreignTablesObj.className = "liquidForeignTables";
-                                if(Liquid.projectMode) Liquid.setDraggable(this.foreignTablesObj);
+                                this.foreignTablesTabsObj = document.createElement("div");
+                                this.foreignTablesTabsObj.id = controlId + ".foreignTable.tabs";
+                                this.foreignTablesTabsObj.className = "liquidForeignTables";
+                                if(Liquid.projectMode) Liquid.setDraggable(this.foreignTablesTabsObj);
                                 var ftHTML = "";
 
                                 for(var ic=0; ic<this.foreignTables.length; ic++) {
@@ -1163,16 +1163,16 @@ class LiquidCtrl {
                                 this.homeTabId = controlId + ".homeTable." + this.tableJson.table;
                                 this.homeName = (isDef(this.tableJson.name) ? (this.tableJson.name ? this.tableJson.name : this.tableJson.table ) : this.tableJson.table);
                                 var homeHTML = "<li><a href=\"javascript:void(0)\" id=\"" + this.homeTabId + "\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"Liquid.onForeignTable(this)\">" + this.homeName + "</a></li>";
-                                this.foreignTablesObj.innerHTML = ""
+                                this.foreignTablesTabsObj.innerHTML = ""
                                         + "<div style=\"float:left; width:100%; text-align:center;\" id=\""+controlId+".foreignTable.container\" class=\"liquidForeignTablesContainer\"><ul>"
                                         + homeHTML
                                         + ftHTML
                                         + "</ul></div>";
-                                this.rootObj.appendChild(this.foreignTablesObj);
+                                this.rootObj.appendChild(this.foreignTablesTabsObj);
 
                                 if(isDef(this.tableJson.foreignTablesTabVisible))
                                     if(this.tableJson.foreignTablesTabVisible === false)
-                                        this.foreignTablesObj.style.display = "none";
+                                        this.foreignTablesTabsObj.style.display = "none";
 
                                 Liquid.setTooltip(this.homeTabId, "Liquid.onHomeTooltip('"+this.homeTabId+"')");
                                 this.FTTabList[0].name = this.homeName;
@@ -1189,7 +1189,7 @@ class LiquidCtrl {
                                                     (this.mode !== "lookup" ? this.outDivObj.offsetHeight : 1)
                                                     - (this.popupCaptionObj ? this.popupCaptionObj.offsetHeight : 0)
                                                     - (this.lookupObj ? this.lookupObj.offsetHeight : 0)
-                                                    - (this.foreignTablesObj ? this.foreignTablesObj.offsetHeight : 0)
+                                                    - (this.foreignTablesTabsObj ? this.foreignTablesTabsObj.offsetHeight : 0)
                                                     ) + "px";
                                             this.foreignTables[ic].contentObj.style.visibility = "";
                                             this.foreignTables[ic].contentObj.style.display = 'none';
@@ -1200,6 +1200,10 @@ class LiquidCtrl {
                                     this.homeTablesObj = document.createElement("div");
                                     this.homeTablesObj.className = "liquidForeignTablesContent";
                                     this.homeTablesObj.id = controlId + ".homeTable." + ftId + ".content";
+                                    if(isDef(this.tableJson.foreignTablesTabVisible))
+                                        if(this.tableJson.foreignTablesTabVisible === false)
+                                            this.homeTablesObj.style.display = "none";
+
                                     this.rootObj.appendChild(this.homeTablesObj);
                                     this.homeTablesGridContainerObj = document.createElement("div");
                                     this.homeTablesGridContainerObj.id = controlId + ".homeTable." + ftId + ".grid_content";
@@ -1304,6 +1308,19 @@ class LiquidCtrl {
                             Liquid.createFiltersPickups(this, this.filtersJson);
                         }
                     }
+
+                    // Alias eventi
+                    if(isDef(this.tableJson.events)) {
+                        for (var ievt = 0; ievt < this.tableJson.events.length; ievt++) {
+                            var event = this.tableJson.events[ievt];
+                            if(event) {
+                                if(event.name == "onRender" || event.name == "onRendering" || event.name == "beforeRender" || event.name == "afterRender") {
+                                    event.name = "onRowRendering";
+                                }
+                            }
+                        }
+                    }
+
 
                     // Creating grids/documents/layouts
                     var listTabHTML = "";
@@ -2443,13 +2460,32 @@ var Liquid = {
         while(obj) {
             for(var i=0; i<obj.childNodes.length; i++) {
                 if (obj.childNodes[i].dataset) {
-                    if (obj.childNodes[i].dataset.value == dataSetValue) {
+                    if (obj.childNodes[i].dataset.value == dataSetValue || obj.childNodes[i].dataset.previd == dataSetValue) {
+                        return obj.childNodes[i];
+                    } else if (obj.childNodes[i].id == dataSetValue) {
                         return obj.childNodes[i];
                     }
                 }
             }
             obj = obj.parentNode;
             if(obj==document.body) return;
+        }
+    },
+    getChildNode:function(obj, dataSetValue) {
+        for(var i=0; i<obj.childNodes.length; i++) {
+            if (obj.childNodes[i].dataset) {
+                if (obj.childNodes[i].dataset.value == dataSetValue || obj.childNodes[i].dataset.previd == dataSetValue) {
+                    return obj.childNodes[i];
+                } else if (obj.childNodes[i].id == dataSetValue) {
+                    return obj.childNodes[i];
+                }
+            }
+            if(obj.childNodes[i].childNodes) {
+                if (obj.childNodes[i].childNodes.length) {
+                    var retVal = Liquid.getChildNode(obj.childNodes[i], dataSetValue);
+                    if (retVal) return retVal;
+                }
+            }
         }
     },
     getLiquid: function (searchingNameOrObject) {
@@ -10525,7 +10561,7 @@ var Liquid = {
                         (referenceHeight)
                         - (liquid.popupCaptionObj ? liquid.popupCaptionObj.offsetHeight : 0)
                         - (liquid.lookupObj ? liquid.lookupObj.offsetHeight : 0)
-                        - (liquid.foreignTablesObj ? liquid.foreignTablesObj.offsetHeight : 0)
+                        - (liquid.foreignTablesTabsObj ? liquid.foreignTablesTabsObj.offsetHeight : 0)
                         - (liquid.commandsObj ? liquid.commandsObjHeight : 0)
                         - (liquid.filtersObj ? liquid.filtersObjHeight : 0)
                         - (gridTabsHeight)
@@ -13260,7 +13296,9 @@ var Liquid = {
             }
             if (obj.childNodes) {
                 for (var j = 0; j < obj.childNodes.length; j++) {
-                    Liquid.setLayoutField(liquid, layout, obj.childNodes[j], iRow, bSetup);
+                    if(!obj.classList.contains("liquidForeignTablesContent")) {
+                        Liquid.setLayoutField(liquid, layout, obj.childNodes[j], iRow, bSetup);
+                    }
                 }
             }
         }

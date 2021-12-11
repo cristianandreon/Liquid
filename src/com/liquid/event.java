@@ -102,6 +102,8 @@ public class event {
                     if (method != null && classInstance != null) {
                         retVal = (String) method.invoke(classInstance, tbl_wrk, params, clientData, (Object) request);
                     }
+                } else {
+                    System.err.println("class not found : " + className);
                 }
                 // executing events as syncronous chain
                 try {
