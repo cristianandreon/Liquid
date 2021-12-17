@@ -1989,6 +1989,14 @@ public class db {
                                 nullable = col.getBoolean("nullable");
                             } catch (Exception e) {
                             }
+
+                            // Filtro per data nulla ... non esegue il filtro
+                            if (type == 6 || type == 91 || type == 93) { // date, datetime
+                                if(filterValue == null || filterValue.isEmpty()) {
+                                    filterDisabled = true;
+                                }
+                            }
+
                         } else {
                             String err = " Filters Error: column '" + filterName + "' not defined on control " +tbl_wrk.controlId+ "]";
                             error += err;
@@ -2081,6 +2089,9 @@ public class db {
                         // wrap to is null ... id not numeric
                         if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                             filterValue = "0";
+                        } else if (type == 6 || type == 91 || type == 93) { // date, datetime
+                            filterOp = "IS";
+                            filterValue = "NULL";
                         } else {
                             filterOp = "IS";
                             filterValue = "NULL";

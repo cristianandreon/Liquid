@@ -764,7 +764,7 @@ public class event {
 
         glEnable = !glEnable;
 
-        result += ",\"details\":[" + updateResults + "]";
+        result += ",\"data\":" + updateResults + "";
         result += "}";
 
         return result;
@@ -828,7 +828,7 @@ public class event {
             }
         }
         result += "\"";
-        result += ",\"details\":[" + updateResults + "]";
+        result += ",\"data\":" + updateResults + "";
         result += "}";
         return result;
     }
@@ -876,7 +876,7 @@ public class event {
         }
         resultJson += utility.base64Encode(result);
         resultJson += "\"";
-        resultJson += ",\"details\":[" + updateResults + "]";
+        resultJson += ",\"data\":" + updateResults + "";
         resultJson += "}";
         return resultJson;
     }
@@ -1028,7 +1028,7 @@ public class event {
                 System.err.println(" updateRow() Error:" + e.getLocalizedMessage());
             }
 
-            result += ",\"details\":[" + (resAdd != null && !resAdd.isEmpty() ? resAdd : "\"\"") + "]";
+            result += ",\"data\":" + (resAdd != null && !resAdd.isEmpty() ? resAdd : "\"\"") + "";
             result += "}";
             return result;
 
@@ -1526,7 +1526,7 @@ public class event {
                 System.err.println(" updateRow() Error:" + e.getLocalizedMessage());
             }
 
-            result += ",\"details\":[" + (resUpd != null && !resUpd.isEmpty() ? resUpd : "\"\"") + "]";
+            result += ",\"data\":" + (resUpd != null && !resUpd.isEmpty() ? resUpd : "\"\"") + "";
             result += "}";
             return result;
 
@@ -1599,7 +1599,7 @@ public class event {
                 System.err.println(" deleteRow() Error:" + e.getLocalizedMessage());
             }
 
-            result += ",\"details\":[" + (resDel != null && !resDel.isEmpty() ? resDel : "\"\"") + "]";
+            result += ",\"data\":" + (resDel != null && !resDel.isEmpty() ? resDel : "\"\"") + "";
             result += "}";
             return result;
 

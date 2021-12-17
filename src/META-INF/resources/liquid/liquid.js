@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.77
+// Liquid ver.1.78
 //
-//  First update 04-01-2020 - Last update  08-12-2021
+//  First update 04-01-2020 - Last update 11-12-2021
 //
 //  TODO : see trello.com
 //
@@ -1288,6 +1288,9 @@ class LiquidCtrl {
                             if(newCommandObjHeight > 0) {
                                 this.commandsObj.style.height = newCommandObjHeight+"px";
                             }
+                            if(this.tableJson.commandBarVisible === false) {
+                                this.commandsObj.display = "none";
+                            }
                         }
                     };
 
@@ -1682,7 +1685,7 @@ class LiquidCtrl {
                         this.aggridContainerObj = this.listObj.lastChild;
                         if(this.aggridContainerObj) {
                             this.aggridContainerObj.className += " liquidGridTheme";
-                            if(this.tableJson.listTabVisible === false) {
+                            if(this.tableJson.listVisible === false) {
                                 this.aggridContainerObj.style.visibility = 'hidden';
                                 this.aggridContainerObj.style.display = 'none';
                             }                    
@@ -1712,6 +1715,9 @@ class LiquidCtrl {
 
                     // Barra navigazione
                     this.navVisible = typeof this.tableJson.navVisible !== "undefined" ? this.tableJson.navVisible : true;
+                    if(this.tableJson.navBarVisible === false) {
+                        this.navVisible = false;
+                    }
                     if(this.navVisible) {
                         this.navObj = document.createElement("div");
                         this.navObj.className = "liquidNav";
@@ -8165,8 +8171,8 @@ var Liquid = {
                         }
                         Liquid.processXHRMessagesFromServer(liquid, httpResultJson, command, true, false, false, false);
 
-                        if (isDef(httpResultJson.details)) {
-                            Liquid.processXHRMessagesFromServer(liquid, httpResultJson.details, command, true, false, false, false);
+                        if (isDef(httpResultJson.data)) {
+                            Liquid.processXHRMessagesFromServer(liquid, httpResultJson.data, command, true, false, false, false);
                         }
                         if (isDef(httpResultJson.tables)) {
                             for (var id = 0; id < httpResultJson.tables.length; id++) {
@@ -8178,20 +8184,22 @@ var Liquid = {
                                 Liquid.processXHRMessagesFromServer(liquid, httpResultJson.foreignTables[id], command, true, false, false, false);
                             }
                         }
-                        if (isDef(httpResultJson.details)) {
-                            for (var id = 0; id < httpResultJson.details.length; id++) {
-                                var detail = httpResultJson.details[id];
-                                if (isDef(detail.tables)) {
-                                    for (var it = 0; it < detail.tables.length; it++) {
-                                        if (isDef(detail.tables[it])) {
-                                            Liquid.processXHRMessagesFromServer(liquid, detail.tables[it], command, true, false, false, false);
+                        if (isDef(httpResultJson.data)) {
+                            if (isDef(httpResultJson.data.details)) {
+                                for (var id = 0; id < httpResultJson.data.details.length; id++) {
+                                    var detail = httpResultJson.data.details[id];
+                                    if (isDef(detail.tables)) {
+                                        for (var it = 0; it < detail.tables.length; it++) {
+                                            if (isDef(detail.tables[it])) {
+                                                Liquid.processXHRMessagesFromServer(liquid, detail.tables[it], command, true, false, false, false);
+                                            }
                                         }
                                     }
-                                }
-                                if (isDef(detail.foreignTables)) {
-                                    for (var it = 0; it < detail.foreignTables.length; it++) {
-                                        if (isDef(detail.foreignTables[it])) {
-                                            Liquid.processXHRMessagesFromServer(liquid, detail.foreignTables[it], command, true, false, false, false);
+                                    if (isDef(detail.foreignTables)) {
+                                        for (var it = 0; it < detail.foreignTables.length; it++) {
+                                            if (isDef(detail.foreignTables[it])) {
+                                                Liquid.processXHRMessagesFromServer(liquid, detail.foreignTables[it], command, true, false, false, false);
+                                            }
                                         }
                                     }
                                 }
@@ -8356,12 +8364,14 @@ var Liquid = {
                     var needFullUpdate = false;
                     if (liquid.modifications) { // reload rows
                         if (command.response) {
-                            if (command.response.details) {
-                                for (var id = 0; id < command.response.details.length; id++) {
-                                    if (command.response.details[id].foreignTables) {
-                                        if (command.response.details[id].foreignTables.length > 0) {
-                                            needFullUpdate = true;
-                                            break;
+                            if (command.response.data) {
+                                if (command.response.data.details) {
+                                    for (var id = 0; id < command.response.data.details.length; id++) {
+                                        if (command.response.data.details[id].foreignTables) {
+                                            if (command.response.data.details[id].foreignTables.length > 0) {
+                                                needFullUpdate = true;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -8407,10 +8417,12 @@ var Liquid = {
                             // Not system table
                             if (command.name === "delete") {
                                 // remove node
-                                if (command.response.details) {
-                                    // cause row reselection and grid/layout refresh
-                                    if (Liquid.onDeletedRow(liquid)) {
-                                        refreshDone = true;
+                                if (command.response.data) {
+                                    if (command.response.data.details) {
+                                        // cause row reselection and grid/layout refresh
+                                        if (Liquid.onDeletedRow(liquid)) {
+                                            refreshDone = true;
+                                        }
                                     }
                                 }
                             } else {
@@ -8499,8 +8511,11 @@ var Liquid = {
         } else {
             // system control : recordset is at runtime
             if (command.name === "delete") {
-                if (command.response.details)
-                    Liquid.onDeletedRow(liquid);
+                if (command.response.data) {
+                    if (command.response.data.details) {
+                        Liquid.onDeletedRow(liquid);
+                    }
+                }
             } else {
                 if (command.name === "insert") {
                     if (ids === null || ids.length === 0) {
@@ -8520,10 +8535,13 @@ var Liquid = {
         // TODO : may be optimized ... layouts need to build only current updating row
         if (isDef(liquid.currentCommand) || isDef(liquid.needLayoutRebuild)) {
             if (liquid.currentCommand.name === command.name) {
-                Liquid.onButton(liquid, {name: "return"});
-                refreshAllDone = true;
+                // Liquid.onButton(liquid, {name: "return"});
+                // Liquid.refreshAll(liquid, null, "onCommandDone");
+                // refreshAllDone = true;
             }
         }
+
+        liquid.currentCommand = null;
         if (!refreshAllDone) {
             // force refresh
             if (liquid instanceof LiquidCtrl) {
@@ -8621,11 +8639,11 @@ var Liquid = {
                 if (command) {
                     if (command.response) {
                         var details = null;
-                        if (isDef(command.response.details)) {
-                            if (command.response.details instanceof Array) {
-                                details = command.response.details;
+                        if (isDef(command.response.data) && isDef(command.response.data.details)) {
+                            if (command.response.data.details instanceof Array) {
+                                details = command.response.data.details;
                             } else {
-                                details = [command.response.details];
+                                details = [command.response.data.details];
                             }
                         } else {
                             details = [{tables: null, foreignTables: null, fails: null}];
@@ -12286,7 +12304,7 @@ var Liquid = {
                             layout.bodyContainerObj.id = bodyContainerObjId;
                             layout.bodyContainerObj.className = "liquidLayoutRowContainer";
                             layout.bodyContainerObj.style.width = "100%";
-                            layout.bodyContainerObj.style.height = "calc(100% - " + (layout.headerContainerObj.offsetHeight + layout.footerContainerObj.offsetHeight + 2) + "px)";
+                            layout.bodyContainerObj.style.height = "calc(100% - " + (layout.headerContainerObj.offsetHeight + layout.footerContainerObj.offsetHeight + 0) + "px)";
                             layout.bodyContainerObj.style.overflow = "auto";
                             containerObj.style.overflow = "hidden";
                             if (Liquid.debug) layout.bodyContainerObj.style.border = "1px solid blue";
@@ -12304,7 +12322,7 @@ var Liquid = {
                     if (typeof layout.nRows !== 'undefined' && (layout.nRows === 0 || layout.nRows === 'auto')) {
                         if (layout.bodyContainerObj && layout.bodyContainerObj.offsetWidth > 0 && layout.bodyContainerObj.offsetHeight > 0) {
                             layout.itemsMaxHeight = layout.templateRows[0].height;
-                            var referenceHeight = $(layout.bodyContainerObj).height();
+                            var referenceHeight = $(layout.bodyContainerObj).height() - 2;
                             if (layout.itemsMaxHeight > 0) {
                                 if (layout.overflow === 'clamp') {
                                     layout.nRows = Math.floor(referenceHeight / layout.itemsMaxHeight);
@@ -12354,7 +12372,7 @@ var Liquid = {
                                 }
                             }
                         }
-                        var referenceHeight = $(layout.bodyContainerObj).height();
+                        var referenceHeight = $(layout.bodyContainerObj).height() - 2;
                         if (layout.nRows > 0) {
                             layout.itemsMaxHeight = referenceHeight / nRows;
                         } else {
@@ -12628,7 +12646,7 @@ var Liquid = {
                 var rowIndex1B = ir+1;
                 if (layout.currentRow1B) {
                     var mode = "readonly";
-                    if (layout.baseIndex1B == rowIndex1B && layout.rowsContainer[layout.currentRow1B - 1]) {
+                    if (layout.rowsContainer[layout.currentRow1B - 1]) {
                         mode = layout.rowsContainer[layout.currentRow1B - 1].isAdding || layout.rowsContainer[layout.currentRow1B - 1].isUpdating ? "write" : "readonly";
                     }
                     Liquid.onLayoutMode(layout.layoutTabObj, rowIndex1B-1, mode);
@@ -15007,9 +15025,11 @@ var Liquid = {
 
                     // put the list visible
                     if(liquid.tableJson.listTabVisible === false) {
-                        console.info("LIQUID: force visibility of list on control '"+liquid.controlId+"'");
-                        liquid.aggridContainerObj.style.visibility = 'visible';
-                        liquid.aggridContainerObj.style.display = '';
+                        if(liquid.tableJson.listVisible !== false) {
+                            console.info("LIQUID: force visibility of list on control '" + liquid.controlId + "'");
+                            liquid.aggridContainerObj.style.visibility = 'visible';
+                            liquid.aggridContainerObj.style.display = '';
+                        }
                     }
                 }
                 parentNode.appendChild(liquid.listObj);
@@ -19637,6 +19657,11 @@ function getCurrentTimetick() {
 
 $(document).ready(function() {
     $('input.liquidCurrency').currencyInput();
+    $('input.liquidDeletable').each(function() {
+        $(this).wrap('<span class="deleteicon" />').after($('<span/>').click(function() {
+            $(this).prev('input').val('').trigger('change');
+        }));
+    });
 });
 
 

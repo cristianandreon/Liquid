@@ -255,4 +255,11 @@ tr.liquidDocumentsXRows td { height:30px; background-color: transparent; padding
 .lds-ring div:nth-child(2) { animation-delay: -0.3s; }
 .lds-ring div:nth-child(3) { animation-delay: -0.15s; }
 .liquidCurrency { text-align: right; padding-right: 5px; }
+
+span.deleteicon { position: relative; }
+span.deleteicon span { position: absolute; display: block; top: 2px;  right: 4px;  width:16px; height:16px;  background: url(/images/reset.png);   background-size: contain;   cursor: pointer;   filter: opacity(0.35); }
+span.deleteicon input { padding-right: 16px; box-sizing: border-box;}
+
+
+
 @keyframes lds-ring {  0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
