@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.78
+// Liquid ver.1.79
 //
-//  First update 04-01-2020 - Last update 11-12-2021
+//  First update 04-01-2020 - Last update 19-12-2021
 //
 //  TODO : see trello.com
 //
@@ -1946,7 +1946,8 @@ class LiquidCtrl {
 
                         if(this.tableJson.autoLoad !== false || isRebuilding === true) {
                             if(isFormX) { 
-                                // no data to load ? no load data from recordset
+                                // no data to load ? no load data from recordset ... but fire onLoadedData
+                                Liquid.onEvent(this, "onLoadData", null, null);
                             } else {
                                 Liquid.loadData(this, null, "start");
                                 hasLoadedData = true;
