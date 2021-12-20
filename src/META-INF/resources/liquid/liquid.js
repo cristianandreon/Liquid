@@ -19640,29 +19640,33 @@ function getCurrentTimetick() {
 
 
 (function($) {
-    $.fn.currencyInput = function() {
-        this.each(function() {
-            $(this).change(function() {
-                var min = parseFloat($(this).attr("min"));
-                var max = parseFloat($(this).attr("max"));
-                var value = this.valueAsNumber;
-                if(value < min)
-                    value = min;
-                else if(value > max)
-                    value = max;
-                $(this).val(value.toFixed(2));
+    try {
+        $.fn.currencyInput = function () {
+            this.each(function () {
+                $(this).change(function () {
+                    var min = parseFloat($(this).attr("min"));
+                    var max = parseFloat($(this).attr("max"));
+                    var value = this.valueAsNumber;
+                    if (value < min)
+                        value = min;
+                    else if (value > max)
+                        value = max;
+                    $(this).val(value.toFixed(2));
+                });
             });
-        });
-    };
+        };
+    } catch (e) {}
 })(jQuery);
 
-$(document).ready(function() {
-    $('input.liquidCurrency').currencyInput();
-    $('input.liquidDeletable').each(function() {
-        $(this).wrap('<span class="deleteicon" />').after($('<span/>').click(function() {
-            $(this).prev('input').val('').trigger('change');
-        }));
-    });
+jQ1124(document).ready(function() {
+    try {
+        $('input.liquidCurrency').currencyInput();
+        $('input.liquidDeletable').each(function() {
+            $(this).wrap('<span class="deleteicon" />').after($('<span/>').click(function() {
+                $(this).prev('input').val('').trigger('change');
+            }));
+        });
+    } catch (e) {}
 });
 
 
