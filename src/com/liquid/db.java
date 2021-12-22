@@ -4208,6 +4208,7 @@ public class db {
     
     /**
      * Create all beans for given where condition
+     * N.B. select automatically the control with high number of columns if database.schema.table match the argument "databaseSchemaTable"
      * 
      * @param databaseSchemaTable
      * @param columns
@@ -4562,7 +4563,7 @@ public class db {
         if(bean != null) {
             ArrayList<String> runtimeForeignTables = new ArrayList<String>();
             // adding initial table@rowId to the anti dead-loop
-            runtimeForeignTables.add( String.valueOf( utility.get(bean, "$tableKey") ) );
+            runtimeForeignTables.add( String.valueOf( utility.getEx(bean, "$tableKey") ) );
             return load_bean_internal( bean, childBeanName, params, maxRows, maxLevel, 1L, runtimeForeignTables, request);
         }
         return null;
@@ -4856,7 +4857,7 @@ public class db {
         if (beans != null && propName != null && targetArray != null) {
             for (int ib = 0; ib < beans.size(); ib++) {
                 Object bean = beans.get(ib);
-                Object obj = utility.get(bean, propName);
+                Object obj = utility.getEx(bean, propName);
                 boolean bAdd = true;
                 if (cond != null) {
                     try {
@@ -6880,7 +6881,7 @@ public class db {
         workspace tblWrk = (workspace)tbl_wrk;
         String primaryKey = tblWrk.tableJson.getString("primaryKey");
         String databaseSchemaTable = null;
-        Object primaryKeyValue = utility.get(bean, primaryKey);
+        Object primaryKeyValue = utility.getEx(bean, primaryKey);
         boolean foundRow = false;
         if(primaryKeyValue != null) {
             String where_condition = "";
@@ -6906,8 +6907,8 @@ public class db {
                             JSONObject col = cols.getJSONObject(ic);
                             String colName = col.getString("name");
                             if(utility.has(bean, colName)) {
-                                Object oSelectedValue = utility.get(selectedBean, colName);
-                                Object curValue = utility.get(bean, colName);
+                                Object oSelectedValue = utility.getEx(selectedBean, colName);
+                                Object curValue = utility.getEx(bean, colName);
                                 if( (oSelectedValue == null && curValue != null) || (oSelectedValue != null && curValue == null) ) {
                                     utility.setChanged(bean, colName, true);
                                 } else if(oSelectedValue == null && curValue == null) {

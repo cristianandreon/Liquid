@@ -510,9 +510,9 @@ public class assets {
     
     static public boolean is_valid_asset_or_role ( Object bean ) {
         if(bean != null) {
-            String status = (String)utility.get(bean, "status");
+            String status = (String)utility.getEx(bean, "status");
             if(!"D".equalsIgnoreCase(status) && !"S".equalsIgnoreCase(status)) {
-                java.sql.Timestamp expireDate = (java.sql.Timestamp)utility.get(bean, "expire_date");
+                java.sql.Timestamp expireDate = (java.sql.Timestamp)utility.getEx(bean, "expire_date");
                 if(expireDate != null) {
                     java.sql.Timestamp currentDate = new java.sql.Timestamp(System.currentTimeMillis());
                     if(currentDate.before(expireDate)) {

@@ -338,16 +338,27 @@ public class workspace {
      */
     static public workspace get_tbl_manager_workspace_from_db(String databaseSchemaTable) {
         String srcDatabaseSchemaTable = liquidize.liquidizeString(databaseSchemaTable, controlIdSeparator);
+        int cumNumColumns = 0;
+        workspace foundWorkspace = null;
         for (int i = 0; i < glTblWorkspaces.size(); i++) {
             workspace tblWorkspace = glTblWorkspaces.get(i);
             if(tblWorkspace != null) {
                 String wrkDatabaseSchemaTable = liquidize.liquidizeString(tblWorkspace.databaseSchemaTable, controlIdSeparator);
                 if(utility.compare_db_schema_table(wrkDatabaseSchemaTable, srcDatabaseSchemaTable)) {
-                    return tblWorkspace;
+                    int numColumns = 0;
+                    if(tblWorkspace.tableJson.has("columns")) {
+                        try {
+                            numColumns = tblWorkspace.tableJson.getJSONArray("columns").length();
+                        } catch (Exception e) {}
+                    }
+                    if(numColumns >= cumNumColumns) {
+                        cumNumColumns = numColumns;
+                        foundWorkspace = tblWorkspace;
+                    }
                 }
             }
         }
-        return null;
+        return foundWorkspace;
     }
 
     /**

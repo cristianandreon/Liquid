@@ -583,7 +583,26 @@ public class utility {
      * @return property value (Object)
      * @see utility
      */
-    static public Object get(Object bean, String property) {
+    static public Object getEx(Object bean, String property) {
+        try {
+            return get(bean, property);
+        } catch (Exception e) {
+            Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
+        }
+        return null;
+    }
+
+    /**
+     * <h3>Get the property of a bean</h3>
+     * <p>
+     * This method get a property from a bean
+     *
+     * @param bean
+     * @param property
+     * @return
+     * @throws Exception
+     */
+    static public Object get(Object bean, String property) throws Exception {
         try {
             property = property.replace("\\.", "$");
             String clasName = bean.getClass().getName();
@@ -623,8 +642,9 @@ public class utility {
                 }
                 return readMethod.invoke(bean);
             }
-        } catch (Throwable th) {
-            Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th);
+        } catch (Exception e) {
+            Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
+            throw new Exception(e);
         }
         return null;
     }
@@ -667,7 +687,7 @@ public class utility {
             for(Field field : fields) {
                 if (field != null) {
                     if(field.getName().indexOf("$Changed") != -1) {
-                        if((Boolean)get(bean, field.getName())) return true;
+                        if((Boolean)getEx(bean, field.getName())) return true;
                     }
                 }
             }
@@ -1573,9 +1593,9 @@ public class utility {
         }
         if(beans != null) {
             for (int i = 0; i < beans.size(); i++) {
-                String code = (codeColumn != null ? (String) utility.get(beans.get(i), codeColumn) : null);
-                String desc = (descColumn != null ? (String) utility.get(beans.get(i), descColumn) : null);
-                String tooltip = (tooltipColumn != null ? (String) (utility.has(beans.get(i), tooltipColumn) ? utility.get(beans.get(i), tooltipColumn) : null) : null);
+                String code = (codeColumn != null ? (String) utility.getEx(beans.get(i), codeColumn) : null);
+                String desc = (descColumn != null ? (String) utility.getEx(beans.get(i), descColumn) : null);
+                String tooltip = (tooltipColumn != null ? (String) (utility.has(beans.get(i), tooltipColumn) ? utility.getEx(beans.get(i), tooltipColumn) : null) : null);
                 out += "<option title=\""+(tooltip != null ? tooltip.replace("\"", "'") : "")+"\" value=\"" + code + "\" > " + desc + " </option>";
             }
         }
@@ -1764,9 +1784,9 @@ public class utility {
     }
 
     public static boolean contains(ArrayList<Object> beans, Object bean, String Key) {
-        Object keyVal = utility.get(bean, Key);
+        Object keyVal = utility.getEx(bean, Key);
         for(int i=0; i<beans.size(); i++) {
-            Object val = utility.get(beans, Key);
+            Object val = utility.getEx(beans, Key);
             if(keyVal.equals(val)) return true;
         }
         return false;

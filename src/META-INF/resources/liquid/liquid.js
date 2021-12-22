@@ -11946,15 +11946,19 @@ var Liquid = {
                         try {
                             // layput type list
                             var sources = [
-                                {key: "source", def: null}                 // the row
-                                , {key: "sourceForInsert", def: "source"}   // the inserting row
-                                , {key: "sourceForUpdate", def: "source"}   // the updating row
-                                , {key: "header", def: null}                // the header
-                                , {key: "footer", def: null}                // the footer
-                                , {key: "headerForInsert", def: null}       // the header whwn inserting row
-                                , {key: "footerForInsert", def: null}       // the header whwn inserting row
-                                , {key: "headerForUpdate", def: null}       // the footer whwn updating row
-                                , {key: "footerForUpdate", def: null}       // the footer whwn updating row
+                                {key: "source", def: null}                  // 0 - the row
+                                , {key: "sourceForInsert", def: "source"}   // 1 - the inserting row case
+                                , {key: "sourceForUpdate", def: "source"}   // 2 - the updating row case
+                                , {key: "header", def: null}                // 3 - the header
+                                , {key: "footer", def: null}                // 4 - the footer
+                                , {key: "headerForInsert", def: null}       // 5 - the header when inserting row
+                                , {key: "footerForInsert", def: null}       // 6 - the header when inserting row
+                                , {key: "headerForUpdate", def: null}       // 7 - the footer when updating row
+                                , {key: "footerForUpdate", def: null}       // 8 - the footer when updating row
+                                // new templates for empty rowset
+                                , {key: "sourceForEmpty", def: "source"}    // 9 - the no rows case
+                                , {key: "headerForEmpty", def: null}        // 10 - the header when no rows
+                                , {key: "footerForEmpty", def: null}        // 11 - the footer when no rows
                             ];
                             layout.templateRows = [];
                             // need rendered html to compute height
@@ -12246,7 +12250,7 @@ var Liquid = {
                         var headerContainerObjId = containerObj.id + ".header";
                         var bodyContainerObjId = containerObj.id + ".body";
                         var footerContainerObjId = containerObj.id + ".footer";
-                        var isInserting = false, isUpdating = false;
+                        var isInserting = false, isUpdating = false, isEmptyRows = false;
                         var templateHeader = null, templateFooter = null;
 
                         layout.headerContainerObj = document.getElementById(headerContainerObjId);
@@ -12255,10 +12259,15 @@ var Liquid = {
 
 
                         if (isDef(liquid.currentCommand)) {
-                            if (liquid.currentCommand.name === "insert")
+                            if (liquid.currentCommand.name === "insert") {
                                 isInserting = true;
-                            else if (liquid.currentCommand.name === "update")
+                            } else if (liquid.currentCommand.name === "update") {
                                 isUpdating = true;
+                            } else {
+                                isEmptyRows = liquid.nRows == 0 ? true : false;
+                            }
+                        } else {
+                            isEmptyRows = liquid.nRows == 0 ? true : false;
                         }
 
                         if (isInserting) {
@@ -12275,6 +12284,9 @@ var Liquid = {
                             templateFooter = layout.templateRows[8];
                             if (!templateFooter)
                                 templateFooter = layout.templateRows[4];
+                        } else if(isEmptyRows) {
+                            templateHeader = layout.templateRows[10];
+                            templateFooter = layout.templateRows[11];
                         } else {
                             templateHeader = layout.templateRows[3];
                             templateFooter = layout.templateRows[4];
@@ -12618,6 +12630,10 @@ var Liquid = {
         }
         Liquid.executeTemplateRowScript(liquid, layout, 'footer');
 
+        Liquid.check_for_layout_loaded_event(liquid, layout);
+
+        Liquid.check_for_layouts_loaded_event(liquid);
+
 
         // startup currencies fields
         $('input.liquidCurrency').currencyInput();
@@ -12746,7 +12762,11 @@ var Liquid = {
                             if (layout.rowsContainer[ir].isUpdating)
                                 return layout.templateRows[2].templateRow;
 
-                return layout.templateRows[0].templateRow;
+                if(liquid.nRows == 0) {
+                    return layout.templateRows[9].templateRow;
+                } else {
+                    return layout.templateRows[0].templateRow;
+                }
             }
         }
     },
@@ -12772,7 +12792,11 @@ var Liquid = {
                             if (layout.rowsContainer[ir].isUpdating)
                                 return [layout.templateRows[2].source, false];
 
-                return [layout.templateRows[0].source, false];
+                if(liquid.nRows == 0) {
+                    return [layout.templateRows[9].templateRow];
+                } else {
+                    return [layout.templateRows[0].source, false];
+                }
             }
         }
         return [null, -1];
@@ -12808,7 +12832,11 @@ var Liquid = {
                                 if (layout.rowsContainer[ir].isUpdating)
                                     return layout.templateRows[2];
 
-                    return layout.templateRows[0];
+                    if(liquid.nRows == 0) {
+                        return [layout.templateRows[9].templateRow];
+                    } else {
+                        return layout.templateRows[0];
+                    }
                 }
             }
         }
@@ -12846,6 +12874,44 @@ var Liquid = {
             }
         }
         return found;
+    },
+    check_for_layouts_loaded_event: function (liquid) {
+        if(liquid) {
+            if(liquid.allLayoutLoaded !== true) {
+                if (isDef(liquid.tableJson.layouts)) {
+                    try {
+                        var nLayoutLoaded = 0;
+                        for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                            if (liquid.tableJson.layouts[il].layoutLoaded === true) {
+                                nLayoutLoaded++;
+                            }
+                        }
+                        if (nLayoutLoaded == liquid.tableJson.layouts.length) {
+                            liquid.allLayoutLoaded = true;
+                            // Fire event
+                            Liquid.onEvent(liquid, "onLoadLayouts", null, null);
+                        }
+                    } catch(e) {
+                        console.error(e);
+                    }
+                }
+            }
+        }
+    },
+    check_for_layout_loaded_event: function (liquid, layout) {
+        if(liquid) {
+            if(layout) {
+                try {
+                    if(layout.layoutLoaded !== true) {
+                        layout.layoutLoaded = true;
+                        // Fire event
+                        Liquid.onEvent(liquid, "onLoadLayout", layout, null);
+                    }
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+        }
     },
     setLayoutField: function (liquid, layout, obj, iRow, bSetup) {
         if (obj) {
