@@ -8559,7 +8559,8 @@ var Liquid = {
         }
         if (command) {
             if (command.name) {
-                if (command.name != 'insert') {
+                // if (command.name != 'insert') {
+                {
                     var isFormX = Liquid.isFormX(liquid);
                     var isAutoInsert = Liquid.isAutoInsert(liquid);
                     if (isFormX || isAutoInsert) {
@@ -11946,7 +11947,7 @@ var Liquid = {
                         try {
                             // layput type list
                             var sources = [
-                                {key: "source", def: null}                  // 0 - the row
+                                  {key: "source", def: null}                  // 0 - the row
                                 , {key: "sourceForInsert", def: "source"}   // 1 - the inserting row case
                                 , {key: "sourceForUpdate", def: "source"}   // 2 - the updating row case
                                 , {key: "header", def: null}                // 3 - the header
@@ -12038,16 +12039,27 @@ var Liquid = {
                                             isAutoInsert: isAutoInsert,
                                             isFormX: isFormX,
                                             mode: mode,
-                                            source: layout.source,
+                                            source: layout[sources[is].key],
                                             height: height
                                         });
                                         layout.pageLoaded = true;
                                     }
                                 } else {
+                                    // risoluzione del default
                                     if (sources[is].def) {
+                                        var templateRow = null;
+                                        if(layout.templateRows) {
+                                            for (var ils = 0; ils < layout.templateRows.length; ils++) {
+                                                if (layout.templateRows[ils]) {
+                                                    if (layout.templateRows[ils].key == sources[is].def) {
+                                                        templateRow = layout.templateRows[ils].templateRow;
+                                                    }
+                                                }
+                                            }
+                                        }
                                         layout.templateRows.push({
                                             key: sources[is].key,
-                                            templateRow: rootObj,
+                                            templateRow: templateRow,
                                             isAutoInsert: isAutoInsert,
                                             isFormX: isFormX,
                                             mode: mode,
@@ -12285,8 +12297,13 @@ var Liquid = {
                             if (!templateFooter)
                                 templateFooter = layout.templateRows[4];
                         } else if(isEmptyRows) {
-                            templateHeader = layout.templateRows[10];
-                            templateFooter = layout.templateRows[11];
+                            if(Liquid.isFormX(liquid)) {
+                                templateHeader = layout.templateRows[3];
+                                templateFooter = layout.templateRows[4];
+                            } else {
+                                templateHeader = layout.templateRows[10];
+                                templateFooter = layout.templateRows[11];
+                            }
                         } else {
                             templateHeader = layout.templateRows[3];
                             templateFooter = layout.templateRows[4];
@@ -12771,6 +12788,9 @@ var Liquid = {
         }
     },
     getTemplateRowSource: function (liquid, layout, ir) {
+        return Liquid.getTemplateRowField(liquid, layout, ir, "source" );
+    },
+    getTemplateRowField: function (liquid, layout, ir, Field) {
         var templateRow = null;
         if (liquid) {
             if (layout) {
@@ -12783,19 +12803,34 @@ var Liquid = {
                 if (isAddingNode)
                     if (layout.templateRows.length > 1)
                         if (layout.templateRows[1])
-                            if (layout.templateRows[1].source)
-                                return [layout.templateRows[1].source, true];
+                            if (layout.templateRows[1].source) {
+                                return [layout.templateRows[1][Field], true];
+                            }
 
                 if (isDef(layout.rowsContainer))
                     if (ir < layout.rowsContainer.length)
                         if (layout.rowsContainer[ir])
                             if (layout.rowsContainer[ir].isUpdating)
-                                return [layout.templateRows[2].source, false];
+                                return [layout.templateRows[2][Field], false];
 
-                if(liquid.nRows == 0) {
-                    return [layout.templateRows[9].templateRow];
+                if(Liquid.isFormX(liquid)) {
+                    if (layout.templateRows[1][Field]) {
+                        // source for insert
+                        return [layout.templateRows[1][Field], true];
+                    } else {
+                        return [layout.templateRows[0][Field], true];
+                    }
                 } else {
-                    return [layout.templateRows[0].source, false];
+                    if (liquid.nRows == 0) {
+                        if (layout.templateRows[9][Field]) {
+                            // source for empty
+                            return [layout.templateRows[9][Field], false];
+                        } else {
+                            return [layout.templateRows[0][Field], false];
+                        }
+                    } else {
+                        return [layout.templateRows[0][Field], false];
+                    }
                 }
             }
         }
@@ -12826,16 +12861,24 @@ var Liquid = {
                             if (layout.templateRows[1])
                                 return layout.templateRows[1];
 
-                    if (isDef(layout.rowsContainer))
-                        if (ir < layout.rowsContainer.length)
-                            if (layout.rowsContainer[ir])
-                                if (layout.rowsContainer[ir].isUpdating)
-                                    return layout.templateRows[2];
-
-                    if(liquid.nRows == 0) {
-                        return [layout.templateRows[9].templateRow];
+                    if(Liquid.isFormX(liquid)) {
+                        if (layout.templateRows[1])
+                            return layout.templateRows[1];
+                        else
+                            return layout.templateRows[0];
                     } else {
-                        return layout.templateRows[0];
+                        if(liquid.nRows == 0) {
+                            return layout.templateRows[9];
+                        } else {
+                            // is updating ?
+                            if (isDef(layout.rowsContainer))
+                                if (ir < layout.rowsContainer.length)
+                                    if (layout.rowsContainer[ir])
+                                        if (layout.rowsContainer[ir].isUpdating)
+                                            return layout.templateRows[2];
+
+                            return layout.templateRows[0];
+                        }
                     }
                 }
             }

@@ -566,13 +566,32 @@ public class db {
                                     JSONArray json_foreign_columns = null;
                                     try {
                                         json_foreign_columns = col.getJSONArray("foreignColumns");
-                                    } catch (Exception e) {
+                                    } catch (Exception e) { }
+                                    for(int ifc=0; ifc<json_foreign_columns.length(); ifc++) {
+                                        foreignColumns.add(json_foreign_columns.getString(ifc));
                                     }
                                 } else if (col.has("foreignColumn")) {
                                     foreignColumns.add(col.getString("foreignColumn"));
                                 }
                             } catch (Exception e) {
                                 foreignColumns = null;
+                            }
+
+                            try {
+                                String columnsKey = null;
+                                if (col.has("columns")) {
+                                    JSONArray json_columns = null;
+                                    try {
+                                        json_columns = col.getJSONArray("columns");
+                                    } catch (Exception e) { }
+                                    for(int ifc=0; ifc<json_columns.length(); ifc++) {
+                                        columns.add(json_columns.getString(ifc));
+                                    }
+                                } else if (col.has("column")) {
+                                    columns.add(col.getString("column"));
+                                }
+                            } catch (Exception e) {
+                                columns = null;
                             }
 
                             if(col.has("query")) {
@@ -582,25 +601,8 @@ public class db {
                                     colQuery = null;
                                 }
                             }
-                            
-                            
-                            try {
-                                String columnsKey = null;
-                                if (col.has("columns")) {
-                                    JSONArray json_columns = null;
-                                    try {
-                                        json_columns = col.getJSONArray("columns");
-                                    } catch (Exception e) {
-                                    }
-                                } else if (col.has("column")) {
-                                    columns.add(col.getString("column"));
-                                }
-                            } catch (Exception e) {
-                                columns = null;
-                            }
 
-                            
-                            
+
                             if (colName.indexOf(".") >= colName.length() - 1) {
                                 error += " [ Control:" + tbl_wrk.controlId + " Column: " + col.getString("name") + " Unsupported column name]";
                                 colName = null;
@@ -717,6 +719,11 @@ public class db {
                                                     }
                                                     int foreignColumnsSize = foreignColumns.size();
                                                     int columnsSize = columns.size();
+
+                                                    if(foreignColumnsSize == 0 && columnsSize == 0) {
+                                                        String msg = "ControId:" + tblWrkDesc + " column '"+col.getString("name")+"' not found";
+                                                        error += "[" + msg + "]";
+                                                    }
                                                     for (int ilj = 0; ilj < Math.max(foreignColumnsSize, columnsSize); ilj++) {
                                                         String foreignColumn = (ilj < foreignColumnsSize ? foreignColumns.get(ilj) : null);
                                                         String column = (ilj < columnsSize ? columns.get(ilj) : null);
