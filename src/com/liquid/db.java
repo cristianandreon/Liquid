@@ -63,7 +63,7 @@ public class db {
     static public long maxIdsCacheAge = 3 * 60 * 1000;
 
     static long maxQueryTimeMs = 1000;
-
+    public static String NULLValue = "";
 
 
     static public class IdsCache {
@@ -2588,7 +2588,7 @@ public class db {
                                             }
                                         }
                                         // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
-                                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "NULL";
+                                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : db.NULLValue;
                                         out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
                                     }
                                 }

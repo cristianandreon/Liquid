@@ -11979,7 +11979,6 @@ var Liquid = {
                                             try {
                                                 if (xhr.responseText) {
                                                     layout.containerObj.innerHTML = xhr.responseText;
-                                                    var scripts = [];
                                                     var height = Liquid.getItemsMaxHeight(layout.containerObj);
                                                     var rootObj = document.createElement("div");
                                                     rootObj.className = "liquidLayoutRowContainerDiv";
@@ -11987,6 +11986,7 @@ var Liquid = {
                                                     while (layout.containerObj.childNodes.length) {
                                                         rootObj.appendChild(layout.containerObj.childNodes[0]);
                                                     }
+                                                    var scripts = [];
                                                     Liquid.searchForScripts(rootObj, scripts);
                                                     if (!scripts.length) scripts = null;
                                                     layout.pageLoaded = true;
@@ -12023,6 +12023,10 @@ var Liquid = {
                                         // while(layout.containerObj.childNodes.length) {
                                         rootObj.appendChild(layout.containerObj.childNodes[0]);
 
+                                        var scripts = [];
+                                        Liquid.searchForScripts(rootObj, scripts);
+                                        if (!scripts.length) scripts = null;
+
                                         if (idDef(layout.height)) {
                                             if (isNumber(layout.height)) {
                                                 layout.height = Number(layout.height);
@@ -12040,7 +12044,9 @@ var Liquid = {
                                             isFormX: isFormX,
                                             mode: mode,
                                             source: layout[sources[is].key],
-                                            height: height
+                                            height: height,
+                                            scripts: scripts,
+                                            scriptsToExec: (scripts ? true : false)
                                         });
                                         layout.pageLoaded = true;
                                     }
@@ -12048,11 +12054,15 @@ var Liquid = {
                                     // risoluzione del default
                                     if (sources[is].def) {
                                         var templateRow = null;
+                                        var scripts = null
+
                                         if(layout.templateRows) {
                                             for (var ils = 0; ils < layout.templateRows.length; ils++) {
                                                 if (layout.templateRows[ils]) {
                                                     if (layout.templateRows[ils].key == sources[is].def) {
                                                         templateRow = layout.templateRows[ils].templateRow;
+                                                        scripts = layout.templateRows[ils].scripts;
+                                                        break;
                                                     }
                                                 }
                                             }
@@ -12064,7 +12074,9 @@ var Liquid = {
                                             isFormX: isFormX,
                                             mode: mode,
                                             source: layout[sources[is].def],
-                                            height: height
+                                            height: height,
+                                            scripts: scripts,
+                                            scriptsToExec: (scripts ? true : false)
                                         });
                                     } else {
                                         // no default layout
