@@ -2376,6 +2376,11 @@ var Liquid = {
     lookupIconSize: 12,
     filterIconSize: 16,
     RenameUnlinkedObjectID: false,
+    invalidInputBorderColor: "darkred",
+    invalidInputBorderWidth: "1px",
+    invalidInputBorderStyle: "solid",
+    invalidInputOutline: "none",
+    invalidInputBoxShadow: "0 0 10px ",
     setLanguage: function (language) {
         var lang_list = language.split(';');
         for (var il = 0; il < lang_list.length; il++) {
@@ -8742,9 +8747,7 @@ var Liquid = {
                                         if (obj) {
                                             obj.style.borderColor = "";
                                             if (obj.value === null || obj.value === '') {
-                                                obj.style.borderColor = "red";
-                                                obj.style.borderWidth = "1px";
-                                                obj.style.borderStyle = "solid";
+                                                Liquid.invalidateHtmlObject(obj);
                                                 if (col)
                                                     col.isValidated = false;
                                                 retVal = false;
@@ -8761,29 +8764,41 @@ var Liquid = {
                     var msg = "";
                     for (var ic = 0; ic < liquid.tableJson.columns.length; ic++) {
                         if (liquid.tableJson.columns[ic].required) {
-                            if (!liquid.tableJson.columns[ic].isChecked) {
+                            if (!liquid.tableJson.columns[ic].isValidated) {
                                 var addingValue = liquid.addingRow[liquid.tableJson.columns[ic].field];
-                                if (!addingValue || addingValue === '')
-                                    msg += liquid.tableJson.columns[ic].name + " is required but it's empty or null\n";
-                            } else {
-                                if (!liquid.tableJson.columns[ic].isValidated) {
-                                    var addingValue = liquid.addingRow[liquid.tableJson.columns[ic].field];
-                                    if (!addingValue || addingValue === '')
-                                        msg += liquid.tableJson.columns[ic].name + " is required\n";
+                                if (!addingValue || addingValue === '') {
+                                    msg += liquid.tableJson.columns[ic].name + (Liquid.lang === 'eng' ? " is required":" e' richiesto")+"\n";
+                                    liquid.tableJson.columns[ic].isChecked = true;
+                                    liquid.tableJson.columns[ic].isValidated = false;
+                                } else {
+                                    liquid.tableJson.columns[ic].isValidated = true;
                                 }
                             }
-                        }
-                        var validateResult = Liquid.validateField(liquid, liquid.tableJson.columns[ic], liquid.addingRow[liquid.tableJson.columns[ic].field]);
-                        if (validateResult !== null) {
-                            if (validateResult[0] >= 0) {
-                                // ok
-                            } else {
-                                // ko
-                                msg += liquid.tableJson.columns[ic].name + " is invalid\n";
-                            }
                         } else {
-                            // fails
-                            msg += liquid.tableJson.columns[ic].name + " verification failed\n";
+                            liquid.tableJson.columns[ic].isValidated = true;
+                        }
+                        // Validazione personalizzata
+                        if(liquid.tableJson.columns[ic].isValidated == true) {
+                            var validateResult = Liquid.validateField(liquid, liquid.tableJson.columns[ic], liquid.addingRow[liquid.tableJson.columns[ic].field]);
+                            if (validateResult !== null) {
+                                if (validateResult[0] >= 0) {
+                                    // ok
+                                } else {
+                                    // ko
+                                    msg += liquid.tableJson.columns[ic].name + (Liquid.lang === 'eng' ? " is invalid":"n on e' valido")+" \n";
+                                    liquid.tableJson.columns[ic].isValidated = false;
+                                }
+                            } else {
+                                // fails
+                                msg += liquid.tableJson.columns[ic].name + (Liquid.lang === 'eng' ? " verification failed":" verifica non superata")+"\n";
+                                liquid.tableJson.columns[ic].isValidated = false;
+                            }
+                        }
+                        // invalidazione dei layouts
+                        if(liquid.tableJson.layouts) {
+                            for(var il=0; il<liquid.tableJson.layouts.length; il++) {
+                                Liquid.invalidateLayoutField(liquid, liquid.tableJson.layouts[il], liquid.tableJson.columns[ic].name, liquid.tableJson.columns[ic].isValidated);
+                            }
                         }
                     }
                     if (msg) {
@@ -12315,6 +12330,8 @@ var Liquid = {
                             } else {
                                 templateHeader = layout.templateRows[10];
                                 templateFooter = layout.templateRows[11];
+                                if(!templateHeader) templateHeader = layout.templateRows[3];
+                                if(!templateFooter) templateFooter = layout.templateRows[4];
                             }
                         } else {
                             templateHeader = layout.templateRows[3];
@@ -12524,7 +12541,15 @@ var Liquid = {
                             else rowObj.style.overflow = 'hidden';
                             rowObj.style.border = "0px solid red";
                             rowObj.style.width = "100%";
-                            rowObj.style.height = !isNaN(layout.itemsMaxHeight) ? layout.itemsMaxHeight + "px" : (layout.itemsMaxHeight ? layout.itemsMaxHeight : "100%");
+
+                            if(isDef(layout.rowHeight)) {
+                                if(layout.rowHeight.toLowerCase() === 'auto') {
+                                    rowObj.style.height = !isNaN(layout.itemsMaxHeight) ? layout.itemsMaxHeight + "px" : (layout.itemsMaxHeight ? layout.itemsMaxHeight : "100%");
+                                } else {
+                                    rowObj.style.height = !isNaN(layout.rowHeight) ? layout.rowHeight + "px" : "";
+                                }
+                            }
+
                             rowObj.style.paddingTop = rowObj.style.paddingBottom = (!isNaN(layout.rowPadding) ? layout.rowPadding + "px" : (layout.rowPadding ? layout.rowPadding : ""));
                             rowObj.id = liquid.controlId + ".layout." + layout.name + ".rowContainer." + (ir + 1);
 
@@ -13441,6 +13466,68 @@ var Liquid = {
                     }
                 }
             }
+        }
+    },
+    invalidateLayoutField: function (liquid, layout, name, isValid) {
+        if (liquid) {
+            if (layout) {
+                if (layout.rowsContainer) {
+                    for (var irc=0; irc<layout.rowsContainer.length; irc++) {
+                        if(layout.rowsContainer[irc]) {
+                            var cols = layout.rowsContainer[irc].cols;
+                            var objs = layout.rowsContainer[irc].objs;
+                            // cols: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+                            // objs: (8) [input#NewAuction.layout.1.col.2.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.7.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.9.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.10.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.8.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.11.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.12.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.13.row.1.checkclass.liquidgridcontrolrw]
+                            for(var ic=0; ic<cols.length; ic++) {
+                                var col_name = cols[ic].name;
+                                var col_field = cols[ic].field;
+                                if (name == col_name || name == col_field) {
+                                    if (objs[ic]) {
+                                        if(isValid) {
+                                            Liquid.validateHtmlObject(objs[ic]);
+                                        } else {
+                                            Liquid.invalidateHtmlObject(objs[ic]);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    invalidateHtmlObject:function(obj) {
+        if(obj) {
+            obj.dataset.borderColor = obj.style.borderColor;
+            obj.dataset.borderWidth = obj.style.borderWidth;
+            obj.dataset.borderStyle = obj.style.borderStyle;
+            obj.dataset.outline = obj.style.outline;
+            obj.dataset.boxShadow = obj.style.boxShadow;
+            obj.style.borderColor = Liquid.invalidInputBorderColor;
+            obj.style.borderWidth = Liquid.invalidInputBorderWidth;
+            obj.style.borderStyle = Liquid.invalidInputBorderStyle;
+            obj.style.outline = Liquid.invalidInputOutline;
+            obj.style.boxShadow = Liquid.invalidInputBoxShadow + Liquid.invalidInputBorderColor;
+        }
+    },
+    validateHtmlObject:function(obj) {
+        if(obj) {
+            if(obj.dataset.borderColor)
+                obj.style.borderColor = obj.dataset.borderColor;
+            obj.dataset.borderColor = null;
+            if(obj.dataset.borderWidth)
+                obj.style.borderWidth = obj.dataset.borderWidth;
+            obj.dataset.borderWidth = null;
+            if(obj.dataset.borderStyle)
+                obj.style.borderStyle = obj.dataset.borderStyle;
+            obj.dataset.borderStyle = null;
+            if(obj.dataset.outline)
+                obj.style.outline = obj.dataset.outline;
+            obj.dataset.outline = null;
+            if(obj.dataset.boxShadow)
+                obj.style.boxShadow = obj.dataset.boxShadow;
+            obj.dataset.boxShadow = null;
         }
     },
     /**
