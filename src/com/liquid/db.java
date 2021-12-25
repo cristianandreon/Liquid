@@ -190,6 +190,57 @@ public class db {
         return columnName;
     }
 
+    /**
+     * Transalte a column in the control by language defined in session
+     * ex: column "status" become "staus_it"
+     *
+     * @param tbl_wrk
+     * @param session
+     * @param col
+     * @param defaultColumnName
+     * @return
+     * @throws JSONException
+     */
+    private static String getColumnTranslated(workspace tbl_wrk, HttpSession session, JSONObject col, String defaultColumnName) throws JSONException {
+        if(col != null) {
+            String colName = col.getString("name");
+            colName = (defaultColumnName != null ? defaultColumnName : colName);
+            if(col.has("translate")) {
+                if(col.getBoolean("translate")) {
+                    if(session != null) {
+                        String lang = (String)session.getAttribute("Liquid.lang");
+                        if(lang != null && !lang.isEmpty()) {
+                            if(!lang.equalsIgnoreCase("EN")) {
+                                return colName+"_"+lang.toLowerCase();
+                            } else {
+                                return colName;
+                            }
+                        } else {
+                            return colName;
+                        }
+                    } else {
+                        if(workspace.projectMode) {
+                            System.err.println("*** ERROR: session not defined in field translation. controlId:" + tbl_wrk.controlId + " field:" + colName);
+                        } else {
+                            return colName;
+                        }
+                    }
+                } else {
+                    return colName;
+                }
+            } else {
+                return colName;
+            }
+        } else {
+            return null;
+        }
+        return null;
+    }
+
+    private static String getColumnTranslated(workspace tbl_wrk, HttpSession session, JSONObject col) throws JSONException {
+        return getColumnTranslated(tbl_wrk, session, col, null);
+    }
+
     static public String get_table_recordset(HttpServletRequest request, JspWriter out) {
         try {
             ParamsUtil.get_recordset_params recordset_params = new ParamsUtil().new get_recordset_params(request);
@@ -765,16 +816,18 @@ public class db {
                                                 }
                                                 if (colParts.length > 1) {
                                                     String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength);
+                                                    String column_translated = getColumnTranslated(tbl_wrk, recordset_params.session, col, colParts[1]);
                                                     aliasIndex++;
                                                     column_alias = leftJoinAlias + "_" + columnName;
                                                     column_json_list += colParts[0] + "_" + columnName;
-                                                    column_list += colMode + leftJoinAlias + "." + itemIdString + colParts[1] + itemIdString + asKeyword + column_alias;
+                                                    column_list += colMode + leftJoinAlias + "." + itemIdString + column_translated + itemIdString + asKeyword + column_alias;
                                                 } else {
                                                     String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength);
+                                                    String column_translated = getColumnTranslated(tbl_wrk, recordset_params.session, col);
                                                     aliasIndex++;
                                                     column_alias = leftJoinAlias + "_" + columnName;
                                                     column_json_list += columnName;
-                                                    column_list += colMode + leftJoinAlias + "." + itemIdString + col.getString("name") + itemIdString + asKeyword + column_alias;
+                                                    column_list += colMode + leftJoinAlias + "." + itemIdString + column_translated + itemIdString + asKeyword + column_alias;
                                                 }
                                             }
 
@@ -1812,6 +1865,7 @@ public class db {
 
         return out_string;
     }
+
 
     //
     // filtersCols = definizione del filtro nella richiesta (il filtro corrente passato dalla pagina web)

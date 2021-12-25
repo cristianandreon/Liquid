@@ -2381,12 +2381,16 @@ var Liquid = {
     invalidInputBorderStyle: "solid",
     invalidInputOutline: "none",
     invalidInputBoxShadow: "0 0 10px ",
-    setLanguage: function (language) {
+    dateFormat:null,
+    timeFormat:null,
+    timestampFormat:null,
+    setLanguage: function (language, serverSide) {
         var lang_list = language.split(';');
+        var langFound = null;
         for (var il = 0; il < lang_list.length; il++) {
             var lang = lang_list[il].split('-')[0];
             if (lang === 'it' || lang === 'ita') {
-                Liquid.lang = 'ita';
+                Liquid.lang = langFound = 'ita';
                 Liquid.loadingMessage = "<span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
                 Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">Nessun dato trovato...</span>";
                 Liquid.paginationTitleGoTo = "digita la pagina a cui andare ... poi premi enter";
@@ -2403,9 +2407,8 @@ var Liquid = {
                 Liquid.Discharge = "scarta";
                 Liquid.swapCellsMessage = "Confermi lo scambio delle celle ?";
                 Liquid.moveCellsMessage = "Confermi lo spostamento della cella ?";
-                return;
             } else if (lang === 'en' || lang === 'eng') {
-                Liquid.lang = 'eng';
+                Liquid.lang = langFound = 'eng';
                 Liquid.loadingMessage = "<span class=\"ag-overlay-loading-center\">Loading data...</span>";
                 Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">No data to show...</span>";
                 Liquid.paginationTitleGoTo = "type page to go to ... then press enter";
@@ -2422,11 +2425,21 @@ var Liquid = {
                 Liquid.Discharge = "Discharge";
                 Liquid.swapCellsMessage = "Do you want to swap the cells ?";
                 Liquid.moveCellsMessage = "Do you want to move the cell ?";
-                return;
+            }
+            if(langFound) {
+                if(serverSide === true) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", glLiquidServlet + "?operation=setLanguage&language=" + Liquid.lang, async);
+                    xhr.onreadystatechange = function () {
+                    }
+                    xhr.send();
+                }
+                return true;
             }
         }
         console.warn("WARNING : language not recorgnized:" + lang);
         Liquid.setLanguage('eng');
+        return false;
     },
     searchLiquid: function (searchingNameOrObject) {
         for (var prop in window) {
@@ -8767,7 +8780,9 @@ var Liquid = {
                             if (!liquid.tableJson.columns[ic].isValidated) {
                                 var addingValue = liquid.addingRow[liquid.tableJson.columns[ic].field];
                                 if (!addingValue || addingValue === '') {
-                                    msg += liquid.tableJson.columns[ic].name + (Liquid.lang === 'eng' ? " is required":" e' richiesto")+"\n";
+                                    msg += (Liquid.lang === 'eng' ? " the field ":"il campo ") +"<b>"
+                                        + liquid.tableJson.columns[ic].name
+                                        +"</b>" + (Liquid.lang === 'eng' ? " is required":" e' richiesto")+"</br>";
                                     liquid.tableJson.columns[ic].isChecked = true;
                                     liquid.tableJson.columns[ic].isValidated = false;
                                 } else {
@@ -8785,12 +8800,16 @@ var Liquid = {
                                     // ok
                                 } else {
                                     // ko
-                                    msg += liquid.tableJson.columns[ic].name + (Liquid.lang === 'eng' ? " is invalid":"n on e' valido")+" \n";
+                                    msg += (Liquid.lang === 'eng' ? " the field ":"il campo ") +"<b>"
+                                        + liquid.tableJson.columns[ic].name
+                                        + "</b>"+ (Liquid.lang === 'eng' ? " is invalid":"n on e' valido")+"</br>";
                                     liquid.tableJson.columns[ic].isValidated = false;
                                 }
                             } else {
                                 // fails
-                                msg += liquid.tableJson.columns[ic].name + (Liquid.lang === 'eng' ? " verification failed":" verifica non superata")+"\n";
+                                msg += (Liquid.lang === 'eng' ? " the field ":"il campo ") +"<b>"
+                                    + liquid.tableJson.columns[ic].name
+                                    + "<br>" + (Liquid.lang === 'eng' ? " verification failed":" verifica non superata")+"</br>";
                                 liquid.tableJson.columns[ic].isValidated = false;
                             }
                         }
@@ -8803,7 +8822,7 @@ var Liquid = {
                     }
                     if (msg) {
                         retVal = false;
-                        alert(msg);
+                        Liquid.messageBox(null, "WARNING", msg, function () {}, null);
                     }
                 }
             }
@@ -13036,6 +13055,8 @@ var Liquid = {
                     delete layout.rowsContainer[iRow].incomingSource;
                 }
 
+                // if(obj.id == "...") debugger;
+
                 if (bSetup) {
                     for (var il = 0; il < objLinkers.length; il++) {
                         if (typeof objLinkers[il] === 'string') {
@@ -13067,6 +13088,8 @@ var Liquid = {
                             }
                         }
                     }
+
+
                     var layoutIndex1B = Liquid.getLayoutIndex(liquid, layout.name);
                     var controlName = "";
                     var newId = liquid.controlId + ".layout." + layoutIndex1B; // generic id .. to refine
@@ -13167,16 +13190,18 @@ var Liquid = {
                                         }
                                     }
                                 }
-
                                 if (linkeCol.type === "6") {
+                                    // date
                                     obj.type = 'datetime-local';
                                     obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
                                     obj.setAttribute("data-date-format", obj.format);
                                 } else if (linkeCol.type === "91") {
+                                    // date
                                     obj.type = 'date';
                                     obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy";
                                     obj.setAttribute("data-format", obj.format);
                                 } else if (linkeCol.type === "93") {
+                                    // timestamp
                                     obj.type = 'datetime-local';
                                     obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
                                     obj.setAttribute("data-date-format", obj.format);
@@ -13302,12 +13327,17 @@ var Liquid = {
                         //
                         if (bSetup) {
                             if (obj) {
-
                                 // Error or warning
                                 if (obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
                                     if (obj.id) {
                                         if (obj.id.startsWith("${") || obj.id.startsWith("@{")) {
                                             console.error("ERROR : input node unlinked ... id:" + obj.id + " please check this node in control:" + liquid.controlId + " layout:" + layout.name + " source:" + layout.source);
+                                        } else {
+                                            if (Liquid.debug) {
+                                                console.error("ERROR : input node unlinked ... id:" + obj.id + " please check this node in control:" + liquid.controlId + " layout:" + layout.name + " source:" + layout.source);
+                                            } else {
+                                                console.warn("WARNING : input node unlinked ... id:" + obj.id + " please check this node in control:" + liquid.controlId + " layout:" + layout.name + " source:" + layout.source);
+                                            }
                                         }
                                     }
                                 }
@@ -13432,7 +13462,29 @@ var Liquid = {
                         }
                         if (targetObj) {
                             if(Liquid.isDate(type)) {
-                                if(value=="NULL") value = "";
+                                if(value=="NULL") {
+                                    value = "";
+                                } else {
+                                    var d = new Date(Date.parse(value));
+                                    if (type === "6" || type === "91") {
+                                        // date
+                                        if (Liquid.dateFormat) {
+                                        }
+                                    } else if (type === "93") {
+                                        // timestamp
+                                        if (Liquid.timestampFormat === 'auto') {
+                                            value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
+                                        } else if (Liquid.timestampFormat === 'iso') {
+                                            value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
+                                        } else if (Liquid.timestampFormat === 'gmt') {
+                                            value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
+                                        } else if (Liquid.timestampFormat === 'date') {
+                                            value = d.toLocaleDateString(); // '2/18/2012'
+                                        } else {
+                                            // use of date.js
+                                        }
+                                    }
+                                }
                             }
                             Liquid.setHTMLElementValue(targetObj, value);
                             if (typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
@@ -16748,6 +16800,8 @@ var Liquid = {
         if(title.indexOf("WARNING")>=0) icon = Liquid.getImagePath("warning.png");
         if(title.indexOf("INFO")>=0) icon = Liquid.getImagePath("info.png");
         if(title.indexOf("DEBUG")>=0) icon = Liquid.getImagePath("debug.png");
+        if(Liquid.lang === 'ita') {
+        }
         return Liquid.dialogBoxButtons(parentObj, title, message, buttons, icon);
     },
     /**
@@ -18987,7 +19041,7 @@ var Liquid = {
     },
     /**
      * 
-     * Handle the request to the server by ajax oer websocket
+     * Handle the request to the server by ajax or websocket
      * 
      * @param liquid
      * @param paramsObject

@@ -148,7 +148,7 @@ public class liquidize {
                 JSONArray names = json.names();
                 for(int io=0; io<names.length(); io++) {
                     String propName = names.getString(io);
-                    if(!"sourceFileName".equalsIgnoreCase(GLLang) && !"sourceFillFileName".equalsIgnoreCase(GLLang))
+                    if(!"sourceFileName".equalsIgnoreCase(propName) && !"sourceFillFileName".equalsIgnoreCase(propName))
                     out += liquidizeAddProp( json, propName, null, cLevel, liquidizeHasNewLine(propName), sep );
                 }
                 out += "\n}";

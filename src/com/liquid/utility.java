@@ -34,6 +34,8 @@ import javax.net.ssl.SSLContext;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.JspWriter;
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -1545,6 +1547,16 @@ public class utility {
             }
         }
         return false;
+    }
+
+    /**
+     * Set languase in session and in client-side (put it outside <script></script>)
+     * @param session
+     * @param out
+     * @param lang (String, "IT" or "EN")
+     */
+    public static boolean setLanguage(HttpSession session, JspWriter out, String lang) throws IOException {
+        return workspace.setLanguage(session, out, lang);
     }
 
 

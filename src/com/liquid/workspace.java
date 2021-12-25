@@ -22,6 +22,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspWriter;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -184,6 +185,35 @@ public class workspace {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+
+    /**
+     * set language server-side
+     * @param session
+     * @param out
+     * @param lang
+     * @throws IOException
+     */
+    public static boolean setLanguage(HttpSession session, JspWriter out, String lang) throws IOException {
+        if(session != null) {
+            if(out != null) {
+                // client-side
+                out.println("<script>");
+                out.println("Liquid.setLanguage();\n");
+                out.println("</script>");
+            }
+            // server-side
+            if("ITA".equalsIgnoreCase(lang) || "IT".equalsIgnoreCase(lang)) {
+                session.setAttribute("Liquid.lang", "IT");
+                return true;
+            } else if("ITA".equalsIgnoreCase(lang) || "IT".equalsIgnoreCase(lang)) {
+                session.setAttribute("Liquid.lang", "EN");
+                return true;
+            }
+        }
+        return false;
+    }
+
+
 
     /**
      * Set the owner ( the specific owner defined by the user session ( not

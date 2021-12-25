@@ -169,6 +169,10 @@
             String value = request.getRequestedSessionId();
             out.print(value);
 
+        } else if ("setLanguage".equalsIgnoreCase(operation)) {
+            // Set the language in the session
+            workspace.setLanguage(session, out, request.getParameter("language"));
+
             
         } else {
             out.println( "<br/><center>Welcome in Liquid ver. 1.x</center><br/>");
