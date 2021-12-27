@@ -5,6 +5,8 @@
 <%@ page import="com.liquid.emailer"%>
 <%@ page import="com.liquid.utility"%>
 <%@ page import="com.liquid.wsStreamerServer"%>
+<%@ page import="java.util.Enumeration" %>
+<%@ page import="java.util.Locale" %>
 
 <% 
     String path = request.getContextPath(); 
@@ -38,6 +40,25 @@
 <script src="<%=path%>/liquid/gunzip.min.js"></script>
 <script src="<%=path%>/liquid/gzip.min.js"></script>
 
+<!-- date.js -->
+<script src="<%=path%>/liquid/datejs/date.js"></script>
+<!-- Set the CultureInfo to -->
+<%
+    Enumeration locales = request.getLocales();
+    while (locales.hasMoreElements()) {
+        Locale locale = (Locale) locales.nextElement();
+        if(locale != null) {
+            // TODO: verifica
+            String country = locale.getCountry();
+            String variant = locale.getVariant();
+            String lang = locale.getLanguage();
+            String lang_code = (country != null && !country.isEmpty() ? country : lang ) +"-"+ lang.toUpperCase();
+            out.println("<script type = \"text/javascript\" src = \""+path+"/liquid/datejs/date-"+(lang_code)+".js\" ></script >");
+            break;
+        }
+    }
+%>
+
 
 <!-- Popup -->
 <link href="<%=path%>/liquid/popup/popup.css?version=<%=jssVersion%>" rel="stylesheet">
@@ -48,7 +69,7 @@
 <script type="text/javascript" src="<%=path%>/liquid/liquid.js?version=<%=jssVersion%>"></script>
 <script type="text/javascript" src="/liquid/liquidEditing.js?version=<%=jssVersion%>"></script>
 
-<!-- Strumenti di seleazione -->
+<!-- Strumenti di selezione -->
 <%@ include file="/liquid/liquidSelector.jsp" %>
 
 <!-- -->

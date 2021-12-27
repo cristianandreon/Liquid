@@ -13465,23 +13465,52 @@ var Liquid = {
                                 if(value=="NULL") {
                                     value = "";
                                 } else {
-                                    var d = new Date(Date.parse(value));
+                                    if(value.lastIndexOf(".") > 0) {
+                                        value = value.substring(0, value.lastIndexOf(".")-1);
+                                    }
+                                    var d = value ? new Date(Date.parse(value)) : null;
                                     if (type === "6" || type === "91") {
                                         // date
                                         if (Liquid.dateFormat) {
                                         }
                                     } else if (type === "93") {
                                         // timestamp
-                                        if (Liquid.timestampFormat === 'auto') {
-                                            value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
-                                        } else if (Liquid.timestampFormat === 'iso') {
-                                            value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
-                                        } else if (Liquid.timestampFormat === 'gmt') {
-                                            value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
-                                        } else if (Liquid.timestampFormat === 'date') {
-                                            value = d.toLocaleDateString(); // '2/18/2012'
-                                        } else {
-                                            // use of date.js
+                                        try {
+                                            if (Liquid.timestampFormat === 'auto') {
+                                                value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
+                                            } else if (Liquid.timestampFormat === 'iso') {
+                                                value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
+                                            } else if (Liquid.timestampFormat === 'gmt') {
+                                                value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
+                                            } else if (Liquid.timestampFormat === 'date') {
+                                                value = d.toLocaleDateString(); // '2/18/2012'
+                                            } else if (Liquid.timestampFormat === 'short') {
+                                                // use of date.js
+                                                d = Date.parse(value);
+                                                if (d) {
+                                                    value = d.toShortateString(); // '2/18/2012'
+                                                } else {
+                                                    value = "";
+                                                }
+                                            } else if (Liquid.timestampFormat === 'long') {
+                                                // use of date.js
+                                                d = Date.parse(value);
+                                                if (d) {
+                                                    value = d.toString('dddd dd MMMM yyyy hh:mm'); // '2/18/2012'
+                                                } else {
+                                                    value = "";
+                                                }
+                                            } else {
+                                                // use of date.js
+                                                d = Date.parse(value);
+                                                if (d) {
+                                                    value = d.toString( Liquid.timestampFormat ? Liquid.timestampFormat : 'ddd dd MMM yyyy hh:mm');
+                                                } else {
+                                                    value = "";
+                                                }
+                                            }
+                                        } catch(e) {
+                                            console.error(e);
                                         }
                                     }
                                 }
