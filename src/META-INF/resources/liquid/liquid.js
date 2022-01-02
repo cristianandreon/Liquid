@@ -12518,7 +12518,15 @@ var Liquid = {
                     //
                     // Clone body template contents to rows
                     //
-                    for (var ir = 0; ir < nRows; ir++) {
+                    var nRowsToRender = nRows;
+                    var isSorceForEmpty = false;
+                    if(nRowsToRender == 0) {
+                        if(layout.templateRows[9].templateRow != null) {
+                            nRowsToRender = 1;
+                            isSorceForEmpty = true;
+                        }
+                    }
+                    for (var ir = 0; ir < nRowsToRender; ir++) {
                         var templateRowSourceResult = Liquid.getTemplateRowSource(liquid, layout, layout.baseIndex1B - 1 + ir);
                         var templateRow = Liquid.getTemplateRow(liquid, layout, layout.baseIndex1B - 1 + ir);
                         var templateRowSource = templateRowSourceResult[0]
@@ -12591,7 +12599,8 @@ var Liquid = {
                                     cols: [],
                                     bSetup: true,
                                     templateRowSource: templateRowSource,
-                                    isAdding: isAdding
+                                    isAdding: isAdding,
+                                    isSorceForEmpty:isSorceForEmpty
                                 });
                             } else {
                                 layout.rowsContainer[ir] = {
@@ -12604,7 +12613,8 @@ var Liquid = {
                                     cols: [],
                                     bSetup: true,
                                     templateRowSource: templateRowSource,
-                                    isAdding: isAdding
+                                    isAdding: isAdding,
+                                    isSorceForEmpty:isSorceForEmpty
                                 };
                             }
                             if (isAdding) {
@@ -12680,10 +12690,12 @@ var Liquid = {
                         if (nRows < layout.rowsContainer.length) {
                             for (var ir = nRows; ir < layout.rowsContainer.length; ir++) {
                                 if (layout.rowsContainer[ir]) {
-                                    var obj = layout.rowsContainer[ir].containerObj;
-                                    if (obj) {
-                                        if (obj.parentNode) obj.parentNode.removeChild(obj);
-                                        layout.rowsContainer[ir] = null;
+                                    if (!layout.rowsContainer[ir].isSorceForEmpty) {
+                                        var obj = layout.rowsContainer[ir].containerObj;
+                                        if (obj) {
+                                            if (obj.parentNode) obj.parentNode.removeChild(obj);
+                                            layout.rowsContainer[ir] = null;
+                                        }
                                     }
                                 }
                             }

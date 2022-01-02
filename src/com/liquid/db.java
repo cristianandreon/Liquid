@@ -1684,7 +1684,12 @@ public class db {
 
                     if(col.has("type")) {
                         try {
-                            colTypes[ic] = Integer.parseInt(col.getString("type"));
+                            String type = col.getString("type");
+                            if(!type.isEmpty()) {
+                                colTypes[ic] = Integer.parseInt(type);
+                            } else {
+                                colTypes[ic] = 1;
+                            }
                         } catch(Exception e) {
                             error += "ERROR: invalid datatype at controlId:"+tbl_wrk.controlId+" field:"+col.getString("name")+" Error:" + e.getLocalizedMessage();
                         }
@@ -2485,7 +2490,12 @@ public class db {
             for (int ic = 0; ic < cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
                 try {
-                    colTypes[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("type"));
+                    String type = col.getString("type");
+                    if(!type.isEmpty()) {
+                        colTypes[ic] = Integer.parseInt(type);
+                    } else {
+                        colTypes[ic] = 1;
+                    }
                 } catch (Exception e) {
                 }
                 try {
