@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.79
+// Liquid ver.1.80
 //
-//  First update 04-01-2020 - Last update 19-12-2021
+//  First update 04-01-2020 - Last update 03-01-2022
 //
 //  TODO : see trello.com
 //
@@ -5059,9 +5059,11 @@ var Liquid = {
         }
         if (allFilterJson || ids) {
             sFiltersJson = "{";
-            if (isDef(ids)) {
+            if (isDef(ids) && ids.length) {
+                // overload filters
                 sFiltersJson += ("\"ids\":[" + ids + "]");
             } else if (isDef(allFilterJson)) {
+                // use filter conputed
                 sFiltersJson += "\"filtersJson\":" + (allFilterJson ? JSON.stringify(allFilterJson) : "{}");
             }
             sFiltersJson += (isDef(liquid.sortColumns) ? (",\"sortColumns\":[" + liquid.sortColumns.toString() + "]") : "");
@@ -8686,7 +8688,9 @@ var Liquid = {
                                             if (detail.tables[it].table === liquid.tableJson.table || detail.tables[it].table === liquid.tableJson.schema + "." + liquid.tableJson.table) {
                                                 if (detail.tables[it].ids) {
                                                     for (var iid = 0; iid < detail.tables[it].ids.length; iid++) {
-                                                        ids.push(detail.tables[it].ids[iid]);
+                                                        if(detail.tables[it].ids[iid]) {
+                                                            ids.push(detail.tables[it].ids[iid]);
+                                                        }
                                                     }
                                                     if (!detail.tables[it].ids || !detail.tables[it].ids.length) {
                                                         if (command.name === "insert") {
@@ -8706,7 +8710,9 @@ var Liquid = {
                                                         if (ftLiquid) {
                                                             var localIds = [];
                                                             for (var iid = 0; iid < detail.tables[it].ids.length; iid++) {
-                                                                localIds.push(detail.tables[it].ids[iid]);
+                                                                if(detail.tables[it].ids[iid]) {
+                                                                    localIds.push(detail.tables[it].ids[iid]);
+                                                                }
                                                             }
                                                             if (localIds.length) {
                                                                 Liquid.loadData(ftLiquid, localIds, "reloading all rows after command");
@@ -12547,6 +12553,7 @@ var Liquid = {
                                     // check is some node own content to recover (like foreign table moved across parent)
                                     Liquid.checkLayoutChildrenForRemove(liquid, layout.rowsContainer[ir].containerObj);
 
+                                    layout.rowsContainer[ir].isAdding = isAdding;
                                     layout.rowsContainer[ir].containerObj.innerHTML = "";
                                     layout.rowsContainer[ir].containerObj.innerText = "";
                                     layout.rowsContainer[ir].bSetup = true;
@@ -12732,6 +12739,9 @@ var Liquid = {
                 containerObj.style.visibility = '';
                 setMode = false;
                 jQ1124(containerObj).slideDown("slow", function () {
+                    if (layout.rowsContainer[layout.currentRow1B - 1]) {
+                        mode = layout.rowsContainer[layout.currentRow1B - 1].isAdding || layout.rowsContainer[layout.currentRow1B - 1].isUpdating ? "write" : "readonly";
+                    }
                     if (layout.currentRow1B) {
                         Liquid.onLayoutMode(layout.layoutTabObj, layout.currentRow1B - 1, mode);
                     } else {
@@ -13508,7 +13518,7 @@ var Liquid = {
                                                 // use of date.js
                                                 d = Date.parse(value);
                                                 if (d) {
-                                                    value = d.toString('dddd dd MMMM yyyy hh:mm'); // '2/18/2012'
+                                                    value = d.toString('dddd dd MMMM yyyy, HH:mm');
                                                 } else {
                                                     value = "";
                                                 }
@@ -13516,7 +13526,7 @@ var Liquid = {
                                                 // use of date.js
                                                 d = Date.parse(value);
                                                 if (d) {
-                                                    value = d.toString( Liquid.timestampFormat ? Liquid.timestampFormat : 'ddd dd MMM yyyy hh:mm');
+                                                    value = d.toString( Liquid.timestampFormat ? Liquid.timestampFormat : 'ddd dd MMM yyyy, HH:mm');
                                                 } else {
                                                     value = "";
                                                 }
@@ -14405,17 +14415,12 @@ var Liquid = {
             var dp = jQ1124(controlName);
             jQ1124(controlName).css('z-index', 90000);
             jQ1124(obj).datepicker().datepicker("option", {
-                showAnim: "slideDown"
-                ,
-                inline: true
-                ,
-                date: value
-                ,
-                dateFormat: (typeof format !== "undefined" && format ? format : 'dd' + Liquid.dateSep + 'mm' + Liquid.dateSep + 'yy')
-                ,
+                showAnim: "slideDown",
+                inline: true,
+                date: value,
+                dateFormat: (typeof format !== "undefined" && format ? format : 'dd' + Liquid.dateSep + 'mm' + Liquid.dateSep + 'yy'),
                 changeMonth: true,
-                changeYear: true
-                ,
+                changeYear: true,
                 beforeShow: function (o) {
                     var opt = {};
                     if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
@@ -14423,18 +14428,15 @@ var Liquid = {
                     setTimeout(function () {
                         jQ1124(controlName).css('z-index', 90000);
                     }, 10);
-                }
-                ,
+                },
                 onShow: function (o, $input, event) {
-                }
-                ,
+                },
                 onClose: function (o) {
                     if (liquid) {
                         liquid.gridOptions.api.stopEditing();
                         if (obj) obj.onchange();
                     }
-                }
-                ,
+                },
                 onSelect: function (date, inst) {
                 }
             });

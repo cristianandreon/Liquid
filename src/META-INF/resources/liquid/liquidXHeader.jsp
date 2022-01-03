@@ -10,7 +10,7 @@
 
 <% 
     String path = request.getContextPath(); 
-    String jssVersion = "1.62";
+    String jssVersion = "1.80";
 %>
 
 <!-- -->

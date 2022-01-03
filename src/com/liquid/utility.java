@@ -683,6 +683,24 @@ public class utility {
         }
         return false;
     }
+    static public boolean isChangedEx(Object bean, String property) {
+        try {
+            if (bean != null) {
+                Field field = bean.getClass().getDeclaredField(property + "$Changed");
+                if (field != null) {
+                    field.setAccessible(true);
+                    return (boolean) field.get(bean);
+                }
+                // Ricerca nei beans
+                field = searchProperty(bean, property, false, false);
+                if (field != null) {
+                    return (boolean) field.get(bean);
+                }
+            }
+        } catch (Exception e) {
+        }
+        return false;
+    }
     static public boolean isChanged(Object bean) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
         if (bean != null) {
             Field [] fields = bean.getClass().getDeclaredFields();

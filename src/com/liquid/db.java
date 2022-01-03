@@ -5649,16 +5649,16 @@ public class db {
      *
      * @param bean
      * @param DatabaseSchemaTable
-     * @param key   the primary key property name
+     * @param primaryKey   the primary key property name
      */
-    public static Object [] update(Object bean, String DatabaseSchemaTable, String key) throws Throwable {
+    public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKey) throws Throwable {
             boolean retVal = false;
             int new_id = 0;
 
             Connection conn = null;
             String sSTMTUpdate = null;
 
-            if(DatabaseSchemaTable == null || bean == null || key == null) {
+            if(DatabaseSchemaTable == null || bean == null || primaryKey == null) {
                 return new Object [] { false, -1 };
             }
 
@@ -5670,16 +5670,47 @@ public class db {
 
 
                 if (conn != null) {
-                    sSTMTUpdate = "UPDATE "+DatabaseSchemaTable+" (";
+                    sSTMTUpdate = "UPDATE " + DatabaseSchemaTable + " SET ";
 
                     // TODO : walk bean propery
+                    String sFields = "", sWhere = "";
+                    ArrayList<Object> paramValues = new ArrayList<Object>();
+                    Field[] fields = bean.getClass().getDeclaredFields();
+                    Field fieldFound = null;
+                    Object primaryKeyValue = null;
 
-                    PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
+                    for (Field f : fields) {
+                        String fieldName = f.getName();
+                        Object fieldData = utility.getEx(bean, fieldName);
 
-                    /*
-                    for(int i=0; i<Values.length; i++) {
-                        if(i < Fields.length) {
-                            Object val = Values[i];
+                        if (fieldName.equals(primaryKey)) {
+                            primaryKeyValue = fieldData;
+                        } else {
+                            if(fieldName.indexOf("$") < 0) {
+                                boolean isChanged = utility.isChangedEx(bean, fieldName);
+                                if (isChanged) {
+                                    sFields += (sFields.length() > 0 ? "," : "") + fieldName+"=" + "?" + "";
+                                    paramValues.add(fieldData);
+                                }
+                            }
+                        }
+                    }
+
+                    if (primaryKey != null && !primaryKey.isEmpty()) {
+
+                        sWhere += primaryKey + "='" + primaryKeyValue + "'";
+
+                        sSTMTUpdate += sFields;
+
+                        sSTMTUpdate += " WHERE ";
+
+                        sSTMTUpdate += sWhere;
+
+
+                        PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
+
+                        for (int i=0; i<paramValues.size(); i++) {
+                            Object val = paramValues.get(i);
                             if (val instanceof Integer) {
                                 sqlSTMTUpdate.setInt((i + 1), (int) val);
                             } else if (val instanceof Long) {
@@ -5696,26 +5727,28 @@ public class db {
                                 sqlSTMTUpdate.setString((i + 1), (String) val);
                             }
                         }
-                    }
-                    */
 
-                    int res = sqlSTMTUpdate.executeUpdate();
-                    if (res < 0) {
-                        System.err.println("Error updating db");
-                        retVal = false;
-                    } else {
-                        ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
-                        if (rs != null && rs.next()) {
-                            new_id = rs.getInt(1);
-                            retVal = true;
+
+                        int res = sqlSTMTUpdate.executeUpdate();
+                        if (res < 0) {
+                            System.err.println("Error updating db");
+                            retVal = false;
+                        } else {
+                            ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
+                            if (rs != null && rs.next()) {
+                                new_id = rs.getInt(1);
+                                retVal = true;
+                            }
+                            if (rs != null)
+                                rs.close();
                         }
-                        if (rs != null)
-                            rs.close();
-                    }
-                    sqlSTMTUpdate.close();
-                    sqlSTMTUpdate = null;
-                }
+                        sqlSTMTUpdate.close();
+                        sqlSTMTUpdate = null;
 
+                    } else {
+                        return new Object [] { false, -1 };
+                    }
+                }
 
             } catch (Exception e) {
                 System.err.println("update() error : "+e.getMessage());
