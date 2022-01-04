@@ -454,9 +454,6 @@ public class workspace {
      * @return the validated control (JspWriter)
      * @see workspace
      */
-    static public String enableProjectMode(JspWriter out) {
-        return enableProjectMode(out,false);
-    }
     static public String enableProjectMode(JspWriter out, boolean keepMetadata) {
         try {
             projectMode = true;
@@ -479,6 +476,12 @@ public class workspace {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
         }
         return genesisToken;
+    }
+    static public String enableProjectMode() {
+        return enableProjectMode(null,false);
+    }
+    static public String enableProjectMode(JspWriter out) {
+        return enableProjectMode(out,false);
     }
 
     /**
