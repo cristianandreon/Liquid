@@ -13,7 +13,7 @@
 /* */
 
 //
-// Liquid ver.1.80
+// Liquid ver.1.81
 //
 //  First update 04-01-2020 - Last update 03-01-2022
 //
@@ -1701,7 +1701,7 @@ class LiquidCtrl {
                                 } else {
                                     if(this.outDivObj) {
                                         // this.aggridContainerObj.style.height = this.outDivObj.offsetWidth / 2.0;
-                                        this.aggridContainerObj.style.height = $(this.outDivObj).height();
+                                        this.aggridContainerObj.style.height = jQ1124(this.outDivObj).height();
                                     }
                                 }                                
                             }
@@ -10508,7 +10508,7 @@ var Liquid = {
                     liquid.referenceHeightObj = liquid.outDivObj;
                     if (liquid.referenceHeightObj) {
                         // referenceHeight = liquid.referenceHeightObj.clientHeight;
-                        referenceHeight = $(liquid.referenceHeightObj).height();
+                        referenceHeight = jQ1124(liquid.referenceHeightObj).height();
                         if (referenceHeight <= 0) {
                             if (!liquid.isResizing) {
 
@@ -10529,7 +10529,7 @@ var Liquid = {
                                     if (node.nodeName === "HTML") break;
                                 }
                                 // referenceHeight = liquid.referenceHeightObj.clientHeight;
-                                referenceHeight = $(liquid.referenceHeightObj).height();
+                                referenceHeight = jQ1124(liquid.referenceHeightObj).height();
                                 for (var inode = 0; inode < nodesVisibilityFitted.length; inode++) {
                                     nodesVisibilityFitted[inode].node.style.display = 'none';
                                     nodesVisibilityFitted[inode].node.style.visibility = nodesVisibilityFitted[inode].visibility;
@@ -10547,7 +10547,7 @@ var Liquid = {
                         lastDisplay = liquid.referenceHeightObj.style.display;
                         lastPos = liquid.referenceHeightObj.style.position;
                         lastLeft = liquid.referenceHeightObj.style.left;
-                        // referenceHeight = $(liquid.referenceHeightObj).height();
+                        // referenceHeight = jQ1124(liquid.referenceHeightObj).height();
 
                         // ???
                         if (referenceHeight <= 0) {
@@ -12406,7 +12406,7 @@ var Liquid = {
                     if (typeof layout.nRows !== 'undefined' && (layout.nRows === 0 || layout.nRows === 'auto')) {
                         if (layout.bodyContainerObj && layout.bodyContainerObj.offsetWidth > 0 && layout.bodyContainerObj.offsetHeight > 0) {
                             layout.itemsMaxHeight = layout.templateRows[0].height;
-                            var referenceHeight = $(layout.bodyContainerObj).height() - 2;
+                            var referenceHeight = jQ1124(layout.bodyContainerObj).height() - 2;
                             if (layout.itemsMaxHeight > 0) {
                                 if (layout.overflow === 'clamp') {
                                     layout.nRows = Math.floor(referenceHeight / layout.itemsMaxHeight);
@@ -12456,7 +12456,7 @@ var Liquid = {
                                 }
                             }
                         }
-                        var referenceHeight = $(layout.bodyContainerObj).height() - 2;
+                        var referenceHeight = jQ1124(layout.bodyContainerObj).height() - 2;
                         if (layout.nRows > 0) {
                             layout.itemsMaxHeight = referenceHeight / nRows;
                         } else {
@@ -12728,7 +12728,7 @@ var Liquid = {
 
 
         // startup currencies fields
-        $('input.liquidCurrency').currencyInput();
+        jQ1124('input.liquidCurrency').currencyInput();
 
         var setMode = true;
         if (slideDownContainerObjs) {
@@ -19948,15 +19948,15 @@ function getCurrentTimetick() {
     try {
         $.fn.currencyInput = function () {
             this.each(function () {
-                $(this).change(function () {
-                    var min = parseFloat($(this).attr("min"));
-                    var max = parseFloat($(this).attr("max"));
+                jQ1124(this).change(function () {
+                    var min = parseFloat(jQ1124(this).attr("min"));
+                    var max = parseFloat(jQ1124(this).attr("max"));
                     var value = this.valueAsNumber;
                     if (value < min)
                         value = min;
                     else if (value > max)
                         value = max;
-                    $(this).val(value.toFixed(2));
+                    jQ1124(this).val(value.toFixed(2));
                 });
             });
         };
@@ -19965,10 +19965,10 @@ function getCurrentTimetick() {
 
 jQ1124(document).ready(function() {
     try {
-        $('input.liquidCurrency').currencyInput();
-        $('input.liquidDeletable').each(function() {
-            $(this).wrap('<span class="deleteicon" />').after($('<span/>').click(function() {
-                $(this).prev('input').val('').trigger('change');
+        jQ1124('input.liquidCurrency').currencyInput();
+        jQ1124('input.liquidDeletable').each(function() {
+            jQ1124(this).wrap('<span class="deleteicon" />').after(jQ1124('<span/>').click(function() {
+                jQ1124(this).prev('input').val('').trigger('change');
             }));
         });
     } catch (e) {}
