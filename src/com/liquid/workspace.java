@@ -1603,6 +1603,8 @@ public class workspace {
                                                         col.put("type", "91");
                                                     } else if ("STRING".equalsIgnoreCase(col.getString("type"))) {
                                                         col.put("type", "1");
+                                                    } else if ("BOOLEAN".equalsIgnoreCase(col.getString("type"))) {
+                                                        col.put("type", "-7");
                                                     } else {
                                                         col.put("type", mdCol.datatype);
                                                     }

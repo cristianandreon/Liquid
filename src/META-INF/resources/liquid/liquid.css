@@ -1,7 +1,6 @@
 /*
  * Copyright (c) Cristian Andreon - cristianandreon.eu - 2021.
  */
-
 /* N.B.: overlay: non-standard value only supported by the WebKit-browsers that does the same as auto */
 html, body { height: 100% }
 .liquidContainer { position: relative; display:block; }

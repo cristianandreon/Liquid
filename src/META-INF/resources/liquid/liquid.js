@@ -4253,7 +4253,7 @@ var Liquid = {
                         cellEditorParams = {liquid: liquid};
                     } else if (Liquid.isBoolean(liquid.tableJson.columns[ic].type)) { // datetime, date, timestamp
                         cellRenderer = function (params) {
-                            return '<input type="checkbox" style="display: inline-table; position: relative; " ' + (params.value == 'f' ? '' : 'checked') + ' />';
+                            return '<input type="checkbox" disabled style="display: inline-table; position: relative; " ' + (params.value && (params.value.toLowerCase() == 'f' || params.value.toLowerCase() == 'y') ? '' : 'checked') + ' />';
                         };
                     }
                     if (isDef(liquid.tableJson.columns[ic].editor)) {
@@ -12728,7 +12728,7 @@ var Liquid = {
 
 
         // startup currencies fields
-        jQ1124('input.liquidCurrency').currencyInput();
+        $('input.liquidCurrency').currencyInput();
 
         var setMode = true;
         if (slideDownContainerObjs) {
@@ -15888,7 +15888,10 @@ var Liquid = {
                 } else {
                     for(var ic=0; ic<liquid.tableJson.columns.length; ic++) {   
                         if(liquid.tableJson.columns[ic].autoSize === true || liquid.tableJson.autoFitColumns === true || liquid.mode === 'auto') {
-                            liquid.gridOptions.columnApi.autoSizeColumns([liquid.tableJson.columns[ic].field], true);
+                            if(isdef(liquid.tableJson.columns[ic].width)) {
+                            } else {
+                                liquid.gridOptions.columnApi.autoSizeColumns([liquid.tableJson.columns[ic].field], true);
+                            }
                         }                            
                     }
                 }

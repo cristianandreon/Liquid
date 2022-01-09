@@ -592,6 +592,7 @@ public class db {
                             String colName = null, colQuery = null, colMode = (targetMode != null ? targetMode + " " : "");
 
                             String foreignTable = null;
+                            String joinType = null;
                             ArrayList<String> foreignColumns = new ArrayList<String>();
                             ArrayList<String> columns = new ArrayList<String>();
                             int foreignIndex = -1;
@@ -658,7 +659,16 @@ public class db {
                                 error += " [ Control:" + tbl_wrk.controlId + " Column: " + col.getString("name") + " Unsupported column name]";
                                 colName = null;
                             }
-                            
+
+
+                            if(col.has("joinType")) {
+                                try {
+                                    joinType = col.getString("joinType");
+                                } catch (Exception e) {
+                                    foreignTable = null;
+                                }
+                            }
+
 
                             if (colName != null) {
                                 String[] colParts = colName.split("\\.");
@@ -788,20 +798,40 @@ public class db {
                                                             bAddColumnToList = false;
                                                         }
 
+                                                        // Risoluzione campi variabili
+                                                        // N.B.: Il risultato può essere una colonna o un valore
+                                                        //      Se si intende un valore utilizzare il carattere ' nell'espressione
+                                                        String foreignColumnSolved = null, columnSolved = null;
+                                                        if(column.indexOf("{")>=0) {
+                                                            columnSolved = solveVariableField(column, recordset_params.request, true);
+                                                            if(!columnSolved.equalsIgnoreCase(column)) {
+                                                            }
+                                                        } else {
+                                                            columnSolved = table + "." + (tableIdString + column + tableIdString);
+                                                        }
+
+                                                        if(foreignColumn.indexOf("{")>=0) {
+                                                            foreignColumnSolved = solveVariableField(foreignColumn, recordset_params.request, true);
+                                                            if(!foreignColumnSolved.equalsIgnoreCase(foreignColumn)) {
+                                                            }
+                                                        } else {
+                                                            foreignColumnSolved = leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString);
+                                                        }
+
                                                         if (ilj == 0) {
-                                                            leftJoinList += "LEFT JOIN "
+                                                            leftJoinList += (joinType != null && !joinType.isEmpty() ? joinType : "LEFT JOIN ")
                                                                     + (schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "")
                                                                     + (tableIdString + foreignTable + tableIdString) + asKeyword + leftJoinAlias
                                                                     + " ON "
-                                                                    + leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString)
+                                                                    + foreignColumnSolved
                                                                     + "="
-                                                                    + table + "." + (tableIdString + column + tableIdString);
+                                                                    + columnSolved;
                                                             leftJoinsMap.add(new LeftJoinMap(leftJoinKey, leftJoinAlias, foreignTable));
                                                         } else {
                                                             leftJoinList += " AND "
-                                                                    + leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString)
+                                                                    + foreignColumnSolved
                                                                     + "="
-                                                                    + table + "." + (tableIdString + column + tableIdString);
+                                                                    + columnSolved;
                                                         }
                                                     }
                                                 }
@@ -8271,7 +8301,7 @@ public class db {
                         String sDefault = null;
                         String sRemarks = null;
 
-                        // TODO: isOracle for tagert
+                        // TODO: isOracle var for target table
                         metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, isOracle);
 
                         if(mdCol != null) {
