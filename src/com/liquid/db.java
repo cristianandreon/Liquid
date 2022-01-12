@@ -66,6 +66,7 @@ public class db {
     public static String NULLValue = "";
 
 
+
     static public class IdsCache {
 
         public String query;
@@ -4028,6 +4029,38 @@ public class db {
 
 
     /**
+     * Create new bean from the string databaseSchemaTable
+     *
+     * @param requestParam
+     * @param databaseSchemaTable
+     * @return
+     * @throws Throwable
+     */
+    public static Object new_bean(Object requestParam, String databaseSchemaTable) throws Throwable {
+        HttpServletRequest request = (HttpServletRequest) requestParam;
+        Object bean = null;
+        if (request != null) {
+            workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable);
+            if (tbl_wrk != null) {
+                Object[] result = create_beans_multilevel_class_internal( tbl_wrk, (JSONArray)null, (JSONArray)null, null,
+                        1, 1,
+                        null,
+                        request
+                );
+                if(result != null) {
+                    int iResult = (int) result[0];
+                    ArrayList<Object> beansContent = (ArrayList<Object>) result[1];
+                    if(beansContent != null && beansContent.size() > 0) {
+                        bean = beansContent.get(0);
+                    }
+                }
+            }
+        }
+        return bean;
+    }
+
+
+    /**
      * Creane new empty bean for control
      *
      * @param requestParam
@@ -4243,6 +4276,18 @@ public class db {
     }
 
     /**
+     *
+     * @param request
+     * @param databaseSchemaTable
+     * @return
+     * @throws JSONException
+     * @throws Throwable
+     */
+    static public workspace load_beans_get_workspace(HttpServletRequest request, String databaseSchemaTable) throws JSONException, Throwable {
+        return load_beans_get_workspace(request, databaseSchemaTable, databaseSchemaTable.replace(".", "_"));
+    }
+
+    /**
      *  Create all beans from primaryKey value
      * 
      * ControlId is automatically created if not exist (from controlId)
@@ -4319,6 +4364,17 @@ public class db {
      */
     static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition, long maxRows) {
         return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
+    }
+
+    /**
+     *
+     * @param databaseSchemaTable
+     * @param columns
+     * @param where_condition
+     * @return
+     */
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition) {
+        return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, -1);
     }
 
     static public Object load_bean(String databaseSchemaTable, String columns, String where_condition) {

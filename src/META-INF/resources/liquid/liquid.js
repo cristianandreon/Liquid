@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.81
+// Liquid ver.1.82
 //
-//  First update 04-01-2020 - Last update 03-01-2022
+//  First update 04-01-2020 - Last update 09-01-2022
 //
 //  TODO : see trello.com
 //
@@ -2385,61 +2385,65 @@ var Liquid = {
     timeFormat:null,
     timestampFormat:null,
     setLanguage: function (language, serverSide) {
-        var lang_list = language.split(';');
-        var langFound = null;
-        for (var il = 0; il < lang_list.length; il++) {
-            var lang = lang_list[il].split('-')[0];
-            if (lang === 'it' || lang === 'ita') {
-                Liquid.lang = langFound = 'ita';
-                Liquid.loadingMessage = "<span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
-                Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">Nessun dato trovato...</span>";
-                Liquid.paginationTitleGoTo = "digita la pagina a cui andare ... poi premi enter";
-                Liquid.paginationTitleFirst = "vai alla prima pagina";
-                Liquid.paginationTitlePrevious = "vai alla pagina precedente";
-                Liquid.paginationTitleNext = "vai alla pagina seguente";
-                Liquid.paginationTitleLast = "vai all'ultima";
-                Liquid.askForSaveTitle = "DOMANDA";
-                Liquid.askForSaveMessage = "Salvare la configurazione del controllo ?";
-                Liquid.foundText = "Trovato a R:${rec} - C:${col}";
-                Liquid.NoSelectedFileMessage = "File non selezionato";
-                Liquid.FileTooBigMessage = "File troppo grande";
-                Liquid.Save = "Salva";
-                Liquid.Discharge = "scarta";
-                Liquid.swapCellsMessage = "Confermi lo scambio delle celle ?";
-                Liquid.moveCellsMessage = "Confermi lo spostamento della cella ?";
-            } else if (lang === 'en' || lang === 'eng') {
-                Liquid.lang = langFound = 'eng';
-                Liquid.loadingMessage = "<span class=\"ag-overlay-loading-center\">Loading data...</span>";
-                Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">No data to show...</span>";
-                Liquid.paginationTitleGoTo = "type page to go to ... then press enter";
-                Liquid.paginationTitleFirst = "go to first page";
-                Liquid.paginationTitlePrevious = "go to previous page";
-                Liquid.paginationTitleNext = "go to next page";
-                Liquid.paginationTitleLast = "go to last page";
-                Liquid.askForSaveTitle = "QUESTION";
-                Liquid.askForSaveMessage = "Save control's configuration ?";
-                Liquid.foundText = "Found at R:${rec} - C:${col}";
-                Liquid.NoSelectedFileMessage = "File not selected";
-                Liquid.FileTooBigMessage = "File too big";
-                Liquid.Save = "Save";
-                Liquid.Discharge = "Discharge";
-                Liquid.swapCellsMessage = "Do you want to swap the cells ?";
-                Liquid.moveCellsMessage = "Do you want to move the cell ?";
-            }
-            if(langFound) {
-                if(serverSide === true) {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("POST", glLiquidServlet + "?operation=setLanguage&language=" + Liquid.lang, async);
-                    xhr.onreadystatechange = function () {
-                    }
-                    xhr.send();
+        if(isDef(language)) {
+            var lang_list = language.split(';');
+            var langFound = null;
+            for (var il = 0; il < lang_list.length; il++) {
+                var lang = lang_list[il].split('-')[0];
+                if (lang === 'it' || lang === 'ita') {
+                    Liquid.lang = langFound = 'ita';
+                    Liquid.loadingMessage = "<span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
+                    Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">Nessun dato trovato...</span>";
+                    Liquid.paginationTitleGoTo = "digita la pagina a cui andare ... poi premi enter";
+                    Liquid.paginationTitleFirst = "vai alla prima pagina";
+                    Liquid.paginationTitlePrevious = "vai alla pagina precedente";
+                    Liquid.paginationTitleNext = "vai alla pagina seguente";
+                    Liquid.paginationTitleLast = "vai all'ultima";
+                    Liquid.askForSaveTitle = "DOMANDA";
+                    Liquid.askForSaveMessage = "Salvare la configurazione del controllo ?";
+                    Liquid.foundText = "Trovato a R:${rec} - C:${col}";
+                    Liquid.NoSelectedFileMessage = "File non selezionato";
+                    Liquid.FileTooBigMessage = "File troppo grande";
+                    Liquid.Save = "Salva";
+                    Liquid.Discharge = "scarta";
+                    Liquid.swapCellsMessage = "Confermi lo scambio delle celle ?";
+                    Liquid.moveCellsMessage = "Confermi lo spostamento della cella ?";
+                } else if (lang === 'en' || lang === 'eng') {
+                    Liquid.lang = langFound = 'eng';
+                    Liquid.loadingMessage = "<span class=\"ag-overlay-loading-center\">Loading data...</span>";
+                    Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">No data to show...</span>";
+                    Liquid.paginationTitleGoTo = "type page to go to ... then press enter";
+                    Liquid.paginationTitleFirst = "go to first page";
+                    Liquid.paginationTitlePrevious = "go to previous page";
+                    Liquid.paginationTitleNext = "go to next page";
+                    Liquid.paginationTitleLast = "go to last page";
+                    Liquid.askForSaveTitle = "QUESTION";
+                    Liquid.askForSaveMessage = "Save control's configuration ?";
+                    Liquid.foundText = "Found at R:${rec} - C:${col}";
+                    Liquid.NoSelectedFileMessage = "File not selected";
+                    Liquid.FileTooBigMessage = "File too big";
+                    Liquid.Save = "Save";
+                    Liquid.Discharge = "Discharge";
+                    Liquid.swapCellsMessage = "Do you want to swap the cells ?";
+                    Liquid.moveCellsMessage = "Do you want to move the cell ?";
                 }
-                return true;
+                if (langFound) {
+                    if (serverSide === true) {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open("POST", glLiquidServlet + "?operation=setLanguage&language=" + Liquid.lang, async);
+                        xhr.onreadystatechange = function () {
+                        }
+                        xhr.send();
+                    }
+                    return true;
+                }
             }
+            console.warn("WARNING : language not recorgnized:" + lang);
+            Liquid.setLanguage('eng');
+            return false;
+        } else {
+            return false;
         }
-        console.warn("WARNING : language not recorgnized:" + lang);
-        Liquid.setLanguage('eng');
-        return false;
     },
     searchLiquid: function (searchingNameOrObject) {
         for (var prop in window) {
@@ -4253,7 +4257,7 @@ var Liquid = {
                         cellEditorParams = {liquid: liquid};
                     } else if (Liquid.isBoolean(liquid.tableJson.columns[ic].type)) { // datetime, date, timestamp
                         cellRenderer = function (params) {
-                            return '<input type="checkbox" disabled style="display: inline-table; position: relative; " ' + (params.value && (params.value.toLowerCase() == 'f' || params.value.toLowerCase() == 'y') ? '' : 'checked') + ' />';
+                            return '<input type="checkbox" disabled style="display: inline-table; position: relative; " ' + (params.value && (params.value.toLowerCase() == 'f' || params.value.toLowerCase() == 'n') ? '' : 'checked') + ' />';
                         };
                     }
                     if (isDef(liquid.tableJson.columns[ic].editor)) {
@@ -8736,6 +8740,23 @@ var Liquid = {
                             }
                         }
                     }
+                    if (command.name === "insert") {
+                        // firing inserted record
+                        var eventData = { };
+                        var callback = null;
+                        var callbackParams = null;
+                        var defaultRetval = true;
+                        var bAlwaysCallback = true;
+                        Liquid.onEvent(liquid, "onInsertedRow", eventData, callback, callbackParams, defaultRetval, bAlwaysCallback);
+                    } else if (command.name === "delete") {
+                        // firing deleted record
+                        var eventData = { };
+                        var callback = null;
+                        var callbackParams = null;
+                        var defaultRetval = true;
+                        var bAlwaysCallback = true;
+                        Liquid.onEvent(liquid, "onDeletedRow", eventData, callback, callbackParams, defaultRetval, bAlwaysCallback);
+                    }
                 }
             }
         } catch (e) {
@@ -12476,15 +12497,30 @@ var Liquid = {
                     var isDialogX = Liquid.isDialogX(liquid);
                     var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
                     if (isFormX || isDialogX) {
-                        if (layout.nRows <= 0) { // all rows
-                            if (nRows <= 0) nRows = 1;
+                        if (isDef(layout.nRows)) {
+                            if (layout.nRows <= 0) { // all rows
+                                if (nRows <= 0) nRows = 1;
+                            }
+                        } else {
+                            // all rows
+                            nRows = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length;
                         }
                     } else if (isAutoInsert) {
-                        if (layout.nRows <= 0) { // all rows
+                        if (isDef(layout.nRows)) {
+                            if (layout.nRows <= 0) { // all rows
+                                nRows = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length;
+                            }
+                        } else {
+                            // all rows
                             nRows = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length;
                         }
                     } else {
-                        if (layout.nRows <= 0) { // all rows
+                        if (isDef(layout.nRows)) {
+                            if (layout.nRows <= 0) { // all rows
+                                nRows = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length;
+                            }
+                        } else {
+                            // all rows
                             nRows = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length;
                         }
                     }
@@ -19955,11 +19991,13 @@ function getCurrentTimetick() {
                     var min = parseFloat(jQ1124(this).attr("min"));
                     var max = parseFloat(jQ1124(this).attr("max"));
                     var value = this.valueAsNumber;
-                    if (value < min)
-                        value = min;
-                    else if (value > max)
-                        value = max;
-                    jQ1124(this).val(value.toFixed(2));
+                    if(!isNaN(value)) {
+                        if (!isNaN(min) && value < min)
+                            value = min;
+                        else if (!isNaN(max) && value > max)
+                            value = max;
+                        jQ1124(this).val(value.toFixed(2));
+                    }
                 });
             });
         };
