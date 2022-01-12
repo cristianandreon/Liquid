@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.82
+// Liquid ver.1.83
 //
-//  First update 04-01-2020 - Last update 09-01-2022
+//  First update 04-01-2020 - Last update 13-01-2022
 //
 //  TODO : see trello.com
 //
@@ -3513,7 +3513,13 @@ var Liquid = {
             }
         } else {
             if (Liquid.projectMode) {
-                console.info("[SERVER] QUERY:\n\n" + atob(obj.query));
+                if(obj.query) {
+                    try {
+                        console.info("[SERVER] QUERY:\n\n" + atob(obj.query));
+                    } catch(e) {
+                        console.error(e);
+                    }
+                }
             }
         }
         if (isDef(obj.warning)) {
@@ -9277,7 +9283,7 @@ var Liquid = {
             } else {
                 selNodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
             }
-            return Liquid.getSerializedNode(liquid, nodes);
+            return Liquid.getSerializedNode(liquid, selNodes);
         }
         return "";
     },
