@@ -8097,8 +8097,13 @@ public class db {
     }
 
 
-
-
+    static public String syncronizeTable(String sourceDatabaseSchemaTable, String sSourceRowsFilters,
+                                         String targetDatabaseSchemaTable, String sTargetRowsFilters,
+                                         String sColumnsRelation,
+                                         String methodGetPrimaryKey, Object instanceGetPrimaryKey,
+                                         String mode) {
+        return  syncronizeTable(sourceDatabaseSchemaTable, sSourceRowsFilters, targetDatabaseSchemaTable, sTargetRowsFilters, sColumnsRelation, methodGetPrimaryKey, instanceGetPrimaryKey, mode, (HttpServletRequest)null);
+    }
 
     /**
      * <h3>Syncronize target table metadata by source table, adding and removing colums</h3>
