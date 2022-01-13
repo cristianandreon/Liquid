@@ -589,7 +589,16 @@ public class utility {
         try {
             return get(bean, property);
         } catch (Exception e) {
-            Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(utility.class.getName()).log(Level.INFO, null, e);
+        }
+        return null;
+    }
+    static public Object getEx(Object bean, String property, boolean log) {
+        try {
+            return get(bean, property);
+        } catch (Exception e) {
+            if(log)
+                Logger.getLogger(utility.class.getName()).log(Level.WARNING, null, e);
         }
         return null;
     }
@@ -645,7 +654,6 @@ public class utility {
                 return readMethod.invoke(bean);
             }
         } catch (Exception e) {
-            Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
             throw new Exception(e);
         }
         return null;

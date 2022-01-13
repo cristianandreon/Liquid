@@ -2494,9 +2494,28 @@ public class workspace {
         // Foreign tables ...
         //
         if(tableJsonForClient.has("foreignTables")) {
-            JSONArray foreignTables = tableJsonForClient.getJSONArray("foreignTables");
-            for(int ift=0; ift<foreignTables.length(); ift++) {
-                JSONObject foreignTable = foreignTables.getJSONObject(ift);
+            Object oforeignTables = tableJsonForClient.get("foreignTables");
+            if(oforeignTables instanceof JSONArray) {
+                JSONArray foreignTables = (JSONArray) oforeignTables;
+                for (int ift = 0; ift < foreignTables.length(); ift++) {
+                    JSONObject foreignTable = foreignTables.getJSONObject(ift);
+                    if (foreignTable.has("options")) {
+                        JSONObject options = foreignTable.getJSONObject("options");
+                        if (options.has("columns")) {
+                            JSONArray cols = options.getJSONArray("columns");
+                            for (int ic = 0; ic < cols.length(); ic++) {
+                                JSONObject col = cols.getJSONObject(ic);
+                                String[] keys = new String[]{"default"};
+                                for (String key : Arrays.asList(keys)) {
+                                    solvedCount += solveClientSideVariableFieldsKey(col, key, request);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if(oforeignTables instanceof JSONObject) {
+                // Mistake ...
+                JSONObject foreignTable = (JSONObject)oforeignTables;
                 if (foreignTable.has("options")) {
                     JSONObject options = foreignTable.getJSONObject("options");
                     if (options.has("columns")) {
@@ -2509,6 +2528,61 @@ public class workspace {
                             }
                         }
                     }
+                }
+            } else if(oforeignTables instanceof String) {
+                String sforeignTables = String.valueOf(oforeignTables);
+                if("*".equalsIgnoreCase(sforeignTables) || "ALL".equalsIgnoreCase(sforeignTables)) {
+                    // Read all foreign tables
+                    String targetDatabase = tableJsonForClient.getString("database");
+                    if(targetDatabase == null || targetDatabase.isEmpty()) {
+                        targetDatabase = null;
+                    }
+                    String targetSchema = tableJsonForClient.getString("schema");
+                    if(targetSchema == null || targetSchema.isEmpty()) {
+                        targetSchema = null;
+                    }
+                    String targetTable = tableJsonForClient.getString("table");
+                    if(targetTable == null || targetTable.isEmpty()) {
+                        targetTable = null;
+                    }
+                    Connection connToUse = null;
+                    boolean bUserFieldIdentificator = false;
+
+
+                    /*
+                    Object[] result = metadata.getAllForeignKeys(
+                            targetDatabase != null ? targetDatabase : null,
+                            targetSchema != null ? targetSchema : null,
+                            targetTable, connToUse,
+                            bUserFieldIdentificator);
+
+                    if(result != null) {
+                        String res = (String) result[0];
+                        if (res != null) {
+                            // "1":"ID")+"\":\""+(nRec+1)+"\"";
+                            // "TABLE")+"\":\""+table+"\"";
+                            // "COLUMN")+"\":\""+utility.arrayToString(foreignKey.columns.toArray(), null, null, ",")+"\"";
+                            // "FOREIGN_TABLE")+"\":\""+foreignKey.foreignTable+"\"";
+                            // "FOREIGN_COLUMN")+"\":\""+utility.arrayToString(foreignKey.foreignColumns.toArray(), null, null, ",")+"\"";
+                            JSONArray newForeignTablesSource = new JSONArray(res);
+                            if(newForeignTablesSource != null) {
+                                JSONArray newForeignTables = new JSONArray();
+                                for (int ift=0; ift<newForeignTablesSource.length(); ift++) {
+                                    JSONObject newForeignTableSource = newForeignTablesSource.getJSONObject(ift);
+                                    String foreignTable = newForeignTableSource.getString("foreignTable");
+                                    String foreignColumn = newForeignTableSource.getString("foreignColumn");;
+                                    String column = newForeignTableSource.getString("column");;
+                                    newForeignTables.put(new JSONObject(
+                                            "{"
+                                                    + "\"foreignTable\":\"" + foreignTable
+                                                    + "\", \"foreignColumn\":\"" + foreignColumn
+                                                    + "\", \"column\":\"" + column
+                                                    + "\"}"));
+                                }
+                            }
+                        }
+                    }
+                    */
                 }
             }
         }
