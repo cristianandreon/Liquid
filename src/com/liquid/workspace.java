@@ -870,26 +870,29 @@ public class workspace {
                             // Contenuto modificato : distruzione di tutti i controlli nidificati (es. foreign tables)
                             //
                             if(tblWorkspace.tableJson.has("foreignTables")) {
-                                JSONArray fts = tblWorkspace.tableJson.getJSONArray("foreignTables");
-                                if(fts != null) {
-                                    for(int ift=0; ift<fts.length(); ift++) {
-                                        JSONObject ft = fts.getJSONObject(ift);
-                                        if(ft != null) {
-                                            if(ft.has("foreignTable")) {
-                                                if(ft.has("foreignColumn")) {
-                                                    if(ft.has("column")) {
-                                                        String sFt = ft.getString("foreignTable");
-                                                        String sFc = ft.getString("foreignColumn");
-                                                        String c = ft.getString("column");
-                                                        // bids$auction_id$id@NewBid
-                                                        String resettingControlId = sFt+"$"+sFc+"$"+c+"@"+tblWorkspace.controlId;
-                                                        for (int i = 0; i < glTblWorkspaces.size(); i++) {
-                                                            tblWorkspace = glTblWorkspaces.get(i);
-                                                            if(tblWorkspace != null) {
-                                                                if (tblWorkspace.controlId.equalsIgnoreCase(resettingControlId)) {
-                                                                    tblWorkspace.sourceTableJsonHash = -1;
-                                                                    glTblWorkspaces.set(i, null);
-                                                                    // "*INVALIDATED-BY-"+tblWorkspace.controlId+"*";
+                                Object oforeignTables = tblWorkspace.tableJson.get("foreignTables");
+                                if(oforeignTables instanceof JSONArray) {
+                                    JSONArray fts = tblWorkspace.tableJson.getJSONArray("foreignTables");
+                                    if (fts != null) {
+                                        for (int ift = 0; ift < fts.length(); ift++) {
+                                            JSONObject ft = fts.getJSONObject(ift);
+                                            if (ft != null) {
+                                                if (ft.has("foreignTable")) {
+                                                    if (ft.has("foreignColumn")) {
+                                                        if (ft.has("column")) {
+                                                            String sFt = ft.getString("foreignTable");
+                                                            String sFc = ft.getString("foreignColumn");
+                                                            String c = ft.getString("column");
+                                                            // bids$auction_id$id@NewBid
+                                                            String resettingControlId = sFt + "$" + sFc + "$" + c + "@" + tblWorkspace.controlId;
+                                                            for (int i = 0; i < glTblWorkspaces.size(); i++) {
+                                                                tblWorkspace = glTblWorkspaces.get(i);
+                                                                if (tblWorkspace != null) {
+                                                                    if (tblWorkspace.controlId.equalsIgnoreCase(resettingControlId)) {
+                                                                        tblWorkspace.sourceTableJsonHash = -1;
+                                                                        glTblWorkspaces.set(i, null);
+                                                                        // "*INVALIDATED-BY-"+tblWorkspace.controlId+"*";
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -898,6 +901,8 @@ public class workspace {
                                             }
                                         }
                                     }
+                                } else {
+
                                 }
                             }
                         }
