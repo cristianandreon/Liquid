@@ -383,7 +383,9 @@ public class utility {
                                         "on".equalsIgnoreCase((String) value) ||
                                                 "true".equalsIgnoreCase((String) value) ||
                                                 "1".equalsIgnoreCase((String) value) ||
-                                                "s".equalsIgnoreCase((String) value) ) ) {
+                                                "s".equalsIgnoreCase((String) value) ||
+                                                "t".equalsIgnoreCase((String) value)
+                        ) ) {
                             field.set(bean, true);
                         } else {
                             field.set(bean, false);

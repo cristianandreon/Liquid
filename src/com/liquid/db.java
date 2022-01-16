@@ -1953,6 +1953,12 @@ public class db {
                             // N.B.: risolve le variabili di sessione
                             //
                             filterValue = solveVariableField(filterValue, request, true);
+
+                            if(!filterValue.equalsIgnoreCase(String.valueOf(oFilterValue))) {
+                                // Espressione risolta : reimposta l'oggetto originale (verrà usato come dato sorgente per rispettare il tipo dato)
+                                // oFilterValue = filterValue;
+                            }
+
                             filterValueIsSet = true;
                         } else if(oFilterValue instanceof JSONArray) {
                             filterValueIsSet = true;
@@ -2583,9 +2589,11 @@ public class db {
                                     try {
                                         java.sql.Date dbSqlDate = rsdo.getDate(columns_alias[0]);
                                         fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
-                                        if(renderService) {
-                                            if(fieldValue == null) fieldValue = "";
+                                        if (renderService) {
+                                            if (fieldValue == null) fieldValue = "";
                                         }
+                                        out_values_string.append("\"" + fieldValue + "\"");
+
                                     } catch (Exception e) {
                                         Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
                                         throw new Exception(e);
@@ -2594,9 +2602,10 @@ public class db {
                                     try {
                                         java.sql.Time dbSqlTime = rsdo.getTime(columns_alias[0]);
                                         fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
-                                        if(renderService) {
-                                            if(fieldValue == null) fieldValue = "";
+                                        if (renderService) {
+                                            if (fieldValue == null) fieldValue = "";
                                         }
+                                        out_values_string.append("\"" + fieldValue + "\"");
                                     } catch (Exception e) {
                                         Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
                                         throw new Exception(e);
@@ -2605,18 +2614,22 @@ public class db {
                                     try {
                                         java.sql.Time dbSqlDateTime = rsdo.getTime(columns_alias[0]);
                                         fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
-                                        if(renderService) {
-                                            if(fieldValue == null) fieldValue = "";
+                                        if (renderService) {
+                                            if (fieldValue == null) fieldValue = "";
                                         }
+                                        out_values_string.append("\"" + fieldValue + "\"");
                                     } catch (Exception e) {
                                         // fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
                                         Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
                                         throw new Exception(e);
                                     }
+                                } else if (colTypes[ic] == -7) {
+                                    out_values_string.append("" + rsdo.getBoolean(columns_alias[0]) + "");
                                 } else {
                                     fieldValue = rsdo.getString(columns_alias[0]).replace("\"", "\\\"");
+                                    out_values_string.append("\"" + fieldValue + "\"");
                                 }
-                                out_values_string.append("\"" + fieldValue + "\"");
+
                             } else {
                                 for (int ic = 0; ic < cols.length(); ic++) {
                                     String columnAlias = columns_alias != null ? columns_alias[ic] : null;
@@ -2645,46 +2658,42 @@ public class db {
                                                 nf.setMaximumFractionDigits(colDigits[ic]);
                                                 fieldValue = nf.format(dFieldValue);
                                             }
+                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+
                                         } else if (colTypes[ic] == 91) { //date
-                                            try {
-                                                java.sql.Date dbSqlDate = columnAlias != null ? rsdo.getDate(columnAlias) : rsdo.getDate(ic + 1);
-                                                fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
-                                                if(renderService) {
-                                                    if(fieldValue == null) fieldValue = "";
-                                                }
-                                            } catch (Exception e) {
-                                                fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000";
+                                            java.sql.Date dbSqlDate = columnAlias != null ? rsdo.getDate(columnAlias) : rsdo.getDate(ic + 1);
+                                            fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
+                                            if(renderService) {
+                                                if(fieldValue == null) fieldValue = "";
                                             }
+                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+
                                         } else if (colTypes[ic] == 92) { //time
-                                            try {
-                                                java.sql.Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic + 1);
-                                                fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
-                                                if(renderService) {
-                                                    if(fieldValue == null) fieldValue = "";
-                                                }
-                                            } catch (Exception e) {
-                                                fieldValue = "00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                            java.sql.Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic + 1);
+                                            fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
+                                            if(renderService) {
+                                                if(fieldValue == null) fieldValue = "";
                                             }
+                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+
                                         } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
-                                            try {
-                                                java.sql.Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic + 1);
-                                                fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
-                                                if(renderService) {
-                                                    if(fieldValue == null) fieldValue = "";
-                                                }
-                                            } catch (Exception e) {
-                                                fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                            java.sql.Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic + 1);
+                                            fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
+                                            if(renderService) {
+                                                if(fieldValue == null) fieldValue = "";
                                             }
+                                            // } catch (Exception e) { fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00"; }
+                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+
+                                        } else if (colTypes[ic] == -7) {
+                                            fieldValue = ("" + rsdo.getBoolean(columnAlias) + "");
+                                            out_string.append("\"" + fieldName + "\":" + fieldValue + "");
                                         } else {
-                                            try {
-                                                fieldValue = columnAlias != null ? rsdo.getString(columnAlias) : rsdo.getString(ic + 1);
-                                            } catch (Exception e) {
-                                                fieldValue = "";
-                                            }
+                                            fieldValue = columnAlias != null ? rsdo.getString(columnAlias) : rsdo.getString(ic + 1);
+                                            // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
+                                            fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : db.NULLValue;
+                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
                                         }
-                                        // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
-                                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : db.NULLValue;
-                                        out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
                                     }
                                 }
                             }
@@ -4149,6 +4158,24 @@ public class db {
         return null;
     }
 
+
+    /**
+     * Load single bean for given database.schema.table and primaryKey
+     *
+     * @param databaseSchemaTable
+     * @param primaryKey
+     * @return
+     * @throws Throwable
+     */
+    public static Object load_bean(String databaseSchemaTable, Object primaryKey) throws Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest)null,databaseSchemaTable, null, null, primaryKey, 1);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
 
 
 
@@ -6080,14 +6107,15 @@ public class db {
                                                 for (int iF = 0; iF < fieldsJSON.length(); iF++) {
                                                     JSONObject fieldJSON = (JSONObject) fieldsJSON.get(iF);
                                                     if (fieldJSON != null) {
-                                                        String field = null, value = null;
+                                                        String field = null;
+                                                        Object oValue = null;
                                                         int valueType = 0;
                                                         try {
                                                             field = fieldJSON.getString("field");
                                                         } catch (JSONException e) {
                                                         }
                                                         try {
-                                                            value = fieldJSON.getString("value");
+                                                            oValue = fieldJSON.get("value");
                                                         } catch (JSONException e) {
                                                         }
                                                         if (field != null && !field.isEmpty() && cols != null) {
@@ -6139,8 +6167,8 @@ public class db {
                                                                         //
                                                                         // compute the value by metadata
                                                                         //
-                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, value, null);
-                                                                        value = (String) fres[0];
+                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null);
+                                                                        oValue = (Object) fres[0];
                                                                         valueType = (int) fres[1];
 
                                                                         if (colParts.length > 1 || foreignTable != null && !foreignTable.isEmpty()) {
@@ -6162,14 +6190,14 @@ public class db {
                                                                                             // foreignTableTransactList.add( col.getString("foreignTable"), tName, value, sourceColumn, null, "insert" );
                                                                                             // bUseAutoCommit = true;
                                                                                         } else if ("delete".equalsIgnoreCase(sType)) {
-                                                                                            foreignTableTransactList.add(col.getString("foreignTable"), tName, value, valueType, sourceColumn, null, "delete", rowId, nodeId);
+                                                                                            foreignTableTransactList.add(col.getString("foreignTable"), tName, oValue, valueType, sourceColumn, null, "delete", rowId, nodeId);
                                                                                         } else if ("update".equalsIgnoreCase(sType)) {
                                                                                             // TODO : lettura dei valori dal client
                                                                                             String foreignValue = "(SELECT " + itemIdString + sourceColumn + itemIdString
                                                                                                     + " FROM " + liquid.schemaTable
                                                                                                     + "\nWHERE " + tableIdString + liquid.tableJson.getString("primaryKey") + tableIdString
                                                                                                     + "=" + rowId + ")";
-                                                                                            foreignTableTransactList.add((schema != null ? tableIdString + schema + tableIdString + "." : "") + tableIdString + foreignTable + tableIdString, tName, value, valueType, sourceColumn, foreignColumn + "=" + foreignValue + "", "update", rowId, nodeId);
+                                                                                            foreignTableTransactList.add((schema != null ? tableIdString + schema + tableIdString + "." : "") + tableIdString + foreignTable + tableIdString, tName, oValue, valueType, sourceColumn, foreignColumn + "=" + foreignValue + "", "update", rowId, nodeId);
                                                                                         }
                                                                                     } else {
                                                                                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, "Missing foreign column in controlId:" + liquid.controlId + " field:" + col.getString("name"));
@@ -6183,10 +6211,10 @@ public class db {
                                                                         }
                                                                         if (!isExternalField) {
                                                                             if ("insert".equalsIgnoreCase(sType)) {
-                                                                                tableTransactList.add((schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString + schema + itemIdString + "." : "") + tableIdString + table + tableIdString, tName, value, valueType, null, null, "insert", rowId, nodeId);
+                                                                                tableTransactList.add((schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString + schema + itemIdString + "." : "") + tableIdString + table + tableIdString, tName, oValue, valueType, null, null, "insert", rowId, nodeId);
 
                                                                             } else if ("update".equalsIgnoreCase(sType)) {
-                                                                                tableTransactList.add((schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString + schema + tableIdString + "." : "") + tableIdString + table + tableIdString, tName, value, valueType, null, itemIdString + liquid.tableJson.getString("primaryKey") + itemIdString + "='" + rowId + "'", "update", rowId, nodeId);
+                                                                                tableTransactList.add((schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString + schema + tableIdString + "." : "") + tableIdString + table + tableIdString, tName, oValue, valueType, null, itemIdString + liquid.tableJson.getString("primaryKey") + itemIdString + "='" + rowId + "'", "update", rowId, nodeId);
                                                                             }
                                                                         }
                                                                     }
@@ -6558,11 +6586,11 @@ public class db {
      * @param tbl_wrk
      * @param colTypes
      * @param nullable
-     * @param value
+     * @param oValue
      * @param operator
      * @return
      */
-    static public Object[] format_db_value(workspace tbl_wrk, int colTypes, boolean nullable, String value, String operator) {
+    static public Object[] format_db_value(workspace tbl_wrk, int colTypes, boolean nullable, Object oValue, String operator) throws Exception {
 
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
 
@@ -6584,98 +6612,126 @@ public class db {
         int valueType = 1; // string
         
         if (colTypes == 8 || colTypes == 7) { // float
-            value = value.replace(",", ".");
+            if(oValue instanceof String) {
+                String value = (String)oValue;
+                value = value.replace(",", ".");
+                oValue = Float.parseFloat(value);
+            } else {
+            }
         }
 
         if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
-            value = getLocalDate(value, colTypes, nullable);
-            if (value != null && !value.isEmpty()) {
-                // refine
-                if (isOracle || isPostgres) {
-                    if (colTypes == 6 || colTypes == 93) { // date, datetime
-                    	if(value.endsWith(" 0:0:0")) {
-                            value = "TO_DATE('" + value.substring(0, value.length()-6) + "','YYYY-MM-DD')";
+            if(oValue instanceof String) {
+                String value = (String) oValue;
+                value = getLocalDate(value, colTypes, nullable);
+                if (value != null && !value.isEmpty()) {
+                    // refine
+                    if (isOracle || isPostgres) {
+                        if (colTypes == 6 || colTypes == 93) { // date, datetime
+                            if (value.endsWith(" 0:0:0")) {
+                                oValue = value = "TO_DATE('" + value.substring(0, value.length() - 6) + "','YYYY-MM-DD')";
+                                valueType = 0; // is an expression
+                            } else if (value.length() > 9) {
+                                // value = "TO_DATE('" + value + "','YYYY-MM-DD HH24:MI:SS')";
+                                oValue = value = "TO_TIMESTAMP('" + value + "','YYYY-MM-DD HH24:MI:SS')";
+                                valueType = 0; // is an expression
+                            } else {
+                                oValue = value = "TO_DATE('" + value + "','YYYY-MM-DD')";
+                                valueType = 0; // is an expression
+                            }
+                        } else if (colTypes == 91) { // date
+                            if (value.length() > 9) value = value.substring(0, 9);
+                            oValue = value = "TO_DATE('" + value + "','YYYY-MM-DD')";
                             valueType = 0; // is an expression
-                    	} else if(value.length() > 9) {
-                            // value = "TO_DATE('" + value + "','YYYY-MM-DD HH24:MI:SS')";
-                            value = "TO_TIMESTAMP('" + value + "','YYYY-MM-DD HH24:MI:SS')";
+                        }
+                    } else if (isMySQL) {
+                        if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
+                            if (value.endsWith(" 0:0:0")) {
+                                oValue = value = "STR_TO_DATE('" + value.substring(0, value.length() - 6) + "','%Y-%m-%d')";
+                                valueType = -1; // truncate
+                            } else if (value.length() > 9) {
+                                oValue = value = "STR_TO_DATE('" + value + "','%Y-%m-%d %H:%i:%s')";
+                                valueType = 0; // is an expression
+                            } else {
+                                oValue = value = "STR_TO_DATE('" + value + "','%Y-%m-%d')";
+                                valueType = 0; // is an expression
+                            }
+                        } else if (colTypes == 91) { // date
+                            oValue = value = "STR_TO_DATE('" + value + "','%Y-%m-%d')";
                             valueType = 0; // is an expression
-                    	} else {
-                            value = "TO_DATE('" + value + "','YYYY-MM-DD')";
+                        }
+                    } else if (isSqlServer) {
+                        if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
+                            oValue = value = "CONVERT(DATETIME,'" + value + "')";
                             valueType = 0; // is an expression
-                        	}
-                    } else if (colTypes == 91) { // date
-                    	if(value.length() > 9) value = value.substring(0, 9);
-                        value = "TO_DATE('" + value + "','YYYY-MM-DD')";
-                        valueType = 0; // is an expression
+                        } else if (colTypes == 91) { // date
+                            oValue = value = "CONVERT(DATETIME,'" + value + ")";
+                            valueType = 0; // is an expression
+                        }
                     }
-                } else if (isMySQL) {
-                    if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
-                    	if(value.endsWith(" 0:0:0")) {
-                            value = "STR_TO_DATE('" + value.substring(0, value.length()-6) + "','%Y-%m-%d')";
-                            valueType = -1; // truncate
-                    	} else if(value.length() > 9) {
-                            value = "STR_TO_DATE('" + value + "','%Y-%m-%d %H:%i:%s')";
-                            valueType = 0; // is an expression
-                    	} else {
-                    		value = "STR_TO_DATE('" + value + "','%Y-%m-%d')";
-                            valueType = 0; // is an expression
-                        	}
-                    } else if (colTypes == 91) { // date
-                        value = "STR_TO_DATE('" + value + "','%Y-%m-%d')";
-                        valueType = 0; // is an expression
-                    }
-                } else if (isSqlServer) {
-                    if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
-                        value = "CONVERT(DATETIME,'" + value + "')";
-                        valueType = 0; // is an expression
-                    } else if (colTypes == 91) { // date
-                        value = "CONVERT(DATETIME,'" + value + ")";
-                        valueType = 0; // is an expression
-                    }
+                } else {
+                    // preserva il tipo dato
+                    valueType = colTypes;
                 }
             } else {
-                // preserva il tipo dato
-                valueType = colTypes;
+                throw new Exception("unsupported case");
             }
         } else if (colTypes == 92) { // time
             // TODO: 24/09/2020 Test to do
-            value = getLocalTime(value, colTypes, nullable);
-            if (value != null && !value.isEmpty()) {
-                // refine
-                if (isOracle || isPostgres) {
-                    value = "TO_DATE('" + value + "', 'HH24:MI:SS')";
-                    valueType = 1; // is an expression
-                } else if (isMySQL) {
-                    value = "STR_TO_DATE('" + value + "', '%H:%i:%s')";
-                    valueType = 1; // is an expression
-                } else if (isSqlServer) {
-                    value = "CONVERT(DATETIME,'" + value + ")";
-                    valueType = 1; // is an expression
+            if(oValue instanceof String) {
+                String value = (String) oValue;
+                value = getLocalTime(value, colTypes, nullable);
+                if (value != null && !value.isEmpty()) {
+                    // refine
+                    if (isOracle || isPostgres) {
+                        value = "TO_DATE('" + value + "', 'HH24:MI:SS')";
+                        oValue = valueType = 0; // is an expression
+                    } else if (isMySQL) {
+                        oValue = value = "STR_TO_DATE('" + value + "', '%H:%i:%s')";
+                        valueType = 0; // is an expression
+                    } else if (isSqlServer) {
+                        oValue = value = "CONVERT(DATETIME,'" + value + ")";
+                        valueType = 0; // is an expression
+                    }
+                } else {
+                    // preserva il tipo dato
+                    valueType = colTypes;
                 }
             } else {
-                // preserva il tipo dato
-                valueType = colTypes;
+                throw new Exception("unsupported case");
             }
+
+
         } else if (colTypes == 8 || colTypes == 7 || colTypes == 4 || colTypes == 3 || colTypes == -5 || colTypes == -6) {
             // numeric
-            if (value == null || value.isEmpty()) {
-                value = "0";
+            if(oValue instanceof String) {
+                String value = (String) oValue;
+                if (value == null || value.isEmpty()) {
+                    oValue = 0;
+                }
+                valueType = colTypes; // is a number
             }
-            valueType = colTypes; // is a number
-            
+
         } else if (colTypes == -7) { // boolean
-            if(value == null || value.isEmpty() || "0".equalsIgnoreCase(value) || "n".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)|| "false".equalsIgnoreCase(value)) {
-                value = "false";
-            } else if("1".equalsIgnoreCase(value) || "y".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value)|| "true".equalsIgnoreCase(value)) {
-                value = "true";
-            } else {
-                value = "false";
-            }
             valueType = colTypes; // is a boolean
+            if(oValue instanceof String) {
+                String value = (String) oValue;
+                if (value == null || value.isEmpty() || "0".equalsIgnoreCase(value) || "n".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+                    value = "false";
+                    oValue = false;
+                } else if ("1".equalsIgnoreCase(value) || "y".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value)) {
+                    value = "true";
+                    oValue = true;
+                } else {
+                    value = "false";
+                    oValue = false;
+                }
+                return new Object[]{oValue, valueType};
+            } else {
+            }
         }
 
-        return new Object [] { value, valueType };
+        return new Object [] { oValue, valueType };
     }
 
     /* Only Java 8
@@ -7206,8 +7262,18 @@ public class db {
                                     }
                                 }
                                 if(setFieldValue) {
-                                    fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
-                                    sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
+                                    if (oFieldValue instanceof Integer
+                                            || oFieldValue instanceof Long
+                                            || oFieldValue instanceof Float
+                                            || oFieldValue instanceof Double
+                                            || oFieldValue instanceof BigDecimal) {
+                                        sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":" + fieldValue + "}";
+                                    } else if (oFieldValue instanceof Boolean) {
+                                            sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":" + (((boolean)oFieldValue) ? "true" : "false") + "}";
+                                    } else {
+                                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                                        sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
+                                    }
                                 }
                             }
                         }
