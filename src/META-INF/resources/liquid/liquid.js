@@ -303,9 +303,9 @@ class LiquidCtrl {
             if(typeof this.tableJson.tableJsonVariableName !== 'undefined')
                 this.tableJsonVariableName = this.tableJson.tableJsonVariableName;
             else
-            if(tableJsonString)
-                if(tableJsonString.charAt(0) != "{")
-                    this.tableJsonVariableName = Liquid.getGlobalVarByContent(tableJsonString);
+                if(tableJsonString)
+                    if(tableJsonString.charAt(0) != "{")
+                        this.tableJsonVariableName = Liquid.getGlobalVarByContent(tableJsonString);
 
             // Runtime mode (no db) ?
             if(!isDef(this.tableJson.query)) {
@@ -4265,7 +4265,13 @@ var Liquid = {
                         cellEditorParams = {liquid: liquid};
                     } else if (Liquid.isBoolean(liquid.tableJson.columns[ic].type)) { // datetime, date, timestamp
                         cellRenderer = function (params) {
-                            return '<input type="checkbox" disabled style="display: inline-table; position: relative; " ' + (params.value && (params.value.toLowerCase() == 'f' || params.value.toLowerCase() == 'n') ? '' : 'checked') + ' />';
+                            var checked = null;
+                            if(typeof params.value == 'boolean') {
+                                checked = params.value ? 'checked' : '';
+                            } else {
+                                checked = (params.value && (params.value.toLowerCase() == 'f' || params.value.toLowerCase() == 'n') ? '' : 'checked')
+                            }
+                            return '<input type="checkbox" disabled style="display: inline-table; position: relative; " ' + checked + ' />';
                         };
                     }
                     if (isDef(liquid.tableJson.columns[ic].editor)) {

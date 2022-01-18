@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.json.HTTP;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -64,6 +65,8 @@ public class db {
 
     static long maxQueryTimeMs = 1000;
     public static String NULLValue = "";
+
+
 
 
 
@@ -206,8 +209,14 @@ public class db {
         if(col != null) {
             String colName = col.getString("name");
             colName = (defaultColumnName != null ? defaultColumnName : colName);
-            if(col.has("translate")) {
-                if(col.getBoolean("translate")) {
+            if(col.has("translate") || col.has("translated")) {
+                boolean translated = false;
+                if(col.has("translate")) {
+                    translated = col.getBoolean("translate");
+                } else if(col.has("translated")) {
+                    translated = col.getBoolean("translated");
+                }
+                if(translated) {
                     if(session != null) {
                         String lang = (String)session.getAttribute("Liquid.lang");
                         if(lang != null && !lang.isEmpty()) {
@@ -5451,7 +5460,6 @@ public class db {
                 } finally {
                     tbl_wrk.bLocked = false;
                 }
-
             }
 
         } catch (Exception e) {
@@ -5459,6 +5467,7 @@ public class db {
         }
         return null;
     }
+
 
     /**
      * Insert row by Fields and Values
@@ -5472,6 +5481,23 @@ public class db {
      * @throws Throwable
      */
     static public Object [] insert_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values ) throws Throwable {
+        return insert_row ( DatabaseSchemaTable, Fields, Values, null);
+    }
+
+
+    /**
+     * Insert row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param Fields
+     * @param Values
+     * @param request
+     * @return Object [] (boolean, int)
+     * @throws Throwable
+     */
+    static public Object [] insert_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, HttpServletRequest request ) throws Throwable {
         boolean retVal = false;
         int new_id = 0;
 
@@ -5487,10 +5513,13 @@ public class db {
 
         try {
 
-            Object [] connResult = connection.getDBConnection();
-            conn = (Connection)connResult[0];
-            String connError = (String)connResult[1];
-
+            if(transaction.isTransaction(request)) {
+                conn = transaction.getTransaction(request);
+            } else {
+                Object[] connResult = connection.getDBConnection();
+                conn = (Connection) connResult[0];
+                String connError = (String) connResult[1];
+            }
 
             if (conn != null) {
                 String [] dbParts = DatabaseSchemaTable.split("\\.");
@@ -5567,10 +5596,13 @@ public class db {
             }
 
         } finally {
-            try {
-                if (conn != null)
-                    conn.close();
-            } catch (Throwable e2) {
+            if(transaction.isTransaction(request)) {
+            } else {
+                try {
+                    if (conn != null)
+                        conn.close();
+                } catch (Throwable e2) {
+                }
             }
             conn = null;
         }
@@ -5757,14 +5789,19 @@ public class db {
     }
 
 
+
+    public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKey) throws Throwable {
+        return update(bean, DatabaseSchemaTable, primaryKey, null);
+    }
+
     /**
-     * TODO ... Update bean to DB
+     * Update the bean to DB
      *
      * @param bean
      * @param DatabaseSchemaTable
      * @param primaryKey   the primary key property name
      */
-    public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKey) throws Throwable {
+    public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKey, HttpServletRequest request) throws Throwable {
             boolean retVal = false;
             int new_id = 0;
 
@@ -5777,9 +5814,13 @@ public class db {
 
             try {
 
-                Object [] connResult = connection.getDBConnection();
-                conn = (Connection)connResult[0];
-                String connError = (String)connResult[1];
+                if(transaction.isTransaction(request)) {
+                    conn = transaction.getTransaction(request);
+                } else {
+                    Object[] connResult = connection.getDBConnection();
+                    conn = (Connection) connResult[0];
+                    String connError = (String) connResult[1];
+                }
 
 
                 if (conn != null) {
@@ -5818,6 +5859,7 @@ public class db {
                         sSTMTUpdate += " WHERE ";
 
                         sSTMTUpdate += sWhere;
+
 
 
                         PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
@@ -5874,10 +5916,13 @@ public class db {
                 }
 
             } finally {
-                try {
-                    if (conn != null)
-                        conn.close();
-                } catch (Throwable e2) {
+                if(transaction.isTransaction(request)) {
+                } else {
+                    try {
+                        if (conn != null)
+                            conn.close();
+                    } catch (Throwable e2) {
+                    }
                 }
                 conn = null;
             }
@@ -6615,7 +6660,11 @@ public class db {
             if(oValue instanceof String) {
                 String value = (String)oValue;
                 value = value.replace(",", ".");
-                oValue = Float.parseFloat(value);
+                if(value != null && !value.isEmpty()) {
+                    oValue = Float.parseFloat(value);
+                } else {
+                    oValue = (Object)0.0f;
+                }
             } else {
             }
         }
