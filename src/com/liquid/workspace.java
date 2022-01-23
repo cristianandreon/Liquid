@@ -817,7 +817,7 @@ public class workspace {
                 }
             }
 
-            // Is in cache and updated ? // auto_bid_max // 7800359548847180201
+            // Is in cache and updated ? // auto_bid_min // 7800359548847180201
             long sourceTableJsonHash = workspace.getHash(sTableJson);
             if (cacheEnabled) {
                 tblWorkspace = workspace.get_tbl_manager_workspace(controlId);

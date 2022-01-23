@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import org.json.HTTP;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -1782,8 +1781,8 @@ public class db {
                         bStoreIds,
                         isCrossTableService,
                         targetColumnIndex,
-                        service
-                );
+                        service,
+                        false);
 
                 out_string += (String) recordset[0];
                 out_values_string += (String) recordset[1];
@@ -2486,27 +2485,29 @@ public class db {
      * @param executingQuery the query (String)
      * @param rsdo the result set (ResultSet)
      *
+     * @param skipMissingField
      * @return json of the records (String)
      * @see db
      */
     static private Object[] get_recordset(workspace tbl_wrk,
-            String executingQuery,
-            ResultSet rsdo,
-            JSONArray cols,
-            int[] colTypes,
-            int[] colPrecs,
-            int[] colDigits,
-            boolean[] colNullable,
-            String dbPrimaryKey,
-            long cRow, long startRow, long endRow, long maxRow,
-            String[] columns_alias,
-            String[] columns_json,
-            String idColumn,
-            boolean bColumnsResolved,
-            boolean bStoreIds,
-            boolean isCrossTableService,
-            int targetColumnIndex,
-            String service
+                                          String executingQuery,
+                                          ResultSet rsdo,
+                                          JSONArray cols,
+                                          int[] colTypes,
+                                          int[] colPrecs,
+                                          int[] colDigits,
+                                          boolean[] colNullable,
+                                          String dbPrimaryKey,
+                                          long cRow, long startRow, long endRow, long maxRow,
+                                          String[] columns_alias,
+                                          String[] columns_json,
+                                          String idColumn,
+                                          boolean bColumnsResolved,
+                                          boolean bStoreIds,
+                                          boolean isCrossTableService,
+                                          int targetColumnIndex,
+                                          String service,
+                                          boolean skipMissingField
     ) throws SQLException, JSONException {
         int addedRow = 0;
         StringBuilder out_string = new StringBuilder("");
@@ -2707,9 +2708,12 @@ public class db {
                                 }
                             }
                         } catch (Exception e) {
-                            error += "[ Retrieve Error:" + e.getLocalizedMessage() + executingQuery + " ]" + "[Driver:" + tbl_wrk.driverClass + "]";
-                            System.err.println("// Retrieve Error at cRow:" + cRow + " fieldName:" + fieldName + " fieldValue:" + fieldValue + " Error:" + e.getLocalizedMessage() + executingQuery);
                             fieldValue = "";
+                            if(skipMissingField) {
+                            } else {
+                                error += "[ Retrieve Error:" + e.getLocalizedMessage() + executingQuery + " ]" + "[Driver:" + tbl_wrk.driverClass + "]";
+                                System.err.println("// Retrieve Error at cRow:" + cRow + " fieldName:" + fieldName + " fieldValue:" + fieldValue + " Error:" + e.getLocalizedMessage() + executingQuery);
+                            }
                             out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
                         }
 
@@ -3015,8 +3019,8 @@ public class db {
                                             bStoreIds,
                                             isCrossTableService,
                                             targetColumnIndex,
-                                            null
-                                    );
+                                            null,
+                                            true);
 
                                     if (recordset != null) {
                                         // Agginta eventuali errori 
@@ -3289,7 +3293,13 @@ public class db {
                     }
                 }
                 try {
-                    props.put(colName, metadata.getJavaClass(cols.getJSONObject(ic).getInt("type")));
+                    JSONObject col = cols.getJSONObject(ic);
+                    if(col.has("type")) {
+                        Object oType = col.get("type");
+                        props.put(colName, metadata.getJavaClass(oType));
+                    } else {
+                        int lb = 1;
+                    }
                     if(!bReadOnly) {
                         props.put(colName + "$Changed", boolean.class);
                     }
@@ -4622,8 +4632,8 @@ public class db {
                         false,
                         false,
                         -1,
-                        null
-                );
+                        null,
+                        true);
 
                 // Freee connection as soon as possible
                 if (rsdo != null) {

@@ -601,10 +601,29 @@ public class metadata {
      *
      * Definisce la mappatura fra i dati sql e le classi java
      * 
-     * @param type the data type (int)
+     * @param oType the data type (int)
      * @return the CLass mathcing the type
      */
-    static public Class getJavaClass(int type) {                                               
+    static public Class getJavaClass(Object oType) {
+        if(oType instanceof Integer) {
+            return getJavaClass((Integer)oType);
+        } else if(oType instanceof Long) {
+            return getJavaClass(((Long)oType).intValue());
+        } else if(oType instanceof String) {
+            return getJavaClass(Integer.parseInt((String)oType));
+        }
+        return null;
+    }
+    /**
+     *
+     * CA : 25-apr-2020
+     *
+     * Definisce la mappatura fra i dati sql e le classi java
+     *
+     * @param oType the data type (int)
+     * @return the CLass mathcing the type
+     */
+    static public Class getJavaClass(int type) {
         if(type == 2 || type == 4 || type == -5 || type == -6 || type == 5) {
             // SMALLINT	short	Integer
             // INTEGER	int	Integer
