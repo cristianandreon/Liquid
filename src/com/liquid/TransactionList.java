@@ -5,6 +5,7 @@
  */
 package com.liquid;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -28,7 +29,7 @@ public class TransactionList {
     public String rowId = null;
     public String nodeId = null;
     public ArrayList<String> columns = null;
-    public ArrayList<String> values = null;
+    public ArrayList<Object> values = null;
     public ArrayList<Integer> valueTypes = null;	// 0=String	1=Expression
     public String sourceColumn = null;
     public String ids = null;
@@ -36,7 +37,7 @@ public class TransactionList {
 
     public ArrayList<TransactionList> transactionList = null;
 
-    public TransactionList(String table, String column, String value, int valueType, String sourceColumn, String where, String type) {
+    public TransactionList(String table, String column, Object value, int valueType, String sourceColumn, String where, String type) {
         this.table = table;
         this.where = where;
         this.columns = new ArrayList<>();
@@ -52,7 +53,7 @@ public class TransactionList {
     public TransactionList() {
     }
 
-    public void add(String _table, String _column, String _value, int _valueType, String _sourceColumn, String _where, String _type, String rowId, String nodeId) {
+    public void add(String _table, String _column, Object _value, int _valueType, String _sourceColumn, String _where, String _type, String rowId, String nodeId) {
         if (transactionList == null) {
             transactionList = new ArrayList<>();
         }
@@ -95,8 +96,15 @@ public class TransactionList {
                 }
                 sql += ") VALUES (";
                 for (int ic = 0; ic < transaction.values.size(); ic++) {
+                    Object oValue = transaction.values.get(ic);
                     String apex = transaction.valueTypes.get(ic) == 0 ? "" : "'";
-                    sql += (ic > 0 ? "," : "") + (transaction.values.get(ic) != null ? (apex + transaction.values.get(ic) + apex) : "NULL");
+                    if(oValue instanceof Boolean) {
+                        sql += (ic > 0 ? "," : "") + (oValue != null ? (oValue) : "NULL");
+                    } else if(oValue instanceof Integer || oValue instanceof Long || oValue instanceof Float || oValue instanceof Double) {
+                        sql += (ic > 0 ? "," : "") + (oValue != null ? (oValue) : "NULL");
+                    } else {
+                        sql += (ic > 0 ? "," : "") + (oValue != null ? (apex + oValue + apex) : "NULL");
+                    }
                 }
                 sql += ")";
             } else if ("update".equalsIgnoreCase(transaction.type)) {
@@ -106,7 +114,14 @@ public class TransactionList {
                     String apex = transaction.valueTypes.get(ic) == 0 ? "" : "'";
                     sql += (ic > 0 ? "," : "") + itemIdString + transaction.columns.get(ic) + itemIdString;
                     sql += "=";
-                    sql += (transaction.values.get(ic) != null ? (apex + transaction.values.get(ic) + apex) : "NULL");
+                    Object oValue = transaction.values.get(ic);
+                    if(oValue instanceof Boolean) {
+                        sql += (oValue != null ? (oValue) : "NULL");
+                    } else if(oValue instanceof Integer || oValue instanceof Long || oValue instanceof Float || oValue instanceof Double) {
+                        sql += (oValue != null ? (oValue) : "NULL");
+                    } else {
+                        sql += (oValue != null ? (apex + oValue + apex) : "NULL");
+                    }
                     sql += "";
                 }
                 sql += " WHERE ";
@@ -153,6 +168,7 @@ public class TransactionList {
                 sql += ") VALUES (";
                 for (int ic = 0; ic < transaction.values.size(); ic++) {
                     int value_type = transaction.valueTypes.get(ic);
+                    Object oValue = transaction.values.get(ic);
                     if (value_type == 0) {
                         // expression : put in the statement
                         sql += (ic > 0 ? "," : "") + transaction.values.get(ic);
@@ -160,7 +176,7 @@ public class TransactionList {
                     } else {
                         // value : put in parameters
                         sql += (ic > 0 ? "," : "") + "?";
-                        params.add(transaction.values.get(ic));
+                        params.add(oValue);
                     }
                 }
                 sql += ")";
@@ -198,8 +214,22 @@ public class TransactionList {
                 } else {
                     Object oParam = params.get(ic);
                     if (value_type == 1) {
-                        // srting
-                        stmt.setString(ip, (String)params.get(ic));
+                        // generic srting
+                        if(oParam instanceof Integer) {
+                            stmt.setInt(ip, (Integer)oParam);
+                        } else if(oParam instanceof Long) {
+                            stmt.setLong(ip, (Long)oParam);
+                        } else if(oParam instanceof BigDecimal) {
+                            stmt.setBigDecimal(ip, (BigDecimal) oParam);
+                        } else if(oParam instanceof Float) {
+                            stmt.setFloat(ip, (Float) oParam);
+                        } else if(oParam instanceof Double) {
+                            stmt.setDouble(ip, (Double) oParam);
+                        } else if(oParam instanceof Boolean) {
+                            stmt.setString(ip, (String) params.get(ic));
+                        } else {
+                            stmt.setString(ip, (String) params.get(ic));
+                        }
                     } else if (value_type == 4 || value_type == 3) {
                         // Integer number
                         if(oParam instanceof String) {
