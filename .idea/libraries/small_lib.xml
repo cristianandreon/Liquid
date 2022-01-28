@@ -17,6 +17,7 @@
       <root url="jar://$PROJECT_DIR$/WEB-INF/lib/javax.activation.jar!/" />
       <root url="jar://$PROJECT_DIR$/WEB-INF/lib/apache-commons-lang.jar!/" />
       <root url="jar://$PROJECT_DIR$/WEB-INF/lib/activation.jar!/" />
+      <root url="jar://$PROJECT_DIR$/WEB-INF/lib/json-20211205.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
