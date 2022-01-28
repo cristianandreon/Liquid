@@ -11,6 +11,10 @@
 <% 
     String path = request.getContextPath(); 
     String jssVersion = "1.81";
+
+    if(request.getSession().getAttribute("LiquidPath") != null) {
+        path = (String)request.getSession().getAttribute("LiquidPath");
+    }
 %>
 <!-- -->
 <!-- START of Liquid Framework Include Files .. Your Application root is at : "<%= path %>" -->
@@ -67,7 +71,7 @@
 
 <link rel="stylesheet" href="<%=path%>/liquid/liquid.css?version=<%=jssVersion%>" type='text/css' />
 <script type="text/javascript" src="<%=path%>/liquid/liquid.js?version=<%=jssVersion%>"></script>
-<script type="text/javascript" src="/liquid/liquidEditing.js?version=<%=jssVersion%>"></script>
+<script type="text/javascript" src="<%=path%>/liquid/liquidEditing.js?version=<%=jssVersion%>"></script>
 
 <!-- Strumenti di selezione -->
 <%@ include file="/liquid/liquidSelector.jsp" %>
