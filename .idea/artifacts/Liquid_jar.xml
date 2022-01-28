@@ -3,23 +3,8 @@
     <output-path>$PROJECT_DIR$/classes/artifacts/Liquid_jar</output-path>
     <root id="archive" name="Liquid.jar">
       <element id="module-output" name="Liquid" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/ojdbc8.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/org.json.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/gson-2.8.2.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mail-1.4.7.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/jsch-0.1.55.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/ganymed-ssh2-262.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/postgresql-42.2.6.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/commons-codec-1.14.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mssql-jdbc-6.4.0.jre7.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mssql-jdbc-8.2.2.jre8.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mssql-jdbc-8.2.2.jre11.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mssql-jdbc-8.2.2.jre13.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mariadb-java-client-2.4.4.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mysql-connector-java-8.0.19.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mysql-connector-java-5.1.47-bin.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../LiquidX/web/WEB-INF/lib/mariadb-java-client-2.6.1-sources.jar" path-in-jar="/" />
       <element id="javaee-facet-resources" facet="Liquid/web/Web" />
+      <element id="library" level="project" name="small_lib" />
     </root>
   </artifact>
 </component>
