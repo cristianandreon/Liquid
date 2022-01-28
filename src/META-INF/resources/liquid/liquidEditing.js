@@ -3,8 +3,8 @@
  */
 
 var LiquidEditing = {
-    version: 1.02,
-    controlid:"Liquid framework for Editing",
+    version: 1.03,
+    controlid:"Liquid framework - Editing module",
     
     
     /**
@@ -1667,8 +1667,9 @@ var LiquidEditing = {
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onServerCallbackTemplate('"+liquid.controlId+".template')\">"+optImg+"<a href=\"javascript:void(0)\">Get Server Callback"+"</a></p>"
                 +"<p><hr size=1></p>"        
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Save to server"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToZK('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Save to server as ZK"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as csv"+"</a></p>"        
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as csv"+"</a></p>"
                 +"</div>";
         }
         menu.innerHTML = innerHTML;
@@ -1694,9 +1695,10 @@ var LiquidEditing = {
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onServerCallbackTemplate('"+liquid.controlId+".template')\">"+optImg+"<a href=\"javascript:void(0)\">Get Server Callback"+"</a></p>"
                 +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Save to server"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"        
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Save to server"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToZK('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Save to server as ZK"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"
                 +"</div>";        
     },
     createOnWindowContainerContextMenu:function( obj ) {
@@ -1757,9 +1759,10 @@ var LiquidEditing = {
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
                 +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"        
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToZK('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Save to server as ZK"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"
                 +"</div>";                
     },
     createOnGridControlContextMenu:function( obj ) {
@@ -1779,9 +1782,10 @@ var LiquidEditing = {
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onOptions('"+liquid.controlId+".options')\">"+optImg+"<a href=\"javascript:void(0)\">Options"+"</a></p>"
                 +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"        
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToZK('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Save to server as ZK"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as json"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToCSV('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\">Download as csv"+"</a></p>"
                 +"</div>";                
     },
     getCheckedAttr:function( obj, def ) {
@@ -2536,8 +2540,9 @@ var LiquidEditing = {
                 +"<span class=\"liquidContextMenu-close\"></span>"
                 +"<p class=\"liquidContextMenu-item\">"+addImg+"<a href=\"javascript:void(0)\" onclick=\"location.href='"+glLiquidRoot+"/liquid/info/'\" >Liquid ver."+Liquid.version+"</a></p>"
                 +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Sate to server"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as json"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToServer('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Sate to server"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToZK('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Save to server as ZK"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSaveToJSON('"+liquid.controlId+"')\" >"+saveImg+"<a href=\"javascript:void(0)\" >Download as json"+"</a></p>"
                 +"</div>";        
     },
     onContextMenu:function(e) {
@@ -2873,7 +2878,6 @@ var LiquidEditing = {
             }
         }
     },
-
     onSaveToServer:function(obj) {
         return LiquidEditing.onSaveTo(obj, false, true);
     },
@@ -2933,6 +2937,101 @@ var LiquidEditing = {
                             liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onSaveTo", e, null, null); }, false);
                             liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onSaveTo", e, null, null); }, false);
                             liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onSaveTo", e, null, null); }, false);
+
+                            liquid.xhr.send(tableJsonString);
+                            liquid.xhr.onreadystatechange = function() {
+                                if(liquid.xhr.readyState === 4) {
+                                    Liquid.release_xhr(liquid);
+                                    Liquid.stopWaiting(liquid);
+                                    if(liquid.xhr.status === 200) {
+                                        // \b \f \n \r \t
+                                        var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                                        responseText = Liquid.getXHRResponse(responseText);
+                                        httpResultJson = JSON.parse(responseText);
+                                        if(httpResultJson) {
+                                            var anyMessage = false;
+                                            if(httpResultJson.error) {
+                                                var err = null;
+                                                try { err = atob(httpResultJson.error); } catch(e) { err = httpResultJson.error; }
+                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "ERROR", err, { text:"OK", func:function() { } }, null);
+                                                anyMessage = true;
+                                            } else if(httpResultJson.warning) {
+                                                var warn = null;
+                                                try { warn = atob(httpResultJson.warning); } catch(e) { warn = httpResultJson.warning; }
+                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "WARNING", warn, { text:"OK", func:function() { } }, null);
+                                                anyMessage = true;
+                                            } else if(httpResultJson.message) {
+                                                var msg = null;
+                                                try { msg = atob(httpResultJson.message); } catch(e) { msg = httpResultJson.message; }
+                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "MESSAGE", msg, { text:"OK", func:function() { } }, null);
+                                                anyMessage = true;
+                                            }
+                                            if(httpResultJson.client) {
+                                                Liquid.executeClientSide(liquid, "Save json response:", httpResultJson.client, null, true);
+                                            }
+                                            if(httpResultJson.result>0) {
+                                                Liquid.setAskForSave(liquid, false);
+                                            }
+                                        }
+                                    } else {
+                                        console.error("ERROR : wring response:"+liquid.xhr.status);
+                                    }
+                                }
+                            };
+                        } catch (e) {
+                            console.error("ERROR : "+e);
+                        }
+                    }
+                }
+            }
+        }
+    },
+    onExportToZK:function(obj) {
+        LiquidEditing.onContextMenuClose();
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            var json = null;
+            if(liquid instanceof LiquidCtrl) {
+                json = liquid.tableJsonSource ? JSON.parse(JSON.stringify(liquid.tableJsonSource)) : null;
+            } else if(liquid instanceof LiquidMenuXCtrl) {
+                json = liquid.menuJsonSource ? JSON.parse(JSON.stringify(liquid.menuJsonSource)) : null;
+            }
+            if(json) {
+                var token = json.token; // cave current token
+                Liquid.removeRuntimeTableJsonProps(json);
+                // controllo presenza file, set se fila nuovo
+                if(typeof liquid.controlId === 'undefined' || !liquid.controlId) {
+                    liquid.controlId = ""
+                        + (json.database ? json.database+"." : "")
+                        + (json.schema ? json.schema+"." : "")
+                        + (json.table ? json.table+"." : "")
+                        + "";
+                }
+                if(typeof json.sourceFileName === 'undefined' || !json.sourceFileName) {
+                    json.sourceFileName = btoa(liquid.controlId + ".json");
+                }
+                var fileName = liquid.controlId+".json";
+                var tableJsonString = JSON.stringify(json);
+
+                {
+                    json.token = token; // need current token
+                    Liquid.registerOnUnloadPage();
+                    if(!liquid.xhr)
+                        liquid.xhr = new XMLHttpRequest();
+                    if(Liquid.wait_for_xhr_ready(liquid), "export to ZK") {
+                        try {
+                            Liquid.startWaiting(liquid);
+                            liquid.xhr.open('POST', glLiquidServlet + '?operation=setZK'
+                                +'&controlId=' + (typeof json.registerControlId !== "undefined" ? json.registerControlId : liquid.controlId)
+                                +'&token=' + (typeof token !== "undefined" ? token : "")
+                                , true);
+
+                            var command = { name:"saveTo" };
+                            liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "onExportToZK", e, null, null); }, false);
+                            liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "onExportToZK", e, null, null); }, false);
+                            liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onExportToZK", e, null, null); }, false);
+                            liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onExportToZK", e, null, null); }, false);
+                            liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onExportToZK", e, null, null); }, false);
 
                             liquid.xhr.send(tableJsonString);
                             liquid.xhr.onreadystatechange = function() {

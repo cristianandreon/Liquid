@@ -3419,6 +3419,109 @@ public class workspace {
         return "{\"result\":0}";
     }
 
+
+    /**
+     *
+     * @param request
+     * @param out
+     * @return
+     */
+    static public String set_zk_content(HttpServletRequest request, JspWriter out) {
+        try {
+            if (request != null) {
+                String controlId = "", tblWrk = "";
+                String table = "", schema = "", database = "", source = "", token = "";
+                try {
+                    controlId = (String) request.getParameter("controlId");
+                } catch (Exception e) {
+                }
+                try {
+                    token = (String) request.getParameter("token");
+                } catch (Exception e) {
+                }
+
+                // Verifica tel token : almeno un controllo deve avere il token assegnato (foreign table, lockuo etc hanno il token ereditato
+                if (!workspace.isTokenValid(token)) {
+                    System.out.println("// LIQUID ERROR : Invalid Token");
+                    return "{\"result\":-1,\"error\":\"" + utility.base64Encode("Error: invalid token") + "\"}";
+                }
+
+                String fileContent = workspace.get_request_content(request);
+                if (fileContent != null && !fileContent.isEmpty()) {
+                    if (fileContent.charAt(0) == '{') {
+                        JSONObject json = new JSONObject(fileContent);
+                        if (json != null) {
+                            String fileName = json.has("sourceFileName") ? utility.base64Decode(json.getString("sourceFileName")) : null;
+                            String fullFileName = json.has("sourceFullFileName") ? utility.base64Decode(json.getString("sourceFullFileName")) : null;
+                            String liquidJsonsProjectFolder = (String) request.getSession().getAttribute("GLLiquidJsonsProjectFolder");
+
+                            if (fileName == null || fileName.isEmpty()) {
+                                fileName = controlId + ".json";
+                            }
+                            fileName = fileName != null ? fileName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") : null;
+                            fullFileName = fullFileName != null ? fullFileName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") : null;
+
+                            if (fullFileName != null && !fullFileName.isEmpty()) {
+                                // salvataggio file nella cartella in produzione
+                                try {
+                                    Files.write(Paths.get(fullFileName), fileContent.getBytes());
+                                } catch (Exception ex) {
+                                    return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage() + " - writing:" + fullFileName) + "\"}";
+                                }
+                            }
+                            if (fileName != null && !fileName.isEmpty()) {
+                                if (liquidJsonsProjectFolder != null && !liquidJsonsProjectFolder.isEmpty()) {
+                                    // salvataggio file nella cartella del progetto
+                                    String insideProjectFileName = liquidJsonsProjectFolder + File.separatorChar + fileName;
+                                    if (!insideProjectFileName.equalsIgnoreCase(fullFileName)) {
+                                        controlId = getControlIdFromFile(fileName);
+                                        String jsVarName = getJSVariableFromControlId(controlId);
+                                        boolean bProceed = true;
+
+                                        // DEBUG : liquidizeJSONContnet(fileContent); return "{\"result\":-1,\"error\":\"\"}";
+                                        File f = new File(insideProjectFileName);
+                                        if (f == null) {
+                                            return "{\"result\":0,\"message\":\"" + utility.base64Encode("Invalid file name : " + insideProjectFileName + "") + "\"}";
+
+                                        } else {
+                                            try {
+                                                if (utility.fileExist(insideProjectFileName)) {
+                                                    bProceed = (Messagebox.show(" File <b>" + insideProjectFileName + "</b> already exist<br/><br/> Do you want to overwrite it ?", "Liquid", Messagebox.YES + Messagebox.NO + Messagebox.WARNING) == Messagebox.YES);
+                                                }
+                                                if (bProceed) {
+                                                    Files.write(Paths.get(insideProjectFileName), liquidizeJSONContent(fileContent).getBytes());
+                                                } else {
+                                                    return "{\"result\":0,\"message\":\"\"}";
+                                                }
+                                            } catch (Exception ex) {
+                                                return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage() + " - writing:" + insideProjectFileName) + "\"}";
+                                            }
+                                            Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "File in project as <b>" + insideProjectFileName + "</b>");
+                                            return "{\"result\":1,\"message\":\"" + utility.base64Encode("file in project " + insideProjectFileName + " saved<br/><br/>javascript global var name : <b>" + jsVarName + "</b>") + "\"}";
+                                        }
+
+                                    } else {
+                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "file " + insideProjectFileName + " saved by client request");
+                                        return "{\"result\":1,\"message\":\"" + utility.base64Encode("file " + fullFileName + " saved") + "\"}";
+                                    }
+                                } else {
+                                    return "{\"result\":0,\"message\":\"" + utility.base64Encode("liquidJsonsProjectFolder is empty... you should set it by workspace.set_project_folder (and check exists)...") + "\"}";
+                                }
+                            } else {
+                                return "{\"result\":0,\"message\":\"" + utility.base64Encode("file name is empty") + "\"}";
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+            return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage()) + "\"}";
+        }
+        return "{\"result\":0}";
+    }
+
+
     static public int get_column(String table, JSONArray cols, String key, String searching) {
         String[] searchColParts = searching.split("\\.");
         String searchTable = null, searchField = null;

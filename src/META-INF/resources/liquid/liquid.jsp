@@ -55,7 +55,11 @@
         } else if ("setJson".equalsIgnoreCase(operation)) {
             // write json configuration to the server
             out.print( workspace.set_file_content(request, out) );
-            
+
+        } else if ("setZK".equalsIgnoreCase(operation)) {
+            // write .xml to the server
+            out.print( workspace.set_zk_content(request, out) );
+
         } else if ("setLiquidJsonProjectFolder".equalsIgnoreCase(operation)) {
             // Set the working folder of the project (where to save new json configurations)
             out.print( workspace.set_project_folder(request, out) );
@@ -175,9 +179,12 @@
 
             
         } else {
-            out.println( "<br/><center>Welcome in Liquid ver. 1.x</center><br/>");
-            if(operation != null)
-                out.println( "<br/><center>Unknown Command <b>"+( operation.isEmpty() ? "[N/D]" : operation ) +"</b></center>" );
+            out.println( "<br/><h1><center>Welcome in Liquid ver. 1.x</center><br/></h1>");
+            if(operation != null) {
+                out.println("<br/><center>Unknown Command <b>" + (operation.isEmpty() ? "[N/D]" : operation) + "</b></center>");
+            }
+            out.println( "<br/></br>");
+            out.println( "<br/><center><div id=\"WinXContainer\" class=\"liquidWinXContainer\" style=\"width:1024px; height:90px\"></div></center><br/></h1>");
         }
         
     } catch (Throwable th) {
