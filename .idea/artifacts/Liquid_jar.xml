@@ -1,10 +1,10 @@
 <component name="ArtifactManager">
   <artifact type="jar" build-on-make="true" name="Liquid:jar">
-    <output-path>$PROJECT_DIR$/classes/artifacts/Liquid_jar</output-path>
+    <output-path>$PROJECT_DIR$/out</output-path>
     <root id="archive" name="Liquid.jar">
       <element id="module-output" name="Liquid" />
       <element id="javaee-facet-resources" facet="Liquid/web/Web" />
-      <element id="library" level="project" name="small_lib" />
+      <element id="library" level="project" name="small_lib_servlet3" />
     </root>
   </artifact>
 </component>
