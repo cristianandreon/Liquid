@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.87
+// Liquid ver.1.89
 //
-//  First update 04-01-2020 - Last update 23-01-2022
+//  First update 04-01-2020 - Last update 30-01-2022
 //
 //  TODO : see trello.com
 //
@@ -97,7 +97,16 @@ class LiquidCtrl {
             this.outDivId = outDivObjOrId;
             this.outDivObj = document.getElementById(this.outDivId);
             if(!this.outDivObj) {
-                console.error("ERROR: creating control "+outDivObjOrId+": html node not found ... please check node (with id=\""+outDivObjOrId+"\") exist in the DOM");
+                if(this.outDivId.startsWith("liquid")) {
+                    console.warn("WARNING: creating control " + outDivObjOrId + ": html node not found ");
+                } else {
+                    console.error("ERROR: creating control " + outDivObjOrId + ": html node not found ... please check node (with id=\"" + outDivObjOrId + "\") exist in the DOM");
+                }
+                this.outDivObj = document.createElement("div");
+                this.outDivObj.style.width = "800px";
+                this.outDivObj.style.height = "600px";
+                this.outDivObj.id = this.outDivId;
+                document.body.insertBefore(this.outDivObj, document.body.firstChild);
             }
         }
 
@@ -2406,7 +2415,7 @@ var Liquid = {
                     Liquid.NoSelectedFileMessage = "File non selezionato";
                     Liquid.FileTooBigMessage = "File troppo grande";
                     Liquid.Save = "Salva";
-                    Liquid.Discharge = "scarta";
+                    Liquid.Discharge = "Annulla";
                     Liquid.swapCellsMessage = "Confermi lo scambio delle celle ?";
                     Liquid.moveCellsMessage = "Confermi lo spostamento della cella ?";
                 } else if (lang === 'en' || lang === 'eng') {
@@ -2481,7 +2490,8 @@ var Liquid = {
                 while (liquid.outDivObj.firstChild) {
                     liquid.outDivObj.removeChild(liquid.outDivObj.firstChild);
                 }
-                liquid.outDivObj.parentNode.removeChild(liquid.outDivObj);
+                if(liquid.outDivObj.parentNode)
+                    liquid.outDivObj.parentNode.removeChild(liquid.outDivObj);
                 liquid.outDivObj = null;
             }
         }
@@ -3480,7 +3490,7 @@ var Liquid = {
                 }
             }
         } catch (e) {
-            console.error("ERROR on fill_data_list() : " + e);
+            console.error("ERROR on get_datalist_value() : " + e);
         }
     },
     translate_data_list: function (data, prop, propVal, outProp) {
@@ -7799,6 +7809,13 @@ var Liquid = {
             if (callback) {
                 result = callback(callbackParams);
             }
+        } else {
+            // Execute the callback if this is a system control
+            if (isDef(liquid.tableJson.isSystem)) {
+                if (callback) {
+                    result = callback(callbackParams);
+                }
+            }
         }
         return {
             result: result ? result : defaultRetval,
@@ -8609,7 +8626,9 @@ var Liquid = {
                     var isFormX = Liquid.isFormX(liquid);
                     var isAutoInsert = Liquid.isAutoInsert(liquid);
                     if (isFormX || isAutoInsert) {
-                        Liquid.autoInsert(liquid);
+                        if (!isSystem) {
+                            Liquid.autoInsert(liquid);
+                        }
                     }
                 }
             }
@@ -14973,6 +14992,61 @@ var Liquid = {
             targetObj.select();
         }
     },
+    createDatalistByColumns:function(obj, liquid) {
+        return Liquid.createDatalistByProp(obj, liquid, "columns");
+    },
+    createDatalistByProp:function(obj, liquid, prop) {
+        var liquid = Liquid.getLiquid(liquid);
+        if(liquid) {
+            var datalistId = obj.id + ".datalist";
+            var datalist = document.getElementById(datalistId);
+            if(!datalist) {
+                datalist = document.createElement('datalist');
+                datalist.id = datalistId;
+                document.body.appendChild(datalist);
+                obj.list = datalistId;
+            } else {
+                datalist.innerHTML = '';
+                if(!obj.list) {
+                    obj.list = datalistId;
+                }
+            }
+            // TODO : ondropdown code
+            if(datalist) {
+                if(prop==="columns") {
+                    for (let i = 0; i < liquid.tableJson.columns.length; i++) {
+                        var opt = document.createElement('option');
+                        opt.text = liquid.tableJson.columns[i].name;
+                        opt.value = liquid.tableJson.columns[i].label;
+                        datalist.appendChild(opt);
+                    }
+                } else {
+                    if(!Array.isArray(prop)) {
+                        for (let i = 0; i < prop.length; i++) {
+                            var opt = document.createElement('option');
+                            opt.text = prop[i];
+                            datalist.appendChild(opt);
+                        }
+                    } else {
+                        var nameItems = prop.split(",");
+                        if(nameItems.length > 2) {
+                            for (let i = 0; i < nameItems.length; i++) {
+                                var opt = document.createElement('option');
+                                opt.text = nameItems[i];
+                                datalist.appendChild(opt);
+                            }
+                        } else {
+                            console.error("createDatalistByProp() : unrecognized prop: "+prop);
+                        }
+                    }
+                }
+            }
+            obj.setAttribute('list', datalistId);
+            // targetObj.focus();
+            // targetObj.click();
+            // targetObj.select();
+        }
+    },
     /**
      * Set the control's rows visible by primary ley list
      * @param obj the control id or the class instance (LiquidCtrl)
@@ -17127,8 +17201,8 @@ var Liquid = {
                 Liquid.dialogBox(liquid.parentObj ? liquid.parentObj : liquid.outDivObj,
                     Liquid.askForSaveTitle,
                     Liquid.askForSaveMessage,
-                    { text:"Save", func:function() { Liquid.onClosingProcessEvent(obj, true); } },
-                    { text:"Discharde", func:function() { Liquid.onClosingProcessEvent(obj, false); } }
+                    { text:(Liquid.lang === 'eng' ? "Save" : "Salva"), func:function() { Liquid.onClosingProcessEvent(obj, true); } },
+                    { text:(Liquid.lang === 'eng' ? "Cancel" : "Annulla"), func:function() { Liquid.onClosingProcessEvent(obj, false); } }
                 );
             } else {
                 Liquid.onClosingProcessEvent(obj, false);
@@ -17139,7 +17213,7 @@ var Liquid = {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             if(bSave) Liquid.onSaveTo(liquid, true, true);
-            Liquid.onEvent(obj, "onClosing", Liquid.onClosingStart, {liquid: liquid, obj: obj, command: null});
+            Liquid.onEvent(obj, "onClosing", null, Liquid.onClosingStart, {liquid: liquid, obj: obj, command: null});
             liquid.outDivObj.classList.add('liquidHide');
             setTimeout('Liquid.onClosed("' + liquid.controlId + '")', 500);
         }
@@ -19333,8 +19407,20 @@ var Liquid = {
                 window.location.reload();
             }
         }
+    },
+    showDlg:function(dlg) {
+        if(dlg) {
+            document.body.appendChild(dlg);
+            var dlgContent = document.querySelector(".liquidEditorDialog-content");
+            if(dlgContent) {
+                var top = dlg.parentNode.offsetTop + dlg.parentNode.clientHeight / 2 - (dlgContent.clientHeight > 0 ? dlgContent.clientHeight : 250) / 2;
+                var left = dlg.parentNode.offsetLeft + dlg.parentNode.clientWidth / 2 - (dlgContent.clientWidth > 0 ? dlgContent.clientWidth : 200) / 2;
+                dlgContent.style.top = top > 0 ? top : 0;
+                dlgContent.style.left = left > 0 ? left : 0;
+                dlgContent.style.position = 'absolute';
+            }
+        }
     }
-
 };
 
 /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
@@ -19407,7 +19493,7 @@ String.prototype.toCamelCase = function() {
 const capitalizeFirstLetter = (s) => {
     if(typeof s !== 'string')
         return '';
-    return s.charAt(0).toUpperCase() + s.slice(1).replace(/ /g, "");
+    return s.charAt(0).toUpperCase() + s.slice(1).replace(/ /g, "").toLowerCase();
 };
 
 // Editors
@@ -19742,13 +19828,7 @@ SystemEditor.prototype.init = function(params) {
         return;
     }
 
-    document.body.appendChild(this.dlg);
-    this.dlgContent = document.querySelector(".liquidEditorDialog-content");
-    if(this.dlgContent) {
-        this.dlgContent.style.top = this.dlg.parentNode.offsetTop + this.dlg.parentNode.clientHeight/2 - (this.dlgContent.clientHeight > 0 ? this.dlgContent.clientHeight:250)/2;
-        this.dlgContent.style.left = this.dlg.parentNode.offsetLeft + this.dlg.parentNode.clientWidth/2 - (this.dlgContent.clientWidth > 0 ? this.dlgContent.clientWidth:200)/2;
-        this.dlgContent.style.position='absolute';
-    }
+    Liquid.showDlg(this.dlg);
 
     var selNodes = Liquid.getCurNodes(this.liquid);
     if(selNodes && selNodes.length > 0) {

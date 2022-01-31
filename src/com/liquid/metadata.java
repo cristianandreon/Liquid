@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspWriter;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,18 +21,18 @@ public class metadata {
 
     /**
      * ********************************
-     *
+     * <p>
      * CA : 30-ott-2019
-     *
+     * <p>
      * Gestione cache dei metadati Lettura della colonna COLUMN_DEF a tipo dato
      * LONG molto lenta : Da rimuovere l'utilizzo della ColumnDef dal framework
-     *
-     ***********************************
+     * <p>
+     * **********************************
      */
     static boolean IsMetadataCacheEnabled = true;
-    
+
     static long TIME_MSEC_LIMIT_FOR_WARNING = 1000;
-    
+
 
     static class MetaDataCol {
 
@@ -49,14 +50,14 @@ public class metadata {
                 size = Integer.parseInt(_size);
             } catch (Throwable th) {
             }
-            isNullable = "yes".equalsIgnoreCase(_isNullable) || "1".equalsIgnoreCase(_isNullable) || "y".equalsIgnoreCase(_isNullable) || "s".equalsIgnoreCase(_isNullable);
+            isNullable = "yes" .equalsIgnoreCase(_isNullable) || "1" .equalsIgnoreCase(_isNullable) || "y" .equalsIgnoreCase(_isNullable) || "s" .equalsIgnoreCase(_isNullable);
             columnDef = _columnDef;
             try {
                 digits = Integer.parseInt(_digits);
             } catch (Throwable th) {
             }
-            autoIncString = "yes".equalsIgnoreCase(_autoIncString) || "1".equalsIgnoreCase(_autoIncString) || "y".equalsIgnoreCase(_autoIncString) || "s".equalsIgnoreCase(_autoIncString);
-            
+            autoIncString = "yes" .equalsIgnoreCase(_autoIncString) || "1" .equalsIgnoreCase(_autoIncString) || "y" .equalsIgnoreCase(_autoIncString) || "s" .equalsIgnoreCase(_autoIncString);
+
             sourceCatalog = _sourceCatalog;
             sourceSchema = _sourceSchema;
             sourceTable = _sourceTable;
@@ -82,36 +83,33 @@ public class metadata {
     public static ArrayList<MetaDataTable> metaDataTable = new ArrayList<MetaDataTable>();
     public static boolean metaDataCacheReadEnabled = true;
 
-    
+
     public static boolean invalidateMetadata() {
-    	if(metaDataTable != null) {
-            if(metaDataTable.size() > 0) {
-                metaDataTable.clear();;
+        if (metaDataTable != null) {
+            if (metaDataTable.size() > 0) {
+                metaDataTable.clear();
+                ;
                 return true;
             }
         }
         return false;
     }
 
-    
-    
-    
-   /**
+
+    /**
      * <h3>Delete metadata cache</h3>
      * <p>
      * This method clean cache of database metadata, useful when database structure change
      *
-     * @param database  the database (String)
-     * @param schema the schema (String)
-     * @param table the table (String)
-     * @param  database  the database (String)
-
-     * @return void          
+     * @param database the database (String)
+     * @param schema   the schema (String)
+     * @param table    the table (String)
+     * @param database the database (String)
+     * @return void
      * void
-     * 
-     * @see         metadata
+     * @see metadata
      */
-     public static void resetTableMetadata(String database, String schema, String table ) {
+    public static void resetTableMetadata(String database, String schema, String table) {
         for (int i = 0; i < metaDataTable.size(); i++) {
             MetaDataTable mdTable = metaDataTable.get(i);
             if (mdTable.database.equalsIgnoreCase(database) || database == null || database.isEmpty()) {
@@ -126,20 +124,20 @@ public class metadata {
             }
         }
     }
-    
-                
+
+
     public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName) throws Throwable {
-    	return readTableMetadata(conn, database, schema, table, columnName, true);    	
+        return readTableMetadata(conn, database, schema, table, columnName, true);
     }
-    
+
     public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName, boolean _bReadDefault) throws Throwable {
         Connection connToDB = null, connToUse = conn;
         int recCount = 0;
-        int nTable = 0;            
+        int nTable = 0;
 
         try {
-            
-            if(table != null && !table.isEmpty()) {
+
+            if (table != null && !table.isEmpty()) {
                 if (columnName != null) {
                     Object mdCol = getTableMetadata(conn, database, schema, table, columnName);
                     if (mdCol != null) {
@@ -149,32 +147,32 @@ public class metadata {
 
                 String driver = db.getDriver(conn);
                 boolean bReadDefault = _bReadDefault;
-                if("oracle".equalsIgnoreCase(driver)) {
+                if ("oracle" .equalsIgnoreCase(driver)) {
                     return readTableMetadataBySQL(conn, schema, table, columnName, "oracle", _bReadDefault);
                 }
-                
-                
-                if(database == null || database.isEmpty()) {
+
+
+                if (database == null || database.isEmpty()) {
                     database = conn.getCatalog();
                 } else {
                     conn.setCatalog(database);
                     String db = conn.getCatalog();
-                    if(!db.equalsIgnoreCase(database)) {
+                    if (!db.equalsIgnoreCase(database)) {
                         // set catalog not supported : connect to different DB
-                        Object [] connResult = connection.getDBConnection(database);
-                        conn = (Connection)connResult[0];
-                        String connError = (String)connResult[1];                        
+                        Object[] connResult = connection.getDBConnection(database);
+                        conn = (Connection) connResult[0];
+                        String connError = (String) connResult[1];
                         connToUse = connToDB = conn;
                     }
                 }
-                
-                
+
+
                 long msTrace = System.currentTimeMillis();
                 DatabaseMetaData databaseMetaData = connToUse.getMetaData();
                 ResultSet rs = databaseMetaData.getColumns(database, schema, table, null);
                 ArrayList<MetaDataCol> metaDataCols = new ArrayList<MetaDataCol>();
-                
-                while(rs.next()) {
+
+                while (rs.next()) {
                     String column = rs.getString("COLUMN_NAME");
                     String datatype = rs.getString("DATA_TYPE");
                     String typeName = rs.getString("TYPE_NAME");
@@ -191,11 +189,11 @@ public class metadata {
                     } catch (Throwable th) {
                         try {
                             Object columnDefaultObj = bReadDefault ? rs.getObject("COLUMN_DEF") : null;
-                            if(columnDefaultObj != null) {
+                            if (columnDefaultObj != null) {
                                 columnDefault = columnDefaultObj.toString();
                             }
                         } catch (Throwable th2) {
-                            System.err.println("readTableMetadata() error : " + th2.getMessage() + " reading deafult on column:"+table+"."+column);
+                            System.err.println("readTableMetadata() error : " + th2.getMessage() + " reading deafult on column:" + table + "." + column);
                         }
                     }
 
@@ -261,28 +259,28 @@ public class metadata {
                     NO --- if this not a generated column
                     empty string --- if it cannot be determined whether this is a generated column
                     The COLUMN_SIZE column specifies the column size for the given column. For numeric dat
-                    */                    
-                    
-                    
+                    */
+
+
                     MetaDataCol metaDataCol = new MetaDataCol(column, datatype, typeName, columnRemarks, columnsize, isNullable, columnDefault, decimaldigits, autoIncString, sourceCatalog, sourceSchema, sourceTable, sourceDataType, sourceIsGenerated);
                     metaDataCols.add(metaDataCol);
                     recCount++;
                 }
                 rs.close();
 
-                
-                if(_bReadDefault) {
-                    if("oracle".equalsIgnoreCase(driver)) {
-                        String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '"+table+"'";
+
+                if (_bReadDefault) {
+                    if ("oracle" .equalsIgnoreCase(driver)) {
+                        String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '" + table + "'";
                         Statement stmt = conn.createStatement();
                         stmt.setFetchSize(8 * 1024);
                         rs = stmt.executeQuery(stmtSQL);
                         while (rs.next()) {
                             String col = rs.getString(1);
                             String def = rs.getString(2);
-                            for(int i=0; i<metaDataCols.size(); i++) {
+                            for (int i = 0; i < metaDataCols.size(); i++) {
                                 MetaDataCol metaDataCol = metaDataCols.get(i);
-                                if(metaDataCol.name.equalsIgnoreCase(col)) {
+                                if (metaDataCol.name.equalsIgnoreCase(col)) {
                                     metaDataCol.columnDef = def;
                                 }
                             }
@@ -290,13 +288,13 @@ public class metadata {
                         rs.close();
                     }
                 }
-                
+
                 metaDataTable.add(new MetaDataTable(table, schema, database, metaDataCols));
                 System.out.println("Read meatadata on table: " + schema + "." + table + " recCount:" + recCount + " Tempo lettura :" + (System.currentTimeMillis() - msTrace));
 
                 if (columnName != null) {
                     Object foundMcol = getTableMetadata(conn, null, schema, table, columnName);
-                    if(foundMcol == null) {
+                    if (foundMcol == null) {
                         System.err.println("readTableMetadata() error: on table:" + schema + "." + table + " Column just added not found...maybe you are adding not exiasting column");
                         // Add dummy data to avoid adding loop
                         MetaDataCol metaDataCol = new MetaDataCol(columnName, "", "", "", "", "", "", "", "", "", "", "", "", "");
@@ -310,16 +308,16 @@ public class metadata {
         } catch (Exception e) {
             System.err.println("readTableMetadata() error : " + e.getMessage());
         } finally {
-            if(connToDB != null) 
+            if (connToDB != null)
                 try {
                     connToDB.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                } catch (SQLException ex) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                }
         }
         return null;
     }
-    
+
     //
     // Legge in soluzione unica tutte le tabelle dello schema(owner).tabella
     //
@@ -372,62 +370,62 @@ public class metadata {
                     ")"
                     };
                  */
-                
+
 
                 String[] queryList = null;
-        
+
                 String[] oracleQueryList = {
-                    // tabelle e viste
-                    "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM ALL_TAB_COLUMNS WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
-                    + "("
-                    + "SELECT TABLE_NAME FROM all_objects WHERE object_type in ('TABLE','VIEW') AND OWNER = '" + schema + "' AND TABLE_NAME='"+table+"'"
-                    + ") ORDER BY 2,3"
-                    
-                    // sinonimi
-                    ,"SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM ALL_TAB_COLUMNS WHERE (OWNER,TABLE_NAME) in "
-                    + "("
-                    + "SELECT TABLE_OWNER,TABLE_NAME FROM all_synonyms WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
-                    + "("
-                    + "SELECT OBJECT_NAME FROM all_objects WHERE object_type='SYNONYM' AND OWNER = '" + schema + "' AND TABLE_NAME='"+table+"'"
-                    + ")"
-                    + ") ORDER BY 2,3"
+                        // tabelle e viste
+                        "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM ALL_TAB_COLUMNS WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
+                                + "("
+                                + "SELECT TABLE_NAME FROM all_objects WHERE object_type in ('TABLE','VIEW') AND OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
+                                + ") ORDER BY 2,3"
+
+                        // sinonimi
+                        , "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM ALL_TAB_COLUMNS WHERE (OWNER,TABLE_NAME) in "
+                        + "("
+                        + "SELECT TABLE_OWNER,TABLE_NAME FROM all_synonyms WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
+                        + "("
+                        + "SELECT OBJECT_NAME FROM all_objects WHERE object_type='SYNONYM' AND OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
+                        + ")"
+                        + ") ORDER BY 2,3"
                 };
 
                 // TODO : lettura information_schema
                 String[] postgresQueryList = {
-                    // tabelle
-                    "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
-                    + "("
-                    + "SELECT TABLE_NAME FROM information_schema.tables WHERE OWNER = '" + schema + "' AND TABLE_NAME='"+table+"'"
-                    + ") ORDER BY 2,3"
-                    
-                    // viste
-                    ,"SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
-                    + "("
-                    + "SELECT TABLE_NAME FROM information_schema.views WHERE AND OWNER = '" + schema + "' AND TABLE_NAME='"+table+"'"
-                    + ") ORDER BY 2,3"
+                        // tabelle
+                        "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
+                                + "("
+                                + "SELECT TABLE_NAME FROM information_schema.tables WHERE OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
+                                + ") ORDER BY 2,3"
 
-                    // TODO . sinonimi
-                    /*
-                    ,"SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE (OWNER,TABLE_NAME) in "
-                    + "("
-                    + "SELECT TABLE_OWNER,TABLE_NAME FROM information_schema.tables_syn WHERE OWNER = '" + metaDataTableSchema + "' AND TABLE_NAME in "
-                    + "("
-                    + "SELECT OBJECT_NAME FROM information_schema.all_object WHERE object_type='SYNONYM' AND OWNER = '" + metaDataTableSchema + "'"
-                    + ")"
-                    + ") ORDER BY 2,3"
-                    */
+                        // viste
+                        , "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
+                        + "("
+                        + "SELECT TABLE_NAME FROM information_schema.views WHERE AND OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
+                        + ") ORDER BY 2,3"
+
+                        // TODO . sinonimi
+                        /*
+                        ,"SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE (OWNER,TABLE_NAME) in "
+                        + "("
+                        + "SELECT TABLE_OWNER,TABLE_NAME FROM information_schema.tables_syn WHERE OWNER = '" + metaDataTableSchema + "' AND TABLE_NAME in "
+                        + "("
+                        + "SELECT OBJECT_NAME FROM information_schema.all_object WHERE object_type='SYNONYM' AND OWNER = '" + metaDataTableSchema + "'"
+                        + ")"
+                        + ") ORDER BY 2,3"
+                        */
                 };
-                
-                if("oracle".equalsIgnoreCase(dialet)) {
+
+                if ("oracle" .equalsIgnoreCase(dialet)) {
                     queryList = oracleQueryList;
-                } else if("postgres".equalsIgnoreCase(dialet)) {
+                } else if ("postgres" .equalsIgnoreCase(dialet)) {
                     queryList = postgresQueryList;
                 } else {
                 }
-                
+
                 ArrayList<MetaDataCol> metaDataCols = new ArrayList<MetaDataCol>();
-                
+
                 int recCount = 0;
                 int nTable = 0;
 
@@ -439,14 +437,14 @@ public class metadata {
                     ResultSet rs = stmt.executeQuery(queryList[iq]);
 
                     long query_time = (System.currentTimeMillis() - msTrace);
-                    
+
                     recCount = 0;
 
                     while (rs.next()) {
 
                         String owner = rs.getString(1);
                         // String _table = rs.getString(2);
-                        
+
                         String autoIncString = null;
 
                         String typeName = rs.getString(4);
@@ -457,7 +455,7 @@ public class metadata {
                         String sourceTable = null; // rs.getString("SCOPE_TABLE");
                         String sourceDataType = null; // rs.getString("SOURCE_DATA_TYPE");
                         String sourceIsGenerated = null; // rs.getString("IS_GENERATEDCOLUMN");
-                        
+
                         // Colonne :
                         // OWNER,TABLE_NAME,
                         // COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'DATA_DEFAULT',DATA_PRECISION
@@ -467,16 +465,16 @@ public class metadata {
                         recCount++;
                     }
                     rs.close();
-                    
+
                     long retrive_time = (System.currentTimeMillis() - msTrace);
-                    
-                    if(recCount > 0) {
+
+                    if (recCount > 0) {
                         nTable++;
 
-                        if(bReadDefault) {                                
+                        if (bReadDefault) {
                             // ORACLE SHIT : lettura DATA_DEFAULT
-                            if("oracle".equalsIgnoreCase(dialet)) {
-                                String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '"+table+"'";
+                            if ("oracle" .equalsIgnoreCase(dialet)) {
+                                String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '" + table + "'";
                                 Statement stmtc = conn.createStatement();
                                 stmtc.setFetchSize(8 * 1024);
                                 ResultSet rsc = stmtc.executeQuery(stmtSQL);
@@ -484,30 +482,31 @@ public class metadata {
                                     while (rsc.next()) {
                                         String col = rsc.getString(1);
                                         String def = rsc.getString(2);
-                                        for(int i=0; i<metaDataCols.size(); i++) {
+                                        for (int i = 0; i < metaDataCols.size(); i++) {
                                             MetaDataCol metaDataCol2 = metaDataCols.get(i);
-                                            if(metaDataCol2.name.equalsIgnoreCase(col)) {
+                                            if (metaDataCol2.name.equalsIgnoreCase(col)) {
                                                 metaDataCol2.columnDef = def;
                                                 break;
                                             }
                                         }
                                     }
-                                } catch(Exception e) { }
+                                } catch (Exception e) {
+                                }
                                 rsc.close();
                                 stmtc.close();
                             }
                         }
                         metaDataTable.add(new MetaDataTable(table, schema, null, metaDataCols));
-                        
+
                         long total_time = (System.currentTimeMillis() - msTrace);
                         long extra_time = total_time - retrive_time;
-                        long total_retrive_time = retrive_time -  query_time;
-                        
-                        System.err.println(" Lettura tabella n." + nTable + " : " + schema + "." + table + "... [ TIME Statistics : query:"+query_time+"ms" + " + retrive:"+total_retrive_time+"ms" + " + extra:"+extra_time+"ms" + " = "+total_time+"ms");
+                        long total_retrive_time = retrive_time - query_time;
+
+                        System.err.println(" Lettura tabella n." + nTable + " : " + schema + "." + table + "... [ TIME Statistics : query:" + query_time + "ms" + " + retrive:" + total_retrive_time + "ms" + " + extra:" + extra_time + "ms" + " = " + total_time + "ms");
                     }
                 }
-                stmt.close();                
-                
+                stmt.close();
+
                 System.err.println("Read meatadata on table: " + schema + "." + table + " Items:" + recCount + " Total time :" + (System.currentTimeMillis() - msTrace));
 
                 if (columnName != null) {
@@ -539,7 +538,7 @@ public class metadata {
                     if (mdTable.schema.equalsIgnoreCase(schema) || schema == null) {
                         if (mdTable.database.equalsIgnoreCase(database) || database == null) {
                             if (mdTable.metaDataCols != null) {
-                                for(int istep=0; istep<2; istep++) {
+                                for (int istep = 0; istep < 2; istep++) {
                                     for (int j = 0; j < mdTable.metaDataCols.size(); j++) {
                                         mdCol = mdTable.metaDataCols.get(j);
                                         boolean condition = istep > 0 ? (mdCol.name.equalsIgnoreCase(columnName)) : (mdCol.name.equals(columnName));
@@ -549,7 +548,7 @@ public class metadata {
                                             condition = istep > 0 ? (mdTable.schema.equalsIgnoreCase(schema) || (schema == null && mdTable.schema.equalsIgnoreCase(metaDataTableSchema))) : (mdTable.schema.equals(schema) || (schema == null && mdTable.schema.equals(metaDataTableSchema)));
                                             if (condition) {
                                                 // schema coincidente o schema tabella = schema utente DataSource (prioritario)
-                                                return (Object)mdCol;
+                                                return (Object) mdCol;
                                             }
                                         }
                                     }
@@ -592,138 +591,142 @@ public class metadata {
         }
         return foundMdCol;
     }
-    
 
-    
+
     /**
-     *
      * CA : 25-apr-2020
-     *
+     * <p>
      * Definisce la mappatura fra i dati sql e le classi java
-     * 
+     *
      * @param oType the data type (int)
      * @return the CLass mathcing the type
      */
     static public Class getJavaClass(Object oType) {
-        if(oType instanceof Integer) {
-            return getJavaClass((Integer)oType);
-        } else if(oType instanceof Long) {
-            return getJavaClass(((Long)oType).intValue());
-        } else if(oType instanceof String) {
-            return getJavaClass(Integer.parseInt((String)oType));
+        if (oType instanceof Integer) {
+            return getJavaClass((Integer) oType);
+        } else if (oType instanceof Long) {
+            return getJavaClass(((Long) oType).intValue());
+        } else if (oType instanceof String) {
+            return getJavaClass(Integer.parseInt((String) oType));
         }
         return null;
     }
+
     /**
-     *
      * CA : 25-apr-2020
-     *
+     * <p>
      * Definisce la mappatura fra i dati sql e le classi java
      *
-     * @param oType the data type (int)
+     * @param type the data type (int)
      * @return the CLass mathcing the type
      */
     static public Class getJavaClass(int type) {
-        if(type == 2 || type == 4 || type == -5 || type == -6 || type == 5) {
+        if (type == 2 || type == 4 || type == -5 || type == -6 || type == 5) {
             // SMALLINT	short	Integer
             // INTEGER	int	Integer
             return Integer.class;
-        } else if(type == -7) {
+        } else if (type == -7) {
             return Boolean.class;
-        } else if(type == -5) {
+        } else if (type == -5) {
             // BIGINT	long	Long     
             return Long.class;
-        } else if(type == 3) {
+        } else if (type == 3) {
             // NUMERIC	 	java.math.BigDecimal
             // DECIMAL	 	java.math.BigDecimal
             return java.math.BigDecimal.class;
-        } else if(type == 7) {
+        } else if (type == 7) {
             return Float.class;
-        } else if(type == 8) {
+        } else if (type == 8) {
             return Double.class;
-        } else if(type == 92) {
+        } else if (type == 92) {
             return java.sql.Time.class;
-        } else if(type == 6 || type == 93) {
+        } else if (type == 6 || type == 93) {
             return java.sql.Timestamp.class;
-        } else if(type == 91) {
+        } else if (type == 91) {
             return java.sql.Date.class;
-        } else if(type == 12) {
+        } else if (type == 12) {
             return String.class;
         } else {
-            System.err.println("getJavaClass() : undetected type:"+type);
+            System.err.println("getJavaClass() : undetected type:" + type);
             return String.class;
         }
     }
 
-        
+
     static public String oracleToSqlType(String type) {
-        String sqlType = "1";        
-        if("CHAR".equalsIgnoreCase(type) || "VARCHAR2".equalsIgnoreCase(type) || "LONG".equalsIgnoreCase(type)) {
-        } else if("NUMBER".equalsIgnoreCase(type) || "BINARY_INTEGER".equalsIgnoreCase(type)) {
+        String sqlType = "1";
+        if ("CHAR" .equalsIgnoreCase(type) || "VARCHAR2" .equalsIgnoreCase(type) || "LONG" .equalsIgnoreCase(type)) {
+        } else if ("NUMBER" .equalsIgnoreCase(type) || "BINARY_INTEGER" .equalsIgnoreCase(type)) {
             sqlType = "4";
-        } else if("BINARY_FLOAT".equalsIgnoreCase(type) || "FLOAT".equalsIgnoreCase(type)) {
+        } else if ("BINARY_FLOAT" .equalsIgnoreCase(type) || "FLOAT" .equalsIgnoreCase(type)) {
             sqlType = "7";
-        } else if("BINARY_DOUBLE".equalsIgnoreCase(type) || "DOUBLE".equalsIgnoreCase(type)) {
+        } else if ("BINARY_DOUBLE" .equalsIgnoreCase(type) || "DOUBLE" .equalsIgnoreCase(type)) {
             sqlType = "8";
-        } else if("DATE".equalsIgnoreCase(type) || "DATE".equalsIgnoreCase(type)) {
+        } else if ("DATE" .equalsIgnoreCase(type) || "DATE" .equalsIgnoreCase(type)) {
             sqlType = "93";
-        } else if("DATETIME".equalsIgnoreCase(type)) {
+        } else if ("DATETIME" .equalsIgnoreCase(type)) {
             sqlType = "6";
-        } else if("TIMESTAMP".equalsIgnoreCase(type) || "TIMESTAMP WITH TIME ZONE".equalsIgnoreCase(type) || "TIMESTAMP WITH LOCAL TIME ZONE".equalsIgnoreCase(type)) {
+        } else if ("TIMESTAMP" .equalsIgnoreCase(type) || "TIMESTAMP WITH TIME ZONE" .equalsIgnoreCase(type) || "TIMESTAMP WITH LOCAL TIME ZONE" .equalsIgnoreCase(type)) {
             sqlType = "91";
         }
         return sqlType;
     }
-    
+
     static public class ForeignKey {
-        String foreignTable;
-        ArrayList<String> foreignColumns;
-        ArrayList<String> columns;
-        String foreignWrk;
-        
+        public String foreignTable;
+        public ArrayList<String> foreignColumns;
+        public ArrayList<String> columns;
+        public String type;
+        public String foreignWrk;
+
         public ForeignKey(String foreignTable, ArrayList<String> foreignColumns, ArrayList<String> columns, String foreignWrk) {
-            this.foreignTable = foreignTable; 
+            this.foreignTable = foreignTable;
             this.foreignColumns = foreignColumns;
             this.columns = columns;
             this.foreignWrk = foreignWrk;
+            this.type = null;
         }
-        public ForeignKey (String foreignTable, String foreignColumn, String column, String foreignWrk) {
-            this.foreignTable = foreignTable; 
+
+        public ForeignKey(String foreignTable, String foreignColumn, String column, String foreignWrk) {
+            this.foreignTable = foreignTable;
             this.foreignColumns = new ArrayList<String>();
             this.foreignColumns.add(foreignColumn);
             this.columns = new ArrayList<String>();
             this.columns.add(column);
             this.foreignWrk = foreignWrk;
+            this.type = null;
         }
-        public ForeignKey () {
-            this.foreignTable = null; 
+
+        public ForeignKey() {
+            this.foreignTable = null;
             this.foreignColumns = null;
             this.columns = null;
             this.foreignWrk = null;
+            this.type = null;
         }
     }
-    
-    
-    static public Object [] getAllDatabases(String database, Connection conn, boolean bUserFieldIdentificator) {
+
+
+    static public Object[] getAllDatabases(String database, Connection conn, boolean bUserFieldIdentificator) {
         int nRec = 0;
         String result = "";
         try {
             // if(database == null || database.isEmpty()) database = conn.getCatalog();
             ArrayList<String> databaseList = new ArrayList<String>();
             DatabaseMetaData dm = conn.getMetaData();
-            ResultSet rs = dm.getCatalogs();      
-            if(rs != null) {
+            ResultSet rs = dm.getCatalogs();
+            if (rs != null) {
                 result += "[";
-                while (rs.next()) {                
-                    if( ("*".equalsIgnoreCase(database) || database == null) || (database != null && database.equalsIgnoreCase(rs.getString("TABLE_CAT"))) ) {
+                while (rs.next()) {
+                    if (("*" .equalsIgnoreCase(database) || database == null) || (database != null && database.equalsIgnoreCase(rs.getString("TABLE_CAT")))) {
                         String databaseName = rs.getString("TABLE_CAT");
-                        if(databaseList.indexOf(databaseName) < 0) {
-                            if(BlackWhiteList.isAccessible(database, "", "")) {
+                        if (databaseList.indexOf(databaseName) < 0) {
+                            if (BlackWhiteList.isAccessible(database, "", "")) {
                                 databaseList.add(databaseName);
                                 result += nRec > 0 ? "," : "";
                                 result += "{";
-                                result += "\""+(bUserFieldIdentificator?"1":"DATABASE")+"\":\""+databaseName+"\"";
-                                result += ",\""+(bUserFieldIdentificator?"2":"REMARKS")+"\":\""+""+"\"";
+                                result += "\"" + (bUserFieldIdentificator ? "1" : "DATABASE") + "\":\"" + databaseName + "\"";
+                                result += ",\"" + (bUserFieldIdentificator ? "2" : "REMARKS") + "\":\"" + "" + "\"";
                                 result += "}";
                                 nRec++;
                             }
@@ -736,57 +739,68 @@ public class metadata {
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return new Object[] { (Object)result, (Object)nRec };
+        return new Object[]{(Object) result, (Object) nRec};
     }
 
-    static public Object [] getAllSchemas(String database, String schema, Connection conn, boolean bUserFieldIdentificator) {
+    static public Object[] getAllSchemas(String database, String schema, Connection conn, boolean bUserFieldIdentificator) {
         int nRec = 0;
         String result = "";
         try {
             ArrayList<String> schemaList = new ArrayList<String>();
-            String[] types = { "TABLE" };
+            String[] types = {"TABLE"};
 
-            if(database == null || database.isEmpty())
-                database = conn.getCatalog();            
+            if (database == null || database.isEmpty())
+                database = conn.getCatalog();
             DatabaseMetaData dm = conn.getMetaData();
             ResultSet rs = null;
             boolean useGetSchemas = false;
             String driver = db.getDriver(conn);
-            if("oracle".equalsIgnoreCase(driver)) {
+            if ("oracle" .equalsIgnoreCase(driver)) {
                 useGetSchemas = true;
                 rs = dm.getSchemas();
             } else {
                 rs = dm.getTables(database, null, "%", types);
             }
-            if(rs != null) {
+            if (rs != null) {
+                int ncols = rs.getMetaData().getColumnCount();
+                String col0 = ncols >= 1 ? rs.getMetaData().getColumnName(1) : null;
+                String col1 = ncols >= 2 ? rs.getMetaData().getColumnName(2) : null;
+                String col2 = ncols >= 3 ? rs.getMetaData().getColumnName(3) : null;
+
                 result += "[";
                 while (rs.next()) {
                     String databaseName = "";
                     String schemaName = "";
-                    if(useGetSchemas) {
-                        databaseName = rs.getString("TABLE_CATALOG");
-                        schemaName = rs.getString("TABLE_SCHEM");
+                    if (useGetSchemas) {
+                        if (ncols >= 2) {
+                            databaseName = col0 != null ? rs.getString(col0) : null;
+                            schemaName = col1 != null ? rs.getString(col1) : null;
+                        } else {
+                            databaseName = null;
+                            schemaName = col0 != null ? rs.getString(col0) : null;
+                            ;
+                        }
                     } else {
                         databaseName = rs.getString("TABLE_CAT");
                         schemaName = rs.getString("TABLE_SCHEM");
                     }
                     // System.err.println("TABLE_CAT:"+databaseName+" TABLE_SCHEM:"+schemaName+"");
-                    if( ("*".equalsIgnoreCase(database) || database == null) 
-                        || (database != null && databaseName != null && databaseName.contains(database)) 
-                        || (database != null && databaseName == null) 
-                        )  {
-                        if( ("*".equalsIgnoreCase(schema) || schema == null) 
-                            || (schema != null && schemaName != null && schemaName.contains(schema)) 
-                            || (schema == null && schemaName != null) 
-                            ) {
-                            if(schemaList.indexOf(schemaName) < 0) {
-                                if(BlackWhiteList.isAccessible(database, schema, "")) {
+                    if (("*" .equalsIgnoreCase(database) || database == null)
+                            || (database != null && databaseName != null && databaseName.contains(database))
+                            || (database != null && databaseName == null)
+                    ) {
+                        if (("*" .equalsIgnoreCase(schema) || schema == null)
+                                || (schema != null && schemaName != null && schemaName.contains(schema))
+                                || (schema == null && schemaName != null)
+                        ) {
+                            if (schemaList.indexOf(schemaName) < 0) {
+                                if (BlackWhiteList.isAccessible(database, schema, "")) {
                                     schemaList.add(schemaName);
                                     result += nRec > 0 ? "," : "";
                                     result += "{";
-                                    result += "\""+(bUserFieldIdentificator?"1":"CATALOG")+"\":\""+(databaseName != null ? databaseName : (database != null ? database : ""))+"\"";
-                                    result += ",\""+(bUserFieldIdentificator?"2":"SCHEMA")+"\":\""+(schemaName != null ? schemaName : "")+"\"";
-                                    result += ",\""+(bUserFieldIdentificator?"3":"REMARKS")+"\":\""+""+"\"";
+                                    result += "\"" + (bUserFieldIdentificator ? "1" : "CATALOG") + "\":\"" + (databaseName != null ? databaseName : (database != null ? database : "")) + "\"";
+                                    result += ",\"" + (bUserFieldIdentificator ? "2" : "SCHEMA") + "\":\"" + (schemaName != null ? schemaName : "") + "\"";
+                                    result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + "" + "\"";
                                     result += "}";
                                     nRec++;
                                 }
@@ -800,38 +814,58 @@ public class metadata {
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return new Object[] { (Object)result, (Object)nRec };
+        return new Object[]{(Object) result, (Object) nRec};
     }
 
-    static public Object [] getAllTables(String database, String schema, String table, String view, Connection conn, boolean bUserFieldIdentificator) {
+    static public Object[] getAllTables(String database, String schema, String table, String view, Connection conn, boolean bUserFieldIdentificator) {
         int nRec = 0;
-        String result = "";
-        String [] types = { "", "", "" };
+        String result = "", driver = null;
+        String[] types = {"", "", ""};
         try {
-            if(table != null) types[0] = "TABLE";
-            if(view != null) types[1] = "VIEW";
-            if(database == null || database.isEmpty())
+
+            try {
+                driver = db.getDriver(conn);
+            } catch (SQLException e) {
+            }
+
+            if ("oracle" .equalsIgnoreCase(driver)) {
+                // fuckyou oracle
+                if (schema == null || schema.isEmpty()) {
+                    try {
+                        schema = conn.getSchema();
+                    } catch (Throwable e) { }
+                }
+                if (schema == null || schema.isEmpty()) {
+                    try {
+                        schema = conn.getMetaData().getUserName();
+                    } catch (Throwable e) { }
+                }
+            }
+
+            if (table != null) types[0] = "TABLE";
+            if (view != null) types[1] = "VIEW";
+            if (database == null || database.isEmpty())
                 database = conn.getCatalog();
-            if(schema == null || schema.isEmpty())
-                 schema = null; // conn.getMetaData().getSchemaTerm();
+            if (schema == null || schema.isEmpty())
+                schema = null; // conn.getMetaData().getSchemaTerm();
 
             DatabaseMetaData dm = conn.getMetaData();
-            ResultSet rs = dm.getTables(database, schema, null, types );
-            if(rs != null) {
+            ResultSet rs = dm.getTables(database, schema, null, types);
+            if (rs != null) {
                 result += "[";
-                while (rs.next()) {                
+                while (rs.next()) {
                     String resultShcema = rs.getString("TABLE_SCHEM");
-                    if( (schema == null && !"information_schema".equalsIgnoreCase(resultShcema)) 
-                     || (schema != null && schema.equalsIgnoreCase(resultShcema) ) 
-                     || (schema != null && resultShcema == null) 
-                     || (schema != null && schema.equalsIgnoreCase(resultShcema))
+                    if ((schema == null && !"information_schema" .equalsIgnoreCase(resultShcema))
+                            || (schema != null && schema.equalsIgnoreCase(resultShcema))
+                            || (schema != null && resultShcema == null)
+                            || (schema != null && schema.equalsIgnoreCase(resultShcema))
                     ) {
-                        if(BlackWhiteList.isAccessible(database, schema, table)) {
+                        if (BlackWhiteList.isAccessible(database, schema, table)) {
                             result += nRec > 0 ? "," : "";
                             result += "{";
-                            result += "\""+(bUserFieldIdentificator?"1":"TABLE")+"\":\""+rs.getString("TABLE_NAME")+"\"";
-                            result += ",\""+(bUserFieldIdentificator?"2":"TYPE")+"\":\""+rs.getString("TABLE_TYPE")+"\"";
-                            result += ",\""+(bUserFieldIdentificator?"3":"REMARKS")+"\":\""+rs.getString("REMARKS")+"\"";
+                            result += "\"" + (bUserFieldIdentificator ? "1" : "TABLE") + "\":\"" + rs.getString("TABLE_NAME") + "\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "2" : "TYPE") + "\":\"" + rs.getString("TABLE_TYPE") + "\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + rs.getString("REMARKS") + "\"";
                             result += "}";
                             nRec++;
                         }
@@ -843,33 +877,73 @@ public class metadata {
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return new Object[] { (Object)result, (Object)nRec };
+        return new Object[]{(Object) result, (Object) nRec};
     }
-    
-    static public Object [] getAllColumns(String database, String schema, String tableName, Connection conn, boolean bUserFieldIdentificator) {
+
+    static public Object[] getAllColumns(String database, String schema, String tableName, Connection conn, boolean bUserFieldIdentificator) {
         int nRec = 0;
-        String result = "";
+        String result = "", driver = null;
         try {
-            if(database == null || database.isEmpty())
+
+            try {
+                driver = db.getDriver(conn);
+            } catch (SQLException e) {
+            }
+
+            if ("oracle" .equalsIgnoreCase(driver)) {
+                // fuckyou oracle
+                if (schema == null || schema.isEmpty()) {
+                    try {
+                        schema = conn.getSchema();
+                    } catch (Throwable e) { }
+                }
+                if (schema == null || schema.isEmpty()) {
+                    try {
+                        schema = conn.getMetaData().getUserName();
+                    } catch (Throwable e) { }
+                }
+
+                try {
+                    oracle.jdbc.OracleConnection oraCon = (oracle.jdbc.OracleConnection)conn.unwrap(oracle.jdbc.OracleConnection.class);
+                    if(oraCon != null) {
+                        oraCon.setRemarksReporting(true);
+                    }
+                } catch (Throwable e) { }
+            }
+
+            if (database == null || database.isEmpty())
                 database = conn.getCatalog();
-            if(schema == null || schema.isEmpty())
-                 schema = null; // conn.getMetaData().getSchemaTerm();
-            
+            if (schema == null || schema.isEmpty())
+                schema = null; // conn.getMetaData().getSchemaTerm();
+
+            // ((oracle.jdbc.OracleConnection)conn ).setIncludeSynonyms(true);
+
             DatabaseMetaData dm = conn.getMetaData();
             ResultSet rs = dm.getColumns(database, schema, tableName, null);
-            if(rs != null) {
+            if (rs != null) {
                 result += "[";
                 while (rs.next()) {
                     String resultShcema = rs.getString("TABLE_SCHEM");
-                    if( (schema == null && !"information_schema".equalsIgnoreCase(resultShcema))
+                    if ((schema == null && !"information_schema" .equalsIgnoreCase(resultShcema))
                             || (schema != null && resultShcema == null)
-                            ||  (schema != null && schema.equalsIgnoreCase(resultShcema))
-                            ) {
+                            || (schema != null && schema.equalsIgnoreCase(resultShcema))
+                    ) {
+
+                        String decimalDigits = null;
+
+                        try {
+                            decimalDigits = String.valueOf(rs.getInt("DECIMAL_DIGITS"));
+                        } catch (Exception e) {}
+
                         result += nRec > 0 ? "," : "";
                         result += "{";
-                        result += "\""+(bUserFieldIdentificator?"1":"TABLE")+"\":\""+(rs.getString("TABLE_NAME") != null ? rs.getString("TABLE_NAME") : "")+"\"";
-                        result += ",\""+(bUserFieldIdentificator?"2":"COLUMN")+"\":\""+(rs.getString("COLUMN_NAME") != null ? rs.getString("COLUMN_NAME") : "")+"\"";
-                        result += ",\""+(bUserFieldIdentificator?"3":"REMARKS")+"\":\""+(rs.getString("REMARKS") != null ? rs.getString("REMARKS") : "")+"\"";
+                        result += "\"" + (bUserFieldIdentificator ? "1" : "TABLE") + "\":\"" + (rs.getString("TABLE_NAME") != null ? rs.getString("TABLE_NAME") : "") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "2" : "COLUMN") + "\":\"" + (rs.getString("COLUMN_NAME") != null ? rs.getString("COLUMN_NAME") : "") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + (rs.getString("REMARKS") != null ? rs.getString("REMARKS") : "") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "4" : "TYPE_NAME") + "\":\"" + (rs.getString("TYPE_NAME") != null ? rs.getString("TYPE_NAME") : "") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "5" : "COLUMN_SIZE") + "\":\"" + (rs.getString("COLUMN_SIZE") != null ? rs.getString("COLUMN_SIZE") : "") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "6" : "DECIMAL_DIGITS") + "\":\"" + (decimalDigits != null ? decimalDigits : "") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "7" : "NULLABLE") + "\":\"" + (rs.getString("NULLABLE") != null ? rs.getString("NULLABLE") : "") + "\"";
                         result += "}";
                         nRec++;
                     }
@@ -880,94 +954,95 @@ public class metadata {
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return new Object[] { (Object)result, (Object)nRec };
+        return new Object[]{(Object) result, (Object) nRec};
     }
-   
+
     static public ArrayList<String> getAllColumnsAsArray(String database, String schema, String tableName, Connection conn) throws Throwable {
         ArrayList<String> result = new ArrayList<String>();
         Connection connToDB = null, connToUse = conn;
         long time1 = 0, time0 = System.currentTimeMillis();
-        
+
         try {
-            if(database == null || database.isEmpty()) {
+            if (database == null || database.isEmpty()) {
                 database = conn.getCatalog();
             } else {
                 conn.setCatalog(database);
                 String db = conn.getCatalog();
-                if(db != null && !database.trim().isEmpty()) {
-                    if(!db.equalsIgnoreCase(database)) {
+                if (db != null && !database.trim().isEmpty()) {
+                    if (!db.equalsIgnoreCase(database)) {
                         // set catalog not supported : connect to different DB
-                        Object [] connResult = connection.getDBConnection(database);
-                        conn = (Connection)connResult[0];
-                        String connError = (String)connResult[1];                                            
+                        Object[] connResult = connection.getDBConnection(database);
+                        conn = (Connection) connResult[0];
+                        String connError = (String) connResult[1];
                         connToUse = connToDB = conn;
                     }
                 }
             }
-            if(schema == null || schema.isEmpty())
+            if (schema == null || schema.isEmpty())
                 schema = null; // connToUse.getMetaData().getSchemaTerm();
-            
-            if(tableName != null && !tableName.isEmpty()) {
+
+            if (tableName != null && !tableName.isEmpty()) {
                 DatabaseMetaData dm = connToUse.getMetaData();
                 ResultSet rs = dm.getColumns(database, schema, tableName, null);
-                if(rs != null) {
-                    while(rs.next()) {
+                if (rs != null) {
+                    while (rs.next()) {
                         String resultShcema = rs.getString("TABLE_SCHEM");
-                        if(     (schema == null && !"information_schema".equalsIgnoreCase(resultShcema))
-                            ||  (schema != null && resultShcema == null)
-                            ||  (schema != null && schema.equalsIgnoreCase(resultShcema))
-                            ) {
+                        if ((schema == null && !"information_schema" .equalsIgnoreCase(resultShcema))
+                                || (schema != null && resultShcema == null)
+                                || (schema != null && schema.equalsIgnoreCase(resultShcema))
+                        ) {
                             result.add(rs.getString("COLUMN_NAME"));
                         }
                     }
                     rs.close();
                 }
             }
-            
+
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            if(connToDB != null) 
+            if (connToDB != null)
                 try {
                     connToDB.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                } catch (SQLException ex) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                }
         }
-        
+
         time1 = System.currentTimeMillis();
-        
-        if(time1-time0 > TIME_MSEC_LIMIT_FOR_WARNING) {        
-            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, "*** WARNING : getAllColumnsAsArray() database:"+database+" schema:"+schema+" table:"+tableName+" time:"+(time1-time0));
+
+        if (time1 - time0 > TIME_MSEC_LIMIT_FOR_WARNING) {
+            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, "*** WARNING : getAllColumnsAsArray() database:" + database + " schema:" + schema + " table:" + tableName + " time:" + (time1 - time0));
         }
-        
+
         return result;
     }
-            
 
-    static public Object [] getAllForeignKeys(String database, String schema, String table, Connection conn, boolean bUserFieldIdentificator) {
+
+    static public Object[] getAllForeignKeys(String database, String schema, String table, Connection conn, boolean bUserFieldIdentificator) {
         int nRec = 0;
         String result = "";
-        String [] types = { "", "", "" };
+        String[] types = {"", "", ""};
         try {
-            if(database == null || database.isEmpty())
+            if (database == null || database.isEmpty())
                 database = conn.getCatalog();
-            if(schema == null || schema.isEmpty())
-                 schema = null; // conn.getMetaData().getSchemaTerm();
-            if(table != null && !table.isEmpty()) {
+            if (schema == null || schema.isEmpty())
+                schema = null; // conn.getMetaData().getSchemaTerm();
+            if (table != null && !table.isEmpty()) {
                 ArrayList<ForeignKey> foreignKeys = getForeignKeyData(database, schema, table, conn);
-                if(foreignKeys != null) {
+                if (foreignKeys != null) {
                     result += "[";
-                    for(int i=0; i<foreignKeys.size(); i++) {
+                    for (int i = 0; i < foreignKeys.size(); i++) {
                         ForeignKey foreignKey = foreignKeys.get(i);
-                        if(foreignKey != null) {
+                        if (foreignKey != null) {
                             result += nRec > 0 ? "," : "";
                             result += "{";
-                            result += "\""+(bUserFieldIdentificator?"1":"ID")+"\":\""+(nRec+1)+"\"";
-                            result += ",\""+(bUserFieldIdentificator?"2":"TABLE")+"\":\""+table+"\"";
-                            result += ",\""+(bUserFieldIdentificator?"3":"COLUMN")+"\":\""+utility.arrayToString(foreignKey.columns.toArray(), null, null, ",")+"\"";
-                            result += ",\""+(bUserFieldIdentificator?"4":"FOREIGN_TABLE")+"\":\""+foreignKey.foreignTable+"\"";
-                            result += ",\""+(bUserFieldIdentificator?"5":"FOREIGN_COLUMN")+"\":\""+utility.arrayToString(foreignKey.foreignColumns.toArray(), null, null, ",")+"\"";
+                            result += "\"" + (bUserFieldIdentificator ? "1" : "ID") + "\":\"" + (nRec + 1) + "\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "2" : "TABLE") + "\":\"" + table + "\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "3" : "COLUMN") + "\":\"" + utility.arrayToString(foreignKey.columns.toArray(), null, null, ",") + "\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "4" : "FOREIGN_TABLE") + "\":\"" + foreignKey.foreignTable + "\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "5" : "FOREIGN_COLUMN") + "\":\"" + utility.arrayToString(foreignKey.foreignColumns.toArray(), null, null, ",") + "\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "6" : "TYPE") + "\":\""+foreignKey.type+"\"";
                             result += "}";
                             nRec++;
                         }
@@ -980,41 +1055,50 @@ public class metadata {
         } catch (Exception ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return new Object[] { (Object)result, (Object)nRec };
+        return new Object[]{(Object) result, (Object) nRec};
     }
 
+
+    /**
+     * @param database
+     * @param schema
+     * @param tableName
+     * @param conn
+     * @return
+     */
     static public ArrayList<ForeignKey> getForeignKeyData(String database, String schema, String tableName, Connection conn) {
         ArrayList<ForeignKey> result = new ArrayList<ForeignKey>();
         try {
             DatabaseMetaData dm = conn.getMetaData();
-            ResultSet rs = dm.getImportedKeys((database != null && database.isEmpty() ? database : null), schema, ("*".equalsIgnoreCase(tableName) ? "" : tableName) );
+            ResultSet rs = dm.getImportedKeys((database != null && database.isEmpty() ? database : null), schema, ("*" .equalsIgnoreCase(tableName) ? "" : tableName));
             // ResultSet rs = dm.getImportedKeys(null, null, null);
-            if(rs != null) {
+            if (rs != null) {
                 while (rs.next()) {
                     String resultDatabase = rs.getString("FKTABLE_CAT");
                     String resultSchema = rs.getString("FKTABLE_SCHEM");
                     String resultTable = rs.getString("FKTABLE_NAME");
-    
-                    if(    (database == null && resultDatabase == null)
-                        || (database != null && resultDatabase != null && database.equalsIgnoreCase(resultDatabase))
-                        || (database == null && resultDatabase != null)
-                        || (database != null && resultDatabase == null)
+
+                    if ((database == null && resultDatabase == null)
+                            || (database != null && resultDatabase != null && database.equalsIgnoreCase(resultDatabase))
+                            || (database == null && resultDatabase != null)
+                            || (database != null && resultDatabase == null)
+                    ) {
+                        if ((schema == null && resultSchema == null)
+                                || (schema != null && resultSchema != null && schema.equalsIgnoreCase(resultSchema))
+                                || (schema == null && resultSchema != null)
+                                || (schema != null && resultSchema == null)
                         ) {
-                        if(    (schema == null && resultSchema == null)
-                            || (schema != null && resultSchema != null && schema.equalsIgnoreCase(resultSchema))
-                            || (schema == null && resultSchema != null)
-                            || (schema != null && resultSchema == null)
+                            if ((tableName == null && resultTable == null)
+                                    || (tableName != null && resultTable != null && tableName.equalsIgnoreCase(resultTable))
+                                    || (tableName == null && resultTable != null)
                             ) {
-                            if(    (tableName == null && resultTable == null)
-                                || (tableName != null && resultTable != null && tableName.equalsIgnoreCase(resultTable))
-                                || (tableName == null && resultTable != null)
-                                ) {
-            
+
                                 ForeignKey foreignTable = new ForeignKey();
                                 foreignTable.foreignTable = rs.getString("PKTABLE_NAME");
                                 foreignTable.foreignColumns = new ArrayList<String>(Arrays.asList(rs.getString("PKCOLUMN_NAME").split(",")));
                                 foreignTable.columns = new ArrayList<String>(Arrays.asList(rs.getString("FKCOLUMN_NAME").split(",")));
-                                foreignTable.foreignWrk = foreignTable.foreignTable+".default";
+                                foreignTable.foreignWrk = foreignTable.foreignTable + ".default";
+                                foreignTable.type = "exp";
                                 result.add(foreignTable);
                             }
                         }
@@ -1027,29 +1111,88 @@ public class metadata {
         }
         return result;
     }
-    
+
+
+    /**
+     * @param database
+     * @param schema
+     * @param tableName
+     * @param conn
+     * @return
+     */
+    static public ArrayList<ForeignKey> getExportedForeignKeyData(String database, String schema, String tableName, Connection conn) {
+        ArrayList<ForeignKey> result = new ArrayList<ForeignKey>();
+        try {
+            DatabaseMetaData dm = conn.getMetaData();
+            ResultSet rs = dm.getExportedKeys((database != null && database.isEmpty() ? database : null), schema, null/*("*".equalsIgnoreCase(tableName) ? "" : tableName)*/ );
+            // ResultSet rs = dm.getImportedKeys(null, null, null);
+            if (rs != null) {
+                while (rs.next()) {
+                    String resultDatabase = rs.getString("FKTABLE_CAT");
+                    String resultSchema = rs.getString("FKTABLE_SCHEM");
+                    String resultTable = rs.getString("FKTABLE_NAME");
+                    // PKTABLE_NAME, PKCOLUMN_NAME, KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME, PK_NAME, DEFERRABILITY
+
+                    if ((database == null && resultDatabase == null)
+                            || (database != null && resultDatabase != null && database.equalsIgnoreCase(resultDatabase))
+                            || (database == null && resultDatabase != null)
+                            || (database != null && resultDatabase == null)
+                    ) {
+                        if ((schema == null && resultSchema == null)
+                                || (schema != null && resultSchema != null && schema.equalsIgnoreCase(resultSchema))
+                                || (schema == null && resultSchema != null)
+                                || (schema != null && resultSchema == null)
+                        ) {
+                            if ((tableName == null && resultTable == null)
+                                    || (tableName != null && resultTable != null && tableName.equalsIgnoreCase(resultTable))
+                                    || (tableName == null && resultTable != null)
+                            ) {
+
+                                ForeignKey foreignTable = new ForeignKey();
+                                String fktable = rs.getString("FKTABLE_NAME");
+                                if(fktable.equalsIgnoreCase(tableName) || tableName == null || tableName.isEmpty() || "*".equalsIgnoreCase(tableName)) {
+                                    foreignTable.foreignTable = rs.getString("PKTABLE_NAME");
+                                    foreignTable.foreignColumns = new ArrayList<String>(Arrays.asList(rs.getString("PKCOLUMN_NAME").split(",")));
+                                    foreignTable.columns = new ArrayList<String>(Arrays.asList(rs.getString("FKCOLUMN_NAME").split(",")));
+                                    foreignTable.foreignWrk = foreignTable.foreignTable + ".default";
+                                    foreignTable.type = "imp";
+                                    result.add(foreignTable);
+                                }
+                            }
+                        }
+                    }
+                }
+                rs.close();
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return result;
+    }
+
+
     static public String getPrimaryKeyData(String database, String schema, String tableName, Connection conn) throws Throwable {
         Connection connToDB = null, connToUse = conn;
         String result = null;
         try {
-            if(database == null || database.isEmpty()) {
+            if (database == null || database.isEmpty()) {
                 database = conn.getCatalog();
             } else {
                 conn.setCatalog(database);
                 String db = conn.getCatalog();
-                if(!db.equalsIgnoreCase(database)) {
+                if (!db.equalsIgnoreCase(database)) {
                     // set catalog not supported : connect to different DB
-                    Object [] connResult = connection.getDBConnection(database);
-                    conn = (Connection)connResult[0];
-                    String connError = (String)connResult[1];                                            
+                    Object[] connResult = connection.getDBConnection(database);
+                    conn = (Connection) connResult[0];
+                    String connError = (String) connResult[1];
                     connToUse = connToDB = conn;
                 }
             }
-            
+
             DatabaseMetaData dm = connToUse.getMetaData();
             ResultSet rs = dm.getPrimaryKeys(database, schema, tableName);
-            if(rs != null) {
-                if(rs.next()) {
+            if (rs != null) {
+                if (rs.next()) {
                     result = rs.getString("COLUMN_NAME");
                 }
                 rs.close();
@@ -1057,16 +1200,16 @@ public class metadata {
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            if(connToDB != null) 
+            if (connToDB != null)
                 try {
                     connToDB.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                } catch (SQLException ex) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                }
         }
         return result;
     }
-    
+
     static public String searchOnDatabases(HttpServletRequest request, JspWriter out) {
         String result = "";
         try {
@@ -1075,32 +1218,32 @@ public class metadata {
             String schema = request.getParameter("schema");
             String table = request.getParameter("table");
             String search = request.getParameter("search");
-            
+
             try {
-                Object [] connResult = connection.getDBConnection(database);
-                conn = (Connection)connResult[0];
-                String connError = (String)connResult[1];                                            
-                if(conn != null) {
+                Object[] connResult = connection.getDBConnection(database);
+                conn = (Connection) connResult[0];
+                String connError = (String) connResult[1];
+                if (conn != null) {
                     result = searchOnDatabases(database, schema, table, conn, search, out);
                 }
             } finally {
                 try {
-                    if(conn != null)
+                    if (conn != null)
                         conn.close();
                 } catch (SQLException ex) {
                     Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            
-            if(out != null)
+
+            if (out != null)
                 out.print("<LiquidStartResponde/>");
-            
+
         } catch (Throwable th) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, th);
         }
         return result;
     }
-        
+
     static public String searchOnDatabases(String database, String schema, String table, Connection conn, String search, JspWriter out) {
         int nDatabaseSearch = 0;
         int nSchemaSearch = 0;
@@ -1108,72 +1251,72 @@ public class metadata {
         int nColumnSearch = 0;
         int nRecFound = 0;
 
-        if (database != null && database.isEmpty() || "*".equalsIgnoreCase(database))
+        if (database != null && database.isEmpty() || "*" .equalsIgnoreCase(database))
             database = null;
-        if (schema != null && schema.isEmpty() || "*".equalsIgnoreCase(schema))
+        if (schema != null && schema.isEmpty() || "*" .equalsIgnoreCase(schema))
             schema = null;
-        if (table != null && table.isEmpty() || "*".equalsIgnoreCase(table))
+        if (table != null && table.isEmpty() || "*" .equalsIgnoreCase(table))
             table = null;
 
         String curStatus = "";
         String driver = null;
-        String[] types = { "TABLE", "VIEW" };
-        
-        String tblHtml = "<table cellspacing=\"0\" cellpadding=\"10\" class=\"liquidFoundTable\">";        
+        String[] types = {"TABLE", "VIEW"};
+
+        String tblHtml = "<table cellspacing=\"0\" cellpadding=\"10\" class=\"liquidFoundTable\">";
         String recHtml = "";
 
         tblHtml += append_to_found_record(null, null, null, null, null, null, null);
-        
+
         try {
             driver = db.getDriver(conn);
         } catch (SQLException e) {
         }
-        
-        if(search != null && !search.isEmpty()) {
-                
+
+        if (search != null && !search.isEmpty()) {
+
             try {
                 ArrayList<String> databaseList = new ArrayList<String>();
                 DatabaseMetaData dm = conn.getMetaData();
-                ResultSet rs = dm.getCatalogs();      
-                if(rs != null) {
-                    while (rs.next()) {                
-                        if( ("*".equalsIgnoreCase(database) || database == null) || (database != null && database.equalsIgnoreCase(rs.getString("TABLE_CAT"))) ) {
+                ResultSet rs = dm.getCatalogs();
+                if (rs != null) {
+                    while (rs.next()) {
+                        if (("*" .equalsIgnoreCase(database) || database == null) || (database != null && database.equalsIgnoreCase(rs.getString("TABLE_CAT")))) {
                             String databaseName = rs.getString("TABLE_CAT");
-                            if(databaseList.indexOf(databaseName) < 0) {
+                            if (databaseList.indexOf(databaseName) < 0) {
                                 databaseList.add(databaseName);
                                 nDatabaseSearch++;
-                                curStatus = "Adding Database:"+databaseName;
+                                curStatus = "Adding Database:" + databaseName;
                                 out.print("<Liquid>" + curStatus + "</Liquid>");
-                                
+
                             }
                         }
                     }
                     rs.close();
                 }
 
-                if(database == null || database.isEmpty()) {
-                    if(databaseList.size() == 0) {
+                if (database == null || database.isEmpty()) {
+                    if (databaseList.size() == 0) {
                         databaseList.add(null);
                         nDatabaseSearch++;
                     }
                 }
 
-                for (int idb=0; idb<databaseList.size(); idb++) {
+                for (int idb = 0; idb < databaseList.size(); idb++) {
                     String db = databaseList.get(idb);
                     ArrayList<String> schemaList = new ArrayList<String>();
-                	boolean useGetSchemas = false;
+                    boolean useGetSchemas = false;
                     try {
-                        if("oracle".equalsIgnoreCase(driver)) {
+                        if ("oracle" .equalsIgnoreCase(driver)) {
                             useGetSchemas = true;
                             rs = dm.getSchemas();
                         } else {
                             rs = dm.getTables(db, null, "%", types);
                         }
-                        if(rs != null) {
-                            while (rs.next()) {                
+                        if (rs != null) {
+                            while (rs.next()) {
                                 String databaseName = "";
                                 String schemaName = "";
-                                if(useGetSchemas) {
+                                if (useGetSchemas) {
                                     databaseName = rs.getString("TABLE_CATALOG");
                                     schemaName = rs.getString("TABLE_SCHEM");
                                 } else {
@@ -1181,20 +1324,20 @@ public class metadata {
                                     schemaName = rs.getString("TABLE_SCHEM");
                                 }
                                 // System.err.println("TABLE_CAT:"+databaseName+" TABLE_SCHEM:"+schemaName+"");
-                                if( "*".equalsIgnoreCase(database) 
-                            		|| (db == null && database == null) 
-                                    || (db != null && databaseName != null && databaseName.contains(db)) 
-                                    || (db != null && databaseName == null) 
-                                    )  {
-                                    if( "*".equalsIgnoreCase(schema) 
-                                		|| (schema == null && schemaName == null) 
-                                        || (schema != null && schemaName != null && schemaName.contains(schema)) 
-                                        || (schema == null && schemaName != null)
-                                        ) {
-                                        if(schemaList.indexOf(schemaName) < 0) {
+                                if ("*" .equalsIgnoreCase(database)
+                                        || (db == null && database == null)
+                                        || (db != null && databaseName != null && databaseName.contains(db))
+                                        || (db != null && databaseName == null)
+                                ) {
+                                    if ("*" .equalsIgnoreCase(schema)
+                                            || (schema == null && schemaName == null)
+                                            || (schema != null && schemaName != null && schemaName.contains(schema))
+                                            || (schema == null && schemaName != null)
+                                    ) {
+                                        if (schemaList.indexOf(schemaName) < 0) {
                                             schemaList.add(schemaName);
                                             nSchemaSearch++;
-                                            curStatus = "Adding Database:"+db+" Schema:"+schemaName;
+                                            curStatus = "Adding Database:" + db + " Schema:" + schemaName;
                                             out.print("<Liquid>" + curStatus + "</Liquid>");
                                         }
                                     }
@@ -1206,46 +1349,46 @@ public class metadata {
                         Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
                     }
 
-                    for (int is=0; is<schemaList.size(); is++) {
+                    for (int is = 0; is < schemaList.size(); is++) {
                         String scm = schemaList.get(is);
                         ArrayList<String> tableList = new ArrayList<String>();
                         ArrayList<String> tableRemarksList = new ArrayList<String>();
                         try {
-                            rs = dm.getTables(db, scm, table, types );
-                            if(rs != null) {
-                                while (rs.next()) {                
+                            rs = dm.getTables(db, scm, table, types);
+                            if (rs != null) {
+                                while (rs.next()) {
                                     String resultShcema = rs.getString("TABLE_SCHEM");
                                     String resultTable = rs.getString("TABLE_NAME");
                                     String resultTableRemarks = rs.getString("REMARKS");
-                                    if( (schema == null && !"information_schema".equalsIgnoreCase(resultShcema)) 
-                                     || (schema != null && schema.equalsIgnoreCase(resultShcema) ) 
-                                     || (schema != null && resultShcema == null) 
-                                     || (schema != null && schema.equalsIgnoreCase(resultShcema))
+                                    if ((schema == null && !"information_schema" .equalsIgnoreCase(resultShcema))
+                                            || (schema != null && schema.equalsIgnoreCase(resultShcema))
+                                            || (schema != null && resultShcema == null)
+                                            || (schema != null && schema.equalsIgnoreCase(resultShcema))
                                     ) {
-                                        if( (table == null && !"information_schema".equalsIgnoreCase(resultTable)) 
-                                         || (table != null && schema.equalsIgnoreCase(resultTable) ) 
-                                         || (table != null && resultTable == null) 
-                                         || (table != null && schema.equalsIgnoreCase(resultTable))
+                                        if ((table == null && !"information_schema" .equalsIgnoreCase(resultTable))
+                                                || (table != null && schema.equalsIgnoreCase(resultTable))
+                                                || (table != null && resultTable == null)
+                                                || (table != null && schema.equalsIgnoreCase(resultTable))
                                         ) {
                                             tableList.add(resultTable);
                                             tableRemarksList.add(resultTableRemarks);
                                             nTbableSearch++;
 
-                                            curStatus = "Adding Database:"+db+" Schema:"+scm+" Table:"+table;
+                                            curStatus = "Adding Database:" + db + " Schema:" + scm + " Table:" + table;
                                             out.print("<Liquid>" + curStatus + "</Liquid>");
-                                            
-                                            if(resultTable != null) {
-                                                if(resultTable.contains(search)) {
+
+                                            if (resultTable != null) {
+                                                if (resultTable.contains(search)) {
                                                     recHtml = append_to_found_record("Table name", db, scm, resultTable, "", resultTable, search);
                                                     nRecFound++;
                                                 }
                                             }
-                                            if(resultTableRemarks != null) {
-                                                if(resultTableRemarks.contains(search)) {
+                                            if (resultTableRemarks != null) {
+                                                if (resultTableRemarks.contains(search)) {
                                                     recHtml = append_to_found_record("Table remarks", db, scm, resultTable, "", resultTableRemarks, search);
                                                     nRecFound++;
                                                 }
-                                            }                                            
+                                            }
                                         }
                                     }
                                 }
@@ -1255,16 +1398,16 @@ public class metadata {
                             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
                         }
 
-                        for (int it=0; it<tableList.size(); it++) {
+                        for (int it = 0; it < tableList.size(); it++) {
                             String tbl = tableList.get(it);
                             ArrayList<String> labelList = new ArrayList<String>();
                             ArrayList<String> remarksList = new ArrayList<String>();
                             try {
                                 rs = dm.getColumns(db, scm, tbl, null);
-                                if(rs != null) {
+                                if (rs != null) {
                                     while (rs.next()) {
-                                        labelList.add( rs.getString("COLUMN_NAME") );
-                                        remarksList.add( rs.getString("REMARKS") );
+                                        labelList.add(rs.getString("COLUMN_NAME"));
+                                        remarksList.add(rs.getString("REMARKS"));
                                     }
                                     rs.close();
                                 }
@@ -1272,28 +1415,28 @@ public class metadata {
                                 Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
                             }
 
-                            for (int ic=0; ic<labelList.size(); ic++) {
+                            for (int ic = 0; ic < labelList.size(); ic++) {
                                 String label = labelList.get(ic);
                                 recHtml = "";
-                                if(label != null) {
-                                    if(label.contains(search)) {
+                                if (label != null) {
+                                    if (label.contains(search)) {
                                         recHtml = append_to_found_record("Label", db, scm, tbl, label, label, search);
                                         nRecFound++;
                                     }
                                 }
                                 String remarks = remarksList.get(ic);
-                                if(remarks != null) {
-                                    if(remarks.contains(search)) {
+                                if (remarks != null) {
+                                    if (remarks.contains(search)) {
                                         recHtml = append_to_found_record("Remarks", db, scm, tbl, label, remarks, search);
                                         nRecFound++;
                                     }
                                 }
                                 tblHtml += recHtml;
                                 nColumnSearch++;
-                                
-                                curStatus = "Searching on Database:"+db+" ("+(idb+1)+"/"+databaseList.size()+")"+ " Schema:"+scm+" ("+(is+1)+"/"+schemaList.size()+")" + " Table:"+tbl+" ("+(it+1)+"/"+tableList.size()+")" + " Columns:"+label+" ("+(ic+1)+"/"+labelList.size()+")";
+
+                                curStatus = "Searching on Database:" + db + " (" + (idb + 1) + "/" + databaseList.size() + ")" + " Schema:" + scm + " (" + (is + 1) + "/" + schemaList.size() + ")" + " Table:" + tbl + " (" + (it + 1) + "/" + tableList.size() + ")" + " Columns:" + label + " (" + (ic + 1) + "/" + labelList.size() + ")";
                                 out.print("<Liquid>" + curStatus + "</Liquid>");
-                                
+
                                 Thread.sleep(1);
                                 out.flush();
                             }
@@ -1304,62 +1447,62 @@ public class metadata {
                     int d = 1;
                 }
 
-                if(nRecFound == 0) {
+                if (nRecFound == 0) {
                     recHtml += "<tr>";
                     recHtml += "<td colspan=\"6\">";
-                    recHtml += "No data match '"+search+"'";
+                    recHtml += "No data match '" + search + "'";
                     recHtml += "</td>";
                     recHtml += "</tr>";
                 }
-                
+
                 recHtml += "<tr>";
                 recHtml += "<td colspan=\"6\">";
                 recHtml += "</td>";
                 recHtml += "</tr>";
 
-                
+
                 recHtml += "<tr>";
                 recHtml += "<td colspan=\"6\">";
-                recHtml += "Searched in "+nDatabaseSearch+" database(s), "+nSchemaSearch+" schema(s), "+nTbableSearch+" table(s), "+nColumnSearch+" column(s)";
+                recHtml += "Searched in " + nDatabaseSearch + " database(s), " + nSchemaSearch + " schema(s), " + nTbableSearch + " table(s), " + nColumnSearch + " column(s)";
                 recHtml += "</td>";
                 recHtml += "</tr>";
                 tblHtml += recHtml;
-                
+
                 tblHtml += "</table>";
 
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, ex.getMessage());
             }
         }
         return tblHtml;
     }
 
-    
+
     static boolean table_exist(Connection conn, String db, String scm, String table) throws SQLException {
         DatabaseMetaData dm = conn.getMetaData();
         ResultSet rs = dm.getCatalogs();
         try {
-            if(rs != null) {
-                String[] types = { "TABLE", "VIEW" };
-                rs = dm.getTables(db, scm, table, types );
-                if(rs != null) {
+            if (rs != null) {
+                String[] types = {"TABLE", "VIEW"};
+                rs = dm.getTables(db, scm, table, types);
+                if (rs != null) {
                     if (rs.next()) return true;
                 }
-                rs = dm.getTables(db, scm, table.toLowerCase(), types );
-                if(rs != null) {
+                rs = dm.getTables(db, scm, table.toLowerCase(), types);
+                if (rs != null) {
                     if (rs.next()) return true;
                 }
-                if(rs != null) rs.close();
-                rs = dm.getTables(db, scm, table.toUpperCase(), types );
-                if(rs != null) {
-                    if(rs.next()) return true;
+                if (rs != null) rs.close();
+                rs = dm.getTables(db, scm, table.toUpperCase(), types);
+                if (rs != null) {
+                    if (rs.next()) return true;
                 }
-                if(rs != null) rs.close();
-                rs = dm.getTables(db, scm, null, null );
-                if(rs != null) {
+                if (rs != null) rs.close();
+                rs = dm.getTables(db, scm, null, null);
+                if (rs != null) {
                     while (rs.next()) {
                         String resultTable = rs.getString("TABLE_NAME");
-                        if(resultTable != null && table.equalsIgnoreCase(resultTable))
+                        if (resultTable != null && table.equalsIgnoreCase(resultTable))
                             return true;
                     }
                 }
@@ -1377,54 +1520,54 @@ public class metadata {
                 */
             }
         } finally {
-            if(rs != null) rs.close();
+            if (rs != null) rs.close();
         }
         return false;
     }
-    
+
     static boolean create_table(Connection conn, String database, String schema, String table, JSONObject tableJson) throws SQLException, JSONException {
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         String itemIdString = "\"", tableIdString = "\"";
-        String pre_sql = null;                    
+        String pre_sql = null;
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
         int res;
-        
+
         try {
 
             String driver = db.getDriver(conn);
-            if("mysql".equalsIgnoreCase(driver)) {
+            if ("mysql" .equalsIgnoreCase(driver)) {
                 isMySQL = true;
-            } else if("mariadb".equalsIgnoreCase(driver)) {
+            } else if ("mariadb" .equalsIgnoreCase(driver)) {
                 isMySQL = true;
-            } else if("postgres".equalsIgnoreCase(driver)) {
+            } else if ("postgres" .equalsIgnoreCase(driver)) {
                 isPostgres = true;
-            } else if("oracle".equalsIgnoreCase(driver)) {
+            } else if ("oracle" .equalsIgnoreCase(driver)) {
                 isOracle = true;
-            } else if("sqlserver".equalsIgnoreCase(driver)) {
+            } else if ("sqlserver" .equalsIgnoreCase(driver)) {
                 isSqlServer = true;
             }
-            
-            if(isMySQL) {
+
+            if (isMySQL) {
                 itemIdString = "`";
                 tableIdString = "";
             }
 
             create_database(conn, database);
-            
+
             create_schema(conn, schema);
-            
+
             String sql = "";
 
-            sql += "CREATE TABLE IF NOT EXISTS "+(tableIdString+schema+tableIdString)+"."+(tableIdString+table+tableIdString)+" ";
-            
+            sql += "CREATE TABLE IF NOT EXISTS " + (tableIdString + schema + tableIdString) + "." + (tableIdString + table + tableIdString) + " ";
 
-            if(isOracle) {
-            } else if(isPostgres) {
-        		sql += "(\n";
+
+            if (isOracle) {
+            } else if (isPostgres) {
+                sql += "(\n";
             }
-            
-            
+
+
             String primaryKey = null;
             try {
                 primaryKey = tableJson.getString("primaryKey");
@@ -1439,7 +1582,7 @@ public class metadata {
                 String typeName = col.has("typeName") ? col.getString("typeName") : "VARCHAR";
                 int size = col.has("size") ? col.getInt("size") : 256;
 
-                
+
                 String sDefault = "";
                 try {
                     sDefault = col.getString("default");
@@ -1450,12 +1593,12 @@ public class metadata {
                     sql += ",";
                 }
 
-                if(primaryKey == null || primaryKey.isEmpty()) {
-                    if("id".equalsIgnoreCase(name)) {
+                if (primaryKey == null || primaryKey.isEmpty()) {
+                    if ("id" .equalsIgnoreCase(name)) {
                         primaryKey = name;
                     }
                 }
-                        
+
                 if (isOracle) {
                     if (size <= 0) {
                         sql += (itemIdString + name + itemIdString) + " " + typeName + "\n";
@@ -1476,25 +1619,25 @@ public class metadata {
                         // creoosa references non implememted
                         // String seq_name = ((tableIdString+schema+tableIdString)+"."+(tableIdString+table+"_seq"+tableIdString));
                         // sDefault = "nextval('"+schema+"."+seq_name+"'::regclass)";
-                        String seq_name = (tableIdString+table+"_seq"+tableIdString);
+                        String seq_name = (tableIdString + table + "_seq" + tableIdString);
                         // pre_sql = "CREATE SEQUENCE IF NOT EXISTS "+seq_name+";\nCOMMIT;\n";
-                        pre_sql = "CREATE SEQUENCE "+seq_name+";\nCOMMIT;\n";
-                        sDefault = "nextval('"+seq_name+"'::regclass)";
+                        pre_sql = "CREATE SEQUENCE " + seq_name + ";\nCOMMIT;\n";
+                        sDefault = "nextval('" + seq_name + "'::regclass)";
                         typeName = "int4";
                     }
-                    
-                    if ("serial".equalsIgnoreCase(typeName)) {
+
+                    if ("serial" .equalsIgnoreCase(typeName)) {
                         typeName = "integer";
                         size = -2;
                     }
 
-                    if ("int4".equalsIgnoreCase(typeName)) {
+                    if ("int4" .equalsIgnoreCase(typeName)) {
                         size = -1;
                     }
                     if (size <= 0) {
                         sql += (itemIdString + name + itemIdString) + " " + typeName;
                     } else {
-                        if("text".equalsIgnoreCase(typeName)) {
+                        if ("text" .equalsIgnoreCase(typeName)) {
                             sql += (itemIdString + name + itemIdString) + " " + typeName;
                         } else {
                             sql += (itemIdString + name + itemIdString) + " " + typeName + "(" + size + ")";
@@ -1502,19 +1645,19 @@ public class metadata {
                     }
 
                     if (name.equals(primaryKey)) {
-                        sql += " PRIMARY KEY ";                        
+                        sql += " PRIMARY KEY ";
                     }
-                    
+
                     if (sDefault != null && !sDefault.isEmpty()) {
                         sDefault = sDefault.replace("`", "'");
                         sql += " DEFAULT " + sDefault + "";
                     }
-                    
+
                     sql += "\n";
                 }
             }
-            
-            
+
+
             if (primaryKey != null && !primaryKey.isEmpty()) {
                 if (isOracle) {
                     sql += "PRIMARY KEY " + primaryKey + "\n";
@@ -1526,27 +1669,27 @@ public class metadata {
                 sql += ");\nCOMMIT;\n";
             }
 
-            if(pre_sql != null && !pre_sql.isEmpty()) {
+            if (pre_sql != null && !pre_sql.isEmpty()) {
                 try {
                     psdo = conn.prepareStatement(pre_sql);
                     res = psdo.executeUpdate();
                 } catch (Exception ex) {
                     Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, ex.getMessage());
-                    System.err.println("sql:"+pre_sql);
+                    System.err.println("sql:" + pre_sql);
                 }
                 psdo.close();
             }
 
-            if(sql != null && !sql.isEmpty()) {
+            if (sql != null && !sql.isEmpty()) {
                 try {
                     psdo = conn.prepareStatement(sql);
                     res = psdo.executeUpdate();
                 } catch (Exception ex) {
                     Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, ex.getMessage());
-                    System.err.println("sql:"+sql);
+                    System.err.println("sql:" + sql);
                 }
             }
-            
+
             if (!table_exist(conn,
                     database,
                     schema,
@@ -1558,108 +1701,107 @@ public class metadata {
             }
         } catch (Exception ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
-            
+
         } finally {
-            if(psdo != null) psdo.close();
-            if(rsdo != null) rsdo.close();
+            if (psdo != null) psdo.close();
+            if (rsdo != null) rsdo.close();
         }
         return false;
     }
 
     static boolean create_database_schema(String driver, String database, String schema, String user, String password) throws SQLException {
         return create_database_schema(driver, "localhost", database, schema, user, password);
-        }    
+    }
+
     static boolean create_database_schema(String driver, String host, String database, String schema, String user, String password) throws SQLException {
-    	Connection conn = null;
+        Connection conn = null;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         String itemIdString = "\"", tableIdString = "\"";
         Class driverClass = null;
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
-        
+
         try {
 
-            if("oracle".equalsIgnoreCase(driver)) {
+            if ("oracle" .equalsIgnoreCase(driver)) {
                 isOracle = true;
-                if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
-                conn = DriverManager.getConnection("jdbc:oracle:thin:@"+host+":1521:xe",user, password);
-                
-            } else if("postgres".equalsIgnoreCase(driver)) {
+                if (driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
+                conn = DriverManager.getConnection("jdbc:oracle:thin:@" + host + ":1521:xe", user, password);
+
+            } else if ("postgres" .equalsIgnoreCase(driver)) {
                 isPostgres = true;
-                if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
-                conn = DriverManager.getConnection("jdbc:postgresql://"+host+":5432/", user, password);
+                if (driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
+                conn = DriverManager.getConnection("jdbc:postgresql://" + host + ":5432/", user, password);
 
-            } else if("mysql".equalsIgnoreCase(driver)) {
+            } else if ("mysql" .equalsIgnoreCase(driver)) {
                 isMySQL = true;
-                if(driverClass == null) driverClass = Class.forName("com.mysql.jdbc.Driver");
-                conn = DriverManager.getConnection("jdbc:mysql://"+host+":3306/", user, password);
+                if (driverClass == null) driverClass = Class.forName("com.mysql.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mysql://" + host + ":3306/", user, password);
 
-            } else if("mariadb".equalsIgnoreCase(driver)) {
+            } else if ("mariadb" .equalsIgnoreCase(driver)) {
                 isMySQL = true;
-                if(driverClass == null) driverClass = Class.forName("org.mariadb.jdbc.Driver");
-                conn = DriverManager.getConnection("jdbc:mariadb://"+host+":3306/", user, password);
-            
-            } else if("sqlserver".equalsIgnoreCase(driver)) {
+                if (driverClass == null) driverClass = Class.forName("org.mariadb.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mariadb://" + host + ":3306/", user, password);
+
+            } else if ("sqlserver" .equalsIgnoreCase(driver)) {
                 isSqlServer = true;
-                if(driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-                conn = DriverManager.getConnection("jdbc:sqlserver://"+host+":1433", user, password);
-                
+                if (driverClass == null) driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+                conn = DriverManager.getConnection("jdbc:sqlserver://" + host + ":1433", user, password);
+
             } else {
                 Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, "driver not recognized");
             }
-        	
 
 
-            
-            if(isMySQL) {
+            if (isMySQL) {
                 itemIdString = "`";
                 tableIdString = "";
             }
-            
+
             create_database(conn, database);
-            
+
             create_schema(conn, schema);
 
             return true;
 
         } catch (Exception ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, ex.getMessage());
-            
+
         } finally {
-            if(psdo != null) psdo.close();
-            if(rsdo != null) rsdo.close();
+            if (psdo != null) psdo.close();
+            if (rsdo != null) rsdo.close();
         }
         return false;
     }
-    
+
     static public boolean create_database(Connection conn, String database) {
         String sql = null;
         if (conn != null) {
             if (database != null && !database.isEmpty()) {
                 try {
                     String driver = db.getDriver(conn);
-                    if ("mysql".equalsIgnoreCase(driver)) {
+                    if ("mysql" .equalsIgnoreCase(driver)) {
                         sql = "CREATE DATABASE IF NOT EXISTS " + database;
-                    } else if ("mariadb".equalsIgnoreCase(driver)) {
+                    } else if ("mariadb" .equalsIgnoreCase(driver)) {
                         sql = "CREATE DATABASE IF NOT EXISTS " + database;
-                    } else if ("postgres".equalsIgnoreCase(driver)) {
+                    } else if ("postgres" .equalsIgnoreCase(driver)) {
                         sql = "CREATE DATABASE " + database;
-                    } else if ("oracle".equalsIgnoreCase(driver)) {
+                    } else if ("oracle" .equalsIgnoreCase(driver)) {
                         // N.B. database = oracle instance
                         sql = "CREATE DATABASE IF NOT EXISTS " + database;
-                    } else if ("sqlserver".equalsIgnoreCase(driver)) {
+                    } else if ("sqlserver" .equalsIgnoreCase(driver)) {
                         sql = "CREATE DATABASE IF NOT EXISTS " + database;
                     }
                     if (sql != null) {
                         PreparedStatement psdo = conn.prepareStatement(sql);
                         psdo.executeUpdate();
                         psdo.close();
-                        Logger.getLogger(metadata.class.getName()).log(Level.INFO, "Created database : "+database + " by driver : "+driver);
+                        Logger.getLogger(metadata.class.getName()).log(Level.INFO, "Created database : " + database + " by driver : " + driver);
                         return true;
                     }
                 } catch (Throwable th) {
                     Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, th.getMessage());
-                    System.err.println("sql:"+sql);
+                    System.err.println("sql:" + sql);
                 }
             }
         }
@@ -1672,15 +1814,15 @@ public class metadata {
             if (schema != null && !schema.isEmpty()) {
                 try {
                     String driver = db.getDriver(conn);
-                    if ("mysql".equalsIgnoreCase(driver)) {
+                    if ("mysql" .equalsIgnoreCase(driver)) {
                         sql = "CREATE SCHEMA IF NOT EXISTS " + schema;
-                    } else if ("mariadb".equalsIgnoreCase(driver)) {
+                    } else if ("mariadb" .equalsIgnoreCase(driver)) {
                         sql = "CREATE SCHEMA IF NOT EXISTS " + schema;
-                    } else if ("postgres".equalsIgnoreCase(driver)) {
+                    } else if ("postgres" .equalsIgnoreCase(driver)) {
                         sql = "CREATE SCHEMA " + schema;
-                    } else if ("oracle".equalsIgnoreCase(driver)) {
+                    } else if ("oracle" .equalsIgnoreCase(driver)) {
                         sql = "CREATE SCHEMA IF NOT EXISTS " + schema;
-                    } else if ("sqlserver".equalsIgnoreCase(driver)) {
+                    } else if ("sqlserver" .equalsIgnoreCase(driver)) {
                         sql = "CREATE SCHEMA IF NOT EXISTS " + schema;
                     }
                     if (sql != null) {
@@ -1691,20 +1833,20 @@ public class metadata {
                     }
                 } catch (Throwable th) {
                     Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, th.getMessage());
-                    System.err.println("sql:"+sql);
+                    System.err.println("sql:" + sql);
                 }
             }
         }
         return false;
     }
-	
-    
+
+
     //
     // search  in db utility func
     //
     static String append_to_found_record(String type, String database, String schema, String table, String column, String data, String searchString) {
         String recHtml = "";
-        if(searchString == null) {
+        if (searchString == null) {
             recHtml += "<tr style=\"background-color: lightgrey\">";
             recHtml += "<td>";
             recHtml += "database";
@@ -1723,7 +1865,7 @@ public class metadata {
             recHtml += "</td>";
             recHtml += "<td>";
             recHtml += "result";
-            recHtml += "</td>";       
+            recHtml += "</td>";
             recHtml += "</tr>";
         } else {
             recHtml += "<tr>";
@@ -1734,7 +1876,7 @@ public class metadata {
             recHtml += schema;
             recHtml += "</td>";
             recHtml += "<td>";
-            recHtml += "<a href=\"javawcript:void(0)\" onclick=\"Liquid.onNewLiquidFromTableName('"+table+"', null, null);\" title=\"Click to create control\">"+table+"</a>";
+            recHtml += "<a href=\"javawcript:void(0)\" onclick=\"Liquid.onNewLiquidFromTableName('" + table + "', null, null);\" title=\"Click to create control\">" + table + "</a>";
             recHtml += "</td>";
             recHtml += "<td>";
             recHtml += column;
@@ -1743,8 +1885,8 @@ public class metadata {
             recHtml += type;
             recHtml += "</td>";
             recHtml += "<td>";
-            recHtml += data.substring(0, data.indexOf(searchString)) + "<span style=\"color:red\">" + searchString + "</span>" + data.substring(data.indexOf(searchString)+searchString.length());
-            recHtml += "</td>";       
+            recHtml += data.substring(0, data.indexOf(searchString)) + "<span style=\"color:red\">" + searchString + "</span>" + data.substring(data.indexOf(searchString) + searchString.length());
+            recHtml += "</td>";
             recHtml += "</tr>";
         }
         return recHtml;
@@ -1756,121 +1898,121 @@ public class metadata {
 
     static public String getAddColumnSQL(String driver, String database, String schema, String table, String field, String type, String size, String scale, String nullable, String autoincrement, String sDefault, String sRemarks) {
         String sql = "";
-        String schemaTable = ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+        String schemaTable = ((schema != null && !schema.isEmpty()) ? schema + "." : "") + table;
 
-        if ("mysql".equalsIgnoreCase(driver)) {
+        if ("mysql" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
-        } else if ("mariadb".equalsIgnoreCase(driver)) {
+        } else if ("mariadb" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
-        } else if ("postgres".equalsIgnoreCase(driver)) {
+        } else if ("postgres" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
-        } else if ("oracle".equalsIgnoreCase(driver)) {
+        } else if ("oracle" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
-        } else if ("sqlserver".equalsIgnoreCase(driver)) {
+        } else if ("sqlserver" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
         }
 
-        if ("mysql".equalsIgnoreCase(driver)) {
-        } else if ("mariadb".equalsIgnoreCase(driver)) {
-        } else if ("postgres".equalsIgnoreCase(driver)) {
-        } else if ("oracle".equalsIgnoreCase(driver)) {
-            if("DATE".equalsIgnoreCase(type)) 
+        if ("mysql" .equalsIgnoreCase(driver)) {
+        } else if ("mariadb" .equalsIgnoreCase(driver)) {
+        } else if ("postgres" .equalsIgnoreCase(driver)) {
+        } else if ("oracle" .equalsIgnoreCase(driver)) {
+            if ("DATE" .equalsIgnoreCase(type))
                 size = null;
-            
+
             String dataType = "";
-            
-            if ( scale != null && !scale.isEmpty() && size != null && !size.isEmpty()) {
-                dataType = (" " + type + "("+size+","+scale+") ");
+
+            if (scale != null && !scale.isEmpty() && size != null && !size.isEmpty()) {
+                dataType = (" " + type + "(" + size + "," + scale + ") ");
             } else if (size != null && !size.isEmpty()) {
-                if(type.indexOf("(") < 0) {
-                    dataType = " " + type + "("+size+") ";
+                if (type.indexOf("(") < 0) {
+                    dataType = " " + type + "(" + size + ") ";
                 } else {
                     dataType = " " + type + " ";
                 }
             } else {
                 dataType = (" " + type + " ");
             }
-            
+
             sql += " ADD\n";
-            sql += "(" 
-                    + field 
+            sql += "("
+                    + field
                     + dataType
-                    + (nullable != null && "Y".equalsIgnoreCase(nullable) ? "" : "NOT NULL ")
+                    + (nullable != null && "Y" .equalsIgnoreCase(nullable) ? "" : "NOT NULL ")
                     + (sDefault != null && !sDefault.isEmpty() ? " DEFAULT " + sDefault : "")
                     + ");\n";
         }
-        
-        if(sRemarks != null && !sRemarks.isEmpty()) {
+
+        if (sRemarks != null && !sRemarks.isEmpty()) {
             sql += "\n";
-            if ("mysql".equalsIgnoreCase(driver)) {
-            } else if ("mariadb".equalsIgnoreCase(driver)) {
-            } else if ("postgres".equalsIgnoreCase(driver)) {
-            } else if ("oracle".equalsIgnoreCase(driver)) {
-                sql += "COMMENT ON COLUMN "+schemaTable+"."+field
-                        +" IS "+sRemarks;
-            } else if ("sqlserver".equalsIgnoreCase(driver)) {
+            if ("mysql" .equalsIgnoreCase(driver)) {
+            } else if ("mariadb" .equalsIgnoreCase(driver)) {
+            } else if ("postgres" .equalsIgnoreCase(driver)) {
+            } else if ("oracle" .equalsIgnoreCase(driver)) {
+                sql += "COMMENT ON COLUMN " + schemaTable + "." + field
+                        + " IS " + sRemarks;
+            } else if ("sqlserver" .equalsIgnoreCase(driver)) {
             }
         }
-        
+
         return sql;
     }
 
 
     static public String getUpdateColumnSQL(String driver, String database, String schema, String table, String field, String type, String size, String scale, String nullable, String sDefault, String sRemarks) {
         String sql = "";
-        String schemaTable = ((schema != null && !schema.isEmpty()) ?  schema +"." : "") + table;
+        String schemaTable = ((schema != null && !schema.isEmpty()) ? schema + "." : "") + table;
 
-        if ("mysql".equalsIgnoreCase(driver)) {
+        if ("mysql" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
-        } else if ("mariadb".equalsIgnoreCase(driver)) {
+        } else if ("mariadb" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
-        } else if ("postgres".equalsIgnoreCase(driver)) {
+        } else if ("postgres" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
-        } else if ("oracle".equalsIgnoreCase(driver)) {
+        } else if ("oracle" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
-        } else if ("sqlserver".equalsIgnoreCase(driver)) {
+        } else if ("sqlserver" .equalsIgnoreCase(driver)) {
             sql = "ALTER TABLE\n" + schemaTable;
         }
 
-        if ("mysql".equalsIgnoreCase(driver)) {
-        } else if ("mariadb".equalsIgnoreCase(driver)) {
-        } else if ("postgres".equalsIgnoreCase(driver)) {
-        } else if ("oracle".equalsIgnoreCase(driver)) {
-            if("DATE".equalsIgnoreCase(type)) 
+        if ("mysql" .equalsIgnoreCase(driver)) {
+        } else if ("mariadb" .equalsIgnoreCase(driver)) {
+        } else if ("postgres" .equalsIgnoreCase(driver)) {
+        } else if ("oracle" .equalsIgnoreCase(driver)) {
+            if ("DATE" .equalsIgnoreCase(type))
                 size = null;
-            
+
             String dataType = "";
-            
-            if ( scale != null && !scale.isEmpty() && size != null && !size.isEmpty()) {
-                dataType = (" " + type + "("+size+","+scale+") ");
+
+            if (scale != null && !scale.isEmpty() && size != null && !size.isEmpty()) {
+                dataType = (" " + type + "(" + size + "," + scale + ") ");
             } else if (size != null && !size.isEmpty()) {
-                dataType = (" " + type + "("+size+") ");
+                dataType = (" " + type + "(" + size + ") ");
             } else if (type != null && !type.isEmpty()) {
                 dataType = (" " + type + " ");
             }
-            
+
             sql += " MODIFY\n";
-            sql += "(" 
-                    + field 
+            sql += "("
+                    + field
                     + (dataType != null && !dataType.isEmpty() ? dataType : "")
-                    + (nullable != null && "Y".equalsIgnoreCase(nullable) ? " NULL " : ( nullable != null && !"Y".equalsIgnoreCase(nullable) ? " NOT NULL " : ""))
+                    + (nullable != null && "Y" .equalsIgnoreCase(nullable) ? " NULL " : (nullable != null && !"Y" .equalsIgnoreCase(nullable) ? " NOT NULL " : ""))
                     + (sDefault != null && !sDefault.isEmpty() ? " DEFAULT " + sDefault : "")
                     + ");\n";
         }
-        
-        if(sRemarks != null && !sRemarks.isEmpty()) {
+
+        if (sRemarks != null && !sRemarks.isEmpty()) {
             sql += "\n";
-            if ("mysql".equalsIgnoreCase(driver)) {
-            } else if ("mariadb".equalsIgnoreCase(driver)) {
-            } else if ("postgres".equalsIgnoreCase(driver)) {
-            } else if ("oracle".equalsIgnoreCase(driver)) {
-                sql += "COMMENT ON COLUMN "+schemaTable+"."+field
-                        +" IS "+sRemarks;
-            } else if ("sqlserver".equalsIgnoreCase(driver)) {
+            if ("mysql" .equalsIgnoreCase(driver)) {
+            } else if ("mariadb" .equalsIgnoreCase(driver)) {
+            } else if ("postgres" .equalsIgnoreCase(driver)) {
+            } else if ("oracle" .equalsIgnoreCase(driver)) {
+                sql += "COMMENT ON COLUMN " + schemaTable + "." + field
+                        + " IS " + sRemarks;
+            } else if ("sqlserver" .equalsIgnoreCase(driver)) {
             }
         }
-        
+
         return sql;
     }
-    
+
 }

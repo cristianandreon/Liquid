@@ -65,7 +65,7 @@ public class system_command {
                         String remoteControlId = liquid.controlId+"@remote";
                         String parentControlId = null;
                         String sourceToken = null;
-                        String sRequest = "{ \"connectionDriver\":\""+remoteConnectionDriver+"\", \"connectionURL\":\""+remoteConnectionURL+"\" }";
+                        String sRequest = "{ \"connectionDriver\":\""+utility.base64Encode(remoteConnectionDriver)+"\", \"connectionURL\":\""+utility.base64Encode(remoteConnectionURL)+"\" }";
 
                         // clona the control's cfg
                         JSONObject remote_liquid_json = new JSONObject( liquid.tableJson.toString() );

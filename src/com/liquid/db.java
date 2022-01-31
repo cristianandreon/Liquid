@@ -883,7 +883,7 @@ public class db {
                                                     aliasIndex++;
                                                     column_alias = "A" + "_" + columnName;
                                                     column_json_list += colParts[0] + "_" + columnName;
-                                                    column_list += colMode + colParts[0] + "." + itemIdString + colParts[1] + itemIdString + asKeyword + column_alias;
+                                                    column_list += colMode + tableIdString + colParts[0] + tableIdString + "." + itemIdString + colParts[1] + itemIdString + asKeyword + column_alias;
                                                 } else {
                                                     String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength);
                                                     aliasIndex++;
@@ -1009,8 +1009,9 @@ public class db {
                 }
             }
 
-            if (isOracle) { //fuckyou
+            if (isOracle) {
                 if (!"distinct".equalsIgnoreCase(targetMode)) { // fail the dintinct purpose
+                    // fuckyou ORACLE
                     column_list += ",ROWNUM as ROWNUMBER";
                 }
             }
@@ -1355,7 +1356,7 @@ public class db {
                                         // limitString += " OFFSET "+startRow+" ROWS FETCH NEXT "+(endRow-startRow)+" ROWS ONLY";
                                         limitString += "ROWNUM < " + (endRow);
                                         executingQuery += limitString;
-                                        executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUM > " + startRow + "";
+                                        executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUMBER > " + startRow + "";
                                         limitString = "";
                                     } else if (isSqlServer) {
                                         if (sSort == null || sSort.isEmpty()) {

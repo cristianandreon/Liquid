@@ -397,7 +397,7 @@ public class wsStreamerClient {
                         send( outputStream,  workspace.set_file_content((HttpServletRequest)request, (JspWriter)null), token );
                         retVal = true;
 
-                    } else if ("setZK".equalsIgnoreCase(operation)) {
+                    } else if ("saveToZK".equalsIgnoreCase(operation)) {
                         // write .xml to the server
                         send( outputStream,  workspace.set_zk_content((HttpServletRequest)request, (JspWriter)null), token );
                         retVal = true;

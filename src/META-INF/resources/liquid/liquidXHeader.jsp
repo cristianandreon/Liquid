@@ -8,9 +8,12 @@
 <%@ page import="java.util.Enumeration" %>
 <%@ page import="java.util.Locale" %>
 
-<% 
-    String path = request.getContextPath(); 
-    String jssVersion = "1.81";
+<%
+    String path = request.getContextPath();
+    String jssVersion = workspace.version_string;
+    if(workspace.path == null) {
+        workspace.path = path;
+    }
 %>
 
 <!-- -->
@@ -54,7 +57,7 @@
             String variant = locale.getVariant();
             String lang = locale.getLanguage();
             String lang_code = (country != null && !country.isEmpty() ? country : lang ) +"-"+ lang.toUpperCase();
-            out.println("<script type = \"text/javascript\" src = \""+path+"/liquid/datejs/date-"+(lang_code)+".js\" ></script >");
+            out.println("<script src=\""+path+"/liquid/datejs/date-"+(lang_code)+".js\"></script>");
             break;
         }
     }

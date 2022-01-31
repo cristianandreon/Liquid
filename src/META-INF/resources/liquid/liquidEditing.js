@@ -3,7 +3,7 @@
  */
 
 var LiquidEditing = {
-    version: 1.03,
+    version: 1.04,
     controlid:"Liquid framework - Editing module",
     
     
@@ -641,7 +641,23 @@ var LiquidEditing = {
                         if(mode === 'winX')
                             cmds = [ { name:"create" },{ name:"update" },{ name:"delete" },{ name:"copy" },{ name:"paste" },{ name:"next" },{ name:"previous" } ];
                         
-                        liquidJson = { database:Liquid.curDatabase, schema:Liquid.curSchema, table:table, columns:cols, commands:cmds, caption:controlId, mode:mode, parentObjId:parentObjId, autoFitColumns:true, width:width, height:height, resize:"both", askForSave:true, editable:true };
+                        liquidJson = {
+                            database:Liquid.curDatabase
+                            ,schema:Liquid.curSchema
+                            ,table:table
+                            ,columns:cols
+                            ,foreignTables:"*"
+                            ,commands:cmds
+                            ,caption:controlId
+                            ,mode:mode
+                            ,parentObjId:parentObjId
+                            ,autoFitColumns:true
+                            ,width:width
+                            ,height:height
+                            ,resize:"both"
+                            ,askForSave:true
+                            ,editable:true
+                        };
                         
                         if(mode === 'formX') {
                             liquidJson.navVisible = false;
@@ -1723,9 +1739,9 @@ var LiquidEditing = {
                 +"<p class=\"liquidContextMenu-item\" title=\"Current:"+Liquid.curDatabase+"\"onclick=\"LiquidEditing.onSetDatabase(event)\" >"+dbImg+"<a href=\"javascript:void(0)\" >Select database"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" title=\"Current:"+Liquid.curSchema+"\" onclick=\"LiquidEditing.onSetSchema(event)\" >"+storeImg+"<a href=\"javascript:void(0)\" >Select schema"+"</a></p>"
                 +"<p><hr size=1></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSearchDatabase(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on databases"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSearchSchema(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on schemas"+"</a></p>"
-                +"<p class=\"liquidContextMenu-item\" onclick=\"Liquid.onSearchTable(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on table"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSearchDatabase(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on databases"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSearchSchema(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on schemas"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onSearchTable(event)\" >"+addImg+"<a href=\"javascript:void(0)\" >Search on table"+"</a></p>"
                 +"<p><hr size=1></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewWindow(event, 'winX','"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New window"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewWindowFromJson(event, 'winX','"+obj.id+"')\" >"+addImg+"<a href=\"javascript:void(0)\" >New window from json"+"</a></p>"
@@ -2856,12 +2872,6 @@ var LiquidEditing = {
         }
         return dlg;
     },
-    onSystemEditorClose:function(objId) {
-        var liquid = Liquid.getLiquid(objId);
-        if(liquid) {
-            liquid.gridOptions.api.stopEditing();
-        }
-    },
     applySystemEditor:function(dlgId, optId, objId) {
         if(dlgId) {
             var dlg = document.getElementById(dlgId);
@@ -2872,6 +2882,265 @@ var LiquidEditing = {
                         if(objId) {
                             var obj = document.getElementById(objId);
                             if(obj) obj.value = opt.value;
+                        }
+                    }
+                }
+            }
+        }
+    },
+    /**
+     *
+     * @param liquid
+     * @returns {HTMLElement}
+     */
+    exportToZKDialog:function(liquid) {
+        var dlgId = "liquidExportToZKDialog";
+        var dlg = document.getElementById(dlgId);
+        if (!dlg) {
+            dlg = document.createElement('div');
+            dlg.id = dlgId;
+            dlg.className = "liquidContextMenu";
+            // dlg.display = 'none';
+
+            var panelCode = capitalizeFirstLetter(liquid.tableJson.table.toCamelCase());
+            if (!Liquid.customerName)
+                Liquid.customerName = "geisoft";
+            if (!Liquid.appName)
+                Liquid.appName = "app";
+
+            if (!Liquid.orderByField)
+                Liquid.orderByField = "";
+            if (!Liquid.orderByField)
+                Liquid.orderByField = "";
+
+
+            var beanClass = "com." + Liquid.customerName + "." + Liquid.appName + ".hibernate.bean." + panelCode;
+            if (!Liquid.fieldInTitleBar)
+                Liquid.fieldInTitleBar = "";
+            if (!Liquid.maxResult)
+                Liquid.maxResult = "5000";
+            if (!Liquid.piedino)
+                Liquid.piedino = "/com/" + Liquid.customerName + "/util/hibernate/controller/datiPiedinoProfilo-1.incxml";
+            if (!Liquid.showList)
+                Liquid.showList = "S";
+            if (!Liquid.autoSelect)
+                Liquid.autoSelect = "S";
+            if (!Liquid.autoFind)
+                Liquid.autoFind = "S";
+            if (!Liquid.itemsInPage)
+                Liquid.itemsInPage = "20";
+            if (!Liquid.popupCommand)
+                Liquid.popupCommand = "N";
+            if (!Liquid.use_asset)
+                Liquid.use_asset = "N";
+            if (!Liquid.process_foreign_tables)
+                Liquid.process_foreign_tables = "N";
+            if (!Liquid.can_insert)
+                Liquid.can_insert = "S";
+            if (!Liquid.can_update)
+                Liquid.can_update = "S";
+            if (!Liquid.can_delete)
+                Liquid.can_delete = "S";
+
+            dlg.innerHTML =
+                "<div class=\"liquidEditorDialog-content\">"
+                + "<span class=\"liquidContextMenu-close\"></span>"
+                + "<span style='text-align: center'><h1>Export to ZK panel</h1></span>"
+                + "<table cellpadding='3' cellspacing='3'     style='width: 100%; height: 100%;'>"
+                + "<tr><td>Panel title</td><td><input id=\"" + "panelTitle" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + panelCode + "'/></td</tr>"
+                + "<tr><td>Field in title bar</td><td><input id=\"" + "fieldInTitleBar" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.fieldInTitleBar + "'/></td</tr>"
+                + "<tr><td>Customer name</td><td><input id=\"" + "customerName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.customerName + "'/></td</tr>"
+                + "<tr><td>App name</td><td><input id=\"" + "appName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.appName + "'/></td</tr>"
+                + "<tr><td>Bean class</td><td><input id=\"" + "beanClass" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + beanClass + "'/></td</tr>"
+                + "<tr><td>Max Result</td><td><input id=\"" + "maxResult" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.maxResult + "'/></td</tr>"
+                + "<tr><td>Order by field</td><td><input id=\"" + "orderByField" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.orderByField + "'/></td</tr>"
+                + "<tr><td>Order mode</td><td><input id=\"" + "orderByFieldMode" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + "ASC" + "'/></td</tr>"
+                + "<tr><td>Piedino</td><td><input id=\"" + "piedino" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.piedino + "'/></td</tr>"
+                + "<tr><td>Show list</td><td><input id=\"" + "showList" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.showList + "'/></td</tr>"
+                + "<tr><td>Auto select</td><td><input id=\"" + "autoSelect" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.autoSelect + "'/></td</tr>"
+                + "<tr><td>Auto find</td><td><input id=\"" + "autoFind" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.autoFind + "'/></td</tr>"
+                + "<tr><td>No.items per page</td><td><input id=\"" + "itemsInPage" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.itemsInPage + "'/></td</tr>"
+                + "<tr><td>Popup command</td><td><input id=\"" + "popupCommand" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.popupCommand + "'/></td</tr>"
+                + "<tr><td>Use asset</td><td><input id=\"" + "use_asset" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.use_asset + "'/></td</tr>"
+                + "<tr><td>Can insert</td><td><input id=\"" + "can_insert" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.can_insert + "'/></td</tr>"
+                + "<tr><td>Can update</td><td><input id=\"" + "can_update" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.can_update + "'/></td</tr>"
+                + "<tr><td>Can delete</td><td><input id=\"" + "can_delete" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.can_delete + "'/></td</tr>"
+                + "<tr><td>Foreign tables</td><td><input id=\"" + "process_foreign_tables" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.process_foreign_tables + "'/></td</tr>"
+                + "</table>"
+                + "</br>"
+                + "</br>"
+                + "<p style=\"width:auto; text-align: center\" onclick=\"LiquidEditing.applyExportToZKDialog('" + liquid.controlId + "','" + dlg.id + "')\" class=\"liquidContextMenu-item\">Do export</p>"
+            ;
+        }
+
+        Liquid.showDlg(dlg);
+
+        Liquid.createDatalistByColumns(document.getElementById("fieldInTitleBar"), liquid);
+
+        Liquid.createDatalistByProp(document.getElementById("maxResult"), liquid, "100,200,500,1000,2000,3000,4000,5000,10000");
+
+        Liquid.createDatalistByColumns(document.getElementById("orderByField"), liquid);
+
+        Liquid.createDatalistByProp(document.getElementById("orderByFieldMode"), liquid, "ASC,DESC");
+
+        Liquid.createDatalistByProp(document.getElementById("showList"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("autoSelect"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("autoFind"), liquid, "S,N");
+
+        Liquid.createDatalistByProp(document.getElementById("itemsInPage"), liquid, "5,10,15,20,30,40,50,100,150,200,500,1000");
+
+        Liquid.createDatalistByProp(document.getElementById("popupCommand"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("use_asset"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("can_insert"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("can_update"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("can_delete"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("process_foreign_tables"), liquid, "S,N");
+    }
+    ,
+    applyExportToZKDialog:function(objId, dlgId) {
+        LiquidEditing.onContextMenuClose();
+        if(dlgId) {
+            var dlg = document.getElementById(dlgId);
+            if(dlg) {
+                if(objId) {
+                    var liquid = Liquid.getLiquid(objId);
+                    if(liquid) {
+                        var obj = document.getElementById("panelTitle");
+                        if(obj) Liquid.panelTitle = obj.value;
+                        obj = document.getElementById("fieldInTitleBar");
+                        if(obj) Liquid.fieldInTitleBar = obj.value;
+                        obj = document.getElementById("customerName");
+                        if(obj) Liquid.customerName = obj.value;
+                        obj = document.getElementById("appName");
+                        if(obj) Liquid.appName = obj.value;
+                        obj = document.getElementById("beanClass");
+                        if(obj) Liquid.beanClass = obj.value;
+                        obj = document.getElementById("maxResult");
+                        if(obj) Liquid.maxResult = obj.value;
+                        obj = document.getElementById("orderByField");
+                        if(obj) Liquid.orderByField = obj.value;
+                        obj = document.getElementById("orderByFieldMode");
+                        if(obj) Liquid.orderByFieldMode = obj.value;
+                        obj = document.getElementById("piedino");
+                        if(obj) Liquid.piedino = obj.value;
+                        obj = document.getElementById("showList");
+                        if(obj) Liquid.showList = obj.value;
+                        obj = document.getElementById("autoSelect");
+                        if(obj) Liquid.autoSelect = obj.value;
+                        obj = document.getElementById("autoFind");
+                        if(obj) Liquid.autoFind = obj.value;
+                        obj = document.getElementById("itemsInPage");
+                        if(obj) Liquid.itemsInPage = obj.value;
+                        obj = document.getElementById("popupCommand");
+                        if(obj) Liquid.popupCommand = obj.value;
+                        obj = document.getElementById("use_asset");
+                        if(obj) Liquid.use_asset = obj.value;
+                        obj = document.getElementById("can_insert");
+                        if(obj) Liquid.can_insert = obj.value;
+                        obj = document.getElementById("can_update");
+                        if(obj) Liquid.can_update = obj.value;
+                        obj = document.getElementById("can_delete");
+                        if(obj) Liquid.can_delete = obj.value;
+                        obj = document.getElementById("process_foreign_tables");
+                        if(obj) Liquid.process_foreign_tables = obj.value;
+
+                        var json = null;
+                        if(liquid instanceof LiquidCtrl) {
+                            json = liquid.tableJsonSource ? JSON.parse(JSON.stringify(liquid.tableJsonSource)) : null;
+                        } else if(liquid instanceof LiquidMenuXCtrl) {
+                            json = liquid.menuJsonSource ? JSON.parse(JSON.stringify(liquid.menuJsonSource)) : null;
+                        }
+                        if(json) {
+                            // aggiunta parametri
+                            var token = json.token; // cave current token
+
+                            json.zkParams = {
+                                panelTitle:Liquid.panelTitle
+                                ,fieldInTitleBar:Liquid.fieldInTitleBar
+                                ,customerName:Liquid.customerName
+                                ,appName:Liquid.appName
+                                ,beanClass:Liquid.beanClass
+                                ,maxResult:Number(Liquid.maxResult)
+                                ,orderByField:Liquid.orderByField
+                                ,orderByFieldMode:Liquid.orderByFieldMode
+                                ,piedino:Liquid.piedino
+                                ,showList:Liquid.showList === 'S' ? true : false
+                                ,autoSelect:Liquid.autoSelect === 'S' ? true : false
+                                ,autoFind:Liquid.autoFind === 'S' ? true : false
+                                ,itemsInPage:Number(Liquid.itemsInPage)
+                                ,popupCommand:Liquid.popupCommand === 'S' ? true : false
+                                ,use_asset:Liquid.use_asset === 'S' ? true : false
+                                ,can_insert:Liquid.can_insert === 'S' ? true : false
+                                ,can_update:Liquid.can_update === 'S' ? true : false
+                                ,can_delete:Liquid.can_delete === 'S' ? true : false
+                                ,process_foreign_tables:Liquid.process_foreign_tables === 'S' ? true : false
+                            }
+                            var fileName = liquid.controlId+".json";
+                            var tableJsonString = JSON.stringify(json);
+
+                            json.token = token; // need current token
+                            Liquid.registerOnUnloadPage();
+                            if(!liquid.xhr)
+                                liquid.xhr = new XMLHttpRequest();
+                            if(Liquid.wait_for_xhr_ready(liquid), "export to ZK") {
+                                try {
+                                    Liquid.startWaiting(liquid);
+                                    liquid.xhr.open('POST', glLiquidServlet + '?operation=saveToZK'
+                                        +'&controlId=' + (typeof json.registerControlId !== "undefined" ? json.registerControlId : liquid.controlId)
+                                        +'&token=' + (typeof token !== "undefined" ? token : "")
+                                        , true);
+
+                                    var command = { name:"onSaveToZK" };
+                                    liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onSaveToZK", e, null, null); }, false);
+
+                                    liquid.xhr.send(tableJsonString);
+                                    liquid.xhr.onreadystatechange = function() {
+                                        if(liquid.xhr.readyState === 4) {
+                                            Liquid.release_xhr(liquid);
+                                            Liquid.stopWaiting(liquid);
+                                            if(liquid.xhr.status === 200) {
+                                                // \b \f \n \r \t
+                                                var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                                                responseText = Liquid.getXHRResponse(responseText);
+                                                httpResultJson = JSON.parse(responseText);
+                                                if(httpResultJson) {
+                                                    var anyMessage = false;
+                                                    if(httpResultJson.error) {
+                                                        var err = null;
+                                                        try { err = atob(httpResultJson.error); } catch(e) { err = httpResultJson.error; }
+                                                        Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "ERROR", err, { text:"OK", func:function() { } }, null);
+                                                        anyMessage = true;
+                                                    } else if(httpResultJson.warning) {
+                                                        var warn = null;
+                                                        try { warn = atob(httpResultJson.warning); } catch(e) { warn = httpResultJson.warning; }
+                                                        Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "WARNING", warn, { text:"OK", func:function() { } }, null);
+                                                        anyMessage = true;
+                                                    } else if(httpResultJson.message) {
+                                                        var msg = null;
+                                                        try { msg = atob(httpResultJson.message); } catch(e) { msg = httpResultJson.message; }
+                                                        Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "MESSAGE", msg, { text:"OK", func:function() { } }, null);
+                                                        anyMessage = true;
+                                                    }
+                                                    if(httpResultJson.client) {
+                                                        Liquid.executeClientSide(liquid, "Save json response:", httpResultJson.client, null, true);
+                                                    }
+                                                    if(httpResultJson.result>0) {
+                                                        Liquid.setAskForSave(liquid, false);
+                                                    }
+                                                }
+                                            } else {
+                                                console.error("ERROR : wring response:"+liquid.xhr.status);
+                                            }
+                                        }
+                                    };
+                                } catch (e) {
+                                    console.error("ERROR : "+e);
+                                }
+                            }
                         }
                     }
                 }
@@ -2986,7 +3255,7 @@ var LiquidEditing = {
             }
         }
     },
-    onExportToZK:function(obj) {
+    onSaveToZK:function(obj) {
         LiquidEditing.onContextMenuClose();
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
@@ -3010,74 +3279,7 @@ var LiquidEditing = {
                 if(typeof json.sourceFileName === 'undefined' || !json.sourceFileName) {
                     json.sourceFileName = btoa(liquid.controlId + ".json");
                 }
-                var fileName = liquid.controlId+".json";
-                var tableJsonString = JSON.stringify(json);
-
-                {
-                    json.token = token; // need current token
-                    Liquid.registerOnUnloadPage();
-                    if(!liquid.xhr)
-                        liquid.xhr = new XMLHttpRequest();
-                    if(Liquid.wait_for_xhr_ready(liquid), "export to ZK") {
-                        try {
-                            Liquid.startWaiting(liquid);
-                            liquid.xhr.open('POST', glLiquidServlet + '?operation=setZK'
-                                +'&controlId=' + (typeof json.registerControlId !== "undefined" ? json.registerControlId : liquid.controlId)
-                                +'&token=' + (typeof token !== "undefined" ? token : "")
-                                , true);
-
-                            var command = { name:"saveTo" };
-                            liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "onExportToZK", e, null, null); }, false);
-                            liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "onExportToZK", e, null, null); }, false);
-                            liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onExportToZK", e, null, null); }, false);
-                            liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onExportToZK", e, null, null); }, false);
-                            liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onExportToZK", e, null, null); }, false);
-
-                            liquid.xhr.send(tableJsonString);
-                            liquid.xhr.onreadystatechange = function() {
-                                if(liquid.xhr.readyState === 4) {
-                                    Liquid.release_xhr(liquid);
-                                    Liquid.stopWaiting(liquid);
-                                    if(liquid.xhr.status === 200) {
-                                        // \b \f \n \r \t
-                                        var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
-                                        responseText = Liquid.getXHRResponse(responseText);
-                                        httpResultJson = JSON.parse(responseText);
-                                        if(httpResultJson) {
-                                            var anyMessage = false;
-                                            if(httpResultJson.error) {
-                                                var err = null;
-                                                try { err = atob(httpResultJson.error); } catch(e) { err = httpResultJson.error; }
-                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "ERROR", err, { text:"OK", func:function() { } }, null);
-                                                anyMessage = true;
-                                            } else if(httpResultJson.warning) {
-                                                var warn = null;
-                                                try { warn = atob(httpResultJson.warning); } catch(e) { warn = httpResultJson.warning; }
-                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "WARNING", warn, { text:"OK", func:function() { } }, null);
-                                                anyMessage = true;
-                                            } else if(httpResultJson.message) {
-                                                var msg = null;
-                                                try { msg = atob(httpResultJson.message); } catch(e) { msg = httpResultJson.message; }
-                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "MESSAGE", msg, { text:"OK", func:function() { } }, null);
-                                                anyMessage = true;
-                                            }
-                                            if(httpResultJson.client) {
-                                                Liquid.executeClientSide(liquid, "Save json response:", httpResultJson.client, null, true);
-                                            }
-                                            if(httpResultJson.result>0) {
-                                                Liquid.setAskForSave(liquid, false);
-                                            }
-                                        }
-                                    } else {
-                                        console.error("ERROR : wring response:"+liquid.xhr.status);
-                                    }
-                                }
-                            };
-                        } catch (e) {
-                            console.error("ERROR : "+e);
-                        }
-                    }
-                }
+                LiquidEditing.exportToZKDialog(liquid);
             }
         }
     },

@@ -2099,7 +2099,7 @@ public class utility {
 
     public static String toCamelCase( String var ) {
         String out = "";
-        String [] list = var.split("_");
+        String [] list = var.replace("-", "").replace(" ", "").split("_");
         for(int i=0; i<list.length; i++) {
             if(i>0)
                 out += capitalizeFirstLetter(list[i]);

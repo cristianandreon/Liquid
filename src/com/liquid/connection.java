@@ -62,6 +62,59 @@ public class connection {
         }
     }
 
+    static public String testDBConnection() {
+        Class cls = null;
+        Method method = null;
+        try {
+            cls = Class.forName("app.liquid.dbx.connection");
+            if(cls != null) {
+                method = cls.getDeclaredMethod("getDBConnection");
+            }
+        } catch(Throwable th) {
+            method = null;
+        }
+        Connection conn = null;
+        try {
+            if (method != null) {
+                method.setAccessible(true);
+                Object result = method.invoke(null);
+                if (result instanceof Object[]) {
+                    conn = (Connection) ((Object[]) result)[0];
+                } else {
+                    conn = (Connection) result;
+                }
+                if (conn != null) {
+                    String catalog = null, schema = null;
+                    try { schema = conn.getSchema(); } catch (Throwable e) { }
+                    try { catalog = conn.getCatalog(); } catch (Throwable e) { }
+                    return "Connection SUCCEDED\n"
+                            + "[Catalog:"+(catalog!=null?catalog:"N/D")+"]\n"
+                            + "[Schema:"+(schema!=null?schema:"N/D")+"]\n"
+                            + "[AutoCommit:"+conn.getAutoCommit()+"]\n"
+                            + "[ProductName:"+conn.getMetaData().getDatabaseProductName()+"]\n"
+                            + "[DriverClass:"+conn.getClass().getName()+"]\n"
+                            + "[Method:app.liquid.dbx.connection method]\n"
+                            ;
+                } else {
+                    return "Method app.liquid.dbx.connection FAILED by return null";
+                }
+            } else {
+                return "Method app.liquid.dbx.connection NOT defined";
+            }
+        } catch(Throwable th) {
+            return "Method app.liquid.dbx.connection FAILED with error:"+th.getMessage();
+        } finally {
+            if(conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+
     /**
      * Get connection from class "app.liquid.dbx.connection.getDBConnection" defined in the main project or in sub project
      *
@@ -142,11 +195,11 @@ public class connection {
     static public String getConnectionString( HttpServletRequest request, JspWriter out ) {
         String result = "";
         try {
-            String driver = (String)request.getSession().getAttribute("GLLiquidDriver");
-            String connectionURL = (String)request.getSession().getAttribute("GLLiquidConnectionURL");
+            String driver = utility.base64Decode((String)request.getSession().getAttribute("GLLiquidDriver"));
+            String connectionURL = utility.base64Decode((String)request.getSession().getAttribute("GLLiquidConnectionURL"));
             String connectionDesc = "";
             if(connectionURL != null && !connectionURL.isEmpty()) { // Forzata da stringa
-                connectionDesc = "[ *** driver:"+driver+" "+"{SERVER SIDE DEFINED}" + " *** ]";
+                connectionDesc = "[ "+driver+" ]";
             } else {
                  connectionDesc = (String)getConnectionDesc();
             }
@@ -207,8 +260,8 @@ public class connection {
                 // Connessione specificata su sessione utente
                 if(request != null) {
                     if(request.getSession() != null) {
-                        String curDriver = (String)request.getSession().getAttribute("GLLiquidDriver");
-                        Object curConnectionURL = request.getSession().getAttribute("GLLiquidConnectionURL");
+                        String curDriver = utility.base64Decode((String)request.getSession().getAttribute("GLLiquidDriver"));
+                        Object curConnectionURL = utility.base64Decode((String)request.getSession().getAttribute("GLLiquidConnectionURL"));
                         if(curDriver != null && !curDriver.isEmpty()) {
                             if(curConnectionURL != null) {
                                 Class driverClass = null;
@@ -326,12 +379,13 @@ public class connection {
             Object connectionURL = (String)request.getSession().getAttribute("GLLiquidConnectionURL");
             if(connectionURL != null) {
                 // Forzata da stringa
-                connectionDesc = "[ *** driver:"+driver+" "+"{ *** SERVER SIDE DEFINED *** }" + " *** ]";
+                connectionDesc = "[ "+driver+" ]";
             } else {
                 // da package app.liquid.dbx.connection
                 connectionDesc = (String)getConnectionDesc();
             }
             result = "{ \"result\":1"
+                    +",\"driver\":\""+utility.base64Encode(driver != null ? driver : "")+"\" "
                     +",\"connectionDesc\":\""+utility.base64Encode(connectionDesc != null ? connectionDesc : "")+"\" "
                     +"}";
         } catch (Throwable th) {

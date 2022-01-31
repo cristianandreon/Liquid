@@ -24,6 +24,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspWriter;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,8 +39,10 @@ public class workspace {
 
     static public String sourceSpecialToken = login.getSaltString(32);
 
+    public static String path = null;
     static public String pythonPath = null;
     static public String pythonExecutable = null;
+    public static String version_string = "1.88";
 
     //
     // key persistent on server but hidden on the client
@@ -463,12 +466,13 @@ public class workspace {
                 metadata.invalidateMetadata();
             }
             if (out != null) {
+                String path = workspace.path != null ? workspace.path : "";
                 out.print("\n<!-- LIQUID : Enabling Project Mode -->\n");
                 out.print("<script>");
                 out.print("glLiquidGenesisToken = '" + genesisToken + "';");
                 out.print("</script>\n");
                 out.print("\n<!-- LIQUID : Editing support -->\n");
-                out.print("<script type=\"text/javascript\" src=\"/liquid/liquidEditing.js?version=<%=jssVersion%>\"></script>");
+                out.print("<script type=\"text/javascript\" src=\""+path+"/liquid/liquidEditing.js?version="+workspace.version_string+"\"></script>");
                 out.print("\n");
             }
             return genesisToken;
@@ -978,13 +982,13 @@ public class workspace {
                                             }
                                         }
                                     } else {
-                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "Skipped json array:" + key);
+                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, "Skipped json array:" + key);
                                     }
                                 } else {
                                     if (!"sourceFileName".equalsIgnoreCase(key) && !"sourceFullFileName".equalsIgnoreCase(key)) {
                                         tableJson.put(key, fileContentJSON.get(key));
                                     } else {
-                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "Skipped json property:" + key);
+                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, "Skipped json property:" + key);
                                     }
                                 }
                             }
@@ -1436,30 +1440,82 @@ public class workspace {
                     }
                 }
 
-                // foreign tables
+                boolean readAllForeignTables = false;
+                boolean updateAllForeignTables = false;
+
                 if ("*".equalsIgnoreCase(foreignTables) || foreignTablesJson != null) {
-                    if (foreignKeysOnTable == null) {
+                    readAllForeignTables = true;
+                }
+
+                String sourceForeignTables = tableJson.has("sourceForeignTables") ? tableJson.getString("sourceForeignTables") : null;
+                if ("*".equalsIgnoreCase(sourceForeignTables)) {
+                    updateAllForeignTables = true;
+                }
+                if(foreignKeysOnTable == null) {
+                    updateAllForeignTables = true;
+                }
+
+                // foreign tables (getExportedKeys e getImportedKeys)
+                if (readAllForeignTables) {
+                    if (updateAllForeignTables) {
+                        ArrayList<metadata.ForeignKey> foreignKeysImportedOnTable = null;
+                        ArrayList<metadata.ForeignKey> foreignKeysExportedOnTable = null;
+                        //
+                        // Elenco colonne che sono referenziate su altre tabelle (tabelle usate da questa tabella)
+                        // es. campo ID_NAZIONE referenziato in NAZIONE.ID
                         try {
-                            foreignKeysOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
+                            foreignKeysImportedOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
                         } catch (Exception ex) {
                             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                         }
+                        //
+                        // Elenco di colonne (chiavi) che sono utilizzate da altre tabelle (tabelle che usano questa tabella)
+                        // es. campo NAZIONE.ID usato in ORDINI.ID_NAZIONE, PREVENTIVI.ID_NAZION£ etc
+                        try {
+                            foreignKeysExportedOnTable = metadata.getExportedForeignKeyData(database, schema, table, connToUse);
+                        } catch (Exception ex) {
+                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        if(foreignKeysImportedOnTable != null || foreignKeysExportedOnTable != null) {
+                            foreignKeysOnTable = new ArrayList<metadata.ForeignKey>();
+                            if(foreignKeysImportedOnTable != null) {
+                                foreignKeysOnTable.addAll(foreignKeysImportedOnTable);
+                            }
+                            if(foreignKeysExportedOnTable != null) {
+                                foreignKeysOnTable.addAll(foreignKeysExportedOnTable);
+                            }
+                        }
                     }
+
                     if (connToUse != null) {
                         if (foreignKeysOnTable != null) {
                             if (foreignKeysOnTable.size() > 0) {
+                                ArrayList<String> allColumns = metadata.getAllColumnsAsArray(database, schema, table, conn);
                                 for (metadata.ForeignKey foreignKey : foreignKeysOnTable) {
                                     // Verifica tutte le foreign table tabella se presente *
                                     if ("*".equalsIgnoreCase(foreignTables) || "all".equalsIgnoreCase(foreignTables)) {
                                         // verifica la presenza delle colonne necessarie alla foreignTable : velocizza il processo evitando la query inneestata
+                                        String type = foreignKey.type;
                                         cols = tableJson.getJSONArray("columns");
                                         int ic = cols.length();
+
                                         for (int jc = 0; jc < foreignKey.columns.size(); jc++) {
                                             String column = foreignKey.columns.get(jc);
+                                            if("exp".equalsIgnoreCase(type)) {
+                                            } else {
+                                            }
                                             if (get_column(table, cols, null, column) <= 0) {
-                                                JSONObject colJson = new JSONObject("{\"name\":\"" + table + "." + column + "\",\"label\":\"" + table + "." + column + "#AutoAdded\",\"field\":\"" + String.valueOf(ic + 1) + "\",\"visible\":false}");
-                                                cols.put(colJson);
-                                                ic++;
+                                                if(allColumns.contains(column)) {
+                                                    JSONObject colJson = new JSONObject("{\"name\":\"" + table + "." + column + "\",\"label\":\"" + table + "." + column + "#AutoAdded\",\"field\":\"" + String.valueOf(ic + 1) + "\",\"visible\":false}");
+                                                    cols.put(colJson);
+                                                    ic++;
+                                                } else {
+                                                    // colonna non presente : la tabella esterna usa la tabella corrente ... es.: foreignTable importate
+                                                    if("exp".equalsIgnoreCase(type)) {
+                                                        int lb = 1;
+                                                    } else {
+                                                    }
+                                                }
                                             }
                                         }
                                         tableJson.put("columns", cols);
@@ -1475,7 +1531,7 @@ public class workspace {
                                         if (foreignTablesJson != null) {
                                             int nUpdated = 0;
                                             for (int ift = 0; ift < foreignTablesJson.length(); ift++) {
-                                                String ft = null, fc = null;
+                                                String ft = null, fc = null, type = null;
                                                 JSONObject foreignableJson = foreignTablesJson.getJSONObject(ift);
                                                 if (foreignableJson != null) {
                                                     try {
@@ -1486,17 +1542,33 @@ public class workspace {
                                                         fc = foreignableJson.getString("column");
                                                     } catch (Exception e) {
                                                     };
+
+                                                    try {
+                                                        type = foreignableJson.getString("type");
+                                                        if("exp".equalsIgnoreCase(type)) {
+                                                        } else {
+                                                        }
+                                                    } catch (Exception e) {
+                                                    };
+
                                                     if (ft != null) {
                                                         if (fc != null) {
                                                             if (foreignKey.foreignTable.equalsIgnoreCase(ft)) {
                                                                 // foreignTablesList.add(ft);
                                                                 int ic = cols.length();
                                                                 if (get_column(table, cols, null, fc) <= 0) {
-                                                                    get_column(table, cols, null, fc);
-                                                                    JSONObject colJson = new JSONObject("{\"name\":\"" + table + "." + fc + "\",\"label\":\"" + table + "." + fc + "#AutoAdded\",\"field\":\"" + String.valueOf(ic + 1) + "\",\"visible\":false}");
-                                                                    cols.put(colJson);
-                                                                    ic++;
-                                                                    nUpdated++;
+                                                                    if(allColumns.contains(fc)) {
+                                                                        JSONObject colJson = new JSONObject("{\"name\":\"" + table + "." + fc + "\",\"label\":\"" + table + "." + fc + "#AutoAdded\",\"field\":\"" + String.valueOf(ic + 1) + "\",\"visible\":false}");
+                                                                        cols.put(colJson);
+                                                                        ic++;
+                                                                        nUpdated++;
+                                                                    } else {
+                                                                        // colonna non presente : la tabella esterna usa la tabella corrente ... es.: foreignTable importate
+                                                                        if("exp".equalsIgnoreCase(type)) {
+                                                                            int lb = 1;
+                                                                        } else {
+                                                                        }
+                                                                    }
                                                                 }
                                                                 break;
                                                             }
@@ -1513,6 +1585,33 @@ public class workspace {
                             }
                         }
                     }
+
+                    JSONArray newForeignTables = new JSONArray();
+                    for (int ift=0; ift<foreignKeysOnTable.size(); ift++) {
+                        JSONObject newForeignTable = new JSONObject();
+                        metadata.ForeignKey foreignKeyOnTable = foreignKeysOnTable.get(ift);
+                        if(foreignKeyOnTable != null) {
+                            newForeignTable.put("foreignTable", foreignKeyOnTable.foreignTable);
+                            if(foreignKeyOnTable.foreignColumns.size()>1) {
+                                newForeignTable.put("foreignColumns", foreignKeyOnTable.foreignColumns);
+                            } else if(foreignKeyOnTable.foreignColumns.size()==1) {
+                                newForeignTable.put("foreignColumn", foreignKeyOnTable.foreignColumns.get(0));
+                            }
+                            if(foreignKeyOnTable.foreignColumns.size()>1) {
+                                newForeignTable.put("columns", foreignKeyOnTable.columns);
+                            } else if(foreignKeyOnTable.foreignColumns.size()==1) {
+                                newForeignTable.put("column", foreignKeyOnTable.columns.get(0));
+                            }
+                            newForeignTable.put("type", foreignKeyOnTable.type);
+                        }
+                        newForeignTables.put(newForeignTable);
+                    }
+
+                    JSONObject newRootForeignTables = new JSONObject();
+                    newRootForeignTables.put("foreignTables", newForeignTables);
+
+                    tableJson.put("sourceForeignTables", "*");
+                    tableJson.put("foreignTables", newForeignTables);
                 }
 
                 // Aggiunta primary key
@@ -1822,238 +1921,18 @@ public class workspace {
                     }
                 }
 
+
+
                 //
-                // Comandi Predefiniti : risoluzione campi default
+                // Comandi Predefiniti : risoluzione campi default, validazione etc
                 //
-                boolean bInsertActive = false;
-                boolean bUpdateActive = false;
-                boolean bDeleteActive = false;
-                boolean bPastedRowActive = false;
-                JSONArray commands = null;
-                JSONArray new_commands = new JSONArray();
-                try {
-                    commands = tableJson.getJSONArray("commands");
-                } catch (Exception e) {
-                }
-                if (commands != null) {
-                    for (int ic = 0; ic < commands.length(); ic++) {
-                        Object oCmd = commands.get(ic);
-                        String cmdName = null, img = null, text = null, rollback = null, rollbackImg = null, asset = null, assetsOp = null, mismatching_assets = null;
-                        boolean bServerDefined = false;
-                        boolean hasActiveAsset = true;
-                        JSONObject cmd = null;
-                        int size = 0;
-                        JSONArray labels = null;
-                        JSONArray assets = null;
+                Object [] res = process_commands(request, tableJson, false);
 
-                        if(oCmd instanceof JSONObject) {
-                            cmd = commands.getJSONObject(ic);
-                            if (cmd != null) {
-                                try {
-                                    cmdName = cmd.getString("name");
-                                } catch (Exception ex) {
-                                }
-                                try {
-                                    img = cmd.getString("img");
-                                } catch (Exception ex) {
-                                    img = null;
-                                }
-                                try {
-                                    rollback = cmd.getString("rollback");
-                                } catch (Exception ex) {
-                                    rollback = null;
-                                }
-                                try {
-                                    rollbackImg = cmd.getString("rollbackImg");
-                                } catch (Exception ex) {
-                                    rollbackImg = null;
-                                }
-                                try {
-                                    text = cmd.getString("text");
-                                } catch (Exception ex) {
-                                    text = null;
-                                }
-                                try {
-                                    labels = cmd.getJSONArray("labels");
-                                } catch (Exception ex) {
-                                    labels = null;
-                                }
-                                try {
-                                    size = cmd.getInt("size");
-                                } catch (Exception ex) {
-                                    size = 0;
-                                }
-                                try {
-                                    bServerDefined = cmd.has("server");
-                                } catch (Exception ex) {
-                                }
-                                try {
-                                    assetsOp = cmd.getString("assetsOp");
-                                } catch (Exception ex) {
-                                    assetsOp = null;
-                                }
-                                try {
-                                    assets = cmd.getJSONArray("assets");
-                                } catch (Exception ex) {
-                                    assets = null;
-                                }
-                                try {
-                                    asset = cmd.getString("asset");
-                                } catch (Exception ex) {
-                                    asset = null;
-                                }
+                boolean bInsertActive = (boolean)res[0];
+                boolean bUpdateActive = (boolean)res[1];
+                boolean bDeleteActive = (boolean)res[2];
+                boolean bPastedRowActive = (boolean)res[3];
 
-                                if (asset != null && !asset.isEmpty()) {
-                                    if (assets == null) {
-                                        assets = new JSONArray();
-                                    }
-                                    assets.put(asset);
-                                }
-
-                                try {
-                                    Object[] res_asset = com.liquid.assets.is_asset_active(request, assets, assetsOp);
-                                    hasActiveAsset = (boolean) res_asset[0];
-                                    mismatching_assets = (String) res_asset[1];
-                                } catch (Exception ex) {
-                                }
-                            }
-                        } else if(oCmd instanceof String) {
-                            cmdName = (String)oCmd;
-                            if(!cmdName.isEmpty()) {
-                                hasActiveAsset = true;
-                                cmd = new JSONObject("{\"name\":\"" + cmdName + "\"}");
-                            }
-                        }
-
-                        if(cmdName != null) {
-                            if (hasActiveAsset) {
-                                if ("insert".equalsIgnoreCase(cmdName) || "create".equalsIgnoreCase(cmdName)) {
-                                    if (!bServerDefined) {
-                                        cmd.put("server", "com.liquid.event.insertRow");
-                                    }
-                                    cmd.put("name", "insert");
-                                    cmd.put("isNative", true);
-                                    if (img == null) {
-                                        cmd.put("img", "add.png");
-                                    }
-                                    if (size == 0) {
-                                        cmd.put("size", 20);
-                                    }
-                                    if (text == null) {
-                                        cmd.put("text", "Aggiungi");
-                                    }
-                                    if (labels == null) {
-                                        cmd.put("labels", new JSONArray("[\"Salva\"]"));
-                                    }
-                                    if (rollback == null || rollback.isEmpty()) {
-                                        cmd.put("rollback", "Annulla");
-                                    }
-                                    if (rollbackImg == null || rollbackImg.isEmpty()) {
-                                        cmd.put("rollbackImg", "cancel.png");
-                                    }
-                                    bInsertActive = true;
-                                } else if ("update".equalsIgnoreCase(cmdName) || "modify".equalsIgnoreCase(cmdName)) {
-                                    if (!bServerDefined) {
-                                        cmd.put("server", "com.liquid.event.updateRow");
-                                    }
-                                    cmd.put("name", "update");
-                                    cmd.put("isNative", true);
-                                    if (img == null) {
-                                        cmd.put("img", "update.png");
-                                    }
-                                    if (size == 0) {
-                                        cmd.put("size", 20);
-                                    }
-                                    if (text == null) {
-                                        cmd.put("text", "Modifica");
-                                    }
-                                    if (labels == null) {
-                                        cmd.put("labels", new JSONArray("[\"Salva\"]"));
-                                    }
-                                    if (rollback == null || rollback.isEmpty()) {
-                                        cmd.put("rollback", "Annulla");
-                                    }
-                                    if (rollbackImg == null || rollbackImg.isEmpty()) {
-                                        cmd.put("rollbackImg", "cancel.png");
-                                    }
-                                    bUpdateActive = true;
-                                } else if ("delete".equalsIgnoreCase(cmdName) || "erase".equalsIgnoreCase(cmdName)) {
-                                    if (!bServerDefined) {
-                                        cmd.put("server", "com.liquid.event.deleteRow");
-                                    }
-                                    cmd.put("name", "delete");
-                                    cmd.put("isNative", true);
-                                    if (img == null) {
-                                        cmd.put("img", "delete.png");
-                                    }
-                                    if (size == 0) {
-                                        cmd.put("size", 20);
-                                    }
-                                    if (text == null) {
-                                        cmd.put("text", "Cancella");
-                                    }
-                                    if (labels == null) {
-                                        cmd.put("labels", new JSONArray("[\"Conferma\"]"));
-                                    }
-                                    if (rollback == null || rollback.isEmpty()) {
-                                        cmd.put("rollback", "Annulla");
-                                    }
-                                    if (rollbackImg == null || rollbackImg.isEmpty()) {
-                                        cmd.put("rollbackImg", "cancel.png");
-                                    }
-                                    bDeleteActive = true;
-                                } else if ("previous".equalsIgnoreCase(cmdName)) {
-                                    if (img == null) {
-                                        cmd.put("img", "prev.png");
-                                    }
-                                    if (size == 0) {
-                                        cmd.put("size", 16);
-                                    }
-                                    cmd.put("client", "onPrevRow");
-                                    cmd.put("isNative", true);
-                                } else if ("next".equalsIgnoreCase(cmdName)) {
-                                    if (img == null) {
-                                        cmd.put("img", "next.png");
-                                    }
-                                    if (size == 0) {
-                                        cmd.put("size", 16);
-                                    }
-                                    cmd.put("client", "onNextRow");
-                                    cmd.put("isNative", true);
-                                } else if ("copy".equalsIgnoreCase(cmdName)) {
-                                    if (img == null) {
-                                        cmd.put("img", "copy.png");
-                                    }
-                                    if (size == 0) {
-                                        cmd.put("size", 16);
-                                    }
-                                    cmd.put("client", "onCopy");
-                                    cmd.put("isNative", true);
-                                } else if ("paste".equalsIgnoreCase(cmdName)) {
-                                    if (img == null) {
-                                        cmd.put("img", "paste.png");
-                                    }
-                                    if (size == 0) {
-                                        cmd.put("size", 16);
-                                    }
-                                    cmd.put("client", "onPaste");
-                                    cmd.put("isNative", true);
-                                    cmd.put("sync", true);
-                                    bPastedRowActive = true;
-                                }
-
-                                if(cmd != null)
-                                    new_commands.put(cmd);
-                            } else {
-                                // skipped
-                                new_commands.put(new JSONObject("{ \"cmd_" + cmdName + "_comment\":\"mismatching asset:" + mismatching_assets + "\"}"));
-                            }
-                        }
-                    }
-                    if(new_commands != null) {
-                        tableJson.put("commands", new_commands);
-                    }
-                }
 
                 String sOwner = null;
                 try {
@@ -2177,6 +2056,21 @@ public class workspace {
                 } catch (JSONException ex) {
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                 }
+
+            } else {
+                //
+                // controllo di sistema
+                //
+                // Comandi Predefiniti : risoluzione campi default, validazione etc
+                //
+                Object [] res = process_commands(request, tableJson, true);
+
+                boolean bInsertActive = (boolean)res[0];
+                boolean bUpdateActive = (boolean)res[1];
+                boolean bDeleteActive = (boolean)res[2];
+                boolean bPastedRowActive = (boolean)res[3];
+
+                // ...
             }
 
             // Product name
@@ -2424,7 +2318,7 @@ public class workspace {
                     conn.close();
                 }
             } catch (SQLException ex) {
-                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, "ERROR on control:" + controlId + " : " + ex);
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "ERROR on control:" + controlId + " : " + ex);
             }
             if (connToDB != null) 
                 try {
@@ -2438,6 +2332,268 @@ public class workspace {
         }
     }
 
+
+    /**
+     * processa la sezione commands
+     *
+     *
+     * @param request
+     * @param tableJson
+     * @return
+     */
+    static Object[] process_commands(HttpServletRequest request, JSONObject tableJson, boolean isSystemLiquid) {
+
+        boolean bInsertActive = false;
+        boolean bUpdateActive = false;
+        boolean bDeleteActive = false;
+        boolean bPastedRowActive = false;
+
+        if(tableJson != null) {
+
+            JSONArray commands = null;
+            JSONArray new_commands = new JSONArray();
+            try {
+                commands = tableJson.getJSONArray("commands");
+            } catch (Exception e) {
+            }
+
+            if (commands != null) {
+                for (int ic = 0; ic < commands.length(); ic++) {
+                    Object oCmd = commands.get(ic);
+                    String cmdName = null, img = null, text = null, rollback = null, rollbackImg = null, asset = null, assetsOp = null, mismatching_assets = null;
+                    boolean bServerDefined = false;
+                    boolean hasActiveAsset = true;
+                    JSONObject cmd = null;
+                    int size = 0;
+                    JSONArray labels = null;
+                    JSONArray assets = null;
+
+                    if (oCmd instanceof JSONObject) {
+                        cmd = commands.getJSONObject(ic);
+                        if (cmd != null) {
+                            try {
+                                cmdName = cmd.getString("name");
+                            } catch (Exception ex) {
+                            }
+                            try {
+                                img = cmd.getString("img");
+                            } catch (Exception ex) {
+                                img = null;
+                            }
+                            try {
+                                rollback = cmd.getString("rollback");
+                            } catch (Exception ex) {
+                                rollback = null;
+                            }
+                            try {
+                                rollbackImg = cmd.getString("rollbackImg");
+                            } catch (Exception ex) {
+                                rollbackImg = null;
+                            }
+                            try {
+                                text = cmd.getString("text");
+                            } catch (Exception ex) {
+                                text = null;
+                            }
+                            try {
+                                labels = cmd.getJSONArray("labels");
+                            } catch (Exception ex) {
+                                labels = null;
+                            }
+                            try {
+                                size = cmd.getInt("size");
+                            } catch (Exception ex) {
+                                size = 0;
+                            }
+                            try {
+                                bServerDefined = cmd.has("server");
+                            } catch (Exception ex) {
+                            }
+                            try {
+                                assetsOp = cmd.getString("assetsOp");
+                            } catch (Exception ex) {
+                                assetsOp = null;
+                            }
+                            try {
+                                assets = cmd.getJSONArray("assets");
+                            } catch (Exception ex) {
+                                assets = null;
+                            }
+                            try {
+                                asset = cmd.getString("asset");
+                            } catch (Exception ex) {
+                                asset = null;
+                            }
+
+                            if (asset != null && !asset.isEmpty()) {
+                                if (assets == null) {
+                                    assets = new JSONArray();
+                                }
+                                assets.put(asset);
+                            }
+
+                            try {
+                                Object[] res_asset = com.liquid.assets.is_asset_active(request, assets, assetsOp);
+                                hasActiveAsset = (boolean) res_asset[0];
+                                mismatching_assets = (String) res_asset[1];
+                            } catch (Exception ex) {
+                            }
+                        }
+                    } else if (oCmd instanceof String) {
+                        cmdName = (String) oCmd;
+                        if (!cmdName.isEmpty()) {
+                            hasActiveAsset = true;
+                            cmd = new JSONObject("{\"name\":\"" + cmdName + "\"}");
+                            if ("insert" .equalsIgnoreCase(cmdName) || "create" .equalsIgnoreCase(cmdName)
+                                    || "update" .equalsIgnoreCase(cmdName) || "modify" .equalsIgnoreCase(cmdName)
+                                    || "delete" .equalsIgnoreCase(cmdName) || "erase" .equalsIgnoreCase(cmdName)
+                                    || "previous" .equalsIgnoreCase(cmdName) || "next" .equalsIgnoreCase(cmdName)
+                                    || "copy" .equalsIgnoreCase(cmdName) || "paste" .equalsIgnoreCase(cmdName)
+                            ) {
+                                cmd.put("isNative", true);
+                            }
+                        }
+                    }
+
+                    if (cmdName != null) {
+                        if (hasActiveAsset) {
+                            if ("insert" .equalsIgnoreCase(cmdName) || "create" .equalsIgnoreCase(cmdName)) {
+                                if (!bServerDefined) {
+                                    if(!isSystemLiquid) {
+                                        cmd.put("server", "com.liquid.event.insertRow");
+                                    }
+                                }
+                                cmd.put("name", "insert");
+                                cmd.put("isNative", true);
+                                if (img == null) {
+                                    cmd.put("img", "add.png");
+                                }
+                                if (size == 0) {
+                                    cmd.put("size", 20);
+                                }
+                                if (text == null) {
+                                    cmd.put("text", "Aggiungi");
+                                }
+                                if (labels == null) {
+                                    cmd.put("labels", new JSONArray("[\"Salva\"]"));
+                                }
+                                if (rollback == null || rollback.isEmpty()) {
+                                    cmd.put("rollback", "Annulla");
+                                }
+                                if (rollbackImg == null || rollbackImg.isEmpty()) {
+                                    cmd.put("rollbackImg", "cancel.png");
+                                }
+                                bInsertActive = true;
+
+                            } else if ("update" .equalsIgnoreCase(cmdName) || "modify" .equalsIgnoreCase(cmdName)) {
+                                if (!bServerDefined) {
+                                    if(!isSystemLiquid) {
+                                        cmd.put("server", "com.liquid.event.updateRow");
+                                    }
+                                }
+                                cmd.put("name", "update");
+                                cmd.put("isNative", true);
+                                if (img == null) {
+                                    cmd.put("img", "update.png");
+                                }
+                                if (size == 0) {
+                                    cmd.put("size", 20);
+                                }
+                                if (text == null) {
+                                    cmd.put("text", "Modifica");
+                                }
+                                if (labels == null) {
+                                    cmd.put("labels", new JSONArray("[\"Salva\"]"));
+                                }
+                                if (rollback == null || rollback.isEmpty()) {
+                                    cmd.put("rollback", "Annulla");
+                                }
+                                if (rollbackImg == null || rollbackImg.isEmpty()) {
+                                    cmd.put("rollbackImg", "cancel.png");
+                                }
+                                bUpdateActive = true;
+                            } else if ("delete" .equalsIgnoreCase(cmdName) || "erase" .equalsIgnoreCase(cmdName)) {
+                                if (!bServerDefined) {
+                                    if(!isSystemLiquid) {
+                                        cmd.put("server", "com.liquid.event.deleteRow");
+                                    }
+                                }
+                                cmd.put("name", "delete");
+                                cmd.put("isNative", true);
+                                if (img == null) {
+                                    cmd.put("img", "delete.png");
+                                }
+                                if (size == 0) {
+                                    cmd.put("size", 20);
+                                }
+                                if (text == null) {
+                                    cmd.put("text", "Cancella");
+                                }
+                                if (labels == null) {
+                                    cmd.put("labels", new JSONArray("[\"Conferma\"]"));
+                                }
+                                if (rollback == null || rollback.isEmpty()) {
+                                    cmd.put("rollback", "Annulla");
+                                }
+                                if (rollbackImg == null || rollbackImg.isEmpty()) {
+                                    cmd.put("rollbackImg", "cancel.png");
+                                }
+                                bDeleteActive = true;
+                            } else if ("previous" .equalsIgnoreCase(cmdName)) {
+                                if (img == null) {
+                                    cmd.put("img", "prev.png");
+                                }
+                                if (size == 0) {
+                                    cmd.put("size", 16);
+                                }
+                                cmd.put("client", "onPrevRow");
+                                cmd.put("isNative", true);
+                            } else if ("next" .equalsIgnoreCase(cmdName)) {
+                                if (img == null) {
+                                    cmd.put("img", "next.png");
+                                }
+                                if (size == 0) {
+                                    cmd.put("size", 16);
+                                }
+                                cmd.put("client", "onNextRow");
+                                cmd.put("isNative", true);
+                            } else if ("copy" .equalsIgnoreCase(cmdName)) {
+                                if (img == null) {
+                                    cmd.put("img", "copy.png");
+                                }
+                                if (size == 0) {
+                                    cmd.put("size", 16);
+                                }
+                                cmd.put("client", "onCopy");
+                                cmd.put("isNative", true);
+                            } else if ("paste" .equalsIgnoreCase(cmdName)) {
+                                if (img == null) {
+                                    cmd.put("img", "paste.png");
+                                }
+                                if (size == 0) {
+                                    cmd.put("size", 16);
+                                }
+                                cmd.put("client", "onPaste");
+                                cmd.put("isNative", true);
+                                cmd.put("sync", true);
+                                bPastedRowActive = true;
+                            }
+
+                            if (cmd != null)
+                                new_commands.put(cmd);
+                        } else {
+                            // skipped
+                            new_commands.put(new JSONObject("{ \"cmd_" + cmdName + "_comment\":\"mismatching asset:" + mismatching_assets + "\"}"));
+                        }
+                    }
+                }
+                if (new_commands != null) {
+                    tableJson.put("commands", new_commands);
+                }
+            }
+        }
+        return new Object [] { bInsertActive, bUpdateActive, bDeleteActive, bPastedRowActive };
+    }
 
     /**
      * Risolve i campi varaibili collegati alle variabile ${} e %{}
@@ -3299,7 +3455,7 @@ public class workspace {
                         request.getSession().setAttribute("GLLiquidJsonsProjectFolder", liquidJsonsProjectFolder);
                         return "{\"result\":1}";
                     } else {
-                        return "{\"result\":1,\"message\":\"folder " + liquidJsonsProjectFolder + " does not exist\"}";
+                        return "{\"result\":-1,\"message\":\"folder " + liquidJsonsProjectFolder + " does not exist\"}";
                     }
                 } else {
                     return "{\"result\":1,\"message\":\"liquidJsonsProjectFolder resetted\"}";
@@ -3328,7 +3484,7 @@ public class workspace {
         try {
             if (request != null) {
                 String controlId = "", tblWrk = "";
-                String table = "", schema = "", database = "", source = "", token = "";
+                String table = "", schema = "", database = "", source = "", token = "", note = "";
                 try {
                     controlId = (String) request.getParameter("controlId");
                 } catch (Exception e) {
@@ -3367,9 +3523,25 @@ public class workspace {
                                     return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage() + " - writing:" + fullFileName) + "\"}";
                                 }
                             }
+
                             if (fileName != null && !fileName.isEmpty()) {
+                                // salvataggio file nella cartella del progetto
+                                if (liquidJsonsProjectFolder == null || liquidJsonsProjectFolder.isEmpty()) {
+                                    liquidJsonsProjectFolder = "liquidJSONs";
+                                    String res = workspace.set_project_folder(request, liquidJsonsProjectFolder, workspace.genesisToken);
+                                    JSONObject resJson = new JSONObject(res);
+                                    if(resJson != null) {
+                                        int result = resJson.getInt("result");
+                                        if(result > 0) {
+                                            note += " [ Note: created folder '"+liquidJsonsProjectFolder+"' ]";
+                                            liquidJsonsProjectFolder = (String) request.getSession().getAttribute("GLLiquidJsonsProjectFolder");
+                                        } else {
+                                            return "{\"result\":0,\"message\":\"" + utility.base64Encode("Invalid path : " + liquidJsonsProjectFolder + "") + "\"}";
+                                        }
+                                    }
+                                }
+
                                 if (liquidJsonsProjectFolder != null && !liquidJsonsProjectFolder.isEmpty()) {
-                                    // salvataggio file nella cartella del progetto
                                     String insideProjectFileName = liquidJsonsProjectFolder + File.separatorChar + fileName;
                                     if (!insideProjectFileName.equalsIgnoreCase(fullFileName)) {
                                         controlId = getControlIdFromFile(fileName);
@@ -3394,21 +3566,23 @@ public class workspace {
                                             } catch (Exception ex) {
                                                 return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage() + " - writing:" + insideProjectFileName) + "\"}";
                                             }
-                                            Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "File in project as <b>" + insideProjectFileName + "</b>");
-                                            return "{\"result\":1,\"message\":\"" + utility.base64Encode("file in project " + insideProjectFileName + " saved<br/><br/>javascript global var name : <b>" + jsVarName + "</b>") + "\"}";
+                                            Logger.getLogger(workspace.class.getName()).log(Level.INFO, "File in project as <b>" + insideProjectFileName + "</b>");
+                                            return "{\"result\":1,\"message\":\"" + utility.base64Encode("file in project " + insideProjectFileName + " saved<br/><br/>javascript global var name : <b>" + jsVarName + "</b>") + note + "\"}";
                                         }
 
                                     } else {
-                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "file " + insideProjectFileName + " saved by client request");
+                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO,"file " + insideProjectFileName + " saved by client request");
                                         return "{\"result\":1,\"message\":\"" + utility.base64Encode("file " + fullFileName + " saved") + "\"}";
                                     }
                                 } else {
-                                    return "{\"result\":0,\"message\":\"" + utility.base64Encode("liquidJsonsProjectFolder is empty... you should set it by workspace.set_project_folder (and check exists)...") + "\"}";
+                                    return "{\"result\":0,\"message\":\"" + utility.base64Encode("liquidJsonsProjectFolder is empty... you should set it by workspace.set_project_folder (and check it exists)...") + "\"}";
                                 }
                             } else {
                                 return "{\"result\":0,\"message\":\"" + utility.base64Encode("file name is empty") + "\"}";
                             }
                         }
+                    } else {
+                        return "{\"result\":-1,\"error\":\"" + utility.base64Encode("Invalid content : should be the json of the control") + "\"}";
                     }
                 }
             }
@@ -3430,7 +3604,7 @@ public class workspace {
         try {
             if (request != null) {
                 String controlId = "", tblWrk = "";
-                String table = "", schema = "", database = "", source = "", token = "";
+                String table = "", schema = "", database = "", source = "", token = "", note = "";
                 try {
                     controlId = (String) request.getParameter("controlId");
                 } catch (Exception e) {
@@ -3456,26 +3630,454 @@ public class workspace {
                             String liquidJsonsProjectFolder = (String) request.getSession().getAttribute("GLLiquidJsonsProjectFolder");
 
                             if (fileName == null || fileName.isEmpty()) {
-                                fileName = controlId + ".json";
+                                fileName = controlId + ".xml";
                             }
                             fileName = fileName != null ? fileName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") : null;
                             fullFileName = fullFileName != null ? fullFileName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") : null;
 
+
+                            String panelTitle = json.getString("table");
+                            String tableName = json.getString("table");
+                            String schemaName = json.getString("schema");
+                            String panelCode = utility.toCamelCase(panelTitle);
+                            String panelId = panelTitle+"_P@1";
+
+                            JSONObject zkParams = json.getJSONObject("zkParams");
+                            String fieldInTitleBar = zkParams.getString("fieldInTitleBar");
+                            String customerName = zkParams.getString("customerName");
+                            String appName = zkParams.getString("appName");
+                            String beanClass = zkParams.getString("beanClass"); // "com."+customerName+"."+appName+".hibernate.bean."+panelCode;
+                            int maxResult = zkParams.getInt("maxResult");;
+                            String orderByField = zkParams.getString("orderByField");
+                            String orderByFieldMode = zkParams.getString("orderByFieldMode");
+                            String piedino = zkParams.getString("piedino");; // "/com/"+customerName+"/util/hibernate/controller/datiPiedinoProfilo-1.incxml";
+                            boolean showList = zkParams.getBoolean("showList"); // "S";
+                            boolean autoSelect = zkParams.getBoolean("autoSelect"); // "S";
+                            boolean autoFind = zkParams.getBoolean("autoFind"); // "S";
+                            int itemsInPage = zkParams.getInt("itemsInPage"); // "20";
+                            boolean popupCommand = zkParams.getBoolean("popupCommand"); // ;
+                            boolean use_asset = zkParams.getBoolean("use_asset"); // false;
+                            boolean can_insert = zkParams.getBoolean("can_insert"); // true;
+                            boolean can_update = zkParams.getBoolean("can_update"); // true;
+                            boolean can_delete = zkParams.getBoolean("can_delete"); // true;
+                            boolean process_foreign_tables = zkParams.getBoolean("process_foreign_tables"); // false;
+
+
+                            String zkFileContent =
+                                    "<page id=\""+panelTitle+"\" >\n"
+                                    +"<template-xmlreference>/com/"+customerName+"/"+appName+"/controller/Reference.xml</template-xmlreference>\n"
+                                    +"<title><![CDATA["+panelTitle+"]]></title>\n"
+                                    +"<menupath><![CDATA[ / panelTitle]]></menupath>\n"
+                                    +"<panels>\n"
+                                    +"\t<!-- "+panelTitle+" -->\n"
+                                    +"\t\t<panel id=\""+panelId+"\">\n"
+                                    +"\t\t\t<title><![CDATA["+panelTitle+"]]></title>\n"
+
+                                    // Titolo finestra
+                                    +"\t\t\t<template-paneldato-hibernate>\n"
+                                    +"\t\t\t\t<entity>"+beanClass+"</entity>\n"
+                                    +"\t\t\t\t<propertyDescription>\n"
+                                    +"\t\t\t\t\t<property name=\""+fieldInTitleBar+"\"/>\n"
+                                    +"\t\t\t\t</propertyDescription>\n"
+                                    +"\t\t\t</template-paneldato-hibernate>\n"
+                                    +"\t\t<template-profilo-hibernate>\n"
+                                    +"\t\t<entity>"+beanClass+"</entity>\n"
+                                    +"\t\t<propertyProfilo>\n";
+
+                            // filtro orop profilo (PreFilter in Liquid)
+                            String valueInProfileFilter = null;
+                            String fieldInProfileFilter = null; // es.: ${user}.filtro_bando_attivo
+                            if(valueInProfileFilter != null) {
+                                zkFileContent += "\t\t<property name=\"" + fieldInProfileFilter + "\">\n"
+                                                + "\t\t<espressioneRicerca>" + valueInProfileFilter + "</espressioneRicerca>\n"
+                                                + "\t\t<comparatoreRicerca>?=</comparatoreRicerca>\n"
+                                                + "\t\t<espressioneValore>${user}.valore_bando_attivo</espressioneValore>\n"
+                                                + "\t\t<espressioneValoreOnlyIfNull>S</espressioneValoreOnlyIfNull>\n"
+                                                + "\t\t</property>\n";
+                            }
+
+                            // Prop profilo incluse su file
+                            if(piedino!=null) {
+                                zkFileContent += "\t\t<!--@template-xmlinclude=" + piedino + " -->\n"
+                                        + "\t\t</propertyProfilo>\n"
+                                        + "\t\t</template-profilo-hibernate>\n";
+                            }
+
+
+
+                            zkFileContent += "\t\t<list id=\""+panelTitle+"_L@1\">\n"
+                                    +"\t\t<show>"+(showList?"S":"N")+"</show>\n"
+                                    +"\t\t<autoSelect>"+(autoSelect?"S":"N")+"</autoSelect>\n"
+                                    +"\t\t<autoFind>"+(autoFind?"S":"N")+"</autoFind>\n"
+                                    +"\t\t<paging>\n"
+                                    +"\t\t<size>"+itemsInPage+"</size>\n"
+                                    +"\t\t</paging>\n"
+                                    +"\t\t<title><![CDATA[Ricerca]]></title>\n"
+                            ;
+
+                            // Schede ricerca
+                            Object ofilters = json.has("filters") ? utility.base64Decode(json.getString("filters")) : null;
+                            JSONArray filters = null;
+                            if(ofilters instanceof JSONObject) {
+                                filters = new JSONArray();
+                                filters.put(ofilters);
+                            } else if(ofilters instanceof JSONArray) {
+                                filters = (JSONArray)ofilters;
+                            }
+
+                            if(filters != null) {
+
+                                zkFileContent += "\t\t<finders>\n";
+
+                                for (int ir = 0; ir < filters.length(); ir++) {
+                                    zkFileContent += ""
+                                            + "\t\t\t<finder id=\"" + panelTitle + "_R@"+(ir+1)+"\">\n"
+                                            + "\t\t\t<title><![CDATA[Ricerca base]]></title>\n"
+                                            + "\t\t\t<limitResult>" + maxResult + "</limitResult>\n"
+                                            + "\t\t\t<fields>\n";
+
+
+
+                                    JSONObject filter = (JSONObject) filters.get(ir);
+                                    JSONArray cols = filter.has("cols") ? filter.getJSONArray("cols") : null;
+                                    if(cols != null) {
+                                        // Scheda ricerca
+                                        zkFileContent += ""
+                                                + "\t\t\t<template-fields-hibernate>\n"
+                                                + "\t\t\t\t<entity>" + beanClass + "</entity>\n"
+                                                + "\t\t\t\t<propertyFields>\n";
+
+                                        // Campi ricerca
+                                        for (int irf = 0; irf < cols.length(); irf++) {
+                                            JSONObject col = cols.getJSONObject(irf);
+                                            String name = col.has("name") ? col.getString("name") : null;
+                                            JSONObject target_col = getColumnByName(name, cols);
+                                            String searchFieldName = "??";
+                                            String posX = "";
+                                            String posY = "";
+                                            String width = "200px";
+                                            String operator = "?=";
+                                            String controlType = null;
+                                            String controlValues = null;
+                                            String label = null;
+                                            String lookupId = null;
+
+                                            if(target_col != null) {
+                                                int size = target_col.getInt("size");
+                                                label = target_col.has("label") ? target_col.getString("label") : name;
+                                                if(name.startsWith("F")) {
+                                                    if(size == 1) {
+                                                        controlType = "LISTBOX";
+                                                        controlValues = "=,S=Si,N=No";
+                                                    }
+                                                }
+                                            }
+
+                                            zkFileContent += "\t\t\t\t<property name=\"" + searchFieldName + "\">\n"
+                                                    + (label != null ? "\t\t\t\t\t<etichetta>"+label+"</etichetta>" : "")+"\n"
+                                                    + (lookupId != null ? "\t\t\t\t\t<xmlreference-id>"+lookupId+"</xmlreference-id>" : "")+"\n"
+                                                    + (width != null ? "\t\t\t\t\t<widthControllo>"+width+"</widthControllo>" : "")+"\n"
+                                                    + (operator != null ? "\t\t\t\t\t<comparatoreRicerca>"+operator+"</comparatoreRicerca>" : "")+"\n"
+                                                    + (controlType != null ? "\t\t\t\t\t<tipoControllo>"+controlType+"</tipoControllo>" : "")+"\n"
+                                                    + (controlValues != null ? "\t\t\t\t\t<elencoValori>"+controlValues+"</elencoValori>" : "")+"\n"
+                                                    + (posX != null ? "\t\t\t\t\t<posX>" + posX + "</posX>" : "")+"\n"
+                                                    + (posY != null ? "\t\t\t\t\t<posY>" + posY + "</posY>" : "")+"\n"
+                                                    + "\t\t\t\t</property>"+"\n";
+                                        }
+
+                                        zkFileContent += ""
+                                                + "\t\t\t\t</propertyFields>\n"
+                                                + "\t\t\t</template-fields-hibernate>\n"
+                                                + "\t\t</fields>\n"
+                                                + "\t\t</finder>\n";
+
+                                    }
+                                }
+                                zkFileContent += "\t\t</finders>\n\n";
+                            }
+
+
+
+
+                            // Campi nella lista
+                            JSONArray cols = json.has("columns") ? json.getJSONArray("columns") : null;
+                            if(cols != null) {
+
+                                zkFileContent += ""
+                                        + "\t\t<fields>"
+                                        + "\t\t<template-fields-hibernate>"
+                                        + "\t\t<entity>" + beanClass + "</entity>"
+                                        + "\t\t<propertyFields>"
+                                ;
+
+                                for (int ic = 0; ic < cols.length(); ic++) {
+                                    JSONObject col = cols.getJSONObject(ic);
+                                    String fieldInList = col.getString("name");
+                                    String labelInList = col.getString("label");
+                                    String controlTypeInList = "";
+                                    String labelWidthInList = "1px";
+
+                                    // Fit to hibernate
+                                    fieldInList = nameSpacer.DB2Hibernate( fieldInList );
+
+                                    zkFileContent += ""
+                                            + "\t\t<property name=" + fieldInList + "\">"
+                                            + "\t\t<etichetta>" + labelInList + "</etichetta>"
+                                            + "\t\t<tipoControllo>" + controlTypeInList + "</tipoControllo>"
+                                            + "\t\t<visibile>S</visibile>"
+                                            + "\t\t<widthEtichetta>" + labelWidthInList + "</widthEtichetta>"
+                                            + "\t\t</property>";
+                                }
+
+                                zkFileContent += ""
+                                        + "\t\t</propertyFields>"
+                                        + "\t\t</template-fields-hibernate>"
+                                        + "\t\t</fields>";
+
+
+                                if(orderByField != null) {
+                                    zkFileContent += ""
+                                            + "\t\t<template-orderby>"
+                                            // +"\t\t<propertyOrderby>edizione.comune.provincia.desTarga(ASC)</propertyOrderby>"
+                                            // +"\t\t<propertyOrderby>edizione.comune.desComune(ASC)</propertyOrderby>"
+                                            + "\t\t<propertyOrderby>" + orderByField + "(" + orderByFieldMode + ")</propertyOrderby>"
+                                            + "\t\t</template-orderby>";
+                                }
+
+                                zkFileContent += "\t\t</list>";
+                            }
+
+
+                            // Grids
+                            JSONArray grids = json.has("grids") ? json.getJSONArray("grids") : null;
+                            if(grids != null) {
+                                zkFileContent += "\t\t<grids>\n";
+
+                                for (int ig = 0; ig < grids.length(); ig++) {
+                                    JSONObject grid = (JSONObject) grids.get(ig);
+                                    String gridTitle = grid.has("title") ? grid.getString("title") : "Dellaglio";
+                                    zkFileContent += ""
+                                            + "\t\t<grid id=\"" + panelTitle + "_G@" + (ig + 1) + "\">\n"
+                                            + "\t\t<title><![CDATA["+gridTitle+"]]></title>\n"
+                                            + "\t\t<template-fields-hibernate>\n"
+                                            + "\t\t<entity>" + beanClass + "</entity>\n"
+                                            + "\t\t<propertyFields>\n";
+
+                                    if (grid != null) {
+                                        JSONArray gcols = grid.has("cols") ? grid.getJSONArray("cols") : null;
+                                        if (gcols != null) {
+                                            for (int ic = 0; ic < gcols.length(); ic++) {
+                                                // campo grid
+                                                JSONObject gcol = gcols.getJSONObject(ic);
+                                                String gridField = gcol.has("name") ? gcol.getString("name") : null;
+                                                String gridLabel = gcol.has("label") ? gcol.getString("label") : null;
+                                                JSONObject col = getColumnByName(gridField, cols);
+                                                String gridLabelWidth = null; // "70px";
+                                                String gridControlType = getZKControlType(gridField, cols, "type");
+                                                String gridControlWidth = getZKControlType(gridField, cols, "width");
+                                                String gridControlHeight = getZKControlType(gridField, cols, "height");
+                                                String gridControlRO = col.has("readOnly") ? (col.getBoolean("readOnly") ? "S" : "N") : "N";
+                                                String gridControlVisible = col.has("visible") ? (col.getBoolean("visible") ? "S" : "N") : "N";
+
+                                                String posX = gcol.has("col") ? "" : null;
+                                                String posY = gcol.has("row") ? "" : null;
+
+                                                // Fit to hibernate
+                                                gridField = nameSpacer.DB2Hibernate( gridField );
+
+                                                zkFileContent += ""
+                                                        + "\t\t\t\t<property name=\"" + gridField + "\">\n"
+                                                        + "\t\t\t\t\t<etichetta>" + gridLabel + "</etichetta>\n"
+                                                        + "\t\t\t\t\t<widthEtichetta>" + gridLabelWidth + "</widthEtichetta>\n"
+                                                        + "\t\t\t\t\t<tipoControllo>" + gridControlType + "</tipoControllo>\n"
+                                                        + "\t\t\t\t\t<posX>" + posX + "</posX>\n"
+                                                        + "\t\t\t\t\t<posY>" + posY + "</posY>\n"
+                                                        + (gridControlWidth != null ? "\t\t<widthControllo>" + gridControlWidth + "</widthControllo>" : "") + "\n"
+                                                        + (gridControlHeight != null ? "\t\theightControllo>" + gridControlHeight + "</heightControllo>" : "") + "\n"
+                                                        + (gridControlRO != null ? "\t\t<solaLettura>" + gridControlRO + "</solaLettura>" : "") + "\n"
+                                                        + (gridControlVisible != null ? "\t\t<visibile>" + gridControlVisible + "</visibile>" : "") + "\n"
+                                                ;
+
+
+                                                // evento onChange del campo
+                                                boolean bCallbackOnChange = false;
+                                                if (bCallbackOnChange) {
+                                                    zkFileContent += ""
+                                                            + "\t\t<events>" + "\n"
+                                                            + "\t\t<event>" + "\n"
+                                                            + "\t\t<name>onVariazione</name>" + "\n"
+                                                            + "\t\t<parameter id=\"function\">" + "\n"
+                                                            + "\t\t<value><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi." + "onVariazione" + panelCode + "((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}." + panelId + "\"));]]></value>" + "\n"
+                                                            + "\t\t</parameter>" + "\n"
+                                                            + "\t\t</event>" + "\n"
+                                                            + "\t\t</events>" + "\n";
+                                                }
+                                                zkFileContent += "\t\t</property>" + "\n";
+                                            }
+
+                                            zkFileContent += ""
+                                                    + "\t\t</propertyFields>\n"
+                                                    + "\t\t</template-fields-hibernate>\n"
+                                                    + "\t\t</grid>\n"
+                                                    + "\t\t</grids>\n";
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Eventi del controllo
+                            zkFileContent += ""
+                                    +"\t\t<template-events>\n\n"
+
+                                    +"\t\t<event name=\"onNuovo\">\n"
+                                    +"\t\t<id>onNuovo</id>\n"
+                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"defaultDatiPerNuovo"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t</event>\n"
+
+                                    +"\t\t<event name=\"onSalvaNuovo\">\n"
+                                    +"\t\t<id>onSalvaNuovo</id>\n"
+                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"checkStatoPerSalva"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t</event>"
+
+                                    +"\t\t<event name=\"onSalva\">\n"
+                                    +"\t\t<id>onSalva</id>\n"
+                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"checkStatoPerSalva"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t</event>"
+
+                                    +"\t\t<event name=\"onAbilitaPulsanti\">\n"
+                                    +"\t\t<id>onAbilitaPulsanti</id>\n"
+                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onAbilitaPulsanti"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t</event>\n"
+
+                                    +"\t\t<event name=\"onLoad\">\n"
+                                    +"\t\t<id>onLoad</id>\n"
+                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onLoad"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t</event>\n"
+
+                                    +"\t\t<event name=\"onPostLoad\">\n"
+                                    +"\t\t<id>onPostLoad</id>\n"
+                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onPostLoad"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t</event>\n"
+
+                                    +"\t\t<event name=\"onPreSalvaNuovo\">\n"
+                                    +"\t\t<id>onPreSalvaNuovo</id>\n"
+                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onBeforeSalva"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t</event>\n"
+
+                                    +"\t\t<event name=\"onAfterSalvaNuovo\">\n"
+                                    +"\t\t<id>onAfterSalvaNuovo</id>\n"
+                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onPostSalva"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t</event>\n"
+
+                                    +"\t\t</template-events>\n\n";
+
+
+                            // Pulsanti del Menu
+                            zkFileContent += ""
+                                    +"\t\t<template-menus>\n"
+                                    +"\t\t<menu name=\"INDIETRO\"/>\n"
+                                    +"\t\t<menu name=\"AVANTI\"/>\n"
+
+                            +(can_insert ?
+                                    "\t\t<menu name=\"NUOVO\">\n"
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
+                                    +"\t\t</menu>\n"
+                                            : "")
+                            +(can_update ?
+                                    "\t\t<menu name=\"MODIFICA\">\n"
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
+                                    +"\t\t</menu>\n"
+                                            : "")
+
+                            +(can_insert || can_update ?
+                                    "\t\t<menu name=\"SALVA\"/>\n"
+                                    +"\t\t<menu name=\"ANNULLA\"/>\n"
+                                            : "")
+
+                            +(can_delete ?
+                                    "\t\t<menu name=\"ELIMINA\">\n"
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
+                                    +"\t\t</menu>\n"
+                                    : "")
+
+
+                            +(can_insert ?
+                                "\t\t<!-- SQL inserimento KEYPOOLS -->"
+                                +"\t\t<!-- INSERT INTO "+(schemaName != null && !schemaName.isEmpty() ? (schemaName+"."):"")+"KEYPOOLS TABLENAME,PROG,UTENTE_INS,DATA_INS VALUES ('"+tableName+"',"+"1000"+","+"'azienda'"+","+"NOW()"+") -->"
+                                    : "")
+                                    ;
+
+
+                            // Pulsante apertura popup
+                            if(popupCommand) {
+                                zkFileContent += "\n\n"
+                                        + "\t\t<menu name=\"" + "PopupCommand" + "\">\n"
+                                        + "\t\t<tipo>ITEM_ONLY_SELECT</tipo>\n"
+                                        + "\t\t<label>" + "Richiedi validazione" + "</label>\n"
+                                        + "\t\t<icon>" + "img/true.gif" + "</icon>\n"
+                                        + "\t\t<assets>" + "pulsante_invia_percorso" + "</assets>\n"
+                                        + "\t\t<actionClass>com."+customerName+".zk.controller.datamanager.actions.ApriWindowAction</actionClass>\n"
+                                        + "\t\t<parameters>class=" + "com."+customerName+"."+appName+".controller.InviaPercorso" + ";\n"
+                                        + "\t\tpopup=S;\n"
+                                        + "\t\t</parameters>\n"
+                                        + "\t\t</menu>\n"
+
+                                        + "\t\t</template-menus>\n\n"
+                                        + "\t\t</panel>\n\n";
+
+                            }
+
+                            if(process_foreign_tables) {
+                                // Foreign tables
+                                // +"\t\t<!-- bando destinatari -->"
+                                // +"\t\t<panel id=\"PercorsiDestinatari_P@1254136534031\">"
+                                // ...
+                            }
+
+                            zkFileContent += ""
+                                    +"\t\t</panels>\n\n"
+                                    +"\t</page>\n\n";
+
+
+
                             if (fullFileName != null && !fullFileName.isEmpty()) {
                                 // salvataggio file nella cartella in produzione
                                 try {
-                                    Files.write(Paths.get(fullFileName), fileContent.getBytes());
+                                    Files.write(Paths.get(fullFileName), zkFileContent.getBytes());
                                 } catch (Exception ex) {
                                     return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage() + " - writing:" + fullFileName) + "\"}";
                                 }
                             }
+
+
                             if (fileName != null && !fileName.isEmpty()) {
+                                // salvataggio file nella cartella del progetto
+                                if (liquidJsonsProjectFolder == null || liquidJsonsProjectFolder.isEmpty()) {
+                                    liquidJsonsProjectFolder = "liquidJSONs";
+                                    String res = workspace.set_project_folder(request, liquidJsonsProjectFolder, workspace.genesisToken);
+                                    JSONObject resJson = new JSONObject(res);
+                                    if(resJson != null) {
+                                        int result = resJson.getInt("result");
+                                        if(result > 0) {
+                                            note += " [ Note: created folder '"+liquidJsonsProjectFolder+"' ]";
+                                            liquidJsonsProjectFolder = (String) request.getSession().getAttribute("GLLiquidJsonsProjectFolder");
+                                        } else {
+                                            return "{\"result\":0,\"message\":\"" + utility.base64Encode("Invalid path : " + liquidJsonsProjectFolder + "") + "\"}";
+                                        }
+                                    }
+                                }
+
                                 if (liquidJsonsProjectFolder != null && !liquidJsonsProjectFolder.isEmpty()) {
-                                    // salvataggio file nella cartella del progetto
                                     String insideProjectFileName = liquidJsonsProjectFolder + File.separatorChar + fileName;
                                     if (!insideProjectFileName.equalsIgnoreCase(fullFileName)) {
-                                        controlId = getControlIdFromFile(fileName);
-                                        String jsVarName = getJSVariableFromControlId(controlId);
                                         boolean bProceed = true;
 
                                         // DEBUG : liquidizeJSONContnet(fileContent); return "{\"result\":-1,\"error\":\"\"}";
@@ -3489,20 +4091,20 @@ public class workspace {
                                                     bProceed = (Messagebox.show(" File <b>" + insideProjectFileName + "</b> already exist<br/><br/> Do you want to overwrite it ?", "Liquid", Messagebox.YES + Messagebox.NO + Messagebox.WARNING) == Messagebox.YES);
                                                 }
                                                 if (bProceed) {
-                                                    Files.write(Paths.get(insideProjectFileName), liquidizeJSONContent(fileContent).getBytes());
+                                                    Files.write(Paths.get(insideProjectFileName), zkFileContent.getBytes());
                                                 } else {
                                                     return "{\"result\":0,\"message\":\"\"}";
                                                 }
                                             } catch (Exception ex) {
                                                 return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage() + " - writing:" + insideProjectFileName) + "\"}";
                                             }
-                                            Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "File in project as <b>" + insideProjectFileName + "</b>");
-                                            return "{\"result\":1,\"message\":\"" + utility.base64Encode("file in project " + insideProjectFileName + " saved<br/><br/>javascript global var name : <b>" + jsVarName + "</b>") + "\"}";
+                                            Logger.getLogger(workspace.class.getName()).log(Level.INFO, "File exported to " + insideProjectFileName + "");
+                                            return "{\"result\":1,\"message\":\"" + utility.base64Encode("File exported to : </br></br><b>" + insideProjectFileName + "</b>") + "\"}";
                                         }
 
                                     } else {
-                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, null, "file " + insideProjectFileName + " saved by client request");
-                                        return "{\"result\":1,\"message\":\"" + utility.base64Encode("file " + fullFileName + " saved") + "\"}";
+                                        Logger.getLogger(workspace.class.getName()).log(Level.INFO, "file " + insideProjectFileName + " saved by client request");
+                                        return "{\"result\":1,\"message\":\"" + utility.base64Encode("file " + fullFileName + " saved") + note + "\"}";
                                     }
                                 } else {
                                     return "{\"result\":0,\"message\":\"" + utility.base64Encode("liquidJsonsProjectFolder is empty... you should set it by workspace.set_project_folder (and check exists)...") + "\"}";
@@ -3511,6 +4113,8 @@ public class workspace {
                                 return "{\"result\":0,\"message\":\"" + utility.base64Encode("file name is empty") + "\"}";
                             }
                         }
+                    } else {
+                        return "{\"result\":-1,\"error\":\"" + utility.base64Encode("Invalid content : should be the json of the control") + "\"}";
                     }
                 }
             }
@@ -3521,6 +4125,68 @@ public class workspace {
         return "{\"result\":0}";
     }
 
+
+    static public JSONObject getColumnByName(String gridField, JSONArray cols) {
+        for (int ic = 0; ic < cols.length(); ic++) {
+            JSONObject col = cols.getJSONObject(ic);
+            String colName = null, typeName = null;
+            try {
+                colName = col.getString("name");
+            } catch (Exception ex) {
+            }
+            if (gridField.equalsIgnoreCase(colName)) {
+                return col;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * TEXTBOX/RICHTEXT/DATEBOX/VALUEBOX/LISTBOX/INTEGERBOX";
+     *
+     * @param gridField
+     * @param cols
+     * @return
+     */
+    static public String getZKControlType( String gridField, JSONArray cols, String mode) {
+        String gridControlType = "", width = "", height = "";
+        for (int ic = 0; ic < cols.length(); ic++) {
+            JSONObject col = cols.getJSONObject(ic);
+            String colName = null, typeName = null;
+            col = getColumnByName( gridField, cols);
+            if(col != null) {
+                if (col.has("type")) {
+                    Object oWidth = col.get("width");
+                    Object oType = col.get("type");
+                    Class type = metadata.getJavaClass(oType);
+                    if(type.getName().equalsIgnoreCase("java.util.Date")) {
+                        gridControlType = "DATEBOX";
+                    } else if(type.getName().equalsIgnoreCase("java.sql.Timestamp")) {
+                        gridControlType = "DATEBOX";
+                    } else if(type.getName().equalsIgnoreCase("java.sql.BigDecimal")) {
+                        gridControlType = "INTEGERBOX"; // VALUEBOX
+                    } else if(type.getName().equalsIgnoreCase("java.lang.String")) {
+                        gridControlType = "TEXTBOX";
+                        if(col.getInt("size") >= 2000) {
+                            gridControlType = "RICHTEXT";
+                            // oWidth
+                            width = "400px";
+                            height = "400px";
+                        }
+                    }
+                }
+            }
+        }
+        if("type".equalsIgnoreCase(mode)) {
+            return gridControlType;
+        } else if("width".equalsIgnoreCase(mode)) {
+            return width;
+        } else if("height".equalsIgnoreCase(mode)) {
+            return height;
+        } else {
+            return null;
+        }
+    }
 
     static public int get_column(String table, JSONArray cols, String key, String searching) {
         String[] searchColParts = searching.split("\\.");
@@ -4030,14 +4696,14 @@ public class workspace {
         return ((workspace) tbl_wrk).tableJson.getJSONArray("columns").getJSONObject(columnIndex).getString("type");
     }
 
-    static JSONObject getColumn(Object tbl_wrk, int columnIndex) throws JSONException {
+    static JSONObject getColumnByName(Object tbl_wrk, int columnIndex) throws JSONException {
         return ((workspace) tbl_wrk).tableJson.getJSONArray("columns").getJSONObject(columnIndex);
     }
 
-    static JSONObject getColumn(Object tbl_wrk, String columnName) throws JSONException {
+    static JSONObject getColumnByName(Object tbl_wrk, String columnName) throws JSONException {
         JSONArray cols = ((workspace) tbl_wrk).tableJson.getJSONArray("columns");
         for (int i = 0; i < cols.length(); i++) {
-            if (cols.getJSONObject(i).getString("nsme").equalsIgnoreCase(columnName)) {
+            if (cols.getJSONObject(i).getString("name").equalsIgnoreCase(columnName)) {
                 return cols.getJSONObject(i);
             }
         }

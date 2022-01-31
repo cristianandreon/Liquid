@@ -56,7 +56,7 @@
             // write json configuration to the server
             out.print( workspace.set_file_content(request, out) );
 
-        } else if ("setZK".equalsIgnoreCase(operation)) {
+        } else if ("saveToZK".equalsIgnoreCase(operation)) {
             // write .xml to the server
             out.print( workspace.set_zk_content(request, out) );
 
@@ -179,7 +179,7 @@
 
             
         } else {
-            out.println( "<br/><h1><center>Welcome in Liquid ver. 1.x</center><br/></h1>");
+            out.println( "<br/><h1><center>Welcome in Liquid ver. "+workspace.version_string+"</center><br/></h1>");
             if(operation != null) {
                 out.println("<br/><center>Unknown Command <b>" + (operation.isEmpty() ? "[N/D]" : operation) + "</b></center>");
             }

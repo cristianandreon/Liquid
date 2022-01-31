@@ -4,17 +4,25 @@
 ,"selectColumns":"*"
 ,"primaryKey":"COLUMN"
 ,"columns":[
- { "name":"TABLE", "label":"Table", "field":"1", "width":"100", "readonly":true, "visible":true }
-,{ "name":"COLUMN", "label":"Column", "field":"2", "width":"200", "readonly":true, "visible":true }
-,{ "name":"REMARKS", "label":"Note", "field":"3", "width":"150", "readonly":true, "visible":true }
+ { "name":"TABLE", "label":"Table", "field":"1", "width":"100", "readonly":true }
+,{ "name":"COLUMN", "label":"Column", "field":"2", "width":"200", "readonly":true }
+,{ "name":"REMARKS", "label":"Note", "field":"3", "width":"150", "readonly":true }
+,{ "name":"TYPE_NAME", "label":"Type", "field":"4", "width":"75", "readonly":true }
+,{ "name":"COLUMN_SIZE", "label":"Size", "field":"5", "width":"75", "readonly":true }
+,{ "name":"DECIMAL_DIGITS", "label":"Dec.dig.", "field":"75", "width":"150", "readonly":true }
+,{ "name":"NULLABLE", "label":"Nullable", "field":"7", "width":"75", "readonly":true }
 ]
 ,"filters": { 
     "nCols":2
     ,"nRows":3
     ,"columns":[
-        { "name":"COLUMN", "label":"column"},
-        { "name":"REMARKS", "label":"description"} 
-    ]
+        { "name":"COLUMN", "label":"Column"},
+        { "name":"REMARKS", "label":"Note"},
+        { "name":"TYPE_NAME", "label":"Type"},
+        { "name":"COLUMN_SIZE", "label":"Size"},
+        { "name":"DECIMAL_DIGITS", "label":"Decimal digits"},
+        { "name":"NULLABLE", "label":"Nullable"}
+  ]
 }
 , "preFilters":[]
 , "operation":[] 

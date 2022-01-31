@@ -129,6 +129,12 @@ public class Info {
         out_string += "<td>"+"(user session)"+"</td>";
         out_string += "</tr>";
 
+        String methodConnection = connection.testDBConnection();
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Managed Connection</td>";
+        out_string += "<td>"+(methodConnection != null ? methodConnection.replace("\n", "</br>") : "[N/D]")+"</td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
 
         out_string += "<tr>";
         out_string += "<td>Black list</td>";
