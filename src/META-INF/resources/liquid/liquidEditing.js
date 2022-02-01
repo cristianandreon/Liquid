@@ -2899,8 +2899,7 @@ var LiquidEditing = {
         if (!dlg) {
             dlg = document.createElement('div');
             dlg.id = dlgId;
-            dlg.className = "liquidContextMenu";
-            // dlg.display = 'none';
+            dlg.className = "liquidContextDialog";
 
             var panelCode = capitalizeFirstLetter(liquid.tableJson.table.toCamelCase());
             if (!Liquid.customerName)
@@ -2920,7 +2919,7 @@ var LiquidEditing = {
             if (!Liquid.maxResult)
                 Liquid.maxResult = "5000";
             if (!Liquid.piedino)
-                Liquid.piedino = "/com/" + Liquid.customerName + "/util/hibernate/controller/datiPiedinoProfilo-1.incxml";
+                Liquid.piedino = "/com/" + Liquid.customerName + "/controller/datiPiedinoProfilo-1.incxml";
             if (!Liquid.showList)
                 Liquid.showList = "S";
             if (!Liquid.autoSelect)
@@ -2942,30 +2941,34 @@ var LiquidEditing = {
             if (!Liquid.can_delete)
                 Liquid.can_delete = "S";
 
+            var onCancelCode = "LiquidEditing.onContextMenuClose();";
+            var onOkCode = "";
+            var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
+
             dlg.innerHTML =
                 "<div class=\"liquidEditorDialog-content\">"
                 + "<span class=\"liquidContextMenu-close\"></span>"
                 + "<span style='text-align: center'><h1>Export to ZK panel</h1></span>"
                 + "<table cellpadding='3' cellspacing='3'     style='width: 100%; height: 100%;'>"
-                + "<tr><td>Panel title</td><td><input id=\"" + "panelTitle" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + panelCode + "'/></td</tr>"
-                + "<tr><td>Field in title bar</td><td><input id=\"" + "fieldInTitleBar" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.fieldInTitleBar + "'/></td</tr>"
-                + "<tr><td>Customer name</td><td><input id=\"" + "customerName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.customerName + "'/></td</tr>"
-                + "<tr><td>App name</td><td><input id=\"" + "appName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.appName + "'/></td</tr>"
-                + "<tr><td>Bean class</td><td><input id=\"" + "beanClass" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + beanClass + "'/></td</tr>"
-                + "<tr><td>Max Result</td><td><input id=\"" + "maxResult" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.maxResult + "'/></td</tr>"
-                + "<tr><td>Order by field</td><td><input id=\"" + "orderByField" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.orderByField + "'/></td</tr>"
-                + "<tr><td>Order mode</td><td><input id=\"" + "orderByFieldMode" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + "ASC" + "'/></td</tr>"
-                + "<tr><td>Piedino</td><td><input id=\"" + "piedino" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.piedino + "'/></td</tr>"
-                + "<tr><td>Show list</td><td><input id=\"" + "showList" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.showList + "'/></td</tr>"
-                + "<tr><td>Auto select</td><td><input id=\"" + "autoSelect" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.autoSelect + "'/></td</tr>"
-                + "<tr><td>Auto find</td><td><input id=\"" + "autoFind" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.autoFind + "'/></td</tr>"
-                + "<tr><td>No.items per page</td><td><input id=\"" + "itemsInPage" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.itemsInPage + "'/></td</tr>"
-                + "<tr><td>Popup command</td><td><input id=\"" + "popupCommand" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.popupCommand + "'/></td</tr>"
-                + "<tr><td>Use asset</td><td><input id=\"" + "use_asset" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.use_asset + "'/></td</tr>"
-                + "<tr><td>Can insert</td><td><input id=\"" + "can_insert" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.can_insert + "'/></td</tr>"
-                + "<tr><td>Can update</td><td><input id=\"" + "can_update" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.can_update + "'/></td</tr>"
-                + "<tr><td>Can delete</td><td><input id=\"" + "can_delete" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.can_delete + "'/></td</tr>"
-                + "<tr><td>Foreign tables</td><td><input id=\"" + "process_foreign_tables" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + Liquid.process_foreign_tables + "'/></td</tr>"
+                + "<tr><td>Panel title</td><td><input id=\"" + "panelTitle" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + panelCode + "' "+onKeyPressCode+" /></td</tr>"
+                + "<tr><td>Field in title bar</td><td><input id=\"" + "fieldInTitleBar" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.fieldInTitleBar + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Customer name</td><td><input id=\"" + "customerName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.customerName + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>App name</td><td><input id=\"" + "appName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.appName + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Bean class</td><td><input id=\"" + "beanClass" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + beanClass + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Max Result</td><td><input id=\"" + "maxResult" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.maxResult + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Order by field</td><td><input id=\"" + "orderByField" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.orderByField + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Order mode</td><td><input id=\"" + "orderByFieldMode" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + "ASC" + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Piedino</td><td><input id=\"" + "piedino" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.piedino + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Show list</td><td><input id=\"" + "showList" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.showList + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Auto select</td><td><input id=\"" + "autoSelect" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.autoSelect + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Auto find</td><td><input id=\"" + "autoFind" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.autoFind + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>No.items per page</td><td><input id=\"" + "itemsInPage" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.itemsInPage + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Popup command</td><td><input id=\"" + "popupCommand" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.popupCommand + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Use asset</td><td><input id=\"" + "use_asset" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.use_asset + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Can insert</td><td><input id=\"" + "can_insert" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_insert + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Can update</td><td><input id=\"" + "can_update" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_update + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Can delete</td><td><input id=\"" + "can_delete" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_delete + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Foreign tables</td><td><input id=\"" + "process_foreign_tables" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_foreign_tables + "' "+onKeyPressCode+"/></td</tr>"
                 + "</table>"
                 + "</br>"
                 + "</br>"
@@ -2995,8 +2998,18 @@ var LiquidEditing = {
         Liquid.createDatalistByProp(document.getElementById("can_update"), liquid, "S,N");
         Liquid.createDatalistByProp(document.getElementById("can_delete"), liquid, "S,N");
         Liquid.createDatalistByProp(document.getElementById("process_foreign_tables"), liquid, "S,N");
-    }
-    ,
+
+
+
+        var menu = LiquidEditing.createContextMenu();
+        var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
+        var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
+        var ckeckImg = "<img src=\""+Liquid.getImagePath("check.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
+        var saveImg = "<img src=\""+Liquid.getImagePath("saveas.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
+
+        menu.appendChild(dlg);
+        menu.style.display = "";
+    },
     applyExportToZKDialog:function(objId, dlgId) {
         LiquidEditing.onContextMenuClose();
         if(dlgId) {
@@ -3078,6 +3091,22 @@ var LiquidEditing = {
                             var fileName = liquid.controlId+".json";
                             var tableJsonString = JSON.stringify(json);
 
+                            // TODO: risoluzione larghezze
+                            if(json.columns) {
+                                for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                                    var col = json.columns[ic];
+                                    if(col.width) {
+                                        var width = Number(col.width && !isNaN(col.width) ? col.width : 0)
+                                        if(width==0) {
+                                            liquid.gridOptions.columnApi.autoSizeColumns([json.columns[ic].field], true);
+                                        }
+                                        width = Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0)
+                                        if(width > 0) {
+                                            json.columns[ic].rtWidth = width;
+                                        }
+                                    }
+                                }
+                            }
                             json.token = token; // need current token
                             Liquid.registerOnUnloadPage();
                             if(!liquid.xhr)

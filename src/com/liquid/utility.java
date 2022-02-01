@@ -2104,12 +2104,12 @@ public class utility {
             if(i>0)
                 out += capitalizeFirstLetter(list[i]);
             else
-                out += list[i];
+                out += list[i].toLowerCase();
         }
         return out;
     }
 
     public static String capitalizeFirstLetter(String s) {
-        return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "");
+        return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "").toLowerCase();
     };
 }

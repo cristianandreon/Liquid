@@ -13,7 +13,7 @@
 /* */
 
 //
-// Liquid ver.1.89
+// Liquid ver.1.90
 //
 //  First update 04-01-2020 - Last update 30-01-2022
 //
@@ -13070,7 +13070,7 @@ var Liquid = {
         var found = 0;
         for (var inode = 0; inode < rootObj.childNodes.length; inode++) {
             var child = rootObj.childNodes[inode];
-            if (nodeName(child, "script") && (!child.type || child.type.toLowerCase() === "text/javascript")) {
+            if (Liquid.compareNodeName(child, "script") && (!child.type || child.type.toLowerCase() === "text/javascript")) {
                 if (scripts) scripts.push(child.text);
                 found++;
             }
@@ -19420,6 +19420,8 @@ var Liquid = {
                 dlgContent.style.position = 'absolute';
             }
         }
+    }, compareNodeName:function(elem, name) {
+        return elem.nodeName && elem.nodeName.toUpperCase() === name.toUpperCase();
     }
 };
 
@@ -20116,9 +20118,6 @@ var LZW = {
     }
 };
 
-function nodeName(elem, name) {
-    return elem.nodeName && elem.nodeName.toUpperCase() === name.toUpperCase();
-}
 
 function deepClone(obj, hash = new WeakMap()) {
     if (Object(obj) !== obj || obj instanceof Function) return obj;

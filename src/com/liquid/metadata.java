@@ -318,10 +318,22 @@ public class metadata {
         return null;
     }
 
-    //
-    // Legge in soluzione unica tutte le tabelle dello schema(owner).tabella
-    //
+
+
+
+    /**
+     * Legge in soluzione unica tutte le tabelle dello schema(owner).tabella
+     *
+     * @param conn
+     * @param schema
+     * @param table
+     * @param columnName
+     * @param dialet
+     * @param bReadDefault
+     * @return
+     */
     public static Object readTableMetadataBySQL(Connection conn, String schema, String table, String columnName, String dialet, boolean bReadDefault) {
+        MetaDataTable metaDataTableResult = null;
 
         try {
 
@@ -329,7 +341,8 @@ public class metadata {
                 return null;
             }
 
-            if (columnName != null) {
+            if (columnName != null && !"*".equalsIgnoreCase(columnName)) {
+                // colonna specifica
                 Object mdCol = getTableMetadata(conn, null, schema, table, columnName);
                 if (mdCol != null) {
                     return mdCol;
@@ -376,31 +389,43 @@ public class metadata {
 
                 String[] oracleQueryList = {
                         // tabelle e viste
-                        "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM ALL_TAB_COLUMNS WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
+                        /*
+                        "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,B.COMMENTS AS REMARKS,A.DATA_PRECISION FROM ALL_TAB_COLUMNS A"
+                                + " LEFT JOIN ALL_COL_COMMENTS B ON B.OWNER=A.OWNER AND B.TABLE_NAME=A.TABLE_NAME AND B.COLUMN_NAME=A.COLUMN_NAME"
+                                + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME in "
                                 + "("
-                                + "SELECT TABLE_NAME FROM all_objects WHERE object_type in ('TABLE','VIEW') AND OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
+                                + "SELECT TABLE_NAME FROM ALL_OBJECTS WHERE object_type in ('TABLE','VIEW') AND OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
                                 + ") ORDER BY 2,3"
+                         */
+                        "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,'',A.DATA_PRECISION,B.COMMENTS AS REMARKS FROM ALL_TAB_COLUMNS A"
+                                + " LEFT JOIN ALL_COL_COMMENTS B ON B.OWNER=A.OWNER AND B.TABLE_NAME=A.TABLE_NAME AND B.COLUMN_NAME=A.COLUMN_NAME"
+                                + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
+                                + " ORDER BY 2,3"
+
+
 
                         // sinonimi
-                        , "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM ALL_TAB_COLUMNS WHERE (OWNER,TABLE_NAME) in "
+                        , "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,B.COMMENTS,A.DATA_PRECISION,B.COMMENTS FROM ALL_TAB_COLUMNS A"
+                        + " LEFT JOIN ALL_COL_COMMENTS B ON B.OWNER=A.OWNER AND B.TABLE_NAME=A.TABLE_NAME AND B.COLUMN_NAME=A.COLUMN_NAME"
+                        + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME in "
                         + "("
-                        + "SELECT TABLE_OWNER,TABLE_NAME FROM all_synonyms WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
-                        + "("
-                        + "SELECT OBJECT_NAME FROM all_objects WHERE object_type='SYNONYM' AND OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
-                        + ")"
+                        + "SELECT C.TABLE_NAME FROM all_synonyms C WHERE C.TABLE_OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
                         + ") ORDER BY 2,3"
                 };
 
+                //
                 // TODO : lettura information_schema
+                // Per ora non serve postgres NON è una merda nella gestione dei metadati
+                //
                 String[] postgresQueryList = {
                         // tabelle
-                        "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
+                        "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION,REMARKS FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
                                 + "("
                                 + "SELECT TABLE_NAME FROM information_schema.tables WHERE OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
                                 + ") ORDER BY 2,3"
 
                         // viste
-                        , "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
+                        , "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'',DATA_PRECISION,REMARKS FROM information_schema.columns WHERE OWNER = '" + schema + "' AND TABLE_NAME in "
                         + "("
                         + "SELECT TABLE_NAME FROM information_schema.views WHERE AND OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
                         + ") ORDER BY 2,3"
@@ -449,6 +474,7 @@ public class metadata {
 
                         String typeName = rs.getString(4);
                         String sqlType = oracleToSqlType(typeName);
+                        String remarks = rs.getString(9);
 
                         String sourceCatalog = null; // rs.getString("SCOPE_CATALOG");
                         String sourceSchema = null; // rs.getString("SCOPE_SCHEMA");
@@ -460,7 +486,7 @@ public class metadata {
                         // OWNER,TABLE_NAME,
                         // COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'DATA_DEFAULT',DATA_PRECISION
                         // MetaDataCol(String _name, String _datatype, String _remarks, String _size, String _isNullable, String _columnDef, String _digits) {
-                        MetaDataCol metaDataCol = new MetaDataCol(rs.getString(3), sqlType, typeName, null, rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8), autoIncString, sourceCatalog, sourceSchema, sourceTable, sourceDataType, sourceIsGenerated);
+                        MetaDataCol metaDataCol = new MetaDataCol(rs.getString(3), sqlType, typeName, remarks, rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8), autoIncString, sourceCatalog, sourceSchema, sourceTable, sourceDataType, sourceIsGenerated);
                         metaDataCols.add(metaDataCol);
                         recCount++;
                     }
@@ -496,7 +522,12 @@ public class metadata {
                                 stmtc.close();
                             }
                         }
-                        metaDataTable.add(new MetaDataTable(table, schema, null, metaDataCols));
+
+                        // The result
+                        metaDataTableResult = new MetaDataTable(table, schema, null, metaDataCols);
+
+                        // Add to cache
+                        metaDataTable.add(metaDataTableResult);
 
                         long total_time = (System.currentTimeMillis() - msTrace);
                         long extra_time = total_time - retrive_time;
@@ -509,8 +540,12 @@ public class metadata {
 
                 System.err.println("Read meatadata on table: " + schema + "." + table + " Items:" + recCount + " Total time :" + (System.currentTimeMillis() - msTrace));
 
-                if (columnName != null) {
+                if (columnName != null && !"*".equalsIgnoreCase(columnName)) {
+                    // colonna specifica
                     return getTableMetadata(conn, null, schema, table, columnName);
+                } else {
+                    // tutte le colonne return metadataTable
+                    return metaDataTableResult;
                 }
             }
 
@@ -883,6 +918,8 @@ public class metadata {
     static public Object[] getAllColumns(String database, String schema, String tableName, Connection conn, boolean bUserFieldIdentificator) {
         int nRec = 0;
         String result = "", driver = null;
+        metadata.MetaDataTable metaDatatable = null;
+
         try {
 
             try {
@@ -909,6 +946,8 @@ public class metadata {
                         oraCon.setRemarksReporting(true);
                     }
                 } catch (Throwable e) { }
+
+                metaDatatable = (MetaDataTable) readTableMetadataBySQL(conn, schema, tableName, null, "oracle", false);
             }
 
             if (database == null || database.isEmpty())
@@ -924,22 +963,38 @@ public class metadata {
                 result += "[";
                 while (rs.next()) {
                     String resultShcema = rs.getString("TABLE_SCHEM");
-                    if ((schema == null && !"information_schema" .equalsIgnoreCase(resultShcema))
+                    if ((       schema == null && !"information_schema" .equalsIgnoreCase(resultShcema))
                             || (schema != null && resultShcema == null)
                             || (schema != null && schema.equalsIgnoreCase(resultShcema))
                     ) {
 
-                        String decimalDigits = null;
+                        String columnName = null, remarks = null, decimalDigits = null;
+
+                        try {
+                            columnName = (rs.getString("COLUMN_NAME") != null ? rs.getString("COLUMN_NAME") : "");
+                        } catch (Exception e) {}
+
+
+                        try {
+                            if ("oracle" .equalsIgnoreCase(driver)) {
+                                // oracle shit
+                                Object res = metadata.getTableMetadata(metaDatatable, columnName, "remarks");
+                                remarks = String.valueOf( res != null ? res : "" );
+                            } else {
+                                remarks = (rs.getString("REMARKS") != null ? rs.getString("REMARKS") : "");
+                            }
+                        } catch (Exception e) {}
 
                         try {
                             decimalDigits = String.valueOf(rs.getInt("DECIMAL_DIGITS"));
                         } catch (Exception e) {}
 
+
                         result += nRec > 0 ? "," : "";
                         result += "{";
                         result += "\"" + (bUserFieldIdentificator ? "1" : "TABLE") + "\":\"" + (rs.getString("TABLE_NAME") != null ? rs.getString("TABLE_NAME") : "") + "\"";
-                        result += ",\"" + (bUserFieldIdentificator ? "2" : "COLUMN") + "\":\"" + (rs.getString("COLUMN_NAME") != null ? rs.getString("COLUMN_NAME") : "") + "\"";
-                        result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + (rs.getString("REMARKS") != null ? rs.getString("REMARKS") : "") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "2" : "COLUMN") + "\":\"" + columnName + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + remarks + "\"";
                         result += ",\"" + (bUserFieldIdentificator ? "4" : "TYPE_NAME") + "\":\"" + (rs.getString("TYPE_NAME") != null ? rs.getString("TYPE_NAME") : "") + "\"";
                         result += ",\"" + (bUserFieldIdentificator ? "5" : "COLUMN_SIZE") + "\":\"" + (rs.getString("COLUMN_SIZE") != null ? rs.getString("COLUMN_SIZE") : "") + "\"";
                         result += ",\"" + (bUserFieldIdentificator ? "6" : "DECIMAL_DIGITS") + "\":\"" + (decimalDigits != null ? decimalDigits : "") + "\"";
@@ -955,6 +1010,29 @@ public class metadata {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         }
         return new Object[]{(Object) result, (Object) nRec};
+    }
+
+    private static Object getTableMetadata(MetaDataTable metaDatatable, String column, String prop) {
+        ArrayList<MetaDataCol> cols = metaDatatable.metaDataCols;
+        for(int ic=0; ic<cols.size(); ic++) {
+            MetaDataCol col = cols.get(ic);
+            if(col.name.equalsIgnoreCase(column)) {
+                if("remarks".equalsIgnoreCase(prop)) {
+                    return col.remarks;
+                } else if("typeName".equalsIgnoreCase(prop)) {
+                    return col.remarks;
+                } else if("size".equalsIgnoreCase(prop)) {
+                    return col.size;
+                } else if("isNullable".equalsIgnoreCase(prop)) {
+                    return col.isNullable;
+                } else if("columnDef".equalsIgnoreCase(prop)) {
+                    return col.columnDef;
+                } else {
+                    return col.name;
+                }
+            }
+        }
+        return null;
     }
 
     static public ArrayList<String> getAllColumnsAsArray(String database, String schema, String tableName, Connection conn) throws Throwable {

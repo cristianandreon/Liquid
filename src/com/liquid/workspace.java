@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -3640,10 +3641,15 @@ public class workspace {
                             String tableName = json.getString("table");
                             String schemaName = json.getString("schema");
                             String panelCode = utility.toCamelCase(panelTitle);
+                            String beanName = panelCode.substring(0, 1).toUpperCase()  + panelCode.substring(1);
                             String panelId = panelTitle+"_P@1";
 
                             JSONObject zkParams = json.getJSONObject("zkParams");
                             String fieldInTitleBar = zkParams.getString("fieldInTitleBar");
+
+                            // Fit to hibernate
+                            fieldInTitleBar = nameSpacer.DB2Hibernate( fieldInTitleBar );
+
                             String customerName = zkParams.getString("customerName");
                             String appName = zkParams.getString("appName");
                             String beanClass = zkParams.getString("beanClass"); // "com."+customerName+"."+appName+".hibernate.bean."+panelCode;
@@ -3664,55 +3670,63 @@ public class workspace {
 
 
                             String zkFileContent =
-                                    "<page id=\""+panelTitle+"\" >\n"
-                                    +"<template-xmlreference>/com/"+customerName+"/"+appName+"/controller/Reference.xml</template-xmlreference>\n"
-                                    +"<title><![CDATA["+panelTitle+"]]></title>\n"
-                                    +"<menupath><![CDATA[ / panelTitle]]></menupath>\n"
-                                    +"<panels>\n"
-                                    +"\t<!-- "+panelTitle+" -->\n"
+                                    "\t<page id=\""+panelTitle+"\" >\n"
+                                    +"\t<template-xmlreference>/com/"+customerName+"/"+appName+"/controller/Reference.xml</template-xmlreference>\n"
+                                    +"\t<title><![CDATA["+panelTitle+"]]></title>\n"
+                                    +"\t<menupath><![CDATA[ / panelTitle]]></menupath>\n"
+                                    +"\t<panels>\n"
+                                    +"\t\t<!-- "+panelTitle+" -->\n"
                                     +"\t\t<panel id=\""+panelId+"\">\n"
                                     +"\t\t\t<title><![CDATA["+panelTitle+"]]></title>\n"
 
                                     // Titolo finestra
+                                    +"\n"
                                     +"\t\t\t<template-paneldato-hibernate>\n"
                                     +"\t\t\t\t<entity>"+beanClass+"</entity>\n"
                                     +"\t\t\t\t<propertyDescription>\n"
                                     +"\t\t\t\t\t<property name=\""+fieldInTitleBar+"\"/>\n"
                                     +"\t\t\t\t</propertyDescription>\n"
                                     +"\t\t\t</template-paneldato-hibernate>\n"
-                                    +"\t\t<template-profilo-hibernate>\n"
-                                    +"\t\t<entity>"+beanClass+"</entity>\n"
-                                    +"\t\t<propertyProfilo>\n";
+
+                                    // Profilo
+                                    +"\n"
+                                    +"\t\t\t<template-profilo-hibernate>\n"
+                                    +"\t\t\t\t<entity>"+beanClass+"</entity>\n"
+                                    +"\t\t\t\t<propertyProfilo>\n";
 
                             // filtro orop profilo (PreFilter in Liquid)
                             String valueInProfileFilter = null;
                             String fieldInProfileFilter = null; // es.: ${user}.filtro_bando_attivo
                             if(valueInProfileFilter != null) {
-                                zkFileContent += "\t\t<property name=\"" + fieldInProfileFilter + "\">\n"
-                                                + "\t\t<espressioneRicerca>" + valueInProfileFilter + "</espressioneRicerca>\n"
-                                                + "\t\t<comparatoreRicerca>?=</comparatoreRicerca>\n"
-                                                + "\t\t<espressioneValore>${user}.valore_bando_attivo</espressioneValore>\n"
-                                                + "\t\t<espressioneValoreOnlyIfNull>S</espressioneValoreOnlyIfNull>\n"
-                                                + "\t\t</property>\n";
+                                zkFileContent += "\t\t\t\t<property name=\"" + fieldInProfileFilter + "\">\n"
+                                                + "\t\t\t\t<espressioneRicerca>" + valueInProfileFilter + "</espressioneRicerca>\n"
+                                                + "\t\t\t\t<comparatoreRicerca>?=</comparatoreRicerca>\n"
+                                                + "\t\t\t\t<espressioneValore>${user}.valore_bando_attivo</espressioneValore>\n"
+                                                + "\t\t\t\t<espressioneValoreOnlyIfNull>S</espressioneValoreOnlyIfNull>\n"
+                                                + "\t\t\t\t</property>\n";
                             }
 
                             // Prop profilo incluse su file
                             if(piedino!=null) {
-                                zkFileContent += "\t\t<!--@template-xmlinclude=" + piedino + " -->\n"
-                                        + "\t\t</propertyProfilo>\n"
-                                        + "\t\t</template-profilo-hibernate>\n";
+                                zkFileContent += "\t\t\t\t<!--@template-xmlinclude=" + piedino + " -->\n";
                             }
 
+                            zkFileContent += ""
+                                    + "\t\t\t\t</propertyProfilo>\n"
+                                    + "\t\t\t</template-profilo-hibernate>\n";
 
 
-                            zkFileContent += "\t\t<list id=\""+panelTitle+"_L@1\">\n"
-                                    +"\t\t<show>"+(showList?"S":"N")+"</show>\n"
-                                    +"\t\t<autoSelect>"+(autoSelect?"S":"N")+"</autoSelect>\n"
-                                    +"\t\t<autoFind>"+(autoFind?"S":"N")+"</autoFind>\n"
-                                    +"\t\t<paging>\n"
-                                    +"\t\t<size>"+itemsInPage+"</size>\n"
-                                    +"\t\t</paging>\n"
-                                    +"\t\t<title><![CDATA[Ricerca]]></title>\n"
+
+                            // Lista e finders
+                            zkFileContent += "\n"
+                                    +"\t\t\t<list id=\""+panelTitle+"_L@1\">\n"
+                                    +"\t\t\t\t<show>"+(showList?"S":"N")+"</show>\n"
+                                    +"\t\t\t\t<autoFind>"+(autoFind?"S":"N")+"</autoFind>\n"
+                                    +"\t\t\t\t<autoSelect>"+(autoSelect?"S":"N")+"</autoSelect>\n"
+                                    +"\t\t\t\t<paging>\n"
+                                    +"\t\t\t\t\t<size>"+itemsInPage+"</size>\n"
+                                    +"\t\t\t\t</paging>\n"
+                                    +"\t\t\t\t<title><![CDATA[Ricerca]]></title>\n"
                             ;
 
                             // Schede ricerca
@@ -3727,14 +3741,14 @@ public class workspace {
 
                             if(filters != null) {
 
-                                zkFileContent += "\t\t<finders>\n";
+                                zkFileContent += "\t\t\t\t<finders>\n";
 
                                 for (int ir = 0; ir < filters.length(); ir++) {
                                     zkFileContent += ""
-                                            + "\t\t\t<finder id=\"" + panelTitle + "_R@"+(ir+1)+"\">\n"
-                                            + "\t\t\t<title><![CDATA[Ricerca base]]></title>\n"
-                                            + "\t\t\t<limitResult>" + maxResult + "</limitResult>\n"
-                                            + "\t\t\t<fields>\n";
+                                            + "\t\t\t\t\t<finder id=\"" + panelTitle + "_R@"+(ir+1)+"\">\n"
+                                            + "\t\t\t\t\t<title><![CDATA[Ricerca base]]></title>\n"
+                                            + "\t\t\t\t\t<limitResult>" + maxResult + "</limitResult>\n"
+                                            + "\t\t\t\t\t<fields>\n";
 
 
 
@@ -3743,9 +3757,9 @@ public class workspace {
                                     if(cols != null) {
                                         // Scheda ricerca
                                         zkFileContent += ""
-                                                + "\t\t\t<template-fields-hibernate>\n"
-                                                + "\t\t\t\t<entity>" + beanClass + "</entity>\n"
-                                                + "\t\t\t\t<propertyFields>\n";
+                                                + "\t\t\t\t\t<template-fields-hibernate>\n"
+                                                + "\t\t\t\t\t\t<entity>" + beanClass + "</entity>\n"
+                                                + "\t\t\t\t\t\t<propertyFields>\n";
 
                                         // Campi ricerca
                                         for (int irf = 0; irf < cols.length(); irf++) {
@@ -3773,27 +3787,27 @@ public class workspace {
                                                 }
                                             }
 
-                                            zkFileContent += "\t\t\t\t<property name=\"" + searchFieldName + "\">\n"
-                                                    + (label != null ? "\t\t\t\t\t<etichetta>"+label+"</etichetta>" : "")+"\n"
-                                                    + (lookupId != null ? "\t\t\t\t\t<xmlreference-id>"+lookupId+"</xmlreference-id>" : "")+"\n"
-                                                    + (width != null ? "\t\t\t\t\t<widthControllo>"+width+"</widthControllo>" : "")+"\n"
-                                                    + (operator != null ? "\t\t\t\t\t<comparatoreRicerca>"+operator+"</comparatoreRicerca>" : "")+"\n"
-                                                    + (controlType != null ? "\t\t\t\t\t<tipoControllo>"+controlType+"</tipoControllo>" : "")+"\n"
-                                                    + (controlValues != null ? "\t\t\t\t\t<elencoValori>"+controlValues+"</elencoValori>" : "")+"\n"
-                                                    + (posX != null ? "\t\t\t\t\t<posX>" + posX + "</posX>" : "")+"\n"
-                                                    + (posY != null ? "\t\t\t\t\t<posY>" + posY + "</posY>" : "")+"\n"
-                                                    + "\t\t\t\t</property>"+"\n";
+                                            zkFileContent += "\t\t\t\t\t\t<property name=\"" + searchFieldName + "\">\n"
+                                                    + (label != null ? "\t\t\t\t\t\t\t<etichetta>"+label+"</etichetta>" : "")+"\n"
+                                                    + (lookupId != null ? "\t\t\t\t\t\t\t<xmlreference-id>"+lookupId+"</xmlreference-id>" : "")+"\n"
+                                                    + (width != null ? "\t\t\t\t\t\t\t<widthControllo>"+width+"</widthControllo>" : "")+"\n"
+                                                    + (operator != null ? "\t\t\t\t\t\t\t<comparatoreRicerca>"+operator+"</comparatoreRicerca>" : "")+"\n"
+                                                    + (controlType != null ? "\t\t\t\t\t\t\t<tipoControllo>"+controlType+"</tipoControllo>" : "")+"\n"
+                                                    + (controlValues != null ? "\t\t\t\t\t\t\t<elencoValori>"+controlValues+"</elencoValori>" : "")+"\n"
+                                                    + (posX != null ? "\t\t\t\t\t\t\t<posX>" + posX + "</posX>" : "")+"\n"
+                                                    + (posY != null ? "\t\t\t\t\t\t\t<posY>" + posY + "</posY>" : "")+"\n"
+                                                    + "\t\t\t\t\t\t</property>"+"\n";
                                         }
 
                                         zkFileContent += ""
-                                                + "\t\t\t\t</propertyFields>\n"
-                                                + "\t\t\t</template-fields-hibernate>\n"
-                                                + "\t\t</fields>\n"
-                                                + "\t\t</finder>\n";
+                                                + "\t\t\t\t\t\t</propertyFields>\n"
+                                                + "\t\t\t\t\t</template-fields-hibernate>\n"
+                                                + "\t\t\t\t</fields>\n"
+                                                + "\t\t\t\t</finder>\n";
 
                                     }
                                 }
-                                zkFileContent += "\t\t</finders>\n\n";
+                                zkFileContent += "\t\t\t</finders>\n\n";
                             }
 
 
@@ -3804,67 +3818,89 @@ public class workspace {
                             if(cols != null) {
 
                                 zkFileContent += ""
-                                        + "\t\t<fields>"
-                                        + "\t\t<template-fields-hibernate>"
-                                        + "\t\t<entity>" + beanClass + "</entity>"
-                                        + "\t\t<propertyFields>"
+                                        + "\t\t\t\t<fields>\n"
+                                        + "\t\t\t\t\t<template-fields-hibernate>\n"
+                                        + "\t\t\t\t\t<entity>" + beanClass + "</entity>\n"
+                                        + "\t\t\t\t\t<propertyFields>\n"
                                 ;
 
                                 for (int ic = 0; ic < cols.length(); ic++) {
                                     JSONObject col = cols.getJSONObject(ic);
                                     String fieldInList = col.getString("name");
                                     String labelInList = col.getString("label");
+                                    String width = col.has("width") ? col.getString("width") : null;
+                                    String rtWidth = col.has("rtWidth") ? col.getString("rtWidth") : null;
+                                    int isize = col.has("size") ? col.getInt("size") : null;
                                     String controlTypeInList = "";
-                                    String labelWidthInList = "1px";
+                                    String labelWidthInList = null;
+
+
+                                    int irtwidth = 0;
+                                    int iwidth = 0;
+
+                                    try { irtwidth = Integer.parseInt(rtWidth); } catch (Exception e) {}
+                                    try { iwidth = Integer.parseInt(width); } catch (Exception e) {}
+
+                                    if(irtwidth>0) {
+                                        labelWidthInList = irtwidth + "px";
+                                    } else if(iwidth>0) {
+                                        labelWidthInList = iwidth + "px";
+                                    } else if(isize>0) {
+                                        labelWidthInList = (isize * 10) + "px";
+                                    } else {
+                                        labelWidthInList = (5 * labelInList.length()) + "px";
+                                    }
 
                                     // Fit to hibernate
                                     fieldInList = nameSpacer.DB2Hibernate( fieldInList );
 
                                     zkFileContent += ""
-                                            + "\t\t<property name=" + fieldInList + "\">"
-                                            + "\t\t<etichetta>" + labelInList + "</etichetta>"
-                                            + "\t\t<tipoControllo>" + controlTypeInList + "</tipoControllo>"
-                                            + "\t\t<visibile>S</visibile>"
-                                            + "\t\t<widthEtichetta>" + labelWidthInList + "</widthEtichetta>"
-                                            + "\t\t</property>";
+                                            + "\t\t\t\t\t\t<property name=\"" + fieldInList + "\">\n"
+                                            + "\t\t\t\t\t\t<etichetta>" + labelInList + "</etichetta>\n"
+                                            // + "\t\t\t\t\t\t<tipoControllo>" + controlTypeInList + "</tipoControllo>\n"
+                                            // + "\t\t\t\t\t\t<visibile>S</visibile>\n"
+                                            + "\t\t\t\t\t\t<widthEtichetta>" + labelWidthInList + "</widthEtichetta>\n"
+                                            + "\t\t\t\t\t\t</property>\n";
                                 }
 
                                 zkFileContent += ""
-                                        + "\t\t</propertyFields>"
-                                        + "\t\t</template-fields-hibernate>"
-                                        + "\t\t</fields>";
+                                        + "\t\t\t\t\t\t</propertyFields>\n"
+                                        + "\t\t\t\t\t</template-fields-hibernate>\n"
+                                        + "\t\t\t\t</fields>\n";
 
 
                                 if(orderByField != null) {
-                                    zkFileContent += ""
-                                            + "\t\t<template-orderby>"
+                                    zkFileContent += "\n"
+                                            + "\t\t\t\t<template-orderby>\n"
                                             // +"\t\t<propertyOrderby>edizione.comune.provincia.desTarga(ASC)</propertyOrderby>"
                                             // +"\t\t<propertyOrderby>edizione.comune.desComune(ASC)</propertyOrderby>"
-                                            + "\t\t<propertyOrderby>" + orderByField + "(" + orderByFieldMode + ")</propertyOrderby>"
-                                            + "\t\t</template-orderby>";
+                                            + "\t\t\t\t\t<propertyOrderby>" + orderByField + "(" + orderByFieldMode + ")</propertyOrderby>\n"
+                                            + "\t\t\t\t</template-orderby>\n";
                                 }
 
-                                zkFileContent += "\t\t</list>";
+                                zkFileContent += "\t\t\t</list>\n";
                             }
 
 
                             // Grids
                             JSONArray grids = json.has("grids") ? json.getJSONArray("grids") : null;
                             if(grids != null) {
-                                zkFileContent += "\t\t<grids>\n";
+                                zkFileContent +=
+                                        "\n"
+                                        +"\t\t\t<grids>\n";
 
                                 for (int ig = 0; ig < grids.length(); ig++) {
                                     JSONObject grid = (JSONObject) grids.get(ig);
                                     String gridTitle = grid.has("title") ? grid.getString("title") : "Dellaglio";
                                     zkFileContent += ""
-                                            + "\t\t<grid id=\"" + panelTitle + "_G@" + (ig + 1) + "\">\n"
-                                            + "\t\t<title><![CDATA["+gridTitle+"]]></title>\n"
-                                            + "\t\t<template-fields-hibernate>\n"
-                                            + "\t\t<entity>" + beanClass + "</entity>\n"
-                                            + "\t\t<propertyFields>\n";
+                                            + "\t\t\t\t<grid id=\"" + panelTitle + "_G@" + (ig + 1) + "\">\n"
+                                            + "\t\t\t\t\t<title><![CDATA["+gridTitle+"]]></title>\n"
+                                            + "\t\t\t\t\t<template-fields-hibernate>\n"
+                                            + "\t\t\t\t\t\t<entity>" + beanClass + "</entity>\n"
+                                            + "\t\t\t\t\t\t<propertyFields>\n";
 
                                     if (grid != null) {
-                                        JSONArray gcols = grid.has("cols") ? grid.getJSONArray("cols") : null;
+                                        JSONArray gcols = grid.has("columns") ? grid.getJSONArray("columns") : null;
                                         if (gcols != null) {
                                             for (int ic = 0; ic < gcols.length(); ic++) {
                                                 // campo grid
@@ -3886,16 +3922,16 @@ public class workspace {
                                                 gridField = nameSpacer.DB2Hibernate( gridField );
 
                                                 zkFileContent += ""
-                                                        + "\t\t\t\t<property name=\"" + gridField + "\">\n"
-                                                        + "\t\t\t\t\t<etichetta>" + gridLabel + "</etichetta>\n"
-                                                        + "\t\t\t\t\t<widthEtichetta>" + gridLabelWidth + "</widthEtichetta>\n"
-                                                        + "\t\t\t\t\t<tipoControllo>" + gridControlType + "</tipoControllo>\n"
-                                                        + "\t\t\t\t\t<posX>" + posX + "</posX>\n"
-                                                        + "\t\t\t\t\t<posY>" + posY + "</posY>\n"
-                                                        + (gridControlWidth != null ? "\t\t<widthControllo>" + gridControlWidth + "</widthControllo>" : "") + "\n"
-                                                        + (gridControlHeight != null ? "\t\theightControllo>" + gridControlHeight + "</heightControllo>" : "") + "\n"
-                                                        + (gridControlRO != null ? "\t\t<solaLettura>" + gridControlRO + "</solaLettura>" : "") + "\n"
-                                                        + (gridControlVisible != null ? "\t\t<visibile>" + gridControlVisible + "</visibile>" : "") + "\n"
+                                                        + "\t\t\t\t\t<property name=\"" + gridField + "\">\n"
+                                                        + "\t\t\t\t\t\t<etichetta>" + gridLabel + "</etichetta>\n"
+                                                        + "\t\t\t\t\t\t<widthEtichetta>" + gridLabelWidth + "</widthEtichetta>\n"
+                                                        + "\t\t\t\t\t\t<tipoControllo>" + gridControlType + "</tipoControllo>\n"
+                                                        + (posX != null ? "\t\t\t\t\t\t<posX>" + posX + "</posX>\n" : "")
+                                                        + (posY != null ? "\t\t\t\t\t\t<posY>" + posY + "</posY>\n" : "")
+                                                        + (gridControlWidth != null ? "\t\t\t\t\t\t<widthControllo>" + gridControlWidth + "</widthControllo>" : "") + "\n"
+                                                        + (gridControlHeight != null ? "\t\t\t\t\t\t<heightControllo>" + gridControlHeight + "</heightControllo>" : "") + "\n"
+                                                        + (gridControlRO != null ? "\t\t\t\t\t\t<solaLettura>" + gridControlRO + "</solaLettura>" : "") + "\n"
+                                                        + (gridControlVisible != null ? "\t\t\t\t\t\t<visibile>" + gridControlVisible + "</visibile>" : "") + "\n"
                                                 ;
 
 
@@ -3903,115 +3939,205 @@ public class workspace {
                                                 boolean bCallbackOnChange = false;
                                                 if (bCallbackOnChange) {
                                                     zkFileContent += ""
-                                                            + "\t\t<events>" + "\n"
-                                                            + "\t\t<event>" + "\n"
-                                                            + "\t\t<name>onVariazione</name>" + "\n"
-                                                            + "\t\t<parameter id=\"function\">" + "\n"
-                                                            + "\t\t<value><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi." + "onVariazione" + panelCode + "((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}." + panelId + "\"));]]></value>" + "\n"
-                                                            + "\t\t</parameter>" + "\n"
-                                                            + "\t\t</event>" + "\n"
-                                                            + "\t\t</events>" + "\n";
+                                                            + "\t\t\t\t\t\t<events>" + "\n"
+                                                            + "\t\t\t\t\t\t\t<event>" + "\n"
+                                                            + "\t\t\t\t\t\t\t\t<name>onVariazione</name>" + "\n"
+                                                            + "\t\t\t\t\t\t\t\t<parameter id=\"function\">" + "\n"
+                                                            + "\t\t\t\t\t\t\t\t<value><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi." + "onVariazione" + panelCode + "((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}." + panelId + "\"));]]></value>" + "\n"
+                                                            + "\t\t\t\t\t\t\t\t</parameter>" + "\n"
+                                                            + "\t\t\t\t\t\t\t</event>" + "\n"
+                                                            + "\t\t\t\t\t\t</events>" + "\n";
                                                 }
-                                                zkFileContent += "\t\t</property>" + "\n";
+                                                zkFileContent += "\t\t\t\t\t\t</property>" + "\n";
                                             }
 
                                             zkFileContent += ""
-                                                    + "\t\t</propertyFields>\n"
-                                                    + "\t\t</template-fields-hibernate>\n"
-                                                    + "\t\t</grid>\n"
-                                                    + "\t\t</grids>\n";
+                                                    + "\t\t\t\t\t\t</propertyFields>\n"
+                                                    + "\t\t\t\t\t</template-fields-hibernate>\n"
+                                                    + "\t\t\t\t</grid>\n";
                                         }
                                     }
                                 }
+                                zkFileContent += "\n"
+                                        + "\t\t\t</grids>\n";
                             }
 
                             // Eventi del controllo
-                            zkFileContent += ""
-                                    +"\t\t<template-events>\n\n"
+                            zkFileContent += "\n"
+                                    +"\t\t\t<template-events>\n"
+                                    +"\t\t\t\t<event name=\"onNuovo\">\n"
+                                    +"\t\t\t\t\t<id>onNuovo</id>\n"
+                                    +"\t\t\t\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t\t\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"defaultDatiPerNuovo"+beanName+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t\t\t</event>\n"
+                                    +"\t\t\t\t<event name=\"onSalvaNuovo\">\n"
+                                    +"\t\t\t\t\t<id>onSalvaNuovo</id>\n"
+                                    +"\t\t\t\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t\t\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"checkStatoPerSalva"+beanName+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t\t\t</event>\n"
+                                    +"\t\t\t\t<event name=\"onSalva\">\n"
+                                    +"\t\t\t\t\t<id>onSalva</id>\n"
+                                    +"\t\t\t\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t\t\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"checkStatoPerSalva"+beanName+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t\t\t</event>\n"
+                                    +"\t\t\t\t<event name=\"onAbilitaPulsanti\">\n"
+                                    +"\t\t\t\t\t<id>onAbilitaPulsanti</id>\n"
+                                    +"\t\t\t\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t\t\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onAbilitaPulsanti"+beanName+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t\t\t</event>\n"
+                                    +"\t\t\t\t<event name=\"onLoad\">\n"
+                                    +"\t\t\t\t\t<id>onLoad</id>\n"
+                                    +"\t\t\t\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t\t\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onLoad"+beanName+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t\t\t</event>\n"
+                                    +"\t\t\t\t<event name=\"onPostLoad\">\n"
+                                    +"\t\t\t\t\t<id>onPostLoad</id>\n"
+                                    +"\t\t\t\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t\t\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onPostLoad"+beanName+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t\t\t</event>\n"
+                                    +"\t\t\t\t<event name=\"onPreSalvaNuovo\">\n"
+                                    +"\t\t\t\t\t<id>onPreSalvaNuovo</id>\n"
+                                    +"\t\t\t\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t\t\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onBeforeSalva"+beanName+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t\t\t</event>\n"
+                                    +"\t\t\t\t<event name=\"onAfterSalvaNuovo\">\n"
+                                    +"\t\t\t\t\t<id>onAfterSalvaNuovo</id>\n"
+                                    +"\t\t\t\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
+                                    +"\t\t\t\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onPostSalva"+beanName+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
+                                    +"\t\t\t\t</event>\n"
+                                    +"\t\t\t</template-events>\n";
 
-                                    +"\t\t<event name=\"onNuovo\">\n"
-                                    +"\t\t<id>onNuovo</id>\n"
-                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
-                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"defaultDatiPerNuovo"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
-                                    +"\t\t</event>\n"
 
-                                    +"\t\t<event name=\"onSalvaNuovo\">\n"
-                                    +"\t\t<id>onSalvaNuovo</id>\n"
-                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
-                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"checkStatoPerSalva"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
-                                    +"\t\t</event>"
+                            String [] fncList = {
+                                     "com." + customerName + "." + appName + ".controller.FunzioniEventi." + "defaultDatiPerNuovo" + beanName + ""
+                                    ,"com." + customerName + "." + appName + ".controller.FunzioniEventi." + "checkStatoPerSalva" + beanName + ""
+                                    ,"com." + customerName + "." + appName + ".controller.FunzioniEventi." + "checkStatoPerSalva" + beanName + ""
+                                    ,"com." + customerName + "." + appName + ".controller.FunzioniEventi." + "onAbilitaPulsanti" + beanName + ""
+                                    ,"com." + customerName + "." + appName + ".controller.FunzioniEventi." + "onLoad" + beanName + ""
+                                    ,"com." + customerName + "." + appName + ".controller.FunzioniEventi." + "onPostLoad" + beanName + ""
+                                    ,"com." + customerName + "." + appName + ".controller.FunzioniEventi." + "onBeforeSalva" + beanName + ""
+                                    ,"com." + customerName + "." + appName + ".controller.FunzioniEventi." + "onPostSalva" + beanName + ""
+                            };
 
-                                    +"\t\t<event name=\"onSalva\">\n"
-                                    +"\t\t<id>onSalva</id>\n"
-                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
-                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"checkStatoPerSalva"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
-                                    +"\t\t</event>"
+                            for(int ifn=0; ifn<fncList.length; ifn++) {
+                                String fncClass = fncList[ifn];
+                                String [] fncParts = fncClass.split("\\.");
+                                String fnc = fncParts[fncParts.length-1];
 
-                                    +"\t\t<event name=\"onAbilitaPulsanti\">\n"
-                                    +"\t\t<id>onAbilitaPulsanti</id>\n"
-                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
-                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onAbilitaPulsanti"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
-                                    +"\t\t</event>\n"
+                                if(ifn == 0) {
+                                    String primaryKey = json.getString("primaryKey");
+                                    String hibFieldName = nameSpacer.DB2Hibernate(primaryKey);
+                                    String getSethibFieldName = hibFieldName.substring(0, 1).toUpperCase()  + hibFieldName.substring(1);
 
-                                    +"\t\t<event name=\"onLoad\">\n"
-                                    +"\t\t<id>onLoad</id>\n"
-                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
-                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onLoad"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
-                                    +"\t\t</event>\n"
+                                    String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
+                                            + "\tArrayList errori = new ArrayList();\n"
+                                            + "\t"+beanName+" bean=("+beanName+")panelContext.getBean();\n"
+                                            + "\tif(bean!=null){\n"
+                                            + "\t\t\ttry{\n"
+                                            + "\t\t\tBigDecimal pk = Keypools.getFromKeypoolsManager(\"" + tableName + "\");\n"
+                                            + "\t\t\tbean.set"+getSethibFieldName+"(pk.toString());\n"
+                                            + "\t\t\t}catch (Exception e) {\n"
+                                            + "\t\t\t\terrori.add(\"Impossibile procedere con l'operazione: \"+e.getMessage());\n"
+                                            + "\t\t\t}\n"
+                                            + "\t\t}\n"
+                                            + "\treturn errori;\n"
+                                            + "}\n";
+                                    zkFileContent += "// Gestione inserimento riga tabella " + tableName.toUpperCase() + "\n";
+                                    zkFileContent += fncCode;
 
-                                    +"\t\t<event name=\"onPostLoad\">\n"
-                                    +"\t\t<id>onPostLoad</id>\n"
-                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
-                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onPostLoad"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
-                                    +"\t\t</event>\n"
+                                } else if(ifn == 1) {
+                                    // TODO : verifica valori not null
+                                    String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
+                                            + "\tObject bean = panelContext.getBean();\n"
+                                            + "\tArrayList errori = new ArrayList();\n"
+                                            + "\tif (bean instanceof ProfileRole) {\n"
+                                            + "\t\t/*\n"
+                                            + "\t\tif (GeiUtil.isNullorBlank(((ProfileRole) bean).get...())) {\n"
+                                            + "\t\t\terrori.add(\"Attenzione: Necessario inserire un codice\");\n"
+                                            + "\t\t}\n"
+                                            + "\t\t*/\n"
+                                            + "\t}\n"
+                                            + "\treturn errori;\n"
+                                            + "\t}\n";
+                                    zkFileContent += "// Gestione Salvataggio riga tabella "+tableName.toUpperCase()+"\n";
+                                    zkFileContent += fncCode;
 
-                                    +"\t\t<event name=\"onPreSalvaNuovo\">\n"
-                                    +"\t\t<id>onPreSalvaNuovo</id>\n"
-                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
-                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onBeforeSalva"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
-                                    +"\t\t</event>\n"
+                                } else if(ifn == 2) {
 
-                                    +"\t\t<event name=\"onAfterSalvaNuovo\">\n"
-                                    +"\t\t<id>onAfterSalvaNuovo</id>\n"
-                                    +"\t\t<stepClass>com."+customerName+".zk.controller.datamanager.events.BeanShellStepEvent</stepClass>\n"
-                                    +"\t\t<parameterFunction><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi."+"onPostSalva"+panelCode+"((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}."+panelId+"\"));]]></parameterFunction>\n"
-                                    +"\t\t</event>\n"
+                                } else if(ifn == 3) {
+                                    String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
+                                            + "\tArrayList errori = new ArrayList();\n"
+                                            + "\treturn errori;\n"
+                                            + "}\n";
+                                    zkFileContent += "// Gestione Abilitazione pulsanti "+tableName.toUpperCase()+"\n";
+                                    zkFileContent += fncCode;
 
-                                    +"\t\t</template-events>\n\n";
+                                } else if(ifn == 4) {
+                                    String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
+                                            + "\tArrayList errori = new ArrayList();\n"
+                                            + "\treturn errori;\n"
+                                            + "}\n";
+                                    zkFileContent += "// Gestione caricamento (onLoad)"+tableName.toUpperCase()+"\n";
+                                    zkFileContent += fncCode;
+
+                                } else if(ifn == 5) {
+                                    String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
+                                            + "\tArrayList errori = new ArrayList();\n"
+                                            + "\treturn errori;\n"
+                                            + "}\n";
+                                    zkFileContent += "// Gestione post caricamento (onPostLoad) "+tableName.toUpperCase()+"\n";
+                                    zkFileContent += fncCode;
+
+                                } else if(ifn == 6) {
+                                    String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
+                                            + "\tArrayList errori = new ArrayList();\n"
+                                            + "\treturn errori;\n"
+                                            + "}\n";
+                                    zkFileContent += "// Gestione post caricamento (onBeforeSalva) "+tableName.toUpperCase()+"\n";
+                                    zkFileContent += fncCode;
+
+                                } else if(ifn == 7) {
+                                    String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
+                                            + "\tArrayList errori = new ArrayList();\n"
+                                            + "\treturn errori;\n"
+                                            + "}\n";
+                                    zkFileContent += "// Gestione post caricamento (onPostSalva) "+tableName.toUpperCase()+"\n";
+                                    zkFileContent += fncCode;
+                                }
+                            }
 
 
                             // Pulsanti del Menu
-                            zkFileContent += ""
-                                    +"\t\t<template-menus>\n"
-                                    +"\t\t<menu name=\"INDIETRO\"/>\n"
-                                    +"\t\t<menu name=\"AVANTI\"/>\n"
+                            zkFileContent += "\n"
+                                    +"\t\t\t<template-menus>\n"
+                                    +"\t\t\t\t<menu name=\"INDIETRO\"/>\n"
+                                    +"\t\t\t\t<menu name=\"AVANTI\"/>\n"
 
                             +(can_insert ?
-                                    "\t\t<menu name=\"NUOVO\">\n"
+                                    "\t\t\t\t<menu name=\"NUOVO\">\n"
                                     +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
-                                    +"\t\t</menu>\n"
+                                    +"\t\t\t\t</menu>\n"
                                             : "")
                             +(can_update ?
-                                    "\t\t<menu name=\"MODIFICA\">\n"
+                                    "\t\t\t\t<menu name=\"MODIFICA\">\n"
                                     +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
-                                    +"\t\t</menu>\n"
+                                    +"\t\t\t\t</menu>\n"
                                             : "")
-
-                            +(can_insert || can_update ?
-                                    "\t\t<menu name=\"SALVA\"/>\n"
-                                    +"\t\t<menu name=\"ANNULLA\"/>\n"
-                                            : "")
-
                             +(can_delete ?
-                                    "\t\t<menu name=\"ELIMINA\">\n"
+                                    "\t\t\t\t<menu name=\"ELIMINA\">\n"
                                     +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
-                                    +"\t\t</menu>\n"
+                                    +"\t\t\t\t</menu>\n"
                                     : "")
 
+                            +(can_insert || can_update ?
+                                     "\t\t\t\t<menu name=\"SALVA\"/>\n"
+                                    +"\t\t\t\t<menu name=\"ANNULLA\"/>\n"
+                            : "")
 
                             +(can_insert ?
-                                "\t\t<!-- SQL inserimento KEYPOOLS -->"
-                                +"\t\t<!-- INSERT INTO "+(schemaName != null && !schemaName.isEmpty() ? (schemaName+"."):"")+"KEYPOOLS TABLENAME,PROG,UTENTE_INS,DATA_INS VALUES ('"+tableName+"',"+"1000"+","+"'azienda'"+","+"NOW()"+") -->"
+                                    "\n\n"
+                                            +"\t\t\t\t<!-- SQL inserimento KEYPOOLS -->\n"
+                                            +"\t\t\t\t<!-- INSERT INTO "+(schemaName != null && !schemaName.isEmpty() ? (schemaName+"."):"")+"KEYPOOLS TABLENAME,PROG,UTENTE_INS,DATA_INS VALUES ('"+tableName+"',"+"1000"+","+"'azienda'"+","+"NOW()"+") -->\n"
                                     : "")
                                     ;
 
@@ -4019,32 +4145,37 @@ public class workspace {
                             // Pulsante apertura popup
                             if(popupCommand) {
                                 zkFileContent += "\n\n"
-                                        + "\t\t<menu name=\"" + "PopupCommand" + "\">\n"
-                                        + "\t\t<tipo>ITEM_ONLY_SELECT</tipo>\n"
-                                        + "\t\t<label>" + "Richiedi validazione" + "</label>\n"
-                                        + "\t\t<icon>" + "img/true.gif" + "</icon>\n"
-                                        + "\t\t<assets>" + "pulsante_invia_percorso" + "</assets>\n"
-                                        + "\t\t<actionClass>com."+customerName+".zk.controller.datamanager.actions.ApriWindowAction</actionClass>\n"
-                                        + "\t\t<parameters>class=" + "com."+customerName+"."+appName+".controller.InviaPercorso" + ";\n"
-                                        + "\t\tpopup=S;\n"
-                                        + "\t\t</parameters>\n"
-                                        + "\t\t</menu>\n"
-
-                                        + "\t\t</template-menus>\n\n"
-                                        + "\t\t</panel>\n\n";
+                                        + "\t\t\t<menu name=\"" + "PopupCommand" + "\">\n"
+                                        + "\t\t\t\t<tipo>ITEM_ONLY_SELECT</tipo>\n"
+                                        + "\t\t\t\t<label>" + "Richiedi validazione" + "</label>\n"
+                                        + "\t\t\t\t<icon>" + "img/true.gif" + "</icon>\n"
+                                        + "\t\t\t\t<assets>" + "pulsante_invia_percorso" + "</assets>\n"
+                                        + "\t\t\t\t<actionClass>com."+customerName+".zk.controller.datamanager.actions.ApriWindowAction</actionClass>\n"
+                                        + "\t\t\t\t<parameters>class=" + "com."+customerName+"."+appName+".controller.InviaPercorso" + ";\n"
+                                        + "\t\t\t\t\tpopup=S;\n"
+                                        + "\t\t\t\t</parameters>\n"
+                                        + "\t\t\t</menu>\n"
+                                        + "\n"
+                                        + "\t\t</template-menus>\n\n";
 
                             }
+
+                            zkFileContent += "\n"
+                                +"\t\t\t</template-menus>\n";
+
+                            zkFileContent += "\n"
+                                + "\t\t</panel>\n\n";
 
                             if(process_foreign_tables) {
                                 // Foreign tables
-                                // +"\t\t<!-- bando destinatari -->"
-                                // +"\t\t<panel id=\"PercorsiDestinatari_P@1254136534031\">"
+                                // +"\t\t\t<!-- bando destinatari -->"
+                                // +"\t\t\t<panel id=\"PercorsiDestinatari_P@1254136534031\">"
                                 // ...
                             }
 
-                            zkFileContent += ""
-                                    +"\t\t</panels>\n\n"
-                                    +"\t</page>\n\n";
+                            zkFileContent += "\n"
+                                    +"\t</panels>\n\n"
+                                    +"</page>\n\n";
 
 
 
