@@ -33,7 +33,6 @@ import java.util.Map;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
-import org.json.JSONException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javassist.ClassPool;
@@ -204,7 +203,7 @@ public class db {
      * @return
      * @throws JSONException
      */
-    private static String getColumnTranslated(workspace tbl_wrk, HttpSession session, JSONObject col, String defaultColumnName) throws JSONException {
+    private static String getColumnTranslated(workspace tbl_wrk, HttpSession session, JSONObject col, String defaultColumnName) throws Exception {
         if(col != null) {
             String colName = col.getString("name");
             colName = (defaultColumnName != null ? defaultColumnName : colName);
@@ -246,7 +245,7 @@ public class db {
         return null;
     }
 
-    private static String getColumnTranslated(workspace tbl_wrk, HttpSession session, JSONObject col) throws JSONException {
+    private static String getColumnTranslated(workspace tbl_wrk, HttpSession session, JSONObject col) throws Exception {
         return getColumnTranslated(tbl_wrk, session, col, null);
     }
 
@@ -1467,7 +1466,7 @@ public class db {
                             String serverClassName = null;
                             try {
                                 events = tbl_wrk.tableJson.getJSONArray("events");
-                            } catch (JSONException e) {
+                            } catch (Exception e) {
                             }
                             if (events != null) {
                                 for (int ie = 0; ie < events.length(); ie++) {
@@ -1476,13 +1475,13 @@ public class db {
                                         String eventName = null;
                                         try {
                                             eventName = event.getString("name");
-                                        } catch (JSONException ex) {
+                                        } catch (Exception ex) {
                                         }
                                         if ("onRetrieve".equalsIgnoreCase(eventName)) {
                                             bOnRetrieveFound = true;
                                             try {
                                                 serverClassName = event.getString("server");
-                                            } catch (JSONException ex) {
+                                            } catch (Exception ex) {
                                                 serverClassName = null;
                                             }
                                             if (serverClassName != null && !serverClassName.isEmpty()) {
@@ -1922,7 +1921,7 @@ public class db {
             String sWhere, ArrayList<Object> sWhereParams,
             JSONArray filtersCols, JSONArray filtersDefinitionCols, ArrayList<LeftJoinMap> leftJoinsMap,
             String tableIdString, String itemIdString,
-            HttpServletRequest request) throws JSONException, Exception {
+            HttpServletRequest request) throws Exception {
 
         String error = "";
         int parentesisCount = 0;
@@ -1973,7 +1972,7 @@ public class db {
                             filterValueIsSet = true;
                         }
                     }
-                } catch (JSONException e) {
+                } catch (Exception e) {
                 }
 
                 filterOp = filtersCol.has("op") ? filtersCol.getString("op") : filterOp;
@@ -2509,7 +2508,7 @@ public class db {
                                           int targetColumnIndex,
                                           String service,
                                           boolean skipMissingField
-    ) throws SQLException, JSONException {
+    ) throws SQLException {
         int addedRow = 0;
         StringBuilder out_string = new StringBuilder("");
         StringBuilder out_codes_string = new StringBuilder("");
@@ -4047,7 +4046,7 @@ public class db {
                             }
                         }
                     }
-                } catch (JSONException ex) {
+                } catch (Exception ex) {
                     Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
                     error = ex.getLocalizedMessage();
                 }
@@ -4098,7 +4097,7 @@ public class db {
      * @return 
      */
 
-    public static Object new_bean(Object requestParam, workspace tblWrk, JSONObject rowData) throws JSONException {
+    public static Object new_bean(Object requestParam, workspace tblWrk, JSONObject rowData) throws Exception {
         if(tblWrk != null) {
             HttpServletRequest request = (HttpServletRequest)requestParam;
             JSONArray rowsData = new JSONArray();
@@ -4147,9 +4146,9 @@ public class db {
      * @param tblWrk
      * @param rowData
      * @return
-     * @throws JSONException
+     * @throws Exception
      */
-    public static Object new_bean(Object requestParam, workspace tblWrk, Object rowData) throws JSONException {
+    public static Object new_bean(Object requestParam, workspace tblWrk, Object rowData) throws Exception {
         if(rowData instanceof String) {
             return new_bean(requestParam, tblWrk, new JSONObject((String)rowData));
         } else if(rowData instanceof JSONObject) {
@@ -4214,10 +4213,10 @@ public class db {
      * 
      * @return  { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
      * 
-     * @throws JSONException
+     * @throws Exception
      * @throws Throwable 
      */
-    static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, Object primaryKey) throws JSONException, Throwable {
+    static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, Object primaryKey) throws Exception, Throwable {
         ArrayList<Object> beans = load_beans(request, databaseSchemaTable, columns, null, primaryKey, 1);
         if (beans != null) {
             if (beans.size() > 0) {
@@ -4267,14 +4266,14 @@ public class db {
      * 
      * @return { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
      * 
-     * @throws JSONException
+     * @throws Exception
      * @throws Throwable 
      */
-    static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws JSONException, Throwable {
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws Exception, Throwable {
         return load_beans(request, null, databaseSchemaTable, columns, keyColumn, key, maxRows);
     }
 
-    static public workspace load_beans_get_workspace(HttpServletRequest request, String databaseSchemaTable, String controlId) throws JSONException, Throwable {
+    static public workspace load_beans_get_workspace(HttpServletRequest request, String databaseSchemaTable, String controlId) throws Exception, Throwable {
         String database = null, table = null, schema = null, primaryKey = null;
         workspace tbl_wrk = null;
         if (controlId == null) {
@@ -4327,10 +4326,10 @@ public class db {
      * @param request
      * @param databaseSchemaTable
      * @return
-     * @throws JSONException
+     * @throws Exception
      * @throws Throwable
      */
-    static public workspace load_beans_get_workspace(HttpServletRequest request, String databaseSchemaTable) throws JSONException, Throwable {
+    static public workspace load_beans_get_workspace(HttpServletRequest request, String databaseSchemaTable) throws Exception, Throwable {
         return load_beans_get_workspace(request, databaseSchemaTable, databaseSchemaTable.replace(".", "_"));
     }
 
@@ -4349,12 +4348,12 @@ public class db {
      * 
      * @return  { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
      * 
-     * @throws JSONException
+     * @throws Exception
      * @throws Throwable 
      * 
      *  TODO : partial columns read still unsupported... read always all columns
      */
-    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws JSONException, Throwable {
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws Exception, Throwable {
         String sWhere = "";
 
         //
@@ -5274,7 +5273,7 @@ public class db {
             try {
                 tbl_wrk.tableJson.put("preFilters", new JSONArray());
                 return true;
-            } catch (JSONException ex) {
+            } catch (Exception ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -5336,7 +5335,7 @@ public class db {
                 preFilters.put(preFilter);
                 tbl_wrk.tableJson.put("preFilters", preFilters);
                 return true;
-            } catch (JSONException ex) {
+            } catch (Exception ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -5367,7 +5366,7 @@ public class db {
                         }
                     }
                 }
-            } catch (JSONException ex) {
+            } catch (Exception ex) {
                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -6029,15 +6028,15 @@ public class db {
                 String table = null;
                 try {
                     database = liquid.tableJson.getString("database");
-                } catch (JSONException e) {
+                } catch (Exception e) {
                 }
                 try {
                     schema = liquid.tableJson.getString("schema");
-                } catch (JSONException e) {
+                } catch (Exception e) {
                 }
                 try {
                     table = liquid.tableJson.getString("table");
-                } catch (JSONException e) {
+                } catch (Exception e) {
                 }
 
                 if ((liquid.driverClass != null && liquid.driverClass.toLowerCase().contains("postgres.")) || liquid.dbProductName.toLowerCase().contains("postgres")) {
@@ -6108,7 +6107,7 @@ public class db {
                                     JSONObject col = cols.getJSONObject(ic);
                                     try {
                                         colTypes[ic] = Integer.parseInt(col.getString("type"));
-                                    } catch (NumberFormatException | JSONException e) {
+                                    } catch (Exception e) {
                                     }
                                     if(col.has("precision")) {
                                         Object precision = col.get("precision");
@@ -6168,11 +6167,11 @@ public class db {
                                                         int valueType = 0;
                                                         try {
                                                             field = fieldJSON.getString("field");
-                                                        } catch (JSONException e) {
+                                                        } catch (Exception e) {
                                                         }
                                                         try {
                                                             oValue = fieldJSON.get("value");
-                                                        } catch (JSONException e) {
+                                                        } catch (Exception e) {
                                                         }
                                                         if (field != null && !field.isEmpty() && cols != null) {
                                                             for (int ic = 0; ic < cols.length(); ic++) {
@@ -6187,7 +6186,7 @@ public class db {
                                                                 boolean autoIncString = false;
                                                                 try {
                                                                     autoIncString = col.getBoolean("autoIncString");
-                                                                } catch (JSONException e) {
+                                                                } catch (Exception e) {
                                                                 }
                                                                 boolean nullable = true;
                                                                 try {
@@ -6312,8 +6311,8 @@ public class db {
                                             } else if ("update".equalsIgnoreCase(type)) {
                                                 // TODO: where is the data ???
                                                 // String field = null, value = null;
-                                                // try { field = fieldJSON.getString("field"); } catch (JSONException e) {}
-                                                // try { value = fieldJSON.getString("value"); } catch (JSONException e) {}
+                                                // try { field = fieldJSON.getString("field"); } catch (Exception e) {}
+                                                // try { value = fieldJSON.getString("value"); } catch (Exception e) {}
                                                 // tableTransactList.add( (schema != null ? tableIdString+schema+tableIdString + ".":"") + tableIdString+table+tableIdString, tName, value, null, itemIdString+liquid.tableJson.getString("primaryKey") + itemIdString+"='" + rowId + "'", "update", rowId, nodeId);
                                             }
                                         }
@@ -7156,7 +7155,7 @@ public class db {
      * changed primary keys ] } ] }
      * @see db
      */
-    static public String save(Object bean, Object tbl_wrk) throws JSONException, NoSuchFieldException, IllegalAccessException {
+    static public String save(Object bean, Object tbl_wrk) throws Exception, NoSuchFieldException, IllegalAccessException {
         if(tbl_wrk instanceof String) {
             tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String)tbl_wrk);
         }
@@ -7183,7 +7182,7 @@ public class db {
      * changed primary keys ] } ] }
      * @see db
      */
-    static public String insertUpdate(Object bean, Object tbl_wrk) throws JSONException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    static public String insertUpdate(Object bean, Object tbl_wrk) throws Exception, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
         workspace tblWrk = (workspace)tbl_wrk;
         String primaryKey = tblWrk.tableJson.getString("primaryKey");
         String databaseSchemaTable = null;
@@ -7818,7 +7817,7 @@ public class db {
         return metadata.create_schema(conn, schema);
     }
 
-    static public JSONArray wrapFilters(JSONObject filterJSON) throws JSONException {
+    static public JSONArray wrapFilters(JSONObject filterJSON) throws Exception {
         JSONArray result = new JSONArray();
         JSONArray names = filterJSON.names();
         if (names != null) {
