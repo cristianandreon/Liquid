@@ -416,8 +416,10 @@ public class workspace {
                 return true;
             }
             for (int i = 0; i < glTblWorkspaces.size(); i++) {
-                if (token.equals(glTblWorkspaces.get(i).token)) {
-                    return true;
+                if(glTblWorkspaces.get(i) != null) {
+                    if (token.equals(glTblWorkspaces.get(i).token)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -1473,7 +1475,7 @@ public class workspace {
                         // Elenco di colonne (chiavi) che sono utilizzate da altre tabelle (tabelle che usano questa tabella)
                         // es. campo NAZIONE.ID usato in ORDINI.ID_NAZIONE, PREVENTIVI.ID_NAZION£ etc
                         try {
-                            foreignKeysExportedOnTable = metadata.getExportedForeignKeyData(database, schema, table, connToUse);
+                            foreignKeysExportedOnTable = metadata.getExternalForeignKeyData(database, schema, table, connToUse);
                         } catch (Exception ex) {
                             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -1520,13 +1522,6 @@ public class workspace {
                                             }
                                         }
                                         tableJson.put("columns", cols);
-
-                                        Gson gson = new Gson();
-                                        String sForeignKeysOnTableJson = gson.toJson(foreignKeysOnTable);
-                                        if (sForeignKeysOnTableJson != null && !sForeignKeysOnTableJson.isEmpty()) {
-                                            // unione cfg utente + foreign key
-                                            tableJson.put("foreignTables", new JSONArray(sForeignKeysOnTableJson));
-                                        }
 
                                     } else {
                                         if (foreignTablesJson != null) {
@@ -1681,6 +1676,7 @@ public class workspace {
 
                                         if (!isSystem) {
                                             boolean bReadDefault = true;
+                                            boolean bReadComments = false; // N.B.: Molto lenta
                                             if (tableJson.has("readOnly")) {
                                                 Object oReadOnly = tableJson.get("readOnly");
                                                 String sReadOnly = String.valueOf(oReadOnly);
@@ -1690,7 +1686,7 @@ public class workspace {
                                                 }
                                             }
 
-                                            metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(connToUse, database, schema, colTable, colName, bReadDefault);
+                                            metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(connToUse, database, schema, colTable, colName, bReadDefault, bReadComments);
                                             if (mdCol != null) {
                                                 // Handle sensitive case mismath
                                                 if (!colName.equals(mdCol.name)) {

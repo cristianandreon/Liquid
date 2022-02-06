@@ -39,7 +39,7 @@
 ,"resize":"both"
 ,"autoSizeColumns":true
 ,"autoLoad":false
-,"autoInsert":true
+,"autoInsertIfMissing":true
 ,"autoSelect":true
 ,"pageSize":0
 ,"width":"600"

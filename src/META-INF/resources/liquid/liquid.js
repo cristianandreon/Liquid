@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.90
+// Liquid ver.1.91
 //
-//  First update 04-01-2020 - Last update 30-01-2022
+//  First update 04-01-2020 - Last update 06-02-2022
 //
 //  TODO : see trello.com
 //
@@ -1073,7 +1073,7 @@ class LiquidCtrl {
                     }
 
 
-                    // Foreign table
+                    // Foreign tables
                     this.lastForeignTabSelected = null;
                     this.lastForeignTabObjSelected = null;
                     this.foreignTables = null;
@@ -1741,8 +1741,8 @@ class LiquidCtrl {
                             + "<div style=\"\" class=\"liquidNavInfo\">"
                             + "<span class=\"liquidNavLabel\">"
                             + ( Liquid.lang === 'eng' ? "Row" : "Riga" )
-                            +":</span><span class=\"liquidValue\" id=\"" + controlId + ".cRow\"></span>"
-                            + "<span class=\"liquidNavLabel\">/</span><span class=\"liquidValue\" id=\"" + controlId + ".nRows\"></span>"
+                            +":</span><span class=\"liquidValue\" id=\"" + controlId + ".cRow\">0</span>"
+                            + "<span class=\"liquidNavLabel\">/</span><span class=\"liquidValue\" id=\"" + controlId + ".nRows\">0</span>"
                             + "<span class=\"liquidNavLabel\"> </span>";
                         if(this.pageSize>0) {
                             navHTML += "<span id=\"" + controlId + ".cPageContainer\" style=\"cursor:pointer\" onclick=\"Liquid.onGotoPage(this)\" class=\"liquidNavLabel\">Pag.:</span><input id=\"" + controlId + ".cPage\" type=\"mumber\" step=\"1\" min=\"1\" max=\"1\" class=\"liquidNavCurPage\" value=\"1\" onkeypress=\"return Liquid.onPageKeyPress(event, this)\" title=\""+Liquid.paginationTitleGoTo+"\" />"
@@ -2402,7 +2402,7 @@ var Liquid = {
                 var lang = lang_list[il].split('-')[0];
                 if (lang === 'it' || lang === 'ita') {
                     Liquid.lang = langFound = 'ita';
-                    Liquid.loadingMessage = "<span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
+                    Liquid.loadingMessage = "<div class=\"lds-ring\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
                     Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">Nessun dato trovato...</span>";
                     Liquid.paginationTitleGoTo = "digita la pagina a cui andare ... poi premi enter";
                     Liquid.paginationTitleFirst = "vai alla prima pagina";
@@ -2420,7 +2420,7 @@ var Liquid = {
                     Liquid.moveCellsMessage = "Confermi lo spostamento della cella ?";
                 } else if (lang === 'en' || lang === 'eng') {
                     Liquid.lang = langFound = 'eng';
-                    Liquid.loadingMessage = "<span class=\"ag-overlay-loading-center\">Loading data...</span>";
+                    Liquid.loadingMessage = "<div class=\"lds-ring\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Loading data...</span>";
                     Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">No data to show...</span>";
                     Liquid.paginationTitleGoTo = "type page to go to ... then press enter";
                     Liquid.paginationTitleFirst = "go to first page";
@@ -2947,7 +2947,7 @@ var Liquid = {
         var pendingControlId = null;
         var status = "ready";
         var types = [];
-        var retVal = [status, null, pendingControlId, types];
+        var retVal = null;
         var currentRow = iRow;
         if (obj) {
             if (typeof obj === 'object') {
@@ -2957,18 +2957,27 @@ var Liquid = {
                     obj[propName] = obj[sourcePropName];
                 }
                 if (typeof obj[propName] !== 'undefined') {
+                    // backup
+                    obj[sourcePropName] = obj[propName];
                     if (obj[propName].startsWith("@")) {
                         var targetObj = Liquid.getObjectByName(liquid, obj[propName].substring(1));
                         if (targetObj) {
                             var nameItems = obj[propName].substring(1).split(".");
-                            obj[sourcePropName] = obj[propName];
                             retVal = Liquid.getObjectProperty(targetObj, obj[propName].substring(1 + nameItems[0].length + 1));
-                            if (!isDef(retVal)) { // in the name of flexibility :
-                                // extracting property "table" of @contol.table fail because .table il already explicitated in source expression
+                            if (typeof retVal === 'undefined') {
+                                // if (typeof retVal === 'undefined' && (nameItems.length>=2 && nameItems[1].toLowerCase() === 'table')) {
+                                // in the name of flexibility : extracting property "table" of @contol.table fail
                                 retVal = targetObj;
                                 obj[propName] = targetObj;
-                                types.push("liquid");
+                                types.push(typeof(obj[propName]));
+                            } else {
+                                obj[propName] = retVal;
+                                types.push(typeof(obj[propName]));
                             }
+                        } else {
+                            retVal = '';
+                            obj[propName] = '';
+                            types.push(typeof(obj[propName]));
                         }
                     }
                 }
@@ -2999,7 +3008,7 @@ var Liquid = {
                                 if (nameItems.length > 1) {
                                     if (nameItems[0] !== 'this') searchingLiquid = Liquid.getLiquid(nameItems[0]);
                                     searchingProp = nameItems[1];
-                                    // ahaaa ... currentRow is relative to searchingLiquid
+                                    // ... currentRow is relative to searchingLiquid
                                     currentRow = searchingLiquid.cRow;
                                 }
                                 var value = "";
@@ -3077,7 +3086,7 @@ var Liquid = {
             }
         }
         for (var i = 1; i < nameItems.length; i++) {
-            targetObj = isDef(targetObj[nameItems[i]]) ? targetObj[nameItems[i]] : targetObj;
+            targetObj = (typeof targetObj[nameItems[i]] !== 'undefined') ? targetObj[nameItems[i]] : targetObj;
             if (typeof targetObj === 'string') {
                 if (targetObj.trim().startsWith("{")) {
                     try {
@@ -4596,6 +4605,14 @@ var Liquid = {
                                 resultTableJson.columns.push(registeredTableJson.additionalColumns[iac]);
                             }
                         }
+                        // Adding additional foreignTables
+                        if (isDef(registeredTableJson.foreignTables)) {
+                            if(resultTableJson.foreignTables === '*' || resultTableJson.foreignTables === null || resultTableJson.foreignTables === '')
+                                resultTableJson.foreignTables = [];
+                            for (var ift = 0; ift < registeredTableJson.foreignTables.length; ift++) {
+                                resultTableJson.foreignTables.push(registeredTableJson.foreignTables[ift]);
+                            }
+                        }
                         if (liquid.mode === 'winX' || liquid.mode === 'WinX') {
                             liquid.tableJson.mode = liquid.mode;
                             if (liquid.tableJson.resize !== false)
@@ -4799,6 +4816,7 @@ var Liquid = {
                                 console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
                             } catch (e) {
                                 debugger;
+                                console.error(e);
                             }
                             Liquid.setErrorDiv(liquid, httpResultJson.error, "error");
                         } else {
@@ -4808,6 +4826,7 @@ var Liquid = {
                             try {
                                 console.warn("[SERVER] WARNING:" + atob(httpResultJson.warning));
                             } catch (e) {
+                                console.error(e);
                                 debugger;
                             }
                         }
@@ -4821,6 +4840,7 @@ var Liquid = {
                                     }
                                 }, null);
                             } catch (e) {
+                                console.error(e);
                                 debugger;
                             }
                         } else {
@@ -9286,7 +9306,8 @@ var Liquid = {
                     if (!isDef(liquid.selection.exclude) || (isDef(liquid.selection.exclude) && !liquid.selection.exclude.contains(value))) {
                         if (idsSelected.length > 0) idsSelected += ",";
                         if (typeof value === 'string') value = value.replace(/"/g, "\\\"");
-                        idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
+                        if(value)
+                            idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
                     }
                 }
                 // escluse list
@@ -9294,7 +9315,8 @@ var Liquid = {
                     if (idsUnselected.length > 0) idsUnselected += ",";
                     var value = liquid.selection.exclude[i];
                     if (typeof value === 'string') value = value.replace(/"/g, "\\\"");
-                    idsUnselected += (value.startsWith('"') ? "" : '"') + +value + (value.endsWith('"') ? "" : '"');
+                    if(value)
+                        idsUnselected += (value.startsWith('"') ? "" : '"') + +value + (value.endsWith('"') ? "" : '"');
                 }
             } else {
                 // working with include list
@@ -9302,7 +9324,8 @@ var Liquid = {
                     if (idsSelected.length > 0) idsSelected += ",";
                     var value = liquid.selection.include[i];
                     if (typeof value === 'string') value = value.replace(/"/g, "\\\"");
-                    idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
+                    if(value)
+                        idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
                 }
             }
         }
@@ -10830,6 +10853,9 @@ var Liquid = {
                 }
             }
             if (nIconic) {
+                if(parentObj) {
+                    parentObj = document.body;
+                }
                 var maxX = Math.floor(parentObj.offsetWidth / Liquid.iconincSize.wx);
                 result.y = Math.floor((nIconic - 1) / maxX);
                 result.x = (nIconic - 1) % maxX;
@@ -16592,8 +16618,24 @@ var Liquid = {
             var newData = {};
             for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
                 var col = liquid.tableJson.columns[ic];
-                Liquid.solveExpressionField(col, "default", liquid);
-                newData[col.field] = (isDef(col.default) ? col.default : "");
+                // [status, retVal, pendingControlId, types]
+                var result = Liquid.solveExpressionField(col, "default", liquid);
+                if(result) {
+                    var type = result[3];
+                    if(type.length == 0) {
+                        newData[col.field] = (isDef(col.default) ? col.default : "");
+                    } else {
+                        if (type[0] === 'liquid') {
+                            console.error("createNewRowData(): unexpected result type:" + type);
+                        } else if (type[0] === 'string') {
+                            newData[col.field] = (isDef(col.default) ? col.default : "");
+                        } else {
+                            console.error("createNewRowData(): unexpected result type:" + type);
+                        }
+                    }
+                } else {
+                    console.error("createNewRowData(): unexpected result");
+                }
                 // Verify column referenced in parent
                 if(liquid.srcLiquid) {
                     if(liquid.srcForeignColumn.toLowerCase() === col.name.toLowerCase()) {
@@ -19622,7 +19664,9 @@ SelectEditor.prototype.init = function(params) {
                 + (this.table ? '&targetTable=' + this.table : "")
                 + '&targetColumn=' + this.column
                 + (this.idColumn ? '&idColumn=' + this.idColumn : '')
-                + '&targetMode=' + params.colDef.cellEditorParams.editor, false);
+                + '&targetMode=' + params.colDef.cellEditorParams.editor, false
+                + '&extendedMetadata=false'
+            );
             xhr.send();
             if(xhr.status === 200) {
                 try {

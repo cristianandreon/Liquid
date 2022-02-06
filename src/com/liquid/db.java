@@ -291,6 +291,7 @@ public class db {
         String applicationRoot = recordset_params.applicationRoot;
         String controlId = recordset_params.controlId, tblWrk = recordset_params.tblWrk, columnsResolved = recordset_params.columnsResolved;
         String targetDatabase = recordset_params.targetDatabase, targetSchema = recordset_params.targetSchema, targetTable = recordset_params.targetTable;
+        boolean extendedMetadata = recordset_params.extendedMetadata;
         String targetView = null, targetColumn = recordset_params.targetColumn, targetMode = recordset_params.targetMode, idColumn = recordset_params.idColumn;
         JSONObject requestJson = recordset_params.requestJson;
         String service = recordset_params.service;
@@ -413,17 +414,27 @@ public class db {
                 tbl_wrk.addSession(ThreadSession.getThreadSessionInfo());
 
                 try {
-                    database = tbl_wrk.tableJson.getString("database");
+                    if(tbl_wrk.tableJson.has("database")) {
+                        database = tbl_wrk.tableJson.getString("database");
+                    }
                 } catch (Exception e) {
+                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
                 }
                 try {
-                    schema = tbl_wrk.tableJson.getString("schema");
+                    if(tbl_wrk.tableJson.has("schema")) {
+                        schema = tbl_wrk.tableJson.getString("schema");
+                    }
                 } catch (Exception e) {
+                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
                 }
                 try {
-                    table = tbl_wrk.tableJson.getString("table");
+                    if(tbl_wrk.tableJson.has("table")) {
+                        table = tbl_wrk.tableJson.getString("table");
+                    }
                 } catch (Exception e) {
+                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
                 }
+
                 if(tbl_wrk.tableJson.has("view")) {
                     view = tbl_wrk.tableJson.getString("view");
                 }
@@ -532,7 +543,7 @@ public class db {
                         return out_string;
                     } else if ("selectColumns".equalsIgnoreCase(isSystemLiquid)) {
                         if (targetTable != null && !targetTable.isEmpty()) {
-                            Object[] result = metadata.getAllColumns(targetDatabase != null ? targetDatabase : database, targetSchema != null ? targetSchema : schema, targetTable, connToUse, bUserFieldIdentificator);
+                            Object[] result = metadata.getAllColumns(targetDatabase != null ? targetDatabase : database, targetSchema != null ? targetSchema : schema, targetTable, connToUse, bUserFieldIdentificator, extendedMetadata);
                             out_string = "{\"resultSet\":" + result[0];
                             out_string += ",\"startRow\":" + "0";
                             out_string += ",\"endRow\":" + result[1];
@@ -8408,10 +8419,9 @@ public class db {
 
                             if (mode.contains("callback"))
                                 Callback.send("Reading metadata on "+schema+"."+table+" ...");
-                            
-                            // TODO: isOracle for tagert
-                            metadata.MetaDataCol mdColS = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, isOracle);
-                            metadata.MetaDataCol mdColT = (metadata.MetaDataCol) metadata.readTableMetadata(tconn, targetDatabase, targetSchema, targetTable, field, isOracle);
+
+                            metadata.MetaDataCol mdColS = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, true, true);
+                            metadata.MetaDataCol mdColT = (metadata.MetaDataCol) metadata.readTableMetadata(tconn, targetDatabase, targetSchema, targetTable, field, true, true);
                             if(mdColS.size != mdColT.size) {
                                 isFieldChanged = true;
                                 sSize = String.valueOf(mdColS.size);
@@ -8489,7 +8499,7 @@ public class db {
                         String sRemarks = null;
 
                         // TODO: isOracle var for target table
-                        metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, isOracle);
+                        metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, true, true);
 
                         if(mdCol != null) {
                             String sqlCode = metadata.getAddColumnSQL( targetDriver, targetDatabase, targetSchema, targetTable, field, mdCol.typeName, String.valueOf(mdCol.size), mdCol.isNullable ? "y":"n", mdCol.autoIncString ? "y" : "n", mdCol.columnDef, mdCol.remarks );

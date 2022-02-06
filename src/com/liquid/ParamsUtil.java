@@ -33,7 +33,7 @@ public class ParamsUtil {
         String targetMode = null;
         String idColumn = null;
         String applicationRoot = null;
-        
+        boolean extendedMetadata = true;
         String sRequest = null;
         JSONObject requestJson = null;
         
@@ -70,6 +70,8 @@ public class ParamsUtil {
                     try { targetMode = (String) request.getParameter("targetMode"); } catch (Exception e) {}
                     try { idColumn = (String) request.getParameter("idColumn"); } catch (Exception e) {}
                     try { service = (String) request.getParameter("service"); } catch (Exception e) {}
+
+                    try { extendedMetadata = (boolean) "false".equalsIgnoreCase(request.getParameter("extendedMetadata")) ? false : true; } catch (Exception e) {}
 
                     try { applicationRoot = request.getContextPath(); } catch (Exception e) { }
 

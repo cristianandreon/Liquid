@@ -127,10 +127,10 @@ public class metadata {
 
 
     public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName) throws Throwable {
-        return readTableMetadata(conn, database, schema, table, columnName, true);
+        return readTableMetadata(conn, database, schema, table, columnName, true, true);
     }
 
-    public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName, boolean _bReadDefault) throws Throwable {
+    public static Object readTableMetadata(Connection conn, String database, String schema, String table, String columnName, boolean _bReadDefault, boolean _bReadComments) throws Throwable {
         Connection connToDB = null, connToUse = conn;
         int recCount = 0;
         int nTable = 0;
@@ -147,8 +147,9 @@ public class metadata {
 
                 String driver = db.getDriver(conn);
                 boolean bReadDefault = _bReadDefault;
+                boolean bReadComments = _bReadComments;
                 if ("oracle" .equalsIgnoreCase(driver)) {
-                    return readTableMetadataBySQL(conn, schema, table, columnName, "oracle", _bReadDefault);
+                    return readTableMetadataBySQL(conn, database, schema, table, columnName, "oracle", _bReadDefault, bReadComments);
                 }
 
 
@@ -332,7 +333,7 @@ public class metadata {
      * @param bReadDefault
      * @return
      */
-    public static Object readTableMetadataBySQL(Connection conn, String schema, String table, String columnName, String dialet, boolean bReadDefault) {
+    public static Object readTableMetadataBySQL(Connection conn, String database, String schema, String table, String columnName, String dialet, boolean bReadDefault, boolean bReadComments) {
         MetaDataTable metaDataTableResult = null;
 
         try {
@@ -343,7 +344,7 @@ public class metadata {
 
             if (columnName != null && !"*".equalsIgnoreCase(columnName)) {
                 // colonna specifica
-                Object mdCol = getTableMetadata(conn, null, schema, table, columnName);
+                Object mdCol = getTableMetadata(conn, database, schema, table, columnName);
                 if (mdCol != null) {
                     return mdCol;
                 }
@@ -360,58 +361,65 @@ public class metadata {
                     schema = metaDataTableSchema;
                 }
 
+
+                Object result;
+                if (columnName != null && !"*".equalsIgnoreCase(columnName)) {
+                    // colonna specifica
+                    result = getTableMetadata(conn, database, schema, table, columnName);
+                    if(result != null)
+                        return result;
+                } else {
+                    // tutte le colonne return metadataTable
+                    result = getTableMetadata(conn, database, schema, table, null);
+                    if(result != null)
+                        return result;
+                }
+
+
                 // System.err.println(" getFetchSize:"+stmt.getFetchSize());
                 // System.err.println(" getMaxFieldSize:"+stmt.getMaxFieldSize());
                 // System.err.println(" getMaxRows"+stmt.getMaxRows());
                 // ResultSet rs = stmt.executeQuery("select COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,DATA_DEFAULT,DATA_PRECISION from ALL_TAB_COLUMNS where TABLE_NAME='"+tableName+"' and OWNER='"+tableSchema+"'");
                 /* Non si riesce a fare il cast su DATA_DEFAULT, e la UNION fallisce perchè i due recordset hanno tipo dato diverso */
-                /*
-                    String [] quewryList = {
-                    "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'DATA_DEFAULT',DATA_PRECISION FROM ALL_TAB_COLUMNS WHERE OWNER = 'GEDIPROD' AND TABLE_NAME in "+ 
-                    "("+
-                        "SELECT TABLE_NAME FROM all_objects WHERE object_type in ('TABLE','VIEW') AND OWNER = 'GEDIPROD'"+
-                    ")"+
-                    "UNION"+
-                    "("+
-                        "SELECT OWNER,TABLE_NAME,COLUMN_NAME,DATA_TYPE,DATA_LENGTH,NULLABLE,'DATA_DEFAULT',DATA_PRECISION FROM ALL_TAB_COLUMNS WHERE (OWNER,TABLE_NAME) in "+ 
-                        "("+
-                            "SELECT TABLE_OWNER,TABLE_NAME FROM all_synonyms WHERE OWNER = 'GEDIPROD' AND TABLE_NAME in "+
-                            "("+
-                                "SELECT OBJECT_NAME FROM all_objects WHERE object_type='SYNONYM' AND OWNER = 'GEDIPROD'"+
-                            ")"+
-                        ")"+
-                    ")"
-                    };
-                 */
 
 
                 String[] queryList = null;
+                String oracle_read_column_sql, oracle_read_synonym_column_sql;
 
-                String[] oracleQueryList = {
-                        // tabelle e viste
-                        /*
-                        "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,B.COMMENTS AS REMARKS,A.DATA_PRECISION FROM ALL_TAB_COLUMNS A"
-                                + " LEFT JOIN ALL_COL_COMMENTS B ON B.OWNER=A.OWNER AND B.TABLE_NAME=A.TABLE_NAME AND B.COLUMN_NAME=A.COLUMN_NAME"
-                                + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME in "
-                                + "("
-                                + "SELECT TABLE_NAME FROM ALL_OBJECTS WHERE object_type in ('TABLE','VIEW') AND OWNER = '" + schema + "' AND TABLE_NAME='" + table + "'"
-                                + ") ORDER BY 2,3"
-                         */
-                        "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,'',A.DATA_PRECISION,B.COMMENTS AS REMARKS FROM ALL_TAB_COLUMNS A"
-                                + " LEFT JOIN ALL_COL_COMMENTS B ON B.OWNER=A.OWNER AND B.TABLE_NAME=A.TABLE_NAME AND B.COLUMN_NAME=A.COLUMN_NAME"
-                                + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
-                                + " ORDER BY 2,3"
+                if(bReadComments) {
+                    // tabelle e viste
+                    oracle_read_column_sql =
+                            "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,'',A.DATA_PRECISION,B.COMMENTS AS REMARKS FROM ALL_TAB_COLUMNS A"
+                                    + " LEFT JOIN ALL_COL_COMMENTS B ON B.OWNER=A.OWNER AND B.TABLE_NAME=A.TABLE_NAME AND B.COLUMN_NAME=A.COLUMN_NAME"
+                                    + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
+                                    + " ORDER BY 2,3";
 
+                    // sinonimi
+                    oracle_read_synonym_column_sql =
+                            "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,B.COMMENTS,A.DATA_PRECISION,B.COMMENTS AS REMARKS FROM ALL_TAB_COLUMNS A"
+                                    + " LEFT JOIN ALL_COL_COMMENTS B ON B.OWNER=A.OWNER AND B.TABLE_NAME=A.TABLE_NAME AND B.COLUMN_NAME=A.COLUMN_NAME"
+                                    + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME in "
+                                    + "("
+                                    + "SELECT C.TABLE_NAME FROM all_synonyms C WHERE C.TABLE_OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
+                                    + ") ORDER BY 2,3";
+                } else {
+                    // tabelle e viste
+                    oracle_read_column_sql =
+                            "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,'',A.DATA_PRECISION,'' AS REMARKS FROM ALL_TAB_COLUMNS A"
+                                    + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
+                                    + " ORDER BY 2,3";
 
+                    // sinonimi
+                    oracle_read_synonym_column_sql =
+                            "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,B.COMMENTS,A.DATA_PRECISION,'' AS REMARKS FROM ALL_TAB_COLUMNS A"
+                                    + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME in "
+                                    + "("
+                                    + "SELECT C.TABLE_NAME FROM all_synonyms C WHERE C.TABLE_OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
+                                    + ") ORDER BY 2,3";
+                }
 
-                        // sinonimi
-                        , "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,B.COMMENTS,A.DATA_PRECISION,B.COMMENTS FROM ALL_TAB_COLUMNS A"
-                        + " LEFT JOIN ALL_COL_COMMENTS B ON B.OWNER=A.OWNER AND B.TABLE_NAME=A.TABLE_NAME AND B.COLUMN_NAME=A.COLUMN_NAME"
-                        + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME in "
-                        + "("
-                        + "SELECT C.TABLE_NAME FROM all_synonyms C WHERE C.TABLE_OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
-                        + ") ORDER BY 2,3"
-                };
+                String[] oracleQueryList = { oracle_read_column_sql, oracle_read_synonym_column_sql };
+
 
                 //
                 // TODO : lettura information_schema
@@ -524,7 +532,7 @@ public class metadata {
                         }
 
                         // The result
-                        metaDataTableResult = new MetaDataTable(table, schema, null, metaDataCols);
+                        metaDataTableResult = new MetaDataTable(table, schema, database, metaDataCols);
 
                         // Add to cache
                         metaDataTable.add(metaDataTableResult);
@@ -573,19 +581,26 @@ public class metadata {
                     if (mdTable.schema.equalsIgnoreCase(schema) || schema == null) {
                         if (mdTable.database.equalsIgnoreCase(database) || database == null) {
                             if (mdTable.metaDataCols != null) {
-                                for (int istep = 0; istep < 2; istep++) {
-                                    for (int j = 0; j < mdTable.metaDataCols.size(); j++) {
-                                        mdCol = mdTable.metaDataCols.get(j);
-                                        boolean condition = istep > 0 ? (mdCol.name.equalsIgnoreCase(columnName)) : (mdCol.name.equals(columnName));
-                                        if (condition) {
-                                            // Assegna il risultato
-                                            foundMdCol = mdCol;
-                                            condition = istep > 0 ? (mdTable.schema.equalsIgnoreCase(schema) || (schema == null && mdTable.schema.equalsIgnoreCase(metaDataTableSchema))) : (mdTable.schema.equals(schema) || (schema == null && mdTable.schema.equals(metaDataTableSchema)));
+                                if(columnName != null && !"*".equalsIgnoreCase(columnName) && !columnName.isEmpty()) {
+                                    for (int istep = 0; istep < 2; istep++) {
+                                        for (int j = 0; j < mdTable.metaDataCols.size(); j++) {
+                                            mdCol = mdTable.metaDataCols.get(j);
+                                            boolean condition = istep > 0 ? (mdCol.name.equalsIgnoreCase(columnName)) : (mdCol.name.equals(columnName));
                                             if (condition) {
-                                                // schema coincidente o schema tabella = schema utente DataSource (prioritario)
-                                                return (Object) mdCol;
+                                                // Assegna il risultato
+                                                foundMdCol = mdCol;
+                                                condition = istep > 0 ? (mdTable.schema.equalsIgnoreCase(schema) || (schema == null && mdTable.schema.equalsIgnoreCase(metaDataTableSchema))) : (mdTable.schema.equals(schema) || (schema == null && mdTable.schema.equals(metaDataTableSchema)));
+                                                if (condition) {
+                                                    // schema coincidente o schema tabella = schema utente DataSource (prioritario)
+                                                    return (Object) mdCol;
+                                                }
                                             }
                                         }
+                                    }
+                                } else {
+                                    // Metadata of the table
+                                    if(mdTable.metaDataCols.size() > 1) { // TODO: >= non columns of the table
+                                        return mdTable;
                                     }
                                 }
                             }
@@ -896,13 +911,18 @@ public class metadata {
                             || (schema != null && schema.equalsIgnoreCase(resultShcema))
                     ) {
                         if (BlackWhiteList.isAccessible(database, schema, table)) {
-                            result += nRec > 0 ? "," : "";
-                            result += "{";
-                            result += "\"" + (bUserFieldIdentificator ? "1" : "TABLE") + "\":\"" + rs.getString("TABLE_NAME") + "\"";
-                            result += ",\"" + (bUserFieldIdentificator ? "2" : "TYPE") + "\":\"" + rs.getString("TABLE_TYPE") + "\"";
-                            result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + rs.getString("REMARKS") + "\"";
-                            result += "}";
-                            nRec++;
+                            String table_name = rs.getString("TABLE_NAME");
+                            String table_type = rs.getString("TABLE_TYPE");
+                            String remarks = rs.getString("REMARKS");
+                            if(table_name != null && !table_name.isEmpty()) {
+                                result += nRec > 0 ? "," : "";
+                                result += "{";
+                                result += "\"" + (bUserFieldIdentificator ? "1" : "TABLE") + "\":\"" + table_name + "\"";
+                                result += ",\"" + (bUserFieldIdentificator ? "2" : "TYPE") + "\":\"" + (table_type != null ? table_type : "") + "\"";
+                                result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + (remarks != null ? remarks : "") + "\"";
+                                result += "}";
+                                nRec++;
+                            }
                         }
                     }
                 }
@@ -916,6 +936,10 @@ public class metadata {
     }
 
     static public Object[] getAllColumns(String database, String schema, String tableName, Connection conn, boolean bUserFieldIdentificator) {
+        return getAllColumns( database, schema, tableName, conn, bUserFieldIdentificator, true);
+    }
+
+    static public Object[] getAllColumns(String database, String schema, String tableName, Connection conn, boolean bUserFieldIdentificator, boolean extendedMetadata) {
         int nRec = 0;
         String result = "", driver = null;
         metadata.MetaDataTable metaDatatable = null;
@@ -947,7 +971,7 @@ public class metadata {
                     }
                 } catch (Throwable e) { }
 
-                metaDatatable = (MetaDataTable) readTableMetadataBySQL(conn, schema, tableName, null, "oracle", false);
+                metaDatatable = (MetaDataTable) readTableMetadataBySQL(conn, database, schema, tableName, null, "oracle", false, extendedMetadata);
             }
 
             if (database == null || database.isEmpty())
@@ -1097,6 +1121,16 @@ public class metadata {
     }
 
 
+    /**
+     * Return all foreign keys and all cross reference relative to database/schema/table
+     *
+     * @param database
+     * @param schema
+     * @param table
+     * @param conn
+     * @param bUserFieldIdentificator
+     * @return
+     */
     static public Object[] getAllForeignKeys(String database, String schema, String table, Connection conn, boolean bUserFieldIdentificator) {
         int nRec = 0;
         String result = "";
@@ -1107,7 +1141,38 @@ public class metadata {
             if (schema == null || schema.isEmpty())
                 schema = null; // conn.getMetaData().getSchemaTerm();
             if (table != null && !table.isEmpty()) {
-                ArrayList<ForeignKey> foreignKeys = getForeignKeyData(database, schema, table, conn);
+                // ArrayList<ForeignKey> foreignKeys = getForeignKeyData(database, schema, table, conn);
+                ArrayList<ForeignKey> foreignKeys = null;
+
+                ArrayList<metadata.ForeignKey> foreignKeysImportedOnTable = null;
+                ArrayList<metadata.ForeignKey> foreignKeysExportedOnTable = null;
+                //
+                // Elenco colonne che sono referenziate su altre tabelle (tabelle usate da questa tabella)
+                // es. campo ID_NAZIONE referenziato in NAZIONE.ID
+                try {
+                    foreignKeysImportedOnTable = metadata.getForeignKeyData(database, schema, table, conn);
+                } catch (Exception ex) {
+                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                //
+                // Elenco di colonne (chiavi) che sono utilizzate da altre tabelle (tabelle che usano questa tabella)
+                // es. campo NAZIONE.ID usato in ORDINI.ID_NAZIONE, PREVENTIVI.ID_NAZION£ etc
+                try {
+                    foreignKeysExportedOnTable = metadata.getExternalForeignKeyData(database, schema, table, conn);
+                } catch (Exception ex) {
+                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                if(foreignKeysImportedOnTable != null || foreignKeysExportedOnTable != null) {
+                    foreignKeys = new ArrayList<metadata.ForeignKey>();
+                    if(foreignKeysImportedOnTable != null) {
+                        foreignKeys.addAll(foreignKeysImportedOnTable);
+                    }
+                    if(foreignKeysExportedOnTable != null) {
+                        foreignKeys.addAll(foreignKeysExportedOnTable);
+                    }
+                }
+
+
                 if (foreignKeys != null) {
                     result += "[";
                     for (int i = 0; i < foreignKeys.size(); i++) {
@@ -1198,11 +1263,49 @@ public class metadata {
      * @param conn
      * @return
      */
-    static public ArrayList<ForeignKey> getExportedForeignKeyData(String database, String schema, String tableName, Connection conn) {
+    static public ArrayList<ForeignKey> getExternalForeignKeyData(String database, String schema, String tableName, Connection conn) {
         ArrayList<ForeignKey> result = new ArrayList<ForeignKey>();
         try {
             DatabaseMetaData dm = conn.getMetaData();
-            ResultSet rs = dm.getExportedKeys((database != null && database.isEmpty() ? database : null), schema, null/*("*".equalsIgnoreCase(tableName) ? "" : tableName)*/ );
+            // ResultSet rs = dm.getImportedKeys((database != null && database.isEmpty() ? database : null), schema, null/*("*".equalsIgnoreCase(tableName) ? "" : tableName)*/ );
+            ResultSet rs = dm.getCrossReference((database != null && database.isEmpty() ? database : null), (schema != null && schema.isEmpty() ? schema : null), tableName,
+                                                (database != null && database.isEmpty() ? database : null), null, null);
+            /*
+            PKTABLE_CAT String => parent key table catalog (may be null)
+            PKTABLE_SCHEM String => parent key table schema (may be null)
+            PKTABLE_NAME String => parent key table name
+            PKCOLUMN_NAME String => parent key column name
+            FKTABLE_CAT String => foreign key table catalog (may be null) being exported (may be null)
+            FKTABLE_SCHEM String => foreign key table schema (may be null) being exported (may be null)
+            FKTABLE_NAME String => foreign key table name being exported
+            FKCOLUMN_NAME String => foreign key column name being exported
+            KEY_SEQ short => sequence number within foreign key( a value of 1 represents the first column of the foreign key, a value of 2 would represent the second column within the foreign key).
+                    UPDATE_RULE short => What happens to foreign key when parent key is updated:
+            importedNoAction - do not allow update of parent key if it has been imported
+            importedKeyCascade - change imported key to agree with parent key update
+            importedKeySetNull - change imported key to NULL if its parent key has been updated
+            importedKeySetDefault - change imported key to default values if its parent key has been updated
+                importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x compatibility)
+                DELETE_RULE short => What happens to the foreign key when parent key is deleted.
+                        importedKeyNoAction - do not allow delete of parent key if it has been imported
+                importedKeyCascade - delete rows that import a deleted key
+                importedKeySetNull - change imported key to NULL if its primary key has been deleted
+                importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x compatibility)
+                importedKeySetDefault - change imported key to default if its parent key has been deleted
+                FK_NAME String => foreign key name (may be null)
+                PK_NAME String => parent key name (may be null)
+                DEFERRABILITY short => can the evaluation of foreign key constraints be deferred until commit
+                importedKeyInitiallyDeferred - see SQL92 for definition
+                importedKeyInitiallyImmediate - see SQL92 for definition
+                importedKeyNotDeferrable - see SQL92 for definition
+                Params:
+                parentCatalog – a catalog name; must match the catalog name as it is stored in the database; "" retrieves those without a catalog; null means drop catalog name from the selection criteria
+                parentSchema – a schema name; must match the schema name as it is stored in the database; "" retrieves those without a schema; null means drop schema name from the selection criteria
+                parentTable – the name of the table that exports the key; must match the table name as it is stored in the database
+                foreignCatalog – a catalog name; must match the catalog name as it is stored in the database; "" retrieves those without a catalog; null means drop catalog name from the selection criteria
+                foreignSchema – a schema name; must match the schema name as it is stored in the database; "" retrieves those without a schema; null means drop schema name from the selection criteria
+                foreignTable – the name of the table that imports the key; must match the table name as it is stored in the database
+                */
             // ResultSet rs = dm.getImportedKeys(null, null, null);
             if (rs != null) {
                 while (rs.next()) {
@@ -1222,18 +1325,18 @@ public class metadata {
                                 || (schema != null && resultSchema == null)
                         ) {
                             if ((tableName == null && resultTable == null)
-                                    || (tableName != null && resultTable != null && tableName.equalsIgnoreCase(resultTable))
+                                    || (tableName != null && resultTable != null && !tableName.equalsIgnoreCase(resultTable))
                                     || (tableName == null && resultTable != null)
                             ) {
 
                                 ForeignKey foreignTable = new ForeignKey();
                                 String fktable = rs.getString("FKTABLE_NAME");
-                                if(fktable.equalsIgnoreCase(tableName) || tableName == null || tableName.isEmpty() || "*".equalsIgnoreCase(tableName)) {
-                                    foreignTable.foreignTable = rs.getString("PKTABLE_NAME");
-                                    foreignTable.foreignColumns = new ArrayList<String>(Arrays.asList(rs.getString("PKCOLUMN_NAME").split(",")));
-                                    foreignTable.columns = new ArrayList<String>(Arrays.asList(rs.getString("FKCOLUMN_NAME").split(",")));
+                                if(!fktable.equalsIgnoreCase(tableName) || tableName == null || tableName.isEmpty() || "*".equalsIgnoreCase(tableName)) {
+                                    foreignTable.foreignTable = rs.getString("FKTABLE_NAME");
+                                    foreignTable.foreignColumns = new ArrayList<String>(Arrays.asList(rs.getString("FKCOLUMN_NAME").split(",")));
+                                    foreignTable.columns = new ArrayList<String>(Arrays.asList(rs.getString("PKCOLUMN_NAME").split(",")));
                                     foreignTable.foreignWrk = foreignTable.foreignTable + ".default";
-                                    foreignTable.type = "imp";
+                                    foreignTable.type = "ext";
                                     result.add(foreignTable);
                                 }
                             }

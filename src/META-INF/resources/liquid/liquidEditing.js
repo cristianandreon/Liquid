@@ -239,7 +239,7 @@ var LiquidEditing = {
                 table = liquid.tableJson.table;
             }            
             if(typeof event === 'object') event.stopPropagation();
-            Liquid.onNewLayoutProcess(obj_id,ftIndex1B);
+            LiquidEditing.onNewLayoutProcess(obj_id,ftIndex1B);
         }
     },    
     onNewLayoutProcess:function(obj_id, ftIndex1B) {
@@ -627,16 +627,7 @@ var LiquidEditing = {
                     var height = Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5;
                     var controlId = prompt("Enter control name", defaultVal);
                     if(controlId) {
-                        var copyCounter = 1;
-                        var sourceControlId = controlId;
-                        var checkLiquid = true;
-                        while(checkLiquid) {
-                            checkLiquid = Liquid.getLiquid(controlId);
-                            if(checkLiquid) {
-                                copyCounter++;
-                                controlId = sourceControlId+"("+copyCounter+")";
-                            }
-                        }
+                        controlId = LiquidEditing.checkControlName(controlId);
                         var cmds = [];
                         if(mode === 'winX')
                             cmds = [ { name:"create" },{ name:"update" },{ name:"delete" },{ name:"copy" },{ name:"paste" },{ name:"next" },{ name:"previous" } ];
@@ -646,7 +637,7 @@ var LiquidEditing = {
                             ,schema:Liquid.curSchema
                             ,table:table
                             ,columns:cols
-                            ,foreignTables:"*"
+                            ,foreignTables:"" // N.B.: No foreign tables default, also define foreignTables:"*"
                             ,commands:cmds
                             ,caption:controlId
                             ,mode:mode
@@ -719,16 +710,7 @@ var LiquidEditing = {
                 controlId = "window-"+liquidJson.table;
             }
             if(controlId) {
-                var copyCounter = 1;
-                var sourceControlId = controlId;
-                var checkLiquid = true;
-                while(checkLiquid) {
-                    checkLiquid = Liquid.getLiquid(controlId);
-                    if(checkLiquid) {
-                        copyCounter++;
-                        controlId = sourceControlId+"("+copyCounter+")";
-                    }
-                }
+                controlId = LiquidEditing.checkControlName(controlId);
                 // liquidJson = { database:Liquid.curDatabase, schema:Liquid.curSchema, table:table, columns:cols, caption:controlId, mode:mode, parentObjId:parentObjId, autoFitColumns:true, width:width, height:height, resize:"both", askForSave:true };
                 if(Liquid.curDriver) liquidJson.driver = Liquid.curDriver; 
                 if(Liquid.curConnectionURL) liquidJson.connectionURL = Liquid.curConnectionURL;
@@ -779,17 +761,7 @@ var LiquidEditing = {
                     controlId = "FormToControl";
                 }
                 if(controlId) {
-                    var copyCounter = 1;
-                    var sourceControlId = controlId;
-                    var checkLiquid = true;
-                    while(checkLiquid) {
-                        checkLiquid = Liquid.getLiquid(controlId);
-                        if(checkLiquid) {
-                            copyCounter++;
-                            controlId = sourceControlId+"("+copyCounter+")";
-                        }
-                    }
-
+                    controlId = LiquidEditing.checkControlName(controlId);
                     var liquidJson = { columns:[], createIfMissing:true };
                     var frm_elements = formObj.elements;
                     if(frm_elements && frm_elements.length) {
@@ -1581,7 +1553,6 @@ var LiquidEditing = {
             }
             Liquid.loadData(selectorLiquid, null, "newForeignTable");
             selectorLiquid.onPostClosed = "LiquidEditing.onNewForeignTableProcess('"+obj_id+"','"+mode+"')";
-            Liquid.autoInsert(selectorLiquid);
             if(typeof event === 'object') event.stopPropagation();
         }
     },
@@ -3312,5 +3283,22 @@ var LiquidEditing = {
             }
         }
     },
+    checkControlName:function(controlId) {
+        var copyCounter = 1;
+        var sourceControlId = controlId;
+        var checkLiquid = true;
+        while(checkLiquid) {
+            checkLiquid = Liquid.getLiquid(controlId);
+            if (checkLiquid) {
+                if (!checkLiquid.tableJson.isSystem) {
+                    copyCounter++;
+                    controlId = sourceControlId + "(" + copyCounter + ")";
+                } else {
+                    checkLiquid = null;
+                }
+            }
+        }
+        return controlId;
+    }
 
 }

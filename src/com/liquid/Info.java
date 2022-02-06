@@ -191,13 +191,13 @@ public class Info {
         out_string += "</tr>";
         
         out_string += "<tr style=\"background-color:lightGray\">";
-        out_string += "<td>class path</td>";
+        out_string += "<td>Class path</td>";
         out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getClassPath()+"</td>";
         out_string += "</tr>";
 
         out_string += "<tr>";
-        out_string += "<td>Library path</td>";
-        out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getLibraryPath()+"</span></td>";
+        out_string += "<td>In Arguments</td>";
+        out_string += "<td colspan=2 style=\"font-size: 70%;\">"+ManagementFactory.getRuntimeMXBean().getInputArguments()+"</span></td>";
         out_string += "</tr>";
         
         out_string += "<tr style=\"background-color:lightGray\">";
