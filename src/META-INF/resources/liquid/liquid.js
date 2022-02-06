@@ -5378,7 +5378,8 @@ var Liquid = {
     onWindowKeyDown: function (e, obj) {
         if (e.keyCode === 13) {
         } else if (e.keyCode === 27) {
-            LiquidEditing.onContextMenuClose();
+            if(isDef(LiquidEditing))
+                LiquidEditing.onContextMenuClose();
         }
     },
     onKeyPress: function (e, obj) {
@@ -19305,7 +19306,8 @@ var Liquid = {
         return true;
     },
     onSaveToCSV:function(obj) {
-        LiquidEditing.onContextMenuClose();
+        if(isDef(LiquidEditing))
+            LiquidEditing.onContextMenuClose();
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             liquid.gridOptions.api.exportDataAsCsv();
