@@ -1446,15 +1446,12 @@ public class workspace {
                 boolean readAllForeignTables = false;
                 boolean updateAllForeignTables = false;
 
-                if ("*".equalsIgnoreCase(foreignTables) || foreignTablesJson != null) {
+                if ("*".equalsIgnoreCase(foreignTables)) {
                     readAllForeignTables = true;
                 }
 
                 String sourceForeignTables = tableJson.has("sourceForeignTables") ? tableJson.getString("sourceForeignTables") : null;
                 if ("*".equalsIgnoreCase(sourceForeignTables)) {
-                    updateAllForeignTables = true;
-                }
-                if(foreignKeysOnTable == null) {
                     updateAllForeignTables = true;
                 }
 
@@ -1466,6 +1463,7 @@ public class workspace {
                         //
                         // Elenco colonne che sono referenziate su altre tabelle (tabelle usate da questa tabella)
                         // es. campo ID_NAZIONE referenziato in NAZIONE.ID
+                        //
                         try {
                             foreignKeysImportedOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
                         } catch (Exception ex) {
@@ -1474,6 +1472,7 @@ public class workspace {
                         //
                         // Elenco di colonne (chiavi) che sono utilizzate da altre tabelle (tabelle che usano questa tabella)
                         // es. campo NAZIONE.ID usato in ORDINI.ID_NAZIONE, PREVENTIVI.ID_NAZION£ etc
+                        //
                         try {
                             foreignKeysExportedOnTable = metadata.getExternalForeignKeyData(database, schema, table, connToUse);
                         } catch (Exception ex) {
@@ -3633,26 +3632,43 @@ public class workspace {
                             fullFileName = fullFileName != null ? fullFileName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") : null;
 
 
-                            String panelTitle = json.getString("table");
+                            // Tabella schema
                             String tableName = json.getString("table");
                             String schemaName = json.getString("schema");
-                            String panelCode = utility.toCamelCase(panelTitle);
-                            String beanName = panelCode.substring(0, 1).toUpperCase()  + panelCode.substring(1);
-                            String panelId = panelTitle+"_P@1";
 
+
+                            // Parametri ZK
                             JSONObject zkParams = json.getJSONObject("zkParams");
                             String fieldInTitleBar = zkParams.getString("fieldInTitleBar");
+
+
+                            // Titolo del pannello
+                            String panelTitle = zkParams.getString("panelTitle");
+                            if(panelTitle == null || panelTitle.isEmpty()) {
+                                panelTitle = utility.toDescriptionCase(tableName);
+                            }
+
+
+                            // ID pannello
+                            String panelId = zkParams.getString("panelId");
+                            if(panelId == null || panelId.isEmpty()) {
+                                panelId = nameSpacer.DB2Hibernate(tableName);
+                            }
+
+                            String beanName = panelId;
+
+
 
                             // Fit to hibernate
                             fieldInTitleBar = nameSpacer.DB2Hibernate( fieldInTitleBar );
 
                             String customerName = zkParams.getString("customerName");
                             String appName = zkParams.getString("appName");
-                            String beanClass = zkParams.getString("beanClass"); // "com."+customerName+"."+appName+".hibernate.bean."+panelCode;
+                            String beanClass = zkParams.getString("beanClass"); // "com."+customerName+"."+appName+".hibernate.bean."+panelId;
                             int maxResult = zkParams.getInt("maxResult");;
                             String orderByField = zkParams.getString("orderByField");
                             String orderByFieldMode = zkParams.getString("orderByFieldMode");
-                            String piedino = zkParams.getString("piedino");; // "/com/"+customerName+"/util/hibernate/controller/datiPiedinoProfilo-1.incxml";
+                            String profileData = zkParams.getString("profileData");; // "/com/"+customerName+"/util/hibernate/controller/datiPiedinoProfilo-1.incxml";
                             boolean showList = zkParams.getBoolean("showList"); // "S";
                             boolean autoSelect = zkParams.getBoolean("autoSelect"); // "S";
                             boolean autoFind = zkParams.getBoolean("autoFind"); // "S";
@@ -3666,13 +3682,13 @@ public class workspace {
 
 
                             String zkFileContent =
-                                    "\t<page id=\""+panelTitle+"\" >\n"
+                                    "\t<page id=\""+panelId+"\" >\n"
                                     +"\t<template-xmlreference>/com/"+customerName+"/"+appName+"/controller/Reference.xml</template-xmlreference>\n"
                                     +"\t<title><![CDATA["+panelTitle+"]]></title>\n"
-                                    +"\t<menupath><![CDATA[ / panelTitle]]></menupath>\n"
+                                    +"\t<menupath><![CDATA[ / "+panelTitle+"]]></menupath>\n"
                                     +"\t<panels>\n"
-                                    +"\t\t<!-- "+panelTitle+" -->\n"
-                                    +"\t\t<panel id=\""+panelId+"\">\n"
+                                    +"\t\t<!-- "+panelTitle+" on Table:"+tableName+" -->\n"
+                                    +"\t\t<panel id=\""+panelId+"_P@1"+"\">\n"
                                     +"\t\t\t<title><![CDATA["+panelTitle+"]]></title>\n"
 
                                     // Titolo finestra
@@ -3703,8 +3719,8 @@ public class workspace {
                             }
 
                             // Prop profilo incluse su file
-                            if(piedino!=null) {
-                                zkFileContent += "\t\t\t\t<!--@template-xmlinclude=" + piedino + " -->\n";
+                            if(profileData!=null) {
+                                zkFileContent += "\t\t\t\t<!--@template-xmlinclude=" + profileData + " -->\n";
                             }
 
                             zkFileContent += ""
@@ -3715,7 +3731,7 @@ public class workspace {
 
                             // Lista e finders
                             zkFileContent += "\n"
-                                    +"\t\t\t<list id=\""+panelTitle+"_L@1\">\n"
+                                    +"\t\t\t<list id=\""+panelId+"_L@1\">\n"
                                     +"\t\t\t\t<show>"+(showList?"S":"N")+"</show>\n"
                                     +"\t\t\t\t<autoFind>"+(autoFind?"S":"N")+"</autoFind>\n"
                                     +"\t\t\t\t<autoSelect>"+(autoSelect?"S":"N")+"</autoSelect>\n"
@@ -3741,7 +3757,7 @@ public class workspace {
 
                                 for (int ir = 0; ir < filters.length(); ir++) {
                                     zkFileContent += ""
-                                            + "\t\t\t\t\t<finder id=\"" + panelTitle + "_R@"+(ir+1)+"\">\n"
+                                            + "\t\t\t\t\t<finder id=\"" + panelId + "_R@"+(ir+1)+"\">\n"
                                             + "\t\t\t\t\t<title><![CDATA[Ricerca base]]></title>\n"
                                             + "\t\t\t\t\t<limitResult>" + maxResult + "</limitResult>\n"
                                             + "\t\t\t\t\t<fields>\n";
@@ -3816,21 +3832,22 @@ public class workspace {
                                 zkFileContent += ""
                                         + "\t\t\t\t<fields>\n"
                                         + "\t\t\t\t\t<template-fields-hibernate>\n"
-                                        + "\t\t\t\t\t<entity>" + beanClass + "</entity>\n"
-                                        + "\t\t\t\t\t<propertyFields>\n"
+                                        + "\t\t\t\t\t\t<entity>" + beanClass + "</entity>\n"
+                                        + "\t\t\t\t\t\t<propertyFields>\n"
                                 ;
 
                                 for (int ic = 0; ic < cols.length(); ic++) {
                                     JSONObject col = cols.getJSONObject(ic);
                                     String fieldInList = col.getString("name");
-                                    String labelInList = col.getString("label");
+                                    String labelInList = col.has("label") ? col.getString("label") : null;
                                     String width = col.has("width") ? col.getString("width") : null;
                                     String rtWidth = col.has("rtWidth") ? col.getString("rtWidth") : null;
-                                    int isize = col.has("size") ? col.getInt("size") : null;
+                                    Object oSize = col.has("size") ? col.get("size") : null;
                                     String controlTypeInList = "";
                                     String labelWidthInList = null;
 
 
+                                    int isize = Integer.parseInt( oSize != null ? String.valueOf(oSize) : "0" );
                                     int irtwidth = 0;
                                     int iwidth = 0;
 
@@ -3851,12 +3868,12 @@ public class workspace {
                                     fieldInList = nameSpacer.DB2Hibernate( fieldInList );
 
                                     zkFileContent += ""
-                                            + "\t\t\t\t\t\t<property name=\"" + fieldInList + "\">\n"
-                                            + "\t\t\t\t\t\t<etichetta>" + labelInList + "</etichetta>\n"
+                                            + "\t\t\t\t\t\t\t<property name=\"" + fieldInList + "\">\n"
+                                            + "\t\t\t\t\t\t\t\t<etichetta>" + (labelInList != null ? labelInList : fieldInList) + "</etichetta>\n"
                                             // + "\t\t\t\t\t\t<tipoControllo>" + controlTypeInList + "</tipoControllo>\n"
                                             // + "\t\t\t\t\t\t<visibile>S</visibile>\n"
-                                            + "\t\t\t\t\t\t<widthEtichetta>" + labelWidthInList + "</widthEtichetta>\n"
-                                            + "\t\t\t\t\t\t</property>\n";
+                                            + "\t\t\t\t\t\t\t\t<widthEtichetta>" + labelWidthInList + "</widthEtichetta>\n"
+                                            + "\t\t\t\t\t\t\t</property>\n";
                                 }
 
                                 zkFileContent += ""
@@ -3889,7 +3906,7 @@ public class workspace {
                                     JSONObject grid = (JSONObject) grids.get(ig);
                                     String gridTitle = grid.has("title") ? grid.getString("title") : "Dellaglio";
                                     zkFileContent += ""
-                                            + "\t\t\t\t<grid id=\"" + panelTitle + "_G@" + (ig + 1) + "\">\n"
+                                            + "\t\t\t\t<grid id=\"" + panelId + "_G@" + (ig + 1) + "\">\n"
                                             + "\t\t\t\t\t<title><![CDATA["+gridTitle+"]]></title>\n"
                                             + "\t\t\t\t\t<template-fields-hibernate>\n"
                                             + "\t\t\t\t\t\t<entity>" + beanClass + "</entity>\n"
@@ -3919,9 +3936,9 @@ public class workspace {
 
                                                 zkFileContent += ""
                                                         + "\t\t\t\t\t<property name=\"" + gridField + "\">\n"
-                                                        + "\t\t\t\t\t\t<etichetta>" + gridLabel + "</etichetta>\n"
-                                                        + "\t\t\t\t\t\t<widthEtichetta>" + gridLabelWidth + "</widthEtichetta>\n"
-                                                        + "\t\t\t\t\t\t<tipoControllo>" + gridControlType + "</tipoControllo>\n"
+                                                        + (gridLabel!=null?"\t\t\t\t\t\t<etichetta>" + gridLabel + "</etichetta>\n":"")
+                                                        + (gridLabelWidth!=null?"\t\t\t\t\t\t<widthEtichetta>" + gridLabelWidth + "</widthEtichetta>\n":"")
+                                                        + (gridControlType!=null?"\t\t\t\t\t\t<tipoControllo>" + gridControlType + "</tipoControllo>\n":"")
                                                         + (posX != null ? "\t\t\t\t\t\t<posX>" + posX + "</posX>\n" : "")
                                                         + (posY != null ? "\t\t\t\t\t\t<posY>" + posY + "</posY>\n" : "")
                                                         + (gridControlWidth != null ? "\t\t\t\t\t\t<widthControllo>" + gridControlWidth + "</widthControllo>" : "") + "\n"
@@ -3939,7 +3956,7 @@ public class workspace {
                                                             + "\t\t\t\t\t\t\t<event>" + "\n"
                                                             + "\t\t\t\t\t\t\t\t<name>onVariazione</name>" + "\n"
                                                             + "\t\t\t\t\t\t\t\t<parameter id=\"function\">" + "\n"
-                                                            + "\t\t\t\t\t\t\t\t<value><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi." + "onVariazione" + panelCode + "((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}." + panelId + "\"));]]></value>" + "\n"
+                                                            + "\t\t\t\t\t\t\t\t<value><![CDATA[ritorno = com."+customerName+"."+appName+".controller.FunzioniEventi." + "onVariazione" + panelId + "((com."+customerName+".zk.controller.datamanager.PanelBeanManager)windowContext.getOpener().getValoreEspressione(\"${panel}." + panelId + "\"));]]></value>" + "\n"
                                                             + "\t\t\t\t\t\t\t\t</parameter>" + "\n"
                                                             + "\t\t\t\t\t\t\t</event>" + "\n"
                                                             + "\t\t\t\t\t\t</events>" + "\n";
@@ -4015,6 +4032,8 @@ public class workspace {
                                     ,"com." + customerName + "." + appName + ".controller.FunzioniEventi." + "onPostSalva" + beanName + ""
                             };
 
+                            zkFileContent += "\n";
+                            zkFileContent += "<!-- START of callback functions :";
                             for(int ifn=0; ifn<fncList.length; ifn++) {
                                 String fncClass = fncList[ifn];
                                 String [] fncParts = fncClass.split("\\.");
@@ -4025,7 +4044,8 @@ public class workspace {
                                     String hibFieldName = nameSpacer.DB2Hibernate(primaryKey);
                                     String getSethibFieldName = hibFieldName.substring(0, 1).toUpperCase()  + hibFieldName.substring(1);
 
-                                    String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
+                                    String fncCode =
+                                            "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
                                             + "\tArrayList errori = new ArrayList();\n"
                                             + "\t"+beanName+" bean=("+beanName+")panelContext.getBean();\n"
                                             + "\tif(bean!=null){\n"
@@ -4038,7 +4058,16 @@ public class workspace {
                                             + "\t\t}\n"
                                             + "\treturn errori;\n"
                                             + "}\n";
+
+                                    zkFileContent += "\n";
                                     zkFileContent += "// Gestione inserimento riga tabella " + tableName.toUpperCase() + "\n";
+                                    zkFileContent += "/**"
+                                            +"*"
+                                             +"* @param panelContext"
+                                             +"* @return"
+                                             +"* @throws Exception"
+                                            +"*/";
+
                                     zkFileContent += fncCode;
 
                                 } else if(ifn == 1) {
@@ -4101,6 +4130,9 @@ public class workspace {
                                     zkFileContent += fncCode;
                                 }
                             }
+                            zkFileContent += "\n";
+                            zkFileContent += "\n";
+                            zkFileContent += "END of callback functions -->";
 
 
                             // Pulsanti del Menu
@@ -4111,17 +4143,17 @@ public class workspace {
 
                             +(can_insert ?
                                     "\t\t\t\t<menu name=\"NUOVO\">\n"
-                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelId.toLowerCase()+"</assets>\n" : "")
                                     +"\t\t\t\t</menu>\n"
                                             : "")
                             +(can_update ?
                                     "\t\t\t\t<menu name=\"MODIFICA\">\n"
-                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelId.toLowerCase()+"</assets>\n" : "")
                                     +"\t\t\t\t</menu>\n"
                                             : "")
                             +(can_delete ?
                                     "\t\t\t\t<menu name=\"ELIMINA\">\n"
-                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelCode.toLowerCase()+"</assets>\n" : "")
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelId.toLowerCase()+"</assets>\n" : "")
                                     +"\t\t\t\t</menu>\n"
                                     : "")
 
@@ -4133,7 +4165,7 @@ public class workspace {
                             +(can_insert ?
                                     "\n\n"
                                             +"\t\t\t\t<!-- SQL inserimento KEYPOOLS -->\n"
-                                            +"\t\t\t\t<!-- INSERT INTO "+(schemaName != null && !schemaName.isEmpty() ? (schemaName+"."):"")+"KEYPOOLS TABLENAME,PROG,UTENTE_INS,DATA_INS VALUES ('"+tableName+"',"+"1000"+","+"'azienda'"+","+"NOW()"+") -->\n"
+                                            +"\t\t\t\t<!-- INSERT INTO "+(schemaName != null && !schemaName.isEmpty() ? (schemaName+"."):"")+"KEYPOOLS (TABLENAME,PROGR,UTENTE_INS,DATA_INS) VALUES ('"+tableName+"',"+"1000"+","+"'azienda'"+","+"CURRENT_TIMESTAMP"+") -->\n"
                                     : "")
                                     ;
 
@@ -4247,7 +4279,7 @@ public class workspace {
             }
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-            return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage()) + "\"}";
+            return "{\"result\":-1,\"error\":\"" + utility.base64Encode("Unexpected error:"+ex.getMessage()) + "\"}";
         }
         return "{\"result\":0}";
     }

@@ -768,7 +768,7 @@ public class login {
                                 
                                 if(additionalProperties != null) {
                                     try {
-                                        Object bean = db.load_bean(request, databaseSchemaTable, "*", "id", String.valueOf(iUserId));
+                                        Object bean = com.liquid.bean.load_bean(request, databaseSchemaTable, "*", "id", String.valueOf(iUserId));
 
                                         for(int i=0; i<additionalProperties.length; i++) {
                                             String prop = additionalProperties[i];

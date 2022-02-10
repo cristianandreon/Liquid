@@ -1,6 +1,9 @@
 package com.liquid;
 
-import com.liquid.db.beansCondition;
+import com.liquid.bean.beansCondition;
+
+import static com.liquid.bean.beansToArray;
+import static com.liquid.bean.load_beans;
 import static com.liquid.login.getConnection;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -573,18 +576,18 @@ public class assets {
                     request.getSession().setAttribute("GLLiquidConnectionURL", login.connectionURL);
 
                     // assets for user
-                    ArrayList<Object> user_asset_beans = db.load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, user_assets_table), "*", "user_id", (Object)userId, 1000 );
+                    ArrayList<Object> user_asset_beans = load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, user_assets_table), "*", "user_id", (Object)userId, 1000 );
                     if(user_asset_beans != null) {
                         // put asset_id of all beans in ArryList
                         try {
-                            Object [] res = db.beansToArray(user_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
+                            Object [] res = beansToArray(user_asset_beans, "asset_id", user_all_assets_id, true, (bean.beansCondition)assets::is_valid_asset_or_role);
                             user_all_inactive_assets_id.addAll((ArrayList<Object>)res[1]);
                         } catch(Throwable th) {                        
                         }
                     }
 
                     // assets per roles for user
-                    ArrayList<Object> user_role_beans = db.load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, user_roles_table), "*", "user_id", (Object)userId, 1000 );
+                    ArrayList<Object> user_role_beans = load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, user_roles_table), "*", "user_id", (Object)userId, 1000 );
                     if(user_role_beans != null) {
                         for(Object role_bean : user_role_beans) {
                             Object roleId = utility.get(role_bean, "role_id");
@@ -601,35 +604,35 @@ public class assets {
                                     bProcessRole = true;
                                 }
                             }
-                            ArrayList<Object> user_role_asset_beans = db.load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, role_assets_table), "*", "role_id", (Object)roleId, 1000 );
+                            ArrayList<Object> user_role_asset_beans = load_beans( (HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, role_assets_table), "*", "role_id", (Object)roleId, 1000 );
                             if(user_role_asset_beans != null) {
                                 if(bProcessRole) {
                                     try {
                                         // put asset_id of all beans in ArryList
-                                        Object [] res = db.beansToArray(user_role_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
+                                        Object [] res = beansToArray(user_role_asset_beans, "asset_id", user_all_assets_id, true, (beansCondition)assets::is_valid_asset_or_role);
                                         user_all_inactive_assets_id.addAll((ArrayList<Object>)res[1]);
                                     } catch(Throwable th) {                        
                                     }
                                 } else {
                                     // all assets inactive due to role inactive
-                                    db.beansToArray(user_role_asset_beans, "asset_id", user_all_inactive_assets_id, true, null);
+                                    beansToArray(user_role_asset_beans, "asset_id", user_all_inactive_assets_id, true, null);
                                 }
                             }
                         }
                     }
 
                     // all assets of the userId by name in ArrayList
-                    ArrayList<Object> user_all_assets_beans = db.load_beans((HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, assets_table), "*", "id", (Object)user_all_assets_id, 1000 );
+                    ArrayList<Object> user_all_assets_beans = load_beans((HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, assets_table), "*", "id", (Object)user_all_assets_id, 1000 );
                     if(user_all_assets_beans != null) {
                         // put asset of all beans in ArryList
-                        db.beansToArray(user_all_assets_beans, "asset", user_all_assets_name, true);
+                        beansToArray(user_all_assets_beans, "asset", user_all_assets_name, true);
                     }
 
                     // all expired assets of the userId by name in ArrayList
-                    ArrayList<Object> user_all_inactive_assets_beans = db.load_beans((HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, assets_table), "*", "id", (Object)user_all_inactive_assets_id, 1000 );
+                    ArrayList<Object> user_all_inactive_assets_beans = load_beans((HttpServletRequest)request, workspace.getDatabaseSchemaTable(login.database, login.schema, assets_table), "*", "id", (Object)user_all_inactive_assets_id, 1000 );
                     if(user_all_inactive_assets_beans != null) {
                         // put inactive asset of all beans in ArryList
-                        db.beansToArray(user_all_inactive_assets_beans, "asset", user_all_inactive_assets_name, true);
+                        beansToArray(user_all_inactive_assets_beans, "asset", user_all_inactive_assets_name, true);
                     }
 
                     // Save in session

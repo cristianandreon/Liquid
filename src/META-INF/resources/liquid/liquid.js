@@ -13,9 +13,9 @@
 /* */
 
 //
-// Liquid ver.1.91
+// Liquid ver.1.93
 //
-//  First update 04-01-2020 - Last update 06-02-2022
+//  First update 04-01-2020 - Last update 09-02-2022
 //
 //  TODO : see trello.com
 //
@@ -67,10 +67,19 @@ if(!isDef(glLiquidGenesisToken))
 //
 // start point of servlet ... the bridge to server
 //
-if(!isDef(glLiquidRoot))
+if(typeof glLiquidRoot === 'undefined') {
     var glLiquidRoot = ".";
-if(!isDef(glLiquidServlet))
-    var glLiquidServlet = glLiquidRoot+"/liquid/liquid.jsp";    // look inside framework : need servlet 3
+}
+if(typeof glLiquidServlet === 'undefined') {
+    var glLiquidServlet = glLiquidRoot + "/liquid/liquid.jsp";    // look inside framework : need servlet 3
+}
+
+//
+// No conflict JQuery
+//
+if(typeof jQ1124 === 'undefined') {
+    jQ1124 = $.noConflict(true);
+}
 
 class LiquidCtrl {
 
@@ -105,6 +114,8 @@ class LiquidCtrl {
                 this.outDivObj = document.createElement("div");
                 this.outDivObj.style.width = "800px";
                 this.outDivObj.style.height = "600px";
+                this.outDivObj.style.position = "600px";
+                this.outDivObj.style.position = 'absolute';
                 this.outDivObj.id = this.outDivId;
                 document.body.insertBefore(this.outDivObj, document.body.firstChild);
             }
@@ -317,7 +328,7 @@ class LiquidCtrl {
                         this.tableJsonVariableName = Liquid.getGlobalVarByContent(tableJsonString);
 
             // Runtime mode (no db) ?
-            if(!isDef(this.tableJson.query)) {
+            if(!isDef(this.tableJson.query) && !isDef(this.tableJson.sourceData)) {
                 if(typeof this.tableJson.table === 'undefined' || !this.tableJson.table) {
                     if(isFormX || isDialogX) { // Runtime mode allowed
                         for (let ic = 0; ic < this.tableJson.columns.length; ic++) {
@@ -4428,16 +4439,24 @@ var Liquid = {
                         typeColumn = "stringColumn";
                     }
 
+                    var tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].tooltipField : null;
+                    if(!tooltipField)
+                        tooltipField = liquid.tableJson.columns[ic].tooltip ? liquid.tableJson.columns[ic].tooltip : tooltipField;
+                    if(!tooltipField)
+                        tooltipField = liquid.tableJson.columns[ic].comment ? liquid.tableJson.columns[ic].comment : tooltipField;
+
+                    var headerTooltip = liquid.tableJson.columns[ic].headerTooltip ? liquid.tableJson.columns[ic].headerTooltip : null;
+                    if(!headerTooltip)
+                        headerTooltip = liquid.tableJson.columns[ic].headerCommnet ? liquid.tableJson.columns[ic].headerCommnet : headerTooltip;
+                    if(!headerTooltip)
+                        headerTooltip = tooltipField ? tooltipField : headerTooltip;
+
                     var colData = {
                         headerName: isDef(liquid.tableJson.columns[ic].label) ? liquid.tableJson.columns[ic].label : liquid.tableJson.columns[ic].name
-                        ,
-                        field: (liquid.tableJson.columns[ic].field ? liquid.tableJson.columns[ic].field : liquid.tableJson.columns[ic].name.replace(/\./g, "_"))
-                        ,
-                        type: typeColumn
-                        ,
-                        width: Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0)
-                        ,
-                        checkboxSelection: (ic === 0 && liquid.tableJson.checkboxSelection ? (function (row) {
+                        ,field: (liquid.tableJson.columns[ic].field ? liquid.tableJson.columns[ic].field : liquid.tableJson.columns[ic].name.replace(/\./g, "_"))
+                        ,type: typeColumn
+                        ,width: Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0)
+                        ,checkboxSelection: (ic === 0 && liquid.tableJson.checkboxSelection ? (function (row) {
                             try {
                                 if (row.api.context.contextParams.seed.eGridDiv)
                                     return Liquid.onEvent(row.api.context.contextParams.seed.eGridDiv, "isRowSelectable", row, null, null, true).result;
@@ -4446,45 +4465,26 @@ var Liquid = {
                             }
                             return true;
                         }) : false)
-                        ,
-                        headerCheckboxSelection: (ic === 0 ? isDef(liquid.tableJson.rowSelection) && liquid.tableJson.rowSelection === "multiple" ? (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : true) : (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : false) : false)
-                        ,
-                        tooltipField: liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].field : null
-                        ,
-                        headerTooltip: liquid.tableJson.columns[ic].headerTooltip ? liquid.tableJson.columns[ic].field : null
-                        ,
-                        hide: (liquid.tableJson.columns[ic].visible === false ? true : false)
-                        ,
-                        pinned: (typeof liquid.tableJson.columns[ic].pinned === 'string' ? liquid.tableJson.columns[ic].pinned : (liquid.tableJson.columns[ic].pinned === true ? "left" : false))
-                        ,
-                        lockPinned: (liquid.tableJson.columns[ic].lockPinned === true ? true : false)
-                        ,
-                        cellStyle: cellStyle
-                        ,
-                        filter: (typeof liquid.tableJson.columns[ic].filter !== "undefined" ? liquid.tableJson.columns[ic].filter : (typeof liquid.tableJson.clientFilters !== "undefined" ? liquid.tableJson.clientFilters : true))
-                        ,
-                        editable: editable
-                        ,
-                        cellEditor: cellEditor
-                        ,
-                        cellEditorParams: cellEditorParams
-                        ,
-                        cellRenderer: cellRenderer
-                        ,
-                        sortable: (typeof liquid.tableJson.columns[ic].sortable !== "undefined" ? liquid.tableJson.columns[ic].sortable : true)
-                        ,
-                        comparator: sortComparator
-                        ,
-                        headerComponentParams: {
+                        ,headerCheckboxSelection: (ic === 0 ? isDef(liquid.tableJson.rowSelection) && liquid.tableJson.rowSelection === "multiple" ? (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : true) : (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : false) : false)
+                        ,tooltipField: tooltipField
+                        ,headerTooltip: headerTooltip
+                        ,hide: (liquid.tableJson.columns[ic].visible === false ? true : false)
+                        ,pinned: (typeof liquid.tableJson.columns[ic].pinned === 'string' ? liquid.tableJson.columns[ic].pinned : (liquid.tableJson.columns[ic].pinned === true ? "left" : false))
+                        ,lockPinned: (liquid.tableJson.columns[ic].lockPinned === true ? true : false)
+                        ,cellStyle: cellStyle
+                        ,filter: (typeof liquid.tableJson.columns[ic].filter !== "undefined" ? liquid.tableJson.columns[ic].filter : (typeof liquid.tableJson.clientFilters !== "undefined" ? liquid.tableJson.clientFilters : true))
+                        ,editable: editable
+                        ,cellEditor: cellEditor
+                        ,cellEditorParams: cellEditorParams
+                        ,cellRenderer: cellRenderer
+                        ,sortable: (typeof liquid.tableJson.columns[ic].sortable !== "undefined" ? liquid.tableJson.columns[ic].sortable : true)
+                        ,comparator: sortComparator
+                        ,headerComponentParams: {
                             menuIcon: (typeof liquid.tableJson.columns[ic].menuIcon !== 'undefined' ? liquid.tableJson.columns[ic].menuIcon : "&#9776;")
-                            ,
-                            menuIconSize: (typeof liquid.tableJson.columns[ic].menuIconSize !== 'undefined' ? liquid.tableJson.columns[ic].menuIconSize : "")
-                            ,
-                            liquidLink: liquid
-                            ,
-                            column: (typeof liquid.tableJson.columns[ic] !== "undefined" ? liquid.tableJson.columns[ic] : null)
-                            ,
-                            enableMenu: (typeof liquid.tableJson.headerMenu !== "undefined" ? liquid.tableJson.headerMenu : true)
+                            ,menuIconSize: (typeof liquid.tableJson.columns[ic].menuIconSize !== 'undefined' ? liquid.tableJson.columns[ic].menuIconSize : "")
+                            ,liquidLink: liquid
+                            ,column: (typeof liquid.tableJson.columns[ic] !== "undefined" ? liquid.tableJson.columns[ic] : null)
+                            ,enableMenu: (typeof liquid.tableJson.headerMenu !== "undefined" ? liquid.tableJson.headerMenu : true)
                         }
                     };
                     liquid.columnDefs.push(colData);
@@ -14141,7 +14141,7 @@ var Liquid = {
                                         }
                                     } else if (obj.type === 'file') {
                                         // look to column definition of control
-                                        linkToFile = false;
+                                        var linkToFile = false;
                                         if (isDef(lay_coord.col)) {
                                             if (liquid.tableJson.columns) {
                                                 if (lay_coord.col < liquid.tableJson.columns.length) {
@@ -17068,13 +17068,23 @@ var Liquid = {
             }
         } );
         var icon = "";
+
         if(title.indexOf("QUESTION")>=0) icon = Liquid.getImagePath("question.png");
         if(title.indexOf("ERROR")>=0) icon = Liquid.getImagePath("error.png");
         if(title.indexOf("WARNING")>=0) icon = Liquid.getImagePath("warning.png");
         if(title.indexOf("INFO")>=0) icon = Liquid.getImagePath("info.png");
+        if(title.indexOf("MESSAGE")>=0) icon = Liquid.getImagePath("info.png");
+        if(title.indexOf("TEXT")>=0) icon = Liquid.getImagePath("info.png");
+        if(title.indexOf("NOTIFY")>=0) icon = Liquid.getImagePath("info.png");
         if(title.indexOf("DEBUG")>=0) icon = Liquid.getImagePath("debug.png");
-        if(Liquid.lang === 'ita') {
-        }
+
+        if(title.indexOf("DOMANDA")>=0) icon = Liquid.getImagePath("question.png");
+        if(title.indexOf("ERRORE")>=0) icon = Liquid.getImagePath("error.png");
+        if(title.indexOf("ATTENZIONE")>=0) icon = Liquid.getImagePath("warning.png");
+        if(title.indexOf("MESSAGGIO")>=0) icon = Liquid.getImagePath("info.png");
+        if(title.indexOf("TESTO")>=0) icon = Liquid.getImagePath("info.png");
+        if(title.indexOf("NOTIFICA")>=0) icon = Liquid.getImagePath("info.png");
+
         return Liquid.dialogBoxButtons(parentObj, title, message, buttons, icon);
     },
     /**
@@ -19526,20 +19536,50 @@ function dragElement(controlId, divObj) {
 
 String.prototype.toCamelCase = function() {
     var out = "";
-    var list = this.split("_");
+    var list = this.replace("-", "_").replace(" ", "_").split("_");
     for(let i=0; i<list.length; i++) {
         if(i)
             out += capitalizeFirstLetter(list[i]);
         else
-            out += list[i];
+            out += list[i].toLowerCase();
     }
     return out;
 };
+
+String.prototype.toDescriptionCase = function() {
+    var out = "";
+    var list = this.replace("-", " ").replace("_", " ").split(" ");
+    for(let i=0; i<list.length; i++) {
+        if(i)
+            out += " " + list[i].toLowerCase();
+        else
+            out += capitalizeFirstLetter(list[i])
+    }
+    return out;
+};
+
+String.prototype.camelCasetoDescriptionCase = function() {
+    var out = "";
+    var list = this.replace(/([A-Z]+|[A-Z]?[a-z]+)(?=[A-Z]|\b)/g, '!$&').split('!');
+    for(let i=0; i<list.length; i++) {
+        if(i)
+            out += " " + list[i].toLowerCase();
+        else
+            out += capitalizeFirstLetter(list[i])
+    }
+    return out;
+};
+
 
 const capitalizeFirstLetter = (s) => {
     if(typeof s !== 'string')
         return '';
     return s.charAt(0).toUpperCase() + s.slice(1).replace(/ /g, "").toLowerCase();
+};
+const capitalizeOnlyFirstLetter = (s) => {
+    if(typeof s !== 'string')
+        return '';
+    return s.charAt(0).toUpperCase() + s.slice(1).replace(/ /g, "");
 };
 
 // Editors
@@ -19666,8 +19706,9 @@ SelectEditor.prototype.init = function(params) {
                 + (this.table ? '&targetTable=' + this.table : "")
                 + '&targetColumn=' + this.column
                 + (this.idColumn ? '&idColumn=' + this.idColumn : '')
-                + '&targetMode=' + params.colDef.cellEditorParams.editor, false
+                + '&targetMode=' + params.colDef.cellEditorParams.editor
                 + '&extendedMetadata=false'
+                ,false
             );
             xhr.send();
             if(xhr.status === 200) {
@@ -19709,6 +19750,8 @@ SelectEditor.prototype.init = function(params) {
                 } catch (e) {
                     console.error(e);
                 }
+            } else {
+                console.error("ERROR: failed to read tables (error:" + xhr.status +")");
             }
         }
     } else {
@@ -20208,7 +20251,7 @@ function getCurrentTimetick() {
     } catch (e) {}
 })(jQuery);
 
-jQ1124(document).ready(function() {
+$(document).ready(function() {
     try {
         jQ1124('input.liquidCurrency').currencyInput();
         jQ1124('input.liquidDeletable').each(function() {

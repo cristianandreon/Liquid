@@ -492,16 +492,7 @@ public class sshManager {
             if(resultLines != null) {
                 for(int i=0; i<resultLines.size(); i++) {
                     String line = resultLines.get(i).trim();
-                    /*
-                        File: ‘/home/ondino-renier/rilasci/bak/gedi-web.war’
-                        Size: 39314160  	Blocks: 76792      IO Block: 4096   regular file
-                      Device: fd0ah/64778d	Inode: 524383      Links: 1
-                      Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
-                      Access: 2021-02-19 01:11:49.572409156 +0100
-                      Modify: 2021-02-19 01:11:49.962409164 +0100
-                      Change: 2021-02-19 13:35:49.553482727 +0100
-                    */
-                    
+
                     if(line.startsWith("Access:") 
                             || line.startsWith("Modify:") 
                             || line.startsWith("Change:") 

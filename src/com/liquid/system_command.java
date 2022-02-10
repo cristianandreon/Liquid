@@ -87,7 +87,7 @@ public class system_command {
                             String key = idsList[iid];
                         
                             // load bean from remote control
-                            ArrayList<Object> beans = db.load_beans( request, remoteControlId, remoteDatabase+"."+remoteSchema +"."+remoteTable, "*", keyColumn, key, maxRows );
+                            ArrayList<Object> beans = bean.load_beans( request, remoteControlId, remoteDatabase+"."+remoteSchema +"."+remoteTable, "*", keyColumn, key, maxRows );
                         
                             if(beans != null) {
                                 for(Object bean : beans) {
@@ -110,7 +110,7 @@ public class system_command {
                                                 if(table != null && !table.isEmpty()) {
                                                     
                                                     // load bean of foreign table
-                                                    loadBeasnResult = db.load_bean( bean, table, maxRows, request );
+                                                    loadBeasnResult = com.liquid.bean.load_bean( bean, table, maxRows, request );
 
                                                     ArrayList<Object> beans_lev1 = (ArrayList<Object>)loadBeasnResult[0];
                                                     for(Object bean_lev1 : beans_lev1) {
@@ -124,7 +124,7 @@ public class system_command {
                                                             ArrayList<Object> beans_lev2 = (ArrayList<Object>) utility.get(bean, table_2lev);
                                                             if(beans_lev2 != null) {
                                                                 for(Object bean_lev2 : beans_lev2) {
-                                                                    // loadBeasnResult = db.load_bean( beanQD, table, maxRows );
+                                                                    // loadBeasnResult = bean.load_bean( beanQD, table, maxRows );
                                                                 }
                                                             }
                                                         }

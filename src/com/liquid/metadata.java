@@ -1129,7 +1129,10 @@ public class metadata {
      * @param table
      * @param conn
      * @param bUserFieldIdentificator
-     * @return
+     *
+     * @return Object[] { (Object) result, (Object) nRec};
+     *
+     *
      */
     static public Object[] getAllForeignKeys(String database, String schema, String table, Connection conn, boolean bUserFieldIdentificator) {
         int nRec = 0;

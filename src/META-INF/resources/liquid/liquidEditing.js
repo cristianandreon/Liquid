@@ -3,8 +3,9 @@
  */
 
 var LiquidEditing = {
-    version: 1.04,
+    version: 1.05,
     controlid:"Liquid framework - Editing module",
+    lastUpdate: '09/02/2022',
     
     
     /**
@@ -149,7 +150,7 @@ var LiquidEditing = {
         if(liquid) {
             Liquid.startPopup('liquidSelectTableColumns', window.liquidSelectTableColumns);
             var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
-            selectorLiquid.tableJson.caption = "New grid : <b>select columns</b>";
+            selectorLiquid.tableJson.caption = "Dettaglio";
             selectorLiquid.tableJson.database = liquid.tableJson.database;
             selectorLiquid.tableJson.schema = liquid.tableJson.schema;
             var table = liquid.tableJson.table;
@@ -173,59 +174,88 @@ var LiquidEditing = {
                 if(selectorLiquid.tableJson.selections) {
                     if(selectorLiquid.tableJson.selections.length) {
                         var sels = selectorLiquid.tableJson.selections;
-                        if(nameItems[1] === 'newGrid') {
-                            var cols = "";
-                            for(var i=0; i<sels.length; i++) {
-                                cols += "[" + sels[i]["COLUMN"] + "]";
-                            }
-                            var gridName = prompt("Enter grid name", "new grid "+(liquid.tableJson.grids?liquid.tableJson.grids.length+1:1));
-                            if(gridName) {
-                                var gridNumColumns = prompt("Enter grid no. columns", "1");
-                                if(gridNumColumns) {
-                                    var nCols = Number(gridNumColumns) > 0 ? Number(gridNumColumns) : 1;
-                                    var nRows = Math.ceil(sels.length / nCols);
-                                    var gridColumns = [];
-                                    
-                                    for(var i=0; i<sels.length; i++) {
-                                        var gridColumn = { name:sels[i]["COLUMN"], tooltip:sels[i]["REMARKS"], label:sels[i]["COLUMN"].replace("_", " "), row:Math.floor(i/nCols), col:(i%nCols) };
-                                        gridColumns.push( gridColumn );                                        
-                                        if(ftIndex1B) {
-                                            // TODO : add column ?
-                                            tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
-                                            var iField1B = Liquid.solveGridField(tagetLiquid, gridColumn);
-                                            if(iField1B <= 0) {
-                                                var listColumn = { name:sels[i]["COLUMN"], visible:false };
-                                                tagetLiquid.tableJsonSource.columns.push(listColumn);
-                                                tagetLiquid.tableJsonSource.columnsResolved = false;
-                                            }
-                                        } else {
-                                            var iField1B = Liquid.solveGridField(liquid, gridColumn);
-                                            if(iField1B <= 0) {
-                                                var listColumn = { name:sels[i]["COLUMN"], visible:false };
-                                                liquid.tableJsonSource.columns.push(listColumn);
-                                                liquid.tableJsonSource.columnsResolved = false;
-                                            }
-                                        }
-                                    }
-                                    if(typeof liquid.tableJsonSource.grids === 'undefined' || !liquid.tableJsonSource.grids) liquid.tableJsonSource.grids = [];
-                                    var newGridJson = { name:gridName, title:gridName, tooltip:"", icon:"", nRows:nRows, nCols:nCols, columns:gridColumns };
-                                    try { console.log("INFO: new grid json : \n"+JSON.stringify(newGridJson)); } catch(e) { console.error(e); }
-     
-                                    // adding the property...
-                                    Liquid.addProperty(liquid, ftIndex1B, "grids", newGridJson);                                    
-                                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
-                                }
-                            }                            
-                        } else {
-                            console.error("ERROR : Unrecognized taget");
-                        }
+                        LiquidEditing.createNewGrid(liquid, ftIndex1B, nameItems[1], sels);
                     } else {
                         console.warn("ERROR : no column selected");
                     }
                 }
             }
         }
-    },    
+    },
+    createNewGrid:function(liquid, ftIndex1B, mode, sels) {
+        if (mode === 'newGrid') {
+
+            if(!isDef(sels)) {
+                sels = [];
+                for(var i=0; i<liquid.tableJson.columns.length; i++) {
+                    sels.push(
+                        {
+                            COLUMN: liquid.tableJson.columns[i].name
+                            , REMARKS: liquid.tableJson.columns[i].ramarks
+                        });
+                }
+            }
+            var gridName = prompt("Enter grid name", "new grid " + (liquid.tableJson.grids ? liquid.tableJson.grids.length + 1 : 1));
+            if (gridName) {
+                var gridNumColumns = prompt("Enter grid no. columns", "1");
+                if (gridNumColumns) {
+                    var nCols = Number(gridNumColumns) > 0 ? Number(gridNumColumns) : 1;
+                    var nRows = Math.ceil(sels.length / nCols);
+                    var gridColumns = [];
+
+                    for (var i = 0; i < sels.length; i++) {
+                        var label = liquid.tableJson.columns[i].ramarks ? liquid.tableJson.columns[i].ramarks : liquid.tableJson.columns[i].name;
+                        var gridColumn = {
+                            name: sels[i]["COLUMN"]
+                            , tooltip: sels[i]["REMARKS"]
+                            , label: label.toDescriptionCase()
+                            , row: Math.floor(i / nCols)
+                            , col: (i % nCols)
+                        };
+                        gridColumns.push(gridColumn);
+                        if (ftIndex1B) {
+                            // TODO : add column ?
+                            var tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B - 1].controlId);
+                            var iField1B = Liquid.solveGridField(tagetLiquid, gridColumn);
+                            if (iField1B <= 0) {
+                                var listColumn = {name: sels[i]["COLUMN"], visible: false};
+                                tagetLiquid.tableJsonSource.columns.push(listColumn);
+                                tagetLiquid.tableJsonSource.columnsResolved = false;
+                            }
+                        } else {
+                            var iField1B = Liquid.solveGridField(liquid, gridColumn);
+                            if (iField1B <= 0) {
+                                var listColumn = {name: sels[i]["COLUMN"], visible: false};
+                                liquid.tableJsonSource.columns.push(listColumn);
+                                liquid.tableJsonSource.columnsResolved = false;
+                            }
+                        }
+                    }
+                    if (typeof liquid.tableJsonSource.grids === 'undefined' || !liquid.tableJsonSource.grids) liquid.tableJsonSource.grids = [];
+                    var newGridJson = {
+                        name: gridName,
+                        title: gridName,
+                        tooltip: "",
+                        icon: "",
+                        nRows: nRows,
+                        nCols: nCols,
+                        columns: gridColumns
+                    };
+                    try {
+                        console.log("INFO: new grid json : \n" + JSON.stringify(newGridJson));
+                    } catch (e) {
+                        console.error(e);
+                    }
+
+                    // adding the property...
+                    Liquid.addProperty(liquid, ftIndex1B, "grids", newGridJson);
+                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
+                }
+            }
+        } else {
+            console.error("ERROR : createNewGrid() : Unrecognized taget");
+        }
+    },
     onNewLayout:function(event) {
         var obj = typeof event === 'object' ? event.target : null;
         var obj_id = typeof event === 'object' ? obj.id : event;
@@ -605,7 +635,8 @@ var LiquidEditing = {
                 if(selectorLiquid.tableJson.selections && selectorLiquid.tableJson.selections.length) {
                     var sels = selectorLiquid.tableJson.selections;
                     for(var i=0; i<sels.length; i++) {
-                        cols.push( { name:sels[i]["COLUMN"], width:"!auto", label:sels[i]["COLUMN"] } );
+                        var label = (sels[i]["REMARKS"] ? sels[i]["REMARKS"] : sels[i]["COLUMN"]).toDescriptionCase();
+                        cols.push( { name:sels[i]["COLUMN"], width:"!auto", label:label } );
                     }
                 } else {
                     if(mode === 'formX') {
@@ -702,9 +733,17 @@ var LiquidEditing = {
     onNewWindowFromJsonProcess:function(obj_id, mode, parentObjId, liquidJsonString) {
         if(liquidJsonString) {
             var parentObj = document.getElementById(parentObjId);
-            var width = Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5;
-            var height = Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5;
-            var liquidJson = JSON.parse(liquidJsonString);
+            var liquidJson = null;
+            if(liquidJsonString[0] != '{' && liquidJsonString[1] === '{') {
+                liquidJsonString = liquidJsonString.substring(1);
+            }
+            try {
+                liquidJson = JSON.parse(liquidJsonString);
+            } catch (e) {
+                console.error("ERROR: parsing json:"+e);
+                alert("LIQUID: unexpected json ... please check it");
+                return;
+            }
             var controlId = liquidJson.controlId;
             if(!controlId) {
                 controlId = "window-"+liquidJson.table;
@@ -1138,9 +1177,10 @@ var LiquidEditing = {
                                                 status:"closed",
                                                 height:Liquid.defaultLookupHeight,
                                                 columns:columnsToShow };
+
                                             // verify if exist
                                             var new_col_name = sel["FOREIGN_TABLE"] + "." + colSel["COLUMN"];
-                                            var new_col_label = colSel["COLUMN"].replace(/\_/g, " ")
+                                            var new_col_label = (sel["REMARKS"] ? sel["REMARKS"] : sel["COLUMN"]).toDescriptionCase();
 
                                             if(confirm("Hide column "+col.name+" ?")) {
                                                 col.visible = false;
@@ -2660,7 +2700,7 @@ var LiquidEditing = {
         out += "            String ids = db.getSelection(tbl_wrk, params);\n";
         out += "            long maxRows = 0;\n";
         out += "            // read the row in the db as bean\n";
-        out += "            ArrayList<Object> beans = (ArrayList<Object>)db.get_bean(requestParam, (String)ids, \"bean\", \"all\", \"all\", maxRows);\n";
+        out += "            ArrayList<Object> beans = (ArrayList<Object>)bean.get_bean(requestParam, (String)ids, \"bean\", \"all\", \"all\", maxRows);\n";
         out += "            if(beans != null) {\n";
         out += "                int i = 1, n = beans.size();\n";
         out += "                for(Object bean : beans) {\n";
@@ -2691,7 +2731,7 @@ var LiquidEditing = {
         if(liquid.srcLiquid) {
             out += "\n";
             out += "                        // Loading parent bean "+liquid.srcLiquid.controlId+" from db\n";
-            out += "                        Object parentBean = db.load_parent_bean( bean, params, maxRows );\n";
+            out += "                        Object parentBean = bean.load_parent_bean( bean, params, maxRows );\n";
             if(liquid.srcLiquid.tableJsonSource.columns) {
                 for(var ic=0; ic<liquid.srcLiquid.tableJsonSource.columns.length; ic++) {
                     var col = liquid.srcLiquid.tableJsonSource.columns[ic];
@@ -2872,7 +2912,12 @@ var LiquidEditing = {
             dlg.id = dlgId;
             dlg.className = "liquidContextDialog";
 
-            var panelCode = capitalizeFirstLetter(liquid.tableJson.table.toCamelCase());
+            var panelId = capitalizeOnlyFirstLetter(liquid.tableJson.table.toCamelCase());
+            Liquid.panelId = panelId;
+
+            var panelTitle = panelId.camelCasetoDescriptionCase();
+            Liquid.panelTitle = panelTitle;
+
             if (!Liquid.customerName)
                 Liquid.customerName = "geisoft";
             if (!Liquid.appName)
@@ -2884,13 +2929,16 @@ var LiquidEditing = {
                 Liquid.orderByField = "";
 
 
-            var beanClass = "com." + Liquid.customerName + "." + Liquid.appName + ".hibernate.bean." + panelCode;
+            var beanClass = "com." + Liquid.customerName + "." + Liquid.appName + ".hibernate.bean." + Liquid.panelId;
+            if (!Liquid.beanClass)
+                Liquid.beanClass = beanClass;
+
             if (!Liquid.fieldInTitleBar)
                 Liquid.fieldInTitleBar = "";
             if (!Liquid.maxResult)
                 Liquid.maxResult = "5000";
-            if (!Liquid.piedino)
-                Liquid.piedino = "/com/" + Liquid.customerName + "/controller/datiPiedinoProfilo-1.incxml";
+            if (!Liquid.profileData)
+                Liquid.profileData = "/com/" + Liquid.customerName + "/" + Liquid.appName + "/controller/datiPiedinoProfilo-1.incxml";
             if (!Liquid.showList)
                 Liquid.showList = "S";
             if (!Liquid.autoSelect)
@@ -2912,24 +2960,30 @@ var LiquidEditing = {
             if (!Liquid.can_delete)
                 Liquid.can_delete = "S";
 
+            if(!Liquid.addNewGridIfMissing)
+                Liquid.addNewGridIfMissing = true;
+
             var onCancelCode = "LiquidEditing.onContextMenuClose();";
             var onOkCode = "";
             var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
+            var onPanelIdCode = "onchange=\"LiquidEditing.onPanelId(this);\" onkeyup=\"LiquidEditing.onPanelId(this);\" onpaste=\"LiquidEditing.onPanelId(this);\"";
+            var onPanelCustomerOrAppCode = "onchange=\"LiquidEditing.onPanelCustomerOrApp(this);\" onkeyup=\"LiquidEditing.onPanelCustomerOrApp(this);\" onpaste=\"LiquidEditing.onPanelCustomerOrApp(this);\"";
 
             dlg.innerHTML =
                 "<div class=\"liquidEditorDialog-content\">"
                 + "<span class=\"liquidContextMenu-close\"></span>"
                 + "<span style='text-align: center'><h1>Export to ZK panel</h1></span>"
                 + "<table cellpadding='3' cellspacing='3'     style='width: 100%; height: 100%;'>"
-                + "<tr><td>Panel title</td><td><input id=\"" + "panelTitle" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + panelCode + "' "+onKeyPressCode+" /></td</tr>"
+                + "<tr><td style='width:200px; font-weight:bold;'>Panel Id</td><td><input id=\"" + "panelId" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.panelId + "' "+onKeyPressCode+onPanelIdCode+" /></td</tr>"
+                + "<tr><td>Panel title</td><td><input id=\"" + "panelTitle" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.panelTitle + "' "+onKeyPressCode+" /></td</tr>"
                 + "<tr><td>Field in title bar</td><td><input id=\"" + "fieldInTitleBar" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.fieldInTitleBar + "' "+onKeyPressCode+"/></td</tr>"
-                + "<tr><td>Customer name</td><td><input id=\"" + "customerName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.customerName + "' "+onKeyPressCode+"/></td</tr>"
-                + "<tr><td>App name</td><td><input id=\"" + "appName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.appName + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Customer name</td><td><input id=\"" + "customerName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.customerName + "' "+onKeyPressCode+onPanelCustomerOrAppCode+"/></td</tr>"
+                + "<tr><td>App name</td><td><input id=\"" + "appName" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.appName + "' "+onKeyPressCode+onPanelCustomerOrAppCode+"/></td</tr>"
                 + "<tr><td>Bean class</td><td><input id=\"" + "beanClass" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + beanClass + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Max Result</td><td><input id=\"" + "maxResult" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.maxResult + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Order by field</td><td><input id=\"" + "orderByField" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.orderByField + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Order mode</td><td><input id=\"" + "orderByFieldMode" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + "ASC" + "' "+onKeyPressCode+"/></td</tr>"
-                + "<tr><td>Piedino</td><td><input id=\"" + "piedino" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.piedino + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Profile data</td><td><input id=\"" + "profileData" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.profileData + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Show list</td><td><input id=\"" + "showList" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.showList + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Auto select</td><td><input id=\"" + "autoSelect" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.autoSelect + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Auto find</td><td><input id=\"" + "autoFind" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.autoFind + "' "+onKeyPressCode+"/></td</tr>"
@@ -2940,6 +2994,7 @@ var LiquidEditing = {
                 + "<tr><td>Can update</td><td><input id=\"" + "can_update" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_update + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Can delete</td><td><input id=\"" + "can_delete" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_delete + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Foreign tables</td><td><input id=\"" + "process_foreign_tables" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_foreign_tables + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Add new grid</td><td><input id=\"" + "addGridIfMissing" + "\" class=\"liquidSystemDialogInput\" type=\"checkbox\" " + (Liquid.addNewGridIfMissing ? "checked":"" ) + " "+onKeyPressCode+"/></td</tr>"
                 + "</table>"
                 + "</br>"
                 + "</br>"
@@ -2972,6 +3027,7 @@ var LiquidEditing = {
 
 
 
+
         var menu = LiquidEditing.createContextMenu();
         var addImg = "<img src=\""+Liquid.getImagePath("add.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
         var optImg = "<img src=\""+Liquid.getImagePath("setup.png")+"\" style=\"width:16px; height:16px; padding-right:5px; filter:grayscale(0.8); \">";
@@ -2981,6 +3037,22 @@ var LiquidEditing = {
         menu.appendChild(dlg);
         menu.style.display = "";
     },
+    onPanelId:function(obj) {
+        Liquid.panelId = obj.value;
+        var panelTtile = Liquid.panelId.camelCasetoDescriptionCase();
+        var beanClass = "com." + Liquid.customerName + "." + Liquid.appName + ".hibernate.bean." + Liquid.panelId;
+        document.getElementById("panelTitle").value = panelTtile;
+        document.getElementById("beanClass").value = beanClass;
+    },
+    onPanelCustomerOrApp:function(obj) {
+        Liquid.panelId = document.getElementById("panelId").value;
+        Liquid.customerName = document.getElementById("customerName").value;
+        Liquid.appName = document.getElementById("appName").value;
+        var beanClass = "com." + Liquid.customerName + "." + Liquid.appName + ".hibernate.bean." + Liquid.panelId;
+        var profileData = "/com/" + Liquid.customerName + "/" + Liquid.appName + "/controller/datiPiedinoProfilo-1.incxml";
+        document.getElementById("beanClass").value = beanClass;
+        document.getElementById("profileData").value = profileData;
+    },
     applyExportToZKDialog:function(objId, dlgId) {
         LiquidEditing.onContextMenuClose();
         if(dlgId) {
@@ -2989,7 +3061,9 @@ var LiquidEditing = {
                 if(objId) {
                     var liquid = Liquid.getLiquid(objId);
                     if(liquid) {
-                        var obj = document.getElementById("panelTitle");
+                        var obj = document.getElementById("panelId");
+                        if(obj) Liquid.panelId = obj.value;
+                        obj = document.getElementById("panelTitle");
                         if(obj) Liquid.panelTitle = obj.value;
                         obj = document.getElementById("fieldInTitleBar");
                         if(obj) Liquid.fieldInTitleBar = obj.value;
@@ -3005,8 +3079,8 @@ var LiquidEditing = {
                         if(obj) Liquid.orderByField = obj.value;
                         obj = document.getElementById("orderByFieldMode");
                         if(obj) Liquid.orderByFieldMode = obj.value;
-                        obj = document.getElementById("piedino");
-                        if(obj) Liquid.piedino = obj.value;
+                        obj = document.getElementById("profileData");
+                        if(obj) Liquid.profileData = obj.value;
                         obj = document.getElementById("showList");
                         if(obj) Liquid.showList = obj.value;
                         obj = document.getElementById("autoSelect");
@@ -3039,7 +3113,8 @@ var LiquidEditing = {
                             var token = json.token; // cave current token
 
                             json.zkParams = {
-                                panelTitle:Liquid.panelTitle
+                                panelId:Liquid.panelId
+                                ,panelTitle:Liquid.panelTitle
                                 ,fieldInTitleBar:Liquid.fieldInTitleBar
                                 ,customerName:Liquid.customerName
                                 ,appName:Liquid.appName
@@ -3047,7 +3122,7 @@ var LiquidEditing = {
                                 ,maxResult:Number(Liquid.maxResult)
                                 ,orderByField:Liquid.orderByField
                                 ,orderByFieldMode:Liquid.orderByFieldMode
-                                ,piedino:Liquid.piedino
+                                ,profileData:Liquid.profileData
                                 ,showList:Liquid.showList === 'S' ? true : false
                                 ,autoSelect:Liquid.autoSelect === 'S' ? true : false
                                 ,autoFind:Liquid.autoFind === 'S' ? true : false
@@ -3059,6 +3134,16 @@ var LiquidEditing = {
                                 ,can_delete:Liquid.can_delete === 'S' ? true : false
                                 ,process_foreign_tables:Liquid.process_foreign_tables === 'S' ? true : false
                             }
+
+                            // Create a new grid
+                            Liquid.addNewGridIfMissing = document.getElementById("addGridIfMissing").checked;
+                            if(Liquid.addNewGridIfMissing) {
+                                if (!isDef(liquid.tableJson.grids) || liquid.tableJson.grids.length === 0) {
+                                    LiquidEditing.createNewGrid(liquid, 0, "newGrid", null);
+                                }
+                            }
+
+
                             var fileName = liquid.controlId+".json";
                             var tableJsonString = JSON.stringify(json);
 

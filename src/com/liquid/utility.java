@@ -1588,6 +1588,7 @@ public class utility {
     }
 
 
+
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
         public ArrayList<Object> beans = null;
@@ -1625,7 +1626,7 @@ public class utility {
         if(dataListCache != null) {
             beans = dataListCache.beans;
         } else {
-            beans = db.load_beans(databaseSchemaTable, ""+codeColumn+","+descColumn, where, 0);
+            beans = bean.load_beans(databaseSchemaTable, ""+codeColumn+","+descColumn, where, 0);
         }
         out += "<datalist id=\""+datalistId+"\">";
         if(emptyRow != null) {
@@ -2040,7 +2041,17 @@ public class utility {
     
     
     static public ArrayList<FolderWatchThread> folderWatchThreadList = new ArrayList<FolderWatchThread>();
-    
+
+    /**
+     * Starts a watch thread in a folder, calling the callbackInstance.callbackMethod in case of event
+     *
+     * @param folder
+     * @param fileExt
+     * @param callbackInstance
+     * @param callbackMethod
+     * @return
+     * @throws Exception
+     */
     static public boolean startWatchFolder(String folder, String fileExt, Object callbackInstance, String callbackMethod) throws Exception {
         try {
             for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
@@ -2063,7 +2074,13 @@ public class utility {
         folderWatchThread.start();        
         return true;
     }
-    
+
+    /**
+     *
+     * @param folder
+     * @return
+     * @throws Exception
+     */
     static public boolean stopWatchFolder(String folder) throws Exception {        
         for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
             if(folder.equalsIgnoreCase(folderWatchThread.folder)) {
@@ -2076,7 +2093,13 @@ public class utility {
         }
         return false;
     }
-    
+
+    /**
+     *
+     * @param folder
+     * @return
+     * @throws Exception
+     */
     static public String statusWatchFolder(String folder) throws Exception {        
         String out = "";
         for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
@@ -2097,9 +2120,14 @@ public class utility {
         return dateFormatSymbols.getMonths()[month-1];
     }
 
+    /**
+     *
+     * @param var
+     * @return
+     */
     public static String toCamelCase( String var ) {
         String out = "";
-        String [] list = var.replace("-", "").replace(" ", "").split("_");
+        String [] list = var.replace("-", "_").replace(" ", "_").split("_");
         for(int i=0; i<list.length; i++) {
             if(i>0)
                 out += capitalizeFirstLetter(list[i]);
@@ -2109,7 +2137,25 @@ public class utility {
         return out;
     }
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     public static String capitalizeFirstLetter(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "").toLowerCase();
     };
+
+    public static String toDescriptionCase(String var) {
+        String out = "";
+        String [] list = var.replace("-", " ").replace("_", " ").split(" ");
+        for(int i=0; i<list.length; i++) {
+            if(i>0)
+                out += " " + list[i].toLowerCase();
+            else
+                out += capitalizeFirstLetter(list[i]);
+        }
+        return out;
+    }
+
 }

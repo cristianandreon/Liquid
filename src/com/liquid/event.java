@@ -61,23 +61,23 @@ public class event {
         try {
 
             try {
-                className = (String) request.getParameter("className");
+                className = request.getParameter("className");
+            } catch (Exception ignored) {
+            }
+            try {
+                clientData = request.getParameter("clientData");
             } catch (Exception e) {
             }
             try {
-                clientData = (String) request.getParameter("clientData");
+                controlId = request.getParameter("controlId");
             } catch (Exception e) {
             }
             try {
-                controlId = (String) request.getParameter("controlId");
+                owner = request.getParameter("owner");
             } catch (Exception e) {
             }
             try {
-                owner = (String) request.getParameter("owner");
-            } catch (Exception e) {
-            }
-            try {
-                tblWrk = (String) request.getParameter("tblWrk");
+                tblWrk = request.getParameter("tblWrk");
             } catch (Exception e) {
             }
             workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null && !tblWrk.isEmpty() ? tblWrk : controlId);
@@ -134,6 +134,19 @@ public class event {
         return errorJson;
     }
 
+
+    /**
+     *
+     * @param className
+     * @param tbl_wrk
+     * @param owner
+     * @return
+     * @throws ClassNotFoundException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     * @throws NoSuchMethodException
+     * @throws Exception
+     */
     static public Object[] get_method_by_class_name(String className, workspace tbl_wrk, String owner) throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, Exception {
         if (className != null && !className.isEmpty()) {
             String objectClassName = className;
@@ -154,7 +167,7 @@ public class event {
             } else if (owner != null && !owner.isEmpty()) {
                 try {
                     cls = Class.forName(owner);
-                    classInstance = (Object) cls.newInstance();
+                    classInstance = cls.newInstance();
                     sMethod = className;
                 } catch (Throwable th) {
                     // happens when tomcat redeploy at developing time
@@ -204,6 +217,17 @@ public class event {
         return null;
     }
 
+
+    /**
+     *
+     * @param className
+     * @param classOrInstance
+     * @return
+     * @throws ClassNotFoundException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     * @throws NoSuchMethodException
+     */
     static public Object[] get_method_by_class_name(String className, Object classOrInstance) throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException {
         if (className != null && !className.isEmpty()) {
             String objectClassName = className;
@@ -264,6 +288,17 @@ public class event {
         return null;
     }
 
+
+    /**
+     *
+     * @param currentRetVal
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param requestParam
+     * @return
+     * @throws Exception
+     */
     static public String process_next_event(String currentRetVal, Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
         String retVal = currentRetVal, errors = "";
         if (tbl_wrk != null) {
@@ -350,9 +385,16 @@ public class event {
         return retVal;
     }
 
-    //
-    // Transfer client param to parameter for next event process
-    // 
+
+
+    /**
+     * Transfer client param to parameter for next event process
+     *
+     * @param clientToTransfer
+     * @param result
+     * @return
+     * @throws JSONException
+     */
     static public String transfer_client_to_result(Object clientToTransfer, String result) throws JSONException {
         JSONObject retValJSON = new JSONObject(result);
         if (clientToTransfer != null) {
@@ -390,13 +432,19 @@ public class event {
         return retValJSON.toString();
     }
 
-    //
-    // Transfer result to parameter of next event process
-    //  ex.: 
-    //      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
-    //          to 
-    //      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
-    //
+    /**
+     *
+     * Transfer result to parameter of next event process
+     *  ex.:
+     *      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
+     *          to
+     *      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
+     *
+     * @param retValToTransfer
+     * @param params
+     * @return
+     * @throws JSONException
+     */
     static public String transfer_result_to_params(String retValToTransfer, String params) throws JSONException {
         String retVal = params;
         JSONObject retValJSON = new JSONObject((String) retValToTransfer);
@@ -430,13 +478,20 @@ public class event {
         return retVal;
     }
 
-    //
-    // Transfer current result to result for next event process
-    //  ex.: 
-    //      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
-    //          to 
-    //      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
-    //   
+
+    /**
+     *
+     * Transfer current result to result for next event process
+     *   ex.:
+     *       {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
+     *           to
+     *       {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
+     *
+     * @param retValToTransfer
+     * @param retValTarget
+     * @return
+     * @throws JSONException
+     */
     static public String transfer_result_to_results(String retValToTransfer, String retValTarget) throws JSONException {
         String retVal = retValTarget;
         JSONObject retValToTransferJSON = new JSONObject((String) retValToTransfer != null ? retValToTransfer : "{}");
@@ -481,6 +536,13 @@ public class event {
         return retVal;
     }
 
+
+    /**
+     *
+     * @param error
+     * @param result
+     * @return
+     */
     static public String append_error_to_result(String error, String result) {
         if(error != null) {
             if(result != null) {
@@ -503,9 +565,13 @@ public class event {
     }
 
     
-    //
-    // Per eseguire un file python nel server da js
-    //
+    /**
+     *  Esegue un file python nel server da js
+     *
+     * @param request
+     * @param out
+     * @return
+     */
     static public String pythonExecute(HttpServletRequest request, JspWriter out) {
         String errorJson = "", error = "";
         String pythonFileToProcess = "";
@@ -562,9 +628,19 @@ public class event {
         return errorJson;
     }
 
-    //
-    // Callback varie di test
-    //
+
+
+
+    /**
+     * Callback varie di test
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     * @throws Exception
+     */
     static public String echo(Object tbl_wrk, Object params, Object clientData, Object freeParam) throws Exception {
         return testEvent(tbl_wrk, params, clientData, freeParam);
     }
@@ -653,17 +729,17 @@ public class event {
                 int maxRows = 0;
 
                 // ES.: Elenco selezione come JSONArray
-                JSONArray jsonIds = (JSONArray) db.get_bean(request, (String) ids, "jsonarray", maxRows);
+                JSONArray jsonIds = (JSONArray) bean.get_bean(request, (String) ids, "jsonarray", maxRows);
                 result += " json-ids:" + (jsonIds != null ? workspace.jsonArrayToString(jsonIds, "'", "'", ",") : "N/D") + "";
 
                 // ES.: Elenco selezione come ArrayList<String>
-                ArrayList<String> idsList = (ArrayList<String>) db.get_bean(request, (String) ids, "array", maxRows);
+                ArrayList<String> idsList = (ArrayList<String>) bean.get_bean(request, (String) ids, "array", maxRows);
                 result += " ids:" + (ids != null ? workspace.arrayToString(idsList != null ? idsList.toArray() : null, "'", "'", ",") : "N/D") + "";
 
                 //
                 // ES.: Elenco selezione come bean (all field, all foreign tables)
                 //
-                ArrayList<Object> beans = (ArrayList<Object>) db.get_bean(request, (String) ids, "bean", "all", "all", maxRows);
+                ArrayList<Object> beans = (ArrayList<Object>) bean.get_bean(request, (String) ids, "bean", "all", "all", maxRows);
                 if (beans != null) {
                     int i = 1;
                     int n = beans.size();
@@ -674,15 +750,15 @@ public class event {
                             //      Ritorna { int nBeans, int nBeansLoaded, String errors, String warning }
                             Object[] loadBeasnResult = null;
 
-                            loadBeasnResult = db.load_bean(bean, "UTENTI", maxRows, request);
-                            loadBeasnResult = db.load_bean(bean, "DOMAINS", maxRows, request);
-                            loadBeasnResult = db.load_bean(bean, "QUOTES_DETAIL", maxRows, request);
+                            loadBeasnResult = com.liquid.bean.load_bean(bean, "UTENTI", maxRows, request);
+                            loadBeasnResult = com.liquid.bean.load_bean(bean, "DOMAINS", maxRows, request);
+                            loadBeasnResult = com.liquid.bean.load_bean(bean, "QUOTES_DETAIL", maxRows, request);
 
                             // ES.: Caricamento foreign tables 2° livello per tutte le righe di QUOTES_DETAIL
                             ArrayList<Object> beansQD = (ArrayList<Object>) utility.get(bean, "QUOTES_DETAIL");
                             if (beansQD != null) {
                                 for (Object beanQD : beansQD) {
-                                    loadBeasnResult = db.load_bean(beanQD, "MATERIALS", maxRows, request);
+                                    loadBeasnResult = com.liquid.bean.load_bean(beanQD, "MATERIALS", maxRows, request);
                                 }
                             }
 
@@ -785,7 +861,7 @@ public class event {
                 // ES.: Legge il bean completo, tutti i campi, tutte le foreign tables
                 //
                 int maxRows = 0;
-                ArrayList<Object> beans = (ArrayList<Object>) db.get_bean(requestParam, (String) ids, "bean", "all", "all", maxRows);
+                ArrayList<Object> beans = (ArrayList<Object>) bean.get_bean(requestParam, (String) ids, "bean", "all", "all", maxRows);
                 if (beans != null) {
                     int i = 1, n = beans.size();
                     for (Object bean : beans) {
@@ -793,11 +869,11 @@ public class event {
                             // ES.: Caricamento foreign tables parent
                             // N.B.: La selezione corrente del client risiede in params (String as getJSONArray)
                             //      Ritorna { int nBeans, int nBeansLoaded, String errors, String warning }
-                            Object parentLevel1Bean = db.load_parent_bean(bean, params, maxRows, request);
+                            Object parentLevel1Bean = com.liquid.bean.load_parent_bean(bean, params, maxRows, request);
 
-                            Object parentLevel2Bean = db.load_parent_bean(parentLevel1Bean, params, maxRows, request);
+                            Object parentLevel2Bean = com.liquid.bean.load_parent_bean(parentLevel1Bean, params, maxRows, request);
 
-                            Object parentLevel3Bean = db.load_parent_bean(parentLevel2Bean, params, maxRows, request);
+                            Object parentLevel3Bean = com.liquid.bean.load_parent_bean(parentLevel2Bean, params, maxRows, request);
 
                             // ES.: Stampa risultati
                             result += " bean #" + String.valueOf(i++) + "/" + String.valueOf(n)
@@ -848,7 +924,7 @@ public class event {
                 // ES.: Legge il bean completo, tutti i campi, tutte le foreign tables
                 //
                 int maxRows = 0;
-                ArrayList<Object> beans = (ArrayList<Object>) db.get_bean(requestParam, (String) ids, "bean", "all", "all", maxRows);
+                ArrayList<Object> beans = (ArrayList<Object>) bean.get_bean(requestParam, (String) ids, "bean", "all", "all", maxRows);
                 if (beans != null) {
                     int i = 1, n = beans.size();
                     for (Object bean : beans) {
@@ -856,7 +932,7 @@ public class event {
                             // ES.: Caricamento foreign tables parent
                             // N.B.: La selezione corrente del client risiede in params (String as getJSONArray)
                             //      Ritorna { int nBeans, int nBeansLoaded, String errors, String warning }
-                            Object[] loadBeasnResult = db.load_bean(bean, "$Parent", params, maxRows, request);
+                            Object[] loadBeasnResult = com.liquid.bean.load_bean(bean, "$Parent", params, maxRows, request);
 
                             // ES.: Stampa risultati
                             result += " bean #" + String.valueOf(i++) + "/" + String.valueOf(n)
@@ -887,7 +963,7 @@ public class event {
                 HttpServletRequest request = (HttpServletRequest) requestParam;
                 String ids = workspace.getSelection(((workspace) tbl_wrk).controlId, (String) params);
                 int maxRows = 0, i = 1;
-                ArrayList<Object> beans = (ArrayList<Object>) db.get_bean(request, (String) ids, "bean", "all", "all", maxRows);
+                ArrayList<Object> beans = (ArrayList<Object>) bean.get_bean(request, (String) ids, "bean", "all", "all", maxRows);
                 for (Object bean : beans) {
                     try {
                         System.out.print(" bean #" + String.valueOf(i) + "/" + String.valueOf(beans.size())
@@ -980,10 +1056,23 @@ public class event {
         result += "}";
         return result;
     }
+
     //
     // Fine callback di test
     //
 
+
+
+
+    /**
+     * Insert row system command (server side)
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String insertRow(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String result = "{ \"result\":1", error = "";
         try {
@@ -1176,9 +1265,15 @@ public class event {
 
 
 
-    //
-    // Evento di SISTEMA onInserting : creazione iniziale del record senza scrittura nel DB
-    // 
+    /**
+     * onInserting system event : initialize recordset without write into db
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param requetParam
+     * @return
+     */
     static public String onInserting(Object tbl_wrk, Object params, Object clientData, Object requetParam) {
         String retVal = "", out_string = "", error = "";
         Connection conn = null;
@@ -1332,15 +1427,36 @@ public class event {
         return retVal;
     }
 
+
+
+    /**
+     * System event on inserted row
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String onInserted(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         Logger.getLogger(db.class.getName()).log(Level.INFO, "onInserted() get called");
         return null;
     }
 
-    //
-    // Callback per test overlay evento di sistema
-    // Per Test : "events":[ "name":"onInserting" : "com.liquid.event.onInsertingRow" ...]
-    //
+
+
+    /**
+     * System event on insetring row (before insert)
+     *
+     *  Callback per test overlay evento di sistema
+     *  Per Test : "events":[ "name":"onInserting" : "com.liquid.event.onInsertingRow" ...]
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String onInsertingRow(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         System.out.println(" TEST : onInsertingRow() Raised");
         return null;
@@ -1481,7 +1597,16 @@ public class event {
         return retVal;
     }
 
-    // Evento di Systema aggiornamento riga da GUI
+
+
+    /**
+     * update row from GUI (system event)
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String updateRow(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String result = "{ \"result\":1", error = "";
         try {
@@ -1538,8 +1663,21 @@ public class event {
         return "{ \"result\":0, \"error\":\"" + utility.base64Encode(error) + "\"}";
     }
 
-    // Evento di SISTEMA onUpdating : aggiornamento iniziale del record senza scrittura nel DB
-    // Per Test con "owner":"com.liquid.event"
+
+
+
+    /**
+     * on updating (before update) (system event)
+     *
+     *  Evento di SISTEMA onUpdating : aggiornamento iniziale del record senza scrittura nel DB
+     *  Per Test con "owner":"com.liquid.event"
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String onUpdating(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         return null;
     }
@@ -1553,7 +1691,16 @@ public class event {
         return null;
     }
 
-    // Evento di Systema cancellazione riga
+
+    /**
+     * on deleting (before delete) (system event)
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String deleteRow(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String result = "{ \"result\":1", error = "";
 
@@ -1611,10 +1758,19 @@ public class event {
         return "{ \"result\":0, \"error\":\"" + utility.base64Encode(error) + "\"}";
     }
 
-    //
-    // Evento di SISTEMA onDeleting : cancellazione iniziale del record senza scrittura nel DB
-    // Per Test con "owner":"com.liquid.event"
-    //
+
+    /**
+     * On deleting row (befer delete) (system event)
+     *
+     *     Evento di SISTEMA onDeleting : cancellazione iniziale del record senza scrittura nel DB
+     *     Per Test con "owner":"com.liquid.event"
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String onDeleting(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         return null;
     }
@@ -1634,9 +1790,16 @@ public class event {
         return null;
     }
 
-    ///////////////////
-    // Servizi DMS
-    //
+
+    /**
+     * DMS services
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String getDocuments(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
@@ -1665,6 +1828,14 @@ public class event {
         return result;
     }
 
+    /**
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String uploadDocument(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
@@ -1729,6 +1900,14 @@ public class event {
         return result;
     }
 
+    /**
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String downloadDocument(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String error = "", resultSet = "";
         Object[] result = null;
@@ -1769,6 +1948,15 @@ public class event {
         return null;
     }
 
+
+    /**
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String deleteDocument(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
@@ -1795,6 +1983,14 @@ public class event {
         return result;
     }
 
+    /**
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String updateDocument(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
@@ -1821,6 +2017,14 @@ public class event {
         return result;
     }
 
+    /**
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public String init(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         String result = "{ \"result\":1", error = "";
         try {
@@ -1847,6 +2051,14 @@ public class event {
         return "{ \"error\":\"" + utility.base64Encode(error) + "\"}";
     }
 
+    /**
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public Object close(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         Object result = null;
         try {
@@ -1863,6 +2075,16 @@ public class event {
         return "{ \"result\":\"" + (result != null ? utility.base64Encode(result.toString()) : "") + "\"}";
     }
 
+
+    /**
+     *
+     * @param eventName
+     * @param tbl_wrk
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public Object forwardEvent(String eventName, Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         try {
             if (tbl_wrk != null) {
@@ -1882,6 +2104,16 @@ public class event {
         return null;
     }
 
+    /**
+     *
+     * @param eventName
+     * @param tbl_wrk
+     * @param owner
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public Object forwardEvent(String eventName, Object tbl_wrk, Object owner, Object params, Object clientData, Object freeParam) {
         try {
             if (owner != null) {
@@ -1904,6 +2136,16 @@ public class event {
         return null;
     }
 
+    /**
+     *
+     * @param eventName
+     * @param tbl_wrk
+     * @param ownerClassName
+     * @param params
+     * @param clientData
+     * @param freeParam
+     * @return
+     */
     static public Object forwardEvent(String eventName, Object tbl_wrk, String ownerClassName, Object params, Object clientData, Object freeParam) {
         try {
             if (ownerClassName != null && !ownerClassName.isEmpty()) {
@@ -2015,10 +2257,24 @@ public class event {
         return null;
     }
 
+
+    /**
+     *
+     * @param params
+     * @param paramName
+     * @return
+     */
     static public JSONObject getJSONObject(Object params, String paramName) {
         return getJSONObject(params, paramName, null);
     }
 
+    /**
+     *
+     * @param params
+     * @param paramName
+     * @param controlId
+     * @return
+     */
     static public JSONObject getJSONObject(Object params, String paramName, String controlId) {
         if (params != null) {
             try {
@@ -2093,6 +2349,13 @@ public class event {
         return null;
     }
 
+
+    /**
+     *
+     * @param params
+     * @param paramName
+     * @return
+     */
     static public Object getObject(Object params, String paramName) {
         if (params != null) {
             try {
@@ -2119,7 +2382,13 @@ public class event {
         }
         return null;
     }
-    
+
+    /**
+     *
+     * @param params
+     * @param controlName
+     * @return
+     */
     static public Object getControlObject(Object params, String controlName) {
         if (params != null) {
             try {
@@ -2140,6 +2409,72 @@ public class event {
             }
         }
         return null;
-    }    
+    }
+
+
+    /**
+     * Load data from function
+     *
+     * @param tbl_wrk
+     * @param sourceData
+     *
+     * @return @return Object[] { (Object) result, (Object) nRec};
+     */
+    public static Object[] loadSourceData(workspace tbl_wrk, JSONObject sourceData, HttpServletRequest request) {
+        String result = null;
+        String error = null;
+        int nRecs = 0;
+
+        if (tbl_wrk != null) {
+
+            if (sourceData != null) {
+
+                String className = sourceData.getString("server");
+                String owner = null;
+                String params = null;
+                String clientData = null;
+
+                try {
+
+                    // get instance and method
+                    Object[] result_method = get_method_by_class_name(className, tbl_wrk, owner);
+                    if(result_method != null) {
+                        Object classInstance = result_method[0];
+                        Method method = (Method) result_method[1];
+                        if (method != null && classInstance != null) {
+                            result = (String) method.invoke(classInstance, tbl_wrk, params, clientData, (Object) request);
+                        }
+                    } else {
+                        error = "class not found : " + className;
+                        System.err.println(error);
+                        result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                    }
+
+                } catch (InvocationTargetException ite) {
+                    final Throwable cause = ite.getTargetException();
+                    error = ite.getCause().getLocalizedMessage();
+                    System.err.println("nested exception - " + cause + " " + ite.getCause());
+                    result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+
+                } catch (Throwable th) {
+                    error = "Error in class.method:" + className + " (" + th.getLocalizedMessage() + ")";
+                    System.err.println(" execute() [" + tbl_wrk.controlId + "] Error:" + th.getLocalizedMessage());
+                    result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                }
+
+            } else {
+                error = "invalid sourceData";
+                System.err.println(error);
+                result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+            }
+
+        } else {
+            error = "Invalid workspace";
+            System.err.println(error);
+            result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+        }
+
+        return new Object[] { (Object) result, (Object) nRecs };
+    }
 
 }
