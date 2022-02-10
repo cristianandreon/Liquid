@@ -2414,7 +2414,7 @@ public class event {
 
 
     /**
-     * Load data from function
+     * Load data from function (callback defined in "server":".." into the json of the control)
      *
      * @param tbl_wrk
      * @param sourceData
