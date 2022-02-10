@@ -125,7 +125,7 @@ public class ThreadSession {
     /**
      * set a specific owner for this session (ex.: workspace store multiple owner, each for his thread, or none for main, like in a static class)
      * 
-     * @param Owner the object Owning
+     * @param owner the object Owning
      * @return 
      */
     static public boolean setOwner ( Object owner ) {

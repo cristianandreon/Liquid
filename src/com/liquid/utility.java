@@ -1587,6 +1587,61 @@ public class utility {
         return workspace.setLanguage(session, out, lang);
     }
 
+    public static String jsonToRowset(workspace tbl_wrk, JSONArray rowsetJson) {
+        String result = null;
+        if (rowsetJson != null) {
+            ArrayList<Integer> colMap = new ArrayList<Integer>();
+            boolean colMapped = false;
+            result = "[";
+            for(int ir=0; ir<rowsetJson.length(); ir++) {
+                String row = "";
+                JSONObject rowJson = rowsetJson.getJSONObject(ir);
+                int colCounter = 0;
+                if (rowJson != null) {
+                    JSONArray names = ((JSONObject) rowJson).names();
+                    for (int iname = 0; iname < names.length(); iname++) {
+                        int field1B = 0;
+                        if (colMapped) {
+                            field1B = colMap.get(iname);
+                        } else {
+                            String colName = names.getString(iname);
+                            JSONObject col = workspace.getColumnByName(tbl_wrk, colName);
+                            if (col != null) {
+                                String sfield1B = col.getString("field");
+                                try {
+                                    field1B = Integer.parseInt(sfield1B);
+                                    colMap.add(field1B);
+                                } catch (Exception e) {
+                                }
+                            }
+                        }
+                        if (field1B > 0) {
+                            Object obj = rowJson.get(names.getString(iname));
+                            row += (colCounter>0?",":"") + "\"" + field1B + "\"" + ":";
+                            if(obj == null) {
+                                row += "null";
+                            } else {
+                                if(obj instanceof String) {
+                                    row += "\"" + String.valueOf(obj) + "\"";
+                                } else if(obj instanceof Integer || obj instanceof Long || obj instanceof BigDecimal || obj instanceof Float || obj instanceof Double) {
+                                    row += "" + String.valueOf(obj) + "";
+                                } else if (obj instanceof Boolean) {
+                                    row += "" + ((boolean)obj ? "true":"false") + "";
+                                } else {
+                                    row += "\"" + String.valueOf(obj) + "\"";
+                                }
+                            }
+                            colCounter++;
+                        }
+                    }
+                    colMapped = true;
+                }
+                result += (ir > 0 ? "," : "") + "{" + row + "}";
+            }
+            result += "]";
+        }
+        return result;
+    }
 
 
     public static class DataListCache {

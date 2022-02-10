@@ -69,6 +69,11 @@ public class workspace {
 
     static public boolean cacheEnabled = true;
 
+    static public String defaultDatabase = null;
+    static public String defaultSchema = null;
+
+
+
     static long getHash(String s) {
         long hash = 7;
         for (int i = 0; i < s.length(); i++) {
@@ -132,8 +137,6 @@ public class workspace {
     public String controlId = null;
     public String schemaTable = null;
     public String databaseSchemaTable = null;
-    public String defaultDatabase = null;
-    public String defaultSchema = null;
     public JSONObject tableJson = null;
     public String clientTableJson = null;
     public long sourceTableJsonHash = 0;
@@ -220,8 +223,7 @@ public class workspace {
 
 
     /**
-     * Set the owner ( the specific owner defined by the user session ( not
-     * always the threadId ) )
+     * Set the owner ( the specific owner defined by the user session ( not always the same as threadId ) )
      *
      * @param owner
      * @return
@@ -248,7 +250,7 @@ public class workspace {
                 } else {
                     // No session : FATAL ERROR
                     if (owner != null) {
-                        throw new Exception("LIQUID ERROR: controiId '" + this.controlId + "' current session NOT valid");
+                        throw new Exception("LIQUID ERROR: controiId '" + this.controlId + "' current session NOT valid : in order to set an owner of a control you must pass a httpRequest");
                     }
                 }
             } else {
@@ -561,14 +563,14 @@ public class workspace {
      * @param controlId the Id of the control (String)
      * @param sTableJsonFile the configuration of the control (file in JSON
      * format)
-     * @param replaceApex escape all apex (boolean)
+     * @param b64Encode base 64 encode the result (boolean)
      *
      * @return the validated control json
      * @throws java.lang.Throwable
      * @see workspace
      */
-    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex) throws Throwable {
-        return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, replaceApex), null, null, null);
+    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean b64Encode) throws Throwable {
+        return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, b64Encode), null, null, null);
     }
 
     /**
@@ -582,7 +584,7 @@ public class workspace {
      * @param controlId the Id of the control (String)
      * @param sTableJsonFile the configuration of the control (file in JSON
      * format)
-     * @param replaceApex escape all apex (boolean)
+     * @param b64Encode base 64 encode the result (boolean)
      * @param owner the class owning the control (String as package.class)
      * @param returnType the or result, can be "json" or empty for html (String)
      *
@@ -590,8 +592,14 @@ public class workspace {
      * @throws java.lang.Throwable
      * @see workspace
      */
-    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex, Object owner, String returnType) throws Throwable {
-        return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, false), null, owner, returnType);
+    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean b64Encode, Object owner, String returnType) throws Throwable {
+        String result = get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, b64Encode), null, owner, returnType);
+        if("json".equalsIgnoreCase(returnType)) {
+            if(b64Encode) {
+                return utility.base64Encode(result);
+            }
+        }
+        return result;
     }
 
     /**
@@ -605,15 +613,15 @@ public class workspace {
      * @param controlId the Id of the control (String)
      * @param sTableJsonFile the configuration of the control (file in JSON
      * format)
-     * @param replaceApex escape all apex (boolean)
+     * @param b64Encode base64 encode the result (boolean)
      * @param owner the class owning the control (String as package.class)
      *
      * @return the validated control json
      * @throws java.lang.Throwable
      * @see workspace
      */
-    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean replaceApex, Object owner) throws Throwable {
-        return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, false), null, owner, null);
+    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, boolean b64Encode, Object owner) throws Throwable {
+        return get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, b64Encode), null, owner, null);
     }
 
     // Controllo da jsp (il json viene letto dal body della request)
@@ -713,7 +721,7 @@ public class workspace {
     static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch, String fileNameFilter) throws Throwable {
         String out_string = "";
         try {
-            boolean replaceApex = true;
+            boolean b64Encode = true;
             Object owner = null;
             String returnType = "js";
             ServletContext servletContext = request.getSession().getServletContext();
@@ -744,7 +752,7 @@ public class workspace {
                         out_string += "<!-- ERROR: Duplicate controlId: " + controlId + " File:" + s + " -->\n";
                         out_string += "<script>alert(\"Duplicate controlId:" + controlId + "\\n\\nPlease check files in the folder:" + sFolder + "\")</script>\n";
                     } else {
-                        String controlScript = get_table_control(request, controlId, sTableJsonFile, replaceApex, owner, returnType);
+                        String controlScript = get_table_control(request, controlId, sTableJsonFile, b64Encode, owner, returnType);
                         controlIds.add(controlId);
                         out_string += "<!-- ControlId: " + controlId + " - [ File:\"" + s + "\" ]-->\n";
                         out_string += controlScript;
@@ -799,6 +807,7 @@ public class workspace {
         JSONArray foreignTablesJson = null;
         String foreignKeysJson = null, foreignTables = null, foreignTable = null;
         String connectionDriver = null, connectionURL = null, database = null, table = null, schema = null, primaryKey = null, query = null;
+        Object sourceData = null;
         int primaryKeyIndex1B = 0;
         boolean bAllColumns = false;
         String result = "json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + controlId + "\"}" : "<script> console.error(\"" + controlId + " not created in server\");</script>";
@@ -1005,103 +1014,118 @@ public class workspace {
             }
 
             try {
-                connectionDriver = tableJson.getString("connectionDriver");
+                if(tableJson.has("connectionDriver"))
+                    connectionDriver = tableJson.getString("connectionDriver");
             } catch (Exception e) {
             }
             try {
-                connectionURL = tableJson.getString("connectionURL");
+                if(tableJson.has("connectionURL"))
+                    connectionURL = tableJson.getString("connectionURL");
             } catch (Exception e) {
             }
             try {
-                database = tableJson.getString("database");
+                if(tableJson.has("database"))
+                    database = tableJson.getString("database");
             } catch (Exception e) {
             }
             try {
-                schema = tableJson.getString("schema");
+                if(tableJson.has("schema"))
+                    schema = tableJson.getString("schema");
             } catch (Exception e) {
             }
             try {
-                table = tableJson.getString("table");
+                if(tableJson.has("table"))
+                    table = tableJson.getString("table");
             } catch (Exception e) {
             }
             try {
-                query = tableJson.getString("query");
+                if(tableJson.has("query"))
+                    query = tableJson.getString("query");
+            } catch (Exception e) {
+            }
+            try {
+                if(tableJson.has("sourceData"))
+                    sourceData = tableJson.get("sourceData");
             } catch (Exception e) {
             }
 
-            // Connessione al DB
-            try {
-                Object [] connResult = connection.getConnection(null, request, connectionDriver, connectionURL, database);
-                conn = (Connection)connResult[0];
-                if (conn == null) {
-                    String error = "[error is : "+connResult[1]+"]";
+            if(sourceData != null) {
+
+            } else {
+                // Connessione al DB
+                try {
+                    Object[] connResult = connection.getConnection(null, request, connectionDriver, connectionURL, database);
+                    conn = (Connection) connResult[0];
+                    if (conn == null) {
+                        String error = "[error is : " + connResult[1] + "]";
+                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection .." + error + "\");</script>");
+                    }
+                } catch (Throwable th) {
+                    String error = th.getLocalizedMessage();
+                    if (error == null) {
+                        error = th.getCause().getLocalizedMessage();
+                    }
+                    error = error != null ? error.replace("\"", "\\\"") : "";
                     return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection .." + error + "\");</script>");
                 }
-            } catch (Throwable th) {
-                String error = th.getLocalizedMessage();
-                if (error == null) {
-                    error = th.getCause().getLocalizedMessage();
-                }
-                error = error != null ? error.replace("\"", "\\\"") : "";
-                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection .." + error + "\");</script>");
-            }
 
-            String defaultDatabase = conn.getCatalog();
-            String defaultSchema = null;
+                String defaultDatabase = conn.getCatalog();
+                String defaultSchema = null;
 
-            String driver = db.getDriver(conn);
-            if ("mysql".equalsIgnoreCase(driver)) {
-                defaultSchema = null;
-            } else if ("mariadb".equalsIgnoreCase(driver)) {
-                defaultSchema = null;
-            } else if ("postgres".equalsIgnoreCase(driver)) {
-                defaultSchema = null;
-            } else if ("oracle".equalsIgnoreCase(driver)) {
-                defaultSchema = conn.getMetaData().getUserName();
-            } else if ("sqlserver".equalsIgnoreCase(driver)) {
-                defaultSchema = null;
-            }
-
-            // aggiunto per oracle
-            if (schema == null || schema.isEmpty()) {
-                schema = defaultSchema;
-            }
-
-            // Controllo definizione database / database richiesto
-            if (!check_database_definition(conn, database)) {
-                System.out.println("LIQUID WARNING : database defined by driver :" + conn.getCatalog() + " requesting database:" + database);
-                String itemIdString = "\"", tableIdString = "\"";
+                String driver = db.getDriver(conn);
                 if ("mysql".equalsIgnoreCase(driver)) {
-                    itemIdString = "`";
-                    tableIdString = "";
+                    defaultSchema = null;
                 } else if ("mariadb".equalsIgnoreCase(driver)) {
-                    itemIdString = "`";
-                    tableIdString = "";
+                    defaultSchema = null;
+                } else if ("postgres".equalsIgnoreCase(driver)) {
+                    defaultSchema = null;
+                } else if ("oracle".equalsIgnoreCase(driver)) {
+                    defaultSchema = conn.getMetaData().getUserName();
+                } else if ("sqlserver".equalsIgnoreCase(driver)) {
+                    defaultSchema = null;
                 }
-                db.set_current_database(conn, database, driver, tableIdString);
-            }
 
-            // set the connection
-            connToUse = conn;
-            if (database == null || database.isEmpty()) {
-                database = conn.getCatalog();
-            } else {
-                conn.setCatalog(database);
-                String db = conn.getCatalog();
-                if (!db.equalsIgnoreCase(database)) {
-                    // set catalog not supported : connect to different DB
-                    if (connectionURL != null && !connectionURL.isEmpty()) {
-                        // TODO : support for jump database in connectioURL
-                        // Jump to database not supported if connection defined by connectioURL
-                        String err = "Cannot jump to database " + database + " .. the connection is defined by connectionURL on control:" + controlId;
-                        System.out.println(err);
-                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                // aggiunto per oracle
+                if (schema == null || schema.isEmpty()) {
+                    schema = defaultSchema;
+                }
+
+                // Controllo definizione database / database richiesto
+                if (!check_database_definition(conn, database)) {
+                    System.out.println("LIQUID WARNING : database defined by driver :" + conn.getCatalog() + " requesting database:" + database);
+                    String itemIdString = "\"", tableIdString = "\"";
+                    if ("mysql".equalsIgnoreCase(driver)) {
+                        itemIdString = "`";
+                        tableIdString = "";
+                    } else if ("mariadb".equalsIgnoreCase(driver)) {
+                        itemIdString = "`";
+                        tableIdString = "";
                     }
-                    // closing the connections (with callbacks)
-                    connection.closeConnection(conn);
-                    conn = null;
-                    Object [] connResult = connection.getDBConnection(database);
-                    connToUse = connToDB = (Connection)connResult[0];
+                    db.set_current_database(conn, database, driver, tableIdString);
+                }
+
+                // set the connection
+                connToUse = conn;
+                if (database == null || database.isEmpty()) {
+                    database = conn.getCatalog();
+                } else {
+                    conn.setCatalog(database);
+                    String db = conn.getCatalog();
+                    if (!db.equalsIgnoreCase(database)) {
+                        // set catalog not supported : connect to different DB
+                        if (connectionURL != null && !connectionURL.isEmpty()) {
+                            // TODO : support for jump database in connectioURL
+                            // Jump to database not supported if connection defined by connectioURL
+                            String err = "Cannot jump to database " + database + " .. the connection is defined by connectionURL on control:" + controlId;
+                            System.out.println(err);
+                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                        }
+                        // closing the connections (with callbacks)
+                        connection.closeConnection(conn);
+                        conn = null;
+                        Object[] connResult = connection.getDBConnection(database);
+                        connToUse = connToDB = (Connection) connResult[0];
+                    }
                 }
             }
 
@@ -1631,168 +1655,176 @@ public class workspace {
                 //
                 // Aggiunta Metadati
                 //
-                try {
-                    if (connToUse == null) {
-                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + controlId + " : no DB connection\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection\");</script>");
-                    }
-                } catch (Exception ex) {
-                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                if (connToUse != null) {
-                    long msTrace = System.currentTimeMillis();
+                if(sourceData != null) {
+
+                } else {
+
                     try {
-                        cols = tableJson.getJSONArray("columns");
+                        if (connToUse == null) {
+                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + controlId + " : no DB connection\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection\");</script>");
+                        }
                     } catch (Exception ex) {
+                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    if (cols != null) {
-                        for (int ic = 0; ic < cols.length(); ic++) {
-                            JSONObject col = cols.getJSONObject(ic);
-                            String colName = null, colTable = null, colForeignTable = null, colQuery = null;
-                            try {
-                                colName = col.getString("name");
-                            } catch (Exception ex) {
-                            }
-                            try {
-                                colName = col.getString("name");
-                            } catch (Exception ex) {
-                            }
-                            try {
-                                colQuery = col.getString("query");
-                            } catch (Exception ex) {
-                            }
+                    if (connToUse != null) {
+                        long msTrace = System.currentTimeMillis();
+                        try {
+                            cols = tableJson.getJSONArray("columns");
+                        } catch (Exception ex) {
+                        }
+                        if (cols != null) {
+                            for (int ic = 0; ic < cols.length(); ic++) {
+                                JSONObject col = cols.getJSONObject(ic);
+                                String colName = null, colTable = null, colForeignTable = null, colQuery = null;
+                                try {
+                                    colName = col.getString("name");
+                                } catch (Exception ex) {
+                                }
+                                try {
+                                    colName = col.getString("name");
+                                } catch (Exception ex) {
+                                }
+                                try {
+                                    colQuery = col.getString("query");
+                                } catch (Exception ex) {
+                                }
 
-                            if (colName != null && !colName.isEmpty()) {
-                                if (colQuery != null && !colQuery.isEmpty()) {
-                                    // nested query : no metadata to read
-                                    col.put("type", "1");
-                                    col.put("size", "-1"); // TODO : test this
-                                } else {
-                                    // read metadata
-                                    String[] colParts = colName.split("\\.");
-                                    colTable = (colParts.length > 1 ? colParts[0] : (colForeignTable != null ? colForeignTable : table));
-                                    colName = (colParts.length > 1 ? colParts[1] : colName);
-                                    if (colName != null && !colName.isEmpty()) {
+                                if (colName != null && !colName.isEmpty()) {
+                                    if (colQuery != null && !colQuery.isEmpty()) {
+                                        // nested query : no metadata to read
+                                        col.put("type", "1");
+                                        col.put("size", "-1"); // TODO : test this
+                                    } else {
+                                        // read metadata
+                                        String[] colParts = colName.split("\\.");
+                                        colTable = (colParts.length > 1 ? colParts[0] : (colForeignTable != null ? colForeignTable : table));
+                                        colName = (colParts.length > 1 ? colParts[1] : colName);
+                                        if (colName != null && !colName.isEmpty()) {
 
-                                        if (!isSystem) {
-                                            boolean bReadDefault = true;
-                                            boolean bReadComments = false; // N.B.: Molto lenta
-                                            if (tableJson.has("readOnly")) {
-                                                Object oReadOnly = tableJson.get("readOnly");
-                                                String sReadOnly = String.valueOf(oReadOnly);
-                                                if ("true".equalsIgnoreCase(sReadOnly) || "yes".equalsIgnoreCase(sReadOnly)) {
-                                                    // deccrease read metatata time
-                                                    bReadDefault = false;
-                                                }
-                                            }
-
-                                            metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(connToUse, database, schema, colTable, colName, bReadDefault, bReadComments);
-                                            if (mdCol != null) {
-                                                // Handle sensitive case mismath
-                                                if (!colName.equals(mdCol.name)) {
-                                                    if (colParts.length > 1) {
-                                                        col.put("name", colParts[0] + "." + mdCol.name);
-                                                    } else {
-                                                        col.put("name", mdCol.name);
+                                            if (!isSystem) {
+                                                boolean bReadDefault = true;
+                                                boolean bReadComments = false; // N.B.: Molto lenta
+                                                if (tableJson.has("readOnly")) {
+                                                    Object oReadOnly = tableJson.get("readOnly");
+                                                    String sReadOnly = String.valueOf(oReadOnly);
+                                                    if ("true".equalsIgnoreCase(sReadOnly) || "yes".equalsIgnoreCase(sReadOnly)) {
+                                                        // deccrease read metatata time
+                                                        bReadDefault = false;
                                                     }
                                                 }
 
-                                                if (col.has("type")) {
-                                                    if ("DATE".equalsIgnoreCase(col.getString("type"))) {
-                                                        col.put("type", "6");
-                                                    } else if ("DATETIME".equalsIgnoreCase(col.getString("type"))) {
-                                                        col.put("type", "91");
-                                                    } else if ("STRING".equalsIgnoreCase(col.getString("type"))) {
-                                                        col.put("type", "1");
-                                                    } else if ("BOOLEAN".equalsIgnoreCase(col.getString("type"))) {
-                                                        col.put("type", "-7");
+                                                metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(connToUse, database, schema, colTable, colName, bReadDefault, bReadComments);
+                                                if (mdCol != null) {
+                                                    // Handle sensitive case mismath
+                                                    if (!colName.equals(mdCol.name)) {
+                                                        if (colParts.length > 1) {
+                                                            col.put("name", colParts[0] + "." + mdCol.name);
+                                                        } else {
+                                                            col.put("name", mdCol.name);
+                                                        }
+                                                    }
+
+                                                    if (col.has("type")) {
+                                                        if ("DATE".equalsIgnoreCase(col.getString("type"))) {
+                                                            col.put("type", "6");
+                                                        } else if ("DATETIME".equalsIgnoreCase(col.getString("type"))) {
+                                                            col.put("type", "91");
+                                                        } else if ("STRING".equalsIgnoreCase(col.getString("type"))) {
+                                                            col.put("type", "1");
+                                                        } else if ("BOOLEAN".equalsIgnoreCase(col.getString("type"))) {
+                                                            col.put("type", "-7");
+                                                        } else {
+                                                            col.put("type", mdCol.datatype);
+                                                        }
                                                     } else {
                                                         col.put("type", mdCol.datatype);
                                                     }
-                                                } else {
-                                                    col.put("type", mdCol.datatype);
-                                                }
-                                                col.put("typeName", mdCol.typeName);
-                                                col.put("size", mdCol.size);
+                                                    col.put("typeName", mdCol.typeName);
+                                                    col.put("size", mdCol.size);
 
-                                                if (!col.has("")) {
-                                                    col.put("digits", mdCol.digits);
-                                                }
+                                                    if (!col.has("")) {
+                                                        col.put("digits", mdCol.digits);
+                                                    }
 
-                                                col.put("nullable", mdCol.isNullable);
-                                                col.put("autoIncString", mdCol.autoIncString);
-                                                col.put("remarks", utility.base64Encode(mdCol.remarks));
+                                                    col.put("nullable", mdCol.isNullable);
+                                                    col.put("autoIncString", mdCol.autoIncString);
+                                                    col.put("remarks", utility.base64Encode(mdCol.remarks));
 
-                                                boolean bStoreDigits = false;
-                                                if (col.has("digits")) {
-                                                    try {
-                                                        Integer idigits = col.getInt("digits");
-                                                        if (idigits == null) {
+                                                    boolean bStoreDigits = false;
+                                                    if (col.has("digits")) {
+                                                        try {
+                                                            Integer idigits = col.getInt("digits");
+                                                            if (idigits == null) {
+                                                                bStoreDigits = true;
+                                                            }
+                                                        } catch (Exception e) {
                                                             bStoreDigits = true;
                                                         }
-                                                    } catch (Exception e) {
+                                                    } else {
                                                         bStoreDigits = true;
                                                     }
-                                                } else {
-                                                    bStoreDigits = true;
-                                                }
-                                                if (bStoreDigits) {
-                                                    col.put("digits", mdCol.digits);
-                                                }
-
-                                                //
-                                                // Save default in the database if not overwrited by json
-                                                //
-                                                boolean bStoreMetadataDefualt = false;
-                                                if (col.has("default")) {
-                                                    String sDefault = col.getString("default");
-                                                    if (sDefault == null || sDefault.isEmpty()) {
-                                                        bStoreMetadataDefualt = true;
-                                                    } else {
-                                                        String sDefaultSolved = db.solveVariableField( sDefault, request, false );
-                                                        if (sDefaultSolved == null || sDefaultSolved.isEmpty()) {
-                                                            // N.B.: Lascia il default non risolto : sarà risolto a tempo debito
-                                                            // bStoreMetadataDefualt = true;
-                                                        } else {
-                                                            col.put("default", sDefaultSolved);
-                                                        }
+                                                    if (bStoreDigits) {
+                                                        col.put("digits", mdCol.digits);
                                                     }
-                                                } else {
-                                                    bStoreMetadataDefualt = true;
-                                                }
-                                                if (bStoreMetadataDefualt) {
-                                                    col.put("default", (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null));
-                                                }
 
-                                                if (colForeignTable != null && !colForeignTable.isEmpty()) { // campo esterno
-                                                    // ??? col.put("default", ""); ??? bStoreDefualt
-                                                    col.put("isReflected", true);
-                                                }
+                                                    //
+                                                    // Save default in the database if not overwrited by json
+                                                    //
+                                                    boolean bStoreMetadataDefualt = false;
+                                                    if (col.has("default")) {
+                                                        String sDefault = col.getString("default");
+                                                        if (sDefault == null || sDefault.isEmpty()) {
+                                                            bStoreMetadataDefualt = true;
+                                                        } else {
+                                                            String sDefaultSolved = db.solveVariableField(sDefault, request, false);
+                                                            if (sDefaultSolved == null || sDefaultSolved.isEmpty()) {
+                                                                // N.B.: Lascia il default non risolto : sarà risolto a tempo debito
+                                                                // bStoreMetadataDefualt = true;
+                                                            } else {
+                                                                col.put("default", sDefaultSolved);
+                                                            }
+                                                        }
+                                                    } else {
+                                                        bStoreMetadataDefualt = true;
+                                                    }
+                                                    if (bStoreMetadataDefualt) {
+                                                        col.put("default", (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null));
+                                                    }
 
-                                                if (!mdCol.isNullable) {
-                                                    if (mdCol.columnDef == null || mdCol.columnDef.isEmpty()) {
-                                                        if (!mdCol.autoIncString) {
-                                                            if (colForeignTable == null || colForeignTable.isEmpty()) { // NON campo esterno
-                                                                col.put("required", true);
-                                                                col.put("requiredByDB", true);
+                                                    if (colForeignTable != null && !colForeignTable.isEmpty()) { // campo esterno
+                                                        // ??? col.put("default", ""); ??? bStoreDefualt
+                                                        col.put("isReflected", true);
+                                                    }
+
+                                                    if (!mdCol.isNullable) {
+                                                        if (mdCol.columnDef == null || mdCol.columnDef.isEmpty()) {
+                                                            if (!mdCol.autoIncString) {
+                                                                if (colForeignTable == null || colForeignTable.isEmpty()) { // NON campo esterno
+                                                                    col.put("required", true);
+                                                                    col.put("requiredByDB", true);
+                                                                }
                                                             }
                                                         }
                                                     }
-                                                }
 
-                                                cols.put(ic, col);
+                                                    cols.put(ic, col);
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
-                        metadataTime = System.currentTimeMillis() - msTrace;
+                            metadataTime = System.currentTimeMillis() - msTrace;
 
-                        tableJson.put("columns", cols);
+                            tableJson.put("columns", cols);
+                        }
                     }
                 }
 
+
+                //
                 // Lookup field : risoluzione campo per il client side
+                //
                 String lookupField = null;
                 try {
                     lookupField = tableJson.getString("lookupField");
@@ -1842,7 +1874,9 @@ public class workspace {
                             colTable = (colParts.length > 1 ? colParts[0] : (colForeignTable != null ? colForeignTable : table));
                             colName = (colParts.length > 1 ? colParts[1] : colName);
                             if (colName != null && !colName.isEmpty()) {
-                                if (primaryKey.equalsIgnoreCase(colName) && colTable.equalsIgnoreCase(table)) {
+                                if (primaryKey.equalsIgnoreCase(colName)
+                                        && (colTable != null && colTable.equalsIgnoreCase(table) || colTable == null)
+                                ) {
                                     tableJson.put("primaryKeyField", String.valueOf(ic + 1));
                                 }
                             }
@@ -1851,7 +1885,7 @@ public class workspace {
                 }
 
                 //
-                // Assetts on the grids : set visible = false or delete ???
+                // Assets on the grids : set visible = false or delete ???
                 //
                 JSONArray grids = null;
                 boolean gridChanged = false;
@@ -3279,7 +3313,7 @@ public class workspace {
         return get_file_content(request, fileName, trackFileName, true);
     }
 
-    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean replaceApex) {
+    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode) {
         String fileContent = "", lineContent;
         String fullFileName = null;
         String foundFileName = null;
@@ -3380,7 +3414,7 @@ public class workspace {
                 }
             }
         }
-        if (replaceApex) {
+        if (b64Encode) {
             // fileContent = fileContent.replace("'", "\\'");
             fileContent = utility.base64Encode(fileContent);
         }

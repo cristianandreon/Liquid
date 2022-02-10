@@ -106,10 +106,10 @@ class LiquidCtrl {
             this.outDivId = outDivObjOrId;
             this.outDivObj = document.getElementById(this.outDivId);
             if(!this.outDivObj) {
-                if(this.outDivId.startsWith("liquid")) {
-                    console.warn("WARNING: creating control " + outDivObjOrId + ": html node not found ");
-                } else {
-                    console.error("ERROR: creating control " + outDivObjOrId + ": html node not found ... please check node (with id=\"" + outDivObjOrId + "\") exist in the DOM");
+                if(this.mode !== "popup") {
+                    if (this.outDivId.startsWith("liquid")) {
+                        console.warn("WARNING: creating control " + outDivObjOrId + ": html node not found ");
+                    }
                 }
                 this.outDivObj = document.createElement("div");
                 this.outDivObj.style.width = "800px";
@@ -829,8 +829,8 @@ class LiquidCtrl {
                         this.outDivObj.id = this.outDivId;
                         this.outDivObj.style.position = 'absolute';
                         document.body.insertBefore(this.outDivObj, document.body.firstChild);
-                        setSize = true;
                     }
+                    setSize = true;
                 } else {
                     if(isWinX || isFormX || isDialogX) {
                         // Create div container
@@ -858,7 +858,7 @@ class LiquidCtrl {
                 }
 
 
-                // set size/zindex
+                // set size
                 if(setSize) {
                     if(!this.absoluteLoadCounter) {
                         // var scrollTop = (document.documentElement && document.documentElement.scrollTop) || document.body.scrollTop;
@@ -881,9 +881,12 @@ class LiquidCtrl {
                             this.outDivObj.style.left = (this.tableJson.left ? this.tableJson.left : Liquid.defaultWinXLeft)+'px';
                         }
                     }
-                    if(this.tableJson.zIndex)
-                        this.outDivObj.style.zIndex = this.tableJson.zIndex;
                 }
+
+                // set zIndex
+                if(isDef(this.tableJson.zIndex))
+                    if(this.outDivObj)
+                        this.outDivObj.style.zIndex = this.tableJson.zIndex;
 
 
                 if(typeof parentObjId !== 'undefined' && parentObjId) {
@@ -4439,17 +4442,17 @@ var Liquid = {
                         typeColumn = "stringColumn";
                     }
 
-                    var tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].tooltipField : null;
-                    if(!tooltipField)
-                        tooltipField = liquid.tableJson.columns[ic].tooltip ? liquid.tableJson.columns[ic].tooltip : tooltipField;
-                    if(!tooltipField)
-                        tooltipField = liquid.tableJson.columns[ic].comment ? liquid.tableJson.columns[ic].comment : tooltipField;
 
                     var headerTooltip = liquid.tableJson.columns[ic].headerTooltip ? liquid.tableJson.columns[ic].headerTooltip : null;
                     if(!headerTooltip)
-                        headerTooltip = liquid.tableJson.columns[ic].headerCommnet ? liquid.tableJson.columns[ic].headerCommnet : headerTooltip;
+                        headerTooltip = liquid.tableJson.columns[ic].headerCommnent ? liquid.tableJson.columns[ic].headerCommnent : headerTooltip;
                     if(!headerTooltip)
-                        headerTooltip = tooltipField ? tooltipField : headerTooltip;
+                        headerTooltip = liquid.tableJson.columns[ic].commnent ? liquid.tableJson.columns[ic].commnent : headerTooltip;
+                    if(!headerTooltip)
+                        headerTooltip = liquid.tableJson.columns[ic].tooltip ? liquid.tableJson.columns[ic].tooltip : headerTooltip;
+
+                    // Tool tip also in the fields ?
+                    var tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].name : null;
 
                     var colData = {
                         headerName: isDef(liquid.tableJson.columns[ic].label) ? liquid.tableJson.columns[ic].label : liquid.tableJson.columns[ic].name
@@ -4708,7 +4711,13 @@ var Liquid = {
                             }
                         } else {  // set data as full
                             result.retVal = 1;
-                            liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
+                            try {
+                                liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
+                            } catch (e) {
+                                var err = "ERROR: failed to set grid data:"+e;
+                                console.error(err);
+                                Liquid.showToast(Liquid.appTitle, err, "error");
+                            }
                             liquid.lastSelectedId = null;
                             // check
                             if (liquid.addingNode) {
@@ -5130,6 +5139,7 @@ var Liquid = {
                     || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
                     || (isDef(liquid.tableJson.selectColumns) && liquid.tableJson.selectColumns === '*')
                     || isDef(liquid.tableJson.query)
+                    || isDef(liquid.tableJson.sourceData)
                 ) {
                     // if(liquid.controlId === 'quotes_detail$quoteid$id@testGrid4') debugger;
                     // if(liquid.controlId === "utenti$id$user_id@testGrid4") debugger;
@@ -17194,24 +17204,28 @@ var Liquid = {
         const base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
         if(base64regex.test(message))
             message = atob(message);
-        toastr.options = {
-            "closeButton": true,
-            "debug": false,
-            "newestOnTop": true,
-            "progressBar": true,
-            "positionClass": "toast-bottom-center",
-            "preventDuplicates": false,
-            "onclick": null,
-            "showDuration": "300",
-            "hideDuration": "1000",
-            "timeOut": "5000",
-            "extendedTimeOut": "1000",
-            "showEasing": "swing",
-            "hideEasing": "linear",
-            "showMethod": "fadeIn",
-            "hideMethod": "fadeOut"
-        };
-        toastr[(type?type:'info')](message, title);
+        if(typeof toastr === 'undefined') {
+            console.error("ERROR: missing toastr.js");
+        } else {
+            toastr.options = {
+                "closeButton": true,
+                "debug": false,
+                "newestOnTop": true,
+                "progressBar": true,
+                "positionClass": "toast-bottom-center",
+                "preventDuplicates": false,
+                "onclick": null,
+                "showDuration": "300",
+                "hideDuration": "1000",
+                "timeOut": "5000",
+                "extendedTimeOut": "1000",
+                "showEasing": "swing",
+                "hideEasing": "linear",
+                "showMethod": "fadeIn",
+                "hideMethod": "fadeOut"
+            };
+            toastr[(type ? type : 'info')](message, title);
+        }
     },
     showDesktopNofity:function( msg ) {
         if (!("Notification" in window)) {

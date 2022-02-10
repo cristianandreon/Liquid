@@ -598,11 +598,12 @@ public class db {
                                         // * @return Object[] { (Object) result, (Object) nRec};
                                         Object [] result = event.loadSourceData(tbl_wrk, sourceData, recordset_params.request);
                                         if(result != null) {
-                                            if(result[0] instanceof String && result[0] instanceof Integer) {
+                                            if(result[0] instanceof String && result[1] instanceof Integer) {
                                                 out_string = "{\"resultSet\":" + result[0];
                                                 out_string += ",\"startRow\":" + "0";
-                                                out_string += ",\"endRow\":" + result[1];
-                                                out_string += ",\"nRows\":" + result[1];
+                                                out_string += (result.length >= 2 ? ",\"endRow\":" + result[1] : "");
+                                                out_string += (result.length >= 2 ? ",\"nRows\":" + result[1] : "");
+                                                out_string += (result.length >= 3 ? ",\"error\":\"" + (result[2] != null ? result[2] : "") +"\"" : "");
                                                 out_string += "}";
                                                 return out_string;
                                             } else {

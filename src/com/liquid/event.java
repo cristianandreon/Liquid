@@ -190,27 +190,28 @@ public class event {
                 try {
                     Method method = cls.getMethod(sMethod, Object.class, Object.class, Object.class, Object.class);
                     return new Object[]{classInstance, method};
-                } catch (Throwable th) {
-                }
-                try {
-                    Method method = cls.getMethod(sMethod, Object.class, Object.class, Object.class);
-                    return new Object[]{classInstance, method};
-                } catch (Throwable th) {
-                }
-                try {
-                    Method method = cls.getMethod(sMethod, Object.class, Object.class);
-                    return new Object[]{classInstance, method};
-                } catch (Throwable th) {
-                }
-                try {
-                    Method method = cls.getMethod(sMethod, Object.class);
-                    return new Object[]{classInstance, method};
-                } catch (Throwable th) {
-                }
-                try {
-                    Method method = cls.getMethod(sMethod);
-                    return new Object[]{classInstance, method};
-                } catch (Throwable th) {
+                } catch (Throwable th1) {
+                    try {
+                        Method method = cls.getMethod(sMethod, Object.class, Object.class, Object.class);
+                        return new Object[]{classInstance, method};
+                    } catch (Throwable th2) {
+                        try {
+                            Method method = cls.getMethod(sMethod, Object.class, Object.class);
+                            return new Object[]{classInstance, method};
+                        } catch (Throwable th3) {
+                            try {
+                                Method method = cls.getMethod(sMethod, Object.class);
+                                return new Object[]{classInstance, method};
+                            } catch (Throwable th4) {
+                                try {
+                                    Method method = cls.getMethod(sMethod);
+                                    return new Object[]{classInstance, method};
+                                } catch (Throwable th5) {
+                                    Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th5);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2418,11 +2419,10 @@ public class event {
      * @param tbl_wrk
      * @param sourceData
      *
-     * @return @return Object[] { (Object) result, (Object) nRec};
+     * @return @return Object[] { (Object) result, (Object) nRec, (String)error};
      */
     public static Object[] loadSourceData(workspace tbl_wrk, JSONObject sourceData, HttpServletRequest request) {
-        String result = null;
-        String error = null;
+        String result = null, rootKey = null, error = null;
         int nRecs = 0;
 
         if (tbl_wrk != null) {
@@ -2441,8 +2441,112 @@ public class event {
                     if(result_method != null) {
                         Object classInstance = result_method[0];
                         Method method = (Method) result_method[1];
-                        if (method != null && classInstance != null) {
-                            result = (String) method.invoke(classInstance, tbl_wrk, params, clientData, (Object) request);
+                        if (method != null) {
+                            if (classInstance != null) {
+                                Object[] loadSourceDataResult = null;
+
+                                //
+                                // N.B.: The loadSourceData return :
+                                // Object [] { String Data, int nRecs, String rootKey, String error }
+                                //
+
+                                try {
+                                    loadSourceDataResult = (Object[]) method.invoke(classInstance, tbl_wrk, params, clientData, (Object) request);
+                                } catch (Throwable th1) {
+                                    try {
+                                        loadSourceDataResult = (Object[]) method.invoke(classInstance, tbl_wrk, params, clientData);
+                                    } catch (Throwable th2) {
+                                        try {
+                                            loadSourceDataResult = (Object[]) method.invoke(classInstance, tbl_wrk, params);
+                                        } catch (Throwable th3) {
+                                            try {
+                                                loadSourceDataResult = (Object[]) method.invoke(classInstance, tbl_wrk);
+                                            } catch (Throwable th4) {
+                                                loadSourceDataResult = (Object[]) method.invoke(classInstance);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if(loadSourceDataResult != null) {
+                                    if(loadSourceDataResult.length >= 3) {
+
+                                        result = (String)loadSourceDataResult[0];
+                                        nRecs = (int)(loadSourceDataResult.length >= 2 ? loadSourceDataResult[1] : 0);
+                                        rootKey = (String)(loadSourceDataResult.length >= 3 ? loadSourceDataResult[2] : null);
+                                        error = (String)(loadSourceDataResult.length >= 4 ? loadSourceDataResult[3] : null);
+
+                                        if(rootKey != null && !rootKey.isEmpty()) {
+                                            try {
+                                                JSONObject resultJson = new JSONObject(result);
+                                                if (resultJson != null) {
+                                                    if(resultJson.has(rootKey)) {
+                                                        Object resultRoot = resultJson.get(rootKey);
+                                                        JSONArray rowsetJson = null;
+                                                        if(resultRoot instanceof JSONObject) {
+                                                            if (resultRoot != null) {
+                                                                JSONArray names = ((JSONObject) resultRoot).names();
+                                                                for(int iname=0; iname<names.length(); iname++) {
+                                                                    Object obj = ((JSONObject) resultRoot).get(names.getString(iname));
+                                                                    if(obj instanceof JSONArray) {
+                                                                        rowsetJson = (JSONArray)obj; 
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                result = null;
+                                                            }
+                                                        } else if(resultRoot instanceof JSONArray) {
+                                                            if (resultRoot != null) {
+                                                                rowsetJson = (JSONArray)resultRoot;
+                                                            }
+                                                        } else {
+                                                            error = "Invalid rootKey from sourceData .. (class:" + className + ") .. rootKey '"+rootKey+"' should be a JSON Object or Array";
+                                                            System.err.println(error);
+                                                            result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                                                        }
+
+                                                        // Transcode the field
+                                                        result = utility.jsonToRowset(tbl_wrk, rowsetJson);
+
+                                                    } else {
+                                                        error = "Error extracting rootKey from sourceData .. (class:" + className + ") .. rootKey '"+rootKey+"' not found";
+                                                        System.err.println(error);
+                                                        result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                                                    }
+                                                } else {
+                                                    error = "Error extracting rootKey from sourceData .. (class:" + className + ") .. invalid json";
+                                                    System.err.println(error);
+                                                    result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                                                }
+                                            } catch (Exception e) {
+                                                error = "Error extracting rootKey from sourceData .. (class:" + className + ") ... error:"+e.getMessage();
+                                                System.err.println(error);
+                                                result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                                            }
+                                        }
+
+                                    } else {
+                                        error = "Invalid result type : should be Object[4] .. (class:" + className + ")";
+                                        System.err.println(error);
+                                        result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                                    }
+                                } else {
+                                    error = "Empty result : should be Object[4] .. (class:" + className + ")";
+                                    System.err.println(error);
+                                    result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                                }
+
+
+                            } else {
+                                error = "classInstance not valid for class : " + className;
+                                System.err.println(error);
+                                result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
+                            }
+                        } else {
+                            error = "method not found for class : " + className;
+                            System.err.println(error);
+                            result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
                         }
                     } else {
                         error = "class not found : " + className;
@@ -2457,8 +2561,8 @@ public class event {
                     result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
 
                 } catch (Throwable th) {
-                    error = "Error in class.method:" + className + " (" + th.getLocalizedMessage() + ")";
-                    System.err.println(" execute() [" + tbl_wrk.controlId + "] Error:" + th.getLocalizedMessage());
+                    error = "Error in class.method:" + className + " (" + th.getMessage() + ")";
+                    System.err.println(" execute() [" + tbl_wrk.controlId + "] Error:" + th.getMessage());
                     result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
                 }
 
@@ -2474,7 +2578,7 @@ public class event {
             result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
         }
 
-        return new Object[] { (Object) result, (Object) nRecs };
+        return new Object[] { (Object) result, (Object) nRecs, error != null ? utility.base64Encode(error) : null };
     }
 
 }
