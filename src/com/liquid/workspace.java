@@ -4460,6 +4460,15 @@ public class workspace {
         return false;
     }
 
+
+    /**
+     *
+     * @param objs
+     * @param prefix
+     * @param postfix
+     * @param separator
+     * @return
+     */
     public static String arrayToString(Object[] objs, String prefix, String postfix, String separator) {
         StringBuilder listObj = new StringBuilder();
         if (objs != null) {
@@ -4473,6 +4482,19 @@ public class workspace {
         return listObj.toString();
     }
 
+    public static String arrayToJsonString(Object[] objs, String prefix, String postfix, String separator) {
+        return arrayToString(objs, prefix, postfix, separator);
+    }
+
+
+    /**
+     *
+     * @param objs
+     * @param prefix
+     * @param postfix
+     * @param separator
+     * @return
+     */
     public static String jsonArrayToString(JSONArray objs, String prefix, String postfix, String separator) {
         StringBuilder listObj = new StringBuilder();
         if (objs != null) {
