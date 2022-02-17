@@ -13,7 +13,7 @@
 /* */
 
 //
-// Liquid ver.1.93
+// Liquid ver.1.94
 //
 //  First update 04-01-2020 - Last update 09-02-2022
 //
@@ -542,7 +542,6 @@ class LiquidCtrl {
                         FloatEditor: FloatEditor,
                         DateEditor: DateEditor
                     },
-
                     columnTypes: {
                         'nonEditableColumn': { editable: false },
                         'dateColumn': {
@@ -566,7 +565,6 @@ class LiquidCtrl {
                             suppressMenu: false
                         }
                     },
-
                     onRowSelected:function(event) {
                         if(event.type === "rowSelected") {
                             var liquid = Liquid.getLiquid(this.liquidLink.controlId);
@@ -773,13 +771,114 @@ class LiquidCtrl {
                             Liquid.updateSelectionData(liquid);
                         }
                     },
-                    onRowValueChanged:function(event) {
+                    onRowDataChanged:function(event) {
                         var data = event.data;
-                        // console.log('onRowVa    lueChanged: (' + data.make + ', ' + data.model + ', ' + data.price + ', ' + data.field5 + ')');
+                        if (Liquid.debug) {
+                            console.log('onRowDataChanged...');
+                        }
+                    },
+                    onRowDataUpdated:function(event) {
+                        var rowsToDisplay = event.api.nodeManager.rowsToDisplay;
+                        if (Liquid.debug) {
+                            console.log('onRowDataUpdated...');
+                        }
+                    },
+                    onRowValueChanged:function(event) {
+                        var rowsToDisplay = event.api.nodeManager.rowsToDisplay;
+                        if (Liquid.debug) {
+                            console.log('onRowValueChanged...');
+                        }
                     },onFirstDataRendered:function(event) {
-                        var liquid = Liquid.getLiquid(this.liquidLink.controlId);
+                        var liquid = this.liquidLink;
                         Liquid.setAutoresizeColumn(liquid, false);
-                    },onGridReady:function(event) {
+                        if (Liquid.debug) {
+                            console.log('onFirstDataRendered...');
+                        }
+                        //
+                        // Firing event onRowRendering
+                        //
+                        var allNodesMap = event.api.rowModel.nodeManager.allNodesMap;
+                        var nRows = allNodesMap.length;
+                        for (var ir = 0; ir < nRows; ir++) {
+                            var data = allNodesMap[ir].data;
+                            var containerObj = null;
+                            var rowsContainerObj = null;
+                            try {
+                                Liquid.onEvent(liquid, "onFirstDataRendered", {
+                                    layout: null,
+                                    layoutRow: (ir + 1),
+                                    layoutRows: nRows,
+                                    obj: containerObj,
+                                    rowData: Liquid.getFullRecordData(liquid, { data:data } ),
+                                    node: Liquid.getCleanNodeData(data),
+                                    nodes: Liquid.getCleanNodesData(allNodesMap),
+                                    command: null,
+                                    isAddingNode: false,
+                                    rowsContainer: rowsContainerObj
+                                }, null);
+                            } catch(e) {
+                                console.error("ERROR : "+e);
+                            }
+                        }
+                    }
+                    ,getRowStyle:function(event, param) {
+                        if (event) {
+                            try {
+                                // if (params.data.myColumnToCheck === myValueToCheck) { return {'background-color': 'yellow'} }
+                                var liquid = null;
+                                if(isDef(this)) {
+                                    liquid = this.liquidLink;
+                                } else {
+                                    var layoutElements = event.api.getModel().nodeManager.rootNode.gridOptionsWrapper.layoutElements;
+                                    if (layoutElements.length > 0) {
+                                        var layoutElement = layoutElements[layoutElements.length - 1];
+                                        var rootObj = Liquid.getParentNodeByClass(layoutElement, "liquidShow");
+                                        if(!rootObj) rootObj = Liquid.getParentNodeByClass(layoutElement, "liquidHide");
+                                        if(rootObj) liquid = Liquid.getLiquid(rootObj);
+                                    }
+                                }
+                                if(liquid) {
+                                    var node = event.node;
+                                    var nodes = null;
+                                    var eventResult = Liquid.onEvent(liquid, "onRowRendering", {
+                                        layout: null,
+                                        layoutRow: null,
+                                        layoutRows: null,
+                                        obj: null,
+                                        rowData: Liquid.getFullRecordData(liquid, node),
+                                        node: Liquid.getCleanNodeData(node),
+                                        nodes: Liquid.getCleanNodesData(nodes),
+                                        command: null,
+                                        isAddingNode: false,
+                                        rowsContainer: null
+                                    }, null);
+                                    if(typeof eventResult === 'object') {
+                                        var rowStyle = eventResult.result;
+                                        if(typeof rowStyle === 'object') {
+                                            return rowStyle;
+                                        } else if(typeof rowStyle === 'string') {
+                                            return JSON.parse(rowStyle);
+                                        } else if(typeof rowStyle === 'undefined') {
+                                            return null;
+                                        } else {
+                                            console.error("ERROR : getRowStyle() : invalid style object format:" + (typeof rowStyle));
+                                        }
+                                    } else {
+                                        console.error("ERROR : getRowStyle() : invalid event result object format:" + (typeof eventResult));
+                                    }
+                                } else {
+                                    // TODO : use fixed key-field 'rowStyle'
+                                    if(event.data['rowStyle']) {
+                                        return event.data['rowStyle'];
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("ERROR : "+e);
+                            }
+                        }
+                        return null;
+                    }
+                    ,onGridReady:function(event) {
                     }
                     ,postSort:function(rowNodes) {
                         try {
@@ -2335,7 +2434,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.47,
+    version: 1.94,
     appTitle: "LIQUID",
     controlid: "Liquid framework",
     debug: false,
@@ -2408,12 +2507,19 @@ var Liquid = {
     dateFormat:null,
     timeFormat:null,
     timestampFormat:null,
+    localStorageFiledSize:1024*2,
     setLanguage: function (language, serverSide) {
         if(isDef(language)) {
             var lang_list = language.split(';');
             var langFound = null;
             for (var il = 0; il < lang_list.length; il++) {
                 var lang = lang_list[il].split('-')[0];
+                if (lang === 'it' || lang === 'ita') {
+                } else if (lang === 'en' || lang === 'eng') {
+                } else {
+                    console.error("LIQUID: unknown language:"+lang);
+                    lang = "en";
+                }
                 if (lang === 'it' || lang === 'ita') {
                     Liquid.lang = langFound = 'ita';
                     Liquid.loadingMessage = "<div class=\"lds-ring\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
@@ -2523,6 +2629,16 @@ var Liquid = {
             }
             obj = obj.parentNode;
             if(obj==document.body) return;
+        }
+    },
+    getParentNodeByClass:function(obj, className) {
+        while(obj) {
+            if(obj.classList) {
+                if(obj.classList.contains(className)) {
+                    return obj;
+                }
+            }
+            obj = obj.parentNode;
         }
     },
     getChildNode:function(obj, dataSetValue) {
@@ -3088,10 +3204,17 @@ var Liquid = {
             if (targetObj instanceof LiquidCtrl)
                 targetObj = targetObj.tableJson;
         } else {
+            // Root object
             targetObj = Liquid.getProperty(nameItems[0]);
             if (targetObj) {
                 if (typeof targetObj === 'string') {
                     try {
+                        if (!targetObj.trim().startsWith("{")) {
+                            try {
+                                targetObj = atob(targetObj)
+                            } catch (e) {
+                            }
+                        }
                         targetObj = JSON.parse(targetObj);
                     } catch (e) {
                         console.error(e);
@@ -3099,6 +3222,7 @@ var Liquid = {
                 }
             }
         }
+        // Root object's property
         for (var i = 1; i < nameItems.length; i++) {
             targetObj = (typeof targetObj[nameItems[i]] !== 'undefined') ? targetObj[nameItems[i]] : targetObj;
             if (typeof targetObj === 'string') {
@@ -7646,7 +7770,8 @@ var Liquid = {
         var nUpdates = 0;
         if (obj && targetObj) {
             for (var j = 0; j < obj.childNodes.length; j++) {
-                if (obj.childNodes[j].nodeName.toUpperCase() === 'INPUT') {
+                var nodeName = obj.childNodes[j].nodeName.toUpperCase();
+                if (nodeName === 'INPUT') {
                     if (obj.childNodes[j].id) {
                         var propName = obj.childNodes[j].id;
                         var propValue = null;
@@ -7677,7 +7802,13 @@ var Liquid = {
                     var propName = obj.childNodes[j].id;
                     var propValue = obj.childNodes[j].value;
                     nUpdates += Liquid.formToObjectUpdate(targetObj, propName, propValue);
-                } else if (obj.childNodes[j].nodeName.toUpperCase() === 'TBODY' || obj.childNodes[j].nodeName.toUpperCase() === 'TR' || obj.childNodes[j].nodeName.toUpperCase() === 'TD' || obj.childNodes[j].nodeName.toUpperCase() === 'DIV' || obj.childNodes[j].nodeName.toUpperCase() === 'SPAN' || obj.childNodes[j].nodeName.toUpperCase() === 'P') {
+                } else if (nodeName === 'TABLE'
+                    || nodeName === 'TBODY'
+                    || nodeName === 'TR'
+                    || nodeName === 'TD'
+                    || nodeName === 'DIV'
+                    || nodeName === 'SPAN'
+                    || nodeName === 'P') {
                     nUpdates += Liquid.formToObjectExchange(obj.childNodes[j], targetObj);
                 }
             }
@@ -7808,13 +7939,12 @@ var Liquid = {
                     //         Execute first the system event, than if no system event execute user event
                     //
                     var events = Liquid.getEventsByName(liquid, eventName);
-                    eventCounter = events.length;
                     for (var ievt = 0; ievt < events.length; ievt++) {
                         var event = events[ievt];
                         if (event) {
                             if (Liquid.isSystemEvent(event)) { // system event take care of the syncronous chain
                                 var eventParams = Liquid.buildCommandParams(liquid, event, null);
-                                res = systemResult = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, callback, callbackParams, defaultRetval);
+                                var res = systemResult = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, callback, callbackParams, defaultRetval);
                                 systemEventCounter++;
                                 eventCounter++;
                             }
@@ -7842,9 +7972,13 @@ var Liquid = {
             }
         } else {
             // Execute the callback if this is a system control
-            if (isDef(liquid.tableJson.isSystem)) {
-                if (callback) {
-                    result = callback(callbackParams);
+            if (isDef(liquid)) {
+                if (isDef(liquid.tableJson)) {
+                    if (isDef(liquid.tableJson.isSystem)) {
+                        if (callback) {
+                            result = callback(callbackParams);
+                        }
+                    }
                 }
             }
         }
@@ -8012,7 +8146,7 @@ var Liquid = {
                     retVal = callback(callbackParams);
                 } else {
                     if (event.clientAfter !== true || event.clientBefore === true) {
-                        Liquid.executeClientSide(liquid, "event:" + event.name, event.client, (event.params ? event.params : eventData), event.isNative);
+                        retVal = Liquid.executeClientSide(liquid, "event:" + event.name, event.client, (event.params ? event.params : eventData), event.isNative);
                     }
                 }
             }
@@ -17416,7 +17550,7 @@ var Liquid = {
         }
     },
     startup:function(e) {
-        console.log("Wellcome in Liquid version:" + Liquid.version + " - Copyright 2020 Cristian Andreon - https://cristianandreon.eu/Liquid - info@cristianandreon.eu");
+        console.log("Wellcome in Liquid version:" + Liquid.version + " - Copyright 2022 Cristian Andreon - https://cristianandreon.eu/Liquid - info@cristianandreon.eu");
 
         // scroll listner
         if(document.body.addEventListener) { document.body.addEventListener('scroll', Liquid.onWindowScroll); } else { document.body.attachEvent('scroll', Liquid.onWindowScroll); }
@@ -18678,12 +18812,19 @@ var Liquid = {
             if(glLiquidDBEnable) {
                 var date = new Date();
                 Liquid.getDB();
+
                 if(glLiquidDB) {
                     glLiquidDB.transaction(function (tx) {
                         try {
-                            let valueB64 = btoa(JSON.stringify(value));
-                            let noteB64 = btoa(JSON.stringify(note));
+                            let valueB64 = typeof value === 'object' ? btoa(JSON.stringify(value)) : btoa(value);
+                            let noteB64 = typeof note === 'object' ? btoa(JSON.stringify(note)) : btoa(note);
                             var sqlDelete = "DELETE FROM USERDATA WHERE field='" + btoa(field)+"'";
+                            // var valueB64array = Liquid.chunkString(valueB64, Liquid.localStorageFiledSize);
+                            if(valueB64.length>Liquid.localStorageFiledSize) {
+                                console.error("saveUserData(): unsupported field size:" + valueB64.length + "/" + Liquid.localStorageFiledSize);
+                                Liquid.saveUserDataDone(null, callback);
+                                return;
+                            }
                             var sqlInsert = "INSERT INTO USERDATA (field,value,note,date) VALUES ("
                                 + "'" + btoa(field)+"'"
                                 + ",'" + valueB64 + "'"
@@ -18699,12 +18840,23 @@ var Liquid = {
                             }, function (tx, results) {
                                 console.error(results);
                             });
-                        } catch(e) { console.error("ERROR: "+e); }
+                        } catch(e) {
+                            console.error("ERROR: "+e);
+                            Liquid.showToast(Liquid.appTitle, "Unable to save user data:"+e, "error");
+                        }
                     }, null);
                 } else if(glLiquidIDB) {
                     var transaction = glLiquidIDB.transaction(["USERDATA"], "readwrite");
                     var objectStore = transaction.objectStore("USERDATA");
-                    var data = { field:btoa(field), value:btoa(JSON.stringify(value)), note:btoa(note), date:date.toISOString() };
+                    let valueB64 = typeof value === 'object' ? btoa(JSON.stringify(value)) : btoa(value);
+                    let noteB64 = typeof note === 'object' ? btoa(JSON.stringify(note)) : btoa(note);
+                    // var valueB64array = Liquid.chunkString(valueB64, Liquid.localStorageFiledSize);
+                    if(valueB64.length>Liquid.localStorageFiledSize) {
+                        console.error("saveUserData(): unsupported field size:" + valueB64.length + "/" + Liquid.localStorageFiledSize);
+                        Liquid.saveUserDataDone(null, callback);
+                        return;
+                    }
+                    var data = { field:btoa(field), value:valueB64, note:noteB64, date:date.toISOString() };
                     var request = objectStore.add(data);
                     if(request.readyState === 'done') {
                         Liquid.saveUserDataDone(field, callback);
@@ -18722,11 +18874,14 @@ var Liquid = {
     },
     saveUserDataDone:function(field, callback) {
         if(callback) {
-            callback();
+            callback(field);
         } else {
             if (field) {
                 var msg = Liquid.lang === 'eng' ? ("Data saved") : ("Dati salvati");
                 Liquid.showToast(Liquid.appTitle, msg, "success");
+            } else {
+                var msg = Liquid.lang === 'eng' ? ("Data NOT saved") : ("Dati NON salvati");
+                Liquid.showToast(Liquid.appTitle, msg, "warning");
             }
         }
     },
@@ -18760,6 +18915,10 @@ var Liquid = {
                             Liquid.readUserDataProcessCursors(fieldB64, event.target.result, callback);
                         };
                     }
+                } else {
+                    if(callback) {
+                        callback(null, null, null, null);
+                    }
                 }
             }
         }
@@ -18769,9 +18928,13 @@ var Liquid = {
             let cursor = cursors[ic];
             if (cursor) {
                 if(fieldB64 == cursor.field) {
-                    Liquid.readUserDataExec(cursor.Id, cursor.field, cursor.value, cursor.note, cursor.date, callback);
+                    Liquid.readUserDataExec(ic+1, cursor.field, cursor.value, cursor.note, cursor.date, callback);
                 }
             }
+        }
+        if(cursors.length==0) {
+            if(callback)
+                callback(null, null, null, null);
         }
     },
     readUserDataExec:function(id, field, value, note, date, callback) {
@@ -18787,86 +18950,100 @@ var Liquid = {
     },
     getDB:function() {
         if(glLiquidDBEnable) {
-            if(!glLiquidDB) {
-                if(isDef(window.openDatabase)) {
+            if(!glLiquidIDB && !glLiquidDB) {
+
+                // WebDB
+                if (isDef(window.openDatabase)) {
                     glLiquidDB = window.openDatabase('Liquid', '1.0', 'LiquidDB', Liquid.loadDBInitialSize);
-                    if(glLiquidDB) {
+                    if (glLiquidDB) {
                         glLiquidDB.transaction(function (tx) {
                             tx.executeSql('CREATE TABLE IF NOT EXISTS WORKERS (id INTEGER PRIMARY KEY,userId TEXT,status TEXT,controlId TEXT,command TEXT, date DATETIME)');
                             tx.executeSql('CREATE TABLE IF NOT EXISTS CLIPBOARD (id INTEGER PRIMARY KEY,controlId TEXT,columns TEXT, rows TEXT, date DATETIME)');
                             tx.executeSql('CREATE TABLE IF NOT EXISTS USERDATA (id INTEGER PRIMARY KEY,field TEXT,note TEXT, value TEXT, date DATETIME)');
                         }, null);
                     }
-                } else {
-                    // TODO : localStorage o window.indexedDB
-                    if(glLiquidIDB === null) {
-                        window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-                        window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
-                        window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
-                        if(isDef(window.indexedDB)) {
-                            // var idbCallback = function (e) { console.load("idbCallback():"+e); }
-                            // var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion, idbCallback);
-                            var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion);
-                            request.onerror = function(event) {
-                                console.error("IndexedDB not enabled! error:"+event.target.error.message);
-                                event.target.readyState = 'done';
-                            };
-                            request.onsuccess = function(event) {
-                                glLiquidIDB = event.target.result;
-                                event.target.readyState = 'done';
-                            };
-                            request.onupgradeneeded = function(event) {
-                                try {
-                                    glLiquidIDB = event.target.result;
-                                    // var transaction = glLiquidIDB.transaction([],  IDBTransaction.READ_WRITE, 2000);
-                                    // transaction.oncomplete = function(){}
-                                    if (!glLiquidIDB.objectStoreNames.contains('WORKERS')) {
-                                        var objStoreWorker = glLiquidIDB.createObjectStore("WORKERS", { autoIncrement : true } );
-                                        objStoreWorker.createIndex('id', 'id', {keyPath: 'id', autoIncrement:true});
-                                        objStoreWorker.createIndex("userId", "userId", { unique: false });
-                                        objStoreWorker.createIndex("status", "status", { unique: false });
-                                        objStoreWorker.createIndex("controlId", "controlId", { unique: false });
-                                        objStoreWorker.createIndex("command", "command", { unique: false });
-                                        objStoreWorker.createIndex("date", "date", { unique: false });
-                                    }
-                                    if (!glLiquidIDB.objectStoreNames.contains('CLIPBOARD')) {
-                                        var objStoreClipboard = glLiquidIDB.createObjectStore("CLIPBOARD", { autoIncrement : true } );
-                                        objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement:true});
-                                        objStoreClipboard.createIndex("controlId", "controlId", { unique: false });
-                                        objStoreClipboard.createIndex("columns", "command", { unique: false });
-                                        objStoreClipboard.createIndex("rows", "rows", { unique: false });
-                                        objStoreClipboard.createIndex("date", "date", { unique: false });
-                                    }
-                                    if (!glLiquidIDB.objectStoreNames.contains('USERDATA')) {
-                                        var objStoreClipboard = glLiquidIDB.createObjectStore("USERDATA", { autoIncrement : true } );
-                                        objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement:true});
-                                        objStoreClipboard.createIndex("field", "controlId", { unique: false });
-                                        objStoreClipboard.createIndex("note", "command", { unique: false });
-                                        objStoreClipboard.createIndex("value", "rows", { unique: false });
-                                        objStoreClipboard.createIndex("date", "date", { unique: false });
-                                    }
-                                } catch(e) {
-                                    console.error("IndexedDB not enabled! error:"+e);
-                                }
-                                event.target.readyState = 'done';
-                            };
-
-                            request.onblocked = function(event) {
-                                console.log("Please close all other tabs with this site open!");
-                            };
-                            if(Liquid.wait_for_indexdb_ready(request, "")) {
-                                glLiquidIDB = request.result;
-                            }
-                        } else {
-                            alert("This browser desn't support HTML WebDB\n\nUnable to use local database");
-                            glLiquidDBEnable = false;
-                        }
-                    } else {
-                        return glLiquidIDB;
-                    }
+                    return glLiquidDB;
                 }
+
+                // localStorage o window.indexedDB
+                window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+                window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
+                window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
+                if (isDef(window.indexedDB)) {
+                    // var idbCallback = function (e) { console.load("idbCallback():"+e); }
+                    // var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion, idbCallback);
+                    var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion);
+                    request.onerror = function (event) {
+                        console.error("IndexedDB not enabled! error:" + event.target.error.message);
+                        event.target.readyState = 'done';
+                    };
+                    request.onsuccess = function (event) {
+                        glLiquidIDB = event.target.result;
+                        event.target.readyState = 'done';
+                    };
+                    request.onupgradeneeded = function (event) {
+                        try {
+                            glLiquidIDB = event.target.result;
+                            // var transaction = glLiquidIDB.transaction([],  IDBTransaction.READ_WRITE, 2000);
+                            // transaction.oncomplete = function(){}
+                            if (!glLiquidIDB.objectStoreNames.contains('WORKERS')) {
+                                var objStoreWorker = glLiquidIDB.createObjectStore("WORKERS", {autoIncrement: true});
+                                objStoreWorker.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
+                                objStoreWorker.createIndex("userId", "userId", {unique: false});
+                                objStoreWorker.createIndex("status", "status", {unique: false});
+                                objStoreWorker.createIndex("controlId", "controlId", {unique: false});
+                                objStoreWorker.createIndex("command", "command", {unique: false});
+                                objStoreWorker.createIndex("date", "date", {unique: false});
+                            }
+                            if (!glLiquidIDB.objectStoreNames.contains('CLIPBOARD')) {
+                                var objStoreClipboard = glLiquidIDB.createObjectStore("CLIPBOARD", {autoIncrement: true});
+                                objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
+                                objStoreClipboard.createIndex("controlId", "controlId", {unique: false});
+                                objStoreClipboard.createIndex("columns", "command", {unique: false});
+                                objStoreClipboard.createIndex("rows", "rows", {unique: false});
+                                objStoreClipboard.createIndex("date", "date", {unique: false});
+                            }
+                            if (!glLiquidIDB.objectStoreNames.contains('USERDATA')) {
+                                var objStoreClipboard = glLiquidIDB.createObjectStore("USERDATA", {autoIncrement: true});
+                                objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
+                                objStoreClipboard.createIndex("field", "controlId", {unique: false});
+                                objStoreClipboard.createIndex("note", "command", {unique: false});
+                                objStoreClipboard.createIndex("value", "rows", {unique: false});
+                                objStoreClipboard.createIndex("date", "date", {unique: false});
+                            }
+                        } catch (e) {
+                            console.error("IndexedDB not enabled! error:" + e);
+                        }
+                        event.target.readyState = 'done';
+                    };
+
+                    request.onblocked = function (event) {
+                        console.log("Please close all other tabs with this site open!");
+                    };
+                    if (Liquid.wait_for_indexdb_ready(request, "")) {
+                        glLiquidIDB = request.result;
+                    }
+                    return glLiquidIDB;
+                }
+
+                alert("This browser desn't support HTML WebDB / IndexDB\n\nUnable to use local database");
+                glLiquidDBEnable = false;
+
+            } else if(glLiquidIDB) {
+                return glLiquidIDB;
+            } else if(glLiquidDB) {
+                return glLiquidDB;
             }
         }
+        return null;
+    },
+    chunkString:function(str, size) {
+        const numChunks = Math.ceil(str.length / size)
+        let chunks = new Array(numChunks)
+        for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+            chunks[i] = str.substr(o, size)
+        }
+        return chunks;
     },
     wait_for_indexdb_ready:function(request, title) {
         if(request.readyState !== 'done') {
@@ -19341,27 +19518,41 @@ var Liquid = {
      *
      * Handle the request to the server by ajax or websocket
      *
-     * @param liquid
-     * @param paramsObject
-     * @param method
-     * @param url
-     * @param async
-     * @param data
-     * @param onReadyStateChange
-     * @param reason
-     * @param onUploadingProgress
-     * @param onDownloadingProgress
-     * @param onCompleted
-     * @param onFailed
-     * @param onCancelled
+     * @param liquid        the control
+     * @param paramsObject  the parameters (CGI)
+     * @param method        GET/POST (not used in ws)
+     * @param url           the url to call
+     * @param async         (not used in ws)
+     * @param data          the data to send (body)
+     *
+     * @param onReadyStateChange    the callback
+     * @param reason                the call's reason
+     * @param onUploadingProgress   the callback uploading
+     * @param onDownloadingProgress the callback downloading
+     * @param onCompleted           the callback when completed
+     * @param onFailed              the callback when failed
+     * @param onCancelled           the callback when cancelled
      * @returns {*}
      */
     sendRequest:function(liquid, paramsObject, method, url, async, data, onReadyStateChange, reason, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled) {
         var thisLiquid = liquid;
-        if(typeof glLiquidWebSocket !== 'undefined' && glLiquidWebSocket && async == true) {
+        if(typeof LiquidStreamer.webSocket !== 'undefined' && LiquidStreamer.webSocket && async == true) {
             // Websocket
             var bCompress = false;
             var token = LiquidStreamer.generate_token(32);
+            // put paramsObject in the url as CGI parameters
+            if(paramsObject) {
+                var ip=0;
+                if(url.indexOf("?") < 0) {
+                    url += "?"
+                } else {
+                    ip=1;
+                }
+                for(var propertyName in paramsObject) {
+                    url += (ip > 0 ? "&" : "") + propertyName + "=" + encodeURI( paramsObject[propertyName] );
+                    ip++;
+                }
+            }
             var request = JSON.stringify( { method:method, url:url, data:data, sessionId:LiquidStreamer.sessionId, token:token } );
             var gzRequest = null;
             if(bCompress) {
@@ -19389,9 +19580,11 @@ var Liquid = {
             }
 
             // store parameters
-            if(!isDef(liquid.xhr))
-                liquid.xhr = {};
-            liquid.xhr.params = paramsObject;
+            if(liquid != null) {
+                if (!isDef(liquid.xhr))
+                    liquid.xhr = {};
+                liquid.xhr.params = paramsObject;
+            }
 
             // create the queue object
             var queue = LiquidStreamer.queueAppendLiquidStreamer( token, reason, onReadyStateChange, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled, liquid, async );
@@ -19488,8 +19681,30 @@ var Liquid = {
                 dlgContent.style.position = 'absolute';
             }
         }
-    }, compareNodeName:function(elem, name) {
+    },
+    compareNodeName:function(elem, name) {
         return elem.nodeName && elem.nodeName.toUpperCase() === name.toUpperCase();
+    },
+    getCookie:function(cname) {
+        let name = cname + "=";
+        let decodedCookie = decodeURIComponent(document.cookie);
+        let ca = decodedCookie.split(';');
+        for(let i = 0; i <ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    },
+    setCookie:function(cname, cvalue, exdays) {
+        const d = new Date();
+        d.setTime(d.getTime() + (exdays ? (exdays*24*60*60*1000) : 0) );
+        let expires = exdays ? "expires="+ d.toUTCString() : "";
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
     }
 };
 
@@ -20180,8 +20395,6 @@ var LZW = {
         }
         return result;
     },
-
-
     decompress: function (compressed) {
         "use strict";
         // Build the dictionary.
@@ -20265,15 +20478,16 @@ function getCurrentTimetick() {
     } catch (e) {}
 })(jQuery);
 
-$(document).ready(function() {
+document.addEventListener("DOMContentLoaded", function(event) {
     try {
         jQ1124('input.liquidCurrency').currencyInput();
-        jQ1124('input.liquidDeletable').each(function() {
-            jQ1124(this).wrap('<span class="deleteicon" />').after(jQ1124('<span/>').click(function() {
+        jQ1124('input.liquidDeletable').each(function () {
+            jQ1124(this).wrap('<span class="deleteicon" />').after(jQ1124('<span/>').click(function () {
                 jQ1124(this).prev('input').val('').trigger('change');
             }));
         });
-    } catch (e) {}
+    } catch (e) {
+    }
 });
 
 

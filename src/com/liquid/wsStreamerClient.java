@@ -41,7 +41,6 @@ public class wsStreamerClient {
     /**
      * Handle incoming data
      * 
-     * @param inputStream
      * @return
      * @throws IOException 
      */
@@ -374,13 +373,14 @@ public class wsStreamerClient {
                         sessionId = requestJson.getString("sessionId");
                         if(sessionId != null) {
                             // register the session
-                            ThreadSession.saveThreadSessionInfo ( "Liquid", sessionId, outputStream, token );
+                            synchronized(ThreadSession.class) {
+                                ThreadSession.saveThreadSessionInfo("Liquid", sessionId, outputStream, token);
+                            }
                         }
                     }
                     
                     wsHttpServletRequest request = new wsHttpServletRequest(requestJson);
-                    operation = request.getParameter("operation");
-                    
+                    operation = request != null ? request.getParameter("operation") : null;
 
                     if("get".equalsIgnoreCase(operation)) {
 
@@ -422,7 +422,16 @@ public class wsStreamerClient {
                         try { send( outputStream,  event.execute((HttpServletRequest)request, (JspWriter)null), token ); } catch (Exception e) {}
                         retVal = true;
 
-            
+                    } else if ("start_tail".equalsIgnoreCase(operation)) {
+                        // execution of commands, events ...
+                        try { if(!FileTail.start_tail_file(outputStream, (HttpServletRequest)request, (JspWriter)null, token )) { }; } catch (Exception e) {}
+                        retVal = true;
+
+                    } else if ("stop_tail".equalsIgnoreCase(operation)) {
+                        // execution of commands, events ...
+                        try { if(!FileTail.stop_tail_file(outputStream, (HttpServletRequest)request, (JspWriter)null, token )) { }; } catch (Exception e) {}
+                        retVal = true;
+
                     } else {
                         Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "[LIQUID Streamer] unsupported operation : "+operation);
                     }
@@ -430,7 +439,9 @@ public class wsStreamerClient {
                 } catch (Throwable th) {
                     Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, th);
                 } finally {
-                    ThreadSession.removeThreadSessionInfo();
+                    synchronized(ThreadSession.class) {
+                        ThreadSession.removeThreadSessionInfo();
+                    }
                 }                    
             } else {
                 // not expected
@@ -529,7 +540,10 @@ public class wsStreamerClient {
     /**
      * encode the message arrived (websocket protocol)
      * 
-     * @param mess
+     * @param rawData
+     * @param token
+     * @param typeOf
+     *
      * @return
      * @throws IOException 
      */

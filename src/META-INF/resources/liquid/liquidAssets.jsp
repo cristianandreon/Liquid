@@ -1,11 +1,12 @@
 <%@ page 
-    language="java" 
+    language="java"
+    import="com.liquid.workspace"
     import="com.liquid.assets"
     import="com.liquid.login"
     import="com.liquid.ThreadSession"
     errorPage="" 
-    %><%!
     %>
+<%! %>
 <!-- -->
 <!-- START of Liquid Framework Assets Service Files  -->
 <!-- -->
@@ -36,7 +37,7 @@
         ThreadSession.removeThreadSessionInfo ();
     }
     %>
-    glCurrentAsset = [ <%=assets.get_assets(request) %> ];
+    glLiquidCurrentAsset = [ <%=assets.get_assets(request) %> ];
     
 </script>
 <!-- -->

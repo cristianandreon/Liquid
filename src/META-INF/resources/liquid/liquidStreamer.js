@@ -5,15 +5,15 @@
 //  TODO : see trello.com
 //
 //
-var glLiquidWSQueueBusy = false;
-var glLiquidWebSocket = null;
-var glLiquidWebSocketRunning = false;
-
 
 var glLiquidWSQueue = [];
 
-
 var LiquidStreamer = {
+
+    wsQueueBusy:false,
+    webSocket:null,
+    webSocketRunning:false,
+    webSocketConnected:false,
 
     waitForWebSocketTimeoutMS:5000,
     sessionId:"",
@@ -25,14 +25,14 @@ var LiquidStreamer = {
         var streamerEnabled = false;
 
         // debug
-        if(!isDef(glCurrentAsset)) {
-            glCurrentAsset = [];
+        if(typeof glLiquidCurrentAsset === 'undefined') {
+            glLiquidCurrentAsset = [];
         }
-        glCurrentAsset.push("StreamerServer");
+        glLiquidCurrentAsset.push("StreamerServer");
 
-        if(isDef(glCurrentAsset)) {            
+        if(isDef(glLiquidCurrentAsset)) {
             // TODO: check the assests
-            if(glCurrentAsset.contains("StreamerServer") || glCurrentAsset.contains("WebSocket")) {
+            if(glLiquidCurrentAsset.contains("StreamerServer") || glLiquidCurrentAsset.contains("WebSocket")) {
                 streamerEnabled = true;
             }
         } else {
@@ -41,8 +41,8 @@ var LiquidStreamer = {
 
         if(streamerEnabled) {
 
-            if(isDef(glLiquidWebSocket)) {
-                if (glLiquidWebSocket.readyState !== WebSocket.CLOSED) {
+            if(isDef(LiquidStreamer.webSocket)) {
+                if (LiquidStreamer.webSocket.readyState !== WebSocket.CLOSED) {
                     return;
                 }
             }
@@ -67,15 +67,16 @@ var LiquidStreamer = {
                             LiquidStreamer.webSocketName = "ws://"+LiquidStreamer.webSocketHost+":"+LiquidStreamer.port+"";
 
                         // LiquidWebSocket = new WebSocket("ws://"+location.hostname+"/"+glLiquidRoot+":"+LiquidStreamer.port+"");
-                        glLiquidWebSocket = new WebSocket(LiquidStreamer.webSocketName);
+                        LiquidStreamer.webSocket = new WebSocket(LiquidStreamer.webSocketName);
 
-                        glLiquidWebSocket.binaryType = "arraybuffer";
+                        LiquidStreamer.webSocket.binaryType = "arraybuffer";
 
-                        glLiquidWebSocket.onopen = function(event){
-                            console.info("[LIQUID Streamer] : Server connected ["+glLiquidWebSocket.readyState+"]");
+                        LiquidStreamer.webSocket.onopen = function(event){
+                            LiquidStreamer.webSocketConnected = true;
+                            console.info("[LIQUID Streamer] : Server connected ["+LiquidStreamer.webSocket.readyState+"]");
                         };
 
-                        glLiquidWebSocket.onmessage = function(event){
+                        LiquidStreamer.webSocket.onmessage = function(event){
                             // console.info("[LIQUID Streamer] : < "+event.data.length+"bytes");
                             try {
                                 var dv = null;
@@ -108,23 +109,26 @@ var LiquidStreamer = {
                             }
                         };
 
-                        glLiquidWebSocket.onclose = function(event) {
+                        LiquidStreamer.webSocket.onclose = function(event) {
                             if(event.code === 1006) {
                                 console.error("[LIQUID Streamer] : Abnormally closed");
                             } else {
                                 console.warn("[LIQUID Streamer] : Closed");
                             }
+                            LiquidStreamer.webSocketConnected = false;
                         };
                         
-                        glLiquidWebSocket.onerror = function(event) {
+                        LiquidStreamer.webSocket.onerror = function(event) {
+                            console.error("LIQUID: Streamer is NOT activated");
                             console.error("[LIQUID Streamer] : Error :"+event.code);
                             LiquidStreamer.queueProcessLiquidStreamer(null, null, event);
-                            glLiquidWebSocketRunning = false;
-                            glLiquidWebSocket = null;
+                            LiquidStreamer.webSocketRunning = false;
+                            LiquidStreamer.webSocket = null;
                         };
 
-                        glLiquidWebSocketRunning = true;
-                        
+                        LiquidStreamer.webSocketRunning = true;
+                        console.warn("LIQUID: Streamer is activated");
+
                     } else {
                         console.error("[LIQUID Error] : LiquidStreamer got wrong data getting the sessionId");
                     }
@@ -141,8 +145,8 @@ var LiquidStreamer = {
         }
     },
     sendLiquidStreamer:function(data, length, queue, async) {
-        if(glLiquidWebSocket) {
-            if(glLiquidWebSocket.readyState === 0) {
+        if(LiquidStreamer.webSocket) {
+            if(LiquidStreamer.webSocket.readyState === 0) {
                 var dtime = (getCurrentTimetick() - queue.tick) / 1000;
                 if(dtime < LiquidStreamer.waitForWebSocketTimeoutMS) {                
                     setTimeout( function() {
@@ -150,14 +154,14 @@ var LiquidStreamer = {
                     }, 3000 );
                     return 0;
                 } else {
-                    console.error("sendLiquidStreamer() timeout ... maybe StreamerServer not running or invalid url ("+(glLiquidWebSocket ? glLiquidWebSocket.url : "")+")");
+                    console.error("sendLiquidStreamer() timeout ... maybe StreamerServer not running or invalid url ("+(LiquidStreamer.webSocket ? LiquidStreamer.webSocket.url : "")+")");
                     queue.pending = false;
                     queue.timeout = true;
                     return -1;
                 }
             }
-            if(glLiquidWebSocket.readyState > 0) {
-                return glLiquidWebSocket.send(data, length);
+            if(LiquidStreamer.webSocket.readyState > 0) {
+                return LiquidStreamer.webSocket.send(data, length);
             } else {
                 console.error("sendLiquidStreamer() error ... maybe StreamerServer not running");
                 return -1;
@@ -165,20 +169,20 @@ var LiquidStreamer = {
         }
     },
     closeLiquidStreamer:function() {
-        if(glLiquidWebSocket)
-            glLiquidWebSocket.close();
-        glLiquidWebSocket = null;
+        if(LiquidStreamer.webSocket)
+            LiquidStreamer.webSocket.close();
+        LiquidStreamer.webSocket = null;
     },
     queueAppendLiquidStreamer:function( token, reason, callback, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled, param, async ) {
-        if(!glLiquidWSQueueBusy) {
-            glLiquidWSQueueBusy = true;
+        if(!LiquidStreamer.wsQueueBusy) {
+            LiquidStreamer.wsQueueBusy = true;
             for(var i=0; i<glLiquidWSQueue.length; i++) {
                 if(glLiquidWSQueue[i].pending === false) {
                     glLiquidWSQueue.splice(i, 1);
                     i--;
                 }
             }
-            glLiquidWSQueueBusy = false;
+            LiquidStreamer.wsQueueBusy = false;
         }
         var queueItem = { 
             token:token,
@@ -186,7 +190,8 @@ var LiquidStreamer = {
             callback:callback, 
             onUploadingProgress:onUploadingProgress, onDownloadingProgress:onDownloadingProgress, onCompleted:onCompleted, onFailed:onFailed, onCancelled:onCancelled, 
             param:param,
-            async:async, pending:true, 
+            async:async,
+            pending:true,
             tick:getCurrentTimetick(), 
             timeout:false 
         };
@@ -204,7 +209,7 @@ var LiquidStreamer = {
     ,queueProcessLiquidStreamer:function( token, response, event ){
         var res = false;
         var queueItemFound = false;
-        glLiquidWSQueueBusy = true;
+        LiquidStreamer.wsQueueBusy = true;
         for(var i=0; i<glLiquidWSQueue.length; i++) {
             if(glLiquidWSQueue[i].token === token) {
                 var queueItem = glLiquidWSQueue[i];
@@ -248,17 +253,24 @@ var LiquidStreamer = {
                                         liquid.xhr.responseText = response;
                                         liquid.xhr.ws = true;
 
-                                        queueItem.callback(liquid, liquid.xhr);
+                                        queueItem.callback( { liquid:liquid, xhr:liquid ? liquid.xhr : null, param:queueItem.param, token:queueItem.token, data:event.data } );
                                     } catch(e) {
                                         console.error("queueProcessLiquidStreamer() error:"+e);
                                     }
  
                                 } else {
-                                    queueItem.callback(liquid, liquid.xhr);
+                                    queueItem.callback( { liquid:liquid, xhr:null, param:queueItem.param, token:queueItem.token, data:event.data } );
                                 }                                 
                             }
                         }
                     }
+
+                    // Connessione continua
+                    if(queueItem.async) {
+                        bCloseQueue = false;
+                    }
+
+                    // Chiusura coda recezione
                     if(bCloseQueue) {
                         queueItem.pending = false;
                         queueItem.token = null;
@@ -269,10 +281,10 @@ var LiquidStreamer = {
                 }
             }
         }
-        glLiquidWSQueueBusy = false;
+        LiquidStreamer.wsQueueBusy = false;
         
         if(!queueItemFound) {
-            console.error("[LIQUID Error] queueLiquidStreamerProcess() : queue item not found");
+            console.error("[LIQUID Error] queueLiquidStreamerProcess() : queue item not found .. please use asyn flag to keep reciving queue running");
         }
         
         return res;

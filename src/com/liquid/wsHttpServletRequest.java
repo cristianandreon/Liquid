@@ -67,7 +67,8 @@ public class wsHttpServletRequest implements HttpServletRequest {
                 }
             }
             if(requestJson.has("data")) {
-                this.body = requestJson.getString("data");
+                Object oBody = requestJson.get("data");
+                this.body = oBody != null ? String.valueOf(oBody) : null;
             }
             if(requestJson.has("sessionId")) {
                 this.sessionId = requestJson.getString("sessionId");

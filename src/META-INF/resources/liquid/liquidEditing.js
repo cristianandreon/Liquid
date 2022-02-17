@@ -3,9 +3,9 @@
  */
 
 var LiquidEditing = {
-    version: 1.05,
+    version: 1.06,
     controlid:"Liquid framework - Editing module",
-    lastUpdate: '09/02/2022',
+    lastUpdate: '15/02/2022',
     
     
     /**
@@ -555,6 +555,14 @@ var LiquidEditing = {
             var event = {};
             var formObj = document.getElementById(formId);
             Liquid.formToObjectExchange(formObj, event);
+            if(isDef(event.eventSamples))
+                delete event.eventSamples;
+            if(isDef(event.name)) {
+                try {
+                    event.name = atob(event.name);
+                } catch (e) { console.error("ERROR: onNewEventOk() : "+e); }
+            }
+
             if(liquid.tableJsonSource) {
                 if(typeof liquid.tableJsonSource.events === 'undefined' || !liquid.tableJsonSource.events)
                     liquid.tableJsonSource.events = [];
@@ -572,7 +580,7 @@ var LiquidEditing = {
             selectorLiquid.lastAction = { name:"ok" };
             selectorLiquid.tableJson.selections = [ { TABLE:tableName } ];
             Liquid.close(selectorLiquid);
-            Liquid.onNewWindowProcess('',(mode?mode:'winX'),(parentObjId?parentObjId:'WinXContainer'));
+            LiquidEditing.onNewWindowProcess('',(mode?mode:'winX'),(parentObjId?parentObjId:'WinXContainer'));
         } else console.error("ERROR: selector module not found");
     },
     onNewWindow:function(event, mode, parentObjId) {
@@ -724,19 +732,32 @@ var LiquidEditing = {
             alert("In order to create new window you must Enable Project Mode by server-side");
             return;
         }
+        var controlFromJSON = Liquid.getCookie("controlFromJSON")
+        try {
+            LiquidEditing.controlFromJSON = controlFromJSON ? atob(controlFromJSON) : "{}";
+        } catch(e) {}
+        LiquidEditing.onNewWindowFromJsonRun(obj_id, mode, parentObjId, LiquidEditing.controlFromJSON);
+    },
+    onNewWindowFromJsonRun:function(obj_id, mode, parentObjId, lastControlJson) {
+        if(!isDef(lastControlJson)) lastControlJson = "{}";
+        lastControlJson = lastControlJson.replace("\\", "\"");
         var parentObj = document.getElementById(parentObjId);
         var width = Math.floor(parentObj.offsetWidth * 0.8 / 5) * 5;
         var height = Math.floor(parentObj.offsetHeight * 0.8 / 5) * 5;
-        var liquidJsonString = prompt("Enter control json", "{}");
-        return LiquidEditing.onNewWindowFromJsonProcess(obj_id, mode, parentObjId, liquidJsonString);
+        var liquidJsonString = prompt("Enter control json", lastControlJson);
+        if(liquidJsonString) {
+            if(liquidJsonString[0] != '{' && liquidJsonString[1] === '{') {
+                liquidJsonString = liquidJsonString.substring(1);
+            }
+            LiquidEditing.controlFromJSON = liquidJsonString;
+            Liquid.setCookie("controlFromJSON", btoa(LiquidEditing.controlFromJSON), null);
+            return LiquidEditing.onNewWindowFromJsonProcess(obj_id, mode, parentObjId, liquidJsonString);
+        }
     },
     onNewWindowFromJsonProcess:function(obj_id, mode, parentObjId, liquidJsonString) {
         if(liquidJsonString) {
             var parentObj = document.getElementById(parentObjId);
             var liquidJson = null;
-            if(liquidJsonString[0] != '{' && liquidJsonString[1] === '{') {
-                liquidJsonString = liquidJsonString.substring(1);
-            }
             try {
                 liquidJson = JSON.parse(liquidJsonString);
             } catch (e) {
@@ -746,7 +767,7 @@ var LiquidEditing = {
             }
             var controlId = liquidJson.controlId;
             if(!controlId) {
-                controlId = "window-"+liquidJson.table;
+                controlId = ""+liquidJson.table;
             }
             if(controlId) {
                 controlId = LiquidEditing.checkControlName(controlId);
@@ -1836,10 +1857,59 @@ var LiquidEditing = {
         if(ftIndex1B) { // work on liquid.foreignTables[].options
             tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B-1].controlId);
         }        
-        contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block;  \">"
-                +"<tr><td colspan=\"3\"><center>"
-                +"<span style=\"font-size:200%\">Liquid Control Options<span>"
-                +"</center></td></tr>"
+        contentHTML += ""
+                +"<table id=\""+formId+"\" class=\"liquidOptionsMenu\" style=\"max-height:calc(100% - 40px); width:800px; \">"
+                +"<tr><td colspan='3'><center>"
+                +"<span style=\"font-size:200%; text-align: center;\">Liquid Control Options</span>"
+                +"</center></br>"
+
+                +"<div class=\"liquidForeignTables\" style=\"width: 100%;\"><ul>"
+                +"   <li id=\"sourceTab\" class=\"liquidTabSel\"><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"LiquidEditing.onGenericTab('"+formId+"',this.parentNode)\">Source</a></li>"
+                +"   <li id=\"generalTab\" class=\"\"><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"LiquidEditing.onGenericTab('"+formId+"',this.parentNode)\">General</a></li>"
+                +"   <li id=\"commandsTab\" class=\"\"><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"LiquidEditing.onGenericTab('"+formId+"',this.parentNode)\">Commands</a></li>"
+                +"   <li id=\"eventsTab\" class=\"\"><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"LiquidEditing.onGenericTab('"+formId+"',this.parentNode)\">Eventss</a></li>"
+                +"   <li id=\"optionsTab\" class=\"\"><a href=\"javascript:void(0)\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"LiquidEditing.onGenericTab('"+formId+"',this.parentNode)\">Options</a></li>"
+                +"</ul></div>"
+                +"</td><td>"
+
+                +"<tr><td colspan='3'>"
+                +"<table id=\""+formId+".sourceTab\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; \">"
+                +"<tr><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Driver:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.driver !== 'undefined' ? tagetLiquid.tableJson.driver : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Connection URL:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.connectionURL !== 'undefined' ? tagetLiquid.tableJson.connectionURL : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+
+                +"<tr><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Database:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.name !== 'undefined' ? tagetLiquid.tableJson.database : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Schema:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.name !== 'undefined' ? tagetLiquid.tableJson.schema : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Table:"+"<input id=\"caption\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.caption !== 'undefined' ? tagetLiquid.tableJson.table : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+
+                +"<tr><td colspan='3'>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Query:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.query !== 'undefined' ? tagetLiquid.tableJson.query : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"</td><td>"
+                +"</td><td>"
+
+                +"<tr><td colspan='1'>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Source Data server:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.sourceData !== 'undefined' ? tagetLiquid.tableJson.sourceData.server : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Source Data Client:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.sourceData !== 'undefined' ? tagetLiquid.tableJson.sourceData.client : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Source Data Params:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.sourceData !== 'undefined' ? tagetLiquid.tableJson.sourceData.params : '')+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+
+                +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
+                +"</table>"
+                +"</td></tr>"
+
+
+                +"<tr><td colspan='3'>"
+                +"<table id=\""+formId+".generalTab\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; width:100%; overflow:auto; display:none;  \">"
                 +"<tr><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Name:"+"<input id=\"name\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.name !== 'undefined' ? tagetLiquid.tableJson.name : '')+"\" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
@@ -1847,30 +1917,30 @@ var LiquidEditing = {
                 +"</td><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Caption:"+"<input id=\"caption\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.caption !== 'undefined' ? tagetLiquid.tableJson.caption : '')+"\" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
-                +"</td></tr>"
+
                 +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Primary key:"+"<input id=\"primaryKey\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.primaryKey !== 'undefined' ? tagetLiquid.tableJson.primaryKey : '')+"\" list=\"primaryKeyDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"primaryKeyDataliast\"><option></option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Primary key:"+"<input id=\"primaryKey\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.primaryKey !== 'undefined' ? tagetLiquid.tableJson.primaryKey : '')+"\" list=\"primaryKeyDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"primaryKeyDatalist\"><option></option></datalist>"
                 +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Lookup Field:"+"<input id=\"lookupField\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.lookupField !== 'undefined' ? tagetLiquid.tableJson.lookupField : '')+"\" list=\"lookupFieldDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"lookupFieldDataliast\"><option value=\"closed\">closed</option><option value=\"open\">open</option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Lookup Field:"+"<input id=\"lookupField\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.lookupField !== 'undefined' ? tagetLiquid.tableJson.lookupField : '')+"\" list=\"lookupFieldDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"lookupFieldDatalist\"><option value=\"closed\">closed</option><option value=\"open\">open</option></datalist>"
                 +"</td><td>"
                 +"</td></tr>"        
                 +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Mode:"+"<input id=\"status\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.status !== 'undefined' ? tagetLiquid.tableJson.status : '')+"\" list=\"statusDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"statusDataliast\"><option value=\"closed\">closed</option><option value=\"open\">open</option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Mode:"+"<input id=\"status\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.status !== 'undefined' ? tagetLiquid.tableJson.status : '')+"\" list=\"statusDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"statusDatalist\"><option value=\"closed\">closed</option><option value=\"open\">open</option></datalist>"
                 +"</td><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Modeless:"+"<input id=\"modeless\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.modeless, false)+" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Resize:"+"<input id=\"resize\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.resize !== 'undefined' ? tagetLiquid.tableJson.resize : '')+"\" list=\"resizeDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"resizeDataliast\"><option value=\"both\">both</option><option value=\" \"></option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Resize:"+"<input id=\"resize\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.resize !== 'undefined' ? tagetLiquid.tableJson.resize : '')+"\" list=\"resizeDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"resizeDatalist\"><option value=\"both\">both</option><option value=\" \"></option></datalist>"
                 +"</td></tr>"
                 +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Left:"+"<input id=\"left\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.left !== 'undefined' ? tagetLiquid.tableJson.left : "")+"\" list=\"leftDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"leftDataliast\"><option value=\"center\">center</option><option value=\"\"></option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Left:"+"<input id=\"left\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.left !== 'undefined' ? tagetLiquid.tableJson.left : "")+"\" list=\"leftDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"leftDatalist\"><option value=\"center\">center</option><option value=\"\"></option></datalist>"
                 +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Top:"+"<input id=\"top\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.top !== 'undefined' ? tagetLiquid.tableJson.top : "")+"\" list=\"topDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"topDataliast\"><option value=\"center\">center</option><option value=\"\"></option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Top:"+"<input id=\"top\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.top !== 'undefined' ? tagetLiquid.tableJson.top : "")+"\" list=\"topDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"topDatalist\"><option value=\"center\">center</option><option value=\"\"></option></datalist>"
                 +"</td><td>"
                 +"</td></tr>"
 
@@ -1882,12 +1952,34 @@ var LiquidEditing = {
                 +"</td></tr>"
 
                 +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Filter mode:"+"<input id=\"left\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.filterMode !== 'undefined' ? tagetLiquid.tableJson.filterMode : "")+"\" list=\"filterModeDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"filterModeDataliast\"><option value=\"\"></option><option value=\"client\">client</option><option value=\"client\">dynamic</option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"current tab:"+"<input id=\"currentTab\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.currentTab !== 'undefined' ? tagetLiquid.tableJson.currentTab : "")+"\"/></p>"
                 +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Sort mode:"+"<input id=\"top\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.sortMode !== 'undefined' ? tagetLiquid.tableJson.sortMode : "")+"\" list=\"sortModeDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"sortModeDataliast\"><option value=\"\"></option><option value=\"client\">client</option><option value=\"server\">server</option></datalist>"
                 +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"current foreign table:"+"<input id=\"currentForeignTable\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.currentForeignTable !== 'undefined' ? tagetLiquid.tableJson.currentForeignTable : "")+"\"/></p>"
+                +"</td></tr>"
+
+                +"<tr><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"owner:"+"<input id=\"owner\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.owner !== 'undefined' ? tagetLiquid.tableJson.owner : "com.liquid.event")+"\" "+onKeyPressCode+"/></p>"
+                +"</td><td>"
+                +"</td><td>"
+                +"</td></tr>"
+
+                +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
+                +"</table>"
+
+
+
+                +"<tr><td colspan='3'>"
+                +"<table id=\""+formId+".optionsTab\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; width:100%; overflow:auto; display:none;  \">"
+                +"<tr><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Filter mode:"+"<input id=\"left\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.filterMode !== 'undefined' ? tagetLiquid.tableJson.filterMode : "")+"\" list=\"filterModeDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"filterModeDatalist\"><option value=\"\"></option><option value=\"client\">client</option><option value=\"client\">dynamic</option></datalist>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Sort mode:"+"<input id=\"top\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.sortMode !== 'undefined' ? tagetLiquid.tableJson.sortMode : "")+"\" list=\"sortModeDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"sortModeDatalist\"><option value=\"\"></option><option value=\"client\">client</option><option value=\"server\">server</option></datalist>"
+                +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Row selection:"+"<input id=\"rowSelection\"type=\"\text\" value=\""+(typeof tagetLiquid.tableJson.rowSelection !== 'undefined' ? tagetLiquid.tableJson.rowSelection : "")+"\" list=\"rowSelectionDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"rowSelectionDatalist\"><option value=\"single\">single</option><option value=\"multiple\">multiple</option></datalist>"
                 +"</td></tr>"
 
                 +"<tr><td>"
@@ -1895,8 +1987,6 @@ var LiquidEditing = {
                 +"</td><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Checkbox selection:"+"<input id=\"checkboxSelection\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.checkboxSelection, false)+" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Row selection:"+"<input id=\"rowSelection\"type=\"\text\" value=\""+(typeof tagetLiquid.tableJson.rowSelection !== 'undefined' ? tagetLiquid.tableJson.rowSelection : "")+"\" list=\"rowSelectionDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"rowSelectionDataliast\"><option value=\"single\">single</option><option value=\"multiple\">multiple</option></datalist>"
                 +"</td></tr>"
 
                 +"<tr><td>"
@@ -1917,8 +2007,8 @@ var LiquidEditing = {
                 +"<tr><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Editable:"+"<input id=\"editable\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.editable, true)+" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Edit type:"+"<input id=\"editType\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.editType !== 'undefined' ? tagetLiquid.tableJson.editType : "")+"\" list=\"editTypeDataliast\"  "+onKeyPressCode+"/></p>"
-                +"<datalist id=\"editTypeDataliast\"><option value=\"\"></option><option value=\"fullRow\">fullRow</option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Edit type:"+"<input id=\"editType\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.editType !== 'undefined' ? tagetLiquid.tableJson.editType : "")+"\" list=\"editTypeDatalist\"  "+onKeyPressCode+"/></p>"
+                +"<datalist id=\"editTypeDatalist\"><option value=\"\"></option><option value=\"fullRow\">fullRow</option></datalist>"
                 +"</td><td>"
                 +"</td></tr>"
 
@@ -1934,12 +2024,13 @@ var LiquidEditing = {
                 +"</td><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Auto fit columns:"+"<input id=\"autoFitColumns\" type=\"checkbox\" v"+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.autoFitColumns, true)+" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Header menu:"+"<input id=\"headerMenu\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.headerMenu, true)+" "+onKeyPressCode+"/></p>"
                 +"</td></tr>"
 
 
                 +"<tr><td>"
                 +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Search button on filters:"+"<input id=\"filtersSearch\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.filtersSearch, false)+" "+onKeyPressCode+"/></p>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Search button on filters:"+"<input id=\"filtersSearch\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(!tagetLiquid.tableJson.filtersSearch, false)+" "+onKeyPressCode+"/></p>"
                 +"</td><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Menu on grid header:"+"<input id=\"gridHeaderMenu\" type=\"checkbox\" v"+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.gridHeaderMenu, true)+" "+onKeyPressCode+"/></p>"
                 +"</td></tr>"
@@ -1980,34 +2071,77 @@ var LiquidEditing = {
                 +"</td><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Cache:"+"<input id=\"cache\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.cache, true)+""+onKeyPressCode+" /></p>"
                 +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Header menu:"+"<input id=\"headerMenu\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.headerMenu, true)+" "+onKeyPressCode+"/></p>"
-                +"</td></tr>"
-
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"owner:"+"<input id=\"owner\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.owner !== 'undefined' ? tagetLiquid.tableJson.owner : "com.liquid.event")+"\" "+onKeyPressCode+"/></p>"
-                +"</td><td>"
-                +"</td><td>"
                 +"<p class=\"liquidContextMenu-item\">"+optImg+"Create table if missing:"+"<input id=\"createTableIfMissing\" type=\"checkbox\" "+LiquidEditing.getCheckedAttr(tagetLiquid.tableJson.createTableIfMissing, false)+" "+onKeyPressCode+"/></p>"
                 +"</td></tr>"
 
-                +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"current tab:"+"<input id=\"currentTab\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.currentTab !== 'undefined' ? tagetLiquid.tableJson.currentTab : "")+"\"/></p>"
-                +"</td><td>"
-                +"</td><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"current foreign table:"+"<input id=\"currentForeignTable\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.currentForeignTable !== 'undefined' ? tagetLiquid.tableJson.currentForeignTable : "")+"\"/></p>"
-                +"</td></tr>"
-
                 +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
-
-                +"<tr><td style=\"text-align: center;\">"
-                +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\""+onCancelCode+"\">Cancel</button>"
-                +"</td><td>"
-                +"</td><td style=\"text-align: center;\">"
-                +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\""+onOkCode+"\">Ok</button>"
+                +"</table>"
                 +"</td></tr>"
 
-                +"</table>"
-                +"</div>";
+
+
+                +"<tr><td colspan='3'>"
+                +"<table id=\""+formId+".commandsTab\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; width:100%; overflow:auto; display:none;  \">"
+                +"<tr><td colspan='3'>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Commands:"+"<input id=\"left\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.commands !== 'undefined' ? tagetLiquid.tableJson.commands.length + " commands" : "")+"\" "
+                +"onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\""
+                +"onblur=\"if(!this.value) this.value=this.placeholder\""
+                +"list=\"commandsDatalist\"  "
+                +""+onKeyPressCode+"/></p>";
+
+        if(tagetLiquid.tableJson.commands) {
+            contentHTML += "<datalist id=\"commandsDatalist\">"
+            for (let ie = 0; ie < tagetLiquid.tableJson.commands.length; ie++) {
+                var command = tagetLiquid.tableJson.commands[ie];
+                contentHTML += "<option value=\"" + command.name + "\">" + command.server + (command.client ? (command.server ? " - " : "") + command.client : "") + "</option>";
+            }
+            contentHTML += "</datalist>";
+        }
+
+
+        contentHTML += ""
+            +"</td></tr>"
+
+            +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
+            +"</table>"
+            +"</td></tr>"
+
+
+
+            +"<tr><td colspan='3'>"
+            +"<table id=\""+formId+".eventsTab\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:none;  \">"
+            +"<tr><td colspan='3'>"
+            +"<p class=\"liquidContextMenu-item\">"+optImg+"Events:"+"<input id=\"left\" type=\"text\" value=\""+(typeof tagetLiquid.tableJson.events !== 'undefined' ? tagetLiquid.tableJson.events.length + " events" : "")+"\" "
+            +"list=\"eventsDatalist\"  " +
+            +"onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\""
+            +"onblur=\"if(!this.value) this.value=this.placeholder\""
+            +""+onKeyPressCode+"/></p>";
+
+        if(tagetLiquid.tableJson.events) {
+            contentHTML += "<datalist id=\"eventsDatalist\">"
+            for (let ie = 0; ie < tagetLiquid.tableJson.events.length; ie++) {
+                var event = tagetLiquid.tableJson.events[ie];
+                contentHTML += "<option value=\"" + event.name + "\">" + event.server + (event.client ? (event.server ? " - " : "")+event.client : "")+"</option>";
+            }
+            contentHTML += "</datalist>";
+        }
+
+        contentHTML += ""
+            +"</td></tr>"
+
+            +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
+            +"</table>"
+            +"</td></tr>"
+
+            +"<tr><td style=\"text-align: center;\">"
+            +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\""+onCancelCode+"\">Cancel</button>"
+            +"</td><td>"
+            +"</td><td style=\"text-align: center;\">"
+            +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\""+onOkCode+"\">Ok</button>"
+            +"</td></tr>"
+
+            +"</table>"
+            +"</div>";
 
         menu.innerHTML = contentHTML;
         var modal_content = document.querySelector('.liquidContextMenu-content');
@@ -2015,6 +2149,7 @@ var LiquidEditing = {
         modal_content.style.fontSize="12px";
         modal_content.style.position="relative";
         modal_content.style.top="10px";
+        LiquidEditing.onGenericTab(formId, document.getElementById('sourceTab'));
     },
     createLiquidGridOptionsContextMenu:function( obj, gridNameOrIndex ) {
         var liquid = Liquid.getLiquid(obj);
@@ -2051,7 +2186,7 @@ var LiquidEditing = {
             if(!isDef(grid.image)) {
                 grid.image = {};
             }
-            contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block;  \">"
+            contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; \">"
                     +"<tr><td colspan=\"3\"><center>"
                     +"<span style=\"font-size:200%\">Grid Options<span>"
                     +"</center></td></tr>"
@@ -2064,7 +2199,7 @@ var LiquidEditing = {
                     +"</td><td>"
                     +"</td></tr>"
                     +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Icon:"+"<input id=\"icon\" type=\"text\" value=\""+(typeof grid.icon !== 'undefined' ? grid.icon : '')+"\" list=\"primaryKeyDataliast\" "+onKeyPressCode+"/></p>"
+                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Icon:"+"<input id=\"icon\" type=\"text\" value=\""+(typeof grid.icon !== 'undefined' ? grid.icon : '')+"\" list=\"primaryKeyDatalist\" "+onKeyPressCode+"/></p>"
                     +"</td><td>"
                     +"<p class=\"liquidContextMenu-item\">"+optImg+"N.rows:"+"<input id=\"nRows\" type=\"number\" value=\""+(typeof grid.nRows !== 'undefined' ? grid.nRows : '')+"\" "+onKeyPressCode+"/></p>"
                     +"</td><td>"
@@ -2073,30 +2208,30 @@ var LiquidEditing = {
                     +"<tr><td>"
                     +"<p class=\"liquidContextMenu-item\">"+optImg+"Background image:"+"<input id=\"image.url\" type=\"text\" value=\""+(typeof grid.image.url !== 'undefined' ? grid.image.url : "")+"\" "+onKeyPressCode+"/></p>"
                     +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"size:"+"<input id=\"image.size\" type=\"text\" value=\""+(typeof grid.image.size !== 'undefined' ? grid.image.size : "")+"\" list=\"sizeDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"sizeDataliast\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"contain\">contain</option><option value=\"cover\">cover</option><option value=\"inherit\">inherit</option><option value=\"initial\">initial</option><option value=\"unset\">unset</option></datalist>"
+                    +"<p class=\"liquidContextMenu-item\">"+optImg+"size:"+"<input id=\"image.size\" type=\"text\" value=\""+(typeof grid.image.size !== 'undefined' ? grid.image.size : "")+"\" list=\"sizeDatalist\" "+onKeyPressCode+"/></p>"
+                    +"<datalist id=\"sizeDatalist\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"contain\">contain</option><option value=\"cover\">cover</option><option value=\"inherit\">inherit</option><option value=\"initial\">initial</option><option value=\"unset\">unset</option></datalist>"
             
                     +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Repeat:"+"<input id=\"image.repeat\" type=\"text\" value=\""+(typeof grid.image.repeat !== 'undefined' ? grid.image.repeat : "")+"\" list=\"repeatDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"repeatDataliast\"><option value=\"\"></option><option value=\"round\">round</option><option value=\"no-repeat\">no-repeat</option><option value=\"repeat-x\">repeat-x</option><option value=\"repeat-y\">repeat-y</option></datalist>"
+                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Repeat:"+"<input id=\"image.repeat\" type=\"text\" value=\""+(typeof grid.image.repeat !== 'undefined' ? grid.image.repeat : "")+"\" list=\"repeatDatalist\" "+onKeyPressCode+"/></p>"
+                    +"<datalist id=\"repeatDatalist\"><option value=\"\"></option><option value=\"round\">round</option><option value=\"no-repeat\">no-repeat</option><option value=\"repeat-x\">repeat-x</option><option value=\"repeat-y\">repeat-y</option></datalist>"
                     +"</td></tr>"
 
                     +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Position X:"+"<input id=\"image.positionX\" type=\"text\" value=\""+(typeof grid.image.positionX !== 'undefined' ? grid.image.positionX : "")+"\" list=\"positionXDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"positionXDataliast\"><option value=\"\"></option><option value=\"no-repeat\">no-repeat</option><option value=\"\"></option></datalist>"
+                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Position X:"+"<input id=\"image.positionX\" type=\"text\" value=\""+(typeof grid.image.positionX !== 'undefined' ? grid.image.positionX : "")+"\" list=\"positionXDatalist\" "+onKeyPressCode+"/></p>"
+                    +"<datalist id=\"positionXDatalist\"><option value=\"\"></option><option value=\"no-repeat\">no-repeat</option><option value=\"\"></option></datalist>"
                     +"</td><td>"
                     +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Position Y:"+"<input id=\"image.positionY\" type=\"text\" value=\""+(typeof grid.image.positionY !== 'undefined' ? grid.image.positionY : "")+"\" list=\"positionYDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"positionYDataliast\"><option value=\"\"></option><option value=\"no-repeat\">no-repeat</option><option value=\"\"></option></datalist>"
+                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Position Y:"+"<input id=\"image.positionY\" type=\"text\" value=\""+(typeof grid.image.positionY !== 'undefined' ? grid.image.positionY : "")+"\" list=\"positionYDatalist\" "+onKeyPressCode+"/></p>"
+                    +"<datalist id=\"positionYDatalist\"><option value=\"\"></option><option value=\"no-repeat\">no-repeat</option><option value=\"\"></option></datalist>"
                     +"</td></tr>"
 
                     +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Width:"+"<input id=\"width\" type=\"text\" value=\""+(typeof grid.width !== 'undefined' ? grid.width : "")+"\" list=\"widthDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"widthDataliast\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"100%\">100%</option></datalist>"
+                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Width:"+"<input id=\"width\" type=\"text\" value=\""+(typeof grid.width !== 'undefined' ? grid.width : "")+"\" list=\"widthDatalist\" "+onKeyPressCode+"/></p>"
+                    +"<datalist id=\"widthDatalist\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"100%\">100%</option></datalist>"
                     +"</td><td>"
                     +"</td><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Height:"+"<input id=\"height\" type=\"text\" value=\""+(typeof grid.height !== 'undefined' ? grid.height : "")+"\" list=\"heightDataliast\" "+onKeyPressCode+"/></p>"
-                    +"<datalist id=\"heightDataliast\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"100%\">100%</option></datalist>"
+                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Height:"+"<input id=\"height\" type=\"text\" value=\""+(typeof grid.height !== 'undefined' ? grid.height : "")+"\" list=\"heightDatalist\" "+onKeyPressCode+"/></p>"
+                    +"<datalist id=\"heightDatalist\"><option value=\"\"></option><option value=\"auto\">auto</option><option value=\"100%\">100%</option></datalist>"
                     +"</td></tr>"
 
                     +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
@@ -2154,7 +2289,7 @@ var LiquidEditing = {
             if(!isDef(layout.image)) {
                 layout.image = {};
             }
-            contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block;  \">"
+            contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; \">"
                     +"<tr><td colspan=\"3\"><center>"
                     +"<span style=\"font-size:200%\">Layout Options<span>"
                     +"</center></td></tr>"
@@ -2167,7 +2302,7 @@ var LiquidEditing = {
                     +"</td><td>"
                     +"</td></tr>"
                     +"<tr><td>"
-                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Icon:"+"<input id=\"icon\" type=\"text\" value=\""+(typeof layout.icon !== 'undefined' ? layout.icon : '')+"\" list=\"primaryKeyDataliast\" "+onKeyPressCode+"/></p>"
+                    +"<p class=\"liquidContextMenu-item\">"+optImg+"Icon:"+"<input id=\"icon\" type=\"text\" value=\""+(typeof layout.icon !== 'undefined' ? layout.icon : '')+"\" list=\"primaryKeyDatalist\" "+onKeyPressCode+"/></p>"
                     +"</td><td>"
                     +"</td><td>"
                     +"<p class=\"liquidContextMenu-item\">"+optImg+"N.rows:"+"<input id=\"nRows\" type=\"number\" value=\""+(typeof layout.nRows !== 'undefined' ? layout.nRows : '')+"\" "+onKeyPressCode+"/></p>"
@@ -2190,7 +2325,7 @@ var LiquidEditing = {
                     +"</td><td>"
                     +"</td><td>"
                     +"<p class=\"liquidContextMenu-item\">"+optImg+"source for new row:"+"<input id=\"sourceForInsert\" type=\"text\" value=\""+(isDef(layout.sourceForInsert) ? layout.sourceForInsert : "")+"\" "+onKeyPressCode+"/></p>"
-                    // +"<datalist id=\"sourceForInsertDataliast\"><option value=\"\"></option><option value=\"no-repeat\">/layouts/myLayoutForInsert.jsp</option><option value=\"\"></option></datalist>"
+                    // +"<datalist id=\"sourceForInsertDatalist\"><option value=\"\"></option><option value=\"no-repeat\">/layouts/myLayoutForInsert.jsp</option><option value=\"\"></option></datalist>"
                     +"</td></tr>"
 
                     +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"3\"></td></tr>"
@@ -2244,7 +2379,7 @@ var LiquidEditing = {
 
 
 
-                contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; display:block;  \">"
+                contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidOptionsMenu\" style=\"max-height:95%; overflow:auto; \">"
                         +"<tr><td colspan=\"3\"><center>"
                         +"<span style=\"font-size:200%\">Grid Field<span>"
                         +"</center></td></tr>"
@@ -2352,8 +2487,8 @@ var LiquidEditing = {
                 +"</center></td></tr>"
 
                 +"<tr><td>"
-                +"<p class=\"liquidContextMenu-item\">"+optImg+"Language:"+"<input id=\"lang\" type=\"text\" value=\""+(Liquid.lang ? Liquid.lang : "eng")+"\" list=\"langDataliast\" autocomplete=\"false\" /></p>"
-                +"<datalist id=\"langDataliast\"><option value=\"en\">english</option><option value=\"it\">italiano</option></datalist>"
+                +"<p class=\"liquidContextMenu-item\">"+optImg+"Language:"+"<input id=\"lang\" type=\"text\" value=\""+(Liquid.lang ? Liquid.lang : "eng")+"\" list=\"langDatalist\" autocomplete=\"false\" /></p>"
+                +"<datalist id=\"langDatalist\"><option value=\"en\">english</option><option value=\"it\">italiano</option></datalist>"
                 +"</td><td>"
                 +"</td><td>"
                 +"</td></tr>"
@@ -2430,16 +2565,16 @@ var LiquidEditing = {
                 +"</td></tr>"
 
                 +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:480px;\">"+optImg+"Driver:"+"<input id=\"curDriver\" type=\"text\" style=\"width:475px; height:32px\" value=\""+(Liquid.curDriver ? Liquid.curDriver : "")+"\" list=\"driverDataliast\" autocomplete=\"false\" /></p>"
-                +"<datalist id=\"driverDataliast\"><option value=\"oracle.jdbc.driver.OracleDriver\">Oracle</option>"
+                +"<p class=\"liquidContextMenu-item\" style=\"width:480px;\">"+optImg+"Driver:"+"<input id=\"curDriver\" type=\"text\" style=\"width:475px; height:32px\" value=\""+(Liquid.curDriver ? Liquid.curDriver : "")+"\" list=\"driverDatalist\" autocomplete=\"false\" /></p>"
+                +"<datalist id=\"driverDatalist\"><option value=\"oracle.jdbc.driver.OracleDriver\">Oracle</option>"
                 +"<option value=\"com.mysql.jdbc.Driver\">MySQL</option>"
                 +"<option value=\"org.postgresql.Driver\">Postgres</option>"
                 +"<option value=\"com.microsoft.sqlserver.jdbc.SQLServerDriver\">SqlServer</option></datalist>"
                 +"</td></tr>"
 
                 +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:480px;\">"+optImg+"Connection URL:"+"<input id=\"curConnectionURL\" style=\"width:475px; height:32px\" type=\"text\" value=\""+(Liquid.curConnectionURL !== 'undefined' ? Liquid.curConnectionURL : "")+"\" list=\"curConnectionURLDataliast\" autocomplete=\"false\" /></p>"
-                +"<datalist id=\"curConnectionURLDataliast\">"
+                +"<p class=\"liquidContextMenu-item\" style=\"width:480px;\">"+optImg+"Connection URL:"+"<input id=\"curConnectionURL\" style=\"width:475px; height:32px\" type=\"text\" value=\""+(Liquid.curConnectionURL !== 'undefined' ? Liquid.curConnectionURL : "")+"\" list=\"curConnectionURLDatalist\" autocomplete=\"false\" /></p>"
+                +"<datalist id=\"curConnectionURLDatalist\">"
                 +"<option value=\"jdbc:oracle:thin:@[host]:1521:xe,[database],[password]\">Oracle</option>"
                 +"<option value=\"jdbc:mysql://[host]:3306/[database],[user],[password]\">MySQL</option>"
                 +"<option value=\"jdbc:postgresql://[host]:5432/[database],[user],[password]\">PostGres</option>"
@@ -2486,14 +2621,20 @@ var LiquidEditing = {
         contentHTML += "<table id=\""+formId+"\" cellPadding=\"3\" class=\"liquidEvent\" style=\"max-height:95%; overflow:auto; display:block; position:relative; top:10px;\">"
 
                 +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Event:"+"<input id=\"name\" type=\"text\" style=\"width:775px; height:32px\" value=\""+(Liquid.curDriver ? Liquid.curDriver : "")+"\" list=\"nameDataliast\" autocomplete=\"false\" /></p>"
-                +"<datalist id=\"nameDataliast\">"
+                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Event:"+"<input id=\"name\" type=\"text\" style=\"width:775px; height:32px\" value=\""+(Liquid.curDriver ? Liquid.curDriver : "")+"\" "
+                +"list=\"nameDatalist\" autocomplete=\"false\" "
+                +"onchange='LiquidEditing.on_change_new_event(this)'"
+                +"onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\""
+                +"onblur=\"if(!this.value) this.value=this.placeholder\""
+            +"/></p>"
+                +"<datalist id=\"nameDatalist\">"
                 +"<option value=\"onFirstLoad\">on first time loaded control</option>"
                 +"<option value=\"onLoad\">on loaded windows</option>"
                 +"<option value=\"onRowSelected\">on row selected</option>"
                 +"<option value=\"onRowUnSelected\">on row unselected</option>"
                 +"<option value=\"onRowClicked\">on row clicked</option>"        
                 +"<option value=\"onRowRendering\">on row rendering</option>"
+                +"<option value=\"onFirstDataRendered\">on first row rendering</option>"
                 +"<option value=\"onCellClicked\">on cell clicked</option>"
                 +"<option value=\"onCellChanged\">on cell changed</option>"
                 +"<option value=\"onCellDoubleClicked\">on cell double-clicked</option>"
@@ -2505,10 +2646,10 @@ var LiquidEditing = {
                 +"<option value=\"onSorting\">before sort</option>"
                 +"<option value=\"onSorted\">after sort</option>"
                 +"<option value=\"onInserting\">before intert row</option>"
-                +"<option value=\"onUpdating\">before update row</option>"
-                +"<option value=\"onDeleting\">before delete row</option>"
                 +"<option value=\"onInserted\">before intert row</option>"
+                +"<option value=\"onUpdating\">before update row</option>"
                 +"<option value=\"onUpdated\">before update row</option>"
+                +"<option value=\"onDeleting\">before delete row</option>"
                 +"<option value=\"onDeleted\">before delete row</option>"
                 +"<option value=\"onRollback\">on command rollback</option>"
                 +"<option value=\"onUploadDocument\">on update DMS document</option>"
@@ -2524,11 +2665,11 @@ var LiquidEditing = {
                 +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Client code:"+"<textarea id=\"client\" style=\"width:775px; height:200px\" type=\"text\" value=\""+("")+"\" placeholder=\"javascript:\" ></textarea></p>"
                 +"</td></tr>"
                 +"<tr><td colspan=\"2\">"
-                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Server class:"+"<textarea id=\"server\" style=\"width:775px; height:60px\" type=\"text\" value=\""+("")+"\" placeholder=\"server_package.server_class\" /></textarea></p>"
+                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Server class:"+"<textarea id=\"server\" style=\"width:775px; height:60px\" type=\"text\" value=\""+("")+"\" placeholder=\"server_package.server_class.method\" /></textarea></p>"
                 +"</td></tr>"
                 +"<tr><td colspan=\"2\">"
                 +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Parameters:"+"<input id=\"params\" type=\"text\" style=\"width:775px; height:32px\" value=\""+("")+"\" placeholder=\"[control1, control2]\" /></p>"
-                +"<datalist id=\"driverDataliast\">"
+                +"<datalist id=\"driverDatalist\">"
                 +"<option value=\"empty\"> </option>"
                 +"<option value=\"controlId\">[ControlId1, ControlId2]</option>"
                 +"</td></tr>"
@@ -2538,7 +2679,12 @@ var LiquidEditing = {
                 +"<tr><td style=\"text-align: center;\">"
                 +"<button id=\"cancel\" class=\"liquidOptionsButtonMenu\" onclick=\"LiquidEditing.onContextMenuClose();\">Cancel</button>"
                 +"</td><td style=\"text-align: center;\">"
-                +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\"LiquidEditing.onContextMenuClose(); Liquid.onNewEventOk('"+formId+"','"+objId+"')\">Ok</button>"
+                +"<button id=\"ok\" class=\"liquidOptionsButtonMenu\" onclick=\"LiquidEditing.onContextMenuClose(); LiquidEditing.onNewEventOk('"+formId+"','"+objId+"')\">Ok</button>"
+                +"</td></tr>"
+
+                +"<tr><td style=\"border-top:1px solid lightgray;\" colspan=\"2\"></td></tr>"
+                +"<tr><td colspan=\"2\">"
+                +"<p class=\"liquidContextMenu-item\" style=\"width:780px;\">"+optImg+"Samples:"+"<textarea id=\"eventSamples\" style=\"width:775px; height:175px\" readonly='readonly' type=\"text\" value=\""+("")+"\" placeholder=\"\" /></textarea></p>"
                 +"</td></tr>"
 
                 +"</table>"
@@ -2550,6 +2696,32 @@ var LiquidEditing = {
         modal_content.style.fontSize="12px";    
         modal_content.style.position="relative";
         modal_content.style.top="10px";
+    },
+    on_change_new_event:function(obj) {
+        var tArea = document.getElementById("eventSamples");
+        if(tArea) {
+            var content = "";
+            if(obj) {
+                if(obj.value === 'onRowRendering') {
+                    content = "function onMyRowRender ( liquid, params ) {\n" +
+                        "    if(params.rowData) {\n" +
+                        "        var field = params.rowData[\"field\"];\n" +
+                        "        if(params.isAddingNode) {\n" +
+                        "        } else {\n" +
+                        "            if(rowNode) {\n" +
+                        "               if(field=='A') {\n" +
+                        "                   return { backgroundColor: 'lightRed' }\n" +
+                        "               } else {\n" +
+                        "                   return { backgroundColor: 'lightGreen' }\n" +
+                        "               }\n" +
+                        "            }\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}\n";
+                }
+            }
+            tArea.value = content;
+        }
     },
     createOnMenuContextMenu:function( obj ) {
         var liquid = Liquid.getLiquid(obj);
@@ -3385,5 +3557,18 @@ var LiquidEditing = {
         }
         return controlId;
     }
-
+    ,onGenericTab:function(baseId, obj) {
+        if(isDef(LiquidEditing.lastSelectedTab)) {
+            LiquidEditing.lastSelectedTab.classList.remove("liquidTabSel");
+            if(LiquidEditing.lastSelectedTabDiv)
+                LiquidEditing.lastSelectedTabDiv.style.display = 'none';
+        }
+        LiquidEditing.lastSelectedTab = obj;
+        LiquidEditing.lastSelectedTabDiv = obj != null ? document.getElementById(baseId+"."+obj.id) : null;
+        if(LiquidEditing.lastSelectedTab) {
+            LiquidEditing.lastSelectedTab.classList.add("liquidTabSel");
+            if(LiquidEditing.lastSelectedTabDiv)
+                LiquidEditing.lastSelectedTabDiv.style.display = '';
+        }
+    }
 }

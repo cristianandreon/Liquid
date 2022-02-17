@@ -1,12 +1,12 @@
 <%@ page 
     language="java" 
-    import="com.liquid.assets"
-    import="com.liquid.login"
     import="com.liquid.ThreadSession"
+    import="com.liquid.login"
     import="com.liquid.wsStreamerServer"
-    errorPage="" 
+    errorPage=""
     %><%!
-    %>    
+
+%>
 <!-- -->
 <!-- START of Liquid Framework Streamer Service (WebSocket) -->
 <!-- -->
@@ -26,16 +26,19 @@
 
         %>
 
-                <script src="<%=path%>/liquid/liquidStreamer.js?version=<%=jssVersion%>"></script>
+                <script src="<%=workspace.path%>/liquid/liquidStreamer.js?version=<%=workspace.version_string%>"></script>
                 
                 <!-- setup global var -->
                 <script>
                     <%
                         try {
-                            if(wsStreamerServer.webSocketHost != null) 
-                                out.println("LiquidStreamer.webSocketHost = \""+wsStreamerServer.webSocketHost+"\";;");
-                            if(wsStreamerServer.port > 0) 
-                                out.println("LiquidStreamer.port = "+wsStreamerServer.port+";");
+                            if(wsStreamerServer.webSocketHost != null) {
+                                out.println("console.info(\"LiquidStreamer.webSocketHost = '"+wsStreamerServer.webSocketHost+"'\");");
+                            } else {
+                                out.println("console.info(\"LiquidStreamer.webSocketHost = 'localhost'\");");
+                            }
+                            if(wsStreamerServer.port > 0)
+                                out.println("console.info(\"LiquidStreamer.port = "+wsStreamerServer.port+"\");");
                         } catch(Exception e) {
                             out.println("console.error(\"SERVER ERROR:"+e.getMessage()+"\");");
                         }
@@ -45,12 +48,111 @@
                 <!-- start the streamer -->
                 <script>
                     LiquidStreamer.openLiquidStreamer();
+                </script>
 
-                    if(LiquidStreamer.glLiquidWebSocketRunning) {
-                        console.warn("LIQUID: Streamer is activated");
+
+                <script>
+                    /**
+                     * Debug function to tail file in the server to console
+                     * @param fileName
+                     */
+                    function startServerFileTail(fileName) {
+                        if(LiquidStreamer.webSocketRunning) {
+                            if(fileName) {
+                                var liquid = null;
+                                var paramsObject = { operation:"start_tail", fileName:fileName };
+                                var method = null;
+                                var url = "liquid.jsp";
+                                var async = true;
+                                var data = null;
+                                var onReadyStateChange = function(param, jsEvent) {
+                                };
+                                var onUploadingProgress = function(param, jsEvent) {
+                                };
+                                var onDownloadingProgress = function(param, jsEvent) {
+                                };
+                                var onCompleted = function(param, jsEvent) {
+                                    // console.info("LIQUID SERVER TAIL: onCompleted():"+data);
+                                    var data = jsEvent ? jsEvent.currentTarget.response : null;
+                                    var p = document.createElement("p");
+                                    p.innerText = data;
+                                    if(data.indexOf(" ERROR")>=0) {
+                                        p.style.color='darkred';
+                                    } else if(data.indexOf(" WARN")>=0) {
+                                        p.style.color='darkyellor';
+                                    } else if(data.indexOf(" INFO")>=0) {
+                                        p.style.color='black';
+                                    } else if(data.indexOf(" DEBUG")>=0) {
+                                        p.style.color='darkgray';
+                                    } else {
+                                    }
+                                    document.getElementById("msgContainer").appendChild(p);
+                                };
+                                var onFailed = function(param, jsEvent) {
+                                    console.info("LIQUID SERVER TAIL: onFailed():"+data);
+                                };
+                                var onCancelled = function(param, jsEvent) {
+                                    console.info("LIQUID SERVER TAIL: onCancelled():"+data);
+                                };
+                                var reason = "Liquid Server tail start";
+
+                                Liquid.sendRequest(liquid,
+                                    paramsObject,
+                                    method,
+                                    url,
+                                    async,
+                                    data,
+                                    onReadyStateChange,
+                                    reason,
+                                    onUploadingProgress,
+                                    onDownloadingProgress,
+                                    onCompleted,
+                                    onFailed,
+                                    onCancelled
+                                );
+
+                            } else {
+                                console.error("LIQUID: startServerFileTail(): Invalid file name");
+                            }
+                        } else {
+                            console.error("LIQUID: Streamer is NOT activated");
+                        }
+                    }
+                    function stopServerFileTail() {
+                        if(LiquidStreamer.webSocketRunning) {
+                            {
+                                var liquid = null;
+                                var paramsObject = { operation:"stop_tail" };
+                                var method = null;
+                                var url = "liquid.jsp";
+                                var async = false;
+                                var data = null;
+                                var reason = "Liquid Server tail stop";
+
+                                Liquid.sendRequest(liquid,
+                                    paramsObject,
+                                    method,
+                                    url,
+                                    async,
+                                    data,
+                                    null,
+                                    reason,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                                );
+                            }
+                        } else {
+                            console.error("LIQUID: Streamer is NOT activated");
+                        }
                     }
                 </script>
-                
+
+
+
+
 
         <% } else { %>
                 <script>console.warn("LIQUID: Streamer is not running...Please see server log");</script>
