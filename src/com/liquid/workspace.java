@@ -4067,7 +4067,15 @@ public class workspace {
                             };
 
                             zkFileContent += "\n";
-                            zkFileContent += "<!-- START of callback functions :";
+
+
+
+                            //
+                            // Funzioni gestone eventi
+                            //
+                            String zkFunctionsFileContent = "";
+
+                            zkFunctionsFileContent += "<!-- START of callback functions :";
                             for(int ifn=0; ifn<fncList.length; ifn++) {
                                 String fncClass = fncList[ifn];
                                 String [] fncParts = fncClass.split("\\.");
@@ -4093,33 +4101,73 @@ public class workspace {
                                             + "\treturn errori;\n"
                                             + "}\n";
 
-                                    zkFileContent += "\n";
-                                    zkFileContent += "// Gestione inserimento riga tabella " + tableName.toUpperCase() + "\n";
-                                    zkFileContent += "/**"
+                                    zkFunctionsFileContent += "\n";
+                                    zkFunctionsFileContent += "// Gestione inserimento riga tabella " + tableName.toUpperCase() + "\n";
+                                    zkFunctionsFileContent += "/**"
                                             +"*"
                                              +"* @param panelContext"
                                              +"* @return"
                                              +"* @throws Exception"
                                             +"*/";
 
-                                    zkFileContent += fncCode;
+                                    zkFunctionsFileContent += fncCode;
 
                                 } else if(ifn == 1) {
                                     // TODO : verifica valori not null
+                                    String beanVarName = utility.toCamelCase(beanName);
+                                    String labelName = null;
                                     String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
                                             + "\tObject bean = panelContext.getBean();\n"
                                             + "\tArrayList errori = new ArrayList();\n"
-                                            + "\tif (bean instanceof ProfileRole) {\n"
-                                            + "\t\t/*\n"
-                                            + "\t\tif (GeiUtil.isNullorBlank(((ProfileRole) bean).get...())) {\n"
-                                            + "\t\t\terrori.add(\"Attenzione: Necessario inserire un codice\");\n"
-                                            + "\t\t}\n"
-                                            + "\t\t*/\n"
+                                            + "\tif (bean instanceof "+beanName+") {\n"
+                                            + "\t\t"+beanName+" " + beanVarName + " = ("+beanName+")bean;\n";
+
+
+                                    // Campi da contrrollare
+                                    for (int irf = 0; irf < cols.length(); irf++) {
+                                        JSONObject col = cols.getJSONObject(irf);
+                                        String name = col.has("name") ? col.getString("name") : null;
+                                        JSONObject target_col = getColumnByName(name, cols);
+
+                                        if (target_col != null) {
+                                            boolean isRequired = false;
+                                            if(target_col.has("required")) {
+                                                if (target_col.getBoolean("required")) {
+                                                    isRequired = true;
+                                                }
+                                            }
+                                            if(target_col.has("requiredByDB")) {
+                                                if (target_col.getBoolean("requiredByDB")) {
+                                                    isRequired = true;
+                                                }
+                                            }
+
+                                            if(isRequired) {
+                                                String label = target_col.has("label") ? target_col.getString("label") : name;
+                                                String getMethod = nameSpacer.getGetter(name);
+                                                if (target_col.has("lookup")) {
+                                                    fncCode += ""
+                                                            + "\t\tif (" + beanVarName + "." + getMethod + "() == null) {\n"
+                                                            + "errori.add(\"Attenzione: necessario definire il campo \\\"" + label + "\\\"\");"
+                                                            + "}";
+                                                } else {
+                                                    fncCode += ""
+                                                            + "\t\tif (GeiUtil.isNullorBlank(" + beanVarName + "." + getMethod + "())) {\n"
+                                                            + "\t\t\terrori.add(\"Attenzione: necessario definire il campo \"" + label + "\");\n"
+                                                            + "\t\t}\n";
+                                                }
+                                            }
+                                        }
+                                    }
+
+
+                                    fncCode += ""
                                             + "\t}\n"
                                             + "\treturn errori;\n"
                                             + "\t}\n";
-                                    zkFileContent += "// Gestione Salvataggio riga tabella "+tableName.toUpperCase()+"\n";
-                                    zkFileContent += fncCode;
+
+                                    zkFunctionsFileContent += "// Gestione Salvataggio riga tabella "+tableName.toUpperCase()+"\n";
+                                    zkFunctionsFileContent += fncCode;
 
                                 } else if(ifn == 2) {
 
@@ -4128,46 +4176,49 @@ public class workspace {
                                             + "\tArrayList errori = new ArrayList();\n"
                                             + "\treturn errori;\n"
                                             + "}\n";
-                                    zkFileContent += "// Gestione Abilitazione pulsanti "+tableName.toUpperCase()+"\n";
-                                    zkFileContent += fncCode;
+                                    zkFunctionsFileContent += "// Gestione Abilitazione pulsanti "+tableName.toUpperCase()+"\n";
+                                    zkFunctionsFileContent += fncCode;
 
                                 } else if(ifn == 4) {
                                     String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
                                             + "\tArrayList errori = new ArrayList();\n"
                                             + "\treturn errori;\n"
                                             + "}\n";
-                                    zkFileContent += "// Gestione caricamento (onLoad)"+tableName.toUpperCase()+"\n";
-                                    zkFileContent += fncCode;
+                                    zkFunctionsFileContent += "// Gestione caricamento (onLoad)"+tableName.toUpperCase()+"\n";
+                                    zkFunctionsFileContent += fncCode;
 
                                 } else if(ifn == 5) {
                                     String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
                                             + "\tArrayList errori = new ArrayList();\n"
                                             + "\treturn errori;\n"
                                             + "}\n";
-                                    zkFileContent += "// Gestione post caricamento (onPostLoad) "+tableName.toUpperCase()+"\n";
-                                    zkFileContent += fncCode;
+                                    zkFunctionsFileContent += "// Gestione post caricamento (onPostLoad) "+tableName.toUpperCase()+"\n";
+                                    zkFunctionsFileContent += fncCode;
 
                                 } else if(ifn == 6) {
                                     String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
                                             + "\tArrayList errori = new ArrayList();\n"
                                             + "\treturn errori;\n"
                                             + "}\n";
-                                    zkFileContent += "// Gestione post caricamento (onBeforeSalva) "+tableName.toUpperCase()+"\n";
-                                    zkFileContent += fncCode;
+                                    zkFunctionsFileContent += "// Gestione post caricamento (onBeforeSalva) "+tableName.toUpperCase()+"\n";
+                                    zkFunctionsFileContent += fncCode;
 
                                 } else if(ifn == 7) {
                                     String fncCode = "public static ArrayList " + fnc + "(PanelBeanManager panelContext) throws Exception{\n"
                                             + "\tArrayList errori = new ArrayList();\n"
                                             + "\treturn errori;\n"
                                             + "}\n";
-                                    zkFileContent += "// Gestione post caricamento (onPostSalva) "+tableName.toUpperCase()+"\n";
-                                    zkFileContent += fncCode;
+                                    zkFunctionsFileContent += "// Gestione post caricamento (onPostSalva) "+tableName.toUpperCase()+"\n";
+                                    zkFunctionsFileContent += fncCode;
                                 }
                             }
-                            zkFileContent += "\n";
-                            zkFileContent += "\n";
-                            zkFileContent += "END of callback functions -->";
 
+                            zkFunctionsFileContent += "\n";
+                            zkFunctionsFileContent += "\n";
+                            zkFunctionsFileContent += "END of callback functions -->";
+
+
+                            zkFileContent += zkFunctionsFileContent;
 
                             // Pulsanti del Menu
                             zkFileContent += "\n"

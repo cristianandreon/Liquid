@@ -78,7 +78,7 @@ public class ColumnsManager {
                 String rowData = "[";
                 long nRecs = 0;
                 for(int ic=0; ic<cols.length(); ic++) {
-                    boolean visible = true, readonly = false, link = false, autocomplete = false, foreignEdit = false;
+                    boolean visible = true, readonly = false, link = false, autocomplete = false, foreignEdit = false, required = false;
                     String field = "", name = "", label = "", type = "", foreignTable = "", foreignColumn = "", column = "", lookup = "", options = "", editor = "";
                     int width = 0;
                     JSONObject col = null, optionsJson = null, editorJson = null, lookupJson = null;
@@ -90,6 +90,7 @@ public class ColumnsManager {
                     try { width = col.getInt("width"); } catch (Exception e) {  }
                     try { visible = col.getBoolean("visible"); } catch (Exception e) {  }
                     try { readonly = col.getBoolean("readonly"); } catch (Exception e) {  }
+                    try { required = col.getBoolean("required"); } catch (Exception e) {  }
                     try { link = col.getBoolean("link"); } catch (Exception e) {  }
                     try { foreignTable = col.getString("foreignTable"); } catch (Exception e) {  }
                     try { foreignColumn = col.getString("foreignColumn"); } catch (Exception e) {  }
@@ -121,6 +122,7 @@ public class ColumnsManager {
                     rowData += ",\""+(cField++)+"\":\""+(lookupJson != null ? lookupJson.toString().replace("\"", "\\\"") : lookup != null ? lookup.replace("\"", "\\\"") : "" )+"\"";
                     rowData += ",\""+(cField++)+"\":\""+(optionsJson != null ? optionsJson.toString().replace("\"", "\\\"") : options != null ? options.replace("\"", "\\\"") : "" )+"\"";
                     rowData += ",\""+(cField++)+"\":\""+(editorJson != null ? editorJson.toString().replace("\"", "\\\"") : editor != null ? editor.replace("\"", "\\\"") : "" )+"\"";
+                    rowData += ",\""+(cField++)+"\":"+required;
                     rowData += "}";
                     nRecs++;
                 }                
@@ -149,6 +151,7 @@ public class ColumnsManager {
                     +",{ \"name\":\"LOOKUP\", \"label\":\"Lookup\", \"field\":\""+String.valueOf(cField++)+"\", \"width\":\"100\", \"editor\":\"systemLookup\" }"
                     +",{ \"name\":\"OPTIONS\", \"label\":\"Options\", \"field\":\""+String.valueOf(cField++)+"\", \"width\":\"200\", \"editor\":\"systemOptions\" }"
                     +",{ \"name\":\"EDITOR\", \"label\":\"Editor\", \"field\":\""+String.valueOf(cField++)+"\", \"width\":\"200\", \"editor\":\"systemEditors\" }"
+                    +",{ \"name\":\"REQUIRED\", \"label\":\"Required\", \"field\":\""+String.valueOf(cField++)+"\", \"width\":\"70\", \"editor\":\"values\", \"editorValues\":[\"true\",\"false\"] }"
                     +"]"
                     +",\"mode\":\"popup\""
                     +",\"modless\":true"

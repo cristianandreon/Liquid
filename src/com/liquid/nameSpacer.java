@@ -85,5 +85,19 @@ public class nameSpacer {
 
         logger.log(Level.INFO, " nameSpacer test : " + test + " -> " + h + " -> " + db);
     }
+
+
+    public static String capitalizeFirstLetter(String s) {
+        return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "").toLowerCase();
+    };
+
+    public static String getGetter(String name) {
+        String field = DB2Hibernate(name);
+        return "get"+capitalizeFirstLetter(field);
+    }
+    public static String getSetter(String name) {
+        String field = DB2Hibernate(name);
+        return "get"+capitalizeFirstLetter(field);
+    }
 }
 
