@@ -29,13 +29,8 @@ public class ThreadSession {
     //
     //
 
-    /**
-     *
-     */
-
     private static final int MAX_AVAILABLE = 1;
-
-    static private final Semaphore semaphore = new Semaphore(MAX_AVAILABLE, true);
+    private static final Semaphore semaphore = new Semaphore(MAX_AVAILABLE, true);
 
 
     public String browser = "";

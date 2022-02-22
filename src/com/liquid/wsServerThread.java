@@ -61,11 +61,11 @@ class wsServerThread extends Thread {
             Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        run = true;            
+        Socket clientSocket = null;
+
+        run = true;
 
         while(run) {
-
-            Socket clientSocket = null;
 
             try {
                 // waits until a client connects
@@ -81,6 +81,13 @@ class wsServerThread extends Thread {
                 error = ex.getLocalizedMessage();
                 wsStreamerServer.errors += error + "\n";
                 throw new IllegalStateException("Could not wait for client connection", ex);
+            }
+        }
+        if(clientSocket != null) {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

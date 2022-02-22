@@ -79,7 +79,7 @@ public class ColumnsManager {
                 long nRecs = 0;
                 for(int ic=0; ic<cols.length(); ic++) {
                     boolean visible = true, readonly = false, link = false, autocomplete = false, foreignEdit = false, required = false;
-                    String field = "", name = "", label = "", type = "", foreignTable = "", foreignColumn = "", column = "", lookup = "", options = "", editor = "";
+                    String field = "", name = "", label = "", type = "", foreignTable = "", foreignColumn = "", column = "", lookup = "", options = "", editor = "", asType="";
                     int width = 0;
                     JSONObject col = null, optionsJson = null, editorJson = null, lookupJson = null;
                     try { col = cols.getJSONObject(ic); } catch (Exception e) {  }
@@ -103,7 +103,8 @@ public class ColumnsManager {
                     try { options  = col.getString("options"); } catch (Exception e) {  }
                     try { editorJson = col.getJSONObject("editor"); } catch (Exception e) {  }
                     try { editor = col.getString("editor"); } catch (Exception e) {  }
-                    
+                    try { asType = col.getString("asType"); } catch (Exception e) {  }
+
                     int cField = 1;
                     rowData += (nRecs>0?",":"")+"{";
                     rowData +=  "\""+(cField++)+"\":\""+field+"\"";
@@ -123,6 +124,7 @@ public class ColumnsManager {
                     rowData += ",\""+(cField++)+"\":\""+(optionsJson != null ? optionsJson.toString().replace("\"", "\\\"") : options != null ? options.replace("\"", "\\\"") : "" )+"\"";
                     rowData += ",\""+(cField++)+"\":\""+(editorJson != null ? editorJson.toString().replace("\"", "\\\"") : editor != null ? editor.replace("\"", "\\\"") : "" )+"\"";
                     rowData += ",\""+(cField++)+"\":"+required;
+                    rowData += ",\""+(cField++)+"\":\""+asType+"\"";
                     rowData += "}";
                     nRecs++;
                 }                
@@ -152,6 +154,7 @@ public class ColumnsManager {
                     +",{ \"name\":\"OPTIONS\", \"label\":\"Options\", \"field\":\""+String.valueOf(cField++)+"\", \"width\":\"200\", \"editor\":\"systemOptions\" }"
                     +",{ \"name\":\"EDITOR\", \"label\":\"Editor\", \"field\":\""+String.valueOf(cField++)+"\", \"width\":\"200\", \"editor\":\"systemEditors\" }"
                     +",{ \"name\":\"REQUIRED\", \"label\":\"Required\", \"field\":\""+String.valueOf(cField++)+"\", \"width\":\"70\", \"editor\":\"values\", \"editorValues\":[\"true\",\"false\"] }"
+                    +",{ \"name\":\"ASTYPE\", \"label\":\"As type\", \"field\":\""+String.valueOf(cField++)+"\", \"width\":\"100\", \"editor\":\"values\", \"editorValues\":[\"string\",\"date\",\"datetime\"] }"
                     +"]"
                     +",\"mode\":\"popup\""
                     +",\"modless\":true"

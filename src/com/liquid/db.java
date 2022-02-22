@@ -586,7 +586,7 @@ public class db {
 
 
                     /*
-                    //  Processo sorgente dati runtime
+                     * Processo sorgente dati runtime
                      */
                     try {
                         if(tbl_wrk.tableJson.has("sourceData")) {

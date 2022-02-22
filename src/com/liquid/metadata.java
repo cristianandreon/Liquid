@@ -1244,7 +1244,7 @@ public class metadata {
                                 foreignTable.foreignColumns = new ArrayList<String>(Arrays.asList(rs.getString("PKCOLUMN_NAME").split(",")));
                                 foreignTable.columns = new ArrayList<String>(Arrays.asList(rs.getString("FKCOLUMN_NAME").split(",")));
                                 foreignTable.foreignWrk = foreignTable.foreignTable + ".default";
-                                foreignTable.type = "exp";
+                                foreignTable.type = "FOREIGN KEY";
                                 result.add(foreignTable);
                             }
                         }
@@ -1339,7 +1339,7 @@ public class metadata {
                                     foreignTable.foreignColumns = new ArrayList<String>(Arrays.asList(rs.getString("FKCOLUMN_NAME").split(",")));
                                     foreignTable.columns = new ArrayList<String>(Arrays.asList(rs.getString("PKCOLUMN_NAME").split(",")));
                                     foreignTable.foreignWrk = foreignTable.foreignTable + ".default";
-                                    foreignTable.type = "ext";
+                                    foreignTable.type = "REFERENCE";
                                     result.add(foreignTable);
                                 }
                             }

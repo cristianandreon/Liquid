@@ -253,13 +253,13 @@ var LiquidStreamer = {
                                         liquid.xhr.responseText = response;
                                         liquid.xhr.ws = true;
 
-                                        queueItem.callback( { liquid:liquid, xhr:liquid ? liquid.xhr : null, param:queueItem.param, token:queueItem.token, data:event.data } );
+                                        queueItem.callback( liquid, liquid ? liquid.xhr : null, { param:queueItem.param, token:queueItem.token, data:event.data } );
                                     } catch(e) {
                                         console.error("queueProcessLiquidStreamer() error:"+e);
                                     }
  
                                 } else {
-                                    queueItem.callback( { liquid:liquid, xhr:null, param:queueItem.param, token:queueItem.token, data:event.data } );
+                                    queueItem.callback( liquid, null, { param:queueItem.param, token:queueItem.token, data:event.data } );
                                 }                                 
                             }
                         }

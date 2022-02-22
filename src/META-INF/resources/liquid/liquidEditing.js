@@ -3,9 +3,9 @@
  */
 
 var LiquidEditing = {
-    version: 1.06,
+    version: 1.07,
     controlid:"Liquid framework - Editing module",
-    lastUpdate: '15/02/2022',
+    lastUpdate: '20/02/2022',
     
     
     /**
@@ -202,36 +202,39 @@ var LiquidEditing = {
                     var nCols = Number(gridNumColumns) > 0 ? Number(gridNumColumns) : 1;
                     var nRows = Math.ceil(sels.length / nCols);
                     var gridColumns = [];
-
                     for (var i = 0; i < sels.length; i++) {
-                        var label = liquid.tableJson.columns[i].ramarks ? liquid.tableJson.columns[i].ramarks : liquid.tableJson.columns[i].name;
-                        var gridColumn = {
-                            name: sels[i]["COLUMN"]
-                            , tooltip: sels[i]["REMARKS"]
-                            , label: label.toDescriptionCase()
-                            , row: Math.floor(i / nCols)
-                            , col: (i % nCols)
-                        };
-                        gridColumns.push(gridColumn);
-                        if (ftIndex1B) {
-                            // TODO : add column ?
-                            var tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B - 1].controlId);
-                            var iField1B = Liquid.solveGridField(tagetLiquid, gridColumn);
-                            if (iField1B <= 0) {
-                                var listColumn = {name: sels[i]["COLUMN"], visible: false};
-                                tagetLiquid.tableJsonSource.columns.push(listColumn);
-                                tagetLiquid.tableJsonSource.columnsResolved = false;
-                            }
-                        } else {
-                            var iField1B = Liquid.solveGridField(liquid, gridColumn);
-                            if (iField1B <= 0) {
-                                var listColumn = {name: sels[i]["COLUMN"], visible: false};
-                                liquid.tableJsonSource.columns.push(listColumn);
-                                liquid.tableJsonSource.columnsResolved = false;
+                        var target_col = Liquid.getColumn(liquid, sels[i].COLUMN);
+                        if(target_col) {
+                            var label = sels[i].REMARKS  ? (sels[i].REMARKS) : (target_col.ramarks ? target_col.ramarks : target_col.name);
+                            var gridColumn = {
+                                name: sels[i]["COLUMN"]
+                                , tooltip: sels[i]["REMARKS"]
+                                , label: label.toDescriptionCase()
+                                , row: Math.floor(i / nCols)
+                                , col: (i % nCols)
+                            };
+                            gridColumns.push(gridColumn);
+                            if (ftIndex1B) {
+                                // TODO : add column ?
+                                var tagetLiquid = Liquid.getLiquid(liquid.foreignTables[ftIndex1B - 1].controlId);
+                                var iField1B = Liquid.solveGridField(tagetLiquid, gridColumn);
+                                if (iField1B <= 0) {
+                                    var listColumn = {name: sels[i]["COLUMN"], visible: false};
+                                    tagetLiquid.tableJsonSource.columns.push(listColumn);
+                                    tagetLiquid.tableJsonSource.columnsResolved = false;
+                                }
+                            } else {
+                                var iField1B = Liquid.solveGridField(liquid, gridColumn);
+                                if (iField1B <= 0) {
+                                    var listColumn = {name: sels[i]["COLUMN"], visible: false};
+                                    liquid.tableJsonSource.columns.push(listColumn);
+                                    liquid.tableJsonSource.columnsResolved = false;
+                                }
                             }
                         }
                     }
-                    if (typeof liquid.tableJsonSource.grids === 'undefined' || !liquid.tableJsonSource.grids) liquid.tableJsonSource.grids = [];
+                    if (typeof liquid.tableJsonSource.grids === 'undefined' || !liquid.tableJsonSource.grids)
+                        liquid.tableJsonSource.grids = [];
                     var newGridJson = {
                         name: gridName,
                         title: gridName,
@@ -750,7 +753,7 @@ var LiquidEditing = {
                 liquidJsonString = liquidJsonString.substring(1);
             }
             LiquidEditing.controlFromJSON = liquidJsonString;
-            Liquid.setCookie("controlFromJSON", btoa(LiquidEditing.controlFromJSON), null);
+            Liquid.setCookie("controlFromJSON", btoa(LiquidEditing.controlFromJSON), 1);
             return LiquidEditing.onNewWindowFromJsonProcess(obj_id, mode, parentObjId, liquidJsonString);
         }
     },
@@ -1661,8 +1664,73 @@ var LiquidEditing = {
             }
         }
     },
-    
-    
+    onNewLookupOrForeignTable:function(event, mode) {
+        var obj = typeof event === 'object' ? event.target : null;
+        var obj_id = typeof event === 'object' ? obj.id : event;
+        var liquid = typeof event === 'object' ? Liquid.getLiquid(obj) : Liquid.getLiquid(event);
+        LiquidEditing.onContextMenuClose();
+        if(liquid) {
+            var nameItems = obj_id.split(".");
+            Liquid.startPopup('liquidSelectForeignTablesAndLookups', window.liquidSelectForeignTablesAndLookups);
+            var selectorLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
+            selectorLiquid.tableJson.caption = "New Lookup or Foreign Table : <b>Define by foreign keys</b>";
+            selectorLiquid.tableJson.database = liquid.tableJson.database;
+            selectorLiquid.tableJson.schema = liquid.tableJson.schema;
+            selectorLiquid.tableJson.table = liquid.tableJson.table;
+            selectorLiquid.tableJson.column = null;
+            Liquid.loadData(selectorLiquid, null, "newLookupOrForeignTable");
+            selectorLiquid.onPostClosed = "LiquidEditing.onNewLookupOrForeignTableProcess('"+obj_id+"','"+mode+"')";
+            if(typeof event === 'object') event.stopPropagation();
+        }
+    },
+    onNewLookupOrForeignTableProcess:function(obj_id, mode) {
+        var liquid = Liquid.getLiquid(obj_id);
+        if(liquid) {
+            var nameItems = obj_id.split(".");
+            var selectorLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
+            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
+                if(selectorLiquid.tableJson.selections) {
+                    for(var isel=0; isel<selectorLiquid.tableJson.selections.length; isel++) {
+                        var sel = selectorLiquid.tableJson.selections[isel];
+                        if(sel) {
+                            var foreignName = prompt("Enter folder name", ""+sel["FOREIGN_TABLE"]);
+                            if(foreignName) {
+                                var newForeignTableJson = null;
+                                var newLookupJson = null;
+                                // alert("New foreign table : "+sel["TABLE"]+"."+sel["COLUMN"]+"="+sel["FOREIGN_TABLE"]+"."+sel["FOREIGN_COLUMN"]);
+
+
+                                if(sel["USEAS"] == "LOOKUP") {
+                                    newLookupJson = { column:sel["COLUMN"], foreignTable:sel["FOREIGN_TABLE"], foreignColumn:sel["FOREIGN_COLUMN"], options:{ editable:true, autoSelect:true, autoSizeColumns:true } };
+
+                                    for(var ic=0; ic<liquid.tableJsonSource.columns.length; ic++) {
+                                        if(liquid.tableJsonSource.columns[ic].name == sel["COLUMN"]) {
+                                            liquid.tableJsonSource.columns[ic].lookup = newLookupJson;
+                                        }
+                                    }
+                                    try { console.log("INFO: new lookup : \n"+JSON.stringify(newLookupJson)); } catch(e) { console.error(e); }
+
+                                } else if(sel["USEAS"] == "FOREIGN TABLE") {
+                                    newForeignTableJson = { name:foreignName, tooltip:"", icon:"", column:sel["COLUMN"], foreignTable:sel["FOREIGN_TABLE"], foreignColumn:sel["FOREIGN_COLUMN"], options:{ editable:true, autoSelect:true, autoSizeColumns:true } };
+                                    newForeignTableJson["height"] = Liquid.defaultMultipanelHeight;
+                                    newForeignTableJson["text"] = sel["FOREIGN_TABLE"];
+                                    newForeignTableJson["options"] = { navVisible:false };
+                                    if(typeof liquid.tableJsonSource.foreignTables === 'undefined' || !liquid.tableJsonSource.foreignTables) liquid.tableJsonSource.foreignTables = [];
+
+                                    try { console.log("INFO: new foreign table json : \n"+JSON.stringify(newForeignTableJson)); } catch(e) { console.error(e); }
+
+                                } else {
+
+                                }
+                            }
+                        }
+                    }
+                    Liquid.setAskForSave(liquid, true);
+                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
+                }
+            }
+        }
+    },
     createContextMenu:function() {
         var menu = document.getElementById("liquidContextMenu");
         if(!menu) {
@@ -1699,6 +1767,7 @@ var LiquidEditing = {
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewLayout('"+liquid.controlId+".newLayout')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Layout"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewForeignTable('"+liquid.controlId+".newForeignTable','')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Foreign Table"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewForeignTable('"+liquid.controlId+".newForeignTable','multipanel')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Multipanel"+"</a></p>"
+                +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewLookupOrForeignTable('"+liquid.controlId+".newLookupOrForeignTable','auto')\" >"+addImg+"<a href=\"javascript:void(0)\" >Lookup/ForeignTable"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewFilters('"+liquid.controlId+".newFilters')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Filter Group"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewFilters('"+liquid.controlId+".newFilter')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Filter Field"+"</a></p>"
                 +"<p class=\"liquidContextMenu-item\" onclick=\"LiquidEditing.onNewEvent('"+liquid.controlId+".newEvent')\" >"+addImg+"<a href=\"javascript:void(0)\" >New Event"+"</a></p>"

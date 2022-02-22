@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.1.94
+// Liquid ver.1.95
 //
 //  First update 04-01-2020 - Last update 09-02-2022
 //
@@ -6019,6 +6019,7 @@ var Liquid = {
             liquid.lookupContainerCombo = document.getElementById(lookupContainerComboId);
             if (!liquid.lookupContainerCombo) {
                 liquid.lookupHeight = (typeof liquid.tableJson.height !== 'undefined' ? liquid.tableJson.height : (liquid.outDivObj.clientHeight > Liquid.minLookupHeight ? liquid.outDivObj.clientHeight : liquid.outDivObj.clientWidth * 2 / 3));
+                if(liquid.lookupHeight<=0) { liquid.lookupHeight = "auto"; }
                 liquid.lookupContainerCombo = document.createElement("div");
                 liquid.lookupContainerCombo.id = lookupContainerComboId;
                 liquid.lookupContainerCombo.style.width = "100%";
@@ -6139,7 +6140,7 @@ var Liquid = {
                         lookupLiquid.needResize = false;
                     }
                 }
-                // focus on forst item
+                // focus on first item
                 if (lookupLiquid.filtersFirstId) {
                     var filtersFirstId = document.getElementById(lookupLiquid.filtersFirstId);
                     if (filtersFirstId) {
@@ -6727,9 +6728,6 @@ var Liquid = {
                 var lookupIdColumnName = isDef(liquid.tableJson.idColumnField) ? liquid.tableJson.idColumnField : null;
                 var lookupFieldCol = Liquid.getColumn(liquid, lookupFieldName);
                 var lookupIdCol = Liquid.getColumn(liquid, lookupIdColumnName);
-
-                // var lookupTargetColumnName = isDef(liquid.tableJson.targetColumn) ? liquid.tableJson.targetColumnField : null;
-                // var lookupTagetCol = Liquid.getColumn(liquid, lookupTargetColumnName);
 
                 if (isDef(lookupFieldName)) {
                     if (!isDef(lookupFieldCol)) {
@@ -10811,10 +10809,14 @@ var Liquid = {
                     var lookupHeight = null;
                     if (isNaN(liquid.lookupHeight)) {
                         if (typeof liquid.lookupHeight === 'string') {
-                            if (liquid.lookupHeight.indexOf("%") > 0) {
-                                lookupHeight = liquid.outDivObj.offsetHeight;
+                            if (liquid.lookupHeight === 'auto') {
+                                liquid.lookupHeight = Liquid.defaultLookupHeight;
                             } else {
-                                lookupHeight = liquid.lookupHeight.replace(/[^0-9]/g, '');
+                                if (liquid.lookupHeight.indexOf("%") > 0) {
+                                    lookupHeight = liquid.outDivObj.offsetHeight;
+                                } else {
+                                    lookupHeight = liquid.lookupHeight.replace(/[^0-9]/g, '');
+                                }
                             }
                         }
                     } else {
@@ -14581,31 +14583,52 @@ var Liquid = {
         var timePicker = true;
         var closeOnDateSelect = false;
         if (col) {
-            if (col.type === "6") {
-                type = 'datetimepicker';
-                timePicker = false;
-                closeOnDateSelect = true;
-                format = formatDate;
-            } else if (col.type === "91") {
-                type = 'datetimepicker';
-                timePicker = false;
-                closeOnDateSelect = true;
-                format = formatDate;
-            } else if (col.type === "93") {
-                type = 'datetimepicker';
-                format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-                closeOnDateSelect = true;
+            if(isDef(col.asType)) {
+                try {
+                    if (col.asType.toLowerCase() === 'date') {
+                        type = 'datetimepicker';
+                        timePicker = false;
+                        format = formatDate;
+                        closeOnDateSelect = true;
+                    } else if (col.asType.toLowerCase() === 'datetime' || col.asType.toLowerCase() === 'timestamp') {
+                        type = 'datetimepicker';
+                        timePicker = true;
+                        format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+                        closeOnDateSelect = true;
+                    }
+                } catch(e) {}
             } else {
-                if (params) {
-                    if (params.type === 'date') {
-                        // type = 'datepicker';
-                        type = 'datetimepicker';
-                        format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-                    } else if (params.type === 'date') {
-                        type = 'datetimepicker';
-                        format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-                    } else {
-                        return;
+                if (col.type === "6") { // date picker
+                    type = 'datetimepicker';
+                    timePicker = false;
+                    closeOnDateSelect = true;
+                    format = formatDate;
+                } else if (col.type === "91") {  // date picker
+                    type = 'datetimepicker';
+                    timePicker = false;
+                    closeOnDateSelect = true;
+                    format = formatDate;
+                } else if (col.type === "93") { // date time picker
+                    type = 'datetimepicker';
+                    timePicker = true;
+                    format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+                    closeOnDateSelect = true;
+                } else {
+                    if (params) {
+                        if (params.type === 'date') {
+                            // type = 'datepicker';
+                            type = 'datetimepicker';
+                            timePicker = false;
+                            format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y';
+                            closeOnDateSelect = true;
+                        } else if (params.type === 'datetime' || params.type === 'timestamp') {
+                            type = 'datetimepicker';
+                            timePicker = true;
+                            format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+                            closeOnDateSelect = true;
+                        } else {
+                            return;
+                        }
                     }
                 }
             }
@@ -14616,47 +14639,32 @@ var Liquid = {
             try {
                 jQ1124(obj).datetimepicker({
                     showAnim: "slideDown"
-                    ,
-                    step: 1
-                    ,
-                    format: format
-                    ,
-                    formatDate: formatDate
-                    ,
-                    formatTime: timeFormat
-                    ,
-                    showSecond: true,
-                    showMillisec: true
-                    ,
-                    stepHour: 1,
-                    stepMinute: 1,
-                    stepSecond: 1
-                    ,
-                    closeOnDateSelect: closeOnDateSelect
-                    ,
-                    showTimePicker: timePicker,
+                    ,step: 1
+                    ,format: format
+                    ,formatDate: formatDate
+                    ,formatTime: timeFormat
+                    ,showSecond: true
+                    ,showMillisec: true
+                    ,stepHour: 1
+                    ,stepMinute: 1
+                    ,stepSecond: 1
+                    ,closeOnDateSelect: closeOnDateSelect
+                    ,showTimePicker: timePicker,
                     timepicker: timePicker,
                     timePickerSeconds: false,
                     timePickerIncrement: 1
-                    ,
-                    dayOfWeekStart: 1
-                    ,
-                    changeMonth: true,
+                    ,dayOfWeekStart: 1
+                    ,changeMonth: true,
                     changeYear: true
-                    ,
-                    beforeShow: function () {
-                    }
-                    ,
-                    onShow: function (o, $input, event) {
+                    ,beforeShow: function () {}
+                    ,onShow: function (o, $input, event) {
                         var opt = {};
                         if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
                         jQ1124(controlName).datetimepicker("option", opt);
                         jQ1124(controlName).css('z-index', 90000);
                         jQ1124().datetimepicker("value", value);
                         this.setOptions(opt);
-                    }
-                    ,
-                    onClose: function (o) {
+                    },onClose: function (o) {
                         if (liquid) liquid.gridOptions.api.stopEditing();
                     }
                 });
@@ -17834,6 +17842,44 @@ var Liquid = {
             }
         } catch(e) { console.error(e); }
     },
+
+    /*  ES. lookup
+    columns:[
+                {...}
+                {
+                    "name":"TAB_TIPO_DISPOSITIVO.COD_TIPODISPOSITIVO",
+                    "label":"COD_TIPODISPOSITIVO",
+                    ...
+                    "lookup":"TAB_TIPO_DISPOSITIVO",        (nome della lookup per condivisione)
+                    "foreignTable":"TAB_TIPO_DISPOSITIVO",  (tabella esterna)
+                    "foreignColumn":"COD_TIPODISPOSITIVO",  (colonna nella tabella esterna)
+                    "column":"COD_TIPODISPOSITIVO",         (colonna nella tabella sorgente)
+                    "options":{
+                        "lookupField":"COD_TIPODISPOSITIVO",    (colonna "descrizione" nella tabella esterna)
+                        "idColumn":"COD_TIPODISPOSITIVO",       (colonna "id" nella tabella esterna)
+                        "idColumnTarget":"COD_TIPODISPOSITIVO", (colonna "id" destinazione nella tabella sorgente)
+                        "autoSelect":false,
+                        "columns":[{"name":"COD_TIPODISPOSITIVO"},{"name":"DES_TIPODISPOSITIVO"}],
+                        "navVisible":true,
+                        "height":200
+                },
+                {...}
+            ]
+     */
+    /**
+     *
+     * @param controlId     (Id of calling control)
+     * @param sourceCol     (column on the calling control)
+     * @param lookupControlId
+     * @param containerObjOrId
+     * @param json          (json o global var o control name owning the looup definition)
+     * @param lookupField   (field to set when select a row)
+     * @param options
+     * @param linkType
+     * @param fieldDescription
+     * @param enviroment
+     * @returns {LiquidCtrl|LiquidMenuXCtrl|*|null}
+     */
     startLookup:function(controlId, sourceCol, lookupControlId, containerObjOrId, json, lookupField, options, linkType, fieldDescription, enviroment) {
         var liquid = null;
         var lookupLiquid = null;
@@ -17901,7 +17947,7 @@ var Liquid = {
                             }
                         }
                         if(!lookupJson) { // by json in global var or object
-                            if(json.toLowerCase().endsWith(".json")) {
+                            if(typeof json === 'string' && json.toLowerCase().endsWith(".json")) {
                                 // wrap json prop to source var
                                 json = json.substring(0, json.length-5);
                             }
@@ -17917,9 +17963,28 @@ var Liquid = {
                                         }
                                     }
                                 }
+                            } else {
+                                // from json object
+                                if(typeof json === 'object') {
+                                    lookupJson = json;
+                                    // wrap properties
+                                    if(!isDef(lookupJson.table)) {
+                                        if(isDef(lookupJson.foreignTable)) {
+                                            lookupJson.table = lookupJson.foreignTable;
+                                        }
+                                    }
+                                    if(!isDef(lookupJson.lookupField)) {
+                                        if(isDef(lookupJson.foreignColumn)) {
+                                            lookupJson.lookupField = lookupJson.foreignColumn;
+                                        }
+                                    }
+                                    if(!isDef(lookupJson.columns)) {
+                                        lookupJson.columns = "*";
+                                    }
+                                }
                             }
                             if(!lookupJson) { // by var or object
-                                if(typeof lookupObj === 'string') {
+                                if(lookupObj && typeof lookupObj === 'string') {
                                     if(document.getElementById(lookupObj)) {
                                         console.error("ERROR : cannot create lookup by HTMLElement ... is should be a liquid control\n Make sure control "+json+" exist and is just registered at this time"
                                             +"\n*** Please check control:"+controlId+" field:"+sourceCol.name
@@ -17927,20 +17992,25 @@ var Liquid = {
                                         if(containerObj) containerObj.title = containerObj.placeholder = "Lookup error : control " + json + " not found";
                                     }
                                 } else {
-                                    if(lookupObj instanceof HTMLElement) {
+                                    if(lookupObj && lookupObj instanceof HTMLElement) {
                                         console.error("ERROR : cannot create lookup by HTMLElement ... is should be a liquid control\n Make sure control "+json+" exist and is just registered at this time"
                                             +"\n*** Please check control:"+controlId+" field:"+sourceCol.name
                                             +"\n\n N.B.: maybe you should load the control '"+(lookupObj.id ? lookupObj.id : lookupObj.name)+"' before of '"+controlId+"'\n");
                                         if(containerObj) containerObj.title = containerObj.placeholder = "Lookup error : control " + json + " not found";
+                                    } else {
+                                        console.error("unexpected case");
                                     }
                                 }
-                                if(typeof lookupObj === 'object') {
+                                if(lookupObj && typeof lookupObj === 'object') {
                                     if(isDef(lookupObj.json)) { // look inside our global var from server side { controlId:... json:... }
                                         lookupSourceGlobalVarControlId = lookupObj.controlId;
                                         lookupObj = lookupObj.json;
+                                    } else {
+                                        lookupSourceGlobalVarControlId = null;
+                                        lookupObj = lookupObj;
                                     }
                                 }
-                                lookupJson = typeof lookupObj === 'string' ? JSON.parse(lookupObj) : lookupObj;
+                                lookupJson = lookupObj && typeof lookupObj === 'string' ? JSON.parse(lookupObj) : lookupObj;
                                 registerControlId = lookupControlId;
                                 lookupSourceGlobalVar = json;
 
@@ -18041,14 +18111,14 @@ var Liquid = {
                                 // rest of the options transfer
                                 Liquid.overlayObjectContent(lookupJson, options);
                             }
-                            if(isDef(lookupJson.idColumn) || isDef(lookupJson.targetColumn)) {
+                            if(isDef(lookupJson.idColumn) || isDef(lookupJson.targetColumn) || isDef(lookupJson.idColumnTarget)) {
                                 //
                                 // Manage idColumn and targetColumn : search in all grids, all columns
                                 //
                                 if(linkType === 'grid') {
                                     // Link to tableJson.grid[].columns
                                     if(liquid.tableJson.grids) {
-                                        var aliasTargetColumn = liquid.tableJson.table + "." + lookupJson.targetColumn;
+                                        var aliasTargetColumn = lookupJson.idColumnTarget ? (liquid.tableJson.table + "." + lookupJson.idColumnTarget) : (liquid.tableJson.table + "." + lookupJson.targetColumn);
                                         var aliasIdColumn = lookupJson.table + "." + lookupJson.idColumn;
                                         for(let ig = 0; ig < liquid.tableJson.grids.length; ig++) {
                                             var grid = liquid.tableJson.grids[ig];
@@ -18056,10 +18126,11 @@ var Liquid = {
                                             parentGridName = grid.name;
                                             if(isDef(columns)) {
                                                 var isTargetColumnFound = false, isSourceColumnFound = false;
+                                                var targetColumn = lookupJson.idColumnTarget ? lookupJson.idColumnTarget : lookupJson.targetColumn;
                                                 for(let ic=0; ic<columns.length; ic++) {
                                                     try {
-                                                        if( columns[ic].name === aliasTargetColumn || columns[ic].name === lookupJson.targetColumn || columns[ic].field === lookupJson.targetColumn) {
-                                                            // link to tagret
+                                                        if( columns[ic].name === aliasTargetColumn || columns[ic].name === targetColumn || columns[ic].field === targetColumn) {
+                                                            // link to tagret column
                                                             if(!isDef(targetColumnLinkedObjIds)) targetColumnLinkedObjIds = [];
                                                             targetColumnLinkedObjIds.push(columns[ic].linkedObj.id);
                                                             isTargetColumnFound = true;
@@ -18078,6 +18149,9 @@ var Liquid = {
                                                     if(isDef(lookupJson.targetColumn)) {
                                                         console.debug("DEBUG : unable to find target column \"" + lookupJson.targetColumn + "\" on control:" + controlId + " field:" + lookupControlId + " check:" + fieldDescription);
                                                     }
+                                                    if(isDef(lookupJson.idColumnTarget)) {
+                                                        console.debug("DEBUG : unable to find target column \"" + lookupJson.idColumnTarget + "\" on control:" + controlId + " field:" + lookupControlId + " check:" + fieldDescription);
+                                                    }
                                                 }
                                                 if(!isSourceColumnFound) {
                                                     if(isDef(lookupJson.idColumn)) {
@@ -18091,20 +18165,25 @@ var Liquid = {
                                 // Link to tableJson.columns
                                 if(liquid.tableJson.columns) {
                                     var columns = liquid.tableJson.columns;
-                                    var aliasTargetColumn = liquid.tableJson.table + "." + lookupJson.targetColumn;
+                                    var aliasTargetColumn = lookupJson.idColumnTarget ? (liquid.tableJson.table + "." + lookupJson.idColumnTarget) : (liquid.tableJson.table + "." + lookupJson.targetColumn);
                                     var targetColumns = [];
                                     if(isDef(columns)) {
                                         for (var ic = 0; ic < columns.length; ic++) {
                                             var colName = isDef(columns[ic].runtimeName) ? columns[ic].runtimeName : columns[ic].name;
                                             var aliasTargetParts = null;
                                             var aliasTargetColumn2 = null;
-                                            if (isDef(lookupJson.targetColumn)) {
-                                                aliasTargetParts = lookupJson.targetColumn.split(".");
+                                            if (isDef(lookupJson.idColumnTarget)) {
+                                                aliasTargetParts = (lookupJson.idColumnTarget).split(".");
+                                                aliasTargetColumn2 = aliasTargetParts.length > 1 ? aliasTargetParts[1] : null;
+                                            } else if (isDef(lookupJson.targetColumn)) {
+                                                aliasTargetParts = (lookupJson.targetColumn).split(".");
                                                 aliasTargetColumn2 = aliasTargetParts.length > 1 ? aliasTargetParts[1] : null;
                                             }
+
                                             try {
                                                 var isIdColumnDefined = isDef(lookupJson.idColumn);
-                                                var isTargetColumn = (colName === lookupJson.targetColumn || colName === aliasTargetColumn || colName === aliasTargetColumn2 || columns[ic].field === lookupJson.targetColumn);
+                                                var targetColumn = (lookupJson.idColumnTarget ? lookupJson.idColumnTarget : lookupJson.targetColumn);
+                                                var isTargetColumn = (colName === targetColumn || colName === aliasTargetColumn || colName === aliasTargetColumn2 || columns[ic].field === targetColumn);
 
                                                 if (isTargetColumn) {
                                                     liquid.tableJson.columns[ic].isReflected = true;
@@ -18128,15 +18207,15 @@ var Liquid = {
                                 }
                             }
                             var sourceData = { // Link to the source
-                                lookupSourceControlId:lookupSourceControlId
-                                ,lookupSourceGlobalVar:lookupSourceGlobalVar
-                                ,lookupSourceGlobalVarControlId:lookupSourceGlobalVarControlId
-                                ,parentLiquidId:liquid.controlId
-                                ,parentColumn:(isDef(sourceCol) ? sourceCol.name : null)
-                                ,parentGridName:parentGridName
-                                ,idColumnLinkedFields:idColumnLinkedFields
-                                ,idColumnLinkedObjIds:idColumnLinkedObjIds
-                                ,targetColumnLinkedObjIds:targetColumnLinkedObjIds
+                                lookupSourceControlId: lookupSourceControlId ? lookupSourceControlId : null
+                                ,lookupSourceGlobalVar: lookupSourceGlobalVar
+                                ,lookupSourceGlobalVarControlId: lookupSourceGlobalVarControlId
+                                ,parentLiquidId: liquid ? liquid.controlId : null
+                                ,parentColumn: (isDef(sourceCol) ? sourceCol.name : null)
+                                ,parentGridName: parentGridName
+                                ,idColumnLinkedFields: idColumnLinkedFields
+                                ,idColumnLinkedObjIds: idColumnLinkedObjIds
+                                ,targetColumnLinkedObjIds: targetColumnLinkedObjIds
                             };
                             lookupJson.token = liquid.tableJson.token;
                             lookupLiquid = new LiquidCtrl( lookupControlId, containerObj, JSON.stringify(lookupJson)
@@ -19702,7 +19781,7 @@ var Liquid = {
         const d = new Date();
         d.setTime(d.getTime() + (exdays ? (exdays*24*60*60*1000) : 0) );
         let expires = exdays ? "expires="+ d.toUTCString() : "";
-        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        document.cookie = cname + "=" + cvalue; //  + ";" + expires + "";
     }
 };
 
