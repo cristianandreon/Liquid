@@ -58,6 +58,7 @@
                      */
                     function startServerFileTail(fileName) {
                         if(LiquidStreamer.webSocketRunning) {
+                            LiquidStreamer.lineNumber = 1;
                             if(fileName) {
                                 var liquid = null;
                                 var paramsObject = { operation:"start_tail", fileName:fileName };
@@ -75,11 +76,11 @@
                                     // console.info("LIQUID SERVER TAIL: onCompleted():"+data);
                                     var data = jsEvent ? jsEvent.currentTarget.response : null;
                                     var p = document.createElement("p");
-                                    p.innerText = data;
+                                    p.innerText = "["+(LiquidStreamer.lineNumber++)+"] " + data;
                                     if(data.indexOf(" ERROR")>=0) {
                                         p.style.color='darkred';
                                     } else if(data.indexOf(" WARN")>=0) {
-                                        p.style.color='darkyellor';
+                                        p.style.color='darkorange';
                                     } else if(data.indexOf(" INFO")>=0) {
                                         p.style.color='black';
                                     } else if(data.indexOf(" DEBUG")>=0) {
@@ -89,13 +90,16 @@
                                     document.getElementById("msgContainer").appendChild(p);
                                 };
                                 var onFailed = function(param, jsEvent) {
-                                    console.info("LIQUID SERVER TAIL: onFailed():"+data);
+                                    var err = "LIQUID SERVER TAIL: onFailed():"+data;
+                                    console.info(err);
+                                    return err;
                                 };
                                 var onCancelled = function(param, jsEvent) {
-                                    console.info("LIQUID SERVER TAIL: onCancelled():"+data);
+                                    var err = "LIQUID SERVER TAIL: onCancelled():"+data
+                                    console.info(err);
+                                    return err;
                                 };
                                 var reason = "Liquid Server tail start";
-
                                 Liquid.sendRequest(liquid,
                                     paramsObject,
                                     method,
@@ -112,11 +116,16 @@
                                 );
 
                             } else {
-                                console.error("LIQUID: startServerFileTail(): Invalid file name");
+                                var err = "LIQUID: startServerFileTail(): Invalid file name";
+                                console.error(err);
+                                return err;
                             }
                         } else {
-                            console.error("LIQUID: Streamer is NOT activated");
+                            var err = "LIQUID: Streamer is NOT activated";
+                            console.error(err);
+                            return err;
                         }
+                        return "";
                     }
                     function stopServerFileTail() {
                         if(LiquidStreamer.webSocketRunning) {

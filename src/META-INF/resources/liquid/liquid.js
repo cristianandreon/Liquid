@@ -19693,13 +19693,14 @@ var Liquid = {
                 xhr.open(method, url, async);
                 if(async) {
                     xhr.onreadystatechange = function() {
-                        return xhr.onReadyStateChange(thisLiquid, xhr);
+                        return xhr.onreadystatechange(thisLiquid, xhr);
                     }
                 }
                 xhr.send(data);
                 // Liquid.release_xhr(liquid);
                 if(!async) {
-                    return xhr.onReadyStateChange(liquid, xhr);
+                    if(onReadyStateChange)
+                        return onReadyStateChange(liquid, xhr);
                 }
             } /* else {
                 console.error("ERROR: sendRequest(): potential duplicate call on control '"+liquid.controlId

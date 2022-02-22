@@ -36,7 +36,7 @@ class FileTail extends Thread {
      * @param token
      * @return
      */
-    public static boolean start_tail_file(OutputStream outputStream, HttpServletRequest request, JspWriter jspWriter, String token) {
+    public static boolean start_tail_file(OutputStream outputStream, HttpServletRequest request, JspWriter jspWriter, String token) throws IOException {
         if(outputStream != null && request != null) {
             if(glFileTail != null) {
                 stop_tail_file(outputStream, request, jspWriter, token);
@@ -46,15 +46,24 @@ class FileTail extends Thread {
                 FileTail fileTail = new FileTail();
                 glFileTail = fileTail;
                 fileTail.fileName = request.getParameter("fileName");
-                fileTail.outputStream = outputStream;
-                fileTail.request = request;
-                fileTail.token = token;
-                fileTail.keepReadingTail = true;
 
-                // Avvio del thread
-                fileTail.start();
+                if(utility.fileExist(fileTail.fileName)) {
+                    fileTail.outputStream = outputStream;
+                    fileTail.request = request;
+                    fileTail.token = token;
+                    fileTail.keepReadingTail = true;
 
-                return true;
+                    // Avvio del thread
+                    fileTail.start();
+
+                    return true;
+                } else {
+                    fileTail.error = "File '"+fileTail.fileName+"' not found";
+                    outputStream.write(fileTail.error.getBytes());
+                    outputStream.flush();
+                    outputStream.close();
+                    return false;
+                }
             }
         }
         return false;
@@ -68,7 +77,9 @@ class FileTail extends Thread {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            glFileTail.stop();
+            if(glFileTail.isAlive()) {
+                glFileTail.stop();
+            }
             glFileTail = null;
             return true;
         }
@@ -76,6 +87,7 @@ class FileTail extends Thread {
     }
 
     public void run() {
+
         try {
 
             this.error = null;
@@ -116,6 +128,38 @@ class FileTail extends Thread {
             Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
             error = e.getMessage();
             keepReadingTail = false;
+            if(e instanceof java.net.SocketException) {
+                try {
+                    outputStream.close();
+                } catch (IOException e2) {
+                    e.printStackTrace();
+                }
+                outputStream = null;
+            }
+        }
+
+        if(outputStream != null) {
+            try {
+                if(error != null && !error.isEmpty()) {
+                    outputStream.write(("error:" + error).getBytes());
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                outputStream.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            /* NON Spetta al tail chiudere lo stream
+            try {
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            outputStream = null;
+            */
         }
     }
 }

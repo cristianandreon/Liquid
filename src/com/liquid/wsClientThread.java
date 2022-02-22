@@ -80,33 +80,40 @@ class wsClientThread extends Thread {
 
         while (run) {
             try {
-                if (wsStreamerClient.processMessageLoop(this, inputStream, outputStream) < 0) {
-                    serverThread.clientThreads.remove(this);
-                    return;
+                if(outputStream != null) {
+                    if (wsStreamerClient.processMessageLoop(this, inputStream, outputStream) < 0) {
+                        serverThread.clientThreads.remove(this);
+                        return;
+                    }
                 }
             } catch (IOException ex) {
                 error = ex.getLocalizedMessage();
                 wsStreamerServer.errors += error + "\n";
                 // throw new IllegalStateException("Could not connect to client input stream", ex);
                 Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : " + ex.getLocalizedMessage());
+                run = false;
             } catch (JSONException ex) {
                 error = ex.getLocalizedMessage();
                 wsStreamerServer.errors += error + "\n";
                 // throw new IllegalStateException("Could not connect to client input stream", ex);
                 Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : " + ex.getLocalizedMessage());
+                run = false;
             } catch (InterruptedException ex) {
                 error = ex.getLocalizedMessage();
                 wsStreamerServer.errors += error + "\n";
                 // throw new IllegalStateException("Could not connect to client input stream", ex);
                 Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : " + ex.getLocalizedMessage());
+                run = false;
             } catch (Exception ex) {
                 error = ex.getLocalizedMessage();
                 wsStreamerServer.errors += error + "\n";
                 Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : " + ex.getLocalizedMessage());
+                run = false;
             } catch (Throwable th) {
                 error = th.getLocalizedMessage();
                 wsStreamerServer.errors += error + "\n";
                 Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID Streamer] : processMessageLoop() error : " + th.getLocalizedMessage());
+                run = false;
             }
         }
     }

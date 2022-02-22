@@ -29,6 +29,31 @@ public class AppInitializer implements ServletContextListener {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
+            if(wsStreamerServer.serverThread.clientThreads != null) {
+                for(int i=0; i<wsStreamerServer.serverThread.clientThreads.size(); i++) {
+                    wsClientThread clientThread = wsStreamerServer.serverThread.clientThreads.get(i);
+                    if(clientThread.isAlive()) {
+                        clientThread.run = false;
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        if(clientThread.isAlive()) {
+                            clientThread.stop();
+                        }
+                    }
+                    wsStreamerServer.serverThread.clientThreads.set(i, null);
+                }
+                wsStreamerServer.serverThread.clientThreads.clear();
+                wsStreamerServer.serverThread.clientThreads = null;
+            }
+
+            if(wsStreamerServer.serverThread.isAlive()) {
+                wsStreamerServer.serverThread.stop();
+            }
+            wsStreamerServer.serverThread = null;
         }
     }
 
