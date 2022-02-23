@@ -1587,7 +1587,7 @@ public class utility {
         return workspace.setLanguage(session, out, lang);
     }
 
-    public static String jsonToRowset(workspace tbl_wrk, JSONArray rowsetJson) {
+    public static String jsonToRowset(workspace tbl_wrk, JSONArray rowsetJson) throws JSONException {
         String result = null;
         if (rowsetJson != null) {
             ArrayList<Integer> colMap = new ArrayList<Integer>();

@@ -2421,7 +2421,7 @@ public class event {
      *
      * @return @return Object[] { (Object) result, (Object) nRec, (String)error};
      */
-    public static Object[] loadSourceData(workspace tbl_wrk, JSONObject sourceData, HttpServletRequest request) {
+    public static Object[] loadSourceData(workspace tbl_wrk, JSONObject sourceData, HttpServletRequest request) throws JSONException {
         String result = null, rootKey = null, error = null;
         int nRecs = 0;
 

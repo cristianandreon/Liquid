@@ -12,11 +12,22 @@ import javax.servlet.ServletContextEvent;
 // @WebListener
 public class AppInitializer implements ServletContextListener {
 
+    public static boolean bHttpSessionListnerAdded = false;
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID] : contextInitialized ... ");
         ServletContext sc = sce.getServletContext();
-        // sc.addListener(new HttpSessionCollector());
+        if(!bHttpSessionListnerAdded) {
+            try {
+                sc.addListener(new HttpSessionCollector());
+            } catch (Throwable e3) {
+                try {
+                    // TODO try to register servlet2 httpListner
+                    // sc.addListener(new HttpSessionCollector2());
+                } catch (Throwable e2) {
+                }
+            }
+        }
     }
 
     @Override

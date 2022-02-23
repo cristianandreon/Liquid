@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import java.util.logging.Level;
@@ -2594,7 +2595,7 @@ public class db {
                                             int targetColumnIndex,
                                             String service,
                                             boolean skipMissingField
-    ) throws SQLException {
+    ) throws SQLException, JSONException {
         int addedRow = 0;
         StringBuilder out_string = new StringBuilder("");
         StringBuilder out_codes_string = new StringBuilder("");
@@ -3139,16 +3140,18 @@ public class db {
 
                     tbl_wrk.bLocked = true;
 
-                    session.setAttribute(tbl_wrk.controlId + ".columnList", (Object) columnList);
-                    session.setAttribute(tbl_wrk.controlId + ".primaryKey", (Object) primaryKey);
-                    // session.setAttribute(tbl_wrk.controlId+".columnAliasList", (Object)columnAliasList);
-                    // session.setAttribute(tbl_wrk.controlId+".primaryKeyAlias", (Object)primaryKeyAlias);
-                    session.setAttribute(tbl_wrk.controlId + ".from", (Object) sFrom);
-                    session.setAttribute(tbl_wrk.controlId + ".join", (Object) sLeftJoinList);
-                    session.setAttribute(tbl_wrk.controlId + ".where", (Object) sWhere);
-                    session.setAttribute(tbl_wrk.controlId + ".sort", (Object) sSort);
-                    session.setAttribute(tbl_wrk.controlId + ".limit", (Object) sLimit);
-                    session.setAttribute(tbl_wrk.controlId + ".delimiter", (Object) itemIdString);
+                    if(session != null) {
+                        session.setAttribute(tbl_wrk.controlId + ".columnList", (Object) columnList);
+                        session.setAttribute(tbl_wrk.controlId + ".primaryKey", (Object) primaryKey);
+                        // session.setAttribute(tbl_wrk.controlId+".columnAliasList", (Object)columnAliasList);
+                        // session.setAttribute(tbl_wrk.controlId+".primaryKeyAlias", (Object)primaryKeyAlias);
+                        session.setAttribute(tbl_wrk.controlId + ".from", (Object) sFrom);
+                        session.setAttribute(tbl_wrk.controlId + ".join", (Object) sLeftJoinList);
+                        session.setAttribute(tbl_wrk.controlId + ".where", (Object) sWhere);
+                        session.setAttribute(tbl_wrk.controlId + ".sort", (Object) sSort);
+                        session.setAttribute(tbl_wrk.controlId + ".limit", (Object) sLimit);
+                        session.setAttribute(tbl_wrk.controlId + ".delimiter", (Object) itemIdString);
+                    }
 
                 } catch (Exception e) {
                     System.err.println("// set_prefilters() [" + controlId + "] Error:" + e.getLocalizedMessage());

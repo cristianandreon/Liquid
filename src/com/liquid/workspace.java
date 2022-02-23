@@ -2371,7 +2371,7 @@ public class workspace {
      * @param tableJson
      * @return
      */
-    static Object[] process_commands(HttpServletRequest request, JSONObject tableJson, boolean isSystemLiquid) {
+    static Object[] process_commands(HttpServletRequest request, JSONObject tableJson, boolean isSystemLiquid) throws JSONException {
 
         boolean bInsertActive = false;
         boolean bUpdateActive = false;
@@ -4370,7 +4370,7 @@ public class workspace {
     }
 
 
-    static public JSONObject getColumnByName(String gridField, JSONArray cols) {
+    static public JSONObject getColumnByName(String gridField, JSONArray cols) throws JSONException {
         for (int ic = 0; ic < cols.length(); ic++) {
             JSONObject col = cols.getJSONObject(ic);
             String colName = null, typeName = null;
@@ -4392,7 +4392,7 @@ public class workspace {
      * @param cols
      * @return
      */
-    static public String getZKControlType( String gridField, JSONArray cols, String mode) {
+    static public String getZKControlType( String gridField, JSONArray cols, String mode) throws JSONException {
         String gridControlType = "", width = "", height = "";
         for (int ic = 0; ic < cols.length(); ic++) {
             JSONObject col = cols.getJSONObject(ic);

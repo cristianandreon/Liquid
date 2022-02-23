@@ -14,7 +14,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 // in web.xml
-// <listener><listener-class>com.example.HttpSessionCollector</listener-class></listener>
+// <listener><listener-class>com.liquid.HttpSessionCollector</listener-class></listener>
             
 
 public class HttpSessionCollector implements HttpSessionListener {
@@ -22,6 +22,7 @@ public class HttpSessionCollector implements HttpSessionListener {
 
     @Override
     public void sessionCreated(HttpSessionEvent event) {
+        AppInitializer.bHttpSessionListnerAdded = true;
         HttpSession session = event.getSession();
         sessions.put(session.getId(), session);
     }

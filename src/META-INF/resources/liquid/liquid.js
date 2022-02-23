@@ -2520,7 +2520,7 @@ var Liquid = {
                 }
                 if (lang === 'it' || lang === 'ita') {
                     Liquid.lang = langFound = 'ita';
-                    Liquid.loadingMessage = "<div class=\"lds-ring\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
+                    Liquid.loadingMessage = "<div class=\"lds-ring-main\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
                     Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">Nessun dato trovato...</span>";
                     Liquid.paginationTitleGoTo = "digita la pagina a cui andare ... poi premi enter";
                     Liquid.paginationTitleFirst = "vai alla prima pagina";
@@ -2538,7 +2538,7 @@ var Liquid = {
                     Liquid.moveCellsMessage = "Confermi lo spostamento della cella ?";
                 } else if (lang === 'en' || lang === 'eng') {
                     Liquid.lang = langFound = 'eng';
-                    Liquid.loadingMessage = "<div class=\"lds-ring\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Loading data...</span>";
+                    Liquid.loadingMessage = "<div class=\"lds-ring-main\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Loading data...</span>";
                     Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">No data to show...</span>";
                     Liquid.paginationTitleGoTo = "type page to go to ... then press enter";
                     Liquid.paginationTitleFirst = "go to first page";
