@@ -8639,8 +8639,14 @@ var Liquid = {
                             if (command.name === "delete") {
                                 // remove node
                                 if (command.response.data) {
-                                    if (command.response.data.details) {
-                                        // cause row reselection and grid/layout refresh
+                                    if (!isSystem) {
+                                        if (command.response.data.details) {
+                                            // cause row reselection and grid/layout refresh
+                                            if (Liquid.onDeletedRow(liquid)) {
+                                                refreshDone = true;
+                                            }
+                                        }
+                                    } else {
                                         if (Liquid.onDeletedRow(liquid)) {
                                             refreshDone = true;
                                         }

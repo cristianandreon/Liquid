@@ -422,7 +422,7 @@ var LiquidEditing = {
             if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
                 var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
                 if(sourceLiquid) {
-                    var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                    var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B[0]-1];
                     if(!isDef(foreignTable.options)) foreignTable.options = { };
                     if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
 
@@ -969,7 +969,7 @@ var LiquidEditing = {
                 if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
                     var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
                     if(sourceLiquid) {
-                        foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                        foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B[0]-1];
                     }
                 }
             }
@@ -1040,7 +1040,7 @@ var LiquidEditing = {
                                             if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
                                                 var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
                                                 if(sourceLiquid) {
-                                                    foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B-1];
+                                                    foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B[0]-1];
                                                 }
                                             }
                                         }
@@ -1048,6 +1048,9 @@ var LiquidEditing = {
                                             if(!isDef(foreignTable.options)) foreignTable.options = { };
                                             if(!isDef(foreignTable.options.columns)) foreignTable.options.columns = [];
                                             targetColumns = foreignTable.options.columns;
+                                            if(!targetColumns || targetColumns.length == 0) {
+                                                // Instanziamento colonne
+                                            }
                                         } else {
                                             targetColumns = liquid.tableJsonSource.columns;
                                         }
