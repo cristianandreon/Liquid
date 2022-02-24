@@ -19616,7 +19616,7 @@ var Liquid = {
      */
     sendRequest:function(liquid, paramsObject, method, url, async, data, onReadyStateChange, reason, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled) {
         var thisLiquid = liquid;
-        if(typeof LiquidStreamer.webSocket !== 'undefined' && LiquidStreamer.webSocket && async == true) {
+        if(typeof LiquidStreamer !== 'undefined' && typeof LiquidStreamer.webSocket !== 'undefined' && LiquidStreamer.webSocket && async == true) {
             // Websocket
             var bCompress = false;
             var token = LiquidStreamer.generate_token(32);
@@ -19696,7 +19696,7 @@ var Liquid = {
                 xhr.open(method, url, async);
                 if(async) {
                     xhr.onreadystatechange = function() {
-                        return xhr.onreadystatechange(thisLiquid, xhr);
+                        return onReadyStateChange(thisLiquid, xhr);
                     }
                 }
                 xhr.send(data);

@@ -28,7 +28,9 @@
         <webroots>
           <root url="file://$MODULE_DIR$/src/META-INF/resources" relative="/" />
         </webroots>
-        <sourceRoots />
+        <sourceRoots>
+          <root url="file://$MODULE_DIR$/src" />
+        </sourceRoots>
       </configuration>
     </facet>
   </component>
@@ -45,8 +47,6 @@
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="lib_Liquid" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Tomcat 8.5.43" level="application_server_libraries" />
-    <orderEntry type="library" exported="" name="Liquid-srvlet2" level="application" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
