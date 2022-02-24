@@ -3406,31 +3406,30 @@ var LiquidEditing = {
                             }
                             json.token = token; // need current token
                             Liquid.registerOnUnloadPage();
-                            if(!liquid.xhr)
-                                liquid.xhr = new XMLHttpRequest();
+                            var xhr = new XMLHttpRequest();
                             if(Liquid.wait_for_xhr_ready(liquid), "export to ZK") {
                                 try {
                                     Liquid.startWaiting(liquid);
-                                    liquid.xhr.open('POST', glLiquidServlet + '?operation=saveToZK'
+                                    xhr.open('POST', glLiquidServlet + '?operation=saveToZK'
                                         +'&controlId=' + (typeof json.registerControlId !== "undefined" ? json.registerControlId : liquid.controlId)
                                         +'&token=' + (typeof token !== "undefined" ? token : "")
                                         , true);
 
                                     var command = { name:"onSaveToZK" };
-                                    liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "onSaveToZK", e, null, null); }, false);
-                                    liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "onSaveToZK", e, null, null); }, false);
-                                    liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onSaveToZK", e, null, null); }, false);
-                                    liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onSaveToZK", e, null, null); }, false);
-                                    liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onSaveToZK", e, null, null); }, false);
+                                    xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onSaveToZK", e, null, null); }, false);
 
-                                    liquid.xhr.send(tableJsonString);
-                                    liquid.xhr.onreadystatechange = function() {
-                                        if(liquid.xhr.readyState === 4) {
+                                    xhr.send(tableJsonString);
+                                    xhr.onreadystatechange = function() {
+                                        if(xhr.readyState === 4) {
                                             Liquid.release_xhr(liquid);
                                             Liquid.stopWaiting(liquid);
-                                            if(liquid.xhr.status === 200) {
+                                            if(xhr.status === 200) {
                                                 // \b \f \n \r \t
-                                                var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                                                var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
                                                 responseText = Liquid.getXHRResponse(responseText);
                                                 httpResultJson = JSON.parse(responseText);
                                                 if(httpResultJson) {
@@ -3459,7 +3458,7 @@ var LiquidEditing = {
                                                     }
                                                 }
                                             } else {
-                                                console.error("ERROR : wring response:"+liquid.xhr.status);
+                                                console.error("ERROR : wring response:"+xhr.status);
                                             }
                                         }
                                     };
@@ -3516,31 +3515,30 @@ var LiquidEditing = {
                 if(bSaveToServer) {
                     json.token = token; // need current token
                     Liquid.registerOnUnloadPage();
-                    if(!liquid.xhr)
-                        liquid.xhr = new XMLHttpRequest();
+                    var xhr = new XMLHttpRequest();
                     if(Liquid.wait_for_xhr_ready(liquid), "save to server") {
                         try {
                             Liquid.startWaiting(liquid);
-                            liquid.xhr.open('POST', glLiquidServlet + '?operation=setJson'
+                            xhr.open('POST', glLiquidServlet + '?operation=setJson'
                                 +'&controlId=' + (typeof json.registerControlId !== "undefined" ? json.registerControlId : liquid.controlId)
                                 +'&token=' + (typeof token !== "undefined" ? token : "")
                                 , true);
 
                             var command = { name:"saveTo" };
-                            liquid.xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "onSaveTo", e, null, null); }, false);
-                            liquid.xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "onSaveTo", e, null, null); }, false);
-                            liquid.xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onSaveTo", e, null, null); }, false);
-                            liquid.xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onSaveTo", e, null, null); }, false);
-                            liquid.xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onSaveTo", e, null, null); }, false);
+                            xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "onSaveTo", e, null, null); }, false);
+                            xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "onSaveTo", e, null, null); }, false);
+                            xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "onSaveTo", e, null, null); }, false);
+                            xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "onSaveTo", e, null, null); }, false);
+                            xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "onSaveTo", e, null, null); }, false);
 
-                            liquid.xhr.send(tableJsonString);
-                            liquid.xhr.onreadystatechange = function() {
-                                if(liquid.xhr.readyState === 4) {
+                            xhr.send(tableJsonString);
+                            xhr.onreadystatechange = function() {
+                                if(xhr.readyState === 4) {
                                     Liquid.release_xhr(liquid);
                                     Liquid.stopWaiting(liquid);
-                                    if(liquid.xhr.status === 200) {
+                                    if(xhr.status === 200) {
                                         // \b \f \n \r \t
-                                        var responseText = liquid.xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                                        var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
                                         responseText = Liquid.getXHRResponse(responseText);
                                         httpResultJson = JSON.parse(responseText);
                                         if(httpResultJson) {
@@ -3569,7 +3567,7 @@ var LiquidEditing = {
                                             }
                                         }
                                     } else {
-                                        console.error("ERROR : wring response:"+liquid.xhr.status);
+                                        console.error("ERROR : wring response:"+xhr.status);
                                     }
                                 }
                             };

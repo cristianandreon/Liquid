@@ -116,5 +116,6 @@ class wsClientThread extends Thread {
                 run = false;
             }
         }
+        return;
     }
 }

@@ -4284,6 +4284,26 @@ public class workspace {
                                 // +"\t\t\t<!-- bando destinatari -->"
                                 // +"\t\t\t<panel id=\"PercorsiDestinatari_P@1254136534031\">"
                                 // ...
+                                try {
+                                    JSONArray foreignTables = json.getJSONArray("foreignTables");
+                                    for (int ift = 0; ift < foreignTables.length(); ift++) {
+                                        JSONObject foreignTableJson = foreignTables.getJSONObject(ift);
+                                        if (foreignTableJson != null) {
+                                            String foreignTable = foreignTableJson.getString("foreignTable");
+                                            String foreignColumn = foreignTableJson.getString("foreignColumn");
+                                            String column = foreignTableJson.getString("column");
+                                            String name = foreignTableJson.getString("name");
+                                            String options = foreignTableJson.getString("options");
+
+                                            // get control ..
+                                            // get columns...
+                                            // get finders...
+                                            // get grid...
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    System.err.println(e.getMessage());
+                                }
                             }
 
                             zkFileContent += "\n"

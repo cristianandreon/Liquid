@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.1.95
+// Liquid ver.1.96
 //
-//  First update 04-01-2020 - Last update 09-02-2022
+//  First update 04-01-2020 - Last update 24-02-2022
 //
 //  TODO : see trello.com
 //
@@ -776,13 +776,11 @@ class LiquidCtrl {
                         }
                     },
                     onRowDataUpdated:function(event) {
-                        var rowsToDisplay = event.api.nodeManager.rowsToDisplay;
                         if (Liquid.debug) {
                             console.log('onRowDataUpdated...');
                         }
                     },
                     onRowValueChanged:function(event) {
-                        var rowsToDisplay = event.api.nodeManager.rowsToDisplay;
                         if (Liquid.debug) {
                             console.log('onRowValueChanged...');
                         }
@@ -4732,8 +4730,7 @@ var Liquid = {
                         }
                         // Adding additional foreignTables
                         if (isDef(registeredTableJson.foreignTables)) {
-                            if(resultTableJson.foreignTables === '*' || resultTableJson.foreignTables === null || resultTableJson.foreignTables === '')
-                                resultTableJson.foreignTables = [];
+                            resultTableJson.foreignTables = [];
                             for (var ift = 0; ift < registeredTableJson.foreignTables.length; ift++) {
                                 resultTableJson.foreignTables.push(registeredTableJson.foreignTables[ift]);
                             }

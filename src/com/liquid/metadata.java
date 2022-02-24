@@ -139,7 +139,7 @@ public class metadata {
 
             if (table != null && !table.isEmpty()) {
                 if (columnName != null) {
-                    Object mdCol = getTableMetadata(conn, database, schema, table, columnName);
+                    Object mdCol = getTableMetadata(conn, database, schema, table, columnName, false);
                     if (mdCol != null) {
                         return mdCol;
                     }
@@ -294,7 +294,7 @@ public class metadata {
                 System.out.println("Read meatadata on table: " + schema + "." + table + " recCount:" + recCount + " Tempo lettura :" + (System.currentTimeMillis() - msTrace));
 
                 if (columnName != null) {
-                    Object foundMcol = getTableMetadata(conn, null, schema, table, columnName);
+                    Object foundMcol = getTableMetadata(conn, null, schema, table, columnName, true);
                     if (foundMcol == null) {
                         System.err.println("readTableMetadata() error: on table:" + schema + "." + table + " Column just added not found...maybe you are adding not exiasting column");
                         // Add dummy data to avoid adding loop
@@ -344,7 +344,7 @@ public class metadata {
 
             if (columnName != null && !"*".equalsIgnoreCase(columnName)) {
                 // colonna specifica
-                Object mdCol = getTableMetadata(conn, database, schema, table, columnName);
+                Object mdCol = getTableMetadata(conn, database, schema, table, columnName, false);
                 if (mdCol != null) {
                     return mdCol;
                 }
@@ -365,12 +365,12 @@ public class metadata {
                 Object result;
                 if (columnName != null && !"*".equalsIgnoreCase(columnName)) {
                     // colonna specifica
-                    result = getTableMetadata(conn, database, schema, table, columnName);
+                    result = getTableMetadata(conn, database, schema, table, columnName, false);
                     if(result != null)
                         return result;
                 } else {
                     // tutte le colonne return metadataTable
-                    result = getTableMetadata(conn, database, schema, table, null);
+                    result = getTableMetadata(conn, database, schema, table, null, false);
                     if(result != null)
                         return result;
                 }
@@ -411,7 +411,7 @@ public class metadata {
 
                     // sinonimi
                     oracle_read_synonym_column_sql =
-                            "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,B.COMMENTS,A.DATA_PRECISION,'' AS REMARKS FROM ALL_TAB_COLUMNS A"
+                            "SELECT A.OWNER,A.TABLE_NAME,A.COLUMN_NAME,A.DATA_TYPE,A.DATA_LENGTH,A.NULLABLE,'',A.DATA_PRECISION,'' AS REMARKS FROM ALL_TAB_COLUMNS A"
                                     + " WHERE A.OWNER = '" + schema + "' AND A.TABLE_NAME in "
                                     + "("
                                     + "SELECT C.TABLE_NAME FROM all_synonyms C WHERE C.TABLE_OWNER = '" + schema + "' AND A.TABLE_NAME='" + table + "'"
@@ -546,11 +546,11 @@ public class metadata {
                 }
                 stmt.close();
 
-                System.err.println("Read meatadata on table: " + schema + "." + table + " Items:" + recCount + " Total time :" + (System.currentTimeMillis() - msTrace));
+                System.out.println("Read meatadata on table: " + schema + "." + table + " Items:" + recCount + " Total time :" + (System.currentTimeMillis() - msTrace));
 
                 if (columnName != null && !"*".equalsIgnoreCase(columnName)) {
                     // colonna specifica
-                    return getTableMetadata(conn, null, schema, table, columnName);
+                    return getTableMetadata(conn, null, schema, table, columnName, true);
                 } else {
                     // tutte le colonne return metadataTable
                     return metaDataTableResult;
@@ -565,7 +565,7 @@ public class metadata {
     }
 
     // uso interno
-    static private Object getTableMetadata(Connection conn, String database, String schema, String table, String columnName) {
+    static private Object getTableMetadata(Connection conn, String database, String schema, String table, String columnName, boolean emitError) {
         MetaDataCol foundMdCol = null;
         MetaDataTable mdTable = null;
         MetaDataCol mdCol = null;
@@ -615,27 +615,29 @@ public class metadata {
         if (foundMdCol == null) {
             if (metaDataTable.size() > 0) {
                 boolean bTableFound = false;
-                System.err.println("Field not in cache : " + schema + "." + table + "." + columnName + " .. dumping table's columns cache");
-                for (int i = 0; i < metaDataTable.size(); i++) {
-                    mdTable = metaDataTable.get(i);
-                    if (mdTable.database.equalsIgnoreCase(database) || database == null || database.isEmpty()) {
-                        if (mdTable.schema.equalsIgnoreCase(schema)) {
-                            if (mdTable.table.equalsIgnoreCase(table)) {
-                                String sAllColumns = "";
-                                for (int ic = 0; ic < mdTable.metaDataCols.size(); ic++) {
-                                    sAllColumns += mdTable.metaDataCols.get(ic).name + ",";
+                if(emitError) {
+                    System.err.println("Field not in cache : " + schema + "." + table + "." + columnName + " .. dumping table's columns cache");
+                    for (int i = 0; i < metaDataTable.size(); i++) {
+                        mdTable = metaDataTable.get(i);
+                        if (mdTable.database.equalsIgnoreCase(database) || database == null || database.isEmpty()) {
+                            if (mdTable.schema.equalsIgnoreCase(schema)) {
+                                if (mdTable.table.equalsIgnoreCase(table)) {
+                                    String sAllColumns = "";
+                                    for (int ic = 0; ic < mdTable.metaDataCols.size(); ic++) {
+                                        sAllColumns += mdTable.metaDataCols.get(ic).name + ",";
+                                    }
+                                    bTableFound = true;
+                                    System.err.println(" tableName:" + mdTable.table + " all cols:" + sAllColumns);
                                 }
-                                bTableFound = true;
-                                System.err.println(" tableName:" + mdTable.table + " all cols:" + sAllColumns);
                             }
                         }
                     }
-                }
-                if (!bTableFound) {
-                    // ok, still to read it
-                    // System.err.println(" Table: " + schema + "." + table + " not found");
-                } else {
-                    System.err.println(" Field : " + schema + "." + table + "." + columnName + " not found");
+                    if (!bTableFound) {
+                        // ok, still to read it
+                        // System.err.println(" Table: " + schema + "." + table + " not found");
+                    } else {
+                        System.err.println(" Field : " + schema + "." + table + "." + columnName + " not found");
+                    }
                 }
             }
         }
