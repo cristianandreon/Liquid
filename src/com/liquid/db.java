@@ -6755,7 +6755,7 @@ public class db {
      * @param oRequest
      * @return
      */
-    public static Map<String, String> filtersToMap(Object liquid, int curFilter1B, Object oRequest) {
+    public static Map<String, String> filtersToMap(Object liquid, int curFilter1B, Object oRequest, boolean addIfNull) {
         Map<String, String> parametersString = null;
         if (liquid != null) {
             com.liquid.workspace wrk = (com.liquid.workspace) liquid;
@@ -6781,7 +6781,7 @@ public class db {
                         String filterName = filterCol.getString("name");
                         if(filterCol.has("value")) {
                             String filterValue = filterCol.getString("value");
-                            if (filterValue != null && !filterValue.isEmpty()) {
+                            if (filterValue != null && !filterValue.isEmpty() || addIfNull == true) {
                                 parametersString.put(filterName, filterValue);
                             }
                         } else {
@@ -6790,7 +6790,7 @@ public class db {
                                     // dalla request
                                     HttpServletRequest request = (HttpServletRequest)oRequest;
                                     String filterValue = request.getParameter(filterName);
-                                    if (filterValue != null && !filterValue.isEmpty()) {
+                                    if (filterValue != null && !filterValue.isEmpty() || addIfNull == true) {
                                         parametersString.put(filterName, filterValue);
                                     }
                                 } else if(oRequest instanceof JSONObject) {
@@ -6805,7 +6805,7 @@ public class db {
                                             if (name.equalsIgnoreCase(filterName)) {
                                                 if (filterJson.has("value")) {
                                                     String value = filtersJson.getJSONObject(iFv).getString("value");
-                                                    if (value != null && !value.isEmpty()) {
+                                                    if (value != null && !value.isEmpty() || addIfNull == true) {
                                                         parametersString.put(filterName, value);
                                                     }
                                                 }

@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.1.96
+// Liquid ver.1.97
 //
 //  First update 04-01-2020 - Last update 24-02-2022
 //
@@ -5508,7 +5508,7 @@ var Liquid = {
     onWindowKeyDown: function (e, obj) {
         if (e.keyCode === 13) {
         } else if (e.keyCode === 27) {
-            if(isDef(LiquidEditing))
+            if(typeof LiquidEditing !== 'undefined')
                 LiquidEditing.onContextMenuClose();
         }
     },
@@ -11545,9 +11545,16 @@ var Liquid = {
                 if (iField1B > 0) {
                     var col = liquid.tableJson.columns[iField1B - 1];
                     if (isDef(col)) {
-                        if (Liquid.isDate(col.type)) {
-                            var obj = document.getElementById(filterObj.linkedContainerId);
-                            Liquid.createDateTimePicker(col, obj, false, liquid, null);
+                        if (isDef(col.asType)) {
+                            if(col.asType.toLowerCase() == 'date' || col.asType.toLowerCase() == 'timestamp' || col.asType.toLowerCase() == 'time') {
+                                var obj = document.getElementById(filterObj.linkedContainerId);
+                                Liquid.createDateTimePicker(col, obj, false, liquid, null);
+                            }
+                        } else {
+                            if (Liquid.isDate(col.type)) {
+                                var obj = document.getElementById(filterObj.linkedContainerId);
+                                Liquid.createDateTimePicker(col, obj, false, liquid, null);
+                            }
                         }
                     }
                 }
@@ -14675,7 +14682,7 @@ var Liquid = {
                 if (bShow)
                     jQ1124(obj).datetimepicker("show");
             } catch (e) {
-                console.error(e);
+                console.error("LIQUID: xdsoft_datetimepicker not found..error:"+e+" ... may be missing file jquery.datepicker.js,jquery.datetimepicker.js");
             }
         } else {
             controlName = '.ui-datepicker';
@@ -19588,7 +19595,7 @@ var Liquid = {
         return true;
     },
     onSaveToCSV:function(obj) {
-        if(isDef(LiquidEditing))
+        if(typeof LiquidEditing !== 'undefined')
             LiquidEditing.onContextMenuClose();
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
@@ -20424,7 +20431,7 @@ if(window.addEventListener) { window.addEventListener('click', Liquid.onClick); 
 if(window.addEventListener) { window.addEventListener('load', Liquid.startup); } else { window.attachEvent('onload', Liquid.Startup); }
 if(window.addEventListener) { window.addEventListener('keydown', Liquid.onWindowKeyDown); } else { window.attachEvent('onkeydown', Liquid.onWindowKeyDown); }
 if(window.addEventListener) { window.addEventListener('scroll', Liquid.onWindowScroll); } else { window.attachEvent('scroll', Liquid.onWindowScroll); }
-if(document.addEventListener) { document.addEventListener('contextmenu', function(e) { if(typeof(LiquidEditing)!=='undefined') if(LiquidEditing.onContextMenu(e)) e.preventDefault(); }, false ); } else { document.attachEvent('contextmenu', function() { if(isDef(LiquidEditing)) if(LiquidEditing.onContextMenu(window.event)) window.event.returnValue = false; }); }
+if(document.addEventListener) { document.addEventListener('contextmenu', function(e) { if(typeof(LiquidEditing)!=='undefined') if(LiquidEditing.onContextMenu(e)) e.preventDefault(); }, false ); } else { document.attachEvent('contextmenu', function() { if(typeof LiquidEditing !== 'undefined') if(LiquidEditing.onContextMenu(window.event)) window.event.returnValue = false; }); }
 
 
 
