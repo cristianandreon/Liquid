@@ -2421,23 +2421,23 @@ public class event {
      *
      * @return @return Object[] { (Object) result, (Object) nRec, (String)error};
      */
-    public static Object[] loadSourceData(workspace tbl_wrk, JSONObject sourceData, HttpServletRequest request) throws JSONException {
+    public static Object[] loadSourceData(workspace tbl_wrk, JSONObject sourceData, ParamsUtil.get_recordset_params requestParams) throws Exception {
         String result = null, rootKey = null, error = null;
         int nRecs = 0;
 
         if (tbl_wrk != null) {
 
             if (sourceData != null) {
-
                 String className = sourceData.getString("server");
-                String owner = null;
-                String params = null;
-                String clientData = null;
+                Object owner = tbl_wrk != null ? tbl_wrk.getOwner() : null;
+                Object params = requestParams != null ? requestParams.requestJson : null;
+                Object clientData = null;
+                Object request = requestParams != null ? requestParams.request : null;
 
                 try {
 
                     // get instance and method
-                    Object[] result_method = get_method_by_class_name(className, tbl_wrk, owner);
+                    Object[] result_method = get_method_by_class_name(className, tbl_wrk, null /*(String)owner*/ );
                     if(result_method != null) {
                         Object classInstance = result_method[0];
                         Method method = (Method) result_method[1];

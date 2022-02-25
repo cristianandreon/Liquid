@@ -23,14 +23,12 @@
     <facet type="web" name="Web">
       <configuration>
         <descriptors>
-          <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/src/META-INF/resources/liquid/web.xml" />
+          <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/src/META-INF/resources/web.xml" />
         </descriptors>
         <webroots>
           <root url="file://$MODULE_DIR$/src/META-INF/resources" relative="/" />
         </webroots>
-        <sourceRoots>
-          <root url="file://$MODULE_DIR$/src" />
-        </sourceRoots>
+        <sourceRoots />
       </configuration>
     </facet>
   </component>
@@ -46,7 +44,8 @@
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="lib_Liquid" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Tomcat 8.5.43" level="application_server_libraries" />
+    <orderEntry type="library" name="Liquid-srvlet2" level="application" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>

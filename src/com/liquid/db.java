@@ -68,8 +68,6 @@ public class db {
 
 
 
-
-
     static public class IdsCache {
 
         public String query;
@@ -597,7 +595,7 @@ public class db {
                                     JSONObject sourceData = (JSONObject)osourceData;
                                     if(sourceData.has("server")) {
                                         // * @return Object[] { (Object) result, (Object) nRec};
-                                        Object [] result = event.loadSourceData(tbl_wrk, sourceData, recordset_params.request);
+                                        Object [] result = event.loadSourceData(tbl_wrk, sourceData, recordset_params);
                                         if(result != null) {
                                             if(result[0] instanceof String && result[1] instanceof Integer) {
                                                 out_string = "{\"resultSet\":" + result[0];
@@ -1144,6 +1142,7 @@ public class db {
                                         }
                                     }
                                     try {
+                                        if(curFilter < 0) curFilter = 0;
                                         filtersDefinitionCols = (filtersDefinition != null ? filtersDefinition.getJSONObject(curFilter).getJSONArray("columns") : null);
                                     } catch (Exception e) {
                                     }
@@ -6744,6 +6743,83 @@ public class db {
         }
 
         return value;
+    }
+
+
+    /**
+     *
+     * Convert filters to hash map
+     *
+     * @param liquid
+     * @param curFilter1B
+     * @param oRequest
+     * @return
+     */
+    public static Map<String, String> filtersToMap(Object liquid, int curFilter1B, Object oRequest) {
+        Map<String, String> parametersString = null;
+        if (liquid != null) {
+            com.liquid.workspace wrk = (com.liquid.workspace) liquid;
+            if (wrk.tableJson.has("filters")) {
+                JSONArray filterCols = null;
+                Object oFilters = wrk.tableJson.get("filters");
+                if(oFilters instanceof JSONArray) {
+                    JSONArray filters = wrk.tableJson.getJSONArray("filters");
+                    int curFilter = curFilter1B > 0 ? curFilter1B - 1 : 0;
+                    if (wrk.tableJson.has("curFilter")) {
+                        parametersString = new HashMap<String, String>();
+                        curFilter = wrk.tableJson.getInt("curFilter");
+                        filterCols = (filters != null ? filters.getJSONObject(curFilter).getJSONArray("columns") : null);
+                    }
+                } else if(oFilters instanceof JSONObject) {
+                    JSONObject filters = (JSONObject)oFilters;
+                    filterCols = filters.getJSONArray("columns");
+                }
+                if (filterCols != null) {
+                    parametersString = new HashMap<String,String>();
+                    for (int iF = 0; iF < filterCols.length(); iF++) {
+                        JSONObject filterCol = filterCols.getJSONObject(iF);
+                        String filterName = filterCol.getString("name");
+                        if(filterCol.has("value")) {
+                            String filterValue = filterCol.getString("value");
+                            if (filterValue != null && !filterValue.isEmpty()) {
+                                parametersString.put(filterName, filterValue);
+                            }
+                        } else {
+                            if(oRequest != null) {
+                                if(oRequest instanceof HttpServletRequest) {
+                                    // dalla request
+                                    HttpServletRequest request = (HttpServletRequest)oRequest;
+                                    String filterValue = request.getParameter(filterName);
+                                    if (filterValue != null && !filterValue.isEmpty()) {
+                                        parametersString.put(filterName, filterValue);
+                                    }
+                                } else if(oRequest instanceof JSONObject) {
+                                    // da oggetto json
+                                    JSONObject requestJson = (JSONObject)oRequest;
+                                    int curFilter = requestJson.has("curFilter") ? requestJson.getInt("curFilter") : 0;
+                                    JSONArray filtersJson = requestJson.getJSONArray("filtersJson");
+                                    for (int iFv = 0; iFv < filtersJson.length(); iFv++) {
+                                        JSONObject filterJson = filtersJson.getJSONObject(iFv);
+                                        if(filterJson.has("name")) {
+                                            String name = filterJson.getString("name");
+                                            if (name.equalsIgnoreCase(filterName)) {
+                                                if (filterJson.has("value")) {
+                                                    String value = filtersJson.getJSONObject(iFv).getString("value");
+                                                    if (value != null && !value.isEmpty()) {
+                                                        parametersString.put(filterName, value);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return parametersString;
     }
 
 }

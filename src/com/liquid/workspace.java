@@ -1250,23 +1250,28 @@ public class workspace {
                         }
                         if (cols != null) {
                             for (int ic = 0; ic < cols.length(); ic++) {
-                                JSONObject col = cols.getJSONObject(ic);
-                                col.put("field", String.valueOf(ic + 1));
-                                cols.put(ic, col);
-                                String colName = "";
                                 try {
-                                    colName = col.getString("name");
-                                } catch (Exception e) {
-                                }
-                                String[] colParts = colName.split("\\.");
-                                if (colParts.length > 1) {
-                                    if (table.equalsIgnoreCase(colParts[0]) && colParts[1].equals(primaryKey)) {
-                                        primaryKeyIndex1B = ic + 1;
+                                    JSONObject col = cols.getJSONObject(ic);
+                                    col.put("field", String.valueOf(ic + 1));
+                                    cols.put(ic, col);
+                                    String colName = "";
+                                    try {
+                                        colName = col.getString("name");
+                                    } catch (Exception e) {
                                     }
-                                } else {
-                                    if (colName.equals(primaryKey)) {
-                                        primaryKeyIndex1B = ic + 1;
+                                    String[] colParts = colName.split("\\.");
+                                    if (colParts.length > 1) {
+                                        if (table.equalsIgnoreCase(colParts[0]) && colParts[1].equals(primaryKey)) {
+                                            primaryKeyIndex1B = ic + 1;
+                                        }
+                                    } else {
+                                        if (colName.equals(primaryKey)) {
+                                            primaryKeyIndex1B = ic + 1;
+                                        }
                                     }
+                                } catch (Exception ex) {
+                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Error in col :"+cols.get(ic)+"");
+                                    throw new Exception(ex);
                                 }
                             }
                             tableJson.put("columns", cols);

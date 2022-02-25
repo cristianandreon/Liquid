@@ -45,6 +45,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import com.sun.org.apache.bcel.internal.generic.ARETURN;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -2211,6 +2212,37 @@ public class utility {
                 out += capitalizeFirstLetter(list[i]);
         }
         return out;
+    }
+
+    /**
+     * Update a json attay by key, merging sJsonToMerge
+     *
+     * @param arrayToUpdate
+     * @param keyName
+     * @param keyValue
+     * @param bKeySensitive
+     * @param sJsonToMerge
+     */
+    public static boolean updateJsonArray(JSONArray arrayToUpdate, String keyName, String keyValue, boolean bKeySensitive, String sJsonToMerge) throws Exception {
+        boolean result = false;
+        if(arrayToUpdate != null && keyName != null) {
+            for(int i=0; i<arrayToUpdate.length(); i++) {
+                Object oToUpdate = arrayToUpdate.get(i);
+                if(oToUpdate instanceof JSONObject) {
+                    JSONObject objToUpdate = (JSONObject)oToUpdate;
+                    boolean eq = bKeySensitive ? objToUpdate.getString(keyName).equals(keyValue) : objToUpdate.getString(keyName).equalsIgnoreCase(keyValue);
+                    if(eq) {
+                        JSONObject jsonToMerge = new JSONObject(sJsonToMerge);
+                        if(mergeJsonObject(jsonToMerge, objToUpdate) > 0) {
+                            result = true;
+                        }
+                    }
+                } else {
+                    throw new Exception("Unexpected case");
+                }
+            }
+        }
+        return result;
     }
 
 }

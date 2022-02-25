@@ -4831,7 +4831,8 @@ var Liquid = {
                         } else {  // set data as full
                             result.retVal = 1;
                             try {
-                                liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
+                                if(isDef(httpResultJson.resultSet))
+                                    liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
                             } catch (e) {
                                 var err = "ERROR: failed to set grid data:"+e;
                                 console.error(err);
