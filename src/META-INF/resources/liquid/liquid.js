@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.1.97
+// Liquid ver.1.98
 //
 //  First update 04-01-2020 - Last update 24-02-2022
 //
@@ -2613,19 +2613,34 @@ var Liquid = {
         }
     },
     getParentNode:function(obj, dataSetValue) {
-        while(obj) {
-            for(let i=0; i<obj.childNodes.length; i++) {
-                if (obj.childNodes[i].dataset) {
-                    if (obj.childNodes[i].dataset.value == dataSetValue || obj.childNodes[i].dataset.previd == dataSetValue) {
-                        return obj.childNodes[i];
-                    } else if (obj.childNodes[i].id == dataSetValue) {
-                        return obj.childNodes[i];
-                    }
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) obj = liquid.outDivObj;
+        var found = Liquid.getParentNodeProcess(obj, dataSetValue);
+        if(found)
+            return found;
+    },
+    getParentNodeProcess:function(obj, dataSetValue) {
+        for(let i=0; i<obj.childNodes.length; i++) {
+            var node = obj.childNodes[i];
+            if (node.dataset) {
+                if (node.dataset.value == dataSetValue || node.dataset.previd == dataSetValue) {
+                    return node;
+                } else if (node.dataset.linkedfield == dataSetValue || node.dataset.linkedname == dataSetValue) {
+                    return node;
+                } else if (node.getAttribute("linkedfield") == dataSetValue || node.getAttribute("linkedname") == dataSetValue) {
+                    return node;
+                } else if (node.id == dataSetValue) {
+                    return node;
                 }
             }
-            obj = obj.parentNode;
-            if(obj==document.body) return;
+            if(node.childNodes.length) {
+                var found = Liquid.getParentNodeProcess(node, dataSetValue);
+                if(found) {
+                    return found;
+                }
+            }
         }
+        return null;
     },
     getParentNodeByClass:function(obj, className) {
         while(obj) {
