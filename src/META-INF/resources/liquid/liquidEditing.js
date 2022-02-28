@@ -2714,6 +2714,7 @@ var LiquidEditing = {
                 +"<option value=\"onSelectionChanged\">on selection changed</option>"
                 +"<option value=\"onGetSelection\">on get selection</option>"
                 +"<option value=\"isRowSelectable\">is row selectable</option>"
+                +"<option value=\"hasCheckboxSelection\">has checkbox selection (column level)</option>"
                 +"<option value=\"onCellValueChanged\">on cell value changed</option>"
                 +"<option value=\"onSorting\">before sort</option>"
                 +"<option value=\"onSorted\">after sort</option>"

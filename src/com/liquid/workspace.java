@@ -582,8 +582,7 @@ public class workspace {
      *
      * @param request the http request (HttpServletRequest)
      * @param controlId the Id of the control (String)
-     * @param sTableJsonFile the configuration of the control (file in JSON
-     * format)
+     * @param sTableJsonFile the configuration of the control (file in JSON format)
      * @param b64Encode base 64 encode the result (boolean)
      * @param owner the class owning the control (String as package.class)
      * @param returnType the or result, can be "json" or empty for html (String)
@@ -598,6 +597,32 @@ public class workspace {
             if(b64Encode) {
                 return utility.base64Encode(result);
             }
+        }
+        return result;
+    }
+
+    /**
+     *
+     * <h3>Register a control in order to use it in the browser</h3>
+     * The controlId argument must specify an absolute control id
+     * <p>
+     * This method returns validate and formattated json for to be rendered in
+     * the browser
+     *
+     * @param request the http request (HttpServletRequest)
+     * @param controlId the Id of the control (String)
+     * @param sTableJsonFile the configuration of the control (file in JSON format)
+     * @param owner the class owning the control (String as package.class)
+     * @param returnType the or result, can be "json" or empty for html (String)
+     *
+     * @return the validated control json
+     * @throws java.lang.Throwable
+     * @see workspace
+     */
+    static public String get_table_control(HttpServletRequest request, String controlId, String sTableJsonFile, Object owner, String returnType) throws Throwable {
+        String result = get_table_control(request, controlId, workspace.get_file_content(request, sTableJsonFile, true, true), null, owner, returnType);
+        if("json".equalsIgnoreCase(returnType)) {
+            return utility.base64Encode(result);
         }
         return result;
     }

@@ -517,6 +517,7 @@ class LiquidCtrl {
                     rowSelection: (isDef(this.tableJson.rowSelection) && this.tableJson.rowSelection ? this.tableJson.rowSelection : "single"),
                     rowMultiSelectWithClick: (typeof this.tableJson.rowMultiSelectWithClick !== "undefined" ? this.tableJson.rowMultiSelectWithClick : (this.tableJson.mode === "lookup"?true:false)),
                     rowDeselection: (typeof this.tableJson.rowDeselection !== "undefined" ? this.tableJson.rowDeselection : false),
+                    rowStyle: { background: 'transparent', color:'', border:'' },
                     editType: (typeof this.tableJson.editType !== "undefined" ? this.tableJson.editType : ''),
                     enableRangeSelection: false,
                     skipHeaderOnAutoSize: (typeof this.tableJson.skipHeaderOnAutoSize !== "undefined" ? this.tableJson.skipHeaderOnAutoSize : false),
@@ -726,9 +727,22 @@ class LiquidCtrl {
                         Liquid.onSelectAll(this.liquidLink, event);
                     },
                     isRowSelectable:function(event) {
-                        if(this) {
-                            var liquid = Liquid.getLiquid(this.liquidLink.controlId);
-                            return Liquid.onEvent(liquid, "isRowSelectable", event.data).result;
+                        var liquid = this ? this.liquidLink : Liquid.getLiquid(event.context.contextParams.seed.eGridDiv);
+                        if(liquid) {
+                            // return Liquid.onEvent(row.api.context.contextParams.seed.eGridDiv, "isRowSelectable", row, null, null, true).result;
+                            var eventData = {
+                                layout: null,
+                                layoutRow: null,
+                                layoutRows: null,
+                                obj: null,
+                                rowData: event.data,
+                                node: null,
+                                nodes: null,
+                                command: null,
+                                isAddingNode: false,
+                                rowsContainer: null
+                            };
+                            return Liquid.onEvent(liquid, "isRowSelectable", eventData).result;
                         }
                         return true;
                     },
@@ -836,7 +850,7 @@ class LiquidCtrl {
                                 if(liquid) {
                                     var node = event.node;
                                     var nodes = null;
-                                    var eventResult = Liquid.onEvent(liquid, "onRowRendering", {
+                                    var eventData = {
                                         layout: null,
                                         layoutRow: null,
                                         layoutRows: null,
@@ -847,13 +861,15 @@ class LiquidCtrl {
                                         command: null,
                                         isAddingNode: false,
                                         rowsContainer: null
-                                    }, null);
+                                    };
+                                    var eventResult = Liquid.onEvent(liquid, "onRowRendering", eventData, null);
                                     if(typeof eventResult === 'object') {
                                         var rowStyle = eventResult.result;
                                         if(typeof rowStyle === 'object') {
                                             return rowStyle;
                                         } else if(typeof rowStyle === 'string') {
-                                            return JSON.parse(rowStyle);
+                                            try { rowStyle = rowStyle.atob(rowStyle); } catch (e) {}
+                                            return JSON.parse(rowStyle.replace(/\'/g,"\""));
                                         } else if(typeof rowStyle === 'undefined') {
                                             return null;
                                         } else {
@@ -1436,7 +1452,15 @@ class LiquidCtrl {
                         for (var ievt = 0; ievt < this.tableJson.events.length; ievt++) {
                             var event = this.tableJson.events[ievt];
                             if(event) {
-                                if(event.name == "onRender" || event.name == "onRendering" || event.name == "beforeRender" || event.name == "afterRender") {
+                                if(
+                                    event.name == "onRenderRow"
+                                    || event.name == "onRenderingRow"
+                                    || event.name == "onRender"
+                                    || event.name == "onRendering"
+                                    || event.name == "beforeRender"
+                                    || event.name == "afterRender"
+                                    || event.name == "onRowRender"
+                                ) {
                                     event.name = "onRowRendering";
                                 }
                             }
@@ -4594,15 +4618,29 @@ var Liquid = {
                         ,field: (liquid.tableJson.columns[ic].field ? liquid.tableJson.columns[ic].field : liquid.tableJson.columns[ic].name.replace(/\./g, "_"))
                         ,type: typeColumn
                         ,width: Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0)
-                        ,checkboxSelection: (ic === 0 && liquid.tableJson.checkboxSelection ? (function (row) {
+                        ,checkboxSelection: (ic === 0 && liquid.tableJson.checkboxSelection ? true : (function (row) {
+                            var liquid = Liquid.getLiquid(row.api.context.contextParams.seed.eGridDiv);
+                            var eventData = {
+                                layout: null,
+                                layoutRow: null,
+                                layoutRows: null,
+                                obj: null,
+                                column:row.column,
+                                rowData: Liquid.getFullRecordData(liquid, row.node),
+                                node: Liquid.getCleanNodeData(row.node),
+                                nodes: null,
+                                command: null,
+                                isAddingNode: false,
+                                rowsContainer: null
+                            };
                             try {
-                                if (row.api.context.contextParams.seed.eGridDiv)
-                                    return Liquid.onEvent(row.api.context.contextParams.seed.eGridDiv, "isRowSelectable", row, null, null, true).result;
+                                if (liquid)
+                                    return Liquid.onEvent(liquid, "hasCheckboxSelection", eventData, null, null, false).result;
                             } catch (e) {
                                 console.error(e);
                             }
                             return true;
-                        }) : false)
+                        }))
                         ,headerCheckboxSelection: (ic === 0 ? isDef(liquid.tableJson.rowSelection) && liquid.tableJson.rowSelection === "multiple" ? (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : true) : (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : false) : false)
                         ,tooltipField: tooltipField
                         ,headerTooltip: headerTooltip

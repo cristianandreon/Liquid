@@ -1854,22 +1854,25 @@ public class utility {
     //
     // Wrappers
     //
+    public static String arrayToString(String[] objs, String prefix, String postfix, String separator) {
+        return workspace.arrayToString(objs, prefix, postfix, separator);
+    }
     public static String arrayToString(Object[] objs, String prefix, String postfix, String separator) {
         return workspace.arrayToString(objs, prefix, postfix, separator);
-    }    
+    }
     public static String jsonArrayToString(JSONArray objs, String prefix, String postfix, String separator) {
         return workspace.jsonArrayToString(objs, prefix, postfix, separator);
     }
     public static ArrayList<String> jsonArrayToArrayList(JSONArray objs, String prefix, String postfix) {
         return workspace.jsonArrayToArrayList(objs, prefix, postfix);
-    }    
+    }
     public static ArrayList<String> jsonArrayToArrayList(JSONArray objs) {
         return workspace.jsonArrayToArrayList(objs, null, null);
     }
-    static String arrayToString(ArrayList<String> columns, String prefix, String postfix, String separator) {
+    public static String arrayToString(ArrayList<String> columns, String prefix, String postfix, String separator) {
         return arrayToString(columns.toArray(), prefix, postfix, separator);
     }
-    static String objArrayToString(ArrayList<Object> columns, String prefix, String postfix, String separator) {
+    public static String objArrayToString(ArrayList<Object> columns, String prefix, String postfix, String separator) {
         return arrayToString(columns.toArray(), prefix, postfix, separator);
     }
 
@@ -2236,6 +2239,7 @@ public class utility {
                         if(mergeJsonObject(jsonToMerge, objToUpdate) > 0) {
                             result = true;
                         }
+                        break;
                     }
                 } else {
                     throw new Exception("Unexpected case");

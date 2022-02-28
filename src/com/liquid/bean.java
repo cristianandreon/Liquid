@@ -15,11 +15,11 @@ import javax.servlet.jsp.JspWriter;
 import java.beans.IntrospectionException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -1454,6 +1454,72 @@ public class bean {
             return new_bean(requestParam, tblWrk, (JSONObject)rowData);
         } else {
             return null;
+        }
+    }
+
+    /**
+     * Create new bean by templateClass, filling it by sourceJson
+     * Supported object :       String, Date, Timestamp ... JSONArray
+     * Unsupported object :     JSONObject
+     *
+     * @param templateClass
+     * @param sourceJson        could be null
+     * @param excludingProps    could be null
+     * @return
+     * @throws Exception
+     */
+    public static Object new_bean(Class templateClass, JSONObject sourceJson, ArrayList<String> excludingProps) throws Exception {
+
+        if(excludingProps == null)
+            excludingProps = new ArrayList<String>();
+
+        Object inst = templateClass.newInstance();
+
+        if(sourceJson != null) {
+            JSONArray names = ((JSONObject)sourceJson).names();
+            for(int io=0; io<names.length(); io++) {
+                String name = names.getString(io);
+                if (!utility.contains(excludingProps, name)) {
+                    Object prop = ((JSONObject) sourceJson).get(name);
+                    if (prop instanceof JSONObject) {
+                        // TODO : ricerca della classe dell'oggetto json ... oppure uso ObjectMapper objectMapper libreria jackson
+                        // throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
+                        //
+
+                    } else if (prop instanceof JSONArray) {
+                        // TODO : TEST
+                        JSONArray propsJson = (JSONArray)prop;
+                        ArrayList<Object> values = new ArrayList<Object>();
+                        for(int i=0; i<propsJson.length(); i++) {
+                            values.add(propsJson.get(i));
+                        }
+                        setBeanProp(templateClass, inst, name, values);
+
+                    } else if (prop instanceof Date
+                            || prop instanceof Timestamp
+                            || prop instanceof Boolean
+                            || prop instanceof Integer
+                            || prop instanceof Long
+                            || prop instanceof Float
+                            || prop instanceof Double
+                            || prop instanceof BigDecimal) {
+                        setBeanProp(templateClass, inst, name, prop);
+                    } else {
+                        throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
+                    }
+                }
+            }
+        }
+        return inst;
+    }
+
+    static private Object setBeanProp(Class templateClass, Object inst, String name, Object prop) throws Exception {
+        String setter = nameSpacer.getSetter(name);
+        Method method = templateClass.getDeclaredMethod(setter);
+        if (method != null) {
+            return method.invoke(inst, prop);
+        } else {
+            throw new Exception("LIQUID: new_bean() error: method not found : " + setter);
         }
     }
 
