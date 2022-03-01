@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
 import java.util.logging.Level;
@@ -1463,12 +1464,13 @@ public class bean {
      * Unsupported object :     JSONObject
      *
      * @param templateClass
-     * @param sourceJson        could be null
-     * @param excludingProps    could be null
+     * @param sourceJson        source data, in jsonformat,  could be null
+     * @param excludingProps    props to exclude (ArrayList<String>), could be null
+     * @param mappingProps      ArrayList<JSON2BeanMapper> of properties (json prop, bean prop, class, format exception ... )
      * @return
      * @throws Exception
      */
-    public static Object new_bean(Class templateClass, JSONObject sourceJson, ArrayList<String> excludingProps) throws Exception {
+    public static Object new_bean(Class templateClass, JSONObject sourceJson, ArrayList<String> excludingProps, ArrayList<JSON2BeanMapper> mappingProps) throws Exception {
 
         if(excludingProps == null)
             excludingProps = new ArrayList<String>();
@@ -1481,31 +1483,131 @@ public class bean {
                 String name = names.getString(io);
                 if (!utility.contains(excludingProps, name)) {
                     Object prop = ((JSONObject) sourceJson).get(name);
-                    if (prop instanceof JSONObject) {
-                        // TODO : ricerca della classe dell'oggetto json ... oppure uso ObjectMapper objectMapper libreria jackson
-                        // throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
-                        //
+                    String beanProp = name;
+                    JSON2BeanMapper json2BeanMapper = null;
 
-                    } else if (prop instanceof JSONArray) {
-                        // TODO : TEST
-                        JSONArray propsJson = (JSONArray)prop;
-                        ArrayList<Object> values = new ArrayList<Object>();
-                        for(int i=0; i<propsJson.length(); i++) {
-                            values.add(propsJson.get(i));
+                    if("budgetIntervento".equalsIgnoreCase(name)) {
+                        beanProp = beanProp;
+                    }
+
+                    if(mappingProps != null) {
+                        try {
+                            json2BeanMapper = JSON2BeanMapper.findMapper(mappingProps, name);
+                            beanProp = json2BeanMapper != null ? json2BeanMapper.beanProp : name;
+                        } catch (Exception e){
+                            beanProp = null;
                         }
-                        setBeanProp(templateClass, inst, name, values);
+                    }
 
-                    } else if (prop instanceof Date
-                            || prop instanceof Timestamp
-                            || prop instanceof Boolean
-                            || prop instanceof Integer
-                            || prop instanceof Long
-                            || prop instanceof Float
-                            || prop instanceof Double
-                            || prop instanceof BigDecimal) {
-                        setBeanProp(templateClass, inst, name, prop);
-                    } else {
-                        throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
+
+                    if(beanProp != null && !beanProp.isEmpty()) {
+                        // to bean ..
+
+                        boolean bThrowExceptIfMissing = true;
+                        String exceptMessage = null;
+
+                        // wrap prop:
+                        if(json2BeanMapper != null) {
+                            if(json2BeanMapper.exception != null && !json2BeanMapper.exception.isEmpty()) {
+                                bThrowExceptIfMissing = true;
+                                exceptMessage = json2BeanMapper.exception;
+                            } else {
+                                bThrowExceptIfMissing = false;
+                            }
+                            if(json2BeanMapper.cls != null) {
+                                if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.util.Date")) {
+                                    if(json2BeanMapper.format != null) {
+                                        SimpleDateFormat dateTimeFormat = new SimpleDateFormat(json2BeanMapper.format);
+                                        if(prop instanceof String) {
+                                            prop = (Object) dateTimeFormat.parse((String) prop);
+                                        }
+                                    }
+                                } else if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.sql.Timestamp")) {
+                                    if(json2BeanMapper.format != null) {
+                                        SimpleDateFormat dateTimeFormat = new SimpleDateFormat(json2BeanMapper.format);
+                                        if(prop instanceof String) {
+                                            prop = (Object) new java.sql.Timestamp(dateTimeFormat.parse((String) prop).getTime());
+                                        }
+                                    }
+                                } else if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.sql.Date")) {
+                                    if(json2BeanMapper.format != null) {
+                                        SimpleDateFormat dateTimeFormat = new SimpleDateFormat(json2BeanMapper.format);
+                                        if(prop instanceof String) {
+                                            prop = (Object) new java.sql.Date(dateTimeFormat.parse((String) prop).getTime());
+                                        }
+                                    }
+                                } else if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.lang.Double")) {
+                                    if(prop instanceof String) {
+                                        Double dProp = Double.parseDouble((String) ((String) prop).replace(",", "."));
+                                        if (dProp != null) {
+                                            prop = new Double((Double) dProp);
+                                        }
+                                    } else if(prop instanceof Integer) {
+                                        prop = new Double((Integer) prop);
+                                    } else if(prop instanceof Long) {
+                                        prop = new Double((Long) prop);
+                                    } else if(prop instanceof BigDecimal) {
+                                        prop = new Double(((BigDecimal) prop).doubleValue());
+                                    } else if(prop instanceof Float) {
+                                        prop = new Double((Float) prop);
+                                    } else if(prop instanceof Double) {
+                                        prop = new Double((Double) prop);
+                                    }
+                                } else if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.lang.Float")) {
+                                    if(prop instanceof String) {
+                                        Float dProp = Float.parseFloat((String)((String) prop).replace(",", "."));
+                                        if(dProp != null) {
+                                            prop = new Float((Float) dProp);
+                                        }
+                                    } else if(prop instanceof Integer) {
+                                        prop = new Float((Integer) prop);
+                                    } else if(prop instanceof Long) {
+                                        prop = new Float((Long) prop);
+                                    } else if(prop instanceof BigDecimal) {
+                                        prop = new Float(((BigDecimal) prop).floatValue());
+                                    } else if(prop instanceof Float) {
+                                        prop = new Float((Float) prop);
+                                    } else if(prop instanceof Double) {
+                                        prop = new Float((Double) prop);
+                                    }
+                                } else if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.math.BigDecimal")) {
+                                    prop = new BigDecimal(String.valueOf(prop));
+                                } else if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.lang.Integer")) {
+                                    prop = new Integer(String.valueOf(prop));
+                                } else if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.math.Long")) {
+                                    prop = new Long(String.valueOf(prop));
+                                }
+                            }
+                        }
+
+                        if (prop instanceof JSONObject) {
+                            // TODO : ricerca della classe dell'oggetto json ... oppure uso ObjectMapper objectMapper libreria jackson
+                            // throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
+                            //
+
+                        } else if (prop instanceof JSONArray) {
+                            // TODO : TEST
+                            JSONArray propsJson = (JSONArray) prop;
+                            ArrayList<Object> values = new ArrayList<Object>();
+                            for (int i = 0; i < propsJson.length(); i++) {
+                                values.add(propsJson.get(i));
+                            }
+                            setBeanProp(templateClass, inst, beanProp, values, true, exceptMessage);
+
+                        } else if (prop instanceof String
+                                || prop instanceof Date
+                                || prop instanceof Timestamp
+                                || prop instanceof Boolean
+                                || prop instanceof Integer
+                                || prop instanceof Long
+                                || prop instanceof Float
+                                || prop instanceof Double
+                                || prop instanceof BigDecimal) {
+
+                            setBeanProp(templateClass, inst, beanProp, prop, bThrowExceptIfMissing, exceptMessage);
+                        } else {
+                            throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
+                        }
                     }
                 }
             }
@@ -1513,14 +1615,52 @@ public class bean {
         return inst;
     }
 
-    static private Object setBeanProp(Class templateClass, Object inst, String name, Object prop) throws Exception {
+    /**
+     * set property in class inst
+     *
+     * @param templateClass
+     * @param inst
+     * @param name
+     * @param prop
+     * @param bThrowExpectIfMissing
+     * @param exceptMessage
+     * @return
+     * @throws Exception
+     */
+    static private Object setBeanProp(Class templateClass, Object inst, String name, Object prop, boolean bThrowExpectIfMissing, String exceptMessage) throws Exception {
         String setter = nameSpacer.getSetter(name);
-        Method method = templateClass.getDeclaredMethod(setter);
-        if (method != null) {
-            return method.invoke(inst, prop);
-        } else {
-            throw new Exception("LIQUID: new_bean() error: method not found : " + setter);
+        try {
+            Method method = null;
+            try {
+                // Original class
+                method = templateClass.getDeclaredMethod(setter, prop.getClass());
+            } catch (Throwable th1) {
+                // Long/Integer/BigDecimal+/Float/Double .. no made by the caller by json2BeanMapper
+                if(prop instanceof Integer) {
+                } else if(prop instanceof Float) {
+                } else if(prop instanceof Double) {
+                } else if(prop instanceof String) {
+                    // String to Double/Float or to Date/Timestamp ? .. no made by the caller by json2BeanMapper
+                } else if(prop instanceof java.sql.Date) {
+                } else if(prop instanceof java.sql.Timestamp) {
+                } else if(prop instanceof java.util.Date) {
+                } else {
+                    throw th1;
+                }
+            }
+            if (method != null) {
+                return method.invoke(inst, prop);
+            } else {
+                if(bThrowExpectIfMissing) {
+                    throw new Exception((exceptMessage != null ? exceptMessage : "LIQUID: new_bean() error: method not found : " + setter));
+                }
+            }
+        } catch (Throwable th) {
+            if(bThrowExpectIfMissing) {
+                throw new Exception((exceptMessage != null ? exceptMessage : "LIQUID: new_bean() error: method not found : " + setter));
+            }
         }
+        return null;
     }
 
 

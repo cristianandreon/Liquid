@@ -601,6 +601,7 @@ public class workspace {
         return result;
     }
 
+
     /**
      *
      * <h3>Register a control in order to use it in the browser</h3>
@@ -626,6 +627,7 @@ public class workspace {
         }
         return result;
     }
+
 
     /**
      * <h3>Register a control in order to use it in the browser</h3>
@@ -4784,6 +4786,13 @@ public class workspace {
         return 0L;
     }
 
+    /**
+     * get Data fields in the control (es from FormX control)
+     * @param controlId
+     * @param params
+     * @param column
+     * @return
+     */
     static public String getData(String controlId, String params, String column) {
         try {
             JSONArray paramsJson = (JSONArray) (new JSONObject(params)).getJSONArray("params");
@@ -4832,6 +4841,57 @@ public class workspace {
 
     static public String getData(Object tbl_wrk, String params, String column) {
         return getData(((workspace) tbl_wrk).controlId, params, column);
+    }
+
+
+    /**
+     * Get user prop from params
+     *
+     * @param tbl_wrk
+     * @param params
+     * @param prop
+     * @return
+     */
+    static public String getUserProp(Object tbl_wrk, Object params, String prop) {
+        JSONObject paramsJson = null;
+        if (params instanceof String) {
+            paramsJson = new JSONObject((String) params);
+        } else if (params instanceof JSONObject) {
+            paramsJson = (JSONObject) params;
+        }
+        JSONArray userPropsJson = null;
+        if (paramsJson != null) {
+            try {
+                userPropsJson = paramsJson.getJSONArray("params").getJSONObject(0).getJSONArray("userProps");
+            } catch (Exception e) {
+            }
+            if (userPropsJson != null) {
+                for (int ip = 0; ip < userPropsJson.length(); ip++) {
+                    JSONObject userPropJson = userPropsJson.getJSONObject(ip);
+                    String name = userPropJson.getString("name");
+                    String value = userPropJson.getString("value");
+                    if (prop.equalsIgnoreCase(name)) {
+                        return value;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    static public JSONArray getRows(Object tbl_wrk, Object params) {
+        JSONObject paramsJson = null;
+        if (params instanceof String) {
+            paramsJson = new JSONObject((String) params);
+        } else if (params instanceof JSONObject) {
+            paramsJson = (JSONObject) params;
+        }
+        JSONArray rowsJson = null;
+        try {
+            rowsJson = paramsJson.getJSONArray("params").getJSONObject(0).getJSONArray("rows");
+        } catch (Exception e) {
+        }
+        return rowsJson;
     }
 
     static public String get_request_content(HttpServletRequest request) {

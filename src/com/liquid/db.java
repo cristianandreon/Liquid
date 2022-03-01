@@ -5501,6 +5501,11 @@ public class db {
         return workspace.getData(tbl_wrk, (String) params, (String) column);
     }
 
+    static public String getUserProp(Object tbl_wrk, Object params, String prop) {
+        return workspace.getUserProp(tbl_wrk, params, prop);
+    }
+
+
     static public boolean set_current_database(Connection conn, String database, String driver, String tableIdString) {
         String sql = null;
         try {

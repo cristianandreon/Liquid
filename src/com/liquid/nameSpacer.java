@@ -91,13 +91,15 @@ public class nameSpacer {
         return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "").toLowerCase();
     };
 
+    public static String capitalizeOnlyFirstLetter(String s) {
+        return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "");
+    };
+
     public static String getGetter(String name) {
-        String field = DB2Hibernate(name);
-        return "get"+capitalizeFirstLetter(field);
+        return "get"+capitalizeOnlyFirstLetter(name);
     }
     public static String getSetter(String name) {
-        String field = DB2Hibernate(name);
-        return "get"+capitalizeFirstLetter(field);
+        return "set"+capitalizeOnlyFirstLetter(name);
     }
 }
 

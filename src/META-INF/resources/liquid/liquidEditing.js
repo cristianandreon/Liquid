@@ -378,7 +378,7 @@ var LiquidEditing = {
                                         Liquid.addProperty(liquid, ftIndex1B, "filters", newFiltersJson);
                                         
                                     } else if(nameItems[1] === 'newFilter') {
-                                        LiquidEditing.addFilterToGroup(liquid, ftIndex1B, liquid.curFilter, filtersColumns, true);
+                                        Liquid.addFilterToGroup(liquid, ftIndex1B, liquid.curFilter, filtersColumns, true);
                                     }
                                     Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
                                 }
@@ -393,74 +393,6 @@ var LiquidEditing = {
             }
         }
     },    
-    // Add one or more filters to the Filters Group at index 'curFilter'
-    // TODO : test
-    addFilterToGroup:function(liquid, ftIndex1B, curFilter, filtersColumns, bPrint) {
-        var propName = "filters";
-        if(ftIndex1B) {
-            //
-            // update from source the foreignTable
-            //
-            var foreignTable = liquid.tableJsonSource.foreignTables[ftIndex1B-1];
-            if(!isDef(foreignTable.options)) foreignTable.options = { };
-            if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
-            
-            if(curFilter < foreignTable.options[propName].length) {
-                for(var ic=0; ic<filtersColumns.length; ic++) {
-                    var filterColumn = filtersColumns[ic];
-                    if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
-                    foreignTable.options[propName][curFilter].columns.push( filterColumn );
-                }
-            } else {
-                console.error("ERROR:addFilterToGroup() out of range");
-            }
-            
-        } else if(isDef(liquid.sourceData) && isDef(liquid.sourceData.rootControlId)) {
-            //
-            // update from the foreign table the source
-            //
-            if(isDef(liquid.sourceData.sourceForeignTablesIndexes1B)) {
-                var sourceLiquid = Liquid.getLiquid(liquid.sourceData.rootControlId);
-                if(sourceLiquid) {
-                    var foreignTable = sourceLiquid.tableJsonSource.foreignTables[liquid.sourceData.sourceForeignTablesIndexes1B[0]-1];
-                    if(!isDef(foreignTable.options)) foreignTable.options = { };
-                    if(!isDef(foreignTable.options[propName])) foreignTable.options[propName] = [];
-
-                    // if(curFilter > liquid.tableJsonSource.filters.length || curFilter < 0) curFilter = liquid.tableJsonSource.filters.length;
-                    if(curFilter < liquid.tableJsonSource.filters.length) {
-                        if(!isDef(liquid.tableJsonSource.filters[curFilter].columns)) liquid.tableJsonSource.filters[curFilter].columns = [];
-                        for(var ic=0; ic<filtersColumns.length; ic++) {
-                            var filterColumn = filtersColumns[ic];
-                            if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
-                            liquid.tableJsonSource.filters[curFilter].columns.push( filterColumn );
-                        }
-                        // update all columns
-                        foreignTable.options[propName][curFilter].columns = liquid.tableJsonSource.filters[curFilter].columns;
-
-                        Liquid.setAskForSave(sourceLiquid, true);
-                    } else {
-                        console.error("ERROR:addFilterToGroup() out of range");
-                    }
-                } else {
-                    console.error("ERROR : source "+propName+" update failed .. source control '"+liquid.sourceData.rootControlId+"' not found");
-                }
-            } else {
-                console.error("ERROR : source "+propName+" update failed .. source foreign table not indexed");
-            }
-        } else {
-            //
-            // direct update
-            //
-            if(curFilter > liquid.tableJsonSource.filters.length || curFilter < 0) curFilter = liquid.tableJsonSource.filters.length;
-            if(!isDef(liquid.tableJsonSource.filters[curFilter].columns)) liquid.tableJsonSource.filters[curFilter].columns = [];
-            for(var ic=0; ic<filtersColumns.length; ic++) {
-                var filterColumn = filtersColumns[ic];
-                if(bPrint) { try { console.log("INFO: new filter json : \n"+JSON.stringify(filterColumn)); } catch(e) { console.error(e); } }
-                liquid.tableJsonSource.filters[curFilter].columns.push( filterColumn );
-            }
-            // liquid.tableJsonSource.filters[curFilter].name = "";
-        }
-    },            
     onNewCommand:function(event) {
         var obj = typeof event === 'object' ? event.target : null;
         var obj_id = typeof event === 'object' ? obj.id : event;
