@@ -735,7 +735,7 @@ class LiquidCtrl {
                                 layoutRow: null,
                                 layoutRows: null,
                                 obj: null,
-                                rowData: event.data,
+                                rowData: Liquid.getFullRecordData(liquid, event),
                                 node: null,
                                 nodes: null,
                                 command: null,
