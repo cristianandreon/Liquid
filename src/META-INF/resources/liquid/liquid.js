@@ -499,6 +499,11 @@ class LiquidCtrl {
 
                 this.tableJsonSource = JSON.parse(JSON.stringify(this.tableJson));
 
+                var overlayLoadingTemplate = (typeof this.tableJson.loadingMessage !== "undefined" ? this.tableJson.loadingMessage : Liquid.loadingMessage);
+                var overlayNoRowsTemplate = (typeof this.tableJson.noRowsMessage !== "undefined" ? this.tableJson.noRowsMessage : Liquid.noRowsMessage);
+                if(this.tableJson.autoLoad === false) {
+                    overlayNoRowsTemplate = (typeof this.tableJson.noRowsInitialMessage !== "undefined" ? this.tableJson.noRowsInitialMessage : Liquid.noRowsInitialMessage);
+                }
 
                 this.gridOptions = {
                     liquidLink: this,
@@ -517,7 +522,7 @@ class LiquidCtrl {
                     rowSelection: (isDef(this.tableJson.rowSelection) && this.tableJson.rowSelection ? this.tableJson.rowSelection : "single"),
                     rowMultiSelectWithClick: (typeof this.tableJson.rowMultiSelectWithClick !== "undefined" ? this.tableJson.rowMultiSelectWithClick : (this.tableJson.mode === "lookup"?true:false)),
                     rowDeselection: (typeof this.tableJson.rowDeselection !== "undefined" ? this.tableJson.rowDeselection : false),
-                    rowStyle: { background: 'transparent', color:'', border:'' },
+                    rowStyle: { background: '', color:'', border:'' },
                     editType: (typeof this.tableJson.editType !== "undefined" ? this.tableJson.editType : ''),
                     enableRangeSelection: false,
                     skipHeaderOnAutoSize: (typeof this.tableJson.skipHeaderOnAutoSize !== "undefined" ? this.tableJson.skipHeaderOnAutoSize : false),
@@ -530,8 +535,8 @@ class LiquidCtrl {
                     suppressPaginationPanel: true,
                     suppressScrollOnNewData: true,
                     animateRows: true,
-                    overlayLoadingTemplate: (typeof this.tableJson.loadingMessage !== "undefined" ? this.tableJson.loadingMessage : Liquid.loadingMessage),
-                    overlayNoRowsTemplate: (typeof this.tableJson.noRowsMessage !== "undefined" ? this.tableJson.noRowsMessage : Liquid.noRowsMessage),
+                    overlayLoadingTemplate: overlayLoadingTemplate,
+                    overlayNoRowsTemplate: overlayNoRowsTemplate,
 
                     components: {
                         agColumnHeader: LiquidGridHeader,
@@ -2498,6 +2503,7 @@ var Liquid = {
     undetectedColumnColor: "red",
     loadingMessage: "",
     noRowsMessage: "",
+    noRowsInitialMessage: "",
     iconincSize: {wx: 175, wy: 26},
     paginationTitleGoTo: "",
     paginationTitleFirst: "",
@@ -2562,6 +2568,7 @@ var Liquid = {
                     Liquid.lang = langFound = 'ita';
                     Liquid.loadingMessage = "<div class=\"lds-ring-main\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
                     Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">Nessun dato trovato...</span>";
+                    Liquid.noRowsInitialMessage = "<span style=''><a href='javascript:void(0)' onclick='Liquid.onSearch(this);' style='color:darkgrey'>..esegui la cerca..</a></span>";
                     Liquid.paginationTitleGoTo = "digita la pagina a cui andare ... poi premi enter";
                     Liquid.paginationTitleFirst = "vai alla prima pagina";
                     Liquid.paginationTitlePrevious = "vai alla pagina precedente";
@@ -2580,6 +2587,7 @@ var Liquid = {
                     Liquid.lang = langFound = 'eng';
                     Liquid.loadingMessage = "<div class=\"lds-ring-main\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Loading data...</span>";
                     Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">No data to show...</span>";
+                    Liquid.noRowsInitialMessage = "<span style=''><a href='javascript:void(0)' onclick='Liquid.onSearch(this);' style='color:darkgrey'>..search for data..</a></span>";
                     Liquid.paginationTitleGoTo = "type page to go to ... then press enter";
                     Liquid.paginationTitleFirst = "go to first page";
                     Liquid.paginationTitlePrevious = "go to previous page";
@@ -5212,6 +5220,10 @@ var Liquid = {
         if (typeof liquid === 'undefined') return;
         if (typeof liquid === 'string') liquid = Liquid.getLiquid(liquid);
         if (typeof liquid.tableJson !== 'undefined') {
+
+            var overlayNoRowsTemplate = (typeof liquid.tableJson.noRowsInitialMessage !== "undefined" ? liquid.tableJson.noRowsInitialMessage : Liquid.noRowsInitialMessage);
+            liquid.gridOptions.overlayNoRowsTemplate = overlayNoRowsTemplate;
+
             if (isDef(liquid.tableJson.rowData)) {
                 // fixed data :
                 var selNodes = liquid.gridOptions.api.getSelectedNodes();
@@ -8135,7 +8147,7 @@ var Liquid = {
             }
         }
         return {
-            result: result ? result : defaultRetval,
+            result: typeof result !== 'undefined' ? result : defaultRetval,
             systemResult: systemResult,
             nEvents: eventCounter,
             nSystemEvents: systemEventCounter
@@ -20374,6 +20386,7 @@ SelectEditor.prototype.init = function(params) {
                 + (this.idColumn ? '&idColumn=' + this.idColumn : '')
                 + '&targetMode=' + params.colDef.cellEditorParams.editor
                 + '&extendedMetadata=false'
+
                 ,false
             );
             xhr.send();

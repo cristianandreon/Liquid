@@ -1209,7 +1209,10 @@ public class db {
                 //
                 // N.B.: I filtri permenaneti sono decisi dal server ma possono essere impostati sessione per sessione
                 //       Ad esempio accesso per dominio
-                if (!isCrossTableService || "distinct".equalsIgnoreCase(targetMode)) {
+                if (!isCrossTableService
+                        // N.B.: La modalita' distinct non prevarica il pre-filtro
+                        || "distinct".equalsIgnoreCase(targetMode)
+                ) {
                     JSONArray preFilters = null;
                     JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
 
@@ -2728,8 +2731,9 @@ public class db {
                                 } else if (colTypes[ic] == -7) {
                                     out_values_string.append("" + rsdo.getBoolean(columns_alias[0]) + "");
                                 } else {
-                                    fieldValue = rsdo.getString(columns_alias[0]).replace("\"", "\\\"");
-                                    out_values_string.append("\"" + fieldValue + "\"");
+                                    fieldValue = rsdo.getString(columns_alias[0]);
+                                    if(fieldValue != null) fieldValue = fieldValue.replace("\"", "\\\"");
+                                    out_values_string.append("\"" + (fieldValue != null ? fieldValue : "") + "\"");
                                 }
 
                             } else {
@@ -3021,19 +3025,22 @@ public class db {
         return false;
     }
 
+    static public boolean set_prefilter(workspace tbl_wrk, String fieldName, String fieldValue, String filterOperator, String filterLogic) {
+        return add_prefilter(tbl_wrk, fieldName, fieldValue, filterOperator, filterLogic);
+    }
     static public boolean set_prefilter(workspace tbl_wrk, String fieldName, String fieldValue, String filterOperator) {
-        return add_prefilter(tbl_wrk, fieldName, fieldValue, filterOperator);
+        return add_prefilter(tbl_wrk, fieldName, fieldValue, filterOperator, null);
     }
 
     static public boolean set_prefilter(workspace tbl_wrk, String fieldName, String fieldValue) {
-        return add_prefilter(tbl_wrk, fieldName, fieldValue, null);
+        return add_prefilter(tbl_wrk, fieldName, fieldValue, null, null);
     }
 
     static public boolean add_prefilter(workspace tbl_wrk, String fieldName, String fieldValue) {
-        return add_prefilter(tbl_wrk, fieldName, fieldValue, null);
+        return add_prefilter(tbl_wrk, fieldName, fieldValue, null, null);
     }
 
-    static public boolean add_prefilter(workspace tbl_wrk, String fieldName, String fieldValue, String filterOperator) {
+    static public boolean add_prefilter(workspace tbl_wrk, String fieldName, String fieldValue, String filterOperator, String filterLogic) {
         if (tbl_wrk != null && tbl_wrk.tableJson != null) {
             JSONArray preFilters = null;
             JSONObject preFilter = null;
@@ -3072,6 +3079,9 @@ public class db {
                 preFilter.put("value", fieldValue);
                 if (filterOperator != null && !filterOperator.isEmpty()) {
                     preFilter.put("op", filterOperator);
+                }
+                if (filterLogic != null && !filterLogic.isEmpty()) {
+                    preFilter.put("logic", filterLogic);
                 }
                 preFilters.put(preFilter);
                 tbl_wrk.tableJson.put("preFilters", preFilters);

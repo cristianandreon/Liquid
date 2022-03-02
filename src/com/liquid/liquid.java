@@ -1,5 +1,8 @@
 package com.liquid;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 
@@ -13,6 +16,7 @@ public class liquid {
      * @param controlId         the Id of the control
      * @param controlJsonFile   the json file name (relative path)
      * @param owner             the class instance owning the callbacks
+     * @param preFilters        the pre-filters (Object [] : name, value, operator(><= ..), logic(AND/OR) Mode (RW/RO)
      * @param filters           the filters (Object [] : name, value, operator(><= ..), logic(AND/OR) Mode (RW/RO)
      * @param userProps         the user properties to append to the control
      * @return
@@ -24,6 +28,7 @@ public class liquid {
             , String controlId
             , String controlJsonFile
             , Object owner
+            , ArrayList<Object[]> preFilters
             , ArrayList<Object[]> filters
             , ArrayList<Object[]> userProps
             ) throws Throwable {
@@ -39,10 +44,46 @@ public class liquid {
                 "json");
 
 
-        // Set dei filtri
+        // Set dei pre-filtri
+
+        // setPreFilters(obj, columnName, filterName, filterValue, filterOperator, filterLogic)
+        if (preFilters != null) {
+            workspace wrk = workspace.get_tbl_manager_workspace(controlId);
+
+            /*
+            JSONObject popupJson = new JSONObject(utility.base64Decode(sPopupJson));
+            if(!popupJson.has("preFilters"))
+                popupJson.put("preFilters", new JSONArray());
+            JSONArray preFiltersJArr = popupJson.getJSONArray("preFilters");
+             */
+            for (int iF = 0; iF < preFilters.size(); iF++) {
+                Object[] filter = preFilters.get(iF);
+                if (filter != null) {
+                    String name = (String) filter[0];
+                    String value = (String) (filter[1] != null ? filter[1] : null);
+                    String operator = (String) (filter[2] != null ? filter[2] : null);
+                    String logic = (String)(filter[3] != null ? filter[3] : null);
+                    if (name != null) {
+                        db.set_prefilter(wrk, name, value, operator, logic);
+                        /*
+                        preFiltersJArr.put( new JSONObject(
+                                "{\"name\":\""+name
+                                        +(value != null ? "\",\"value\":\""+value : "")
+                                        +(operator != null ? "\",\"operator\":\""+operator : "")
+                                        +(logic != null ? "\",\"logic\":\""+logic : "")
+                                        +"\"}"));
+                         */
+                    }
+                }
+            }
+            // popupJson.put("preFilters", preFiltersJArr);
+            // sPopupJson = utility.base64Encode(popupJson.toString());
+        }
+
 
         // script da eseguire per visualizzare il popup
         scriptToExec = "Liquid.startPopup('"+controlId+"','" + sPopupJson + "');";
+
 
         // setFilters(obj, columnName, filterName, filterValue, filterOperator, filterLogic)
         if (filters != null) {
@@ -77,6 +118,27 @@ public class liquid {
             }
         }
         return scriptToExec;
+    }
+
+
+    public static String startPopup(
+            HttpServletRequest request
+            , String controlId
+            , String controlJsonFile
+            , Object owner
+            , ArrayList<Object[]> filters
+            , ArrayList<Object[]> userProps
+    ) throws Throwable {
+
+        return startPopup(
+                request
+                , controlId
+                , controlJsonFile
+                , owner
+                , null
+                , filters
+                , userProps
+            );
     }
 
 }
