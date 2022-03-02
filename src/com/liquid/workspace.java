@@ -4859,19 +4859,28 @@ public class workspace {
         } else if (params instanceof JSONObject) {
             paramsJson = (JSONObject) params;
         }
-        JSONArray userPropsJson = null;
+        Object oUserProps = null;
+        JSONArray paramsJArr = paramsJson.getJSONArray("params");
         if (paramsJson != null) {
-            try {
-                userPropsJson = paramsJson.getJSONArray("params").getJSONObject(0).getJSONArray("userProps");
-            } catch (Exception e) {
-            }
-            if (userPropsJson != null) {
-                for (int ip = 0; ip < userPropsJson.length(); ip++) {
-                    JSONObject userPropJson = userPropsJson.getJSONObject(ip);
-                    String name = userPropJson.getString("name");
-                    String value = userPropJson.getString("value");
-                    if (prop.equalsIgnoreCase(name)) {
-                        return value;
+            for(int ip=0; ip<paramsJArr.length(); ip++) {
+                JSONObject paramJson = paramsJArr.getJSONObject(ip);
+                if(paramJson != null) {
+                    try {
+                        oUserProps = paramJson.has("userProps") ? paramJson.get("userProps") : null;
+                    } catch (Exception e) {
+                    }
+                    if (oUserProps != null) {
+                        if(oUserProps instanceof JSONArray) {
+                            JSONArray userPropsJson = (JSONArray)oUserProps;
+                            for (int iup = 0; iup < userPropsJson.length(); iup++) {
+                                JSONObject userPropJson = userPropsJson.getJSONObject(iup);
+                                String name = userPropJson.getString("name");
+                                String value = userPropJson.getString("value");
+                                if (prop.equalsIgnoreCase(name)) {
+                                    return value;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -4893,6 +4902,22 @@ public class workspace {
         }
         return rowsJson;
     }
+
+    static public JSONArray getModifications(Object tbl_wrk, Object params) {
+        JSONObject paramsJson = null;
+        if (params instanceof String) {
+            paramsJson = new JSONObject((String) params);
+        } else if (params instanceof JSONObject) {
+            paramsJson = (JSONObject) params;
+        }
+        JSONArray modificationsJson = null;
+        try {
+            modificationsJson = paramsJson.getJSONArray("params").getJSONObject(0).getJSONArray("modifications");
+        } catch (Exception e) {
+        }
+        return modificationsJson;
+    }
+
 
     static public String get_request_content(HttpServletRequest request) {
         try {

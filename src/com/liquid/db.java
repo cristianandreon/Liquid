@@ -1338,10 +1338,16 @@ public class db {
                                         } else {
                                             sSort += ",";
                                         }
+
+                                        /*
                                         sSort += ""
                                                 + (tableIdString + table + tableIdString)
                                                 + "."
                                                 + itemIdString + sortColumnAlias + itemIdString;
+                                         */
+                                        sSort += ""
+                                                + itemIdString + sortColumnAlias + itemIdString;
+
                                         if (sortColumnsMode != null) {
                                             sSort += " " + sortColumnsMode.getString(i);
                                         }
@@ -3697,6 +3703,9 @@ public class db {
         return processModification(p1, p2, p3, p4, p5, "update");
     }
 
+    public static String updateFields(Object p1, Object p2, Object p3, Object p4) {
+        return processModification(p1, p2, p3, p4, null, "update");
+    }
 
 
     public static String updateField(workspace wrk, Object key_id, String status, Object requestParam) throws Throwable {
@@ -3919,6 +3928,9 @@ public class db {
                                                                 String sourceColumn = null;
                                                                 String tField = col.getString("field");
                                                                 String tName = col.getString("name");
+                                                                String tTable = col.has("table") ? col.getString("table") : null;
+                                                                String tPrimaryKey = col.has("primaryKey") ? col.getString("primaryKey") : null;
+
                                                                 String[] colParts = tName.split("\\.");
                                                                 boolean autoIncString = false;
                                                                 try {
@@ -3956,6 +3968,19 @@ public class db {
                                                                         }
 
 
+
+                                                                        //
+                                                                        // uso di table/primaryKey nelle query (per aggiornare il campo sorgente
+                                                                        //
+                                                                        if(tTable != null && !tTable.isEmpty()) {
+                                                                            foreignTable = tTable;
+                                                                        }
+                                                                        if(tPrimaryKey != null && !tPrimaryKey.isEmpty()) {
+                                                                            foreignColumn = tPrimaryKey;
+                                                                            sourceColumn = tPrimaryKey;
+                                                                        }
+
+
                                                                         //
                                                                         // compute the value by metadata
                                                                         //
@@ -3970,7 +3995,13 @@ public class db {
                                                                             if (!foreignTable.equalsIgnoreCase(table)) {
                                                                                 // campo esterno
                                                                                 isExternalField = true;
-                                                                                if (foreignBEdit || "y".equalsIgnoreCase(foreignEdit) || "yes".equalsIgnoreCase(foreignEdit) || "s".equalsIgnoreCase(foreignEdit) || "si".equalsIgnoreCase(foreignEdit)) {
+                                                                                if (foreignBEdit
+                                                                                        || "y".equalsIgnoreCase(foreignEdit)
+                                                                                        || "yes".equalsIgnoreCase(foreignEdit)
+                                                                                        || "s".equalsIgnoreCase(foreignEdit)
+                                                                                        || "si".equalsIgnoreCase(foreignEdit)
+                                                                                        || (tTable != null && !tTable.isEmpty() && tPrimaryKey != null && !tPrimaryKey.isEmpty())
+                                                                                ) {
                                                                                     if (colParts.length > 1) {
                                                                                         tName = colParts[1];
                                                                                     }
@@ -4096,10 +4127,11 @@ public class db {
                         }
 
                         try {
-                            PreparedStatement preparedStmt = null;
                             if (foreignTableTransactList != null || tableTransactList != null) {
                                 if (foreignTableTransactList.transactionList != null) {
                                     for (i = 0; i < foreignTableTransactList.transactionList.size(); i++) {
+                                        PreparedStatement foreignPreparedStmt = null;
+
                                     	executingQuery = null;
                                     	
                                         try {
@@ -4116,30 +4148,32 @@ public class db {
                                             int res = 0;
                                             Object[] resArray = foreignTableTransactList.executeSQL(liquid, i, connToUse, Statement.RETURN_GENERATED_KEYS);
                                             res = (int) resArray[0];
-                                            preparedStmt = (PreparedStatement) resArray[1];
+                                            foreignPreparedStmt = (PreparedStatement) resArray[1];
                                             if (res > 0) {
                                                 nForeignUpdates++;
-                                                ResultSet rs = preparedStmt.getGeneratedKeys();
-                                                if (rs != null) {
-                                                    String idsList = "";
-                                                    while (rs.next()) {
-                                                        idsList += (idsList.length() > 0 ? "," : "") + rs.getString(1);
-                                                    }
-                                                    foreignTableUpdates.add("{\"table\":\"" + foreignTableTransactList.transactionList.get(i).table.replace(itemIdString, "") + "\",\"ids\":[" + idsList + "]}");
-                                                    foreignTableTransactList.transactionList.get(i).ids = idsList;
-                                                    if (foreignTableTransactList.transactionList.get(i).sourceColumn != null) {
-                                                        // ignezione in foreignTableTransactList.transactionList.get(i).sourceColumn del id creato
-                                                        if (foreignTableTransactList.transactionList.get(i).linkedTransactList != null) {
-                                                            for (int j = 0; j < foreignTableTransactList.transactionList.get(i).linkedTransactList.size(); j++) {
-                                                                TransactionList linkedTransact = foreignTableTransactList.transactionList.get(i).linkedTransactList.get(j);
-                                                                if (!linkedTransact.columns.contains(foreignTableTransactList.transactionList.get(i).sourceColumn)) {
-                                                                    linkedTransact.columns.add(foreignTableTransactList.transactionList.get(i).sourceColumn);
-                                                                    linkedTransact.values.add(idsList);
+                                                if (!"delete".equalsIgnoreCase(foreignTableTransactList.getType(liquid, i))) {
+                                                    ResultSet rs = foreignPreparedStmt.getGeneratedKeys();
+                                                    if (rs != null) {
+                                                        String idsList = "";
+                                                        while (rs.next()) {
+                                                            idsList += (idsList.length() > 0 ? "," : "") + rs.getString(1);
+                                                        }
+                                                        foreignTableUpdates.add("{\"table\":\"" + foreignTableTransactList.transactionList.get(i).table.replace(itemIdString, "") + "\",\"ids\":[" + idsList + "]}");
+                                                        foreignTableTransactList.transactionList.get(i).ids = idsList;
+                                                        if (foreignTableTransactList.transactionList.get(i).sourceColumn != null) {
+                                                            // ignezione in foreignTableTransactList.transactionList.get(i).sourceColumn del id creato
+                                                            if (foreignTableTransactList.transactionList.get(i).linkedTransactList != null) {
+                                                                for (int j = 0; j < foreignTableTransactList.transactionList.get(i).linkedTransactList.size(); j++) {
+                                                                    TransactionList linkedTransact = foreignTableTransactList.transactionList.get(i).linkedTransactList.get(j);
+                                                                    if (!linkedTransact.columns.contains(foreignTableTransactList.transactionList.get(i).sourceColumn)) {
+                                                                        linkedTransact.columns.add(foreignTableTransactList.transactionList.get(i).sourceColumn);
+                                                                        linkedTransact.values.add(idsList);
+                                                                    }
                                                                 }
                                                             }
                                                         }
+                                                        rs.close();
                                                     }
-                                                    rs.close();
                                                 }
                                             }
                                         } catch (Throwable th) {
@@ -4149,14 +4183,21 @@ public class db {
                                             foreignTableUpdates.add("{\"table\":\"" + tableDesc + "\",\"ids\":[], \"error\":\"" + utility.base64Encode(tableDesc+" : "+th.getLocalizedMessage()) + "\", \"query\":\"" + utility.base64Encode(executingQuery) + "\" }");
                                             String fieldValue = foreignTableTransactList.transactionList.get(i).rowId;
                                             fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
-                                            modificationsFaild.add("{\"rowId\":\"" + fieldValue + "\",\"nodeId\":\"" + tableTransactList.transactionList.get(i).nodeId + "\"}");
+                                            modificationsFaild.add("{\"rowId\":\"" + fieldValue + "\",\"nodeId\":\"" + foreignTableTransactList.transactionList.get(i).nodeId + "\"}");
+                                        } finally {
+                                            if(foreignPreparedStmt != null) {
+                                                foreignPreparedStmt.close();
+                                            }
                                         }
                                     }
                                 }
 
                                 if (tableTransactList.transactionList != null) {
                                     for (i = 0; i < tableTransactList.transactionList.size(); i++) {
+                                        PreparedStatement preparedStmt = null;
+
                                     	executingQuery = null;
+
                                         try {
                                             if (workspace.projectMode) {
                                                 executingQuery = tableTransactList.getSQL(liquid, i);
@@ -4192,16 +4233,16 @@ public class db {
                                             String fieldValue = tableTransactList.transactionList.get(i).rowId;
                                             fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
                                             modificationsFaild.add("{\"rowId\":\"" + fieldValue + "\",\"nodeId\":\"" + tableTransactList.transactionList.get(i).nodeId + "\"}");
+                                        } finally {
+                                            if(preparedStmt != null) {
+                                                preparedStmt.close();
+                                            }
                                         }
                                     }
                                 }
 
                                 if (!bUseAutoCommit) {
                                     connToUse.commit();
-                                }
-
-                                if (preparedStmt != null) {
-                                    preparedStmt.close();
                                 }
                             }
 

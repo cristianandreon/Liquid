@@ -57,7 +57,7 @@
                 if(chart.rows === '*') {
                     nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                 }
-                var keyColField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
+                var keyColField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null;
                 var keyColIndex = Number(keyColField)-1;
                 var columns = [];
                 var types = [];

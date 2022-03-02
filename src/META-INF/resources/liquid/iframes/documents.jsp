@@ -124,7 +124,7 @@
                         glNodes = nodes;
                         var nodeKeys = [];
                         for (var iN=0; iN<nodes.length; iN++) {
-                            nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ] );
+                            nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                         }
                         var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys };
                         var xhr = new XMLHttpRequest();
@@ -199,7 +199,7 @@
                                 var nodeKeys = [];
                                 var nodes = glNodes;
                                 for (var iN=0; iN<nodes.length; iN++) {
-                                    nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ] );
+                                    nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                                 }
                                 var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, file:fileName, size:fileSize, note:note, content:result.target.result };
                                 var xhr = new XMLHttpRequest();
@@ -256,7 +256,7 @@
                     if(nodes) {
                         var nodeKeys = [];
                         for (var iN=0; iN<nodes.length; iN++) {
-                            nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ] );
+                            nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                         }
                         var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, index:String(index) };
                         var xhr = new XMLHttpRequest();
@@ -313,7 +313,7 @@
                         glNodes = nodes;
                         var nodeKeys = [];
                         for (var iN=0; iN<nodes.length; iN++) {
-                            nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ] );
+                            nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                         }
                         var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, index:String(index) };
                         var xhr = new XMLHttpRequest();
@@ -366,7 +366,7 @@
                         glNodes = nodes;
                         var nodeKeys = [];
                         for (var iN=0; iN<nodes.length; iN++) {
-                            nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ] );
+                            nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                         }
                         var curNote = document.getElementById("" + liquid.controlId + ".error").innerHTML = atob(httpResultJson.error);
                         var note = prompt();

@@ -595,7 +595,11 @@ class LiquidCtrl {
                                                 if(liquid.modifications) {
                                                     if(liquid.modifications.length>0) {
                                                         if(!liquid.tableJson.multilineEdit === true) {
-                                                            Liquid.onCommand(liquid, "update");
+                                                            if(liquid.tableJson.transaction === 'single') {
+                                                                console.info("Row change");
+                                                            } else {
+                                                                Liquid.onCommand(liquid, "update");
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -742,7 +746,7 @@ class LiquidCtrl {
                                 isAddingNode: false,
                                 rowsContainer: null
                             };
-                            return Liquid.onEvent(liquid, "isRowSelectable", eventData).result;
+                            return Liquid.onEvent(liquid, "isRowSelectable", eventData, null, null, true).result;
                         }
                         return true;
                     },
@@ -757,8 +761,22 @@ class LiquidCtrl {
                     onCellValueChanged:function(event) {
                         var liquid = Liquid.getLiquid(this.liquidLink.controlId);
                         if(event.oldValue !== event.newValue) {
-                            Liquid.onEvent(liquid, "onCellValueChanged", event.node);
-                            // var iCol = Number(event.column.colId) - 1;
+                            var eventData = {
+                                layout: null,
+                                layoutRow: null,
+                                layoutRows: null,
+                                obj: null,
+                                rowData: Liquid.getFullRecordData(liquid, event),
+                                node: event.node,
+                                nodes: null,
+                                command: null,
+                                isAddingNode: false,
+                                rowsContainer: null
+                            };
+                            Liquid.onEvent(liquid, "onCellValueChanged", eventData);
+                            // update internal data
+                            event.node.setData(event.node.data);
+                            liquid.gridOptions.api.redrawRows({rowNodes:[event.node]});
                             var iCol = Liquid.getColumnIndexByField(liquid, event.column.field);
                             if(iCol !== null && iCol >= 0) {
                                 if(liquid.tableJson.columns[iCol].isReflected === true)
@@ -768,7 +786,7 @@ class LiquidCtrl {
                                     if(validateResult[0] >= 0) {
                                         if(!Liquid.isMirrorEvent(liquid, event.node) ) {
                                             event.newValue = validateResult[1];
-                                            Liquid.registerFieldChange(liquid, event.node.id, event.node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], event.column.colId, event.oldValue, event.newValue);
+                                            Liquid.registerFieldChange(liquid, event.node.id, event.node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ], event.column.colId, event.oldValue, event.newValue);
                                             Liquid.updateDependencies(liquid, liquid.tableJson.columns[iCol], null, event);
                                         }
                                     }
@@ -3838,7 +3856,11 @@ var Liquid = {
                             try {
                                 var messageJson = JSON.parse(sMessageJson);
                                 if (messageJson) {
-                                    Liquid.showServerMessage(atob(messageJson.message), atob(messageJson.title), messageJson.buttons, messageJson.timeout, messageJson.timeoutButton, atob(messageJson.cypher));
+                                    var msg = null;
+                                    try { msg = atob(messageJson.message); } catch(e) { msg = messageJson.message; }
+                                    var title = null;
+                                    try { title = atob(messageJson.title); } catch(e) { title = messageJson.title; }
+                                    Liquid.showServerMessage(msg, title, messageJson.buttons, messageJson.timeout, messageJson.timeoutButton, atob(messageJson.cypher));
                                 }
                             } catch (e) {
                                 console.error("ERROR on onTransferDownloadingProgress() : " + e);
@@ -4309,6 +4331,14 @@ var Liquid = {
                     if (!purgedMode) result[columns[ic].field] = node.data[columns[ic].field];
                     result[columns[ic].name] = node.data[columns[ic].field];
                 }
+                // Add runtime fields (not key numeric)...
+                for (let key of Object.keys(node.data)) {
+                    if(isNaN(key)) {
+                        if (typeof result[key] === 'undefined') {
+                            result[key] = node.data[key];
+                        }
+                    }
+                }
                 return result;
             }
         }
@@ -4470,6 +4500,8 @@ var Liquid = {
             if (isDef(liquid.tableJson.primaryKey)) {
                 var keyColumn = Liquid.getColumn(liquid, liquid.tableJson.primaryKey);
                 if (keyColumn) liquid.tableJson.primaryKeyField = keyColumn.field;
+            } else {
+                console.error("ERROR: controlId:" + liquid.controlId + " missing primary key");
             }
         }
         if (liquid.tableJson) {
@@ -4711,45 +4743,26 @@ var Liquid = {
                             }
                             return true;
                         }))
-                        ,
-                        headerCheckboxSelection: (ic === 0 ? isDef(liquid.tableJson.rowSelection) && liquid.tableJson.rowSelection === "multiple" ? (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : true) : (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : false) : false)
-                        ,
-                        tooltipField: tooltipField
-                        ,
-                        headerTooltip: headerTooltip
-                        ,
-                        hide: (liquid.tableJson.columns[ic].visible === false ? true : false)
-                        ,
-                        pinned: (typeof liquid.tableJson.columns[ic].pinned === 'string' ? liquid.tableJson.columns[ic].pinned : (liquid.tableJson.columns[ic].pinned === true ? "left" : false))
-                        ,
-                        lockPinned: (liquid.tableJson.columns[ic].lockPinned === true ? true : false)
-                        ,
-                        cellStyle: cellStyle
-                        ,
-                        filter: (typeof liquid.tableJson.columns[ic].filter !== "undefined" ? liquid.tableJson.columns[ic].filter : (typeof liquid.tableJson.clientFilters !== "undefined" ? liquid.tableJson.clientFilters : true))
-                        ,
-                        editable: editable
-                        ,
-                        cellEditor: cellEditor
-                        ,
-                        cellEditorParams: cellEditorParams
-                        ,
-                        cellRenderer: cellRenderer
-                        ,
-                        sortable: (typeof liquid.tableJson.columns[ic].sortable !== "undefined" ? liquid.tableJson.columns[ic].sortable : true)
-                        ,
-                        comparator: sortComparator
-                        ,
-                        headerComponentParams: {
+                        ,headerCheckboxSelection: (ic === 0 ? isDef(liquid.tableJson.rowSelection) && liquid.tableJson.rowSelection === "multiple" ? (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : true) : (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : false) : false)
+                        ,tooltipField: tooltipField
+                        ,headerTooltip: headerTooltip
+                        ,hide: (liquid.tableJson.columns[ic].visible === false ? true : false)
+                        ,pinned: (typeof liquid.tableJson.columns[ic].pinned === 'string' ? liquid.tableJson.columns[ic].pinned : (liquid.tableJson.columns[ic].pinned === true ? "left" : false))
+                        ,lockPinned: (liquid.tableJson.columns[ic].lockPinned === true ? true : false)
+                        ,cellStyle: cellStyle
+                        ,filter: (typeof liquid.tableJson.columns[ic].filter !== "undefined" ? liquid.tableJson.columns[ic].filter : (typeof liquid.tableJson.clientFilters !== "undefined" ? liquid.tableJson.clientFilters : true))
+                        ,editable: editable
+                        ,cellEditor: cellEditor
+                        ,cellEditorParams: cellEditorParams
+                        ,cellRenderer: cellRenderer
+                        ,sortable: (typeof liquid.tableJson.columns[ic].sortable !== "undefined" ? liquid.tableJson.columns[ic].sortable : true)
+                        ,comparator: sortComparator
+                        ,headerComponentParams: {
                             menuIcon: (typeof liquid.tableJson.columns[ic].menuIcon !== 'undefined' ? liquid.tableJson.columns[ic].menuIcon : "&#9776;")
-                            ,
-                            menuIconSize: (typeof liquid.tableJson.columns[ic].menuIconSize !== 'undefined' ? liquid.tableJson.columns[ic].menuIconSize : "")
-                            ,
-                            liquidLink: liquid
-                            ,
-                            column: (typeof liquid.tableJson.columns[ic] !== "undefined" ? liquid.tableJson.columns[ic] : null)
-                            ,
-                            enableMenu: (typeof liquid.tableJson.headerMenu !== "undefined" ? liquid.tableJson.headerMenu : true)
+                            ,menuIconSize: (typeof liquid.tableJson.columns[ic].menuIconSize !== 'undefined' ? liquid.tableJson.columns[ic].menuIconSize : "")
+                            ,liquidLink: liquid
+                            ,column: (typeof liquid.tableJson.columns[ic] !== "undefined" ? liquid.tableJson.columns[ic] : null)
+                            ,enableMenu: (typeof liquid.tableJson.headerMenu !== "undefined" ? liquid.tableJson.headerMenu : true)
                         }
                     };
                     liquid.columnDefs.push(colData);
@@ -4951,11 +4964,11 @@ var Liquid = {
                             var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                             var itemsToUpdate = [];
                             for (var ir = 0; ir < httpResultJson.resultSet.length; ir++) {
-                                var idRs = httpResultJson.resultSet[ir][liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                                var idRs = httpResultJson.resultSet[ir][liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                                 if (isDef(nodes) && nodes.length > 0) {
                                     for (var ind = 0; ind < nodes.length; ind++) {
                                         var data = nodes[ind].data;
-                                        var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                                        var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                                         if (id === idRs) {
                                             for (var ic = 0; ic < liquid.tableJson.columns.length; ic++) {
                                                 var col = liquid.tableJson.columns[ic];
@@ -5103,7 +5116,8 @@ var Liquid = {
                         }
                         if (httpResultJson.message) {
                             try {
-                                var msg = atob(httpResultJson.message);
+                                var msg = null;
+                                try { msg = atob(httpResultJson.message); } catch (e) { msg = httpResultJson.message; }
                                 var title = (typeof httpResultJson.title !== 'undefined' && httpResultJson.title ? atob(httpResultJson.title) : (Liquid.lang === 'eng' ? "SERVER MESSAGE" : "MESSAGGIO DAL SERVER"));
                                 console.info("[SERVER] MESSAGE:" + msg);
                                 Liquid.dialogBox(null, title, msg, {
@@ -5199,7 +5213,7 @@ var Liquid = {
         if (typeof liquid === 'string') liquid = Liquid.getLiquid(liquid);
         if (typeof liquid.tableJson !== 'undefined') {
             if (isDef(liquid.tableJson.rowData)) {
-                // current selection
+                // fixed data :
                 var selNodes = liquid.gridOptions.api.getSelectedNodes();
                 liquid.gridOptions.api.setRowData(liquid.tableJson.rowData);
                 // restore previous selection
@@ -5532,11 +5546,11 @@ var Liquid = {
                 var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                 var selIds = [];
                 for (var i = 0; i < selNodes.length; i++) {
-                    selIds.push(selNodes[i].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"]);
+                    selIds.push(selNodes[i].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
                 }
                 if (isDef(nodes) && nodes.length > 0) {
                     for (var i = 0; i < nodes.length; i++) {
-                        var nodeId = nodes[i].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                        var nodeId = nodes[i].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                         if (selIds.indexOf(nodeId) >= 0) {
                             nodes[i].setSelected(true);
                             bFoundSelection = true;
@@ -6928,7 +6942,7 @@ var Liquid = {
                                                         var selNodes = targetLiquid.gridOptions.api.getSelectedNodes();
                                                         if (selNodes && selNodes.length) {
                                                             selNodes[0].setDataValue(col.field, newValue);
-                                                            Liquid.registerFieldChange(liquid, null, selNodes[0].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], col.field, null, newValue);
+                                                            Liquid.registerFieldChange(liquid, null, selNodes[0].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, newValue);
                                                             Liquid.updateDependencies(targetLiquid, col, null);
                                                         }
                                                     }
@@ -6995,7 +7009,7 @@ var Liquid = {
                                                     if (validateResult[0] >= 0) {
                                                         newValueId = validateResult[1];
                                                         selNodes[node].setDataValue(targetField, newValueId);
-                                                        Liquid.registerFieldChange(targetLiquid, selNodes[node].id, selNodes[node].data[targetLiquid.tableJson.primaryKeyField ? targetLiquid.tableJson.primaryKeyField : "1"], targetField, null, newValueId);
+                                                        Liquid.registerFieldChange(targetLiquid, selNodes[node].id, selNodes[node].data[targetLiquid.tableJson.primaryKeyField ? targetLiquid.tableJson.primaryKeyField : null], targetField, null, newValueId);
                                                         Liquid.updateDependencies(targetLiquid, col, null, null);
                                                         // N.B.: transaction is owned by modification
                                                         selNodes[node].data[targetField] = newValueId;
@@ -8028,8 +8042,8 @@ var Liquid = {
                         if (validateResult[0] >= 0) {
                             queue.propValue = validateResult[1];
                             // NO : hude file can be pronlematic here
-                            // Liquid.registerFieldChange(queue.liquid, null, queue.targetRow[ queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : "1" ], queue.targetCol.field, null, queue.propValue);
-                            var rowId = queue.targetRow[queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : "1"];
+                            // Liquid.registerFieldChange(queue.liquid, null, queue.targetRow[ queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null ], queue.targetCol.field, null, queue.propValue);
+                            var rowId = queue.targetRow[queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null];
                             if (rowId === '' || rowId === null) {
                                 if (queue.liquid.addingNode) {
                                     queue.liquid.addingNode.data[queue.targetCol.field] = queue.propValue;
@@ -8176,7 +8190,7 @@ var Liquid = {
                             if (httpResultJson.resultSet) {
                                 for (var ir = 0; ir < httpResultJson.resultSet.length; ir++) {
                                     var fieldSet = httpResultJson.resultSet[ir];
-                                    var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
+                                    var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null;
                                     if (liquid.addingRow) {
                                         liquid.addingRow[primaryKeyField] = fieldSet[primaryKeyField];
                                         for (var prop in fieldSet) {
@@ -8214,13 +8228,13 @@ var Liquid = {
                                                     liquid.addingNode = null;
                                                     Liquid.resetMofifications(liquid);
 
-                                                    console.warn("WARNING: row paste failed at " + liquid.controlId + " key:" + liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"]);
+                                                    console.warn("WARNING: row paste failed at " + liquid.controlId + " key:" + liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
                                                 } else {
                                                     // pasted ok
                                                     if (tables[it].ids) {
                                                         for (var iid = 0; iid < tables[it].ids.length; iid++) {
                                                             ids.push(tables[it].ids[iid]);
-                                                            var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
+                                                            var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null;
                                                             liquid.addingNode.data[primaryKeyField] = String(tables[it].ids[iid]);
                                                             liquid.nRows++;
                                                             liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(liquid.nRows / liquid.gridOptions.paginationPageSize)) : 1;
@@ -8629,7 +8643,7 @@ var Liquid = {
 
                 if (!async) {
                     if (isDef(obj)) {
-                        obj.filter = "grayscale(.5) opacity(0.5) blur(3px)";
+                        obj.filter = "grayscale(.5) opacity(0.5) blur(2px)";
                         obj.disabled = true;
                         obj.style.pointerEvents = 'none';
                     }
@@ -8758,7 +8772,7 @@ var Liquid = {
                                             if (liquid.addingNode.id === modification.nodeId) {
                                                 if (ids) {
                                                     if (ids.length) {
-                                                        var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1";
+                                                        var primaryKeyField = liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null;
                                                         var newId = (typeof ids[0] === 'number' ? ids[0].toString() : ids[0]);
                                                         var oldId = liquid.addingNode.data[primaryKeyField];
                                                         liquid.addingRow[primaryKeyField] = liquid.addingNode.data[primaryKeyField] = newId;
@@ -9421,7 +9435,7 @@ var Liquid = {
     setNodesSelected: function (obj, ids) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
-            return Liquid.setNodesSelectedByColumn(obj, liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1", ids)
+            return Liquid.setNodesSelectedByColumn(obj, liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null, ids)
         }
     },
     setNodesSelectedByColumn: function (obj, field, columnValues, setVisible) {
@@ -9592,7 +9606,7 @@ var Liquid = {
                 idsSelected = "";
                 nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                 for (var i = 0; i < nodes.length; i++) {
-                    var value = nodes[i].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                    var value = nodes[i].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                     if (!isDef(liquid.selection.exclude) || (isDef(liquid.selection.exclude) && !liquid.selection.exclude.contains(value))) {
                         if (idsSelected.length > 0) idsSelected += ",";
                         if (typeof value === 'string') value = value.replace(/"/g, "\\\"");
@@ -10151,7 +10165,7 @@ var Liquid = {
                             if (selNodes) {
                                 liquid.deletingNodes = selNodes;
                                 var dataList = [];
-                                for (var ir = 0; ir < liquid.deletingNodes.length; ir++) dataList.push(liquid.deletingNodes[ir].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"]);
+                                for (var ir = 0; ir < liquid.deletingNodes.length; ir++) dataList.push(liquid.deletingNodes[ir].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
                                 var result = Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bAlwaysCallback);
                                 if (result.systemResult === defaultValue) {
                                     liquid.currentCommand.step = Liquid.CMD_ENABLED;
@@ -12320,7 +12334,7 @@ var Liquid = {
                                                 // selNodes[node].data[col.field] = newValue;
                                                 selNodes[node].setDataValue(col.field, validateResult[1]);
                                                 Liquid.setGridFieldAsChanged(liquid, gridControl, true);
-                                                Liquid.registerFieldChange(liquid, null, selNodes[node].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], col.field, null, newValue);
+                                                Liquid.registerFieldChange(liquid, null, selNodes[node].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, newValue);
                                                 Liquid.updateDependencies(liquid, col, null);
                                                 // TODO: multirecord modify
                                             }
@@ -13104,7 +13118,7 @@ var Liquid = {
 
 
                         } else {
-                            layout.rowsContainer[ir].containerObj.style.filter = "grayscale(.5) opacity(0.5) blur(3px)";
+                            layout.rowsContainer[ir].containerObj.style.filter = "grayscale(.5) opacity(0.5) blur(2px)";
                             layout.rowsContainer[ir].containerObj.disabled = true;
                             layout.rowsContainer[ir].containerObj.style.pointerEvents = 'none';
                         }
@@ -14361,7 +14375,7 @@ var Liquid = {
             for (var ind = 0; ind < nodes.length; ind++) {
                 var data = nodes[ind].data;
                 if (data) {
-                    var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                    var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                     if (id)
                         if (key === id)
                             return ind + 1;
@@ -14375,7 +14389,7 @@ var Liquid = {
         if (isDef(nodes) && nodes.length > 0) {
             for (var ind = 0; ind < nodes.length; ind++) {
                 var data = nodes[ind].data;
-                var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                 if (id)
                     if (key === id)
                         return nodes[ind];
@@ -14501,7 +14515,7 @@ var Liquid = {
                                     if (validateResult !== null) {
                                         if (validateResult[0] >= 0) {
                                             //newValue = validateResult[1];
-                                            Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], linkedField, null, newValue);
+                                            Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], linkedField, null, newValue);
                                             Liquid.updateDependencies(liquid, col, null, event);
                                         }
                                     }
@@ -14516,7 +14530,7 @@ var Liquid = {
                                                     if (validateResult[0] >= 0) {
                                                         // newValue = validateResult[1];
                                                         nodes[baseIndex1B - 1 + linkedRow1B - 1].setDataValue(linkedField, validateResult[1]);
-                                                        Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], linkedField, null, newValue);
+                                                        Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], linkedField, null, newValue);
                                                         Liquid.updateDependencies(liquid, col, null, event);
                                                     }
                                                 }
@@ -15073,7 +15087,7 @@ var Liquid = {
                                         content = validateResult[1];
                                     }
                                     liquid.suneditorNodes[iN].setDataValue(col.field, content);
-                                    Liquid.registerFieldChange(liquid, null, liquid.suneditorNodes[iN].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], col.field, null, content);
+                                    Liquid.registerFieldChange(liquid, null, liquid.suneditorNodes[iN].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, content);
                                     Liquid.updateDependencies(liquid, col, null, null);
                                 }
                             }
@@ -15349,12 +15363,12 @@ var Liquid = {
                                             if (elementSearch) {
                                                 elementSearch.disabled = true;
                                                 elementSearch.style.pointerEvents = "none";
-                                                elementSearch.style.filter = "grayscale(1) opacity(0.2) blur(3px)";
+                                                elementSearch.style.filter = "grayscale(1) opacity(0.2) blur(2px)";
                                             }
                                             if (elementReset) {
                                                 elementReset.disabled = true;
                                                 elementReset.style.pointerEvents = "none";
-                                                elementReset.style.filter = "grayscale(1) opacity(0.2) blur(3px)";
+                                                elementReset.style.filter = "grayscale(1) opacity(0.2) blur(2px)";
                                             }
                                         } else if (filterMode == 'READWRITE' || filterMode == 'WRITE' || filterMode == 'RW') {
                                             if (element) {
@@ -15363,12 +15377,12 @@ var Liquid = {
                                             if (elementSearch) {
                                                 elementSearch.disabled = false;
                                                 elementSearch.style.pointerEvents = "all";
-                                                elementSearch.style.filter = "grayscale(.5) opacity(0.5) blur(3px)";
+                                                elementSearch.style.filter = "grayscale(.5) opacity(0.5) blur(0px)";
                                             }
                                             if (elementReset) {
                                                 elementReset.disabled = false;
                                                 elementReset.style.pointerEvents = "all";
-                                                elementReset.style.filter = "grayscale(.5) opacity(0.5) blur(3px)";
+                                                elementReset.style.filter = "grayscale(.5) opacity(0.5) blur(0px)";
                                             }
                                         }
                                     }
@@ -16865,7 +16879,7 @@ var Liquid = {
                         if (isDefOrNull(newValue)) {
                             if (data[col.field] != newValue) {
                                 data[col.field] = newValue;
-                                Liquid.registerFieldChange(liquid, selNodes ? selNodes[0].id : null, data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], col.field, null, data[col.field]);
+                                Liquid.registerFieldChange(liquid, selNodes ? selNodes[0].id : null, data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, data[col.field]);
                                 Liquid.updateDependencies(liquid, col, null, null);
                                 setTimeout(function () {
                                     Liquid.refreshGrids(liquid, null, "setField");
@@ -17036,7 +17050,7 @@ var Liquid = {
                     nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                     if(bSenstivaCase !== true) primaryKeyValue = primaryKeyValue.toUpperCase();
                     for(let i=0; i<nodes.length; i++) {
-                        var id = nodes[i].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
+                        var id = nodes[i].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ];
                         var bFoundRow = false;
                         if(bSenstivaCase === true) {
                             if(id === primaryKeyValue) {
@@ -17203,7 +17217,7 @@ var Liquid = {
                                             if (validateResult[0] >= 0) {
                                                 liquid.addingRow[col.field] = validateResult[1];
                                                 if (bRegisterModify !== false)
-                                                    Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"], col.field, null, liquid.addingRow[col.field]);
+                                                    Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, liquid.addingRow[col.field]);
                                                 Liquid.updateDependencies(liquid, col, null, null);
                                             } else { // break here
                                                 retVal = false;
@@ -17231,7 +17245,7 @@ var Liquid = {
         if(liquid) {
             for(let ir = 0; ir < liquid.deletingNodes.length; ir++) {
                 var node = liquid.deletingNodes[ir];
-                Liquid.registerFieldChange(liquid, null, node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ], null, null, null);
+                Liquid.registerFieldChange(liquid, null, node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ], null, null, null);
             }
         }
     },
@@ -17340,7 +17354,7 @@ var Liquid = {
         if(liquid) {
             if(node) {
                 if (node.data) {
-                    var id = node.data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1"];
+                    var id = node.data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                     var __objectId = node.__objectId;
                     var index = null;
                     if (liquid.selection.all) {
@@ -17390,7 +17404,7 @@ var Liquid = {
         if(liquid) {
             nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
             for(let i=0; i<nodes.length; i++) {
-                var id = nodes[i].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : "1" ];
+                var id = nodes[i].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ];
                 if(liquid.selection.all) {
                     var index = liquid.selection.exclude.indexOf(id);
                     if(index < 0) {
@@ -20451,7 +20465,7 @@ SelectEditor.prototype.getValue = function() {
                                 this.eInput.value = validateResult[1];
                                 // selNodes[node].data[this.targetColumnIndex] = this.eInput.value;
                                 selNodes[node].setDataValue(String(this.iCol + 1), this.eInput.value);
-                                Liquid.registerFieldChange(this.liquid, null, selNodes[node].data[ this.liquid.tableJson.primaryKeyField ? this.liquid.tableJson.primaryKeyField : "1" ], String(this.iCol + 1), null, this.eInput.value);
+                                Liquid.registerFieldChange(this.liquid, null, selNodes[node].data[ this.liquid.tableJson.primaryKeyField ? this.liquid.tableJson.primaryKeyField : null ], String(this.iCol + 1), null, this.eInput.value);
                                 Liquid.updateDependencies(this.liquid, this.liquid.tableJson.columns[this.iCol], null, null);
                             }
                         }
@@ -20529,7 +20543,7 @@ SunEditor.prototype.getValue = function() {
                             this.eInput.value = validateResult[1];
                             // selNodes[node].data[this.targetField] = this.eInput.value;
                             selNodes[node].setDataValue(this.targetField, this.eInput.value);
-                            Liquid.registerFieldChange(this.liquid, null, selNodes[node].data[ this.liquid.tableJson.primaryKeyField ? this.liquid.tableJson.primaryKeyField : "1" ], this.targetField, null, this.eInput.value);
+                            Liquid.registerFieldChange(this.liquid, null, selNodes[node].data[ this.liquid.tableJson.primaryKeyField ? this.liquid.tableJson.primaryKeyField : null ], this.targetField, null, this.eInput.value);
                             Liquid.updateDependencies(this.liquid, this.liquid.tableJson.columns[this.iCol], null, null);
                         }
                     }
