@@ -111,7 +111,11 @@ public class ThreadSession {
             threadSessionInfo.threadId = threadSessionInfo.thread.getId();
             threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
             threadSessionInfo.sessionId = sessionId;
-            threadSessionList.add(threadSessionInfo);
+            if(threadSessionList != null) {
+                threadSessionList.add(threadSessionInfo);
+            } else {
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
+            }
             if(bDebug) 
                 Logger.getLogger(workspace.class.getName()).log(Level.INFO, " WS ThreadID:"+Thread.currentThread().getId()+" regsitered");
         } catch (Exception e) {

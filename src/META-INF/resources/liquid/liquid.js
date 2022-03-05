@@ -3665,6 +3665,39 @@ var Liquid = {
             }
         }
     },
+    applyModificationsToRowset: function (obj) {
+        var liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            if (isDef(liquid.modifications)) {
+                for (var im = 0; im < liquid.modifications.length; im++) {
+                    var modification = liquid.modifications[im];
+                    if (modification) {
+                        if (modification.rowId) {
+                            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                            if (isDef(nodes) && nodes.length > 0) {
+                                for (var ind = 0; ind < nodes.length; ind++) {
+                                    try {
+                                        var node = nodes[ind];
+                                        var data = node.data;
+                                        var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
+                                        if (id === modification.rowId) {
+                                            for (let c = 0; c < modification.fields.length; c++) {
+                                                var column = Liquid.getColumn(liquid, modification.fields[c].field);
+                                                var value = modification.fields[c].value;
+                                                node.setDataValue(column.field, value);
+                                            }
+                                            liquid.gridOptions.api.redrawRows({rowNodes:[node]});
+                                        }
+                                    } catch (e) {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
     resetMofifications: function (liquid) {
         if (isDef(liquid.modifications)) {
             if (liquid.modifications.length > 1) console.warn("WARNING: dischanging " + liquid.modifications.length + " modifications...");
@@ -4536,12 +4569,12 @@ var Liquid = {
                     }
 
                     try {
-                        var cellStyle = (liquid.tableJson.columns[ic].cellStyle ? JSON.parse(liquid.tableJson.columns[ic].cellStyle.replace(/'/g, "\"")) : null);
+                        var cellStyle = (liquid.tableJson.columns[ic].cellStyle ? Liquid.getProperty(liquid.tableJson.columns[ic].cellStyle) : null);
                     } catch (e) {
                     }
                     var cellEditor = null;
                     var cellEditorParams = null;
-                    var cellRenderer = null;
+                    var cellRenderer = (typeof liquid.tableJson.columns[ic].cellRenderer !== "undefined" ? Liquid.getProperty(liquid.tableJson.columns[ic].cellRenderer) : null);
                     if (liquid.tableJson.columns[ic].type === "12" && liquid.tableJson.columns[ic].size > Liquid.richText.size) {
                         cellEditor = SunEditor;
                         cellEditorParams = {
@@ -4994,8 +5027,12 @@ var Liquid = {
                         } else {  // set data as full
                             result.retVal = 1;
                             try {
-                                if (isDef(httpResultJson.resultSet))
+                                if (isDef(httpResultJson.resultSet)) {
                                     liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
+                                    if(liquid.tableJson.transaction === 'single') {
+                                        Liquid.applyModificationsToRowset(liquid);
+                                    }
+                                }
                             } catch (e) {
                                 var err = "ERROR: failed to set grid data:" + e;
                                 console.error(err);
@@ -5221,7 +5258,7 @@ var Liquid = {
         if (typeof liquid === 'string') liquid = Liquid.getLiquid(liquid);
         if (typeof liquid.tableJson !== 'undefined') {
 
-            var overlayNoRowsTemplate = (typeof liquid.tableJson.noRowsInitialMessage !== "undefined" ? liquid.tableJson.noRowsInitialMessage : Liquid.noRowsInitialMessage);
+            var overlayNoRowsTemplate = (typeof liquid.tableJson.noRowsMessage !== "undefined" ? liquid.tableJson.noRowsMessage : Liquid.noRowsMessage);
             liquid.gridOptions.overlayNoRowsTemplate = overlayNoRowsTemplate;
 
             if (isDef(liquid.tableJson.rowData)) {
@@ -8779,7 +8816,6 @@ var Liquid = {
                                 var modification = liquid.modifications[im];
                                 if (modification) {
                                     if (modification.nodeId) {
-                                        // if(ids.indexOf(modification.rowId) < 0) {
                                         if (liquid.addingNode) {
                                             if (liquid.addingNode.id === modification.nodeId) {
                                                 if (ids) {
@@ -16572,13 +16608,22 @@ var Liquid = {
                 } else if(liquid.tableJson.autoFitColumns === true || liquid.mode === 'auto') {
                     var allColumnIds = [];
                     liquid.gridOptions.suppressColumnVirtualisation=true;
-                    liquid.gridOptions.columnApi.getAllColumns().forEach(function(column) { allColumnIds.push(column.colId); });
+                    liquid.gridOptions.columnApi.getAllColumns().forEach(function(column) {
+                        var width = "auto";
+                        if(isDef(column.width)) width = column.width;
+                        if(isDef(width)) width = width.replace('%', '').replace('px', '');
+                        if (isNAN(width) || Number(width) < 0) {
+                            allColumnIds.push(column.colId);
+                        }
+                    });
                     liquid.gridOptions.columnApi.autoSizeColumns(allColumnIds, true);
                 } else {
                     for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
                         if(liquid.tableJson.columns[ic].autoSize === true || liquid.tableJson.autoFitColumns === true || liquid.mode === 'auto') {
-                            if(isdef(liquid.tableJson.columns[ic].width)) {
-                            } else {
+                            var width = "auto";
+                            if(isDef(column.width)) width = column.width;
+                            if(isDef(width)) width = width.replace('%', '').replace('px', '');
+                            if (isNAN(width) || Number(width) < 0) {
                                 liquid.gridOptions.columnApi.autoSizeColumns([liquid.tableJson.columns[ic].field], true);
                             }
                         }

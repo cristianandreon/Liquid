@@ -44,18 +44,11 @@ public class liquid {
                 "json");
 
 
+        //
         // Set dei pre-filtri
-
-        // setPreFilters(obj, columnName, filterName, filterValue, filterOperator, filterLogic)
+        //
         if (preFilters != null) {
             workspace wrk = workspace.get_tbl_manager_workspace(controlId);
-
-            /*
-            JSONObject popupJson = new JSONObject(utility.base64Decode(sPopupJson));
-            if(!popupJson.has("preFilters"))
-                popupJson.put("preFilters", new JSONArray());
-            JSONArray preFiltersJArr = popupJson.getJSONArray("preFilters");
-             */
             for (int iF = 0; iF < preFilters.size(); iF++) {
                 Object[] filter = preFilters.get(iF);
                 if (filter != null) {
@@ -65,19 +58,9 @@ public class liquid {
                     String logic = (String)(filter[3] != null ? filter[3] : null);
                     if (name != null) {
                         db.set_prefilter(wrk, name, value, operator, logic);
-                        /*
-                        preFiltersJArr.put( new JSONObject(
-                                "{\"name\":\""+name
-                                        +(value != null ? "\",\"value\":\""+value : "")
-                                        +(operator != null ? "\",\"operator\":\""+operator : "")
-                                        +(logic != null ? "\",\"logic\":\""+logic : "")
-                                        +"\"}"));
-                         */
                     }
                 }
             }
-            // popupJson.put("preFilters", preFiltersJArr);
-            // sPopupJson = utility.base64Encode(popupJson.toString());
         }
 
 
@@ -129,7 +112,6 @@ public class liquid {
             , ArrayList<Object[]> filters
             , ArrayList<Object[]> userProps
     ) throws Throwable {
-
         return startPopup(
                 request
                 , controlId

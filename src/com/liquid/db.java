@@ -10,10 +10,7 @@ import static com.liquid.utility.searchProperty;
 import static com.liquid.workspace.check_database_definition;
 import com.liquid.metadata.ForeignKey;
 
-import java.beans.IntrospectionException;
-
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import java.math.BigDecimal;
@@ -27,7 +24,6 @@ import java.sql.*;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javassist.ClassPool;
 import javassist.CtClass;
-import javassist.NotFoundException;
+
 import javax.servlet.http.HttpSession;
 
 
@@ -4162,7 +4158,11 @@ public class db {
                                             if (res > 0) {
                                                 nForeignUpdates++;
                                                 if (!"delete".equalsIgnoreCase(foreignTableTransactList.getType(liquid, i))) {
-                                                    ResultSet rs = foreignPreparedStmt.getGeneratedKeys();
+                                                    ResultSet rs = null;
+                                                    try {
+                                                        rs = foreignPreparedStmt.getGeneratedKeys();
+                                                    } catch (Exception ex) {
+                                                    }
                                                     if (rs != null) {
                                                         String idsList = "";
                                                         while (rs.next()) {
@@ -6811,8 +6811,8 @@ public class db {
      * @param oRequest
      * @return
      */
-    public static Map<String, String> filtersToMap(Object liquid, int curFilter1B, Object oRequest, boolean addIfNull) {
-        Map<String, String> parametersString = null;
+    public static Map<String, Object> filtersToMap(Object liquid, int curFilter1B, Object oRequest, boolean addIfNull) {
+        Map<String, Object> parametersString = null;
         if (liquid != null) {
             com.liquid.workspace wrk = (com.liquid.workspace) liquid;
             if (wrk.tableJson.has("filters")) {
@@ -6822,7 +6822,7 @@ public class db {
                     JSONArray filters = wrk.tableJson.getJSONArray("filters");
                     int curFilter = curFilter1B > 0 ? curFilter1B - 1 : 0;
                     if (wrk.tableJson.has("curFilter")) {
-                        parametersString = new HashMap<String, String>();
+                        parametersString = new HashMap<>();
                         curFilter = wrk.tableJson.getInt("curFilter");
                         filterCols = (filters != null ? filters.getJSONObject(curFilter).getJSONArray("columns") : null);
                     }
@@ -6831,14 +6831,14 @@ public class db {
                     filterCols = filters.getJSONArray("columns");
                 }
                 if (filterCols != null) {
-                    parametersString = new HashMap<String,String>();
+                    parametersString = new HashMap<>();
                     for (int iF = 0; iF < filterCols.length(); iF++) {
                         JSONObject filterCol = filterCols.getJSONObject(iF);
                         String filterName = filterCol.getString("name");
                         if(filterCol.has("value")) {
                             String filterValue = filterCol.getString("value");
                             if (filterValue != null && !filterValue.isEmpty() || addIfNull == true) {
-                                parametersString.put(filterName, filterValue);
+                                parametersString.put(filterName, (Object)filterValue);
                             }
                         } else {
                             if(oRequest != null) {
@@ -6847,7 +6847,7 @@ public class db {
                                     HttpServletRequest request = (HttpServletRequest)oRequest;
                                     String filterValue = request.getParameter(filterName);
                                     if (filterValue != null && !filterValue.isEmpty() || addIfNull == true) {
-                                        parametersString.put(filterName, filterValue);
+                                        parametersString.put(filterName, (Object)filterValue);
                                     }
                                 } else if(oRequest instanceof JSONObject) {
                                     // da oggetto json
