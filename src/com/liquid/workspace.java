@@ -1156,16 +1156,6 @@ public class workspace {
                 }
             }
 
-            if ("quotes_extended".equalsIgnoreCase(table)) {
-                int lb = 1;
-            }
-            if ("utenti".equalsIgnoreCase(table)) {
-                int lb = 1;
-            }
-
-            if (query != null && !query.isEmpty()) {
-                int lb = 1;
-            }
 
             // System calls
             String isSystemLiquid = workspace.isSystemLiquid(tableJson);
@@ -1638,31 +1628,33 @@ public class workspace {
                     }
 
                     JSONArray newForeignTables = new JSONArray();
-                    for (int ift=0; ift<foreignKeysOnTable.size(); ift++) {
-                        JSONObject newForeignTable = new JSONObject();
-                        metadata.ForeignKey foreignKeyOnTable = foreignKeysOnTable.get(ift);
-                        if(foreignKeyOnTable != null) {
-                            newForeignTable.put("foreignTable", foreignKeyOnTable.foreignTable);
-                            if(foreignKeyOnTable.foreignColumns.size()>1) {
-                                newForeignTable.put("foreignColumns", foreignKeyOnTable.foreignColumns);
-                            } else if(foreignKeyOnTable.foreignColumns.size()==1) {
-                                newForeignTable.put("foreignColumn", foreignKeyOnTable.foreignColumns.get(0));
+                    if(foreignKeysOnTable != null) {
+                        for (int ift = 0; ift < foreignKeysOnTable.size(); ift++) {
+                            JSONObject newForeignTable = new JSONObject();
+                            metadata.ForeignKey foreignKeyOnTable = foreignKeysOnTable.get(ift);
+                            if (foreignKeyOnTable != null) {
+                                newForeignTable.put("foreignTable", foreignKeyOnTable.foreignTable);
+                                if (foreignKeyOnTable.foreignColumns.size() > 1) {
+                                    newForeignTable.put("foreignColumns", foreignKeyOnTable.foreignColumns);
+                                } else if (foreignKeyOnTable.foreignColumns.size() == 1) {
+                                    newForeignTable.put("foreignColumn", foreignKeyOnTable.foreignColumns.get(0));
+                                }
+                                if (foreignKeyOnTable.foreignColumns.size() > 1) {
+                                    newForeignTable.put("columns", foreignKeyOnTable.columns);
+                                } else if (foreignKeyOnTable.foreignColumns.size() == 1) {
+                                    newForeignTable.put("column", foreignKeyOnTable.columns.get(0));
+                                }
+                                newForeignTable.put("type", foreignKeyOnTable.type);
                             }
-                            if(foreignKeyOnTable.foreignColumns.size()>1) {
-                                newForeignTable.put("columns", foreignKeyOnTable.columns);
-                            } else if(foreignKeyOnTable.foreignColumns.size()==1) {
-                                newForeignTable.put("column", foreignKeyOnTable.columns.get(0));
-                            }
-                            newForeignTable.put("type", foreignKeyOnTable.type);
+                            newForeignTables.put(newForeignTable);
                         }
-                        newForeignTables.put(newForeignTable);
+
+                        JSONObject newRootForeignTables = new JSONObject();
+                        newRootForeignTables.put("foreignTables", newForeignTables);
+
+                        tableJson.put("sourceForeignTables", "*");
+                        tableJson.put("foreignTables", newForeignTables);
                     }
-
-                    JSONObject newRootForeignTables = new JSONObject();
-                    newRootForeignTables.put("foreignTables", newForeignTables);
-
-                    tableJson.put("sourceForeignTables", "*");
-                    tableJson.put("foreignTables", newForeignTables);
                 }
 
                 // Aggiunta primary key
@@ -2365,7 +2357,7 @@ public class workspace {
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
             if ("json".equalsIgnoreCase(returnType)) {
-                result = "{\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage()) + "\"}";
+                result = "{\"error\":\"" + utility.base64Encode(ex.getMessage()) + "\"}";
             } else if ("js".equalsIgnoreCase(returnType)) {
                 result = "<script> console.error(\"controlId:" + controlId + " error:" + ex.getLocalizedMessage() + "\");</script>";
             } else {
