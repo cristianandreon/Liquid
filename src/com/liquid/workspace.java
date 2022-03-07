@@ -43,7 +43,7 @@ public class workspace {
     public static String path = null;
     static public String pythonPath = null;
     static public String pythonExecutable = null;
-    public static String version_string = "1.88";
+    public static String version_string = "1.99";
 
     //
     // key persistent on server but hidden on the client
@@ -3586,7 +3586,7 @@ public class workspace {
                                     JSONObject resJson = new JSONObject(res);
                                     if(resJson != null) {
                                         int result = resJson.getInt("result");
-                                        if(result > 0) {
+                                        if(result > 1) {
                                             note += " [ Note: created folder '"+liquidJsonsProjectFolder+"' ]";
                                             liquidJsonsProjectFolder = (String) request.getSession().getAttribute("GLLiquidJsonsProjectFolder");
                                         } else {
@@ -3621,7 +3621,7 @@ public class workspace {
                                                 return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage() + " - writing:" + insideProjectFileName) + "\"}";
                                             }
                                             Logger.getLogger(workspace.class.getName()).log(Level.INFO, "File in project as <b>" + insideProjectFileName + "</b>");
-                                            return "{\"result\":1,\"message\":\"" + utility.base64Encode("file in project " + insideProjectFileName + " saved<br/><br/>javascript global var name : <b>" + jsVarName + "</b>") + note + "\"}";
+                                            return "{\"result\":1,\"message\":\"" + utility.base64Encode("file in project " + insideProjectFileName + " saved<br/><br/>javascript global var name : <b>" + jsVarName + "</b>" + note + "") + "\"}";
                                         }
 
                                     } else {
@@ -3740,7 +3740,7 @@ public class workspace {
 
 
                             String zkFileContent =
-                                    "\t<page id=\""+panelId+"\" >\n"
+                                    "<page id=\""+panelId+"\">\n"
                                     +"\t<template-xmlreference>/com/"+customerName+"/"+appName+"/controller/Reference.xml</template-xmlreference>\n"
                                     +"\t<title><![CDATA["+panelTitle+"]]></title>\n"
                                     +"\t<menupath><![CDATA[ / "+panelTitle+"]]></menupath>\n"
@@ -3849,7 +3849,7 @@ public class workspace {
                                             if(target_col != null) {
                                                 int size = target_col.getInt("size");
                                                 label = target_col.has("label") ? target_col.getString("label") : name;
-                                                if(name.startsWith("F")) {
+                                                if(name.startsWith("F") || name.startsWith("f")) {
                                                     if(size == 1) {
                                                         controlType = "LISTBOX";
                                                         controlValues = "=,S=Si,N=No";
@@ -3983,26 +3983,40 @@ public class workspace {
                                                 String gridControlType = getZKControlType(gridField, cols, "type");
                                                 String gridControlWidth = getZKControlType(gridField, cols, "width");
                                                 String gridControlHeight = getZKControlType(gridField, cols, "height");
-                                                String gridControlRO = col.has("readOnly") ? (col.getBoolean("readOnly") ? "S" : "N") : "N";
-                                                String gridControlVisible = col.has("visible") ? (col.getBoolean("visible") ? "S" : "N") : "N";
+                                                String gridControlRO = col.has("readOnly") ? (col.getBoolean("readOnly") ? "S" : null) : null;
+                                                String gridControlVisible = col.has("visible") ? (col.getBoolean("visible") ? null : "N") : null;
+                                                String gridControlValues = null;
 
-                                                String posX = gcol.has("col") ? "" : null;
-                                                String posY = gcol.has("row") ? "" : null;
+
+                                                Object posX = gcol.has("col") ? gcol.get("col") : null;
+                                                Object posY = gcol.has("row") ? gcol.get("row") : null;
 
                                                 // Fit to hibernate
                                                 gridField = nameSpacer.DB2Hibernate( gridField );
+
+                                                if(col != null) {
+                                                    int size = col.getInt("size");
+                                                    if(gridField.startsWith("F") || gridField.startsWith("f")) {
+                                                        if(size == 1) {
+                                                            gridControlType = "LISTBOX";
+                                                            gridControlValues = "=,S=Si,N=No";
+                                                        }
+                                                    }
+                                                }
+
 
                                                 zkFileContent += ""
                                                         + "\t\t\t\t\t<property name=\"" + gridField + "\">\n"
                                                         + (gridLabel!=null?"\t\t\t\t\t\t<etichetta>" + gridLabel + "</etichetta>\n":"")
                                                         + (gridLabelWidth!=null?"\t\t\t\t\t\t<widthEtichetta>" + gridLabelWidth + "</widthEtichetta>\n":"")
                                                         + (gridControlType!=null?"\t\t\t\t\t\t<tipoControllo>" + gridControlType + "</tipoControllo>\n":"")
+                                                        + (gridControlValues != null ? "\t\t\t\t\t\t<elencoValori>"+gridControlValues+"</elencoValori>\n" : "")+""
                                                         + (posX != null ? "\t\t\t\t\t\t<posX>" + posX + "</posX>\n" : "")
                                                         + (posY != null ? "\t\t\t\t\t\t<posY>" + posY + "</posY>\n" : "")
-                                                        + (gridControlWidth != null ? "\t\t\t\t\t\t<widthControllo>" + gridControlWidth + "</widthControllo>" : "") + "\n"
-                                                        + (gridControlHeight != null ? "\t\t\t\t\t\t<heightControllo>" + gridControlHeight + "</heightControllo>" : "") + "\n"
-                                                        + (gridControlRO != null ? "\t\t\t\t\t\t<solaLettura>" + gridControlRO + "</solaLettura>" : "") + "\n"
-                                                        + (gridControlVisible != null ? "\t\t\t\t\t\t<visibile>" + gridControlVisible + "</visibile>" : "") + "\n"
+                                                        + (gridControlWidth != null ? "\t\t\t\t\t\t<widthControllo>" + gridControlWidth + "</widthControllo>\n" : "") + ""
+                                                        + (gridControlHeight != null ? "\t\t\t\t\t\t<heightControllo>" + gridControlHeight + "</heightControllo>\n" : "") + ""
+                                                        + (gridControlRO != null ? "\t\t\t\t\t\t<solaLettura>" + gridControlRO + "</solaLettura>\n" : "") + ""
+                                                        + (gridControlVisible != null ? "\t\t\t\t\t\t<visibile>" + gridControlVisible + "</visibile>\n" : "") + ""
                                                 ;
 
 
@@ -4019,7 +4033,7 @@ public class workspace {
                                                             + "\t\t\t\t\t\t\t</event>" + "\n"
                                                             + "\t\t\t\t\t\t</events>" + "\n";
                                                 }
-                                                zkFileContent += "\t\t\t\t\t\t</property>" + "\n";
+                                                zkFileContent += "\t\t\t\t\t</property>" + "\n";
                                             }
 
                                             zkFileContent += ""
@@ -4127,12 +4141,12 @@ public class workspace {
 
                                     zkFunctionsFileContent += "\n";
                                     zkFunctionsFileContent += "// Gestione inserimento riga tabella " + tableName.toUpperCase() + "\n";
-                                    zkFunctionsFileContent += "/**"
-                                            +"*"
-                                             +"* @param panelContext"
-                                             +"* @return"
-                                             +"* @throws Exception"
-                                            +"*/";
+                                    zkFunctionsFileContent += "/**\n"
+                                            +"*\n"
+                                             +"* @param panelContext\n"
+                                             +"* @return\n"
+                                             +"* @throws Exception\n"
+                                            +"*/\n";
 
                                     zkFunctionsFileContent += fncCode;
 
@@ -4168,16 +4182,16 @@ public class workspace {
 
                                             if(isRequired) {
                                                 String label = target_col.has("label") ? target_col.getString("label") : name;
-                                                String getMethod = nameSpacer.getGetter(name);
+                                                String getMethod = nameSpacer.getGetter(nameSpacer.DB2Hibernate(name));
                                                 if (target_col.has("lookup")) {
                                                     fncCode += ""
                                                             + "\t\tif (" + beanVarName + "." + getMethod + "() == null) {\n"
-                                                            + "errori.add(\"Attenzione: necessario definire il campo \\\"" + label + "\\\"\");"
+                                                            + "errori.add(\"Attenzione: necessario definire il campo \\\"" + label + "\\\"\");\n"
                                                             + "}";
                                                 } else {
                                                     fncCode += ""
                                                             + "\t\tif (GeiUtil.isNullorBlank(" + beanVarName + "." + getMethod + "())) {\n"
-                                                            + "\t\t\terrori.add(\"Attenzione: necessario definire il campo \"" + label + "\");\n"
+                                                            + "\t\t\terrori.add(\"Attenzione: necessario definire il campo \\\"" + label + "\\\"\");\n"
                                                             + "\t\t}\n";
                                                 }
                                             }
@@ -4437,17 +4451,27 @@ public class workspace {
      * @return
      */
     static public String getZKControlType( String gridField, JSONArray cols, String mode) throws JSONException {
-        String gridControlType = "", width = "", height = "";
+        String gridControlType = "", width = null, height = null;
         for (int ic = 0; ic < cols.length(); ic++) {
             JSONObject col = cols.getJSONObject(ic);
             String colName = null, typeName = null;
             col = getColumnByName( gridField, cols);
             if(col != null) {
                 if (col.has("type")) {
-                    Object oWidth = col.get("width");
+                    Object oWidth = col.has("width") ? col.get("width") : null;
                     Object oType = col.get("type");
+                    boolean isLookup = col.has("lookup");
                     Class type = metadata.getJavaClass(oType);
-                    if(type.getName().equalsIgnoreCase("java.util.Date")) {
+
+                    if(oWidth != null) {
+                        try {
+                            width = String.valueOf(Integer.parseInt(String.valueOf(oWidth)));
+                        } catch (Exception e) {
+                        }
+                    }
+                    if(isLookup) {
+                        gridControlType = "LOOKUP";
+                    } else if(type.getName().equalsIgnoreCase("java.util.Date")) {
                         gridControlType = "DATEBOX";
                     } else if(type.getName().equalsIgnoreCase("java.sql.Timestamp")) {
                         gridControlType = "DATEBOX";

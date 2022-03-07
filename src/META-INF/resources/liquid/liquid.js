@@ -16612,7 +16612,7 @@ var Liquid = {
                         var width = "auto";
                         if(isDef(column.width)) width = column.width;
                         if(isDef(width)) width = width.replace('%', '').replace('px', '');
-                        if (isNAN(width) || Number(width) < 0) {
+                        if (isNaN(width) || Number(width) < 0) {
                             allColumnIds.push(column.colId);
                         }
                     });
@@ -16623,7 +16623,7 @@ var Liquid = {
                             var width = "auto";
                             if(isDef(column.width)) width = column.width;
                             if(isDef(width)) width = width.replace('%', '').replace('px', '');
-                            if (isNAN(width) || Number(width) < 0) {
+                            if (isNaN(width) || Number(width) < 0) {
                                 liquid.gridOptions.columnApi.autoSizeColumns([liquid.tableJson.columns[ic].field], true);
                             }
                         }

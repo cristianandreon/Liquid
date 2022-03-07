@@ -61,6 +61,10 @@ public class ThreadSession {
 
     static synchronized public void saveThreadSessionInfo ( String browser, HttpServletRequest request, HttpServletResponse response, JspWriter out ) throws InterruptedException {
         try {
+            if(semaphore == null || threadSessionList == null) {
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
+                throw new Exception("Application server fault");
+            }
             semaphore.acquire();
             ThreadSession threadSessionInfo = new ThreadSession();
             threadSessionInfo.browser = browser;
@@ -97,6 +101,10 @@ public class ThreadSession {
     
     static synchronized void saveThreadSessionInfo(String browser, String sessionId, OutputStream outputStream, String token) throws InterruptedException {
         try {
+            if(semaphore == null || threadSessionList == null) {
+                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
+                throw new Exception("Application server fault");
+            }
             semaphore.acquire();
             ThreadSession threadSessionInfo = new ThreadSession();
             threadSessionInfo.browser = browser;
@@ -113,8 +121,6 @@ public class ThreadSession {
             threadSessionInfo.sessionId = sessionId;
             if(threadSessionList != null) {
                 threadSessionList.add(threadSessionInfo);
-            } else {
-                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
             }
             if(bDebug) 
                 Logger.getLogger(workspace.class.getName()).log(Level.INFO, " WS ThreadID:"+Thread.currentThread().getId()+" regsitered");

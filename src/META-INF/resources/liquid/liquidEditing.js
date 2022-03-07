@@ -3,9 +3,9 @@
  */
 
 var LiquidEditing = {
-    version: 1.07,
+    version: 1.08,
     controlid:"Liquid framework - Editing module",
-    lastUpdate: '20/02/2022',
+    lastUpdate: '07/03/2022',
     
     
     /**
@@ -3279,6 +3279,16 @@ var LiquidEditing = {
                         obj = document.getElementById("process_foreign_tables");
                         if(obj) Liquid.process_foreign_tables = obj.value;
 
+                        //
+                        // Create a new grid
+                        //
+                        Liquid.addNewGridIfMissing = document.getElementById("addGridIfMissing").checked;
+                        if(Liquid.addNewGridIfMissing) {
+                            if (!isDef(liquid.tableJson.grids) || liquid.tableJson.grids.length === 0) {
+                                LiquidEditing.createNewGrid(liquid, 0, "newGrid", null);
+                            }
+                        }
+
                         var json = null;
                         if(liquid instanceof LiquidCtrl) {
                             json = liquid.tableJsonSource ? JSON.parse(JSON.stringify(liquid.tableJsonSource)) : null;
@@ -3312,13 +3322,6 @@ var LiquidEditing = {
                                 ,process_foreign_tables:Liquid.process_foreign_tables === 'S' ? true : false
                             }
 
-                            // Create a new grid
-                            Liquid.addNewGridIfMissing = document.getElementById("addGridIfMissing").checked;
-                            if(Liquid.addNewGridIfMissing) {
-                                if (!isDef(liquid.tableJson.grids) || liquid.tableJson.grids.length === 0) {
-                                    LiquidEditing.createNewGrid(liquid, 0, "newGrid", null);
-                                }
-                            }
 
 
                             var fileName = liquid.controlId+".json";
