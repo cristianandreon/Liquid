@@ -3708,11 +3708,11 @@ public class workspace {
 
 
                             // ID pannello
-                            String panelId = zkParams.getString("panelId");
-                            if(panelId == null || panelId.isEmpty()) {
-                                panelId = nameSpacer.DB2Hibernate(tableName);
+                            String panelBaseId = zkParams.getString("panelId");
+                            if(panelBaseId == null || panelBaseId.isEmpty()) {
+                                panelBaseId = nameSpacer.DB2Hibernate(tableName);
                             }
-
+                            String panelId = panelBaseId + "_P1";
                             String beanName = panelId;
 
 
@@ -3740,13 +3740,13 @@ public class workspace {
 
 
                             String zkFileContent =
-                                    "<page id=\""+panelId+"\">\n"
+                                    "<page id=\""+panelBaseId+"\">\n"
                                     +"\t<template-xmlreference>/com/"+customerName+"/"+appName+"/controller/Reference.xml</template-xmlreference>\n"
                                     +"\t<title><![CDATA["+panelTitle+"]]></title>\n"
                                     +"\t<menupath><![CDATA[ / "+panelTitle+"]]></menupath>\n"
                                     +"\t<panels>\n"
                                     +"\t\t<!-- "+panelTitle+" on Table:"+tableName+" -->\n"
-                                    +"\t\t<panel id=\""+panelId+"_P@1"+"\">\n"
+                                    +"\t\t<panel id=\""+panelId+""+"\">\n"
                                     +"\t\t\t<title><![CDATA["+panelTitle+"]]></title>\n"
 
                                     // Titolo finestra
@@ -3789,7 +3789,7 @@ public class workspace {
 
                             // Lista e finders
                             zkFileContent += "\n"
-                                    +"\t\t\t<list id=\""+panelId+"_L@1\">\n"
+                                    +"\t\t\t<list id=\""+panelBaseId+"_L@1\">\n"
                                     +"\t\t\t\t<show>"+(showList?"S":"N")+"</show>\n"
                                     +"\t\t\t\t<autoFind>"+(autoFind?"S":"N")+"</autoFind>\n"
                                     +"\t\t\t\t<autoSelect>"+(autoSelect?"S":"N")+"</autoSelect>\n"
@@ -3815,7 +3815,7 @@ public class workspace {
 
                                 for (int ir = 0; ir < filters.length(); ir++) {
                                     zkFileContent += ""
-                                            + "\t\t\t\t\t<finder id=\"" + panelId + "_R@"+(ir+1)+"\">\n"
+                                            + "\t\t\t\t\t<finder id=\"" + panelBaseId + "_R@"+(ir+1)+"\">\n"
                                             + "\t\t\t\t\t<title><![CDATA[Ricerca base]]></title>\n"
                                             + "\t\t\t\t\t<limitResult>" + maxResult + "</limitResult>\n"
                                             + "\t\t\t\t\t<fields>\n";
@@ -3857,16 +3857,16 @@ public class workspace {
                                                 }
                                             }
 
-                                            zkFileContent += "\t\t\t\t\t\t<property name=\"" + searchFieldName + "\">\n"
-                                                    + (label != null ? "\t\t\t\t\t\t\t<etichetta>"+label+"</etichetta>" : "")+"\n"
-                                                    + (lookupId != null ? "\t\t\t\t\t\t\t<xmlreference-id>"+lookupId+"</xmlreference-id>" : "")+"\n"
-                                                    + (width != null ? "\t\t\t\t\t\t\t<widthControllo>"+width+"</widthControllo>" : "")+"\n"
-                                                    + (operator != null ? "\t\t\t\t\t\t\t<comparatoreRicerca>"+operator+"</comparatoreRicerca>" : "")+"\n"
-                                                    + (controlType != null ? "\t\t\t\t\t\t\t<tipoControllo>"+controlType+"</tipoControllo>" : "")+"\n"
-                                                    + (controlValues != null ? "\t\t\t\t\t\t\t<elencoValori>"+controlValues+"</elencoValori>" : "")+"\n"
-                                                    + (posX != null ? "\t\t\t\t\t\t\t<posX>" + posX + "</posX>" : "")+"\n"
-                                                    + (posY != null ? "\t\t\t\t\t\t\t<posY>" + posY + "</posY>" : "")+"\n"
-                                                    + "\t\t\t\t\t\t</property>"+"\n";
+                                            zkFileContent += "\t\t\t\t\t\t\t\t<property name=\"" + searchFieldName + "\">\n"
+                                                    + (label != null ? "\t\t\t\t\t\t\t\t\t<etichetta>"+label+"</etichetta>" : "")+"\n"
+                                                    + (lookupId != null ? "\t\t\t\t\t\t\t\t\t<xmlreference-id>"+lookupId+"</xmlreference-id>" : "")+"\n"
+                                                    + (width != null ? "\t\t\t\t\t\t\t\t\t<widthControllo>"+width+"</widthControllo>" : "")+"\n"
+                                                    + (operator != null ? "\t\t\t\t\t\t\t\t\t<comparatoreRicerca>"+operator+"</comparatoreRicerca>" : "")+"\n"
+                                                    + (controlType != null ? "\t\t\t\t\t\t\t\t\t<tipoControllo>"+controlType+"</tipoControllo>" : "")+"\n"
+                                                    + (controlValues != null ? "\t\t\t\t\t\t\t\t\t<elencoValori>"+controlValues+"</elencoValori>" : "")+"\n"
+                                                    + (posX != null ? "\t\t\t\t\t\t\t\t\t<posX>" + posX + "</posX>" : "")+"\n"
+                                                    + (posY != null ? "\t\t\t\t\t\t\t\t\t<posY>" + posY + "</posY>" : "")+"\n"
+                                                    + "\t\t\t\t\t\t\t\t</property>"+"\n";
                                         }
 
                                         zkFileContent += ""
@@ -3945,7 +3945,7 @@ public class workspace {
                                             + "\t\t\t\t<template-orderby>\n"
                                             // +"\t\t<propertyOrderby>edizione.comune.provincia.desTarga(ASC)</propertyOrderby>"
                                             // +"\t\t<propertyOrderby>edizione.comune.desComune(ASC)</propertyOrderby>"
-                                            + "\t\t\t\t\t<propertyOrderby>" + orderByField + "(" + orderByFieldMode + ")</propertyOrderby>\n"
+                                            + "\t\t\t\t\t<propertyOrderby>" + nameSpacer.DB2Hibernate(orderByField) + "(" + orderByFieldMode + ")</propertyOrderby>\n"
                                             + "\t\t\t\t</template-orderby>\n";
                                 }
 
@@ -3964,7 +3964,7 @@ public class workspace {
                                     JSONObject grid = (JSONObject) grids.get(ig);
                                     String gridTitle = grid.has("title") ? grid.getString("title") : "Dellaglio";
                                     zkFileContent += ""
-                                            + "\t\t\t\t<grid id=\"" + panelId + "_G@" + (ig + 1) + "\">\n"
+                                            + "\t\t\t\t<grid id=\"" + panelBaseId + "_G@" + (ig + 1) + "\">\n"
                                             + "\t\t\t\t\t<title><![CDATA["+gridTitle+"]]></title>\n"
                                             + "\t\t\t\t\t<template-fields-hibernate>\n"
                                             + "\t\t\t\t\t\t<entity>" + beanClass + "</entity>\n"
@@ -4266,17 +4266,17 @@ public class workspace {
 
                             +(can_insert ?
                                     "\t\t\t\t<menu name=\"NUOVO\">\n"
-                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelId.toLowerCase()+"</assets>\n" : "")
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelBaseId.toLowerCase()+"</assets>\n" : "")
                                     +"\t\t\t\t</menu>\n"
                                             : "")
                             +(can_update ?
                                     "\t\t\t\t<menu name=\"MODIFICA\">\n"
-                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelId.toLowerCase()+"</assets>\n" : "")
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelBaseId.toLowerCase()+"</assets>\n" : "")
                                     +"\t\t\t\t</menu>\n"
                                             : "")
                             +(can_delete ?
                                     "\t\t\t\t<menu name=\"ELIMINA\">\n"
-                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelId.toLowerCase()+"</assets>\n" : "")
+                                    +(use_asset ? "\t\t<assets>pulsanti_"+panelBaseId.toLowerCase()+"</assets>\n" : "")
                                     +"\t\t\t\t</menu>\n"
                                     : "")
 

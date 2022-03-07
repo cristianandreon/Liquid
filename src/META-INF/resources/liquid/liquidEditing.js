@@ -3097,8 +3097,10 @@ var LiquidEditing = {
 
             if (!Liquid.customerName)
                 Liquid.customerName = "geisoft";
-            if (!Liquid.appName)
-                Liquid.appName = "app";
+            if (!Liquid.appName){
+                alert("Please define \"Application name\"");
+                return;
+            }
 
             if (!Liquid.orderByField)
                 Liquid.orderByField = "";
