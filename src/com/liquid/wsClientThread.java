@@ -26,9 +26,9 @@ class wsClientThread extends Thread {
     public String hostName = null;
     public wsServerThread serverThread = null;
 
-    private Socket clientSocket = null;
-    private SocketAddress ra = null;
-    private OutputStream outputStream = null;
+    public Socket clientSocket = null;
+    public SocketAddress ra = null;
+    public OutputStream outputStream = null;
 
     wsClientThread(Socket clientSocket) {
         this.clientSocket = clientSocket;

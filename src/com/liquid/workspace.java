@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletContext;
@@ -354,7 +355,13 @@ public class workspace {
      * @param controlId
      * @return
      */
-    static public workspace get_tbl_manager_workspace(String controlId) {
+    static public workspace get_tbl_manager_workspace(String controlId) throws Exception {
+        if(glTblWorkspaces == null) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
+            glTblWorkspaces = new ArrayList<workspace>();
+            throw new Exception("Application server fault");
+        }
+
         for (int i = 0; i < glTblWorkspaces.size(); i++) {
             workspace tblWorkspace = glTblWorkspaces.get(i);
             if(tblWorkspace != null) {
@@ -3713,7 +3720,7 @@ public class workspace {
                                 panelBaseId = nameSpacer.DB2Hibernate(tableName);
                             }
                             String panelId = panelBaseId + "_P1";
-                            String beanName = panelId;
+                            String beanName = panelBaseId;
 
 
 
@@ -3852,7 +3859,7 @@ public class workspace {
                                                 if(name.startsWith("F") || name.startsWith("f")) {
                                                     if(size == 1) {
                                                         controlType = "LISTBOX";
-                                                        controlValues = "=,S=Si,N=No";
+                                                        controlValues = "S=Si,N=No";
                                                     }
                                                 }
                                             }
@@ -3868,6 +3875,8 @@ public class workspace {
                                                     + (posY != null ? "\t\t\t\t\t\t\t\t\t<posY>" + posY + "</posY>" : "")+"\n"
                                                     + "\t\t\t\t\t\t\t\t</property>"+"\n";
                                         }
+
+
 
                                         zkFileContent += ""
                                                 + "\t\t\t\t\t\t</propertyFields>\n"
@@ -3913,14 +3922,19 @@ public class workspace {
                                     try { iwidth = Integer.parseInt(width); } catch (Exception e) {}
 
                                     if(irtwidth>0) {
-                                        labelWidthInList = irtwidth + "px";
+                                        labelWidthInList = Math.max(irtwidth, 500) + "px";
                                     } else if(iwidth>0) {
-                                        labelWidthInList = iwidth + "px";
+                                        labelWidthInList = Math.max(iwidth, 500) + "px";
                                     } else if(isize>0) {
-                                        labelWidthInList = (isize * 10) + "px";
+                                        if(isize > 1) {
+                                            labelWidthInList = Math.max((isize * 10), 500) + "px";
+                                        } else {
+                                            labelWidthInList = Math.max((labelInList.length() * 10), 500) + "px";
+                                        }
                                     } else {
-                                        labelWidthInList = (5 * labelInList.length()) + "px";
+                                        labelWidthInList = Math.max(5 * labelInList.length(), 500) + "px";
                                     }
+
 
                                     // Fit to hibernate
                                     fieldInList = nameSpacer.DB2Hibernate( fieldInList );
@@ -4018,6 +4032,37 @@ public class workspace {
                                                         + (gridControlRO != null ? "\t\t\t\t\t\t<solaLettura>" + gridControlRO + "</solaLettura>\n" : "") + ""
                                                         + (gridControlVisible != null ? "\t\t\t\t\t\t<visibile>" + gridControlVisible + "</visibile>\n" : "") + ""
                                                 ;
+
+
+                                                // codice in Reference.xml
+                                                if (col.has("lookup")) {
+                                                    String lookupBean = "com.geisoft...";
+                                                    String lookupType = "LOOKUP"; // "LISTLOOKUP";
+                                                    String lookupCodeField = "cdTagDestinatario";
+                                                    String lookupDescField = "desTagDestinatario";
+                                                    String lookupSearchType = "?FULLLIKE";
+
+                                                    String lookupReferenceCode = "<--Lookuop code\n" +
+                                                            "<xmlreference category='template' entityLookup=\"" + lookupBean + "\" >\n" +
+                                                            "    <tipoControllo>" + lookupType + "</tipoControllo>\n" +
+                                                            "    <proprietaCodiceLookup>" + lookupCodeField + "</proprietaCodiceLookup>\n" +
+                                                            "    <proprietaDescrizioneLookup>" + lookupDescField + "</proprietaDescrizioneLookup>\n" +
+                                                            "    <finderLookup>\n" +
+                                                            "        <property name=\"" + lookupCodeField + "\">\n" +
+                                                            "            <etichetta>Codice</etichetta>\n" +
+                                                            "            <comparatoreRicerca>" + lookupSearchType + "</comparatoreRicerca>\n" +
+                                                            "        </property>\n" +
+                                                            "        <property name=\"" + lookupDescField + "\">\n" +
+                                                            "            <etichetta>Descrizione</etichetta>\n" +
+                                                            "            <tipoControllo>TEXTBOX</tipoControllo>\n" +
+                                                            "            <comparatoreRicerca>" + lookupSearchType + "</comparatoreRicerca>\n" +
+                                                            "        </property>\n" +
+                                                            "    </finderLookup>\n" +
+                                                            "    <colonneLookup>" + lookupCodeField + "=Codice," + lookupDescField + "=Descrizione</colonneLookup>\n" +
+                                                            "    <orderbyLookup>" + lookupCodeField + "</orderbyLookup>\n" +
+                                                            "</xmlreference>\n" +
+                                                            "-->\n\n";
+                                                }
 
 
                                                 // evento onChange del campo

@@ -57,7 +57,7 @@ public class bean {
      * @return comma separated values string, null if no selection defined
      * @see db
      */
-    static public Object get_bean(HttpServletRequest request, String ids, long maxRows) {
+    static public Object get_bean(HttpServletRequest request, String ids, long maxRows) throws Exception {
         return get_bean(request, ids, null, null, null, maxRows);
     }
 
@@ -78,7 +78,7 @@ public class bean {
      * @return comma separated values string, null if no selection defined
      * @see db
      */
-    static public Object get_bean(HttpServletRequest request, String ids, String format, long maxRows) {
+    static public Object get_bean(HttpServletRequest request, String ids, String format, long maxRows) throws Exception {
         return get_bean(request, ids, format, null, null, maxRows);
     }
 
@@ -102,7 +102,7 @@ public class bean {
      * @return comma separated values string, null if no selection defined
      * @see db
      */
-    static public Object get_bean(Object request, String ids, String format, String fields, long maxRows) {
+    static public Object get_bean(Object request, String ids, String format, String fields, long maxRows) throws Exception {
         return get_bean(request, ids, format, fields, null, maxRows);
     }
 
@@ -135,7 +135,7 @@ public class bean {
      * @return comma separated values string, null if no selection defined
      * @see db
      */
-    static public Object get_bean(Object requestParam, String ids, String format, String fields, String foreignTables, long maxRows) {
+    static public Object get_bean(Object requestParam, String ids, String format, String fields, String foreignTables, long maxRows) throws Exception {
         HttpServletRequest request = (HttpServletRequest) requestParam;
         Object result = null;
         String controlId = null, tblWrk = null, errors = "";
@@ -153,7 +153,7 @@ public class bean {
         return null;
     }
 
-    static public Object get_bean(Object requestParam, String controlId, String ids, String format, String fields, String foreignTables, long maxRows) {
+    static public Object get_bean(Object requestParam, String controlId, String ids, String format, String fields, String foreignTables, long maxRows) throws Exception {
         HttpServletRequest request = (HttpServletRequest) requestParam;
         Object result = null;
         String errors = "";

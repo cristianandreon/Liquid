@@ -30,7 +30,7 @@ public class ThreadSession {
     //
 
     private static final int MAX_AVAILABLE = 1;
-    private static final Semaphore semaphore = new Semaphore(MAX_AVAILABLE, true);
+    private static Semaphore semaphore = new Semaphore(MAX_AVAILABLE, true);
 
 
     public String browser = "";
@@ -52,7 +52,7 @@ public class ThreadSession {
             
    // store the owner (the callback instance) of the workspace... one workspace can have multiple owner (storing additional data)
     public Object workspaceOwner = null;
-    
+
     static ArrayList<ThreadSession> threadSessionList = new ArrayList<ThreadSession>();
     
     static private boolean bDebug = false;
@@ -63,6 +63,8 @@ public class ThreadSession {
         try {
             if(semaphore == null || threadSessionList == null) {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
+                semaphore = new Semaphore(MAX_AVAILABLE, true);
+                threadSessionList = new ArrayList<ThreadSession>();
                 throw new Exception("Application server fault");
             }
             semaphore.acquire();
@@ -103,6 +105,8 @@ public class ThreadSession {
         try {
             if(semaphore == null || threadSessionList == null) {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
+                semaphore = new Semaphore(MAX_AVAILABLE, true);
+                threadSessionList = new ArrayList<ThreadSession>();
                 throw new Exception("Application server fault");
             }
             semaphore.acquire();

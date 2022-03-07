@@ -28,7 +28,7 @@ class wsServerThread extends Thread {
 
     public ArrayList<wsClientThread> clientThreads = new ArrayList<wsClientThread> ();
 
-    private ServerSocket server = null;
+    public ServerSocket server = null;
 
     public void run() {
 

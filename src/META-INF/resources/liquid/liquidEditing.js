@@ -3097,10 +3097,6 @@ var LiquidEditing = {
 
             if (!Liquid.customerName)
                 Liquid.customerName = "geisoft";
-            if (!Liquid.appName){
-                alert("Please define \"Application name\"");
-                return;
-            }
 
             if (!Liquid.orderByField)
                 Liquid.orderByField = "";
@@ -3111,6 +3107,8 @@ var LiquidEditing = {
             var beanClass = "com." + Liquid.customerName + "." + Liquid.appName + ".hibernate.bean." + Liquid.panelId;
             if (!Liquid.beanClass)
                 Liquid.beanClass = beanClass;
+            if (!Liquid.appName)
+                Liquid.appName = "";
 
             if (!Liquid.fieldInTitleBar)
                 Liquid.fieldInTitleBar = "";
@@ -3281,6 +3279,13 @@ var LiquidEditing = {
                         obj = document.getElementById("process_foreign_tables");
                         if(obj) Liquid.process_foreign_tables = obj.value;
 
+                        // checkup...
+                        if (!Liquid.appName){
+                            alert("Please define \"Application name\"");
+                            return;
+                        }
+
+
                         //
                         // Create a new grid
                         //
@@ -3290,6 +3295,7 @@ var LiquidEditing = {
                                 LiquidEditing.createNewGrid(liquid, 0, "newGrid", null);
                             }
                         }
+
 
                         var json = null;
                         if(liquid instanceof LiquidCtrl) {

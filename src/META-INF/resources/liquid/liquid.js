@@ -15600,8 +15600,8 @@ var Liquid = {
                 if(prop==="columns") {
                     for (let i = 0; i < liquid.tableJson.columns.length; i++) {
                         var opt = document.createElement('option');
-                        opt.text = liquid.tableJson.columns[i].name;
-                        opt.value = liquid.tableJson.columns[i].label;
+                        opt.text = liquid.tableJson.columns[i].label;
+                        opt.value = liquid.tableJson.columns[i].name;
                         datalist.appendChild(opt);
                     }
                 } else {
@@ -20271,7 +20271,7 @@ String.prototype.toCamelCase = function() {
 
 String.prototype.toDescriptionCase = function() {
     var out = "";
-    var list = this.replace("-", " ").replace("_", " ").split(" ");
+    var list = this.replaceAll("-", " ").replaceAll("_", " ").split(" ");
     for(let i=0; i<list.length; i++) {
         if(i)
             out += " " + list[i].toLowerCase();
