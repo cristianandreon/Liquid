@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.1.99
+// Liquid ver.2.00
 //
-//  First update 04-01-2020 - Last update 24-02-2022
+//  First update 04-01-2020 - Last update 10-03-2022
 //
 //  TODO : see trello.com
 //
@@ -15485,11 +15485,14 @@ var Liquid = {
     },
     onResetFilter: function (obj_id) {
         var obj = document.getElementById(obj_id);
-        if (obj)
-            if (obj.value !== '')
+        if (obj) {
+            obj.placeholder = '';
+            if (obj.value !== '') {
                 obj.value = '';
-            else
+            } else {
                 Liquid.onBtFilterExecute(obj);
+            }
+        }
     },
     onSearchControl: function (obj, columnName, targetName) {
         var liquid = Liquid.getLiquid(obj);
@@ -15540,6 +15543,8 @@ var Liquid = {
                 }
             }
             targetObj.setAttribute('list', datalistId);
+            targetObj.onmousedown=function(e) { this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value ='' };
+            targetObj.onblur=function(e) { if(!this.value) this.value=this.placeholder; };
             targetObj.focus();
             targetObj.click();
             targetObj.select();
@@ -20458,8 +20463,10 @@ SelectEditor.prototype.init = function(params) {
                     if(params.showToast) {
                         var values = params.colDef.cellEditorParams.values
                         if(values.length>0) {
-                            var msg = Liquid.lang === 'eng' ? ("Reading "+this.liquid.tableJson.table+"."+this.column+" done</br></br>Found "+values.length + "item(s)") : ("Lettura "+this.liquid.tableJson.table+"."+this.column+" completata</br></br>Trovat"+(values.length===1?"a":"e")+" "+values.length + " rig"+(values.length===1 ? "a":"he") );
-                            Liquid.showToast(Liquid.appTitle, msg, "success");
+                            if(Liquid.debug) {
+                                var msg = Liquid.lang === 'eng' ? ("Reading " + this.liquid.tableJson.table + "." + this.column + " done</br></br>Found " + values.length + "item(s)") : ("Lettura " + this.liquid.tableJson.table + "." + this.column + " completata</br></br>Trovat" + (values.length === 1 ? "a" : "e") + " " + values.length + " rig" + (values.length === 1 ? "a" : "he"));
+                                Liquid.showToast(Liquid.appTitle, msg, "success");
+                            }
                         } else {
                             var msg = Liquid.lang === 'eng' ? ("Reading "+this.liquid.tableJson.table+"."+this.column+" done</br></br>No items found") : ("Lettura "+this.liquid.tableJson.table+"."+this.column+" completata</br></br>Nessuna riga trovata" );
                             Liquid.showToast(Liquid.appTitle, msg, "warning");
@@ -20494,6 +20501,8 @@ SelectEditor.prototype.init = function(params) {
                 if(params.data[params.colDef.cellEditorParams.iCol + 1] === opt.text)
                     opt.selected = 'selected';
                 this.eInput.add(opt);
+                this.onmousedown=function(e) { this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value ='' };
+                this.onblur=function(e) { if(!this.value) this.value=this.placeholder; };
             }
         }
     }
