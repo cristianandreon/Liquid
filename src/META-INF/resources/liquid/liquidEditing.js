@@ -3487,30 +3487,56 @@ var LiquidEditing = {
                                         // \b \f \n \r \t
                                         var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
                                         responseText = Liquid.getXHRResponse(responseText);
-                                        httpResultJson = JSON.parse(responseText);
-                                        if(httpResultJson) {
-                                            var anyMessage = false;
-                                            if(httpResultJson.error) {
-                                                var err = null;
-                                                try { err = atob(httpResultJson.error); } catch(e) { err = httpResultJson.error; }
-                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "ERROR", err, { text:"OK", func:function() { } }, null);
-                                                anyMessage = true;
-                                            } else if(httpResultJson.warning) {
-                                                var warn = null;
-                                                try { warn = atob(httpResultJson.warning); } catch(e) { warn = httpResultJson.warning; }
-                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "WARNING", warn, { text:"OK", func:function() { } }, null);
-                                                anyMessage = true;
-                                            } else if(httpResultJson.message) {
-                                                var msg = null;
-                                                try { msg = atob(httpResultJson.message); } catch(e) { msg = httpResultJson.message; }
-                                                Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "MESSAGE", msg, { text:"OK", func:function() { } }, null);
-                                                anyMessage = true;
-                                            }
-                                            if(httpResultJson.client) {
-                                                Liquid.executeClientSide(liquid, "Save json response:", httpResultJson.client, null, true);
-                                            }
-                                            if(httpResultJson.result>0) {
-                                                Liquid.setAskForSave(liquid, false);
+                                        if(responseText) {
+                                            httpResultJson = JSON.parse(responseText);
+                                            if (httpResultJson) {
+                                                var anyMessage = false;
+                                                if (httpResultJson.error) {
+                                                    var err = null;
+                                                    try {
+                                                        err = atob(httpResultJson.error);
+                                                    } catch (e) {
+                                                        err = httpResultJson.error;
+                                                    }
+                                                    Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "ERROR", err, {
+                                                        text: "OK",
+                                                        func: function () {
+                                                        }
+                                                    }, null);
+                                                    anyMessage = true;
+                                                } else if (httpResultJson.warning) {
+                                                    var warn = null;
+                                                    try {
+                                                        warn = atob(httpResultJson.warning);
+                                                    } catch (e) {
+                                                        warn = httpResultJson.warning;
+                                                    }
+                                                    Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "WARNING", warn, {
+                                                        text: "OK",
+                                                        func: function () {
+                                                        }
+                                                    }, null);
+                                                    anyMessage = true;
+                                                } else if (httpResultJson.message) {
+                                                    var msg = null;
+                                                    try {
+                                                        msg = atob(httpResultJson.message);
+                                                    } catch (e) {
+                                                        msg = httpResultJson.message;
+                                                    }
+                                                    Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "MESSAGE", msg, {
+                                                        text: "OK",
+                                                        func: function () {
+                                                        }
+                                                    }, null);
+                                                    anyMessage = true;
+                                                }
+                                                if (httpResultJson.client) {
+                                                    Liquid.executeClientSide(liquid, "Save json response:", httpResultJson.client, null, true);
+                                                }
+                                                if (httpResultJson.result > 0) {
+                                                    Liquid.setAskForSave(liquid, false);
+                                                }
                                             }
                                         }
                                     } else {

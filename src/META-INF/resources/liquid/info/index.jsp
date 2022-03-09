@@ -48,7 +48,7 @@
         <table border=0 cellspacing=0 cellpadding=10 style="font-size:9pt; table-layout:fixed; ">
              <tr><td colspan="2" style="width: 100%; display:inline-block">
                 <div style="display: inline-flex">
-                    <%= Info.getInfo(request) %>
+                    <%= Info.getInfo(request, response) %>
                 </div>
              </td></tr>
              <tr><td colspan="2" style="width: 100%; height:40px;">

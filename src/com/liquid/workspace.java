@@ -2811,21 +2811,42 @@ public class workspace {
         return solvedCount;
     }
 
+    /**
+     *
+     * @param obj
+     * @param key
+     * @param request
+     * @return
+     * @throws Exception
+     */
     static public int solveClientSideVariableFieldsKey(JSONObject obj, String key, HttpServletRequest request) throws Exception {
         int solvedCount = 0;
         if(obj != null) {
             if (obj.has(key)) {
-                String def = obj.getString(key);
-                if (def != null) {
-                    if (def.indexOf("${") >= 0 || def.indexOf("%{") >= 0) {
-                        String defSolved = db.solveVariableField(def, request, true);
-                        if (defSolved != null) {
-                            if (!defSolved.equals(def)) {
-                                solvedCount++;
-                                obj.put(key, defSolved);
-                            }
+                Object odef = obj.get(key);
+                if (odef != null) {
+                    if(odef instanceof String) {
+                        solvedCount += solve_object_var(obj, key, (String)odef, request);
+                    } else if(odef instanceof JSONArray) {
+                        JSONArray defJarr = (JSONArray)odef;
+                        for(int id=0; id<defJarr.length(); id++) {
+                            solvedCount += solve_object_var(obj, key, String.valueOf(defJarr.get(id)), request);
                         }
                     }
+                }
+            }
+        }
+        return solvedCount;
+    }
+
+    static private int solve_object_var(JSONObject obj, String key, String def, HttpServletRequest request) throws Exception {
+        int solvedCount = 0;
+        if (def.indexOf("${") >= 0 || def.indexOf("%{") >= 0) {
+            String defSolved = db.solveVariableField(def, request, true);
+            if (defSolved != null) {
+                if (!defSolved.equals(def)) {
+                    solvedCount++;
+                    obj.put(key, defSolved);
                 }
             }
         }

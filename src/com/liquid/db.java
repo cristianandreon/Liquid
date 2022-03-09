@@ -1370,10 +1370,10 @@ public class db {
                 executingQueryForCache = null;
             } else {
                 executingQuery = baseQuery + sWhere;
-                if (!isOracle) {
-                    // Aggiunto dopo la limitazione : in oracle è ottenuta con il filtro
-                    executingQuery += sSort;
-                }
+
+                // Aggiunto ordinamento
+                executingQuery += sSort;
+
                 executingQueryForCache = executingQuery;
             }
 
@@ -1436,16 +1436,8 @@ public class db {
                                 if (endRow > 0) {
                                     cRow = startRow;
                                     if (isOracle) {
-                                        limitString = "";
-                                        if (sWhere == null || sWhere.isEmpty()) {
-                                            limitString += "\nWHERE ";
-                                        } else {
-                                            limitString += " AND ";
-                                        }
-                                        // limitString += " OFFSET "+startRow+" ROWS FETCH NEXT "+(endRow-startRow)+" ROWS ONLY";
-                                        limitString += "ROWNUM < " + (endRow);
-                                        executingQuery += limitString;
-                                        executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUMBER > " + startRow + "";
+                                        executingQuery += ") WHERE ROWNUM < " + (endRow);
+                                        executingQuery = "select * from (select * from (" + executingQuery + ") WHERE ROWNUMBER > " + startRow + "";
                                         limitString = "";
                                     } else if (isSqlServer) {
                                         if (sSort == null || sSort.isEmpty()) {

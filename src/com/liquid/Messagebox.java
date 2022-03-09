@@ -6,8 +6,11 @@
 package com.liquid;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -123,10 +126,40 @@ public class Messagebox {
                             + ",\"timeout\":"+autoCloseTimeSec
                             + ",\"timeoutButton\":\""+autoCloseButton+"\""
                             + ",\"cypher\":\""+utility.base64Encode(threadSession.cypher)+"\""
-                            + "}</Liquid><LiquidStartResponde/>";
-                    if(threadSession.out != null) {
-                        threadSession.out.print(messageJson);
-                        threadSession.out.flush();
+                            + "}</Liquid><LiquidStartResponde/><Liquid></Liquid>";
+                    if(threadSession.response != null) {
+
+                        /*
+                        NON RISOLVE
+                        myHttpServletResponse resWrapper = new myHttpServletResponse(threadSession.response);
+                        ServletOutputStream out = resWrapper.getOutputStream();
+                        out.write(messageJson.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+                        resWrapper.flushBuffer();
+                        // OK out.close();
+                        */
+
+                        /*
+                        NON RISOLVE
+                        // ServletOutputStream out = threadSession.response.getOutputStream();
+                        // out.write(messageJson.getBytes(StandardCharsets.UTF_8));
+                        // out.flush();
+                        */
+
+
+                        // NON RISOLVE
+                        threadSession.response.setBufferSize(messageJson.length());
+
+                        PrintWriter writer = threadSession.response.getWriter();
+                        writer.print(messageJson);
+                        writer.flush();
+
+                        // NON RISOLVE
+                        threadSession.response.flushBuffer();
+
+                        // Needed so secure senda data to client : but can send back dialogbox once
+                        writer.close();
+
                     }
                     if(threadSession.outputStream != null) {
                         wsStreamerClient.send( threadSession.outputStream, messageJson, threadSession.token, "P" );
@@ -188,7 +221,7 @@ public class Messagebox {
             }
         } else {
             // Fatal error
-            Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, "No sessionInfo available... No HttpRequest started so cannot communicate with client");
+            Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, "No sessionInfo available... No HttpRequest started so cannot communicate with client");
         }
         return retVal;
     }    

@@ -12,6 +12,7 @@ import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  *
@@ -22,7 +23,7 @@ public class Info {
     public static String getVersion() {
         return "1.16";
     }
-    public static String getInfo( HttpServletRequest request) {
+    public static String getInfo( HttpServletRequest request, HttpServletResponse response) {
         String out_string = "";
         
         out_string += "<div style=\"padding-top:70px; width:calc( 100% - 20px );\">";
@@ -212,11 +213,18 @@ public class Info {
         out_string += "<td>"+""+"</td>";
         out_string += "</tr>";
 
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>HTTP Response buffer size</td>";
+        out_string += "<td><span style=\"font-size: 70%;\">"+response.getBufferSize()+"</span></td>";
+        out_string += "<td>"+""+"</td>";
+        out_string += "</tr>";
+
+
         String domains = "";
         for (String domain : ManagementFactory.getPlatformMBeanServer().getDomains() ) {
             domains += "["+domain+"]";
         }
-        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<tr>";
         out_string += "<td>Domain</td>";
         out_string += "<td>"+domains+"</td>";
         out_string += "<td>"+""+"</td>";
@@ -257,7 +265,7 @@ public class Info {
         String hostName = "";
         try {
             hostName = InetAddress.getLocalHost().getHostName();
-            out_string += "<tr style=\"background-color:lightGray\">";
+            out_string += "<tr>";
             out_string += "<td>Host</td>";
             out_string += "<td>"+hostName+"</td>";
             out_string += "<td>"+""+"</td>";

@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.00
+// Liquid ver.2.02
 //
 //  First update 04-01-2020 - Last update 10-03-2022
 //
@@ -5237,6 +5237,9 @@ var Liquid = {
                     liquid.autoInsertIfMissing = false;
                 }
 
+                // Processo dei filtri (es. distint clientside)
+                Liquid.processFilterAfterLoadData(liquid);
+
                 if (bFirstTimeLoad) {
                     Liquid.onEvent(liquid, "onLoadData", null, null);
                 }
@@ -8592,42 +8595,44 @@ var Liquid = {
                     // \b \f \n \r \t
                     var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
                     responseText = Liquid.getXHRResponse(responseText);
-                    httpResultJson = JSON.parse(responseText);
-                    command.response = liquidCommandParams.response = httpResultJson;
-                    if (httpResultJson) {
-                        if (httpResultJson.client) {
-                            Liquid.executeClientSide(liquid, "command response:" + command.name, httpResultJson.client, liquidCommandParams, command.isNative);
-                        }
-                        Liquid.processXHRMessagesFromServer(liquid, httpResultJson, command, true, false, false, false);
+                    if(responseText) {
+                        httpResultJson = JSON.parse(responseText);
+                        command.response = liquidCommandParams.response = httpResultJson;
+                        if (httpResultJson) {
+                            if (httpResultJson.client) {
+                                Liquid.executeClientSide(liquid, "command response:" + command.name, httpResultJson.client, liquidCommandParams, command.isNative);
+                            }
+                            Liquid.processXHRMessagesFromServer(liquid, httpResultJson, command, true, false, false, false);
 
-                        if (isDef(httpResultJson.data)) {
-                            Liquid.processXHRMessagesFromServer(liquid, httpResultJson.data, command, true, false, false, false);
-                        }
-                        if (isDef(httpResultJson.tables)) {
-                            for (var id = 0; id < httpResultJson.tables.length; id++) {
-                                Liquid.processXHRMessagesFromServer(liquid, httpResultJson.tables[id], command, true, false, false, false);
+                            if (isDef(httpResultJson.data)) {
+                                Liquid.processXHRMessagesFromServer(liquid, httpResultJson.data, command, true, false, false, false);
                             }
-                        }
-                        if (isDef(httpResultJson.foreignTables)) {
-                            for (var id = 0; id < httpResultJson.foreignTables.length; id++) {
-                                Liquid.processXHRMessagesFromServer(liquid, httpResultJson.foreignTables[id], command, true, false, false, false);
+                            if (isDef(httpResultJson.tables)) {
+                                for (var id = 0; id < httpResultJson.tables.length; id++) {
+                                    Liquid.processXHRMessagesFromServer(liquid, httpResultJson.tables[id], command, true, false, false, false);
+                                }
                             }
-                        }
-                        if (isDef(httpResultJson.data)) {
-                            if (isDef(httpResultJson.data.details)) {
-                                for (var id = 0; id < httpResultJson.data.details.length; id++) {
-                                    var detail = httpResultJson.data.details[id];
-                                    if (isDef(detail.tables)) {
-                                        for (var it = 0; it < detail.tables.length; it++) {
-                                            if (isDef(detail.tables[it])) {
-                                                Liquid.processXHRMessagesFromServer(liquid, detail.tables[it], command, true, false, false, false);
+                            if (isDef(httpResultJson.foreignTables)) {
+                                for (var id = 0; id < httpResultJson.foreignTables.length; id++) {
+                                    Liquid.processXHRMessagesFromServer(liquid, httpResultJson.foreignTables[id], command, true, false, false, false);
+                                }
+                            }
+                            if (isDef(httpResultJson.data)) {
+                                if (isDef(httpResultJson.data.details)) {
+                                    for (var id = 0; id < httpResultJson.data.details.length; id++) {
+                                        var detail = httpResultJson.data.details[id];
+                                        if (isDef(detail.tables)) {
+                                            for (var it = 0; it < detail.tables.length; it++) {
+                                                if (isDef(detail.tables[it])) {
+                                                    Liquid.processXHRMessagesFromServer(liquid, detail.tables[it], command, true, false, false, false);
+                                                }
                                             }
                                         }
-                                    }
-                                    if (isDef(detail.foreignTables)) {
-                                        for (var it = 0; it < detail.foreignTables.length; it++) {
-                                            if (isDef(detail.foreignTables[it])) {
-                                                Liquid.processXHRMessagesFromServer(liquid, detail.foreignTables[it], command, true, false, false, false);
+                                        if (isDef(detail.foreignTables)) {
+                                            for (var it = 0; it < detail.foreignTables.length; it++) {
+                                                if (isDef(detail.foreignTables[it])) {
+                                                    Liquid.processXHRMessagesFromServer(liquid, detail.foreignTables[it], command, true, false, false, false);
+                                                }
                                             }
                                         }
                                     }
@@ -15487,6 +15492,7 @@ var Liquid = {
         var obj = document.getElementById(obj_id);
         if (obj) {
             obj.placeholder = '';
+
             if (obj.value !== '') {
                 obj.value = '';
             } else {
@@ -15497,8 +15503,8 @@ var Liquid = {
     onSearchControl: function (obj, columnName, targetName) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
-            var datalistId = obj.id + ".datalist";
             var targetObj = document.getElementById(targetName);
+            var datalistId = targetObj.id + ".datalist";
             var datalist = document.getElementById(datalistId);
             if (!datalist) {
                 datalist = document.createElement('datalist');
@@ -15518,6 +15524,7 @@ var Liquid = {
                 var params = {
                     table: liquid.tableJson.table,
                     column: columnName,
+                    async:false,
                     showToast: true,
                     rowIndex: null, iCol: null, column: columnName, node: null,
                     colDef: {
@@ -15546,8 +15553,71 @@ var Liquid = {
             targetObj.onmousedown=function(e) { this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value ='' };
             targetObj.onblur=function(e) { if(!this.value) this.value=this.placeholder; };
             targetObj.focus();
-            targetObj.click();
             targetObj.select();
+            targetObj.click();
+        }
+    },
+    onSearchControlClientSide: function (obj, columnName, targetName) {
+        var liquid = Liquid.getLiquid(obj);
+        if (liquid) {
+            var targetObj = document.getElementById(targetName);
+            var datalistId = targetObj.id + ".datalist";
+            var datalist = document.getElementById(datalistId);
+            if (!datalist) {
+                datalist = document.createElement('datalist');
+                datalist.id = datalistId;
+                document.body.appendChild(datalist);
+            }
+            if (datalist) {
+                var shortColumnName = columnName;
+                var table = liquid.tableJson.table;
+                var nameItems = columnName.split(".");
+                if (nameItems.length > 1) {
+                    table = nameItems[0];
+                    shortColumnName = nameItems[1];
+                }
+                var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                var col = Liquid.getColumn(liquid, shortColumnName)
+                var values = [];
+                for (var i = 0; i < nodes.length; i++) {
+                    var val = nodes[i].data[col.field];
+                    if (val) {
+                        if(!values.contains(val)) {
+                            values.push(val);
+                        }
+                    }
+                }
+                if (values) {
+                    if(datalist.childNodes.length < values.length) {
+                        datalist.innerHTML = '';
+                        for (let i = 0; i < values.length; i++) {
+                            var opt = document.createElement('option');
+                            opt.text = values[i];
+                            datalist.appendChild(opt);
+                        }
+                    }
+                }
+            }
+            targetObj.setAttribute('list', datalistId);
+            targetObj.onmousedown=function(e) { this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value ='' };
+            targetObj.onblur=function(e) { if(!this.value) this.value=this.placeholder; };
+        }
+    },
+    processFilterAfterLoadData: function (obj) {
+        var liquid = Liquid.getLiquid(obj);
+        if (liquid) {
+            for (var i = 0; i < liquid.filtersJson.length; i++) {
+                var filterJson = liquid.filtersJson[i];
+                for (var ic = 0; ic < filterJson.columns.length; ic++) {
+                    if (isDef(filterJson.columns[ic].distinct)) {
+                        if (filterJson.columns[ic].distinct.toLowerCase() === 'client') {
+                            Liquid.onSearchControlClientSide(obj, filterJson.columns[ic].name, filterJson.columns[ic].linkedContainerId);
+                        } else if (filterJson.columns[ic].distinct === true || filterJson.columns[ic].distinct.toLowerCase() === 'server') {
+                            console.error("ERROR: Still NOT developed");
+                        }
+                    }
+                }
+            }
         }
     },
     setUserProp: function (liquid, propName, propValue) {
@@ -20436,8 +20506,7 @@ SelectEditor.prototype.init = function(params) {
                 + (this.idColumn ? '&idColumn=' + this.idColumn : '')
                 + '&targetMode=' + params.colDef.cellEditorParams.editor
                 + '&extendedMetadata=false'
-
-                ,false
+                ,(typeof params.async !== 'undefined' ? params.async : true)
             );
             xhr.send();
             if(xhr.status === 200) {
@@ -20786,10 +20855,10 @@ LiquidGridHeader.prototype.onSortRequested = function (order, event) {
     try {
         var retVal = Liquid.onEvent(this.agParams.liquidLink, "onSorting", null, null, null, true).result;
     } catch(e) { console.error(e); }
-    var sortServer = '';
+    var sortSide = '';
     if(this.agParams.liquidLink)
-        if(this.agParams.liquidLink.nPages > 1) sortServer = 'server';
-        else if(isDef(this.agParams.liquidLink.tableJson.sortMode)) sortServer = this.agParams.liquidLink.tableJson.sortMode;
+        if(this.agParams.liquidLink.nPages > 1) sortSide = 'server';
+        else if(isDef(this.agParams.liquidLink.tableJson.sortMode)) sortSide = this.agParams.liquidLink.tableJson.sortMode;
 
     var colIndex1B = Number(this.agParams.column.colDef.field);
     var columnName = colIndex1B > 0 ? this.agParams.liquidLink.tableJson.columns[colIndex1B-1].name : "";
@@ -20799,7 +20868,7 @@ LiquidGridHeader.prototype.onSortRequested = function (order, event) {
         else this.agParams.liquidLink.tableJson.columns[colIndex1B-1].sortMode = "asc";
     }
 
-    if(sortServer === 'server') {
+    if(sortSide === 'server') {
         if(typeof this.agParams.liquidLink.sortColumns === 'undefined' || !this.agParams.liquidLink.sortColumns)
             this.agParams.liquidLink.sortColumns = [];
         if(columnName) {
