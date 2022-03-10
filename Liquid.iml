@@ -45,8 +45,6 @@
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="PROVIDED" name="Tomcat 8.5.43" level="application_server_libraries" />
-    <orderEntry type="library" scope="PROVIDED" name="Tomcat 8.5.73" level="application_server_libraries" />
     <orderEntry type="library" name="Liquid-servlet2" level="application" />
-    <orderEntry type="library" name="lib_JAVA_EE6" level="project" />
   </component>
 </module>

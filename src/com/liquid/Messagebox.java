@@ -157,7 +157,7 @@ public class Messagebox {
                         // NON RISOLVE
                         threadSession.response.flushBuffer();
 
-                        // Needed so secure senda data to client : but can send back dialogbox once
+                        // OK : Needed so secure senda data to client : but can send back dialogbox once
                         writer.close();
 
                     }
