@@ -178,10 +178,6 @@ public class Messagebox {
                             writer.close();
                         }
 
-                        deliveryMode++;
-                        if(deliveryMode > 2) {
-                            deliveryMode = 0;
-                        }
                     }
 
                     // web socket

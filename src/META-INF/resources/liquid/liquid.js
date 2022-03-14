@@ -20187,6 +20187,10 @@ var Liquid = {
                 if(isDef(paramsObject)) xhr.params = paramsObject;
                 if(isDef(onReadyStateChange)) xhr.onReadyStateChange = onReadyStateChange;
 
+                if(reason.indexOf("command ") >= 0) {
+                    xhr.setRequestHeader("Accept-Encoding", "none");
+                }
+
                 xhr.open(method, url, async);
                 if(async) {
                     xhr.onreadystatechange = function() {
