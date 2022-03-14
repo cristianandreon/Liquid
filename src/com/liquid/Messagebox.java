@@ -38,7 +38,13 @@ public class Messagebox {
     static public int timeout = 60;
     static long sleepIntervelMsec = 1 * 1000;
     static long checkerIntervelMsec = 10 * 1000;
-        
+
+    // TODO : DEBUG modalita di consegna dati
+    static int deliveryMode = 0;
+        // 0   ->   Do nothing
+        // 1   ->   close stream
+        // 2    ->  Fill buffer-size
+
             
     /**
      * <h3>Show a message in the client and wait for the response</h3>
@@ -126,7 +132,9 @@ public class Messagebox {
                             + ",\"timeout\":"+autoCloseTimeSec
                             + ",\"timeoutButton\":\""+autoCloseButton+"\""
                             + ",\"cypher\":\""+utility.base64Encode(threadSession.cypher)+"\""
-                            + "}</Liquid><LiquidStartResponde/><Liquid></Liquid>";
+                            + "}</Liquid><LiquidStartResponde/>";
+
+                    // Ajax...
                     if(threadSession.response != null) {
 
                         /*
@@ -148,7 +156,15 @@ public class Messagebox {
 
 
                         // NON RISOLVE
-                        threadSession.response.setBufferSize(messageJson.length());
+                        if(deliveryMode == 0) {
+                            threadSession.response.setBufferSize(messageJson.length());
+                        }
+                        if(deliveryMode == 2) {
+                            int bsize = threadSession.response.getBufferSize();
+                            while(messageJson.length() < bsize) {
+                                messageJson += "<Liquid></Liquid>";
+                            }
+                        }
 
                         PrintWriter writer = threadSession.response.getWriter();
                         writer.print(messageJson);
@@ -157,13 +173,22 @@ public class Messagebox {
                         // NON RISOLVE
                         threadSession.response.flushBuffer();
 
-                        // OK : Needed so secure senda data to client : but can send back dialogbox once
-                        writer.close();
+                        if(deliveryMode == 1) {
+                            // OK : Needed so secure senda data to client : but can send back dialogbox once
+                            writer.close();
+                        }
 
+                        deliveryMode++;
+                        if(deliveryMode > 2) {
+                            deliveryMode = 0;
+                        }
                     }
+
+                    // web socket
                     if(threadSession.outputStream != null) {
-                        wsStreamerClient.send( threadSession.outputStream, messageJson, threadSession.token, "P" );
+                        wsStreamerClient.send(threadSession.outputStream, messageJson, threadSession.token, "P");
                     }
+
                 } catch (IOException ex) {
                     Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
                 }
