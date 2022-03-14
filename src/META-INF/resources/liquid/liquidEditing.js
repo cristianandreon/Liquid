@@ -195,8 +195,13 @@ var LiquidEditing = {
                         });
                 }
             }
-            var gridName = prompt("Enter grid name", "new grid " + (liquid.tableJson.grids ? liquid.tableJson.grids.length + 1 : 1));
+
+            var grid_name = isDef(LiquidEditing.lastGridName) ? LiquidEditing.lastGridName : null;
+            if(!grid_name) grid_name = Liquid.lang === 'eng' ? "Grid" : "Dettaglio";
+
+            var gridName = prompt("Enter grid name", grid_name+"" + (liquid.tableJson.grids ? (" "+(liquid.tableJson.grids.length + 1)) : ""));
             if (gridName) {
+                LiquidEditing.lastGridName = gridName;
                 var gridNumColumns = prompt("Enter grid no. columns", "1");
                 if (gridNumColumns) {
                     var nCols = Number(gridNumColumns) > 0 ? Number(gridNumColumns) : 1;
@@ -3098,10 +3103,13 @@ var LiquidEditing = {
             if (!Liquid.customerName)
                 Liquid.customerName = "geisoft";
 
-            if (!Liquid.orderByField)
-                Liquid.orderByField = "";
-            if (!Liquid.orderByField)
-                Liquid.orderByField = "";
+
+            Liquid.orderByField = "";
+            Liquid.fieldInTitleBar = "";
+
+
+            Liquid.orderByField = "";
+            if (!Liquid.orderByField) Liquid.orderByField = "";
 
 
             var beanClass = "com." + Liquid.customerName + "." + Liquid.appName + ".hibernate.bean." + Liquid.panelId;

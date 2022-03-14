@@ -3740,7 +3740,7 @@ public class workspace {
                             if(panelBaseId == null || panelBaseId.isEmpty()) {
                                 panelBaseId = nameSpacer.DB2Hibernate(tableName);
                             }
-                            String panelId = panelBaseId + "_P1";
+                            String panelId = panelBaseId + "_P@1";
                             String beanName = panelBaseId;
 
 
@@ -4034,24 +4034,24 @@ public class workspace {
                                                     if(gridField.startsWith("F") || gridField.startsWith("f")) {
                                                         if(size == 1) {
                                                             gridControlType = "LISTBOX";
-                                                            gridControlValues = "=,S=Si,N=No";
+                                                            gridControlValues = "S=Si,N=No";
                                                         }
                                                     }
                                                 }
 
 
                                                 zkFileContent += ""
-                                                        + "\t\t\t\t\t<property name=\"" + gridField + "\">\n"
-                                                        + (gridLabel!=null?"\t\t\t\t\t\t<etichetta>" + gridLabel + "</etichetta>\n":"")
-                                                        + (gridLabelWidth!=null?"\t\t\t\t\t\t<widthEtichetta>" + gridLabelWidth + "</widthEtichetta>\n":"")
-                                                        + (gridControlType!=null?"\t\t\t\t\t\t<tipoControllo>" + gridControlType + "</tipoControllo>\n":"")
-                                                        + (gridControlValues != null ? "\t\t\t\t\t\t<elencoValori>"+gridControlValues+"</elencoValori>\n" : "")+""
-                                                        + (posX != null ? "\t\t\t\t\t\t<posX>" + posX + "</posX>\n" : "")
-                                                        + (posY != null ? "\t\t\t\t\t\t<posY>" + posY + "</posY>\n" : "")
-                                                        + (gridControlWidth != null ? "\t\t\t\t\t\t<widthControllo>" + gridControlWidth + "</widthControllo>\n" : "") + ""
-                                                        + (gridControlHeight != null ? "\t\t\t\t\t\t<heightControllo>" + gridControlHeight + "</heightControllo>\n" : "") + ""
-                                                        + (gridControlRO != null ? "\t\t\t\t\t\t<solaLettura>" + gridControlRO + "</solaLettura>\n" : "") + ""
-                                                        + (gridControlVisible != null ? "\t\t\t\t\t\t<visibile>" + gridControlVisible + "</visibile>\n" : "") + ""
+                                                        + "\t\t\t\t\t\t\t<property name=\"" + gridField + "\">\n"
+                                                        + (gridLabel!=null?"\t\t\t\t\t\t\t\t<etichetta>" + gridLabel + "</etichetta>\n":"")
+                                                        + (gridLabelWidth!=null?"\t\t\t\t\t\t\t\t<widthEtichetta>" + gridLabelWidth + "</widthEtichetta>\n":"")
+                                                        + (gridControlType!=null?"\t\t\t\t\t\t\t\t<tipoControllo>" + gridControlType + "</tipoControllo>\n":"")
+                                                        + (gridControlValues != null ? "\t\t\t\t\t\t\t\t<elencoValori>"+gridControlValues+"</elencoValori>\n" : "")+""
+                                                        + (posX != null ? "\t\t\t\t\t\t\t\t<posX>" + posX + "</posX>\n" : "")
+                                                        + (posY != null ? "\t\t\t\t\t\t\t\t<posY>" + posY + "</posY>\n" : "")
+                                                        + (gridControlWidth != null ? "\t\t\t\t\t\t\t\t<widthControllo>" + gridControlWidth + "</widthControllo>\n" : "") + ""
+                                                        + (gridControlHeight != null ? "\t\t\t\t\t\t\t\t<heightControllo>" + gridControlHeight + "</heightControllo>\n" : "") + ""
+                                                        + (gridControlRO != null ? "\t\t\t\t\t\t\t\t<solaLettura>" + gridControlRO + "</solaLettura>\n" : "") + ""
+                                                        + (gridControlVisible != null ? "\t\t\t\t\t\t\t\t<visibile>" + gridControlVisible + "</visibile>\n" : "") + ""
                                                 ;
 
 
@@ -4536,7 +4536,7 @@ public class workspace {
                         }
                     }
                     if(isLookup) {
-                        gridControlType = "LOOKUP";
+                        gridControlType = "LISTLOOKUP";
                     } else if(type.getName().equalsIgnoreCase("java.util.Date")) {
                         gridControlType = "DATEBOX";
                     } else if(type.getName().equalsIgnoreCase("java.sql.Timestamp")) {

@@ -6812,20 +6812,22 @@ var Liquid = {
             tr = document.createElement("tr");
             td = document.createElement("td");
             td.colSpan = 4;
-            for (var i = 0; i < liquid.filtersJson.length; i++) {
-                liquid.filtersJson[i].filterDiv = document.createElement("div");
-                liquid.filtersJson[i].filterDiv.style.display = (liquid.curFilter === i ? '' : 'none');
-                liquid.filtersJson[i].filterDiv.id = liquid.controlId + ".filters." + (i + 1) + ".container";
-                liquid.filtersJson[i].filterTable = Liquid.createFilterTab(liquid, (i + 1), liquid.filtersJson[i]);
-                if (liquid.filtersJson[i].filterTable) {
-                    liquid.filtersJson[i].filterTable.id = liquid.controlId + ".filters." + (i + 1) + ".content";
-                    liquid.filtersJson[i].filterDiv.appendChild(liquid.filtersJson[i].filterTable);
+            if(liquid.filtersJson) {
+                for (var i = 0; i < liquid.filtersJson.length; i++) {
+                    liquid.filtersJson[i].filterDiv = document.createElement("div");
+                    liquid.filtersJson[i].filterDiv.style.display = (liquid.curFilter === i ? '' : 'none');
+                    liquid.filtersJson[i].filterDiv.id = liquid.controlId + ".filters." + (i + 1) + ".container";
+                    liquid.filtersJson[i].filterTable = Liquid.createFilterTab(liquid, (i + 1), liquid.filtersJson[i]);
+                    if (liquid.filtersJson[i].filterTable) {
+                        liquid.filtersJson[i].filterTable.id = liquid.controlId + ".filters." + (i + 1) + ".content";
+                        liquid.filtersJson[i].filterDiv.appendChild(liquid.filtersJson[i].filterTable);
+                    }
+                    td.appendChild(liquid.filtersJson[i].filterDiv);
+                    // TODO : cannot select text even draggable
+                    // if(Liquid.projectMode) Liquid.setDraggable(liquid.filtersJson[i].filterDiv);
+                    if (liquid.mode !== "lookup")
+                        liquid.filtersJson[i].filterTable.style.position = "initial";
                 }
-                td.appendChild(liquid.filtersJson[i].filterDiv);
-                // TODO : cannot select text even draggable
-                // if(Liquid.projectMode) Liquid.setDraggable(liquid.filtersJson[i].filterDiv);
-                if (liquid.mode !== "lookup")
-                    liquid.filtersJson[i].filterTable.style.position = "initial";
             }
             tr.appendChild(td);
             tbody.appendChild(tr);
@@ -6857,9 +6859,11 @@ var Liquid = {
             var filterList = document.createElement("div");
             liquid.filtersSelectorId = liquid.controlId + ".filtersSelector";
             var filterHTML = "<select id=\"" + liquid.filtersSelectorId + "\" style=\"width: 100%;\" class=\"liquidFiltersSelect\" onchange=\"Liquid.onFilterTab(event)\" >";
-            for (var i = 0; i < liquid.filtersJson.length; i++) {
-                var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
-                filterHTML += "<option id=\"" + liquid.controlId + ".filter." + (i + 1) + ".selector\" value=\"x\">" + (name) + "</option>";
+            if(liquid.filtersJson) {
+                for (var i = 0; i < liquid.filtersJson.length; i++) {
+                    var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
+                    filterHTML += "<option id=\"" + liquid.controlId + ".filter." + (i + 1) + ".selector\" value=\"x\">" + (name) + "</option>";
+                }
             }
             filterHTML += "</select>";
             filterList.innerHTML = filterHTML;
@@ -15606,14 +15610,16 @@ var Liquid = {
     processFilterAfterLoadData: function (obj) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
-            for (var i = 0; i < liquid.filtersJson.length; i++) {
-                var filterJson = liquid.filtersJson[i];
-                for (var ic = 0; ic < filterJson.columns.length; ic++) {
-                    if (isDef(filterJson.columns[ic].distinct)) {
-                        if (filterJson.columns[ic].distinct.toLowerCase() === 'client') {
-                            Liquid.onSearchControlClientSide(obj, filterJson.columns[ic].name, filterJson.columns[ic].linkedContainerId);
-                        } else if (filterJson.columns[ic].distinct === true || filterJson.columns[ic].distinct.toLowerCase() === 'server') {
-                            console.error("ERROR: Still NOT developed");
+            if(liquid.filtersJson) {
+                for (var i = 0; i < liquid.filtersJson.length; i++) {
+                    var filterJson = liquid.filtersJson[i];
+                    for (var ic = 0; ic < filterJson.columns.length; ic++) {
+                        if (isDef(filterJson.columns[ic].distinct)) {
+                            if (filterJson.columns[ic].distinct.toLowerCase() === 'client') {
+                                Liquid.onSearchControlClientSide(obj, filterJson.columns[ic].name, filterJson.columns[ic].linkedContainerId);
+                            } else if (filterJson.columns[ic].distinct === true || filterJson.columns[ic].distinct.toLowerCase() === 'server') {
+                                console.error("ERROR: Still NOT developed");
+                            }
                         }
                     }
                 }
