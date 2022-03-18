@@ -26,9 +26,11 @@
           <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/src/META-INF/resources/web.xml" />
         </descriptors>
         <webroots>
-          <root url="file://$MODULE_DIR$/src/META-INF/resources" relative="/" />
+          <root url="file://$MODULE_DIR$/src/META-INF/resources" relative="/liquid" />
         </webroots>
-        <sourceRoots />
+        <sourceRoots>
+          <root url="file://$MODULE_DIR$/src" />
+        </sourceRoots>
       </configuration>
     </facet>
   </component>
@@ -44,7 +46,6 @@
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="lib_JAVA_EE6" level="project" />
     <orderEntry type="library" name="Liquid-servlet3" level="application" />
   </component>
 </module>
