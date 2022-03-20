@@ -18,6 +18,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.text.DateFormat;
@@ -1644,6 +1646,52 @@ public class utility {
         return result;
     }
 
+    public static String append_to_folder(String folder, String file) {
+        if(folder != null && file != null) {
+            if (folder.endsWith(File.separator)) {
+                return folder + file;
+            } else {
+                return folder + (file.startsWith(File.separator) ? file : File.separator + file);
+            }
+        }
+        return folder;
+    }
+
+    public static boolean append_to_file_content(String fileName, StringBuffer content, boolean insertBefore, String tag) throws IOException {
+        if(insertBefore) {
+            RandomAccessFile randomAccessFile = null;
+            try {
+                randomAccessFile = new RandomAccessFile(fileName, "rw");
+                long size = randomAccessFile.length();
+                byte[] buf = new byte[512];
+                if (size > 512) {
+                    randomAccessFile.seek(size - 512);
+                } else {
+                    randomAccessFile.seek(0);
+                }
+                randomAccessFile.read(buf);
+                String bufStr = new String(buf);
+                int pos = bufStr.lastIndexOf(tag);
+                if (pos >= 0) {
+                    randomAccessFile.seek(size - (buf.length - pos));
+                }
+                randomAccessFile.write("\n\n".getBytes(StandardCharsets.UTF_8));
+                randomAccessFile.write(content.toString().getBytes(StandardCharsets.UTF_8));
+                randomAccessFile.write(("\n"+tag).getBytes(StandardCharsets.UTF_8));
+            } finally {
+                if(randomAccessFile != null)
+                    randomAccessFile.close();
+            }
+            return true;
+
+        } else {
+            Files.write(Paths.get(fileName), "\n\n".getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+            Files.write(Paths.get(fileName), content.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+            return true;
+        }
+    }
+
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
@@ -2201,9 +2249,15 @@ public class utility {
      * @param s
      * @return
      */
+    public static String capitalizeOlnyFirstLetter(String s) {
+        return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "");
+    };
     public static String capitalizeFirstLetter(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "").toLowerCase();
     };
+    public static String uncapitalizeOlnyFirstLetter(String s) {
+        return s.substring(0, 1).toLowerCase() + s.substring(1).replaceAll("/ /g", "");
+    }
 
     public static String toDescriptionCase(String var) {
         String out = "";

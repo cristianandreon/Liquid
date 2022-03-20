@@ -17,7 +17,10 @@
     }
 ,{ "name":"TYPE", "label":"Type", "field":"6", "width":"70", "readonly":true, "visible":true }
 ,{ "name":"USEAS", "label":"Use as", "field":"7", "width":"70", "readonly":false, "visible":true,
-        "editor":{ "type":"values", "values":["LOOKUP","FOREIGN TABLE"] }
+    "editor":{ "type":"values", "values":["","LOOKUP","FOREIGN TABLE"] }
+    }
+,{ "name":"DESCRIPTOR", "label":"Descriptor field", "field":"8", "width":"110", "readonly":false, "visible":true,
+    "editor":{"type":"allColumns","table":"@liquidSelectForeignTablesAndLookups.table","column":"DESCRIPTOR","cache":false }
     }
 ]
 ,"filters": { 

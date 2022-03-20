@@ -3,19 +3,8 @@
     contentType="text/html; charset=iso-8859-1" 
     import="org.json.JSONObject"
     import="org.json.JSONArray"
-    import="com.liquid.db"    
-    import="com.liquid.connection"
-    import="com.liquid.workspace"
-    import="com.liquid.worker"
-    import="com.liquid.event"
-    import="com.liquid.metadata"
-    import="com.liquid.utility"
-    import="com.liquid.login"
-    import="com.liquid.emailer"
-    import="com.liquid.ThreadSession"
-    import="com.liquid.ColumnsManager"
-    errorPage="" 
-    %><%!
+    errorPage=""
+    %><%@ page import="com.liquid.*" %><%!
     %><%
 
     String operation = request.getParameter("operation");
@@ -58,9 +47,9 @@
 
         } else if ("saveToZK".equalsIgnoreCase(operation)) {
             // write .xml to the server
-            out.print( workspace.set_zk_content(request, out) );
+            out.print( ZKpanels.set_zk_content(request, out) );
 
-        } else if ("setLiquidJsonProjectFolder".equalsIgnoreCase(operation)) {
+        } else if ("setProjectFolder".equalsIgnoreCase(operation)) {
             // Set the working folder of the project (where to save new json configurations)
             out.print( workspace.set_project_folder(request, out) );
             

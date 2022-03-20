@@ -3,7 +3,7 @@
  */
 
 var LiquidEditing = {
-    version: 1.08,
+    version: 1.09,
     controlid:"Liquid framework - Editing module",
     lastUpdate: '07/03/2022',
     
@@ -575,7 +575,26 @@ var LiquidEditing = {
             }
         } else console.error("ERROR: selector module not found");
     },
-    onNewWindowProcess2:function(obj_id, mode, parentObjId, table) {
+    onNewWindowProcess2:function(obj_id, mode, parentObjId) {
+        var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
+        if(selectorLiquid) {
+            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
+                var cols = [];
+                if(selectorLiquid.tableJson.selections && selectorLiquid.tableJson.selections.length) {
+                    var sels = selectorLiquid.tableJson.selections;
+                    var table = sels[0]["TABLE"];
+                    Liquid.startPopup('liquidSelectForeignTablesAndLookups', window.liquidSelectForeignTablesAndLookups);
+                    var selectorFTLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
+                    selectorFTLiquid.tableJson.database = Liquid.curDatabase;
+                    selectorFTLiquid.tableJson.schema = Liquid.curSchema;
+                    selectorFTLiquid.tableJson.table = table;
+                    Liquid.loadData(selectorFTLiquid, null, "newWindow");
+                    selectorFTLiquid.onPostClosed = "LiquidEditing.onNewWindowProcess3('"+obj_id+"','"+mode+"','"+parentObjId+"','"+table+"')";
+                }
+            }
+        } else console.error("ERROR: selector module not found");
+    },
+    onNewWindowProcess3:function(obj_id, mode, parentObjId, table) {
         var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
         if(selectorLiquid) {
             if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
@@ -591,7 +610,7 @@ var LiquidEditing = {
                         cols.push( { name:"data1" } );
                     }
                 }
-                
+
                 if(cols) {
                     var defaultVal = "";
                     if(mode === 'winX')
@@ -647,10 +666,22 @@ var LiquidEditing = {
                         if(Liquid.curConnectionURL) liquidJson.connectionURL = Liquid.curConnectionURL;
                         liquidJson.token = glLiquidGenesisToken;
                         liquidJson.askForSave = true;
+
                         var newLiquid = new LiquidCtrl(controlId, controlId, JSON.stringify(liquidJson)
                                         , null
                                         , mode, parentObjId
                                         );
+
+                        // Applica le foreign key
+                        var selectorFTLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
+                        if(selectorFTLiquid) {
+                            LiquidEditing.process_foreign_tables_selector(newLiquid, selectorFTLiquid, "batch");
+                            Liquid.rebuild(newLiquid, newLiquid.outDivObjOrId, newLiquid.tableJsonSource);
+                        }
+
+                        // reset export data
+                        Liquid.saveUserData("ZKpanel", JSON.stringify({}));
+
                         Liquid.setFocus(controlId);
                     }
                 }
@@ -1627,46 +1658,79 @@ var LiquidEditing = {
         var liquid = Liquid.getLiquid(obj_id);
         if(liquid) {
             var nameItems = obj_id.split(".");
-            var selectorLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
-            if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
-                if(selectorLiquid.tableJson.selections) {
-                    for(var isel=0; isel<selectorLiquid.tableJson.selections.length; isel++) {
-                        var sel = selectorLiquid.tableJson.selections[isel];
-                        if(sel) {
-                            var foreignName = prompt("Enter folder name", ""+sel["FOREIGN_TABLE"]);
-                            if(foreignName) {
-                                var newForeignTableJson = null;
-                                var newLookupJson = null;
-                                // alert("New foreign table : "+sel["TABLE"]+"."+sel["COLUMN"]+"="+sel["FOREIGN_TABLE"]+"."+sel["FOREIGN_COLUMN"]);
-
-
-                                if(sel["USEAS"] == "LOOKUP") {
-                                    newLookupJson = { column:sel["COLUMN"], foreignTable:sel["FOREIGN_TABLE"], foreignColumn:sel["FOREIGN_COLUMN"], options:{ editable:true, autoSelect:true, autoSizeColumns:true } };
-
-                                    for(var ic=0; ic<liquid.tableJsonSource.columns.length; ic++) {
-                                        if(liquid.tableJsonSource.columns[ic].name == sel["COLUMN"]) {
-                                            liquid.tableJsonSource.columns[ic].lookup = newLookupJson;
-                                        }
-                                    }
-                                    try { console.log("INFO: new lookup : \n"+JSON.stringify(newLookupJson)); } catch(e) { console.error(e); }
-
-                                } else if(sel["USEAS"] == "FOREIGN TABLE") {
-                                    newForeignTableJson = { name:foreignName, tooltip:"", icon:"", column:sel["COLUMN"], foreignTable:sel["FOREIGN_TABLE"], foreignColumn:sel["FOREIGN_COLUMN"], options:{ editable:true, autoSelect:true, autoSizeColumns:true } };
-                                    newForeignTableJson["height"] = Liquid.defaultMultipanelHeight;
-                                    newForeignTableJson["text"] = sel["FOREIGN_TABLE"];
-                                    newForeignTableJson["options"] = { navVisible:false };
-                                    if(typeof liquid.tableJsonSource.foreignTables === 'undefined' || !liquid.tableJsonSource.foreignTables) liquid.tableJsonSource.foreignTables = [];
-
-                                    try { console.log("INFO: new foreign table json : \n"+JSON.stringify(newForeignTableJson)); } catch(e) { console.error(e); }
-
-                                } else {
-
+            var selectorFTLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
+            if(selectorFTLiquid.lastAction && selectorFTLiquid.lastAction.name==="ok") {
+                LiquidEditing.process_foreign_tables_selector(liquid, selectorFTLiquid, "single");
+                Liquid.setAskForSave(liquid, true);
+                Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
+            }
+        }
+    },
+    /**
+     * Add or replace foreign table or lookup by foreign keys
+     *
+     * @param liquid
+     * @param selectorFTLiquid
+     */
+    process_foreign_tables_selector:function(liquid, selectorFTLiquid, mode) {
+        if (selectorFTLiquid.tableJson.selections) {
+            for (var isel = 0; isel < selectorFTLiquid.tableJson.selections.length; isel++) {
+                var sel = selectorFTLiquid.tableJson.selections[isel];
+                if (sel) {
+                    var foreignName = mode === 'batch' ?
+                        sel["FOREIGN_TABLE"]
+                        :
+                        prompt("Enter folder name", "" + sel["FOREIGN_TABLE"]);
+                    if (foreignName) {
+                        var newForeignTableJson = null;
+                        var newLookupJson = null;
+                        var newLookupField = null;
+                        // alert("New foreign table : "+sel["TABLE"]+"."+sel["COLUMN"]+"="+sel["FOREIGN_TABLE"]+"."+sel["FOREIGN_COLUMN"]);
+                        if (sel["USEAS"] == "LOOKUP") {
+                            newLookupJson = {
+                                column: sel["COLUMN"],
+                                foreignTable: sel["FOREIGN_TABLE"],
+                                foreignColumn: sel["FOREIGN_COLUMN"],
+                                options: {editable: true, autoSelect: true, autoSizeColumns: true}
+                            };
+                            newLookupField = sel["DESCRIPTOR"];
+                            for (var ic = 0; ic < liquid.tableJsonSource.columns.length; ic++) {
+                                if (liquid.tableJsonSource.columns[ic].name == sel["COLUMN"]) {
+                                    if(newLookupJson)
+                                        liquid.tableJsonSource.columns[ic].lookup = newLookupJson;
+                                    if(newLookupField)
+                                        liquid.tableJsonSource.columns[ic].lookupField = newLookupField;
                                 }
+                            }
+                            try {
+                                console.log("INFO: new lookup : \n" + JSON.stringify(newLookupJson));
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        } else if (sel["USEAS"] == "FOREIGN TABLE") {
+                            newForeignTableJson = {
+                                name: foreignName,
+                                tooltip: "",
+                                icon: "",
+                                column: sel["COLUMN"],
+                                foreignTable: sel["FOREIGN_TABLE"],
+                                foreignColumn: sel["FOREIGN_COLUMN"],
+                                options: {editable: true, autoSelect: true, autoSizeColumns: true}
+                            };
+                            newForeignTableJson["height"] = Liquid.defaultMultipanelHeight;
+                            newForeignTableJson["text"] = sel["FOREIGN_TABLE"];
+                            newForeignTableJson["options"] = {navVisible: false};
+                            if (typeof liquid.tableJsonSource.foreignTables === 'undefined' || !liquid.tableJsonSource.foreignTables) liquid.tableJsonSource.foreignTables = [];
+
+                            liquid.tableJsonSource.foreignTables.push(newForeignTableJson);
+
+                            try {
+                                console.log("INFO: new foreign table json : \n" + JSON.stringify(newForeignTableJson));
+                            } catch (e) {
+                                console.error(e);
                             }
                         }
                     }
-                    Liquid.setAskForSave(liquid, true);
-                    Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
                 }
             }
         }
@@ -3087,6 +3151,11 @@ var LiquidEditing = {
      * @returns {HTMLElement}
      */
     exportToZKDialog:function(liquid) {
+        Liquid.loadUserData("ZKpanel", function(field, value) {
+            LiquidEditing.exportToZKProcessDialog(liquid, value);
+        } );
+    },
+    exportToZKProcessDialog:function(liquid, zkParams) {
         var dlgId = "liquidExportToZKDialog";
         var dlg = document.getElementById(dlgId);
         if (!dlg) {
@@ -3100,8 +3169,20 @@ var LiquidEditing = {
             var panelTitle = panelId.camelCasetoDescriptionCase();
             Liquid.panelTitle = panelTitle;
 
+            if(zkParams) {
+                if(typeof zkParams === 'string') {
+                    zkParams = JSON.parse(zkParams);
+                }
+                if(typeof zkParams === 'object') {
+                    for(let attrname in zkParams) {
+                        Liquid[attrname] = zkParams[attrname];
+                    }
+                }
+            }
+
+
             if (!Liquid.customerName)
-                Liquid.customerName = "geisoft";
+                Liquid.customerName = zkParams.customerName ? zkParams.customerName : "geisoft";
 
 
             Liquid.orderByField = "";
@@ -3110,6 +3191,7 @@ var LiquidEditing = {
 
             Liquid.orderByField = "";
             if (!Liquid.orderByField) Liquid.orderByField = "";
+
 
 
             var beanClass = "com." + Liquid.customerName + "." + Liquid.appName + ".hibernate.bean." + Liquid.panelId;
@@ -3137,7 +3219,9 @@ var LiquidEditing = {
             if (!Liquid.use_asset)
                 Liquid.use_asset = "N";
             if (!Liquid.process_foreign_tables)
-                Liquid.process_foreign_tables = "N";
+                Liquid.process_foreign_tables = "S";
+            if (!Liquid.process_hibernate)
+                Liquid.process_hibernate = "S";
             if (!Liquid.can_insert)
                 Liquid.can_insert = "S";
             if (!Liquid.can_update)
@@ -3147,6 +3231,17 @@ var LiquidEditing = {
 
             if(!Liquid.addNewGridIfMissing)
                 Liquid.addNewGridIfMissing = true;
+
+            if(!Liquid.projectFolder)
+                Liquid.projectFolder = zkParams.projectFolder ? zkParams.projectFolder : "";
+            if(!Liquid.eventsFunctionsFile)
+                Liquid.eventsFunctionsFile = zkParams.eventsFunctionsFile ? zkParams.eventsFunctionsFile : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/controller/FunzioniEventi.java";
+            if(!Liquid.lookupDefinitionFile)
+                Liquid.lookupDefinitionFile = zkParams.lookupDefinitionFile ? zkParams.lookupDefinitionFile : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/controller/Reference.xml";
+            if(!Liquid.hibFolder)
+                Liquid.hibFolder = zkParams.hibFolder ? zkParams.hibFolder : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/hibernate/bean";
+
+            
 
             var onCancelCode = "LiquidEditing.onContextMenuClose();";
             var onOkCode = "";
@@ -3179,11 +3274,16 @@ var LiquidEditing = {
                 + "<tr><td>Can update</td><td><input id=\"" + "can_update" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_update + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Can delete</td><td><input id=\"" + "can_delete" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_delete + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Foreign tables</td><td><input id=\"" + "process_foreign_tables" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_foreign_tables + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Hibernate rev.eng.</td><td><input id=\"" + "process_hibernate" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_hibernate + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Add new grid</td><td><input id=\"" + "addGridIfMissing" + "\" class=\"liquidSystemDialogInput\" type=\"checkbox\" " + (Liquid.addNewGridIfMissing ? "checked":"" ) + " "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Project folder</td><td><input id=\"" + "projectFolder" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value=\"" + ( Liquid.projectFolder ) + "\" "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Project folder</td><td><input id=\"" + "hibFolder" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value=\"" + ( Liquid.hibFolder ) + "\" "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Events calback class file</td><td><input id=\"" + "eventsFunctionsFile" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + (Liquid.eventsFunctionsFile) + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Lookup class file</td><td><input id=\"" + "lookupDefinitionFile" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + (Liquid.lookupDefinitionFile) + "' "+onKeyPressCode+"/></td</tr>"
                 + "</table>"
                 + "</br>"
                 + "</br>"
-                + "<p style=\"width:auto; text-align: center\" onclick=\"LiquidEditing.applyExportToZKDialog('" + liquid.controlId + "','" + dlg.id + "')\" class=\"liquidContextMenu-item\">Do export</p>"
+                + "<p style=\"width:auto; text-align: center\" onclick=\"LiquidEditing.applyExportToZKDialog(event, '" + liquid.controlId + "','" + dlg.id + "')\" class=\"liquidContextMenu-item\">Do export</p>"
             ;
         }
 
@@ -3209,6 +3309,7 @@ var LiquidEditing = {
         Liquid.createDatalistByProp(document.getElementById("can_update"), liquid, "S,N");
         Liquid.createDatalistByProp(document.getElementById("can_delete"), liquid, "S,N");
         Liquid.createDatalistByProp(document.getElementById("process_foreign_tables"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("process_hibernate"), liquid, "S,N");
 
 
 
@@ -3221,6 +3322,12 @@ var LiquidEditing = {
 
         menu.appendChild(dlg);
         menu.style.display = "";
+    },
+    onSelectFolder:function(e) {
+        var theFiles = e.target.files;
+        var relativePath = theFiles[0].webkitRelativePath;
+        var folder = relativePath.split("/");
+        document.getElementById("projectFolder").value = folder[0];
     },
     onPanelId:function(obj) {
         Liquid.panelId = obj.value;
@@ -3237,9 +3344,14 @@ var LiquidEditing = {
         var profileData = "/com/" + Liquid.customerName + "/" + Liquid.appName + "/controller/datiPiedinoProfilo-1.incxml";
         document.getElementById("beanClass").value = beanClass;
         document.getElementById("profileData").value = profileData;
+        var eventsFunctionsFile = "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/controller/FunzioniEventi.java";
+        var lookupDefinitionFile = "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/controller/Reference.xml";
+        var hibFolder = "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/hibernate/bean";
+        document.getElementById("eventsFunctionsFile").value = eventsFunctionsFile;
+        document.getElementById("lookupDefinitionFile").value = lookupDefinitionFile;
+        document.getElementById("hibFolder").value = hibFolder;
     },
-    applyExportToZKDialog:function(objId, dlgId) {
-        LiquidEditing.onContextMenuClose();
+    applyExportToZKDialog:function(event, objId, dlgId) {
         if(dlgId) {
             var dlg = document.getElementById(dlgId);
             if(dlg) {
@@ -3286,10 +3398,23 @@ var LiquidEditing = {
                         if(obj) Liquid.can_delete = obj.value;
                         obj = document.getElementById("process_foreign_tables");
                         if(obj) Liquid.process_foreign_tables = obj.value;
+                        obj = document.getElementById("process_hibernate");
+                        if(obj) Liquid.process_hibernate = obj.value;
+
+                        obj = document.getElementById("projectFolder");
+                        if(obj) Liquid.projectFolder = obj.value;
+                        obj = document.getElementById("eventsFunctionsFile");
+                        if(obj) Liquid.eventsFunctionsFile = obj.value;
+                        obj = document.getElementById("lookupDefinitionFile");
+                        if(obj) Liquid.lookupDefinitionFile = obj.value;
+                        obj = document.getElementById("hibFolder");
+                        if(obj) Liquid.hibFolder = obj.value;
+
 
                         // checkup...
                         if (!Liquid.appName){
                             alert("Please define \"Application name\"");
+                            event.stopImmediatePropagation();
                             return;
                         }
 
@@ -3336,14 +3461,19 @@ var LiquidEditing = {
                                 ,can_update:Liquid.can_update === 'S' ? true : false
                                 ,can_delete:Liquid.can_delete === 'S' ? true : false
                                 ,process_foreign_tables:Liquid.process_foreign_tables === 'S' ? true : false
+                                ,process_hibernate:Liquid.process_hibernate === 'S' ? true : false
+                                ,projectFolder:Liquid.projectFolder
+                                ,eventsFunctionsFile:Liquid.eventsFunctionsFile
+                                ,lookupDefinitionFile:Liquid.lookupDefinitionFile
+                                ,hibFolder:Liquid.hibFolder
                             }
 
+                            Liquid.saveUserData("ZKpanel", JSON.stringify(json.zkParams));
 
 
                             var fileName = liquid.controlId+".json";
-                            var tableJsonString = JSON.stringify(json);
 
-                            // TODO: risoluzione larghezze
+                            // risoluzione larghezze
                             if(json.columns) {
                                 for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
                                     var col = json.columns[ic];
@@ -3359,7 +3489,22 @@ var LiquidEditing = {
                                     }
                                 }
                             }
+                            // Aggiunta info sulle foreign table
+                            if(liquid.foreignTables) {
+                                for (let ic = 0; ic < liquid.foreignTables.length; ic++) {
+                                    if (liquid.foreignTables[ic].controlId) {
+                                        if (liquid.foreignTables[ic].sourceForeignTablesIndexes1B > 0) {
+                                            json.foreignTables[liquid.foreignTables[ic].sourceForeignTablesIndexes1B-1].controlId = liquid.foreignTables[ic].controlId;
+                                            json.foreignTables[liquid.foreignTables[ic].sourceForeignTablesIndexes1B-1].type = liquid.foreignTables[ic].type;
+                                        }
+                                    }
+                                }
+                            }
+
                             json.token = token; // need current token
+
+                            var tableJsonString = JSON.stringify(json);
+
                             Liquid.registerOnUnloadPage();
                             var xhr = new XMLHttpRequest();
                             if(Liquid.wait_for_xhr_ready(liquid), "export to ZK") {
@@ -3426,6 +3571,7 @@ var LiquidEditing = {
                 }
             }
         }
+        LiquidEditing.onContextMenuClose();
     },
     onSaveToServer:function(obj) {
         return LiquidEditing.onSaveTo(obj, false, true);
