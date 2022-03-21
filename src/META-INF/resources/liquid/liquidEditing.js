@@ -199,7 +199,7 @@ var LiquidEditing = {
             var grid_name = isDef(LiquidEditing.lastGridName) ? LiquidEditing.lastGridName : null;
             if(!grid_name) grid_name = Liquid.lang === 'eng' ? "Grid" : "Dettaglio";
 
-            var gridName = prompt("Enter grid name", grid_name+"" + (liquid.tableJson.grids ? (" "+(liquid.tableJson.grids.length + 1)) : ""));
+            var gridName = prompt("Control '"+liquid.controlId+"' - Enter grid name", grid_name+"" + (liquid.tableJson.grids ? (" "+(liquid.tableJson.grids.length + 1)) : ""));
             if (gridName) {
                 LiquidEditing.lastGridName = gridName;
                 var gridNumColumns = prompt("Enter grid no. columns", "1");
@@ -3277,7 +3277,7 @@ var LiquidEditing = {
                 + "<tr><td>Hibernate rev.eng.</td><td><input id=\"" + "process_hibernate" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_hibernate + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Add new grid</td><td><input id=\"" + "addGridIfMissing" + "\" class=\"liquidSystemDialogInput\" type=\"checkbox\" " + (Liquid.addNewGridIfMissing ? "checked":"" ) + " "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Project folder</td><td><input id=\"" + "projectFolder" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value=\"" + ( Liquid.projectFolder ) + "\" "+onKeyPressCode+"/></td</tr>"
-                + "<tr><td>Project folder</td><td><input id=\"" + "hibFolder" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value=\"" + ( Liquid.hibFolder ) + "\" "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Hibernate folder</td><td><input id=\"" + "hibFolder" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value=\"" + ( Liquid.hibFolder ) + "\" "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Events calback class file</td><td><input id=\"" + "eventsFunctionsFile" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + (Liquid.eventsFunctionsFile) + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Lookup class file</td><td><input id=\"" + "lookupDefinitionFile" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + (Liquid.lookupDefinitionFile) + "' "+onKeyPressCode+"/></td</tr>"
                 + "</table>"
@@ -3426,6 +3426,18 @@ var LiquidEditing = {
                         if(Liquid.addNewGridIfMissing) {
                             if (!isDef(liquid.tableJson.grids) || liquid.tableJson.grids.length === 0) {
                                 LiquidEditing.createNewGrid(liquid, 0, "newGrid", null);
+                            }
+                            if(liquid.foreignTables) {
+                                for (let ic = 0; ic < liquid.foreignTables.length; ic++) {
+                                    if (liquid.foreignTables[ic].controlId) {
+                                        var ftLiquid = Liquid.getLiquid(liquid.foreignTables[ic].controlId);
+                                        if(ftLiquid) {
+                                            if (!isDef(ftLiquid.tableJson.grids) || ftLiquid.tableJson.grids.length === 0) {
+                                                LiquidEditing.createNewGrid(ftLiquid, 0, "newGrid", null);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 

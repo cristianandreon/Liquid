@@ -4612,7 +4612,7 @@ public class workspace {
         if (res != null) {
             JSONObject resHibJson = new JSONObject(res);
             if(resHibJson.getInt("result") < 0) {
-                System.err.println(func+" error : " + utility.base64Encode(resHibJson.getString("error")));
+                System.err.println(func+" error : " + utility.base64Decode(resHibJson.getString("error")));
             } else {
                 return true;
             }
