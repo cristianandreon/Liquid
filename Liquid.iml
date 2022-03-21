@@ -26,9 +26,8 @@
           <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/src/META-INF/resources/web.xml" />
         </descriptors>
         <webroots>
-          <root url="file://$MODULE_DIR$/src/META-INF/resources" relative="/" />
+          <root url="file://$MODULE_DIR$/src/META-INF/resources/liquid" relative="/liquid" />
         </webroots>
-        <sourceRoots />
       </configuration>
     </facet>
   </component>
@@ -38,7 +37,6 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/META-INF/resources" type="java-resource" />
       <excludeFolder url="file://$MODULE_DIR$/out" />
       <excludeFolder url="file://$MODULE_DIR$/nbproject" />
     </content>

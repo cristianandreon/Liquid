@@ -158,8 +158,10 @@ public class db {
             return false;
         }
 
-        static public String getAlias(ArrayList<LeftJoinMap> list, String foreignTable) {
+        static public String getAlias(ArrayList<LeftJoinMap> list, String foreignTable) throws Exception {
             if (list != null) {
+                if(foreignTable == null || foreignTable.isEmpty())
+                    throw new Exception("Invalid foreignTable");
                 for (LeftJoinMap item : list) {
                     if (item.foreignTable.equalsIgnoreCase(foreignTable)) {
                         return item.alias;
@@ -2130,20 +2132,21 @@ public class db {
                             filterName = filterName;
                         }
                     } else if (colParts.length > 1) {
-                        filterTable = colParts[0];
-                        if (filterTable != null) {
+                        String colTable = colParts[0].replace("\"", "");
+                        if (colTable != null) {
                             filterName = colParts[1];
-                            if (!filterTable.equalsIgnoreCase(table)) {
+                            if (!colTable.equalsIgnoreCase(table)) {
                                 if (isPostgres || isOracle) {
                                     // mette l'alias
-                                    String colAlias = (filterTable != null ? LeftJoinMap.getAlias(leftJoinsMap, filterTable) : tableIdString + table + tableIdString) + "." + itemIdString + colParts[1] + itemIdString;
+                                    String colAlias = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : tableIdString + table + tableIdString) + "." + itemIdString + colParts[1] + itemIdString;
                                     filterNameAliased = colAlias != null ? colAlias : filterName;
                                 } else {
                                 }
-                                filterTable = "";
+                                filterTable = null;
                             } else {
-                                // OK con postgres
+                                // OK con postgres e oracle
                                 filterTable = tableIdString + table + tableIdString;
+                                filterNameAliased = filterName;
                             }
                         }
                         for (int ic = 0; ic < cols.length(); ic++) {
@@ -2153,6 +2156,9 @@ public class db {
                                 colName = col.getString("name");
                                 if (filterFullName.equalsIgnoreCase(colName)) {
                                     bFoundCol = true;
+                                    // mette l'alias
+                                    String colAlias = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : tableIdString + table + tableIdString) + "." + itemIdString + colParts[1] + itemIdString;
+                                    filterNameAliased = colAlias != null ? colAlias : filterName;
                                     break;
                                 }
                             }
@@ -2164,6 +2170,8 @@ public class db {
                                     String colName = col.getString("name");
                                     if (filterName.equalsIgnoreCase(colName)) {
                                         bFoundCol = true;
+                                        filterTable = null;
+                                        filterNameAliased = filterName;
                                         break;
                                     }
                                 }
@@ -2297,6 +2305,8 @@ public class db {
                         if ("NULL".equalsIgnoreCase(filterValue)) {
                             preFix = " ";
                             postFix = "";
+                            filterValue = "NULL";
+                            bUseParams = false;
                         }
                     }
 

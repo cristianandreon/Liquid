@@ -9671,7 +9671,8 @@ var Liquid = {
                     var value = nodes[i].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                     if (!isDef(liquid.selection.exclude) || (isDef(liquid.selection.exclude) && !liquid.selection.exclude.contains(value))) {
                         if (idsSelected.length > 0) idsSelected += ",";
-                        if (typeof value === 'string') value = value.replace(/"/g, "\\\"");
+                        if (typeof value === 'string') value = value.replace(/\/"/g, "\"");
+                        if (typeof value === 'string') value = value.replaceAll("\\\\\"", "\"");
                         if (value)
                             idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
                     }
@@ -9680,7 +9681,8 @@ var Liquid = {
                 for (var i = 0; i < liquid.selection.exclude.length; i++) {
                     if (idsUnselected.length > 0) idsUnselected += ",";
                     var value = liquid.selection.exclude[i];
-                    if (typeof value === 'string') value = value.replace(/"/g, "\\\"");
+                    if (typeof value === 'string') value = value.replace(/\/"/g, "\"");
+                    if (typeof value === 'string') value = value.replaceAll("\\\\\"", "\"");
                     if (value)
                         idsUnselected += (value.startsWith('"') ? "" : '"') + +value + (value.endsWith('"') ? "" : '"');
                 }
@@ -9689,7 +9691,8 @@ var Liquid = {
                 for (var i = 0; i < liquid.selection.include.length; i++) {
                     if (idsSelected.length > 0) idsSelected += ",";
                     var value = liquid.selection.include[i];
-                    if (typeof value === 'string') value = value.replace(/"/g, "\\\"");
+                    if (typeof value === 'string') value = value.replace(/\/"/g, "\"");
+                    if (typeof value === 'string') value = value.replaceAll("\\\\\"", "\"");
                     if (value)
                         idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
                 }
@@ -20204,16 +20207,20 @@ var Liquid = {
                 if(isDef(paramsObject)) xhr.params = paramsObject;
                 if(isDef(onReadyStateChange)) xhr.onReadyStateChange = onReadyStateChange;
 
-                if(reason.indexOf("command ") >= 0) {
-                    xhr.setRequestHeader("Accept-Encoding", "none");
-                }
-
                 xhr.open(method, url, async);
                 if(async) {
                     xhr.onreadystatechange = function() {
                         return onReadyStateChange(thisLiquid, xhr);
                     }
                 }
+                if(reason.indexOf("command ") >= 0) {
+                    try {
+                        xhr.setRequestHeader("Accept-Encoding", "none");
+                    } catch(e) {
+                        console.error(e)
+                    }
+                }
+
                 xhr.send(data);
                 // Liquid.release_xhr(liquid);
                 if(!async) {
