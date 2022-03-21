@@ -1183,6 +1183,8 @@ public class metadata {
                     for (int i = 0; i < foreignKeys.size(); i++) {
                         ForeignKey foreignKey = foreignKeys.get(i);
                         if (foreignKey != null) {
+                            // TODO : lettura colonne su foreignKey.foreignTable e set del campo desrittpre
+                            String descriptor = "";
                             result += nRec > 0 ? "," : "";
                             result += "{";
                             result += "\"" + (bUserFieldIdentificator ? "1" : "ID") + "\":\"" + (nRec + 1) + "\"";
@@ -1191,6 +1193,8 @@ public class metadata {
                             result += ",\"" + (bUserFieldIdentificator ? "4" : "FOREIGN_TABLE") + "\":\"" + foreignKey.foreignTable + "\"";
                             result += ",\"" + (bUserFieldIdentificator ? "5" : "FOREIGN_COLUMN") + "\":\"" + utility.arrayToString(foreignKey.foreignColumns.toArray(), null, null, ",") + "\"";
                             result += ",\"" + (bUserFieldIdentificator ? "6" : "TYPE") + "\":\""+foreignKey.type+"\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "7" : "USEAS") + "\":\""+("REFERENCE".equalsIgnoreCase(foreignKey.type) ? "FOREIGN TABLE" : "LOOKUP")+"\"";
+                            result += ",\"" + (bUserFieldIdentificator ? "8" : "DESCRIPTOR") + "\":\""+descriptor+"\"";
                             result += "}";
                             nRec++;
                         }

@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.02
+// Liquid ver.2.03
 //
 //  First update 04-01-2020 - Last update 10-03-2022
 //
@@ -6971,6 +6971,10 @@ var Liquid = {
                 if (newValue !== null) {
                     try {
                         inputObj.value = newValue;
+                        // Set the Id value if lookupIdCol not defined
+                        if(!lookupIdCol) {
+                            inputObj.setAttribute('valueid', newValueId);
+                        }
                         var gridLink = (inputObj.dataset !== 'undefined' ? inputObj.dataset.gridlink : null);
                         var layoutLink = (inputObj.dataset !== 'undefined' ? inputObj.dataset.layoutlink : null);
                         var links = [gridLink, layoutLink];
@@ -7042,6 +7046,7 @@ var Liquid = {
                                 }
                             }
                         }
+                        // Control as lookup ?
                         if (isDef(liquid.sourceData.idColumnLinkedFields)) { // take care about id in the dataset
                             for (var i = 0; i < liquid.sourceData.idColumnLinkedFields.length; i++) {
                                 try {
@@ -15686,7 +15691,7 @@ var Liquid = {
                         datalist.appendChild(opt);
                     }
                 } else {
-                    if(!Array.isArray(prop)) {
+                    if(Array.isArray(prop)) {
                         for (let i = 0; i < prop.length; i++) {
                             var opt = document.createElement('option');
                             opt.text = prop[i];
@@ -15694,7 +15699,7 @@ var Liquid = {
                         }
                     } else {
                         var nameItems = prop.split(",");
-                        if(nameItems.length > 2) {
+                        if(nameItems.length > 0) {
                             for (let i = 0; i < nameItems.length; i++) {
                                 var opt = document.createElement('option');
                                 opt.text = nameItems[i];
@@ -15707,6 +15712,10 @@ var Liquid = {
                 }
             }
             obj.setAttribute('list', datalistId);
+            obj.onmousedown=function(e) { this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value ='' };
+            obj.onblur=function(e) { if(!this.value) this.value=this.placeholder; };
+            obj.autocomplete='off';
+
             // targetObj.focus();
             // targetObj.click();
             // targetObj.select();
@@ -18414,6 +18423,8 @@ var Liquid = {
                 }
             }
             if(json) {
+                // Store the controlId
+                json.controlId = lookupControlId;
                 if(liquid) {
                     var containerObj = null, containerObjId = null;
                     if(typeof enviroment === 'undefined' || enviroment === null) enviroment = window;
@@ -19470,8 +19481,14 @@ var Liquid = {
                 if(glLiquidDB) {
                     glLiquidDB.transaction(function (tx) {
                         tx.executeSql("SELECT * FROM USERDATA WHERE field='"+fieldB64+"'", [], function (tx, results) {
-                            for (var i=0; i<results.rows.length; i++) {
-                                Liquid.readUserDataExec( results.rows.item(i).id, results.rows.item(i).field, results.rows.item(i).value, results.rows.item(i).note, results.rows.item(i).date, callback );
+                            if(results.rows && results.rows.length) {
+                                for (var i = 0; i < results.rows.length; i++) {
+                                    Liquid.readUserDataExec(results.rows.item(i).id, results.rows.item(i).field, results.rows.item(i).value, results.rows.item(i).note, results.rows.item(i).date, callback);
+                                }
+                            } else{
+                                if(callback) {
+                                    callback(atob(field), null, null, null);
+                                }
                             }
                         }, null);
                     });

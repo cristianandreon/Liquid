@@ -157,8 +157,9 @@ public class Messagebox {
 
                         // NON RISOLVE
                         if(deliveryMode == 0) {
-                            threadSession.response.setBufferSize(messageJson.length());
+                            // threadSession.response.setBufferSize(messageJson.length());
                         }
+
                         if(deliveryMode == 2) {
                             int bsize = threadSession.response.getBufferSize();
                             while(messageJson.length() < bsize) {
@@ -177,7 +178,6 @@ public class Messagebox {
                             // OK : Needed so secure senda data to client : but can send back dialogbox once
                             writer.close();
                         }
-
                     }
 
                     // web socket

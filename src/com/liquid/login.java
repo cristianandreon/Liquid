@@ -2253,8 +2253,8 @@ public class login {
     }        
 
     static public boolean compareIp( String IP1, String IP2 ) throws Exception {
-        String [] ip1Parts = IP1.split(".");
-        String [] ip2Parts = IP2.split(".");
+        String [] ip1Parts = IP1.split("\\.");
+        String [] ip2Parts = IP2.split("\\.");
         
         for(int i=0; i<4; i++) {
             if(ip1Parts.length >= i+1) {
