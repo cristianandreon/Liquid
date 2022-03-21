@@ -255,7 +255,7 @@ public class workspace {
                     } catch (Exception ex) {
                         return "{\"result\":-1,\"error\":\"" + utility.base64Encode(ex.getLocalizedMessage() + " - writing:" + insideProjectFileName) + "\"}";
                     }
-                    Logger.getLogger(ZKpanels.class.getName()).log(Level.INFO, "File exported to " + insideProjectFileName + "");
+                    Logger.getLogger(workspace.class.getName()).log(Level.INFO, "File exported to " + insideProjectFileName + "");
                     return "{\"result\":1,\"message\":\"" + utility.base64Encode("File exported to : </br></br><b>" + insideProjectFileName + "</b>") + "\"}";
                 }
 
