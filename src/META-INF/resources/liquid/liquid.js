@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.03
+// Liquid ver.2.04
 //
 //  First update 04-01-2020 - Last update 10-03-2022
 //
@@ -674,6 +674,7 @@ class LiquidCtrl {
                                 if(!isPhantomNode) {
                                     Liquid.processNodeSelected(liquid, event.node, event.node.isSelected());
                                 }
+                                Liquid.updateSelectionData(liquid);
                                 if(liquid.tableJson.rowDeselection === true || liquid.gridOptions.rowSelection === "multiple") {
                                     Liquid.onEvent(liquid, "onRowUnSelected", event.data);
                                     liquid.lastSelectedId = null;
@@ -3330,14 +3331,31 @@ var Liquid = {
         }
         // Root object's property
         for (var i = 1; i < nameItems.length; i++) {
-            targetObj = (typeof targetObj[nameItems[i]] !== 'undefined') ? targetObj[nameItems[i]] : targetObj;
-            if (typeof targetObj === 'string') {
-                if (targetObj.trim().startsWith("{")) {
+            var newTargetObj = (typeof targetObj[nameItems[i]] !== 'undefined') ? targetObj[nameItems[i]] : null;
+            if(!newTargetObj) {
+                // prop not found
+                if (targetObj instanceof LiquidCtrl) {
+                    // search on current record by field
+                    var field = Liquid.getField(targetObj, nameItems[i]);
+                    if(field) {
+                        newTargetObj = field;
+                    }
+                }
+                if(!newTargetObj) {
+                    console.error("ERROR property " + nameItems[i] + " not found in object");
+                    return null;
+                } else {
+                    targetObj = newTargetObj;
+                }
+            } else if (typeof newTargetObj === 'string') {
+                if (newTargetObj.trim().startsWith("{")) {
                     try {
-                        targetObj = JSON.parse(targetObj);
+                        targetObj = JSON.parse(newTargetObj);
                     } catch (e) {
                         console.error(e);
                     }
+                } else {
+                    targetObj = newTargetObj;
                 }
             }
         }

@@ -23,9 +23,10 @@
         { "name":"DECIMAL_DIGITS", "label":"Decimal digits"},
         { "name":"NULLABLE", "label":"Nullable"}
   ]
+  ,"mode":"client"
 }
 , "preFilters":[]
-, "operation":[] 
+, "operation":[]
 ,"mode":"popup"
 ,"modless":true
 ,"isSystem":true

@@ -10,6 +10,7 @@ import org.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspWriter;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -185,6 +186,22 @@ public class ZKpanels {
                 lookupCodeToFile = true;
             }
         }
+
+
+
+        if (process_hibernate) {
+            try {
+                String hibProjFolder = projectFolder;
+                if(!hibProjFolder.endsWith(File.separator) && !hibFolder.startsWith(File.separator))
+                    hibProjFolder += File.separator;
+                hibProjFolder += hibFolder;
+                workspace.check_result(HibernateRevEng.reverse_eng(request, json, beanClass, hibProjFolder, zkParams), "ZKpanels");
+            } catch (Throwable e) {
+                System.err.println(e.getMessage());
+            }
+        }
+
+
 
 
         if(parentPanelId == null) {
@@ -545,7 +562,7 @@ public class ZKpanels {
                                     lookupReferenceCode = "<!-- START Lookup in "+panelId+"-->\n";
                                 }
 
-                                lookupReferenceCode = ""+
+                                lookupReferenceCode += ""+
                                         "<xmlreference category='template' entityLookup=\"" + lookupBean + "\" >\n" +
                                         "    <tipoControllo>" + lookupType + "</tipoControllo>\n" +
                                         "    <proprietaCodiceLookup>" + lookupCodeField + "</proprietaCodiceLookup>\n" +
@@ -755,6 +772,11 @@ public class ZKpanels {
                             String label = target_col.has("label") ? target_col.getString("label") : name;
                             String getMethod = nameSpacer.getGetter(nameSpacer.DB2Hibernate(name));
                             if (target_col.has("lookup")) {
+                                String lookupFieldName = name;
+                                if (target_col.has("hibPropName")) {
+                                    lookupFieldName = target_col.getString("hibPropName");
+                                    getMethod = nameSpacer.getGetter(nameSpacer.DB2Hibernate(lookupFieldName));
+                                }
                                 fncCode += ""
                                         + "\t\tif (" + beanVarName + "." + getMethod + "() == null) {\n"
                                         + "errori.add(\"Attenzione: necessario definire il campo \\\"" + label + "\\\"\");\n"
@@ -1008,15 +1030,6 @@ public class ZKpanels {
                     + "</page>\n\n"
             );
         }
-
-        if (process_hibernate) {
-            try {
-                workspace.check_result(HibernateRevEng.reverse_eng(request, json, beanClass, hibFolder != null && !hibFolder.isEmpty() ? hibFolder : projectFolder), "ZKpanels");
-            } catch (Throwable e) {
-                System.err.println(e.getMessage());
-            }
-        }
-
 
         return zkFileContent;
     }
