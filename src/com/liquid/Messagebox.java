@@ -155,12 +155,15 @@ public class Messagebox {
                         */
 
 
-                        // NON RISOLVE
                         if(deliveryMode == 0) {
+                            // IN TEST
+                            messageJson += "<Liquid>\n\n</Liquid>";
+                            // NON RISOLVE
                             // threadSession.response.setBufferSize(messageJson.length());
                         }
 
                         if(deliveryMode == 2) {
+                            // NON RISOLVE
                             int bsize = threadSession.response.getBufferSize();
                             while(messageJson.length() < bsize) {
                                 messageJson += "<Liquid></Liquid>";
@@ -171,8 +174,15 @@ public class Messagebox {
                         writer.print(messageJson);
                         writer.flush();
 
-                        // NON RISOLVE
-                        threadSession.response.flushBuffer();
+
+                        try {
+                            // IN TEST
+                            threadSession.response.setCharacterEncoding("UTF-8");
+                            // NON RISOLVE
+                            threadSession.response.flushBuffer();
+                        } catch (Exception e) {
+                            System.err.println(e);
+                        }
 
                         if(deliveryMode == 1) {
                             // OK : Needed so secure senda data to client : but can send back dialogbox once
