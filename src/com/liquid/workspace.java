@@ -4608,7 +4608,7 @@ public class workspace {
      * @param func
      * @return
      */
-    static boolean check_result(String res, String func) {
+    public static boolean check_result(String res, String func) {
         if (res != null) {
             JSONObject resHibJson = new JSONObject(res);
             if(resHibJson.getInt("result") < 0) {

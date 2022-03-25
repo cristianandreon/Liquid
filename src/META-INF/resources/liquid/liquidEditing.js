@@ -3220,17 +3220,20 @@ var LiquidEditing = {
                 Liquid.use_asset = "N";
             if (!Liquid.process_foreign_tables)
                 Liquid.process_foreign_tables = "S";
-            if (!Liquid.process_hibernate)
-                Liquid.process_hibernate = "S";
             if (!Liquid.can_insert)
                 Liquid.can_insert = "S";
             if (!Liquid.can_update)
                 Liquid.can_update = "S";
             if (!Liquid.can_delete)
                 Liquid.can_delete = "S";
-
             if(!Liquid.addNewGridIfMissing)
                 Liquid.addNewGridIfMissing = true;
+            if (!Liquid.process_hibernate)
+                Liquid.process_hibernate = "S";
+            if(!Liquid.process_events_callback)
+                Liquid.process_events_callback = 'S';
+            if(Liquid.process_lookup_code)
+                Liquid.process_lookup_code = 'S';
 
             if(!Liquid.projectFolder)
                 Liquid.projectFolder = zkParams.projectFolder ? zkParams.projectFolder : "";
@@ -3241,13 +3244,17 @@ var LiquidEditing = {
             if(!Liquid.hibFolder)
                 Liquid.hibFolder = zkParams.hibFolder ? zkParams.hibFolder : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/hibernate/bean";
 
-            
+
+
 
             var onCancelCode = "LiquidEditing.onContextMenuClose();";
             var onOkCode = "";
             var onKeyPressCode = "onkeypress=\"if(event.keyCode === 13) {"+onOkCode+"} else if(event.keyCode === 13) { "+onCancelCode+" } \"";
             var onPanelIdCode = "onchange=\"LiquidEditing.onPanelId(this);\" onkeyup=\"LiquidEditing.onPanelId(this);\" onpaste=\"LiquidEditing.onPanelId(this);\"";
             var onPanelCustomerOrAppCode = "onchange=\"LiquidEditing.onPanelCustomerOrApp(this);\" onkeyup=\"LiquidEditing.onPanelCustomerOrApp(this);\" onpaste=\"LiquidEditing.onPanelCustomerOrApp(this);\"";
+            var hibRevEngCode = "onchange=\"LiquidEditing.onHibRevEng(this);\" onkeyup=\"LiquidEditing.onHibRevEng(this);\" onpaste=\"LiquidEditing.onPanelId(this);\"";
+            var eventCallbackCode = "onchange=\"LiquidEditing.onEventCallback(this);\" onkeyup=\"LiquidEditing.onHibRevEng(this);\" onpaste=\"LiquidEditing.onEventCallback(this);\"";
+            var lookuoCode = "onchange=\"LiquidEditing.onLookuoCode(this);\" onkeyup=\"LiquidEditing.onLookuoCode(this);\" onpaste=\"LiquidEditing.onEventCallback(this);\"";
 
             dlg.innerHTML =
                 "<div class=\"liquidEditorDialog-content\">"
@@ -3274,11 +3281,13 @@ var LiquidEditing = {
                 + "<tr><td>Can update</td><td><input id=\"" + "can_update" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_update + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Can delete</td><td><input id=\"" + "can_delete" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.can_delete + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Foreign tables</td><td><input id=\"" + "process_foreign_tables" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_foreign_tables + "' "+onKeyPressCode+"/></td</tr>"
-                + "<tr><td>Hibernate rev.eng.</td><td><input id=\"" + "process_hibernate" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_hibernate + "' "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Add new grid</td><td><input id=\"" + "addGridIfMissing" + "\" class=\"liquidSystemDialogInput\" type=\"checkbox\" " + (Liquid.addNewGridIfMissing ? "checked":"" ) + " "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Project folder</td><td><input id=\"" + "projectFolder" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value=\"" + ( Liquid.projectFolder ) + "\" "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Henerate hibernate rev.eng.</td><td><input id=\"" + "process_hibernate" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_hibernate + "' "+onKeyPressCode+hibRevEngCode+"/></td</tr>"
                 + "<tr><td>Hibernate folder</td><td><input id=\"" + "hibFolder" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value=\"" + ( Liquid.hibFolder ) + "\" "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Generate events callback</td><td><input id=\"" + "process_events_callback" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_hibernate + "' "+onKeyPressCode+eventCallbackCode+"/></td</tr>"
                 + "<tr><td>Events calback class file</td><td><input id=\"" + "eventsFunctionsFile" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + (Liquid.eventsFunctionsFile) + "' "+onKeyPressCode+"/></td</tr>"
+                + "<tr><td>Generate lookup code</td><td><input id=\"" + "process_lookup_code" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_hibernate + "' "+onKeyPressCode+lookuoCode+"/></td</tr>"
                 + "<tr><td>Lookup class file</td><td><input id=\"" + "lookupDefinitionFile" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + (Liquid.lookupDefinitionFile) + "' "+onKeyPressCode+"/></td</tr>"
                 + "</table>"
                 + "</br>"
@@ -3310,6 +3319,11 @@ var LiquidEditing = {
         Liquid.createDatalistByProp(document.getElementById("can_delete"), liquid, "S,N");
         Liquid.createDatalistByProp(document.getElementById("process_foreign_tables"), liquid, "S,N");
         Liquid.createDatalistByProp(document.getElementById("process_hibernate"), liquid, "S,N");
+
+        Liquid.createDatalistByProp(document.getElementById("process_events_callback"), liquid, "S,N");
+        Liquid.createDatalistByProp(document.getElementById("process_lookup_code"), liquid, "S,N");
+
+
 
 
 
@@ -3350,6 +3364,30 @@ var LiquidEditing = {
         document.getElementById("eventsFunctionsFile").value = eventsFunctionsFile;
         document.getElementById("lookupDefinitionFile").value = lookupDefinitionFile;
         document.getElementById("hibFolder").value = hibFolder;
+    },
+    onHibRevEng:function(obj) {
+        var disabled = true;
+        if(obj.value == 'S') {
+            disabled = false;
+        }
+        document.getElementById('hibFolder').readOnly = disabled;
+        document.getElementById('hibFolder').disabled = disabled;
+    },
+    onEventCallback:function(obj) {
+        var disabled = true;
+        if(obj.value == 'S') {
+            disabled = false;
+        }
+        document.getElementById('eventsFunctionsFile').readOnly = disabled;
+        document.getElementById('eventsFunctionsFile').disabled = disabled;
+    },
+    onLookuoCode:function(obj) {
+        var disabled = true;
+        if(obj.value == 'S') {
+            disabled = false;
+        }
+        document.getElementById('lookupDefinitionFile').readOnly = disabled;
+        document.getElementById('lookupDefinitionFile').disabled = disabled;
     },
     applyExportToZKDialog:function(event, objId, dlgId) {
         if(dlgId) {
@@ -3410,6 +3448,10 @@ var LiquidEditing = {
                         obj = document.getElementById("hibFolder");
                         if(obj) Liquid.hibFolder = obj.value;
 
+                        obj = document.getElementById("process_events_callback");
+                        if(obj) Liquid.process_events_callback = obj.value;
+                        obj = document.getElementById("process_lookup_code");
+                        if(obj) Liquid.process_lookup_code = obj.value;
 
                         // checkup...
                         if (!Liquid.appName){

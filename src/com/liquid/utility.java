@@ -82,7 +82,7 @@ public class utility {
     }
 
     static public boolean equals(Object o1, Object o2) {
-        if(o1 == null && o2 != null) {
+        if (o1 == null && o2 != null) {
             return true;
         } else {
             return o1.equals(o2);
@@ -152,9 +152,9 @@ public class utility {
     }
 
 
-     static public String base64Decode(String data) {
+    static public String base64Decode(String data) {
         try {
-            if(data != null)
+            if (data != null)
                 return base64Decode(data.getBytes());
         } catch (Throwable th) {
             System.err.println("Error:" + th.getLocalizedMessage() + "Please try adding apache commons-codes.jar to your project");
@@ -260,11 +260,11 @@ public class utility {
      * <p>
      * This method return a Field of the property from a bean
      *
-     * @param bean the bean (Object)
-     * @param property the Field of the property to get (Field)
+     * @param bean        the bean (Object)
+     * @param property    the Field of the property to get (Field)
      * @param exaclyMatch if false strip by $ and check only the parts defined
-     * in the param property (boolean) ex.: searching for 'foreigntTable' the
-     * property named 'foreigntTable$foreignColumn$column' is returned as found
+     *                    in the param property (boolean) ex.: searching for 'foreigntTable' the
+     *                    property named 'foreigntTable$foreignColumn$column' is returned as found
      * @param onlyObject
      * @return the Field found or null
      * @see utility
@@ -350,20 +350,19 @@ public class utility {
         return null;
     }
      */
+
     /**
      * <h3>Set the property of a bean</h3>
      * <p>
      * This method set a property from a bean
      *
-     * @param bean the bean (Object)
+     * @param bean     the bean (Object)
      * @param property the name of the property to get (String)
-     * @param value the new value to set
-     * 
+     * @param value    the new value to set
      * @throws java.beans.IntrospectionException
      * @throws java.lang.NoSuchFieldException
      * @throws java.lang.reflect.InvocationTargetException
      * @throws java.lang.IllegalAccessException
-     *
      * @see utility
      */
     static public void set(Object bean, String property, Object value) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
@@ -383,12 +382,12 @@ public class utility {
                 if (propType.equals(Boolean.class) || propType.equals(boolean.class)) {
                     if (value instanceof String) {
                         if (value != null && !((String) value).isEmpty() && (
-                                        "on".equalsIgnoreCase((String) value) ||
-                                                "true".equalsIgnoreCase((String) value) ||
-                                                "1".equalsIgnoreCase((String) value) ||
-                                                "s".equalsIgnoreCase((String) value) ||
-                                                "t".equalsIgnoreCase((String) value)
-                        ) ) {
+                                "on".equalsIgnoreCase((String) value) ||
+                                        "true".equalsIgnoreCase((String) value) ||
+                                        "1".equalsIgnoreCase((String) value) ||
+                                        "s".equalsIgnoreCase((String) value) ||
+                                        "t".equalsIgnoreCase((String) value)
+                        )) {
                             field.set(bean, true);
                         } else {
                             field.set(bean, false);
@@ -396,31 +395,31 @@ public class utility {
                     } else if (value instanceof Boolean) {
                         field.set(bean, (Boolean) value);
                     } else if (value instanceof Integer) {
-                        if ( value != null && ((Integer)value) > 0) {
+                        if (value != null && ((Integer) value) > 0) {
                             field.set(bean, true);
                         } else {
                             field.set(bean, false);
                         }
                     } else if (value instanceof Long) {
-                        if ( value != null && ((Long)value) > 0) {
+                        if (value != null && ((Long) value) > 0) {
                             field.set(bean, true);
                         } else {
                             field.set(bean, false);
                         }
                     } else if (value instanceof Float) {
-                        if ( value != null && ((Float)value) > 0.0f) {
+                        if (value != null && ((Float) value) > 0.0f) {
                             field.set(bean, true);
                         } else {
                             field.set(bean, false);
                         }
                     } else if (value instanceof Double) {
-                        if ( value != null && ((Double)value) > 0.0f) {
+                        if (value != null && ((Double) value) > 0.0f) {
                             field.set(bean, true);
                         } else {
                             field.set(bean, false);
                         }
                     } else if (value instanceof BigDecimal) {
-                        if ( value != null && ((BigDecimal)value).intValue() > 0) {
+                        if (value != null && ((BigDecimal) value).intValue() > 0) {
                             field.set(bean, true);
                         } else {
                             field.set(bean, false);
@@ -430,14 +429,14 @@ public class utility {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
                             field.set(bean, new Integer(0));
-                        } else if ("on".equalsIgnoreCase((String)value) || "true".equalsIgnoreCase((String)value) || "y".equalsIgnoreCase((String)value) ||  "n".equalsIgnoreCase((String)value)) {
+                        } else if ("on".equalsIgnoreCase((String) value) || "true".equalsIgnoreCase((String) value) || "y".equalsIgnoreCase((String) value) || "n".equalsIgnoreCase((String) value)) {
                             field.set(bean, new Integer(1));
-                        } else if ("off".equalsIgnoreCase((String)value) || "false".equalsIgnoreCase((String)value) || "n".equalsIgnoreCase((String)value)) {
+                        } else if ("off".equalsIgnoreCase((String) value) || "false".equalsIgnoreCase((String) value) || "n".equalsIgnoreCase((String) value)) {
                             field.set(bean, new Integer(0));
                         } else {
                             try {
-                                if(value != null) {
-                                    if(!"null".equalsIgnoreCase(String.valueOf(value))) {
+                                if (value != null) {
+                                    if (!"null".equalsIgnoreCase(String.valueOf(value))) {
                                         field.set(bean, Integer.parseInt((String) value));
                                     } else {
                                         field.set(bean, null);
@@ -445,7 +444,7 @@ public class utility {
                                 } else {
                                     field.set(bean, null);
                                 }
-                            } catch(Exception e) {
+                            } catch (Exception e) {
                                 Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
                             }
                         }
@@ -455,7 +454,7 @@ public class utility {
                 } else if (propType.equals(Long.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
-                            if(!"null".equalsIgnoreCase(String.valueOf(value))) {
+                            if (!"null".equalsIgnoreCase(String.valueOf(value))) {
                                 field.set(bean, new Long(0));
                             } else {
                                 field.set(bean, null);
@@ -463,7 +462,8 @@ public class utility {
                         } else {
                             try {
                                 field.set(bean, Long.parseLong((String) value));
-                            } catch(Exception e) {}
+                            } catch (Exception e) {
+                            }
                         }
                     } else if (value instanceof Object) {
                         field.set(bean, (Long) value);
@@ -471,7 +471,7 @@ public class utility {
                 } else if (propType.equals(Float.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
-                            if(!"null".equalsIgnoreCase(String.valueOf(value))) {
+                            if (!"null".equalsIgnoreCase(String.valueOf(value))) {
                                 field.set(bean, new Float(0.0f));
                             } else {
                                 field.set(bean, null);
@@ -479,7 +479,8 @@ public class utility {
                         } else {
                             try {
                                 field.set(bean, Float.valueOf(((String) value).replaceAll(",", ".")));
-                            } catch(Exception e) {}
+                            } catch (Exception e) {
+                            }
                         }
                     } else if (value instanceof Object) {
                         field.set(bean, (Float) value);
@@ -487,7 +488,7 @@ public class utility {
                 } else if (propType.equals(java.lang.Double.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
-                            if(!"null".equalsIgnoreCase(String.valueOf(value))) {
+                            if (!"null".equalsIgnoreCase(String.valueOf(value))) {
                                 field.set(bean, new Double(0.0));
                             } else {
                                 field.set(bean, null);
@@ -495,7 +496,8 @@ public class utility {
                         } else {
                             try {
                                 field.set(bean, Double.valueOf(((String) value).replaceAll(",", ".")));
-                            } catch(Exception e) {}
+                            } catch (Exception e) {
+                            }
                         }
                     } else if (value instanceof Object) {
                         field.set(bean, (Double) value);
@@ -507,11 +509,11 @@ public class utility {
                         field.set(bean, String.valueOf(value));
                     }
                 } else if (propType.equals(java.util.Date.class)) {
-                    field.set(bean, (value != null ? DateUtil.toDate(value) : null ) );            
+                    field.set(bean, (value != null ? DateUtil.toDate(value) : null));
                 } else if (propType.equals(java.sql.Date.class)) {
-                    field.set(bean, (value != null ? DateUtil.toDate(value) : null ) );
+                    field.set(bean, (value != null ? DateUtil.toDate(value) : null));
                 } else if (propType.equals(java.sql.Timestamp.class)) {
-                    field.set(bean, (value != null ? DateUtil.toTimestamp(value) : null ) ); 
+                    field.set(bean, (value != null ? DateUtil.toTimestamp(value) : null));
                     // dbSqlDateTime = (java.sql.Timestamp) 2020-05-27 10:41:53.149992
                     // value = (java.lang.String) "27-05-2020 10:35:47.788"
                 } else if (propType.equals(java.sql.Time.class)) {
@@ -584,9 +586,8 @@ public class utility {
      * <p>
      * This method get a property from a bean
      *
-     * @param bean the bean (Object)
+     * @param bean     the bean (Object)
      * @param property the name of the property to get (String)
-     *
      * @return property value (Object)
      * @see utility
      */
@@ -598,11 +599,12 @@ public class utility {
         }
         return null;
     }
+
     static public Object getEx(Object bean, String property, boolean log) {
         try {
             return get(bean, property);
         } catch (Exception e) {
-            if(log)
+            if (log)
                 Logger.getLogger(utility.class.getName()).log(Level.WARNING, null, e);
         }
         return null;
@@ -667,7 +669,7 @@ public class utility {
     static public boolean has(Object bean, String property) {
         try {
             if (bean != null) {
-                Field field = bean.getClass().getDeclaredField(property.replace("\\.", "$") );
+                Field field = bean.getClass().getDeclaredField(property.replace("\\.", "$"));
                 if (field != null) {
                     return true;
                 }
@@ -696,6 +698,7 @@ public class utility {
         }
         return false;
     }
+
     static public boolean isChangedEx(Object bean, String property) {
         try {
             if (bean != null) {
@@ -714,19 +717,21 @@ public class utility {
         }
         return false;
     }
+
     static public boolean isChanged(Object bean) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
         if (bean != null) {
-            Field [] fields = bean.getClass().getDeclaredFields();
-            for(Field field : fields) {
+            Field[] fields = bean.getClass().getDeclaredFields();
+            for (Field field : fields) {
                 if (field != null) {
-                    if(field.getName().indexOf("$Changed") != -1) {
-                        if((Boolean)getEx(bean, field.getName())) return true;
+                    if (field.getName().indexOf("$Changed") != -1) {
+                        if ((Boolean) getEx(bean, field.getName())) return true;
                     }
                 }
             }
         }
         return false;
     }
+
     static public void setChanged(Object bean, String property, boolean bChanged) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
         if (bean != null) {
             Field field = bean.getClass().getDeclaredField(property + "$Changed");
@@ -795,7 +800,7 @@ public class utility {
             Path path = Paths.get(folder);
             Files.createDirectories(path);
             File file = new File(folder);
-            if(file != null) {
+            if (file != null) {
                 file.setReadable(true, foreignRead);
                 file.setWritable(true, foreignWrite);
                 file.setExecutable(true, foreignExec);
@@ -803,10 +808,10 @@ public class utility {
                 System.err.println("Failed to access created directory!" + folder);
                 return false;
             }
-          } catch (IOException e) {
+        } catch (IOException e) {
             System.err.println("Failed to create directory!" + e.getMessage());
             return false;
-          }
+        }
         return true;
     }
 
@@ -828,7 +833,7 @@ public class utility {
             file.setExecutable(true, true);
             file.setWritable(true, true);
 
-            if(group != null) {
+            if (group != null) {
                 Path path = file.toPath();
                 FileOwnerAttributeView view = Files.getFileAttributeView(path, FileOwnerAttributeView.class);
                 UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
@@ -841,7 +846,7 @@ public class utility {
                     retVal = false;
                 }
             }
-            if(owner != null) {
+            if (owner != null) {
                 Path path = file.toPath();
                 FileOwnerAttributeView view = Files.getFileAttributeView(path, FileOwnerAttributeView.class);
                 UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
@@ -1115,17 +1120,17 @@ public class utility {
     public static void disableCertificateValidation() {
         // Create a trust manager that does not validate certificate chains
         trustAllCerts = new TrustManager[]{
-            new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() {
-                    return new X509Certificate[0];
-                }
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
 
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
 
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
                 }
-            }
         };
     }
 
@@ -1190,23 +1195,22 @@ public class utility {
     }
 
     /**
-     * 
      * @param columns
      * @param checking_columns
      * @return true if match found or checking_columns is null or empty
      */
     static boolean compare_array(ArrayList<String> columns, ArrayList<String> checking_columns) {
-        if(checking_columns != null) {
-            for(int i=0; i<checking_columns.size(); i++) {
+        if (checking_columns != null) {
+            for (int i = 0; i < checking_columns.size(); i++) {
                 String v = checking_columns.get(i);
                 boolean bFound = false;
-                for(int j=0; j<columns.size(); j++) {
-                    if(v.equalsIgnoreCase(columns.get(j))) {
+                for (int j = 0; j < columns.size(); j++) {
+                    if (v.equalsIgnoreCase(columns.get(j))) {
                         bFound = true;
-                        break;                    
+                        break;
                     }
                 }
-                if(!bFound) 
+                if (!bFound)
                     return false;
             }
         }
@@ -1219,23 +1223,23 @@ public class utility {
         if (jo1.getClass() != jo2.getClass()) {
             return false;
         }
-        if(jo1 instanceof JSONObject) {
-            JSONArray names = ((JSONObject)jo1).names();
-            for(int io=0; io<names.length(); io++) {
+        if (jo1 instanceof JSONObject) {
+            JSONArray names = ((JSONObject) jo1).names();
+            for (int io = 0; io < names.length(); io++) {
                 String name = names.getString(io);
-                if(!contains(excludingProps, name)){
-                    Object o1 = ((JSONObject)jo1).get(name);
-                    Object o2 = ((JSONObject)jo2).get(name);
-                    if(o1 instanceof JSONObject) {
-                        return compare_json((JSONObject)o1, (JSONObject)jo2, excludingProps);
-                    } else if(o1 instanceof JSONArray) {
-                        JSONArray oa1 = (JSONArray)o1;
-                        JSONArray oa2 = (JSONArray)o2;
-                        for(int j=0; j<oa1.length(); j++) {
+                if (!contains(excludingProps, name)) {
+                    Object o1 = ((JSONObject) jo1).get(name);
+                    Object o2 = ((JSONObject) jo2).get(name);
+                    if (o1 instanceof JSONObject) {
+                        return compare_json((JSONObject) o1, (JSONObject) jo2, excludingProps);
+                    } else if (o1 instanceof JSONArray) {
+                        JSONArray oa1 = (JSONArray) o1;
+                        JSONArray oa2 = (JSONArray) o2;
+                        for (int j = 0; j < oa1.length(); j++) {
                             o1 = oa1.get(j);
                             o2 = oa2.get(j);
-                            if(o1 instanceof JSONObject) {
-                                if(!compare_json((JSONObject)o1, (JSONObject)o2, excludingProps)){
+                            if (o1 instanceof JSONObject) {
+                                if (!compare_json((JSONObject) o1, (JSONObject) o2, excludingProps)) {
                                     return false;
                                 }
                             }
@@ -1245,14 +1249,14 @@ public class utility {
                     }
                 }
             }
-        } else if(jo1 instanceof Object) {
+        } else if (jo1 instanceof Object) {
             return jo1.equals(jo2);
         }
         return false;
     }
 
 
- static private String transfer_client_to_result(Object clientToTransfer, String result) throws JSONException {
+    static private String transfer_client_to_result(Object clientToTransfer, String result) throws JSONException {
         JSONObject retValJSON = new JSONObject(result);
         if (clientToTransfer != null) {
             if (retValJSON.has("client")) {
@@ -1289,41 +1293,35 @@ public class utility {
         return retValJSON.toString();
     }
 
- 
+
     /**
-     * 
      * Transfer result to parameter of next event process
-     * 
-     *  ex.: 
-     *       {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
-     *           to 
-     *       {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
-     * 
+     * <p>
+     * ex.:
+     * {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
+     * to
+     * {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
+     *
      * @param retValToTransfer
      * @param params
      * @return
-     * @throws JSONException 
+     * @throws JSONException
      */
     static private String transfer_result_to_params(String retValToTransfer, String params) throws JSONException {
         return event.transfer_result_to_params(retValToTransfer, params);
     }
 
-    
-    
+
     /**
-     * 
      * Transfer current result to global result for next event process
-     * 
+     *
      * @param retValToTransfer
      * @param retValTarget
-     * @return
-     * 
-     * ex.: 
-     *      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
-     *  to 
-     *      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
-     * 
-     * @throws JSONException 
+     * @return ex.:
+     * {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
+     * to
+     * {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
+     * @throws JSONException
      */
     static public String transfer_result_to_results(String retValToTransfer, String retValTarget) throws JSONException {
         return event.transfer_result_to_results(retValToTransfer, retValTarget);
@@ -1332,14 +1330,15 @@ public class utility {
 
     /**
      * Get id of created record from result string
+     *
      * @param result
      * @return
      * @throws JSONException
      */
     static public Object get_result_id(String result) throws JSONException {
         JSONObject resultJson = new JSONObject(result);
-        if(resultJson != null) {
-            if(resultJson.has("tables")) {
+        if (resultJson != null) {
+            if (resultJson.has("tables")) {
                 JSONArray tbls = (JSONArray) resultJson.getJSONArray("tables");
                 if (tbls != null && tbls.length() > 0) {
                     JSONArray ids = ((JSONObject) tbls.get(0)).getJSONArray("ids");
@@ -1347,14 +1346,14 @@ public class utility {
                         return ids.get(0);
                     }
                 }
-            } else if(resultJson.has("details")) {
+            } else if (resultJson.has("details")) {
                 JSONArray details = (JSONArray) resultJson.getJSONArray("details");
-                if(details != null) {
-                    for(int id=0; id<details.length(); id++) {
+                if (details != null) {
+                    for (int id = 0; id < details.length(); id++) {
                         Object detail = details.get(id);
-                        if(detail instanceof JSONObject) {
-                            JSONObject detailJson = (JSONObject)detail;
-                            if(detailJson.has("tables")) {
+                        if (detail instanceof JSONObject) {
+                            JSONObject detailJson = (JSONObject) detail;
+                            if (detailJson.has("tables")) {
                                 JSONArray tbls = (JSONArray) detailJson.getJSONArray("tables");
                                 if (tbls != null && tbls.length() > 0) {
                                     JSONArray ids = ((JSONObject) tbls.get(0)).getJSONArray("ids");
@@ -1373,19 +1372,15 @@ public class utility {
 
 
     /**
-     * 
      * Transfer error to global result
-     * 
+     *
      * @param error
      * @param result
-     * @return
-     * 
-     * ex.: 
-     *      {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
-     *  to 
-     *      {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
-     * 
-     * @throws JSONException 
+     * @return ex.:
+     * {"resultSet":[{"1":"85","2":"","3":"","4":"","5":"2020-05-10 15:28:15.880412+02"}],"error":""}
+     * to
+     * {"params":[{"data":{"1":"nextval(`liquidx.feedbacks_message_seq`::regclass)","2":"","3":"","4":"","5":"CURRENT_TIMESTAMP"}}]}
+     * @throws JSONException
      */
     static public String append_error_to_result(String error, String result) {
         return event.append_error_to_result(error, result);
@@ -1397,17 +1392,16 @@ public class utility {
         try {
             while (it.hasNext()) {
                 pair = (Map.Entry) it.next();
-                sourceContnet = sourceContnet.replace((String) "${"+pair.getKey()+"}", (String) pair.getValue());
+                sourceContnet = sourceContnet.replace((String) "${" + pair.getKey() + "}", (String) pair.getValue());
             }
-        } catch(Exception e) {
-            Logger.getLogger("replace_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
+        } catch (Exception e) {
+            Logger.getLogger("replace_values").log(Level.SEVERE, "errore replacing " + pair.getKey());
         }
         return sourceContnet;
     }
 
 
     /**
-     *
      * @param values
      * @return
      */
@@ -1417,19 +1411,20 @@ public class utility {
         try {
             while (it.hasNext()) {
                 pair = (Map.Entry) it.next();
-                if(!sourceObject.has(String.valueOf(pair.getKey()))) {
+                if (!sourceObject.has(String.valueOf(pair.getKey()))) {
                     sourceObject.put(String.valueOf(pair.getKey()), pair.getValue());
                 }
             }
-        } catch(Exception e) {
-            Logger.getLogger("put_json_values").log(Level.SEVERE, "errore replacing "+pair.getKey());
+        } catch (Exception e) {
+            Logger.getLogger("put_json_values").log(Level.SEVERE, "errore replacing " + pair.getKey());
         }
         return sourceObject;
     }
 
     /**
-     *  Genera il codice js per il set dei noedi HTML dai valori nel server
-     * @param values    : mappa chiave-valore
+     * Genera il codice js per il set dei noedi HTML dai valori nel server
+     *
+     * @param values     : mappa chiave-valore
      * @param sourceJson : se valorizzato costituisce la sorgente dei valori
      * @return
      */
@@ -1442,9 +1437,9 @@ public class utility {
                 pair = (Map.Entry) it.next();
                 String val = null;
 
-                if(sourceJson != null) {
+                if (sourceJson != null) {
                     String key = String.valueOf(pair.getKey());
-                    if(sourceJson.has(key)) {
+                    if (sourceJson.has(key)) {
                         Object oval = sourceJson.get(key);
                         val = String.valueOf(oval);
                     }
@@ -1455,25 +1450,24 @@ public class utility {
                         val = String.valueOf(pair.getValue());
                     }
                 }
-                String varName = ("gl_"+pair.getKey()).replace(".", "_");
+                String varName = ("gl_" + pair.getKey()).replace(".", "_");
                 varName = toCamelCase(varName);
-                out += "try { if(typeof "+varName+" === 'undefined') { "+varName+"='"+val+"'; } Liquid.setHTMLElementValue(document.getElementById(\""+ String.valueOf(pair.getKey()) + "\"), "+varName+"); } catch(e) { console.error(e); }\n";
+                out += "try { if(typeof " + varName + " === 'undefined') { " + varName + "='" + val + "'; } Liquid.setHTMLElementValue(document.getElementById(\"" + String.valueOf(pair.getKey()) + "\"), " + varName + "); } catch(e) { console.error(e); }\n";
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             Logger.getLogger("get_html_set_input_values").log(Level.SEVERE, e, null);
         }
         return out;
     }
+
     public static String get_html_set_input_values(HashMap<String, String> values) {
         return get_html_set_input_values(values, null);
     }
 
 
-
-
-
     /**
-     *  Genera il codice js per il get dei noedi HTML e set dei valori nel server (che vivono nel client)
+     * Genera il codice js per il get dei noedi HTML e set dei valori nel server (che vivono nel client)
+     *
      * @param values
      * @return
      */
@@ -1485,16 +1479,16 @@ public class utility {
             while (it.hasNext()) {
                 pair = (Map.Entry) it.next();
                 String val = null;
-                if(pair.getValue() instanceof Float || pair.getValue() instanceof Double) {
+                if (pair.getValue() instanceof Float || pair.getValue() instanceof Double) {
                     val = String.format("0.3f", pair.getValue());
                 } else {
                     val = String.valueOf(pair.getValue());
                 }
-                String varName = ("gl_"+pair.getKey()).replace(".", "_");
+                String varName = ("gl_" + pair.getKey()).replace(".", "_");
                 varName = toCamelCase(varName);
-                out += "try { if(typeof "+varName+" === 'undefined') { "+varName+"=''; } "+varName+"=( document.getElementById(\"" + String.valueOf(pair.getKey()) + "\") ? document.getElementById(\"" + String.valueOf(pair.getKey()) + "\").value : null); } catch(e) { console.error(e); }\n";
+                out += "try { if(typeof " + varName + " === 'undefined') { " + varName + "=''; } " + varName + "=( document.getElementById(\"" + String.valueOf(pair.getKey()) + "\") ? document.getElementById(\"" + String.valueOf(pair.getKey()) + "\").value : null); } catch(e) { console.error(e); }\n";
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             Logger.getLogger("get_html_get_input_values").log(Level.SEVERE, e, null);
         }
         return out;
@@ -1502,7 +1496,8 @@ public class utility {
 
 
     /**
-     *  genera l'elenco di proprieta' dentro un oggetto js (,"prop":"value")
+     * genera l'elenco di proprieta' dentro un oggetto js (,"prop":"value")
+     *
      * @param values
      * @return
      */
@@ -1513,20 +1508,19 @@ public class utility {
         try {
             while (it.hasNext()) {
                 pair = (Map.Entry) it.next();
-                String val = "( document.getElementById(\""+ String.valueOf(pair.getKey()) + "\") ? document.getElementById(\""+ String.valueOf(pair.getKey()) + "\").value : null )";
-                out += ",\""+ String.valueOf(pair.getKey()) + "\" : "+val+"\n";
+                String val = "( document.getElementById(\"" + String.valueOf(pair.getKey()) + "\") ? document.getElementById(\"" + String.valueOf(pair.getKey()) + "\").value : null )";
+                out += ",\"" + String.valueOf(pair.getKey()) + "\" : " + val + "\n";
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             Logger.getLogger("get_html_set_js_params_values").log(Level.SEVERE, e, null);
         }
         return out;
     }
 
 
-
-
     /**
-     *  genera l'elenco di proprieta' dentro un oggetto json stringa (,"prop":"value")
+     * genera l'elenco di proprieta' dentro un oggetto json stringa (,"prop":"value")
+     *
      * @param values
      * @return
      */
@@ -1538,35 +1532,35 @@ public class utility {
             while (it.hasNext()) {
                 pair = (Map.Entry) it.next();
                 String key = String.valueOf(pair.getKey());
-                if(sourceJson.has(key)) {
+                if (sourceJson.has(key)) {
                     String val = String.valueOf(sourceJson.get(key));
                     out += ",\"" + key + "\" : \"" + val + "\"";
                 }
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             Logger.getLogger("get_json_string_values").log(Level.SEVERE, e, null);
         }
         return out;
     }
 
     public static boolean compare_db_schema_table(String databaseSchemaTable, String searchingDatabaseSchemaTable) {
-        String [] wrkDatabaseSchemaTableParts = databaseSchemaTable.split("\\.");
-        String [] searchingDatabaseSchemaTableParts = searchingDatabaseSchemaTable.split("\\.");
-        if(searchingDatabaseSchemaTableParts.length == 1) {
-            if(wrkDatabaseSchemaTableParts.length >= 1) {
-                if(searchingDatabaseSchemaTableParts[0].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length-1])) {
+        String[] wrkDatabaseSchemaTableParts = databaseSchemaTable.split("\\.");
+        String[] searchingDatabaseSchemaTableParts = searchingDatabaseSchemaTable.split("\\.");
+        if (searchingDatabaseSchemaTableParts.length == 1) {
+            if (wrkDatabaseSchemaTableParts.length >= 1) {
+                if (searchingDatabaseSchemaTableParts[0].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length - 1])) {
                     return true;
                 }
             }
-        } else if(searchingDatabaseSchemaTableParts.length == 2) {
-            if(wrkDatabaseSchemaTableParts.length >= 2) {
-                if(searchingDatabaseSchemaTableParts[1].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length-1])) {
-                    if(searchingDatabaseSchemaTableParts[0].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length-2])) {
+        } else if (searchingDatabaseSchemaTableParts.length == 2) {
+            if (wrkDatabaseSchemaTableParts.length >= 2) {
+                if (searchingDatabaseSchemaTableParts[1].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length - 1])) {
+                    if (searchingDatabaseSchemaTableParts[0].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length - 2])) {
                         return true;
                     }
                 }
             }
-        } else if(searchingDatabaseSchemaTableParts.length >= 3) {
+        } else if (searchingDatabaseSchemaTableParts.length >= 3) {
             if (wrkDatabaseSchemaTableParts.length >= 3) {
                 if (searchingDatabaseSchemaTableParts[2].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length - 1])) {
                     if (searchingDatabaseSchemaTableParts[1].equalsIgnoreCase(wrkDatabaseSchemaTableParts[wrkDatabaseSchemaTableParts.length - 2])) {
@@ -1582,9 +1576,10 @@ public class utility {
 
     /**
      * Set languase in session and in client-side (put it outside <script></script>)
+     *
      * @param session
      * @param out
-     * @param lang (String, "IT" or "EN")
+     * @param lang    (String, "IT" or "EN")
      */
     public static boolean setLanguage(HttpSession session, JspWriter out, String lang) throws IOException {
         return workspace.setLanguage(session, out, lang);
@@ -1596,7 +1591,7 @@ public class utility {
             ArrayList<Integer> colMap = new ArrayList<Integer>();
             boolean colMapped = false;
             result = "[";
-            for(int ir=0; ir<rowsetJson.length(); ir++) {
+            for (int ir = 0; ir < rowsetJson.length(); ir++) {
                 String row = "";
                 JSONObject rowJson = rowsetJson.getJSONObject(ir);
                 int colCounter = 0;
@@ -1620,16 +1615,16 @@ public class utility {
                         }
                         if (field1B > 0) {
                             Object obj = rowJson.get(names.getString(iname));
-                            row += (colCounter>0?",":"") + "\"" + field1B + "\"" + ":";
-                            if(obj == null) {
+                            row += (colCounter > 0 ? "," : "") + "\"" + field1B + "\"" + ":";
+                            if (obj == null) {
                                 row += "null";
                             } else {
-                                if(obj instanceof String) {
+                                if (obj instanceof String) {
                                     row += "\"" + String.valueOf(obj) + "\"";
-                                } else if(obj instanceof Integer || obj instanceof Long || obj instanceof BigDecimal || obj instanceof Float || obj instanceof Double) {
+                                } else if (obj instanceof Integer || obj instanceof Long || obj instanceof BigDecimal || obj instanceof Float || obj instanceof Double) {
                                     row += "" + String.valueOf(obj) + "";
                                 } else if (obj instanceof Boolean) {
-                                    row += "" + ((boolean)obj ? "true":"false") + "";
+                                    row += "" + ((boolean) obj ? "true" : "false") + "";
                                 } else {
                                     row += "\"" + String.valueOf(obj) + "\"";
                                 }
@@ -1647,7 +1642,7 @@ public class utility {
     }
 
     public static String append_to_folder(String folder, String file) {
-        if(folder != null && file != null) {
+        if (folder != null && file != null) {
             if (folder.endsWith(File.separator)) {
                 return folder + file;
             } else {
@@ -1658,7 +1653,7 @@ public class utility {
     }
 
     public static boolean append_to_file_content(String fileName, StringBuffer content, boolean insertBefore, String tag) throws IOException {
-        if(insertBefore) {
+        if (insertBefore) {
             RandomAccessFile randomAccessFile = null;
             try {
                 randomAccessFile = new RandomAccessFile(fileName, "rw");
@@ -1677,9 +1672,9 @@ public class utility {
                 }
                 randomAccessFile.write("\n\n".getBytes(StandardCharsets.UTF_8));
                 randomAccessFile.write(content.toString().getBytes(StandardCharsets.UTF_8));
-                randomAccessFile.write(("\n"+tag).getBytes(StandardCharsets.UTF_8));
+                randomAccessFile.write(("\n" + tag).getBytes(StandardCharsets.UTF_8));
             } finally {
-                if(randomAccessFile != null)
+                if (randomAccessFile != null)
                     randomAccessFile.close();
             }
             return true;
@@ -1692,22 +1687,22 @@ public class utility {
     }
 
 
-
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
         public ArrayList<Object> beans = null;
     }
+
     static ArrayList<DataListCache> glDataListCache = new ArrayList<DataListCache>();
 
 
     public static DataListCache get_datalist_from_cahce(String databaseSchemaTable, String codeColumn, String descColumn, String where) {
-        for(int i=0; i<glDataListCache.size(); i++) {
+        for (int i = 0; i < glDataListCache.size(); i++) {
             DataListCache dataListCache = glDataListCache.get(i);
-            if(dataListCache != null) {
-                if(databaseSchemaTable.equalsIgnoreCase(dataListCache.databaseSchemaTable)) {
-                    if(codeColumn.equalsIgnoreCase(dataListCache.codeColumn)) {
-                        if(descColumn.equalsIgnoreCase(dataListCache.descColumn)) {
-                            if ((where == null && dataListCache.where == null) || (where != null && where.equalsIgnoreCase(dataListCache.where)) ) {
+            if (dataListCache != null) {
+                if (databaseSchemaTable.equalsIgnoreCase(dataListCache.databaseSchemaTable)) {
+                    if (codeColumn.equalsIgnoreCase(dataListCache.codeColumn)) {
+                        if (descColumn.equalsIgnoreCase(dataListCache.descColumn)) {
+                            if ((where == null && dataListCache.where == null) || (where != null && where.equalsIgnoreCase(dataListCache.where))) {
                                 return dataListCache;
                             }
                         }
@@ -1719,7 +1714,7 @@ public class utility {
     }
 
     public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) {
-        return get_datalist_from_table( datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, chacheIt);
+        return get_datalist_from_table(datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, chacheIt);
     }
 
     public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String tooltipColumn, String where, String emptyRow, boolean chacheIt) {
@@ -1727,25 +1722,25 @@ public class utility {
 
         ArrayList<Object> beans = null;
         DataListCache dataListCache = get_datalist_from_cahce(databaseSchemaTable, codeColumn, descColumn, where);
-        if(dataListCache != null) {
+        if (dataListCache != null) {
             beans = dataListCache.beans;
         } else {
-            beans = bean.load_beans(databaseSchemaTable, ""+codeColumn+","+descColumn, where, 0);
+            beans = bean.load_beans(databaseSchemaTable, "" + codeColumn + "," + descColumn, where, 0);
         }
-        out += "<datalist id=\""+datalistId+"\">";
-        if(emptyRow != null) {
-            out += "<option title=\""+("")+"\" selected value=\""+emptyRow+"\">" + " " + "</option>";
+        out += "<datalist id=\"" + datalistId + "\">";
+        if (emptyRow != null) {
+            out += "<option title=\"" + ("") + "\" selected value=\"" + emptyRow + "\">" + " " + "</option>";
         }
-        if(beans != null) {
+        if (beans != null) {
             for (int i = 0; i < beans.size(); i++) {
                 String code = (codeColumn != null ? (String) utility.getEx(beans.get(i), codeColumn) : null);
                 String desc = (descColumn != null ? (String) utility.getEx(beans.get(i), descColumn) : null);
                 String tooltip = (tooltipColumn != null ? (String) (utility.has(beans.get(i), tooltipColumn) ? utility.getEx(beans.get(i), tooltipColumn) : null) : null);
-                out += "<option title=\""+(tooltip != null ? tooltip.replace("\"", "'") : "")+"\" value=\"" + code + "\" > " + desc + " </option>";
+                out += "<option title=\"" + (tooltip != null ? tooltip.replace("\"", "'") : "") + "\" value=\"" + code + "\" > " + desc + " </option>";
             }
         }
         out += "</datalist>";
-        if(dataListCache == null) {
+        if (dataListCache == null) {
             if (chacheIt) {
                 dataListCache = new DataListCache();
                 dataListCache.databaseSchemaTable = databaseSchemaTable;
@@ -1773,15 +1768,15 @@ public class utility {
                 if (f.createNewFile()) {
                     System.out.println("File created: " + f.getName());
                 } else {
-                    System.out.println("set_file_content() connot create file: "+fileName);
+                    System.out.println("set_file_content() connot create file: " + fileName);
                     return false;
                 }
             }
-            if(!f.canRead()) {
-                System.out.println("set_file_content() connot read file: "+fileName);
+            if (!f.canRead()) {
+                System.out.println("set_file_content() connot read file: " + fileName);
                 return false;
             }
-            if(!f.canWrite()) {
+            if (!f.canWrite()) {
                 System.out.println("set_file_content() connot write file: " + fileName);
                 return false;
             }
@@ -1790,14 +1785,14 @@ public class utility {
             out.write(fileContent);
 
         } catch (IOException e) {
-            System.out.println("set_file_content() error: "+e.getMessage());
+            System.out.println("set_file_content() error: " + e.getMessage());
             return false;
         } finally {
-            if(out != null) {
+            if (out != null) {
                 try {
                     out.close();
                 } catch (IOException e) {
-                    System.out.println("set_file_content() error: "+e.getMessage());
+                    System.out.println("set_file_content() error: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -1815,11 +1810,12 @@ public class utility {
 
     public static String dateToString(Date cDate, String format) {
         DateFormat dateFormat = format != null ? new SimpleDateFormat(format) : new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
-        return dateFormat.format( cDate );
+        return dateFormat.format(cDate);
     }
+
     public static String dateToString(long cDate, String format) {
         DateFormat dateFormat = format != null ? new SimpleDateFormat(format) : new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
-        return dateFormat.format( new Date (cDate) );
+        return dateFormat.format(new Date(cDate));
     }
 
     static class MyErrorHandler implements ErrorHandler {
@@ -1845,7 +1841,7 @@ public class utility {
             System.out.println("System ID: " + e.getSystemId());
         }
     }
-    
+
 
     public static Object getArchiveXMLTag(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
         java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
@@ -1872,6 +1868,7 @@ public class utility {
     public static String getFileContent(String fileName) {
         return workspace.get_file_content((HttpServletRequest) null, fileName, false, false);
     }
+
     public static String get_file_content(String fileName) {
         return workspace.get_file_content((HttpServletRequest) null, fileName, false, false);
     }
@@ -1897,66 +1894,71 @@ public class utility {
         }
         return null;
     }
-    
-    
+
+
     //
     // Wrappers
     //
     public static String arrayToString(String[] objs, String prefix, String postfix, String separator) {
         return workspace.arrayToString(objs, prefix, postfix, separator);
     }
+
     public static String arrayToString(Object[] objs, String prefix, String postfix, String separator) {
         return workspace.arrayToString(objs, prefix, postfix, separator);
     }
+
     public static String jsonArrayToString(JSONArray objs, String prefix, String postfix, String separator) {
         return workspace.jsonArrayToString(objs, prefix, postfix, separator);
     }
+
     public static ArrayList<String> jsonArrayToArrayList(JSONArray objs, String prefix, String postfix) {
         return workspace.jsonArrayToArrayList(objs, prefix, postfix);
     }
+
     public static ArrayList<String> jsonArrayToArrayList(JSONArray objs) {
         return workspace.jsonArrayToArrayList(objs, null, null);
     }
+
     public static String arrayToString(ArrayList<String> columns, String prefix, String postfix, String separator) {
         return arrayToString(columns.toArray(), prefix, postfix, separator);
     }
+
     public static String objArrayToString(ArrayList<Object> columns, String prefix, String postfix, String separator) {
         return arrayToString(columns.toArray(), prefix, postfix, separator);
     }
 
     public static boolean contains(ArrayList<Object> controlIds, Object controlId) {
-        for(int i=0; i<controlIds.size(); i++) {
-        	if(String.valueOf(controlIds.get(i)).equals(String.valueOf(controlId))) return true;
+        for (int i = 0; i < controlIds.size(); i++) {
+            if (String.valueOf(controlIds.get(i)).equals(String.valueOf(controlId))) return true;
         }
         return false;
     }
 
     public static boolean contains(ArrayList<Object> beans, Object bean, String Key) {
         Object keyVal = utility.getEx(bean, Key);
-        for(int i=0; i<beans.size(); i++) {
+        for (int i = 0; i < beans.size(); i++) {
             Object val = utility.getEx(beans, Key);
-            if(keyVal.equals(val)) return true;
+            if (keyVal.equals(val)) return true;
         }
         return false;
     }
 
     public static boolean contains(List<String> controlIds, String controlId) {
-        for(int i=0; i<controlIds.size(); i++) {
-            if(controlIds.get(i).equalsIgnoreCase(controlId)) return true;
+        for (int i = 0; i < controlIds.size(); i++) {
+            if (controlIds.get(i).equalsIgnoreCase(controlId)) return true;
         }
         return false;
     }
 
     public static <T> ArrayList<T> removeDuplicates(ArrayList<T> list) {
-        ArrayList<T> newList = new ArrayList<T>();   
-        for (T element : list) {   
-            if (!newList.contains(element)) {  
-                newList.add(element); 
-            } 
-        } 
-        return newList; 
-    } 
-
+        ArrayList<T> newList = new ArrayList<T>();
+        for (T element : list) {
+            if (!newList.contains(element)) {
+                newList.add(element);
+            }
+        }
+        return newList;
+    }
 
 
     public static String htmlEncode(String s) {
@@ -2012,66 +2014,73 @@ public class utility {
         }
         return null;
     }
-    
-    public static String decodeHtml( String str ) {
-        if(str != null && !str.isEmpty()) {
-            return Jsoup.parse(str).text().replaceAll("\\<.*?>","");
+
+    public static String decodeHtml(String str) {
+        if (str != null && !str.isEmpty()) {
+            return Jsoup.parse(str).text().replaceAll("\\<.*?>", "");
         } else {
             return str;
         }
     }
-    
+
     public static String createRegexFromGlob(String glob) {
         StringBuilder out = new StringBuilder("^");
-        for(int i = 0; i < glob.length(); ++i) {
+        for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);
-            switch(c) {
-                case '*': out.append(".*"); break;
-                case '?': out.append('.'); break;
-                case '.': out.append("\\."); break;
-                case '\\': out.append("\\\\"); break;
-                default: out.append(c);
+            switch (c) {
+                case '*':
+                    out.append(".*");
+                    break;
+                case '?':
+                    out.append('.');
+                    break;
+                case '.':
+                    out.append("\\.");
+                    break;
+                case '\\':
+                    out.append("\\\\");
+                    break;
+                default:
+                    out.append(c);
             }
         }
         out.append('$');
         return out.toString();
     }
-    
-    
+
+
     /**
      * Uopdate column attribute inside the control
-     * @param controlJSON   the control (JSONObject)
-     * @param columnName    the name of the updating column (Srting)
-     * @param attribute     the attribute to update (Srting)
-     * @param value         the nre value (Object)
+     *
+     * @param controlJSON the control (JSONObject)
+     * @param columnName  the name of the updating column (Srting)
+     * @param attribute   the attribute to update (Srting)
+     * @param value       the nre value (Object)
      * @return
-     * @throws JSONException 
+     * @throws JSONException
      */
     static public boolean setControlColumn(JSONObject controlJSON, String columnName, String attribute, Object value) throws JSONException {
-    	boolean retVal = false;
+        boolean retVal = false;
         if (controlJSON != null && columnName != null) {
             if (controlJSON.has("columns")) {
-            	JSONArray columns = controlJSON.getJSONArray("columns");
-                for(int i=0; i<columns.length(); i++) {
-                	JSONObject column = columns.getJSONObject(i);
-                	if (controlJSON.has("name")) {
-                		if(columnName.equalsIgnoreCase(column.getString("name"))) {
+                JSONArray columns = controlJSON.getJSONArray("columns");
+                for (int i = 0; i < columns.length(); i++) {
+                    JSONObject column = columns.getJSONObject(i);
+                    if (controlJSON.has("name")) {
+                        if (columnName.equalsIgnoreCase(column.getString("name"))) {
                             if (attribute != null) {
-                            	column.put(attribute, value);
-                            	retVal = true;
+                                column.put(attribute, value);
+                                retVal = true;
                             }
-                		}
-                	}
+                        }
+                    }
                 }
             }
         }
         return retVal;
     }
 
-    
-    
-    
-    
+
     class FolderWatchThread extends Thread {
 
         public String folder = null;
@@ -2080,7 +2089,7 @@ public class utility {
         public Object callbackInstance = null;
         public String callbackMethod = null;
         private Method method = null;
-        
+
         public String error = "";
 
         public boolean run = false;
@@ -2094,24 +2103,24 @@ public class utility {
                 Path path = Paths.get(folder);
 
                 path.register(
-                        watchService, 
-                        StandardWatchEventKinds.ENTRY_CREATE, 
-                        StandardWatchEventKinds.ENTRY_DELETE, 
+                        watchService,
+                        StandardWatchEventKinds.ENTRY_CREATE,
+                        StandardWatchEventKinds.ENTRY_DELETE,
                         StandardWatchEventKinds.ENTRY_MODIFY
                 );
 
                 WatchKey key;
-                
+
                 run = true;
 
-                if(callbackInstance != null) {
+                if (callbackInstance != null) {
                     try {
                         Class cls = callbackInstance.getClass();
                         method = cls.getMethod(callbackMethod, String.class, Object.class);
-                        if(method == null) {
-                            error += "Method "+callbackMethod+" not found.. Did you declare it publlic ?" + "\n";
+                        if (method == null) {
+                            error += "Method " + callbackMethod + " not found.. Did you declare it publlic ?" + "\n";
                         }
-                    } catch (Exception ex) {                
+                    } catch (Exception ex) {
                         error += ex.getLocalizedMessage() + "\n";
                         Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, ex);
                         Method[] methods = callbackMethod.getClass().getMethods();
@@ -2119,16 +2128,16 @@ public class utility {
                             System.err.println("{" + callbackMethod.getClass() + "}.Method #" + (i + 1) + ":" + methods[i].toString());
                         }
                     }
-                }                
-        
+                }
+
                 while ((key = watchService.take()) != null) {
-                    
-                    if(!run) return;
-                    
+
+                    if (!run) return;
+
                     for (WatchEvent<?> event : key.pollEvents()) {
-                        if(callbackInstance != null && method != null) {
+                        if (callbackInstance != null && method != null) {
                             try {
-                                boolean retVal = (boolean) method.invoke(callbackInstance, folder+File.separator+event.context(), (Object)event.kind());
+                                boolean retVal = (boolean) method.invoke(callbackInstance, folder + File.separator + event.context(), (Object) event.kind());
                             } catch (Throwable th) {
                                 Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, th);
                             }
@@ -2139,14 +2148,14 @@ public class utility {
                     key.reset();
                 }
 
-            } catch (Exception ex) {                
+            } catch (Exception ex) {
                 error += ex.getLocalizedMessage() + "\n";
                 Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
-    
-    
+
+
     static public ArrayList<FolderWatchThread> folderWatchThreadList = new ArrayList<FolderWatchThread>();
 
     /**
@@ -2162,81 +2171,77 @@ public class utility {
     static public boolean startWatchFolder(String folder, String fileExt, Object callbackInstance, String callbackMethod) throws Exception {
         try {
             for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
-                if(folder.equalsIgnoreCase(folderWatchThread.folder)) {
+                if (folder.equalsIgnoreCase(folderWatchThread.folder)) {
                     folderWatchThread.run = false;
                     Thread.sleep(1000);
                     folderWatchThread.interrupt();
                     folderWatchThreadList.remove(folderWatchThread);
                 }
             }
-        } catch (Exception ex) {                
+        } catch (Exception ex) {
             Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, null, ex);
         }
         FolderWatchThread folderWatchThread = new utility().new FolderWatchThread();
         folderWatchThread.folder = folder;
         folderWatchThread.fileExt = fileExt;
         folderWatchThread.callbackInstance = callbackInstance;
-        folderWatchThread.callbackMethod = callbackMethod;        
-        folderWatchThreadList.add(folderWatchThread);                
-        folderWatchThread.start();        
+        folderWatchThread.callbackMethod = callbackMethod;
+        folderWatchThreadList.add(folderWatchThread);
+        folderWatchThread.start();
         return true;
     }
 
     /**
-     *
      * @param folder
      * @return
      * @throws Exception
      */
-    static public boolean stopWatchFolder(String folder) throws Exception {        
+    static public boolean stopWatchFolder(String folder) throws Exception {
         for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
-            if(folder.equalsIgnoreCase(folderWatchThread.folder)) {
+            if (folder.equalsIgnoreCase(folderWatchThread.folder)) {
                 folderWatchThread.run = false;
                 Thread.sleep(1000);
                 folderWatchThread.interrupt();
                 folderWatchThreadList.remove(folderWatchThread);
                 return true;
-            }        
+            }
         }
         return false;
     }
 
     /**
-     *
      * @param folder
      * @return
      * @throws Exception
      */
-    static public String statusWatchFolder(String folder) throws Exception {        
+    static public String statusWatchFolder(String folder) throws Exception {
         String out = "";
         for (FolderWatchThread folderWatchThread : folderWatchThreadList) {
-            out += "Folder:"+folderWatchThread.folder+ "\tstatus:"+(folderWatchThread.run ? "running" : "stopped")+ "\terror:"+folderWatchThread.error+"\n";
+            out += "Folder:" + folderWatchThread.folder + "\tstatus:" + (folderWatchThread.run ? "running" : "stopped") + "\terror:" + folderWatchThread.error + "\n";
         }
         return out;
     }
 
 
     /**
-     *
      * @param month (1 based)
-     * @param lang ("IT" / "ENG")
+     * @param lang  ("IT" / "ENG")
      * @return
      */
     public static String getMonthName(int month, String lang) {
         DateFormatSymbols dateFormatSymbols = new DateFormatSymbols("IT".equalsIgnoreCase(lang) ? Locale.ITALIAN : Locale.ENGLISH);
-        return dateFormatSymbols.getMonths()[month-1];
+        return dateFormatSymbols.getMonths()[month - 1];
     }
 
     /**
-     *
      * @param var
      * @return
      */
-    public static String toCamelCase( String var ) {
+    public static String toCamelCase(String var) {
         String out = "";
-        String [] list = var.replace("-", "_").replace(" ", "_").split("_");
-        for(int i=0; i<list.length; i++) {
-            if(i>0)
+        String[] list = var.replace("-", "_").replace(" ", "_").split("_");
+        for (int i = 0; i < list.length; i++) {
+            if (i > 0)
                 out += capitalizeFirstLetter(list[i]);
             else
                 out += list[i].toLowerCase();
@@ -2245,25 +2250,30 @@ public class utility {
     }
 
     /**
-     *
      * @param s
      * @return
      */
     public static String capitalizeOlnyFirstLetter(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "");
-    };
+    }
+
+    ;
+
     public static String capitalizeFirstLetter(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1).replaceAll("/ /g", "").toLowerCase();
-    };
+    }
+
+    ;
+
     public static String uncapitalizeOlnyFirstLetter(String s) {
         return s.substring(0, 1).toLowerCase() + s.substring(1).replaceAll("/ /g", "");
     }
 
     public static String toDescriptionCase(String var) {
         String out = "";
-        String [] list = var.replace("-", " ").replace("_", " ").split(" ");
-        for(int i=0; i<list.length; i++) {
-            if(i>0)
+        String[] list = var.replace("-", " ").replace("_", " ").split(" ");
+        for (int i = 0; i < list.length; i++) {
+            if (i > 0)
                 out += " " + list[i].toLowerCase();
             else
                 out += capitalizeFirstLetter(list[i]);
@@ -2282,15 +2292,15 @@ public class utility {
      */
     public static boolean updateJsonArray(JSONArray arrayToUpdate, String keyName, String keyValue, boolean bKeySensitive, String sJsonToMerge) throws Exception {
         boolean result = false;
-        if(arrayToUpdate != null && keyName != null) {
-            for(int i=0; i<arrayToUpdate.length(); i++) {
+        if (arrayToUpdate != null && keyName != null) {
+            for (int i = 0; i < arrayToUpdate.length(); i++) {
                 Object oToUpdate = arrayToUpdate.get(i);
-                if(oToUpdate instanceof JSONObject) {
-                    JSONObject objToUpdate = (JSONObject)oToUpdate;
+                if (oToUpdate instanceof JSONObject) {
+                    JSONObject objToUpdate = (JSONObject) oToUpdate;
                     boolean eq = bKeySensitive ? objToUpdate.getString(keyName).equals(keyValue) : objToUpdate.getString(keyName).equalsIgnoreCase(keyValue);
-                    if(eq) {
+                    if (eq) {
                         JSONObject jsonToMerge = new JSONObject(sJsonToMerge);
-                        if(mergeJsonObject(jsonToMerge, objToUpdate) > 0) {
+                        if (mergeJsonObject(jsonToMerge, objToUpdate) > 0) {
                             result = true;
                         }
                         break;
@@ -2301,6 +2311,109 @@ public class utility {
             }
         }
         return result;
+    }
+
+    /**
+     * Classe predefinita pannello
+     *
+     * @param json
+     * @param beanClass
+     * @return
+     */
+    public static String get_default_bean_class(JSONObject json, String beanClass) {
+        if (beanClass != null) {
+            String table = json.getString("table");
+            return get_default_bean_class(table, beanClass);
+        }
+        return null;
+    }
+
+    /**
+     * Returl last component of full class path
+     * @param className
+     * @return
+     */
+    public static String get_class_name_from_full_class_path(String className) {
+        if(className != null) {
+            String[] classParts = className.split("\\.");
+            if (classParts != null) {
+                return classParts[classParts.length - 1];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Classe predefinita pannello
+     *
+     * @param table
+     * @param beanClass
+     * @return
+     */
+    public static String get_default_bean_class(String table, String beanClass) {
+        if (beanClass != null) {
+            String[] classParts = beanClass.split("\\.");
+            if (classParts != null) {
+                classParts[classParts.length - 1] = utility.capitalizeOlnyFirstLetter(nameSpacer.DB2Hibernate(table));
+                return utility.arrayToString(classParts, null, null, ".");
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Ritorna la chiave primaria (campo "name)
+     *
+     * @param json
+     * @return
+     */
+    public static String get_primary_key_field(JSONObject json) {
+        return (String) get_primary_key_info(json)[0];
+    }
+
+    /**
+     * Ritorna la chiave primaria
+     *
+     * @param json
+     * @return Object [] { campo "name", indice 1 based (int) }
+     */
+    public static Object[] get_primary_key_info(JSONObject json) {
+        if (json.has("primaryKey")) {
+            String primakyKey = json.getString("primaryKey");
+            JSONArray cols = json.getJSONArray("columns");
+            for (int ic = 0; ic < cols.length(); ic++) {
+                if (cols.getJSONObject(ic).getString("name").equalsIgnoreCase(primakyKey)) {
+                    return new Object[]{cols.getJSONObject(ic).getString("name"), ic + 1};
+                }
+            }
+        }
+        return new Object[]{null, 0};
+    }
+
+
+    /**
+     * Ritorna il descrittore; il campo che segue la primary key
+     *
+     * @param json
+     * @return
+     */
+    public static String get_default_descriptor_field(JSONObject json) {
+        Object[] pk_info = get_primary_key_info(json);
+        if ((int) pk_info[1] > 0) {
+            int ic = (int) pk_info[1] - 1 + 1;
+            JSONArray cols = json.getJSONArray("columns");
+            String name = cols.getJSONObject(ic).getString("name");
+            if (name.toLowerCase().startsWith("cod") || name.toLowerCase().startsWith("cd")) {
+                if (ic + 1 < cols.length()) {
+                    String name2 = cols.getJSONObject(ic + 1).getString("name");
+                    if (name.toLowerCase().startsWith("des") || name.toLowerCase().startsWith("ds")) {
+                        name = name2;
+                    }
+                }
+            }
+            return nameSpacer.DB2Hibernate(name);
+        }
+        return null;
     }
 
 }
