@@ -71,6 +71,9 @@ if(typeof glLiquidRoot === 'undefined') {
 if(typeof glLiquidServlet === 'undefined') {
     var glLiquidServlet = glLiquidRoot + "/liquid/liquid.jsp";    // look inside framework : need servlet 3
 }
+if(typeof glLiquidZKServlet === 'undefined') {
+    var glLiquidZKServlet = glLiquidRoot + "/liquid/liquidZK.jsp";    // look inside framework : need servlet 3
+}
 
 //
 // No conflict JQuery

@@ -398,11 +398,6 @@ public class wsStreamerClient {
                         send( outputStream,  workspace.set_file_content((HttpServletRequest)request, (JspWriter)null), token );
                         retVal = true;
 
-                    } else if ("saveToZK".equalsIgnoreCase(operation)) {
-                        // write .xml to the server
-                        send( outputStream,  ZKpanels.set_zk_content((HttpServletRequest)request, (JspWriter)null), token );
-                        retVal = true;
-
                     } else if ("setProjectFolder".equalsIgnoreCase(operation)) {
                         // Set the working folder of the project (where to save new json configurations)
                         send( outputStream,  workspace.set_project_folder((HttpServletRequest)request, (JspWriter)null), token );

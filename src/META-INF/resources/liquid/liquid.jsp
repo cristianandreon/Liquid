@@ -45,10 +45,6 @@
             // write json configuration to the server
             out.print( workspace.set_file_content(request, out) );
 
-        } else if ("saveToZK".equalsIgnoreCase(operation)) {
-            // write .xml to the server
-            out.print( ZKpanels.set_zk_content(request, out) );
-
         } else if ("setProjectFolder".equalsIgnoreCase(operation)) {
             // Set the working folder of the project (where to save new json configurations)
             out.print( workspace.set_project_folder(request, out) );

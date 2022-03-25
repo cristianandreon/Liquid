@@ -3564,7 +3564,7 @@ var LiquidEditing = {
                             if(Liquid.wait_for_xhr_ready(liquid), "export to ZK") {
                                 try {
                                     Liquid.startWaiting(liquid);
-                                    xhr.open('POST', glLiquidServlet + '?operation=saveToZK'
+                                    xhr.open('POST', glLiquidZKServlet + '?operation=saveToZK'
                                         +'&controlId=' + (typeof json.registerControlId !== "undefined" ? json.registerControlId : liquid.controlId)
                                         +'&token=' + (typeof token !== "undefined" ? token : "")
                                         , true);
