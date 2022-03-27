@@ -912,6 +912,10 @@ public class utility {
         }
     }
 
+    /**
+     * Execute command by Runtime.getRuntime().exec
+     * @param script
+     */
     public static void execute_process(String script) {
 
         try {
@@ -937,6 +941,25 @@ public class utility {
             // log.error(e.getMessage());
         }
     }
+
+    /**
+     * Create system process by ProcessBuilder
+     * @param processPath
+     * @param args
+     * @return
+     */
+    public static Process startProcess(String processPath, String [] args) throws IOException {
+        String folder = getFolderFromFile(processPath);
+        ArrayList<String> argsList = new ArrayList<String>();
+        argsList.add(processPath);
+        argsList.addAll(Arrays.asList(args));
+        ProcessBuilder pbuilder = new ProcessBuilder(argsList);
+        pbuilder.directory(new File(folder));
+        Process process = pbuilder.start();
+        return process;
+    }
+
+
 
     static public String appendSeparator(String path) {
         if (path != null && !path.isEmpty()) {

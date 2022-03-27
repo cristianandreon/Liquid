@@ -2004,8 +2004,13 @@ public class bean {
             if ("*".equalsIgnoreCase(columns) || "all".equalsIgnoreCase(columns)) {
             } else {
                 // TODO : not supported, should review get_recordset ()
-                columnsList = null;
                 // columnsList = columns.split(",");
+                String [] rawColumnsList = columns.split(",");
+                ArrayList<String> trimmedColumnsList = new ArrayList<String>(3);
+                for(int ic=0; ic<rawColumnsList.length; ic++) {
+                    trimmedColumnsList.add(rawColumnsList[ic].trim());
+                }
+                columnsList = trimmedColumnsList.toArray(new String[0]);
             }
 
             // cerca o cerca il controllo
@@ -2079,7 +2084,10 @@ public class bean {
                 }
             }
 
-            String executingQuery = "SELECT * FROM " + tbl_wrk.schemaTable + (where_condition != null ? where_condition : "");
+            String executingQuery = "SELECT "
+                    + (columnsList != null ? utility.arrayToString(columnsList, null, null, ",") : "*")
+                    + " FROM " + tbl_wrk.schemaTable
+                    + (where_condition != null ? where_condition : "");
 
             Object [] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
             conn = (Connection)connResult[0];
@@ -2087,17 +2095,20 @@ public class bean {
 
             long lStartTime = System.currentTimeMillis();
             try {
+                // TODO: Migliramento sicurezza nel caso di stringa malformata
+                // N.B.: Gestione degli apici a carico della chiamante (SQL Ignection)
                 if (conn != null) {
                     psdo = conn.prepareStatement(executingQuery);
                     if(where_condition_params != null) {
-                        for (int iParam=0; iParam<where_condition_params.size(); iParam++) {
-                            psdo.setString(iParam+1, where_condition_params.get(iParam));
+                        for (int iParam = 0; iParam < where_condition_params.size(); iParam++) {
+                            psdo.setString(iParam + 1, where_condition_params.get(iParam));
                         }
-                    } else {
-                        // TODO: Migliramento sicurezza nel caso di stringa malformata
-                        // N.B.: Gestione degli apici a carico della chiamante (SQL Ignection)
                     }
                     rsdo = psdo.executeQuery();
+                } else {
+                    String error = " [" + (controlId) + "] Connection Error:" + connError + "]";
+                    errors += error;
+                    System.err.println(error);
                 }
             } catch (Exception e) {
                 errors += " [" + (controlId) + "] Query Error:" + e.getLocalizedMessage() + " executingQuery:" + executingQuery + "]" + "[Driver:" + tbl_wrk.driverClass + "]";
@@ -2138,7 +2149,7 @@ public class bean {
                         false,
                         -1,
                         null,
-                        true);
+                        false);
 
                 // Freee connection as soon as possible
                 if (rsdo != null) {
