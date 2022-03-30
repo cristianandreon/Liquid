@@ -36,8 +36,8 @@ public class PojoGenerator {
     public String attributes = "";
     public String classBody = "";
     boolean bReadOnly = false;
-    
-    
+
+
     static void removeFinal(CtClass clazz) throws Exception {
         int modifiers = clazz.getModifiers();
         if (Modifier.isFinal(modifiers)) {
@@ -90,7 +90,8 @@ public class PojoGenerator {
             pool.importPackage("java.sql");
             pool.importPackage("com.liquid");
             pool.importPackage("java.lang.reflect");
-            
+            pool.importPackage("java.lang.reflect.Field");
+
             cc = pool.makeClass(className);
 
             error = "";
@@ -260,7 +261,7 @@ public class PojoGenerator {
                 .append("\tField field = this.getClass().getDeclaredField(fieldName+\"$Changed\");\n")
                 .append("\tif(field!=null) { \n")
                 .append("\tfield.setAccessible(true);\n")
-                .append("\tfield.set(this,new Boolean(bChanged)); };\n")
+                .append("\tfield.set(this,new Boolean(bChanged)); }\n")
                 .append("\t}");
             classBody += "\n\t// Generic set propery as changed";
             classBody += "\n\t" + sb.toString();
