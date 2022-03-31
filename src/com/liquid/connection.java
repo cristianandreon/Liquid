@@ -547,7 +547,13 @@ public class connection {
         }
         jdbcSources.add(jdbcSource);
         
-        System.out.println(" [DEBUG] added data source driver:"+driver+" - host:"+host+" - port:"+port+" - database:"+database+" - user:"+user);
+        System.out.println(
+                "[LIQUID] added data source .. driver:"+driver
+                +" - host:"+(host != null ? host : "[n/d]")
+                +" - port:"+(port != null ? port : "[n/d]")
+                +" - database:"+(database != null ? database : "[n/d]")
+                +" - user:"+(user != null ? user : "[n/d]")
+        );
         
         return true;        
     }
