@@ -3,9 +3,9 @@
  */
 
 var LiquidEditing = {
-    version: 1.09,
+    version: 2.01,
     controlid:"Liquid framework - Editing module",
-    lastUpdate: '07/03/2022',
+    lastUpdate: '03/04/2022',
     
     
     /**
@@ -3200,6 +3200,22 @@ var LiquidEditing = {
             if (!Liquid.appName)
                 Liquid.appName = "";
 
+
+            // Wrap true to "S"
+            Liquid.showList = Liquid.showList === 'S' ? true : false;
+            Liquid.autoSelect = Liquid.autoSelect === 'S' ? true : false;
+            Liquid.autoFind = Liquid.autoFind === 'S' ? true : false;
+            Liquid.popupCommand = Liquid.popupCommand === 'S' ? true : false;
+            Liquid.use_asset = Liquid.use_asset === 'S' ? true : false;
+            Liquid.can_insert = Liquid.can_insert === 'S' ? true : false;
+            Liquid.can_update = Liquid.can_update === 'S' ? true : false;
+            Liquid.can_delete = Liquid.can_delete === 'S' ? true : false;
+            Liquid.process_foreign_tables = Liquid.process_foreign_tables === 'S' ? true : false;
+            Liquid.process_hibernate = Liquid.process_hibernate === 'S' ? true : false;
+            Liquid.process_events_callback = Liquid.process_events_callback === 'S' ? true : false;
+            Liquid.process_lookup_code = Liquid.process_lookup_code === 'S' ? true : false;
+
+
             if (!Liquid.fieldInTitleBar)
                 Liquid.fieldInTitleBar = "";
             if (!Liquid.maxResult)
@@ -3287,7 +3303,7 @@ var LiquidEditing = {
                 + "<tr><td>Hibernate folder</td><td><input id=\"" + "hibFolder" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value=\"" + ( Liquid.hibFolder ) + "\" "+onKeyPressCode+"/></td</tr>"
                 + "<tr><td>Generate events callback</td><td><input id=\"" + "process_events_callback" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_hibernate + "' "+onKeyPressCode+eventCallbackCode+"/></td</tr>"
                 + "<tr><td>Events calback class file</td><td><input id=\"" + "eventsFunctionsFile" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + (Liquid.eventsFunctionsFile) + "' "+onKeyPressCode+"/></td</tr>"
-                + "<tr><td>Generate lookup code</td><td><input id=\"" + "process_lookup_code" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_hibernate + "' "+onKeyPressCode+lookuoCode+"/></td</tr>"
+                + "<tr><td>Generate lookup code</td><td><input id=\"" + "process_lookup_code" + "\" class=\"liquidSystemDialogInput\" type=\"text\" autocomplete='off' value='" + Liquid.process_lookup_code + "' "+onKeyPressCode+lookuoCode+"/></td</tr>"
                 + "<tr><td>Lookup class file</td><td><input id=\"" + "lookupDefinitionFile" + "\" class=\"liquidSystemDialogInput\" type=\"text\" value='" + (Liquid.lookupDefinitionFile) + "' "+onKeyPressCode+"/></td</tr>"
                 + "</table>"
                 + "</br>"
@@ -3516,6 +3532,8 @@ var LiquidEditing = {
                                 ,can_delete:Liquid.can_delete === 'S' ? true : false
                                 ,process_foreign_tables:Liquid.process_foreign_tables === 'S' ? true : false
                                 ,process_hibernate:Liquid.process_hibernate === 'S' ? true : false
+                                ,process_events_callback:Liquid.process_events_callback === 'S' ? true : false
+                                ,process_lookup_code:Liquid.process_lookup_code === 'S' ? true : false
                                 ,projectFolder:Liquid.projectFolder
                                 ,eventsFunctionsFile:Liquid.eventsFunctionsFile
                                 ,lookupDefinitionFile:Liquid.lookupDefinitionFile
