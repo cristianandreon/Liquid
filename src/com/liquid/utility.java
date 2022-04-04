@@ -1686,6 +1686,10 @@ public class utility {
         }
     }
 
+    public static Object invoke(Object opal, String hibGetter) {
+    return null;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
