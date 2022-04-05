@@ -289,6 +289,34 @@ public class event {
         return null;
     }
 
+    /**
+     *
+     * @param clsInstance
+     * @param methodName
+     * @param params
+     * @return
+     * @throws ClassNotFoundException
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
+    public static Object invoke (Object clsInstance, String methodName, Object [] params) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Class cls = Class.forName(clsInstance.getClass().getName());
+        Method method = null;
+        if (cls != null) {
+            method = cls.getMethod(methodName);
+        }
+        if (method != null && clsInstance != null) {
+            if(params == null) {
+                return method.invoke(clsInstance);
+            } else {
+                // TODO : PASSAGGIO ARGOMENTI
+                return method.invoke(clsInstance, params);
+            }
+        }
+        return null;
+    }
+
 
     /**
      *

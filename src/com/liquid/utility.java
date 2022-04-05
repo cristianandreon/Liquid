@@ -4,35 +4,20 @@
 
 package com.liquid;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.nio.file.attribute.*;
-import java.text.DateFormat;
-import java.text.DateFormatSymbols;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,23 +31,27 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-
-import com.sun.org.apache.bcel.internal.generic.ARETURN;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
-
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
 import java.security.cert.X509Certificate;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-// comment this for java <= 7
-import org.jsoup.Jsoup;
+import java.text.DateFormat;
+import java.text.DateFormatSymbols;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class utility {
 
@@ -912,6 +901,10 @@ public class utility {
         }
     }
 
+    /**
+     * Execute command by Runtime.getRuntime().exec
+     * @param script
+     */
     public static void execute_process(String script) {
 
         try {
@@ -937,6 +930,25 @@ public class utility {
             // log.error(e.getMessage());
         }
     }
+
+    /**
+     * Create system process by ProcessBuilder
+     * @param processPath
+     * @param args
+     * @return
+     */
+    public static Process startProcess(String processPath, String [] args) throws IOException {
+        String folder = getFolderFromFile(processPath);
+        ArrayList<String> argsList = new ArrayList<String>();
+        argsList.add(processPath);
+        argsList.addAll(Arrays.asList(args));
+        ProcessBuilder pbuilder = new ProcessBuilder(argsList);
+        pbuilder.directory(new File(folder));
+        Process process = pbuilder.start();
+        return process;
+    }
+
+
 
     static public String appendSeparator(String path) {
         if (path != null && !path.isEmpty()) {
@@ -1686,8 +1698,11 @@ public class utility {
         }
     }
 
-    public static Object invoke(Object opal, String hibGetter) {
-    return null;
+    public static Object invoke(Object clsInstance, String methodName) throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return event.invoke(clsInstance, methodName, null);
+    }
+    public static Object invoke(Object clsInstance, String methodName, Object [] Params) throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return event.invoke(clsInstance, methodName, Params);
     }
 
 

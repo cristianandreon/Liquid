@@ -2601,7 +2601,7 @@ public class db {
                                             int targetColumnIndex,
                                             String service,
                                             boolean skipMissingField
-    ) throws SQLException, JSONException {
+    ) throws Exception {
         int addedRow = 0;
         StringBuilder out_string = new StringBuilder("");
         StringBuilder out_codes_string = new StringBuilder("");
@@ -2679,6 +2679,8 @@ public class db {
 
                         out_string.append("{");
                         String fieldName = null;
+                        int field_added = 0;
+
                         try {
                             if (idColumn != null) {
                                 fieldValue = rsdo.getString(idColumn);
@@ -2696,6 +2698,7 @@ public class db {
                                             if (fieldValue == null) fieldValue = "";
                                         }
                                         out_values_string.append("\"" + fieldValue + "\"");
+                                        field_added++;
 
                                     } catch (Exception e) {
                                         Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
@@ -2709,6 +2712,7 @@ public class db {
                                             if (fieldValue == null) fieldValue = "";
                                         }
                                         out_values_string.append("\"" + fieldValue + "\"");
+                                        field_added++;
                                     } catch (Exception e) {
                                         Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
                                         throw new Exception(e);
@@ -2721,6 +2725,7 @@ public class db {
                                             if (fieldValue == null) fieldValue = "";
                                         }
                                         out_values_string.append("\"" + fieldValue + "\"");
+                                        field_added++;
                                     } catch (Exception e) {
                                         // fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
                                         Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
@@ -2728,15 +2733,17 @@ public class db {
                                     }
                                 } else if (colTypes[ic] == -7) {
                                     out_values_string.append("" + rsdo.getBoolean(columns_alias[0]) + "");
+                                    field_added++;
                                 } else {
                                     fieldValue = rsdo.getString(columns_alias[0]);
                                     if(fieldValue != null) fieldValue = fieldValue.replace("\"", "\\\"");
                                     out_values_string.append("\"" + (fieldValue != null ? fieldValue : "") + "\"");
+                                    field_added++;
                                 }
 
                             } else {
                                 for (int ic = 0; ic < cols.length(); ic++) {
-                                    String columnAlias = columns_alias != null ? columns_alias[ic] : null;
+                                    String columnAlias = ic < columns_alias.length ? (columns_alias != null ? columns_alias[ic] : null) : null;
 
                                     if (ic < maxColumn || maxColumn <= 0) {
                                         JSONObject col = cols.getJSONObject(ic);
@@ -2763,6 +2770,7 @@ public class db {
                                                 fieldValue = nf.format(dFieldValue);
                                             }
                                             out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                            field_added++;
 
                                         } else if (colTypes[ic] == 91) { //date
                                             java.sql.Date dbSqlDate = columnAlias != null ? rsdo.getDate(columnAlias) : rsdo.getDate(ic + 1);
@@ -2771,6 +2779,7 @@ public class db {
                                                 if(fieldValue == null) fieldValue = "";
                                             }
                                             out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                            field_added++;
 
                                         } else if (colTypes[ic] == 92) { //time
                                             java.sql.Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic + 1);
@@ -2779,6 +2788,7 @@ public class db {
                                                 if(fieldValue == null) fieldValue = "";
                                             }
                                             out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                            field_added++;
 
                                         } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
                                             java.sql.Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic + 1);
@@ -2788,27 +2798,35 @@ public class db {
                                             }
                                             // } catch (Exception e) { fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00"; }
                                             out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                            field_added++;
 
                                         } else if (colTypes[ic] == -7) {
                                             fieldValue = ("" + rsdo.getBoolean(columnAlias) + "");
                                             out_string.append("\"" + fieldName + "\":" + fieldValue + "");
+                                            field_added++;
                                         } else {
                                             fieldValue = columnAlias != null ? rsdo.getString(columnAlias) : rsdo.getString(ic + 1);
                                             // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
                                             fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : db.NULLValue;
                                             out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                            field_added++;
                                         }
                                     }
                                 }
                             }
                         } catch (Exception e) {
                             fieldValue = "";
+
                             if(skipMissingField) {
+                                if (field_added > 0) {
+                                    out_string.append(",");
+                                }
+                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
                             } else {
                                 error += "[ Retrieve Error:" + e.getLocalizedMessage() + executingQuery + " ]" + "[Driver:" + tbl_wrk.driverClass + "]";
                                 System.err.println("// Retrieve Error at cRow:" + cRow + " fieldName:" + fieldName + " fieldValue:" + fieldValue + " Error:" + e.getLocalizedMessage() + executingQuery);
+                                throw new Exception(e);
                             }
-                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
                         }
 
                         if (!isCrossTableService) {

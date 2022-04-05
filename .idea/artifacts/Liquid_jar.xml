@@ -3,7 +3,6 @@
     <output-path>$PROJECT_DIR$/out</output-path>
     <root id="archive" name="Liquid.jar">
       <element id="module-output" name="Liquid" />
-      <element id="library" level="project" name="small_lib_servlet3" />
     </root>
   </artifact>
 </component>
