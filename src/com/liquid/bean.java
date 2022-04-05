@@ -2001,7 +2001,7 @@ public class bean {
             }
 
             String[] columnsList = null;
-            if ("*".equalsIgnoreCase(columns) || "all".equalsIgnoreCase(columns)) {
+            if ("*".equalsIgnoreCase(columns) || "all".equalsIgnoreCase(columns) || columns == null) {
             } else {
                 // TODO : not supported, should review get_recordset ()
                 // columnsList = columns.split(",");

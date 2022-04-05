@@ -1744,7 +1744,7 @@ public class utility {
         if (dataListCache != null) {
             beans = dataListCache.beans;
         } else {
-            beans = bean.load_beans(databaseSchemaTable, "" + codeColumn + "," + descColumn, where, 0);
+            beans = bean.load_beans(databaseSchemaTable, null, where, 0);
         }
         out += "<datalist id=\"" + datalistId + "\">";
         if (emptyRow != null) {

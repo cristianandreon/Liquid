@@ -13731,17 +13731,20 @@ var Liquid = {
                                 if (linkeCol.type === "6") {
                                     // date
                                     obj.type = 'datetime-local';
-                                    obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
+                                    // TODO: obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
+                                    obj.format = "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
                                     obj.setAttribute("data-date-format", obj.format);
                                 } else if (linkeCol.type === "91") {
                                     // date
                                     obj.type = 'date';
-                                    obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy";
+                                    // TODO: obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy";
+                                    obj.format = "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy";
                                     obj.setAttribute("data-format", obj.format);
                                 } else if (linkeCol.type === "93") {
                                     // timestamp
                                     obj.type = 'datetime-local';
-                                    obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
+                                    // TODO: obj.format = "MM" + Liquid.dateSep + "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
+                                    obj.format = "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
                                     obj.setAttribute("data-date-format", obj.format);
                                 }
                                 Liquid.setDateTimePickerNode(obj, obj.type);
@@ -14042,7 +14045,8 @@ var Liquid = {
                                                 // use of date.js
                                                 d = Date.parse(value);
                                                 if (d) {
-                                                    value = d.toString(Liquid.timestampFormat ? Liquid.timestampFormat : 'ddd dd MMM yyyy, HH:mm');
+                                                    // value = d.toString(Liquid.timestampFormat ? Liquid.timestampFormat : 'ddd dd MMM yyyy, HH:mm');
+                                                    value = value;
                                                 } else {
                                                     value = "";
                                                 }
