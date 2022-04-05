@@ -1698,6 +1698,13 @@ public class utility {
         }
     }
 
+    public static Object invoke(Object clsInstance, String methodName) throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return event.invoke(clsInstance, methodName, null);
+    }
+    public static Object invoke(Object clsInstance, String methodName, Object [] Params) throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return event.invoke(clsInstance, methodName, Params);
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
