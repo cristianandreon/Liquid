@@ -1304,9 +1304,9 @@ public class db {
                                 JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                                 for (int i = 0; i < sortColumns.length(); i++) {
                                     String sortColumn = sortColumns.getString(i);
-                                    String sortColumnAlias = sortColumn;
+                                    String sortColumnAlias = itemIdString + sortColumn + itemIdString;
 
-                                    if (isOracle) { // need column alias
+                                    if (isOracle || isPostgres || isMySQL || isSqlServer) { // need column alias
                                         for (int ic = 0; ic < cols.length(); ic++) {
                                             JSONObject col = cols.getJSONObject(ic);
                                             String colName = null;
@@ -1347,7 +1347,7 @@ public class db {
                                                 + itemIdString + sortColumnAlias + itemIdString;
                                          */
                                         sSort += ""
-                                                + itemIdString + sortColumnAlias + itemIdString;
+                                                + sortColumnAlias ;
 
                                         if (sortColumnsMode != null) {
                                             sSort += " " + sortColumnsMode.getString(i);
@@ -5139,7 +5139,10 @@ public class db {
                                     } else if (oFieldValue instanceof Boolean) {
                                             sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":" + (((boolean)oFieldValue) ? "true" : "false") + "}";
                                     } else {
-                                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                                        fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\") : "";
+                                        fieldValue = fieldValue != null ? fieldValue.replace("\n", "\\n") : "";
+                                        fieldValue = fieldValue != null ? fieldValue.replace("\"", "\\\"") : "";
+                                        fieldValue = fieldValue != null ? fieldValue.replace("\t", "\\t") : "";
                                         sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + fieldValue + "\"}";
                                     }
                                 }

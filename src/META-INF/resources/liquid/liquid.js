@@ -13730,7 +13730,11 @@ var Liquid = {
                                         if (!isDef(linkeCol.default)) {
                                             // N.B.: usare il campo defaul nel DB o nel JSON
                                             // linkeCol.default = obj.value;
-                                            liquid.addingRow[linkeCol.field] = obj.value;
+                                            try {
+                                                if (liquid.addingRow)
+                                                    if (Number(linkeCol.field) >= 0)
+                                                        liquid.addingRow[linkeCol.field] = obj.value;
+                                            } catch(e) {}
                                         } else {
                                             if (linkeCol.default !== obj.value) {
                                                 console.warn("WARNING: default value on layout '" + layout.name + "' ignored because database default is already definid");
@@ -14397,7 +14401,7 @@ var Liquid = {
             if (obj.childNodes) {
                 for (var j = 0; j < obj.childNodes.length; j++) {
                     try {
-                        if (obj.childNodes[j].nodeType != 3) {
+                        if (obj.childNodes[j].nodeType != 3 && obj.childNodes[j].nodeType != 8) {
                             var foreignTable1B = obj.childNodes[j].getAttribute('foreignTable1B');
                             if (foreignTable1B) {
                                 // restore opriginal parent
