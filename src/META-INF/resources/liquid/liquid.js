@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.2.04
+// Liquid ver.2.05
 //
-//  First update 04-01-2020 - Last update 10-03-2022
+//  First update 06-01-2020 - Last update 10-03-2022
 //
 //  TODO : see trello.com
 //
@@ -9252,7 +9252,10 @@ var Liquid = {
                         if (liquid.tableJson.columns[ic].required) {
                             if (!liquid.tableJson.columns[ic].isValidated) {
                                 var addingValue = liquid.addingRow[liquid.tableJson.columns[ic].field];
-                                if (!addingValue || addingValue === '') {
+                                if (!addingValue
+                                    || addingValue === ''
+                                    || (addingValue == 'N' && liquid.tableJson.columns[ic].size ==1)
+                                ) {
                                     msg += (Liquid.lang === 'eng' ? " the field " : "il campo ") + "<b>"
                                         + liquid.tableJson.columns[ic].name
                                         + "</b>" + (Liquid.lang === 'eng' ? " is required" : " e' richiesto") + "</br>";
@@ -9931,6 +9934,7 @@ var Liquid = {
         }
     },
     onButton: function (obj, command) {
+        var retVal = null;
         if (command) {
             if ((command.confirm ? confirm(command.confirm) : true)) {
                 var liquid = Liquid.getLiquid(obj);
@@ -9990,7 +9994,7 @@ var Liquid = {
                         if (!selNodes || selNodes.length === 0) {
                             var msg = Liquid.lang === 'eng' ? ("No items selected") : ("Nessuna riga selezionata");
                             Liquid.showToast(Liquid.appTitle, msg, "warning");
-                            return;
+                            return retVal;
                         }
                     }
                     if (command.name === "insert" || command.name === "update" || command.name === "delete") {
@@ -10001,7 +10005,7 @@ var Liquid = {
                                 if (!selNodes || selNodes.length === 0) {
                                     var msg = Liquid.lang === 'eng' ? ("No items selected on parent") : ("Nessuna riga selezionata in " + parentLiquid.controlId);
                                     Liquid.showToast(Liquid.appTitle, msg, "warning");
-                                    return;
+                                    return retVal;
                                 }
                             }
                         }
@@ -10140,11 +10144,12 @@ var Liquid = {
                             }
                         }
                         Liquid.resetMofifications(liquid);
-                        return;
+                        return retVal;
 
                     } else if (command.name === "filter") {
                         Liquid.onExecuteFilter(liquid);
-                        return;
+                        return retVal;
+
                     } else if (command.name === "next" || command.name === "previous") {
                         command.step = 0;
                         // avoid lokkup close
@@ -10189,18 +10194,20 @@ var Liquid = {
                             Liquid.updateStatusBar(liquid);
                         }
                         Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
-                        return;
-                    } else if (command.name === "copy") {
-                        Liquid.copyToClipBorad(liquid);
-                        Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
-                        return;
-                    } else if (command.name === "paste") {
-                        Liquid.pasteFromClipBorad(liquid);
-                        Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
-                        return;
-                    }
-                    if (command.step === 0) { // prepare
+                        return true;
 
+                    } else if (command.name === "copy") {
+                        retVal = Liquid.copyToClipBorad(liquid);
+                        Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
+                        return retVal;
+
+                    } else if (command.name === "paste") {
+                        retVal = Liquid.pasteFromClipBorad(liquid);
+                        Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
+                        return retVal;
+                    }
+
+                    if (command.step === 0) { // prepare
                         if (command.linkedLabelObj)
                             if (isDef(command.labels))
                                 if (command.labels.length >= 1)
@@ -10268,7 +10275,7 @@ var Liquid = {
                         if (Liquid.isRollbackCommand(command))
                             command.step = Liquid.CMD_EXECUTE;
                         else if (!bContinue)
-                            return;
+                            return null;
                     }
 
                     if (command.step === Liquid.CMD_WAIT_FOR_ENABLE) {
@@ -10375,7 +10382,7 @@ var Liquid = {
                     } else if (command.step === Liquid.CMD_VALIDATE) {
                         if (command.name === "insert") {
                             if (!Liquid.onValidateFields(liquid, command)) {
-                                return;
+                                return false;
                             }
                         }
                         if (isDef(command.onValidate)) {
@@ -10396,7 +10403,7 @@ var Liquid = {
                                         command.linkedLabelObj.innerHTML = command.labels[1];
                             } else {
                                 command.step = 0;
-                                return;
+                                return false;
                             }
                         } else {
                             command.step = Liquid.CMD_EXECUTE;
@@ -10470,18 +10477,20 @@ var Liquid = {
                         Liquid.onEvent(obj, "onRollback", liquid.addingRow);
 
                         Liquid.resetMofifications(liquid);
-                        return;
+                        return true;
                     }
                 } else {
                     command.step = Liquid.CMD_EXECUTE;
                 }
                 if (command.step === Liquid.CMD_EXECUTE) {
                     var liquidCommandParams = Liquid.buildCommandParams(liquid, command, obj);
-                    Liquid.onCommandStart(liquidCommandParams);
+                    retVal = Liquid.onCommandStart(liquidCommandParams);
                     command.step = 0;
+                    return retVal;
                 }
             }
         }
+        return retVal;
     },
     // get the HTML Element owning the value
     getItemObj: function (column) {
@@ -13719,7 +13728,8 @@ var Liquid = {
                                 if (obj.value) {
                                     if (layout.rowsContainer[iRow].isAdding) {
                                         if (!isDef(linkeCol.default)) {
-                                            linkeCol.default = obj.value;
+                                            // N.B.: usare il campo defaul nel DB o nel JSON
+                                            // linkeCol.default = obj.value;
                                             liquid.addingRow[linkeCol.field] = obj.value;
                                         } else {
                                             if (linkeCol.default !== obj.value) {
@@ -14122,11 +14132,11 @@ var Liquid = {
     },
     invalidateHtmlObject: function (obj) {
         if (obj) {
-            obj.dataset.borderColor = obj.style.borderColor;
-            obj.dataset.borderWidth = obj.style.borderWidth;
-            obj.dataset.borderStyle = obj.style.borderStyle;
-            obj.dataset.outline = obj.style.outline;
-            obj.dataset.boxShadow = obj.style.boxShadow;
+            obj.dataset.borderColor = obj.style.borderColor ? obj.style.borderColor : "";
+            obj.dataset.borderWidth = obj.style.borderWidth ? obj.style.borderWidth : "";
+            obj.dataset.borderStyle = obj.style.borderStyle ? obj.style.borderStyle : "";
+            obj.dataset.outline = obj.style.outline ? obj.style.outline : "";
+            obj.dataset.boxShadow = obj.style.boxShadow ? obj.style.boxShadow : "";
             obj.style.borderColor = Liquid.invalidInputBorderColor;
             obj.style.borderWidth = Liquid.invalidInputBorderWidth;
             obj.style.borderStyle = Liquid.invalidInputBorderStyle;
@@ -14136,19 +14146,19 @@ var Liquid = {
     },
     validateHtmlObject: function (obj) {
         if (obj) {
-            if (obj.dataset.borderColor)
+            if (typeof obj.dataset.borderColor !== 'undefined')
                 obj.style.borderColor = obj.dataset.borderColor;
             obj.dataset.borderColor = null;
-            if (obj.dataset.borderWidth)
+            if (typeof obj.dataset.borderWidth !== 'undefined')
                 obj.style.borderWidth = obj.dataset.borderWidth;
             obj.dataset.borderWidth = null;
-            if (obj.dataset.borderStyle)
+            if (typeof obj.dataset.borderStyle !== 'undefined')
                 obj.style.borderStyle = obj.dataset.borderStyle;
             obj.dataset.borderStyle = null;
-            if (obj.dataset.outline)
+            if (typeof obj.dataset.outline !== 'undefined')
                 obj.style.outline = obj.dataset.outline;
             obj.dataset.outline = null;
-            if (obj.dataset.boxShadow)
+            if (typeof obj.dataset.boxShadow !== 'undefined')
                 obj.style.boxShadow = obj.dataset.boxShadow;
             obj.dataset.boxShadow = null;
         }
@@ -16678,7 +16688,7 @@ var Liquid = {
         if(targetObj) {
             if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
                 if(targetObj.type === 'checkbox') {
-                    targetObj.checked = (value === 'true' || value === 'Y' || value === 'y' || value === 'S' || value === 's' || value === true || value === '1' ? true : false);
+                    targetObj.checked = (value === 'on' || value === 'true' || value === 'Y' || value === 'y' || value === 'S' || value === 's' || value === true || value === '1' ? true : false);
                 } else if(targetObj.type === 'file') {
                     console.warn("WARNING : cannot set file of a form element " + targetObj.id);
                 } else {

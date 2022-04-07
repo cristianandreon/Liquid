@@ -38,7 +38,7 @@ public class workspace {
     public static String path = null;
     static public String pythonPath = null;
     static public String pythonExecutable = null;
-    public static String version_string = "1.99";
+    public static String version_string = "2.06";
 
     //
     // key persistent on server but hidden on the client

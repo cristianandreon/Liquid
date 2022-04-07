@@ -2084,6 +2084,11 @@ public class bean {
                 }
             }
 
+            //
+            // TODO : costruire i left join sui campi table.field
+            //
+            boolean skipMissingColumn = true;
+
             String executingQuery = "SELECT "
                     + (columnsList != null ? utility.arrayToString(columnsList, null, null, ",") : "*")
                     + " FROM " + tbl_wrk.schemaTable
@@ -2149,7 +2154,8 @@ public class bean {
                         false,
                         -1,
                         null,
-                        false);
+                        skipMissingColumn
+                );
 
                 // Freee connection as soon as possible
                 if (rsdo != null) {

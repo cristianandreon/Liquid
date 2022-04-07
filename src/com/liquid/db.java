@@ -2744,89 +2744,88 @@ public class db {
                             } else {
                                 for (int ic = 0; ic < cols.length(); ic++) {
                                     String columnAlias = ic < columns_alias.length ? (columns_alias != null ? columns_alias[ic] : null) : null;
+                                    try {
+                                        if (ic < maxColumn || maxColumn <= 0) {
+                                            JSONObject col = cols.getJSONObject(ic);
 
-                                    if (ic < maxColumn || maxColumn <= 0) {
-                                        JSONObject col = cols.getJSONObject(ic);
-
-                                        if (ic > 0) {
-                                            out_string.append(",");
-                                        }
-                                        if (bColumnsResolved) {
-                                            fieldName = col.getString("field");
-                                        } else {
-                                            if (columns_json != null) {
-                                                fieldName = columns_json[ic];
+                                            if (ic > 0) {
+                                                out_string.append(",");
+                                            }
+                                            if (bColumnsResolved) {
+                                                fieldName = col.getString("field");
                                             } else {
-                                                fieldName = col.has("runtimeName") ? col.getString("runtimeName") : col.getString("name");
+                                                if (columns_json != null) {
+                                                    fieldName = columns_json[ic];
+                                                } else {
+                                                    fieldName = col.has("runtimeName") ? col.getString("runtimeName") : col.getString("name");
+                                                }
+                                            }
+                                            if (colTypes[ic] == 8) {
+                                                double dFieldValue = columnAlias != null ? rsdo.getDouble(columns_alias[ic]) : rsdo.getDouble(ic + 1);
+                                                if (colDigits[ic] < 0) {
+                                                    fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
+                                                } else {
+                                                    nf.setGroupingUsed(false);
+                                                    nf.setMaximumFractionDigits(colDigits[ic]);
+                                                    fieldValue = nf.format(dFieldValue);
+                                                }
+                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                field_added++;
+
+                                            } else if (colTypes[ic] == 91) { //date
+                                                java.sql.Date dbSqlDate = columnAlias != null ? rsdo.getDate(columnAlias) : rsdo.getDate(ic + 1);
+                                                fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
+                                                if(renderService) {
+                                                    if(fieldValue == null) fieldValue = "";
+                                                }
+                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                field_added++;
+
+                                            } else if (colTypes[ic] == 92) { //time
+                                                java.sql.Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic + 1);
+                                                fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
+                                                if(renderService) {
+                                                    if(fieldValue == null) fieldValue = "";
+                                                }
+                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                field_added++;
+
+                                            } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
+                                                java.sql.Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic + 1);
+                                                fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
+                                                if(renderService) {
+                                                    if(fieldValue == null) fieldValue = "";
+                                                }
+                                                // } catch (Exception e) { fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00"; }
+                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                field_added++;
+
+                                            } else if (colTypes[ic] == -7) {
+                                                fieldValue = ("" + rsdo.getBoolean(columnAlias) + "");
+                                                out_string.append("\"" + fieldName + "\":" + fieldValue + "");
+                                                field_added++;
+                                            } else {
+                                                fieldValue = columnAlias != null ? rsdo.getString(columnAlias) : rsdo.getString(ic + 1);
+                                                // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
+                                                fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : db.NULLValue;
+                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                field_added++;
                                             }
                                         }
-                                        if (colTypes[ic] == 8) {
-                                            double dFieldValue = columnAlias != null ? rsdo.getDouble(columns_alias[ic]) : rsdo.getDouble(ic + 1);
-                                            if (colDigits[ic] < 0) {
-                                                fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
-                                            } else {
-                                                nf.setGroupingUsed(false);
-                                                nf.setMaximumFractionDigits(colDigits[ic]);
-                                                fieldValue = nf.format(dFieldValue);
-                                            }
+                                    } catch (Exception e) {
+                                        if(skipMissingField) {
                                             out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
-                                            field_added++;
-
-                                        } else if (colTypes[ic] == 91) { //date
-                                            java.sql.Date dbSqlDate = columnAlias != null ? rsdo.getDate(columnAlias) : rsdo.getDate(ic + 1);
-                                            fieldValue = dbSqlDate != null ? dateFormat.format(dbSqlDate) : null;
-                                            if(renderService) {
-                                                if(fieldValue == null) fieldValue = "";
-                                            }
-                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
-                                            field_added++;
-
-                                        } else if (colTypes[ic] == 92) { //time
-                                            java.sql.Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic + 1);
-                                            fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
-                                            if(renderService) {
-                                                if(fieldValue == null) fieldValue = "";
-                                            }
-                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
-                                            field_added++;
-
-                                        } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
-                                            java.sql.Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic + 1);
-                                            fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
-                                            if(renderService) {
-                                                if(fieldValue == null) fieldValue = "";
-                                            }
-                                            // } catch (Exception e) { fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00"; }
-                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
-                                            field_added++;
-
-                                        } else if (colTypes[ic] == -7) {
-                                            fieldValue = ("" + rsdo.getBoolean(columnAlias) + "");
-                                            out_string.append("\"" + fieldName + "\":" + fieldValue + "");
-                                            field_added++;
                                         } else {
-                                            fieldValue = columnAlias != null ? rsdo.getString(columnAlias) : rsdo.getString(ic + 1);
-                                            // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
-                                            fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : db.NULLValue;
-                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
-                                            field_added++;
+                                            throw new Exception(e);
                                         }
                                     }
                                 }
                             }
                         } catch (Exception e) {
                             fieldValue = "";
-
-                            if(skipMissingField) {
-                                if (field_added > 0) {
-                                    out_string.append(",");
-                                }
-                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
-                            } else {
-                                error += "[ Retrieve Error:" + e.getLocalizedMessage() + executingQuery + " ]" + "[Driver:" + tbl_wrk.driverClass + "]";
-                                System.err.println("// Retrieve Error at cRow:" + cRow + " fieldName:" + fieldName + " fieldValue:" + fieldValue + " Error:" + e.getLocalizedMessage() + executingQuery);
-                                throw new Exception(e);
-                            }
+                            error += "[ Retrieve Error:" + e.getLocalizedMessage() + executingQuery + " ]" + "[Driver:" + tbl_wrk.driverClass + "]";
+                            System.err.println("// Retrieve Error at cRow:" + cRow + " fieldName:" + fieldName + " fieldValue:" + fieldValue + " Error:" + e.getLocalizedMessage() + executingQuery);
+                            throw new Exception(e);
                         }
 
                         if (!isCrossTableService) {
@@ -3340,6 +3339,8 @@ public class db {
                             sqlSTMTUpdate.setString((i + 1), (String) val);
                         } else if (val instanceof Boolean) {
                             sqlSTMTUpdate.setBoolean((i + 1), (boolean) val);
+                        } else if (val == null) {
+                            sqlSTMTUpdate.setNull((i + 1), 1);
                         } else {
                             System.err.println("insert_row() invalid obejct type : "+ val.getClass().getName());
                         }

@@ -20,8 +20,12 @@ public class transaction {
      * @param request
      */
     public static boolean isTransaction(HttpServletRequest request) throws SQLException {
-        Connection conn = (Connection)request.getSession().getAttribute("Liquid.connection");
-        return conn != null;
+        if(request != null) {
+            Connection conn = (Connection) request.getSession().getAttribute("Liquid.connection");
+            return conn != null;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -31,7 +35,11 @@ public class transaction {
      * @throws SQLException
      */
     public static Connection getTransaction(HttpServletRequest request) throws SQLException {
-        return (Connection)request.getSession().getAttribute("Liquid.connection");
+        if(request != null) {
+            return (Connection)request.getSession().getAttribute("Liquid.connection");
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -39,8 +47,10 @@ public class transaction {
      * @param request
      */
     public static void commit(HttpServletRequest request) throws SQLException {
-        Connection conn = (Connection)request.getSession().getAttribute("Liquid.connection");
-        conn.commit();
+        if(request != null) {
+            Connection conn = (Connection)request.getSession().getAttribute("Liquid.connection");
+            conn.commit();
+        }
     }
 
     /**
@@ -48,8 +58,10 @@ public class transaction {
      * @param request
      */
     public static void rollback(HttpServletRequest request) throws SQLException {
-        Connection conn = (Connection)request.getSession().getAttribute("Liquid.connection");
-        conn.rollback();
+        if(request != null) {
+            Connection conn = (Connection) request.getSession().getAttribute("Liquid.connection");
+            conn.rollback();
+        }
     }
 
     /**
@@ -57,9 +69,11 @@ public class transaction {
      * @param request
      */
     public static void closeTransaction(HttpServletRequest request) throws SQLException {
-        Connection conn = (Connection)request.getSession().getAttribute("Liquid.connection");
-        request.getSession().setAttribute("Liquid.connection", null);
-        conn.close();
+        if(request != null) {
+            Connection conn = (Connection) request.getSession().getAttribute("Liquid.connection");
+            request.getSession().setAttribute("Liquid.connection", null);
+            conn.close();
+        }
     }
 
     /**
@@ -67,13 +81,17 @@ public class transaction {
      * @param request
      */
     public static boolean beginTransaction(HttpServletRequest request) throws Throwable {
-        Object [] connResult = connection.getLiquidDBConnection();
-        Connection sconn = (Connection)connResult[0];
-        if (sconn == null) {
+        if(request != null) {
+            Object[] connResult = connection.getLiquidDBConnection();
+            Connection sconn = (Connection) connResult[0];
+            if (sconn == null) {
+                return false;
+            }
+            request.getSession().setAttribute("Liquid.connection", sconn);
+            return true;
+        } else {
             return false;
         }
-        request.getSession().setAttribute("Liquid.connection", sconn);
-        return true;
     }
 
 
