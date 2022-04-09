@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.05
+// Liquid ver.2.06
 //
 //  First update 06-01-2020 - Last update 10-03-2022
 //
@@ -2561,7 +2561,7 @@ var Liquid = {
             var lang_list = language.split(';');
             var langFound = null;
             for (var il = 0; il < lang_list.length; il++) {
-                var lang = lang_list[il].split('-')[0];
+                var lang = lang_list[il].split('-')[0].toLowerCase();
                 if (lang === 'it' || lang === 'ita') {
                 } else if (lang === 'en' || lang === 'eng') {
                 } else {
@@ -2569,7 +2569,7 @@ var Liquid = {
                     lang = "en";
                 }
                 if (lang === 'it' || lang === 'ita') {
-                    Liquid.lang = langFound = 'ita';
+                    Liquid.lang = langFound = 'it';
                     Liquid.loadingMessage = "<div class=\"lds-ring-main\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Caricamento dati...</span>";
                     Liquid.noRowsMessage = "<span class=\"ag-overlay-loading-center\">Nessun dato trovato...</span>";
                     Liquid.noRowsInitialMessage = "<span style=''><a href='javascript:void(0)' onclick='Liquid.onSearch(this);' style='color:darkgrey'>..esegui la cerca..</a></span>";
@@ -3120,8 +3120,8 @@ var Liquid = {
                             params.push(
                                 JSON.parse(
                                     "{\"name\":\"" + childLiquid.controlId + "\""
-                                    + (curLiquid.tableJson.table ? ",\"table\":\"" + curLiquid.tableJson.table + "\"" : "")
-                                    + (curLiquid.tableJson.schema ? ",\"schema\":\"" + curLiquid.tableJson.schema + "\"" : "")
+                                    + (childLiquid.tableJson.table ? ",\"table\":\"" + childLiquid.tableJson.table + "\"" : "")
+                                    + (childLiquid.tableJson.schema ? ",\"schema\":\"" + childLiquid.tableJson.schema + "\"" : "")
                                     + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "")
                                     + (idsUnselected ? ",\"unsel\":[" + idsUnselected + "]" : "")
                                     + "}"
@@ -5465,9 +5465,11 @@ var Liquid = {
         }
         if (allFilterJson || ids) {
             sFiltersJson = "{";
-            if (isDef(ids) && ids.length) {
+            if (isDef(ids) && (ids instanceof Array && ids.length)) {
                 // overload filters
                 sFiltersJson += ("\"ids\":[" + ids + "]");
+            } else if (isDef(ids) && (typeof ids === 'string' && ids!=='')) {
+                sFiltersJson += ("\"ids\":[" + ids.split(",") + "]");
             } else if (isDef(allFilterJson)) {
                 // use filter conputed
                 sFiltersJson += "\"filtersJson\":" + (allFilterJson ? JSON.stringify(allFilterJson) : "{}");
@@ -8480,20 +8482,24 @@ var Liquid = {
                 var isCommandFound = false;
                 liquid.gridOptions.api.stopEditing();
                 if (liquid.tableJson.commands) {
+                    var searchingCommandName = commandName.toLowerCase();
                     for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
                         var command = liquid.tableJson.commands[icmd];
                         var commandDetected = false;
-                        if (commandName === command.name) {
-                            commandDetected = true;
-                            command.postFunc = commandPostFunc;
-                        } else if (commandName === "ok" || commandName === "return" || commandName === "cancel") {
-                            if (isDef(liquid.currentCommand)) {
-                                if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update" || liquid.currentCommand.name === "delete") {
+                        if(command) {
+                            if (command.name) {
+                                if (searchingCommandName === command.name.toLowerCase()) {
                                     commandDetected = true;
+                                    command.postFunc = commandPostFunc;
+                                } else if (commandName === "ok" || commandName === "return" || commandName === "cancel") {
+                                    if (isDef(liquid.currentCommand)) {
+                                        if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update" || liquid.currentCommand.name === "delete") {
+                                            commandDetected = true;
+                                        }
+                                    }
                                 }
                             }
                         }
-
                         if (commandDetected) {
                             if (isDef(liquid.currentCommand)) {
                                 if (liquid.currentCommand.name === command.name) {
@@ -9256,8 +9262,12 @@ var Liquid = {
                                     || addingValue === ''
                                     || (addingValue == 'N' && liquid.tableJson.columns[ic].size ==1)
                                 ) {
+                                    var fieldName = liquid.tableJson.columns[ic].name;
+                                    var labelName = "label" + (Liquid.lang.toLowerCase() != 'eng' ? "_"+Liquid.lang.toLowerCase() : "");
+                                    if(isDef(liquid.tableJson.columns[ic][labelName]))
+                                        fieldName = liquid.tableJson.columns[ic][labelName];
                                     msg += (Liquid.lang === 'eng' ? " the field " : "il campo ") + "<b>"
-                                        + liquid.tableJson.columns[ic].name
+                                        + fieldName
                                         + "</b>" + (Liquid.lang === 'eng' ? " is required" : " e' richiesto") + "</br>";
                                     liquid.tableJson.columns[ic].isChecked = true;
                                     liquid.tableJson.columns[ic].isValidated = false;
@@ -10741,6 +10751,18 @@ var Liquid = {
                             }
                         } else {
                             Liquid.onButton(liquid, {name: "insert"});
+                        }
+                    } else if (propName == "commandBarVisible") {
+                        if (liquid.tableJson.commandBarVisible === false) {
+                            if(liquid.commandsObj) liquid.commandsObj.style.display = "none";
+                        } else {
+                            if(liquid.commandsObj) liquid.commandsObj.style.display = "";
+                        }
+                    } else if (propName == "navBarVisible") {
+                        if (liquid.tableJson.commandBarVisible === false) {
+                            if(liquid.navObj) liquid.navObj.style.display = "none";
+                        } else {
+                            if(liquid.navObj) liquid.navObj.style.display = "";
                         }
                     }
                 } catch (e) {
@@ -13124,6 +13146,7 @@ var Liquid = {
                                 layout.rowsContainer.push({
                                     containerObj: rowObj,
                                     objs: [],
+                                    objs_aux: [],
                                     objsSource: [],
                                     objsReload: [],
                                     objsReset: [],
@@ -13576,6 +13599,18 @@ var Liquid = {
                 liquid.linkedForm = obj;
             }
 
+            // search for aux linked obj
+            var obj_aux = null;
+            if(obj) {
+                if (obj.dataset) {
+                    if (obj.dataset.linkedauxid) {
+                        obj_aux = document.getElementById(obj.dataset.linkedauxid);
+                        if(!obj_aux)
+                            obj_aux = document.getElementsByName(obj.dataset.linkedauxid);
+                    }
+                }
+            }
+
             if (objLinkers) {
                 var linkeCol = null;
                 var objLinkerDesc = "";
@@ -13592,6 +13627,7 @@ var Liquid = {
                             layout.rowsContainer[iRow].containerObj.innerHTML = "";
                         });
                         layout.rowsContainer[iRow].objs = [];
+                        layout.rowsContainer[iRow].objs_aux = [];
                         layout.rowsContainer[iRow].objsInput = [];
                         layout.rowsContainer[iRow].objsSource = [];
                         layout.rowsContainer[iRow].objsReset = [];
@@ -13688,6 +13724,7 @@ var Liquid = {
                             }
 
                             var linkedObj = obj;
+                            var linkedObjAux = obj_aux;
                             var linkedObjInput = null;
                             var linkedObjSource = null;
                             var linkedObjReset = null;
@@ -13853,6 +13890,7 @@ var Liquid = {
                                 }
                             }
                             layout.rowsContainer[iRow].objs.push(linkedObj);
+                            layout.rowsContainer[iRow].objs_aux.push(linkedObjAux);
                             layout.rowsContainer[iRow].objsInput.push(linkedObjInput);
                             layout.rowsContainer[iRow].objsSource.push(linkedObjSource);
                             layout.rowsContainer[iRow].objsReset.push(linkedObjReset);
@@ -13870,6 +13908,7 @@ var Liquid = {
                                 }
                             }
                             layout.rowsContainer[iRow].objs.push(null);
+                            layout.rowsContainer[iRow].objs_aux.push(null);
                             layout.rowsContainer[iRow].objsInput.push(null);
                             layout.rowsContainer[iRow].objsSource.push(null);
                             layout.rowsContainer[iRow].objsReset.push(null);
@@ -14113,6 +14152,7 @@ var Liquid = {
                         if (layout.rowsContainer[irc]) {
                             var cols = layout.rowsContainer[irc].cols;
                             var objs = layout.rowsContainer[irc].objs;
+                            var objs_aux = layout.rowsContainer[irc].objs_aux;
                             // cols: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
                             // objs: (8) [input#NewAuction.layout.1.col.2.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.7.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.9.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.10.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.8.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.11.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.12.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.13.row.1.checkclass.liquidgridcontrolrw]
                             for (let ic = 0; ic < cols.length; ic++) {
@@ -14122,8 +14162,10 @@ var Liquid = {
                                     if (objs[ic]) {
                                         if (isValid) {
                                             Liquid.validateHtmlObject(objs[ic]);
+                                            Liquid.validateHtmlObject(objs_aux[ic]);
                                         } else {
                                             Liquid.invalidateHtmlObject(objs[ic]);
+                                            Liquid.invalidateHtmlObject(objs_aux[ic]);
                                         }
                                     }
                                 }
@@ -16304,6 +16346,7 @@ var Liquid = {
                                         }
                                         if(processRow) {
                                             var itemObj = layout.rowsContainer[ir].objs[ic];
+                                            var itemObjAux = layout.rowsContainer[ir].objs_aux[ic];
                                             var itemInputObj = layout.rowsContainer[ir].objsInput[ic];
                                             var itemSourceObj = layout.rowsContainer[ir].objsSource[ic];
                                             var itemResetObj = layout.rowsContainer[ir].objsReset[ic];
@@ -16692,7 +16735,11 @@ var Liquid = {
         if(targetObj) {
             if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
                 if(targetObj.type === 'checkbox') {
-                    targetObj.checked = (value === 'on' || value === 'true' || value === 'Y' || value === 'y' || value === 'S' || value === 's' || value === true || value === '1' ? true : false);
+                    targetObj.checked = (
+                        value === 'on' || value === 'true' || value === 'yes' ||  value === 'si'
+                        || value === 'Y' || value === 'y' || value === 'S' || value === 's'  || value === 'T' || value === 't'
+                        || value === true || value === '1'
+                            ? true : false);
                 } else if(targetObj.type === 'file') {
                     console.warn("WARNING : cannot set file of a form element " + targetObj.id);
                 } else {

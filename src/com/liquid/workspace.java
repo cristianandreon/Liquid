@@ -14,6 +14,9 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspWriter;
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -3410,12 +3413,20 @@ public class workspace {
     static public String get_file_content(HttpServletRequest request, String fileName) {
         return get_file_content(request, fileName, false, true);
     }
-
+    static public String get_file_content(HttpServletRequest request, String fileName, String charset) {
+        return get_file_content(request, fileName, false, true, Charset.forName(charset));
+    }
     static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName) {
         return get_file_content(request, fileName, trackFileName, true);
     }
-
     static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode) {
+        return get_file_content(request, fileName, trackFileName, b64Encode, StandardCharsets.UTF_8);
+    }
+    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode, String charset) {
+        return get_file_content (request, fileName, trackFileName, b64Encode, Charset.forName(charset));
+    }
+
+    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode, Charset charset) {
         String fileContent = "", lineContent;
         String fullFileName = null;
         String foundFileName = null;
@@ -3488,7 +3499,8 @@ public class workspace {
                 }
             }
             if (fileFound) {
-                fileContent = new String( Files.readAllBytes(new File(foundFileName).toPath()) );
+                fileContent = new String( Files.readAllBytes(new File(foundFileName).toPath()), charset != null ? charset : StandardCharsets.UTF_8);
+                // fileContent = Files.readAllLines(new File(foundFileName).toPath(), charset != null ? charset : StandardCharsets.UTF_8).toString();
             } else {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "get_file_content() : File not found!");
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "fullFileName:"+fullFileName);
@@ -4194,11 +4206,24 @@ public class workspace {
 
 
     static public String get_request_content(HttpServletRequest request) {
+        return get_request_content(request, String.valueOf(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Get body content from the HttpServletRequest
+     *
+     * @param request
+     * @param charset
+     * @return
+     */
+    static public String get_request_content(HttpServletRequest request, String charset) {
         try {
             if(request instanceof wsHttpServletRequest) {
                 return ((wsHttpServletRequest)request).body;
             } else {
                 StringBuilder buffer = new StringBuilder();
+                if(charset != null)
+                    request.setCharacterEncoding(charset);
                 BufferedReader reader = request.getReader();
                 int offset = 0, read = 0;
                 int size = 8192;
@@ -4207,7 +4232,7 @@ public class workspace {
                     while (read >= 0) {
                         read = reader.read(chunk, 0, size);
                         if (read > 0) {
-                            buffer.append(chunk, 0, read);
+                            buffer.append(new String( chunk, 0, read));
                             offset += read;
                         }
                     }

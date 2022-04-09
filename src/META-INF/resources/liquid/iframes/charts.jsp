@@ -1,6 +1,6 @@
 <%@ page
     language="java"
-    contentType="text/html; charset=iso-8859-1"
+    contentType="text/html; charset=UTF-8"
     import="javax.servlet.*"
     import="javax.servlet.http.*"
     import="javax.servlet.jsp.*"

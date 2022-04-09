@@ -1,6 +1,6 @@
 <%@ page 
     language="java" 
-    contentType="text/html; charset=iso-8859-1" 
+    contentType="text/html; charset=UTF-8"
     import="org.json.JSONObject"
     import="org.json.JSONArray"
     errorPage=""
@@ -63,7 +63,7 @@
         
             
             
-        // N.B.: Previsto ma non utilizzato : usanto il comando 'SERVER' exec è possibile lanciare l'interprete python
+        // N.B.: Previsto ma non utilizzato : usanto il comando 'SERVER' exec Ã¨ possibile lanciare l'interprete python
         //          L'uso del campo 'server' del json evita di duplicare codice in js
         //          E' eventualmente possibile lanciare codice python (risiedente su file nel server) da js con executeClientSide
         } else if ("pythonExec".equalsIgnoreCase(operation)) {
