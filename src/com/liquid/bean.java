@@ -1789,11 +1789,15 @@ public class bean {
                 tbl_wrk = workspace.get_tbl_manager_workspace(runtimeControlId);
                 if (tbl_wrk == null) {
                     runtimeControlId = workspace.getControlIdFromTable(databaseSchemaTable);
-                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db(runtimeControlId);
+                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db(runtimeControlId, controlId);
                 }
             }
         } else {
-            tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+            if(databaseSchemaTable == null) {
+                tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+            } else {
+                tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, controlId);
+            }
         }
         if (tbl_wrk == null) {
             // crea il controllo
@@ -1919,6 +1923,22 @@ public class bean {
 
     /**
      *
+     * Create all beans for given where condition
+     * N.B. select automatically the control by matching controlId ... or with high number of columns if database.schema.table match the argument "databaseSchemaTable"
+     *
+     * @param databaseSchemaTable
+     * @param controlId
+     * @param columns
+     * @param where_condition
+     * @param maxRows
+     * @return
+     */
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition, long maxRows) {
+        return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, maxRows);
+    }
+
+    /**
+     *
      * @param databaseSchemaTable
      * @param columns
      * @param where_condition
@@ -1927,6 +1947,19 @@ public class bean {
     static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition) {
         return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, -1);
     }
+
+    /**
+     *
+     * @param databaseSchemaTable
+     * @param controlId
+     * @param columns
+     * @param where_condition
+     * @return
+     */
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition) {
+        return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, -1);
+    }
+
 
     static public Object load_bean(String databaseSchemaTable, String columns, String where_condition) {
         ArrayList<Object> beans = load_beans((HttpServletRequest) null, (String) columns, databaseSchemaTable, null, where_condition, 1);

@@ -3583,13 +3583,14 @@ public class db {
      */
     public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKey, HttpServletRequest request) throws Throwable {
             boolean retVal = false;
+            String infoFields = "";
             int new_id = 0;
 
             Connection conn = null;
             String sSTMTUpdate = null;
 
             if(DatabaseSchemaTable == null || bean == null || primaryKey == null) {
-                return new Object [] { false, -1 };
+                return new Object [] { false, -1, "missing database or bean or primary key name" };
             }
 
             try {
@@ -3625,6 +3626,7 @@ public class db {
                                 if (isChanged) {
                                     sFields += (sFields.length() > 0 ? "," : "") + fieldName+"=" + "?" + "";
                                     paramValues.add(fieldData);
+                                    infoFields += "["+fieldName+"]";
                                 }
                             }
                         }
@@ -3632,56 +3634,62 @@ public class db {
 
                     if (primaryKey != null && !primaryKey.isEmpty()) {
 
-                        sWhere += primaryKey + "='" + primaryKeyValue + "'";
+                        if (primaryKeyValue != null) {
 
-                        sSTMTUpdate += sFields;
+                            sWhere += primaryKey + "='" + primaryKeyValue + "'";
 
-                        sSTMTUpdate += " WHERE ";
+                            sSTMTUpdate += sFields;
 
-                        sSTMTUpdate += sWhere;
+                            sSTMTUpdate += " WHERE ";
+
+                            sSTMTUpdate += sWhere;
 
 
 
-                        PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
+                            PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
 
-                        for (int i=0; i<paramValues.size(); i++) {
-                            Object val = paramValues.get(i);
-                            if (val instanceof Integer) {
-                                sqlSTMTUpdate.setInt((i + 1), (int) val);
-                            } else if (val instanceof Long) {
-                                sqlSTMTUpdate.setLong((i + 1), (long) val);
-                            } else if (val instanceof Float) {
-                                sqlSTMTUpdate.setFloat((i + 1), (float) val);
-                            } else if (val instanceof Double) {
-                                sqlSTMTUpdate.setDouble((i + 1), (double) val);
-                            } else if (val instanceof Timestamp) {
-                                sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
-                            } else if (val instanceof Date) {
-                                sqlSTMTUpdate.setDate((i + 1), (Date) val);
-                            } else if (val instanceof String) {
-                                sqlSTMTUpdate.setString((i + 1), (String) val);
+                            for (int i=0; i<paramValues.size(); i++) {
+                                Object val = paramValues.get(i);
+                                if (val instanceof Integer) {
+                                    sqlSTMTUpdate.setInt((i + 1), (int) val);
+                                } else if (val instanceof Long) {
+                                    sqlSTMTUpdate.setLong((i + 1), (long) val);
+                                } else if (val instanceof Float) {
+                                    sqlSTMTUpdate.setFloat((i + 1), (float) val);
+                                } else if (val instanceof Double) {
+                                    sqlSTMTUpdate.setDouble((i + 1), (double) val);
+                                } else if (val instanceof Timestamp) {
+                                    sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
+                                } else if (val instanceof Date) {
+                                    sqlSTMTUpdate.setDate((i + 1), (Date) val);
+                                } else if (val instanceof String) {
+                                    sqlSTMTUpdate.setString((i + 1), (String) val);
+                                }
                             }
-                        }
 
 
-                        int res = sqlSTMTUpdate.executeUpdate();
-                        if (res < 0) {
-                            System.err.println("Error updating db");
-                            retVal = false;
+                            int res = sqlSTMTUpdate.executeUpdate();
+                            if (res < 0) {
+                                System.err.println("Error updating db");
+                                retVal = false;
+                            } else {
+                                ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
+                                if (rs != null && rs.next()) {
+                                    new_id = rs.getInt(1);
+                                    retVal = true;
+                                }
+                                if (rs != null)
+                                    rs.close();
+                            }
+                            sqlSTMTUpdate.close();
+                            sqlSTMTUpdate = null;
+
                         } else {
-                            ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
-                            if (rs != null && rs.next()) {
-                                new_id = rs.getInt(1);
-                                retVal = true;
-                            }
-                            if (rs != null)
-                                rs.close();
+                            return new Object [] { false, -1, "missing primary key value" };
                         }
-                        sqlSTMTUpdate.close();
-                        sqlSTMTUpdate = null;
 
                     } else {
-                        return new Object [] { false, -1 };
+                        return new Object [] { false, -1, "missing primary key name" };
                     }
                 }
 
@@ -3707,7 +3715,7 @@ public class db {
                 conn = null;
             }
 
-            return new Object [] { retVal, new_id } ;
+            return new Object [] { retVal, new_id, infoFields } ;
         }
 
 

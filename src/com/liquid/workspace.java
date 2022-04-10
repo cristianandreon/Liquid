@@ -427,7 +427,7 @@ public class workspace {
      * @param databaseSchemaTable
      * @return
      */
-    static public workspace get_tbl_manager_workspace_from_db(String databaseSchemaTable) {
+    static public workspace get_tbl_manager_workspace_from_db(String databaseSchemaTable, String controlId) {
         String srcDatabaseSchemaTable = liquidize.liquidizeString(databaseSchemaTable, controlIdSeparator);
         int cumNumColumns = 0;
         workspace foundWorkspace = null;
@@ -436,21 +436,56 @@ public class workspace {
             if(tblWorkspace != null) {
                 String wrkDatabaseSchemaTable = liquidize.liquidizeString(tblWorkspace.databaseSchemaTable, controlIdSeparator);
                 if(utility.compare_db_schema_table(wrkDatabaseSchemaTable, srcDatabaseSchemaTable)) {
-                    int numColumns = 0;
-                    if(tblWorkspace.tableJson.has("columns")) {
-                        try {
-                            numColumns = tblWorkspace.tableJson.getJSONArray("columns").length();
-                        } catch (Exception e) {}
-                    }
-                    if(numColumns >= cumNumColumns) {
-                        cumNumColumns = numColumns;
-                        foundWorkspace = tblWorkspace;
+                    if(controlId != null) {
+                        if(controlId.equalsIgnoreCase(tblWorkspace.controlId)) {
+                            return foundWorkspace;
+                        }
+                        String [] controlIdParts = controlId.split("\\@");
+                        String [] tblWrkControlIdParts = tblWorkspace.controlId.split("\\@");
+                        if(controlIdParts.length > 1) {
+                            if(tblWrkControlIdParts.length > 1) {
+                                if(controlIdParts[1].equalsIgnoreCase(tblWrkControlIdParts[1])) {
+                                    foundWorkspace = tblWorkspace;
+                                }
+                            } else {
+                                if(controlIdParts[1].equalsIgnoreCase(tblWrkControlIdParts[0])) {
+                                    foundWorkspace = tblWorkspace;
+                                }
+                            }
+                        } else {
+                            if(tblWrkControlIdParts.length > 1) {
+                                if(controlIdParts[0].equalsIgnoreCase(tblWrkControlIdParts[1])) {
+                                    foundWorkspace = tblWorkspace;
+                                }
+                            } else {
+                                if(controlIdParts[0].equalsIgnoreCase(tblWrkControlIdParts[0])) {
+                                    foundWorkspace = tblWorkspace;
+                                }
+                            }
+                        }
+                    } else {
+                        int numColumns = 0;
+                        if (tblWorkspace.tableJson.has("columns")) {
+                            try {
+                                numColumns = tblWorkspace.tableJson.getJSONArray("columns").length();
+                            } catch (Exception e) {
+                            }
+                        }
+                        if (numColumns >= cumNumColumns) {
+                            cumNumColumns = numColumns;
+                            foundWorkspace = tblWorkspace;
+                        }
                     }
                 }
             }
         }
         return foundWorkspace;
     }
+
+    static public workspace get_tbl_manager_workspace_from_db(String databaseSchemaTable) {
+        return get_tbl_manager_workspace_from_db(databaseSchemaTable, null);
+    }
+
 
     /**
      * Stampa tutti i controlli su una stringa
