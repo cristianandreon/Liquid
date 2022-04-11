@@ -709,7 +709,7 @@ public class connection {
                     try {
                         cls = Class.forName("app.liquid.dbx.connection");
                         if(cls != null) {
-                            method = cls.getDeclaredMethod("closeDbConnection", Connection.class);
+                            method = cls.getDeclaredMethod("closeConnection", Connection.class);
                         }
                     } catch(NoSuchMethodException nsm) {
                     } catch(ClassNotFoundException cnf) {
@@ -717,13 +717,17 @@ public class connection {
                     }        
                     if(method != null) {
                         try {
-                            retVal = (boolean)method.invoke(null, conn);
+                            method.invoke(null, conn);
+                            retVal = (boolean)true;
                         } catch (IllegalAccessException ex) {
                             Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
                         } catch (IllegalArgumentException ex) {
                             Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
                         } catch (InvocationTargetException ex) {
                             Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (Throwable th) {
+                            Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, th);
+                            retVal = false;
                         }
                     } else {
                         // use internal method            

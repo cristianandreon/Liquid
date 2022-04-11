@@ -224,7 +224,7 @@ public class liquid {
 
 
     /**
-     * Ritorna il codice JS che avvia un controllo formX
+     * Prepare the script to execute in the client, and register the control (FormX/DialogX) in the server side
      *
      * @param request
      * @param controlId
@@ -304,6 +304,130 @@ public class liquid {
             }
         }
         return scriptToExec;
+    }
+
+
+
+    /**
+     *
+     * Prepare the script to execute in the client, and register the control (FormX/DialogX) in the server side
+     *
+     * @param request
+     * @param controlId
+     * @param jspPage               Pagina JSP che definische gli elementi HTML
+     * @param onOKServerClass       Classe da invocare su pressione pulsante OK
+     * @param onOKName              nome del pulsante OK
+     * @param onCancelServerClass   Classe da invocare su pressione pulsante Cancel
+     * @param onOKCancelName        nome del pulsante Cancel
+     * @param mode                  Modalita' (DialogX/FormX)
+     * @param fieldsValue           Valori iniziali dei campi
+     * @param userProps             Proprietà inmiziali del controllo
+     * @return
+     * @throws Throwable
+     */
+    public static String startFormX(
+            HttpServletRequest request
+            , String controlId
+            , String jspPage
+            , ArrayList<Object[]> jspParams
+            , String onOKServerClass
+            , String onOKName
+            , String onCancelServerClass
+            , String onOKCancelName
+            , String mode
+            , ArrayList<Object[]> fieldsValue
+            , ArrayList<Object[]> userProps
+    ) throws Throwable {
+
+        JSONObject popupJson = new JSONObject();
+
+        // Campi del controllo
+        JSONArray columnsJson = null;
+        if (fieldsValue != null) {
+            columnsJson = new JSONArray();
+            for (int iF = 0; iF < fieldsValue.size(); iF++) {
+                Object[] fieldValue = fieldsValue.get(iF);
+                if (fieldValue != null) {
+                    String name = (String) fieldValue[0];
+                    String value = (String) fieldValue[1];
+                    if (name != null) {
+                        JSONObject columnJson = new JSONObject();
+                        columnJson.put("name", name);
+                        columnJson.put("required", true);
+                        columnsJson.put(columnJson);
+                    }
+                }
+            }
+        }
+        popupJson.put("columns", columnsJson);
+
+        // Parametri da passare alla jsp del controllo
+        JSONArray jspParamsJson = null;
+        if (jspParams != null) {
+            jspParamsJson = new JSONArray();
+            for (int iF = 0; iF < jspParams.size(); iF++) {
+                Object[] jspParam = jspParams.get(iF);
+                if (jspParam != null) {
+                    String name = (String) jspParam[0];
+                    String value = (String) jspParam[1];
+                    if (name != null) {
+                        JSONObject jspParamJson = new JSONObject();
+                        jspParamJson.put("name", name);
+                        jspParamJson.put("required", true);
+                        jspParamsJson.put(jspParamJson);
+                    }
+                }
+            }
+        }
+
+        // Layout
+        JSONArray layoutsJson = new JSONArray();
+        JSONObject layoutJson = new JSONObject();
+        layoutJson.put("name", controlId);
+        layoutJson.put("source", "url("+jspPage+")");
+        if(jspParamsJson != null)
+            layoutJson.put("sourceParams", jspParamsJson);
+        layoutJson.put("nRows", 1);
+        layoutJson.put("overflow", "overlay");
+        layoutsJson.put(layoutJson);
+        popupJson.put("layouts", layoutsJson);
+
+        // Azioni
+        JSONArray actionsJson = new JSONArray();
+        JSONObject actionJson = new JSONObject();
+        actionJson.put("name", "cancel");
+        actionJson.put("img", "cancel.png");
+        actionJson.put("size", 20);
+        actionJson.put("text", "Annulla");
+        actionJson.put("client", "Liquid.close");
+        if(onOKServerClass != null)
+            actionJson.put("server", onOKServerClass);
+        actionJson.put("overflow", "overlay");
+        actionsJson.put(actionJson);
+        actionJson = new JSONObject();
+        actionJson.put("name", "ok");
+        actionJson.put("img", "add.png");
+        actionJson.put("size", 20);
+        actionJson.put("text", "OK");
+        JSONArray clients = new JSONArray();
+        clients.put("Liquid.close");
+        clients.put("closeFormX()");
+        actionJson.put("client", clients);
+        if(onCancelServerClass != null)
+            actionJson.put("server", onCancelServerClass);
+        actionsJson.put(actionJson);
+        popupJson.put("actions", actionsJson);
+
+        // Opzioni
+        popupJson.put("mode", mode);
+        popupJson.put("modless",true);
+        popupJson.put("navVisible",false);
+        popupJson.put("autoInsert",false);
+        popupJson.put("listTabVisible",false);
+        popupJson.put("layoutsTabVisible",false);
+
+        // Creazione codice JS
+        return startFormX(request, controlId, null, popupJson.toString(), mode, fieldsValue, userProps);
     }
 
 }

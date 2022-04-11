@@ -252,6 +252,7 @@ public class db {
             ParamsUtil.get_recordset_params recordset_params = new ParamsUtil().new get_recordset_params(request);
             return get_table_recordset(recordset_params, out);
         } catch (Exception e) {
+            System.err.println(e);
         }
         return null;
     }
@@ -261,6 +262,7 @@ public class db {
             ParamsUtil.get_recordset_params recordset_params = new ParamsUtil().new get_recordset_params(controlId, sRequest, bSaveQueryInfo, maxRows);
             return get_table_recordset(recordset_params, out);
         } catch (Exception e) {
+            System.err.println(e);
         }
         return null;
     }

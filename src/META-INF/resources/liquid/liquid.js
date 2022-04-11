@@ -5086,7 +5086,10 @@ var Liquid = {
                             result.retVal = 1;
                             try {
                                 if (isDef(httpResultJson.resultSet)) {
-                                    liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
+                                    if(Object.keys(httpResultJson.resultSet).length === 0)
+                                        liquid.gridOptions.api.setRowData(null);
+                                    else
+                                        liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
                                     if (liquid.tableJson.transaction === 'single') {
                                         Liquid.applyModificationsToRowset(liquid);
                                     }
