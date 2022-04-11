@@ -27,6 +27,7 @@ public class liquid {
             HttpServletRequest request
             , String controlId
             , String controlJsonFile
+            , String controlJsonContent
             , Object owner
             , ArrayList<Object[]> preFilters
             , ArrayList<Object[]> filters
@@ -36,12 +37,22 @@ public class liquid {
         String scriptToExec = "";
 
         // Registra il controllo e la classe a cui è+ connesso (this) : NO lo regestrerà Liquid.startPopup a runtime
-        String sPopupJson = workspace.get_table_control(
-                (HttpServletRequest) request,
-                controlId,
-                controlJsonFile,
-                owner,
-                "json");
+        String sPopupJson = null;
+
+        if(controlJsonFile != null)
+            sPopupJson = workspace.get_table_control(
+                    (HttpServletRequest) request,
+                    controlId,
+                    controlJsonFile,
+                    owner,
+                    "json");
+        else
+            sPopupJson = workspace.get_table_control_from_string(
+                    (HttpServletRequest) request,
+                    controlId,
+                    controlJsonFile,
+                    owner,
+                    "json");
 
 
         //
@@ -87,7 +98,7 @@ public class liquid {
                 }
             }
         }
-
+        // Proprieta' del controllo
         if (userProps != null) {
             for (int iF = 0; iF < userProps.size(); iF++) {
                 Object[] userProp = userProps.get(iF);
@@ -109,6 +120,7 @@ public class liquid {
             , String controlId
             , String controlJsonFile
             , Object owner
+            , ArrayList<Object[]> preFilters
             , ArrayList<Object[]> filters
             , ArrayList<Object[]> userProps
     ) throws Throwable {
@@ -116,11 +128,182 @@ public class liquid {
                 request
                 , controlId
                 , controlJsonFile
+                , null
+                , owner
+                , preFilters
+                , filters
+                , userProps
+        );
+    }
+
+    public static String startPopup(
+            HttpServletRequest request
+            , String controlId
+            , String controlJsonFile
+            , Object owner
+            , ArrayList<Object[]> filters
+            , ArrayList<Object[]> userProps
+    ) throws Throwable {
+        return startPopup(
+                request
+                , controlId
+                , controlJsonFile
+                , null
                 , owner
                 , null
                 , filters
                 , userProps
             );
+    }
+
+    public static String startPopupFromString(
+            HttpServletRequest request
+            , String controlId
+            , String controlJsonContent
+            , Object owner
+            , ArrayList<Object[]> preFilters
+            , ArrayList<Object[]> filters
+            , ArrayList<Object[]> userProps
+    ) throws Throwable {
+        return startPopup(
+                request
+                , controlId
+                , null
+                , controlJsonContent
+                , owner
+                , preFilters
+                , filters
+                , userProps
+        );
+    }
+
+    public static String startPopupFromString(
+            HttpServletRequest request
+            , String controlId
+            , String controlJsonContent
+            , Object owner
+            , ArrayList<Object[]> filters
+            , ArrayList<Object[]> userProps
+    ) throws Throwable {
+        return startPopup(
+                request
+                , controlId
+                , null
+                , controlJsonContent
+                , owner
+                , null
+                , filters
+                , userProps
+        );
+    }
+
+
+    public static String startFormX(
+            HttpServletRequest request
+            , String controlId
+            , String controlJsonFile
+            , Object owner
+            , String mode
+            , ArrayList<Object[]> fieldsValue
+            , ArrayList<Object[]> userProps
+    ) throws Throwable {
+        return startFormX(request, controlId, controlJsonFile, null, owner, mode, fieldsValue, userProps);
+    }
+
+    public static String startFormXFromString(
+            HttpServletRequest request
+            , String controlId
+            , String controlJsonContent
+            , Object owner
+            , String mode
+            , ArrayList<Object[]> fieldsValue
+            , ArrayList<Object[]> userProps
+    ) throws Throwable {
+        return startFormX(request, controlId, null, controlJsonContent, owner, mode, fieldsValue, userProps);
+    }
+
+
+    /**
+     * Ritorna il codice JS che avvia un controllo formX
+     *
+     * @param request
+     * @param controlId
+     * @param controlJsonFile
+     * @param controlJsonContent
+     * @param owner
+     * @param mode
+     * @param fieldsValue
+     * @param userProps
+     * @return
+     * @throws Throwable
+     */
+    public static String startFormX(
+            HttpServletRequest request
+            , String controlId
+            , String controlJsonFile
+            , String controlJsonContent
+            , Object owner
+            , String mode
+            , ArrayList<Object[]> fieldsValue
+            , ArrayList<Object[]> userProps
+    ) throws Throwable {
+
+        String scriptToExec = "";
+
+        // Registra il controllo e la classe a cui è+ connesso (this) : NO lo regestrerà Liquid.startPopup a runtime
+        String sPopupJson = null;
+        if(controlJsonFile != null)
+            sPopupJson = workspace.get_table_control(
+                (HttpServletRequest) request,
+                controlId,
+                controlJsonFile,
+                owner,
+                "json");
+        else
+            sPopupJson = workspace.get_table_control_from_string(
+                    (HttpServletRequest) request,
+                    controlId,
+                    controlJsonFile,
+                    owner,
+                    "json");
+
+
+        // script da eseguire per visualizzare il popup
+        if("DialogX".equalsIgnoreCase(mode) || "Dialog".equalsIgnoreCase(mode)) {
+            scriptToExec = "Liquid.startDialogX('" + controlId + "','" + sPopupJson + "');";
+        } else if("FormX".equalsIgnoreCase(mode) || "Form".equalsIgnoreCase(mode)) {
+            scriptToExec = "Liquid.startFormX('" + controlId + "','" + sPopupJson + "');";
+        }
+
+
+        // Campi del controllo
+        if (fieldsValue != null) {
+            for (int iF = 0; iF < fieldsValue.size(); iF++) {
+                Object[] fieldValue = fieldsValue.get(iF);
+                if (fieldValue != null) {
+                    String name = (String) fieldValue[0];
+                    String value = (String) fieldValue[1];
+                    if (name != null) {
+                        scriptToExec += "Liquid.setField('" + controlId + "','" + name + "'," + (value != null ? "'"+value+"'" : "null") + ");";
+                    }
+                }
+            }
+        }
+
+        // Proprieta' del controllo
+        if (userProps != null) {
+            for (int iF = 0; iF < userProps.size(); iF++) {
+                Object[] userProp = userProps.get(iF);
+                if (userProp != null) {
+                    String name = (String) userProp[0];
+                    String value = (String) userProp[1];
+                    if (name != null) {
+                        scriptToExec += "Liquid.setUserProp('" + controlId + "','" + name + "'," + (value != null ? "'"+value+"'" : "null") + ");";
+                    }
+                }
+            }
+        }
+        return scriptToExec;
     }
 
 }

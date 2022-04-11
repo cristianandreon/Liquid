@@ -44,6 +44,9 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
@@ -2434,5 +2437,100 @@ public class utility {
         }
         return null;
     }
+
+
+    static public String get_file_md5(String fileName) throws NoSuchAlgorithmException, IOException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        InputStream is = Files.newInputStream(Paths.get(fileName));
+        DigestInputStream dis = new DigestInputStream(is, md);
+        byte[] digest = md.digest();
+        return utility.base64Encode(new String(digest, StandardCharsets.UTF_8));
+    }
+
+    /*
+    static public String [] get_upload_file_content(HttpServletRequest request, String tempFolder, long maxFileSize) {
+        boolean isMultipart = ServletFileUpload.isMultipartContent(request);
+
+        response.setContentType("text/html");
+        java.io.PrintWriter out = response.getWriter( );
+          if( !isMultipart ){
+            out.println("<html>");
+            out.println("<head>");
+            out.println("<title>Servlet upload</title>");
+            out.println("</head>");
+            out.println("<body>");
+            out.println("<p>No file uploaded</p>");
+            out.println("</body>");
+            out.println("</html>");
+            return;
+        }
+
+        DiskFileItemFactory factory = new DiskFileItemFactory();
+        maximum size that will be stored in memory
+        factory.setSizeThreshold(maxMemSize);
+        // Location to save data that is larger than maxMemSize.
+        factory.setRepository(new File("c:\\temp"));
+
+        // Create a new file upload handler
+        ServletFileUpload upload = new ServletFileUpload(factory);
+        // maximum file size to be uploaded.
+          upload.setSizeMax( maxFileSize );
+
+          try{
+            // Parse the request to get file items.
+            List fileItems = upload.parseRequest(request);
+
+            // Process the uploaded file items
+            Iterator i = fileItems.iterator();
+
+            out.println("<html>");
+            out.println("<head>");
+            out.println("<title>Servlet upload</title>");
+            out.println("</head>");
+            out.println("<body>");
+
+            String fileName = "";
+            while ( i.hasNext () )
+            {
+                FileItem fi = (FileItem)i.next();
+                if ( !fi.isFormField () )
+                {
+                    // Get the uploaded file parameters
+                    String fieldName = fi.getFieldName();
+                    fileName = fi.getName();
+                    String contentType = fi.getContentType();
+                    boolean isInMemory = fi.isInMemory();
+                    long sizeInBytes = fi.getSize();
+                    // Write the file
+                    if( fileName.lastIndexOf("\\") >= 0 ){
+                        file = new File( filePath +
+                                fileName.substring( fileName.lastIndexOf("\\"))) ;
+                    }else{
+                        file = new File( filePath +
+                                fileName.substring(fileName.lastIndexOf("\\")+1)) ;
+                    }
+                    fi.write( file ) ;
+                    out.println("Uploaded Filename: " + fileName + "<br>");
+                    out.println("Uploaded in location: "+filePath);
+                }
+            }
+            out.println("</body>");
+            out.println("</html>");
+            ReadExcelDemo rd = new ReadExcelDemo();
+            System.out.println("file name: "+fileName.substring(fileName.lastIndexOf("\\")));
+            String s = fileName.substring(fileName.lastIndexOf("\\"));
+            System.out.println(filePath);
+            System.out.println(s);
+            String fileP = filePath.concat(s+"\\");
+
+            System.out.println(fileP);
+            rd.read(fileP);
+
+        }catch(Exception ex) {
+            System.out.println(ex);
+        }
+    }
+    */
+
 
 }
