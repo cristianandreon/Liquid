@@ -1297,6 +1297,30 @@ public class db {
                                     if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
                                     sortColumnsMode.put(String.valueOf(osortColumnsMode));
                                 }
+                            } else if (baseObject.has("sortMode")) {
+                                Object osortColumnsMode = baseObject.get("sortMode");
+                                if (osortColumnsMode instanceof JSONArray) {
+                                    sortColumnsMode = baseObject.getJSONArray("sortMode");
+                                } else if (osortColumnsMode instanceof String) {
+                                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
+                                    sortColumnsMode.put(String.valueOf(osortColumnsMode));
+                                }
+                            } else if (tbl_wrk.tableJson.has("sortMode")) {
+                                Object osortColumnsMode = tbl_wrk.tableJson.get("sortMode");
+                                if (osortColumnsMode instanceof JSONArray) {
+                                    sortColumnsMode = tbl_wrk.tableJson.getJSONArray("sortMode");
+                                } else if (osortColumnsMode instanceof String) {
+                                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
+                                    sortColumnsMode.put(String.valueOf(osortColumnsMode));
+                                }
+                            } else if (tbl_wrk.tableJson.has("sortModes")) {
+                                Object osortColumnsMode = tbl_wrk.tableJson.get("sortModes");
+                                if (osortColumnsMode instanceof JSONArray) {
+                                    sortColumnsMode = tbl_wrk.tableJson.getJSONArray("sortModes");
+                                } else if (osortColumnsMode instanceof String) {
+                                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
+                                    sortColumnsMode.put(String.valueOf(osortColumnsMode));
+                                }
                             }
 
                             if (sortColumns != null) {
@@ -2035,7 +2059,15 @@ public class db {
                 filterTable = filtersCol.has("table") ? filtersCol.getString("table") : filterTable;
 
                 filterName = filtersCol.has("name") ? filtersCol.getString("name") : filterName;
-                filterName = filtersCol.has("col") ? filtersCol.getString("col") : filterName;
+
+                Object filterCol = filtersCol.has("col") ? filtersCol.get("col") : null;
+                if(filterCol != null) {
+                    if(filterCol instanceof String) {
+                        if(filterName == null) {
+                            filterName = (String)filterCol;
+                        }
+                    }
+                }
                 filterNameAliased = filterName;
                 filterFullName = filterName;
 
