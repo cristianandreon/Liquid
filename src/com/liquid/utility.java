@@ -40,6 +40,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -171,6 +172,26 @@ public class utility {
         }
         return null;
     }
+
+
+    static public byte [] base64DecodeBytes(String data) {
+        try {
+            return DatatypeConverter.parseBase64Binary(data);
+        } catch (Throwable th) {
+            try {
+                return Base64.getDecoder().decode(data);
+                // throw new Throwable(); // x java 7
+            } catch (Throwable th2) {
+                try {
+                    return org.apache.commons.codec.binary.Base64.decodeBase64(data);
+                } catch (Throwable th3) {
+                    System.err.println("Error:" + th3.getMessage());
+                }
+            }
+        }
+        return null;
+    }
+
 
     static public ArrayList<String> get_dms_keys(workspace tblWrk, String params) {
         ArrayList<String> keyList = null;
@@ -2440,11 +2461,18 @@ public class utility {
 
 
     static public String get_file_md5(String fileName) throws NoSuchAlgorithmException, IOException {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        InputStream is = Files.newInputStream(Paths.get(fileName));
-        DigestInputStream dis = new DigestInputStream(is, md);
-        byte[] digest = md.digest();
-        return utility.base64Encode(new String(digest, StandardCharsets.UTF_8));
+        MessageDigest digest = MessageDigest.getInstance("MD5");
+        File f = new File(fileName);
+        InputStream is = new FileInputStream(f);
+        byte[] buffer = new byte[8192];
+        int read = 0;
+        while( (read = is.read(buffer)) > 0) {
+            digest.update(buffer, 0, read);
+        }
+        byte[] md5sum = digest.digest();
+        BigInteger bigInt = new BigInteger(1, md5sum);
+        String output = bigInt.toString(16);
+        return utility.base64Encode(output);
     }
 
     /*
