@@ -14,23 +14,21 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspWriter;
 
-import java.sql.*;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONArray;
+
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javassist.ClassPool;
@@ -3369,6 +3367,8 @@ public class db {
                             sqlSTMTUpdate.setDate((i + 1), (new java.sql.Date(((java.util.Date) val).getTime())) );
                         } else if (val instanceof java.sql.Date) {
                             sqlSTMTUpdate.setDate((i + 1), (java.sql.Date)val);
+                        } else if (val instanceof java.util.Date) {
+                            sqlSTMTUpdate.setDate((i + 1), new java.sql.Date(((java.util.Date)val).getTime()));
                         } else if (val instanceof String) {
                             sqlSTMTUpdate.setString((i + 1), (String) val);
                         } else if (val instanceof Boolean) {
@@ -3523,7 +3523,9 @@ public class db {
                             } else if (val instanceof java.util.Date) {
                                 sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())) );
                             } else if (val instanceof java.sql.Date) {
-                                sqlSTMTUpdate.setDate((ip), (Date) val);
+                                sqlSTMTUpdate.setDate((ip), (java.sql.Date) val);
+                            } else if (val instanceof java.util.Date) {
+                                sqlSTMTUpdate.setDate((ip), new java.sql.Date(((java.util.Date)val).getTime()));
                             } else if (val instanceof String) {
                                 sqlSTMTUpdate.setString((ip), (String) val);
                             } else if (val instanceof Boolean) {
@@ -3549,10 +3551,10 @@ public class db {
                     sqlSTMTUpdate.setDouble((ip), (double) val);
                 } else if (val instanceof Timestamp) {
                     sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
+                } else if (val instanceof java.sql.Date) {
+                    sqlSTMTUpdate.setDate((ip), (java.sql.Date) val);
                 } else if (val instanceof java.util.Date) {
                     sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())) );
-                } else if (val instanceof java.sql.Date) {
-                    sqlSTMTUpdate.setDate((ip), (Date) val);
                 } else if (val instanceof String) {
                     sqlSTMTUpdate.setString((ip), (String) val);
                 } else if (val instanceof Boolean) {
@@ -3694,8 +3696,10 @@ public class db {
                                     sqlSTMTUpdate.setDouble((i + 1), (double) val);
                                 } else if (val instanceof Timestamp) {
                                     sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
-                                } else if (val instanceof Date) {
-                                    sqlSTMTUpdate.setDate((i + 1), (Date) val);
+                                } else if (val instanceof java.sql.Date) {
+                                    sqlSTMTUpdate.setDate((i + 1), (java.sql.Date) val);
+                                } else if (val instanceof java.util.Date) {
+                                    sqlSTMTUpdate.setDate((i + 1), new java.sql.Date(((java.util.Date)val).getTime()));
                                 } else if (val instanceof String) {
                                     sqlSTMTUpdate.setString((i + 1), (String) val);
                                 }
@@ -3995,6 +3999,7 @@ public class db {
                                                                 String foreignEdit = null;
                                                                 Boolean foreignBEdit = false;
                                                                 String sourceColumn = null;
+                                                                int colType = col.has("type") ? col.getInt("type") : 0;
                                                                 String tField = col.getString("field");
                                                                 String tName = col.getString("name");
                                                                 String tTable = col.has("table") ? col.getString("table") : null;
@@ -4017,6 +4022,17 @@ public class db {
                                                                 if (tField.equalsIgnoreCase(field)) {
 
                                                                     if (!autoIncString) {
+
+                                                                        if (colType == 6 || colType == 93) { // datetime)
+                                                                            if(request != null) {
+                                                                                Date gtmDate = utility.get_local2server_time(request, oValue);
+                                                                                if(gtmDate != null) {
+                                                                                    oValue = gtmDate;
+                                                                                } else {
+                                                                                    throw new Exception("Failed to get local time");
+                                                                                }
+                                                                            }
+                                                                        }
 
                                                                         if(col.has("foreignTable")) {
                                                                             foreignTable = col.getString("foreignTable");
@@ -4583,6 +4599,15 @@ public class db {
                     // preserva il tipo dato
                     valueType = colTypes;
                 }
+            } else if(oValue instanceof java.sql.Date) {
+                // preserva il tipo dato
+                valueType = colTypes;
+            } else if(oValue instanceof java.util.Date) {
+                // preserva il tipo dato
+                valueType = colTypes;
+            } else if(oValue instanceof java.sql.Timestamp) {
+                // preserva il tipo dato
+                valueType = colTypes;
             } else {
                 throw new Exception("unsupported case");
             }
@@ -4603,6 +4628,15 @@ public class db {
                         oValue = value = "CONVERT(DATETIME,'" + value + ")";
                         valueType = 0; // is an expression
                     }
+                } else if(oValue instanceof java.sql.Date) {
+                    // preserva il tipo dato
+                    valueType = colTypes;
+                } else if(oValue instanceof java.util.Date) {
+                    // preserva il tipo dato
+                    valueType = colTypes;
+                } else if(oValue instanceof java.sql.Timestamp) {
+                    // preserva il tipo dato
+                    valueType = colTypes;
                 } else {
                     // preserva il tipo dato
                     valueType = colTypes;
@@ -5199,7 +5233,7 @@ public class db {
                     //
                     // do insert
                     //
-                    result = db.insertFields(tbl_wrk, insertingParams, null, null, null);
+                    result = db.insertFields(tbl_wrk, insertingParams, null, (Object)requestParam, null);
                     
                     if(foreignTables != null && !foreignTables.isEmpty()) {
                         //

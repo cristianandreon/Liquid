@@ -204,6 +204,7 @@ class LiquidCtrl {
                     }
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', glLiquidServlet + '?operation=getJson&fileURL=' + jsonURL, false);
+                    xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
                     xhr.send();
                     if(xhr.status === 200) {
                         try {
@@ -786,7 +787,7 @@ class LiquidCtrl {
                             // update internal data
                             event.node.setData(event.node.data);
                             liquid.gridOptions.api.redrawRows({rowNodes:[event.node]});
-                            var iCol = Liquid.getColumnIndexByField(liquid, event.column.field);
+                            var iCol = Liquid.getColumnIndexByField(liquid, event.column.field ? event.column.field : event.colDef.field);
                             if(iCol !== null && iCol >= 0) {
                                 if(liquid.tableJson.columns[iCol].isReflected === true)
                                     return;
@@ -2288,6 +2289,7 @@ class LiquidMenuXCtrl {
                         jsonURL = jsonURL.substring(0, jsonURL.length - 1);
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', glLiquidServlet + '?operation=getJson&fileURL=' + jsonURL, false);
+                    xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
                     xhr.send();
                     if(xhr.status === 200) {
                         try {
@@ -2611,6 +2613,7 @@ var Liquid = {
                     if (serverSide === true) {
                         var xhr = new XMLHttpRequest();
                         xhr.open("POST", glLiquidServlet + "?operation=setLanguage&language=" + Liquid.lang, async);
+                        xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
                         xhr.onreadystatechange = function () {
                         }
                         xhr.send();
@@ -4163,6 +4166,7 @@ var Liquid = {
                                     + '&controlId=' + liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : "")
                                     , false
                                 );
+                                liquid.xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
 
                                 liquid.xhr.upload.addEventListener("progress", function (e) {
                                     Liquid.onTransferUploading(liquid, command, "Validate", e, command.onUploading, command.onUploadingParam);
@@ -4179,6 +4183,8 @@ var Liquid = {
                                 liquid.xhr.addEventListener("abort", function (e) {
                                     Liquid.onTransferAbort(liquid, command, "Validate", e, command.onAbort, command.onAbortParam);
                                 }, false);
+
+                                liquid.xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
 
                                 liquid.xhr.send("{"
                                     + "\"params\":" + (liquidCommandParams.params ? JSON.stringify(liquidCommandParams.params) : "[]")
@@ -5086,10 +5092,12 @@ var Liquid = {
                             result.retVal = 1;
                             try {
                                 if (isDef(httpResultJson.resultSet)) {
-                                    if(Object.keys(httpResultJson.resultSet).length === 0)
+                                    if(Object.keys(httpResultJson.resultSet).length === 0) {
                                         liquid.gridOptions.api.setRowData(null);
-                                    else
+                                    } else {
+                                        httpResultJson.resultSet = Liquid.Recordset2LocalDate(liquid, httpResultJson.resultSet);
                                         liquid.gridOptions.api.setRowData(httpResultJson.resultSet);
+                                    }
                                     if (liquid.tableJson.transaction === 'single') {
                                         Liquid.applyModificationsToRowset(liquid);
                                     }
@@ -5332,6 +5340,7 @@ var Liquid = {
             if (isDef(liquid.tableJson.rowData)) {
                 // fixed data :
                 var selNodes = liquid.gridOptions.api.getSelectedNodes();
+                liquid.tableJson.rowData = Liquid.Recordset2LocalDate(liquid, liquid.tableJson.rowData);
                 liquid.gridOptions.api.setRowData(liquid.tableJson.rowData);
                 // restore previous selection
                 bFoundSelection = Liquid.setSelctions(liquid, selNodes);
@@ -8630,7 +8639,7 @@ var Liquid = {
                         }
                         if (isDef(commandPostFunc)) {
                             try {
-                                commandPostFunc();
+                                commandPostFunc(command);
                             } catch (e) {
                                 console.error(e);
                             }
@@ -9069,7 +9078,7 @@ var Liquid = {
         }
         if (isDef(command.postFunc)) {
             try {
-                command.postFunc();
+                command.postFunc(command);
             } catch (e) {
                 console.error(e);
             }
@@ -12615,6 +12624,7 @@ var Liquid = {
                                             jsonURL = jsonURL.substring(0, jsonURL.length - 1);
                                         var xhr = new XMLHttpRequest();
                                         xhr.open('GET', jsonURL, false);
+                                        xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
                                         xhr.send();
                                         if (xhr.status === 200) {
                                             try {
@@ -14192,6 +14202,7 @@ var Liquid = {
                                     }
                                 }
                             }
+                            value = Liquid.getLocalDate(value, type);
                             Liquid.setHTMLElementValue(targetObj, value);
                             if (typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
                                 layout.firstObjId = targetObj.id;
@@ -14356,6 +14367,7 @@ var Liquid = {
                                     var value = node.data[j + 1];
                                     if (Liquid.isDate(type)) {
                                         if (value == "NULL") value = "";
+                                        value = Liquid.getLocalDate(value, type);
                                     }
                                     Liquid.setHTMLElementValue(targetObj, value, disabled);
                                     if (linkedLiquid) {
@@ -14455,6 +14467,7 @@ var Liquid = {
                                         var value = node.data[j + 1];
                                         if (Liquid.isDate(type)) {
                                             if (value == "NULL") value = "";
+                                            value = Liquid.getLocalDate(value, type);
                                         }
                                         Liquid.setHTMLElementValue(targetObj, value, disabled);
                                         if (linkedLiquid) {
@@ -15914,6 +15927,7 @@ var Liquid = {
             var xhr = new XMLHttpRequest();
             try {
                 xhr.open('POST', glLiquidServlet + '?operation=setPrefilter' + '&controlId=' + liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : ""));
+                xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
                 xhr.send(ids);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4) {
@@ -16718,6 +16732,7 @@ var Liquid = {
                             if(Liquid.isDate(liquid.tableJson.columns[iCol].type)) {
                                 value = data[liquid.tableJson.columns[iCol].field];
                                 if(value=="NULL") value = "";
+                                value = Liquid.getLocalDate(value, liquid.tableJson.columns[iCol].type);
                             } else {
                                 value = data[liquid.tableJson.columns[iCol].field];
                             }
@@ -17896,6 +17911,7 @@ var Liquid = {
             xhr.open('POST', glLiquidServlet + '?operation=setMessageResponse'
                 +'&jSON=' + encodeURIComponent( JSON.stringify( { response:(typeof response !== 'undefined' ? String(response) : ""), cypher:curMessageInfo.cypher } ) )
             );
+            xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
             xhr.send();
         }
     },
@@ -19205,7 +19221,7 @@ var Liquid = {
                         +'&className=' + command.server
                         +'&async=' + syncParam
                     );
-
+                    xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
                     xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "startWorker", e, command.onUploading, command.onUploadingParam); }, false);
                     xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "startWorker", e, command.onDownloading, command.onDownloadingParam); }, false);
                     xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "startWorker", e, command.onLoad, command.onLoadParam); }, false);
@@ -19251,6 +19267,7 @@ var Liquid = {
             if(userId) {
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', glLiquidServlet + '?operation=getWorker&userId=' + userId);
+                xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
                 xhr.send();
                 xhr.onreadystatechange = function() {
                     if(xhr.readyState === 4) {
@@ -20443,6 +20460,7 @@ var Liquid = {
                         console.error(e)
                     }
                 }
+                xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
 
                 xhr.send(data);
                 // Liquid.release_xhr(liquid);
@@ -20531,6 +20549,31 @@ var Liquid = {
         d.setTime(d.getTime() + (exdays ? (exdays*24*60*60*1000) : 0) );
         let expires = exdays ? "expires="+ d.toUTCString() : "";
         document.cookie = cname + "=" + cvalue; //  + ";" + expires + "";
+    },
+    /** Formattazione data
+     * @param value
+     * @param type
+     * @returns {*}
+     */
+    getLocalDate:function(value, type) {
+        return value
+    },
+    GMT2LocalDate:function(value, type) {
+        if(type == 93) {
+            if(value) {
+                const d = new Date();
+                let diff = d.getTimezoneOffset();
+
+                var valueDate = Date.parse(value, "dd/MM/yyyy HH:mm:ss");
+                // Liquid.dateFormat
+                valueDate.addMinutes(diff);
+                return valueDate.toString("dd/MM/yyyy HH:mm:ss");
+            }
+        }
+        return value;
+    },
+    Recordset2LocalDate:function(liquid, resultset) {
+        return resultset;
     }
 };
 
@@ -20765,6 +20808,7 @@ SelectEditor.prototype.init = function(params) {
                 + '&extendedMetadata=false'
                 ,(typeof params.async !== 'undefined' ? params.async : true)
             );
+            xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
             xhr.send();
             if(xhr.status === 200) {
                 try {

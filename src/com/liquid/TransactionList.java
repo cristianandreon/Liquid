@@ -11,8 +11,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -78,6 +80,7 @@ public class TransactionList {
 
     public String getSQL(workspace tbl_wrk, int i) {
         String sql = "";
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ENGLISH);
         if (i < transactionList.size()) {
             TransactionList transaction = transactionList.get(i);
             String itemIdString = "\"", tableIdString = "\"";
@@ -102,6 +105,12 @@ public class TransactionList {
                         sql += (ic > 0 ? "," : "") + (oValue != null ? (oValue) : "NULL");
                     } else if(oValue instanceof Integer || oValue instanceof Long || oValue instanceof Float || oValue instanceof Double) {
                         sql += (ic > 0 ? "," : "") + (oValue != null ? (oValue) : "NULL");
+                    } else if(oValue instanceof java.util.Date) {
+                        sql += (ic > 0 ? "," : "") + (oValue != null ? (dateFormat.format((java.util.Date)oValue)) : "NULL");
+                    } else if(oValue instanceof java.sql.Timestamp) {
+                        sql += (ic > 0 ? "," : "") + (oValue != null ? (dateFormat.format((java.sql.Timestamp)oValue)) : "NULL");
+                    } else if(oValue instanceof java.sql.Date) {
+                        sql += (ic > 0 ? "," : "") + (oValue != null ? (dateFormat.format((java.sql.Date)oValue)) : "NULL");
                     } else {
                         sql += (ic > 0 ? "," : "") + (oValue != null ? (apex + oValue + apex) : "NULL");
                     }
@@ -146,7 +155,7 @@ public class TransactionList {
         return null;
     }
 
-    Object[] executeSQL(workspace tbl_wrk, int i, Connection conn, int RETURN_TYPE) throws SQLException, ParseException {
+    Object[] executeSQL(workspace tbl_wrk, int i, Connection conn, int RETURN_TYPE) throws Exception {
         String sql = "";
         if (i < transactionList.size()) {
             ArrayList<Object> params = new ArrayList<Object>();
@@ -265,11 +274,29 @@ public class TransactionList {
                         } else {
                             stmt.setBoolean(ip, ((Boolean)oParam ? true : false));
                         }
-                    } else if (value_type == 6  || value_type == 93) { // timestamp
+                    } else if (value_type == 6) { // date
+                        if(oParam instanceof String) {
+                            stmt.setDate(ip, DateUtil.toDate(oParam));
+                        } else if(oParam instanceof java.sql.Date) {
+                            stmt.setDate(ip, (java.sql.Date)oParam);
+                        } else if(oParam instanceof java.sql.Timestamp) {
+                            stmt.setDate(ip, new java.sql.Date(((Timestamp)oParam).getTime()));
+                        } else if(oParam instanceof java.util.Date) {
+                            stmt.setDate(ip, new java.sql.Date(((java.util.Date)oParam).getTime()));
+                        } else {
+                            throw new Exception("invalid date object");
+                        }
+                    } else if (value_type == 93) { // timestamp
                         if(oParam instanceof String) {
                             stmt.setTimestamp(ip, DateUtil.toTimestamp(oParam));
-                        } else {
+                        } else if(oParam instanceof java.sql.Date) {
+                            stmt.setTimestamp(ip, new java.sql.Timestamp(((java.sql.Date)oParam).getTime()));
+                        } else if(oParam instanceof java.sql.Timestamp) {
                             stmt.setTimestamp(ip, (Timestamp)oParam);
+                        } else if(oParam instanceof java.util.Date) {
+                            stmt.setTimestamp(ip, new java.sql.Timestamp(((java.util.Date)oParam).getTime()));
+                        } else {
+                            throw new Exception("invalid date object");
                         }
                     } else if (value_type == 91) { // date
                         if(oParam instanceof String) {
@@ -278,6 +305,8 @@ public class TransactionList {
                             stmt.setDate(ip, new java.sql.Date( ((java.util.Date)oParam).getTime() ));
                         } else if(oParam instanceof java.sql.Date) {
                             stmt.setDate(ip, (java.sql.Date) oParam);
+                        } else if(oParam instanceof java.sql.Timestamp) {
+                            stmt.setDate(ip, new java.sql.Date( ((java.sql.Timestamp)oParam).getTime() ));
                         } else {
                             stmt.setDate(ip, DateUtil.toDate(oParam));
                         }

@@ -49,6 +49,8 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
@@ -1730,6 +1732,7 @@ public class utility {
     }
 
 
+
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
         public ArrayList<Object> beans = null;
@@ -2560,5 +2563,36 @@ public class utility {
     }
     */
 
+
+    static public Date get_local2server_time(HttpServletRequest request, Object oDate) throws ParseException {
+        String sXTimezoneOffset = request.getHeader("X-Timezone-Offset");
+        Integer iXTimezoneOffset = Integer.parseInt(sXTimezoneOffset);
+        Date dXTimezoneOffset = null;
+        if(oDate instanceof String) {
+            SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+            dXTimezoneOffset = df.parse((String)oDate);
+        } else if(oDate instanceof Date) {
+            dXTimezoneOffset = (Date)oDate;
+        }
+        if(dXTimezoneOffset != null) {
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(dXTimezoneOffset);
+            cal.add(Calendar.MINUTE, iXTimezoneOffset);
+            return cal.getTime();
+        }
+        return null;
+    }
+
+    static public Date get_gmt_time() throws ParseException {
+        long date = System.currentTimeMillis();
+        int offset = TimeZone.getDefault().getOffset(date);
+        return new Date(date + offset);
+    }
+
+    public static Timestamp get_gmt_timestamp() {
+        long date = System.currentTimeMillis();
+        int offset = TimeZone.getDefault().getOffset(date);
+        return new Timestamp(date + offset);
+    }
 
 }
