@@ -20564,16 +20564,35 @@ var Liquid = {
                 const d = new Date();
                 let diff = d.getTimezoneOffset();
 
-                var valueDate = Date.parse(value, "dd/MM/yyyy HH:mm:ss");
                 // Liquid.dateFormat
-                valueDate.addMinutes(diff);
-                return valueDate.toString("dd/MM/yyyy HH:mm:ss");
+                if(value.lastIndexOf(".")>0) {
+                    value = value.substring(0, value.lastIndexOf("."));
+                }
+                var valueDate = Date.parse(value, "dd/MM/yyyy HH:mm:ss");
+                if(!valueDate) valueDate = Date.parse(value, "dd/MM/yyyy HH:mm:ss.SS");
+                if(valueDate) {
+                    valueDate.addMinutes(diff);
+                    return valueDate.toString("dd/MM/yyyy HH:mm:ss");
+                } else {
+                    console.error("ERROR: unable to parse data:"+value);
+                }
             }
         }
         return value;
     },
-    Recordset2LocalDate:function(liquid, resultset) {
-        return resultset;
+    Recordset2LocalDate:function(liquid, rowData) {
+        if(liquid && rowData) {
+            for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                if(liquid.tableJson.columns[ic].type == 93) {
+                    for(var ir=0; ir<rowData.length; ir++) {
+                        var sDate = rowData[ir][liquid.tableJson.columns[ic].field];
+                        var newDate = Liquid.GMT2LocalDate(sDate, liquid.tableJson.columns[ic].type);
+                        rowData[ir][liquid.tableJson.columns[ic].field] = newDate;
+                    }
+                }
+            }
+        }
+        return rowData;
     }
 };
 
