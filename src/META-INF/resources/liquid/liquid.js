@@ -13885,7 +13885,8 @@ var Liquid = {
                                     obj.format = "dd" + Liquid.dateSep + "MM" + Liquid.dateSep + "yyyy hh" + Liquid.timeSep + "mm" + Liquid.timeSep + "ss";
                                     obj.setAttribute("data-date-format", obj.format);
                                 }
-                                Liquid.setDateTimePickerNode(obj, obj.type);
+                                var format = Liquid.getTimestampFormat(linkeCol.format, Liquid.timestampFormat);
+                                Liquid.setDateTimePickerNode(obj, obj.type, format);
                             }
 
                             //
@@ -14090,6 +14091,7 @@ var Liquid = {
                 var linkedInputId = obj.getAttribute('linkedinputid');
                 if (linkedField) {
                     var type = liquid.tableJson.columns[Number(linkedField) - 1].type;
+                    var format = liquid.tableJson.columns[Number(linkedField) - 1].format;
                     linkedRow1B = Number(linkedRow1B);
                     if (linkedRow1B === iRow + 1) {
                         var baseIndex1B = layout.baseIndex1B;
@@ -14148,6 +14150,9 @@ var Liquid = {
                         }
                         if (targetObj) {
                             if (Liquid.isDate(type)) {
+                                if(targetObj.format) {
+                                    targetObj.setAttribute("org_value", value);
+                                }
                                 if (value == "NULL") {
                                     value = "";
                                 } else {
@@ -14161,39 +14166,48 @@ var Liquid = {
                                         }
                                     } else if (type === "93") {
                                         // timestamp
+                                        value = Liquid.getLocalDate(value, type);
                                         try {
-                                            if (Liquid.timestampFormat === 'auto') {
-                                                value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
-                                            } else if (Liquid.timestampFormat === 'iso') {
-                                                value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
-                                            } else if (Liquid.timestampFormat === 'gmt') {
-                                                value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
-                                            } else if (Liquid.timestampFormat === 'date') {
-                                                value = d.toLocaleDateString(); // '2/18/2012'
-                                            } else if (Liquid.timestampFormat === 'short') {
-                                                // use of date.js
-                                                d = Date.parse(value);
-                                                if (d) {
-                                                    value = d.toShortateString(); // '2/18/2012'
-                                                } else {
-                                                    value = "";
-                                                }
-                                            } else if (Liquid.timestampFormat === 'long') {
-                                                // use of date.js
-                                                d = Date.parse(value);
-                                                if (d) {
-                                                    value = d.toString('dddd dd MMMM yyyy, HH:mm');
+                                            format = Liquid.getTimestampFormat(format, Liquid.timestampFormat);
+                                            if(format) {
+                                                if(value) {
+                                                    value = d.toString(format);
                                                 } else {
                                                     value = "";
                                                 }
                                             } else {
-                                                // use of date.js
-                                                d = Date.parse(value);
-                                                if (d) {
-                                                    // value = d.toString(Liquid.timestampFormat ? Liquid.timestampFormat : 'ddd dd MMM yyyy, HH:mm');
-                                                    value = value;
+                                                if (Liquid.timestampFormat === 'auto') {
+                                                    value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
+                                                } else if (Liquid.timestampFormat === 'iso') {
+                                                    value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
+                                                } else if (Liquid.timestampFormat === 'gmt') {
+                                                    value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
+                                                } else if (Liquid.timestampFormat === 'date') {
+                                                    value = d.toLocaleDateString(); // '2/18/2012'
+                                                } else if (Liquid.timestampFormat === 'short') {
+                                                    // use of date.js
+                                                    d = Date.parse(value);
+                                                    if (d) {
+                                                        value = d.toShortateString(); // '2/18/2012'
+                                                    } else {
+                                                        value = "";
+                                                    }
+                                                } else if (Liquid.timestampFormat === 'long') {
+                                                    // use of date.js
+                                                    d = Date.parse(value);
+                                                    if (d) {
+                                                        value = d.toString(format);
+                                                    } else {
+                                                        value = "";
+                                                    }
                                                 } else {
-                                                    value = "";
+                                                    // use of date.js
+                                                    d = Date.parse(value);
+                                                    if (d) {
+                                                        value = value;
+                                                    } else {
+                                                        value = "";
+                                                    }
                                                 }
                                             }
                                         } catch (e) {
@@ -14202,7 +14216,6 @@ var Liquid = {
                                     }
                                 }
                             }
-                            value = Liquid.getLocalDate(value, type);
                             Liquid.setHTMLElementValue(targetObj, value);
                             if (typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
                                 layout.firstObjId = targetObj.id;
@@ -14991,6 +15004,7 @@ var Liquid = {
         var controlName = "";
         var type = 'datetimepicker';
         var value = obj ? obj.value : "";
+        var org_value = obj.getAttribute("org_value");
         var formatDate = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy';
         var timeFormat = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
         var format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy' + ' ' + timeFormat;
@@ -15078,7 +15092,7 @@ var Liquid = {
                         if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
                         jQ1124(controlName).datetimepicker("option", opt);
                         jQ1124(controlName).css('z-index', 90000);
-                        jQ1124().datetimepicker("value", value);
+                        jQ1124().datetimepicker("value", org_value ? org_value : value);
                         this.setOptions(opt);
                     }, onClose: function (o) {
                         if (liquid) liquid.gridOptions.api.stopEditing();
@@ -15096,7 +15110,7 @@ var Liquid = {
             jQ1124(obj).datepicker().datepicker("option", {
                 showAnim: "slideDown",
                 inline: true,
-                date: value,
+                date: org_value ? org_value : value,
                 dateFormat: (typeof format !== "undefined" && format ? format : 'dd' + Liquid.dateSep + 'mm' + Liquid.dateSep + 'yy'),
                 changeMonth: true,
                 changeYear: true,
@@ -15151,11 +15165,11 @@ var Liquid = {
         }
         return opt;
     },
-    setDateTimePickerNode: function (obj, type) {
+    setDateTimePickerNode: function (obj, type, format) {
         var timePicker = true;
         var datePicker = false;
         var closeOnDateSelect = true;
-        var format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+        var format = format ? format : ('d' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's');
         var formatDate = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y';
         var formatTime = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
         if (type === 'date') {
@@ -20556,7 +20570,68 @@ var Liquid = {
      * @returns {*}
      */
     getLocalDate:function(value, type) {
+        if(value) {
+            var lb=true;
+        }
         return value
+    },
+    /**
+     *
+     * @param format
+     * @param timestampFormat
+     */
+    getTimestampFormat:function(format, timestampFormat) {
+        if (timestampFormat === 'auto') {
+            if (format) {
+                return format;
+            } else {
+                // '2/18/2012, 2:28:32 PM'
+                return 'd'+Liquid.dateSep+'M'+Liquid.dateSep+'yyyy h'+Liquid.timeSep+'m'+Liquid.timeSep+'s';
+            }
+        } else if (timestampFormat === 'iso') {
+            if (format) {
+                return format;
+            } else {
+                // '2012-02-18T13:28:32.000Z'
+                return 'yyyy'+Liquid.dateSep+'MM'+Liquid.dateSep+'ddThh'+Liquid.timeSep+'mm'+Liquid.timeSep+'ss.SSSZ';
+            }
+        } else if (timestampFormat === 'gmt') {
+            if (format) {
+                return format;
+            } else {
+                // 'Sat, 18 Feb 2012 13:28:32 GMT'
+                return 'EEE'+Liquid.dateSep+'MMM'+Liquid.dateSep+'dd HH'+Liquid.timeSep+'mm'+Liquid.timeSep+'ss z yyyy';
+            }
+        } else if (timestampFormat === 'date') {
+            if (format) {
+                return format;
+            } else {
+                // '2/18/2012'
+                return 'dd'+Liquid.dateSep+'MM'+Liquid.dateSep+'yyyy';
+            }
+        } else if (timestampFormat === 'short') {
+            // use of date.js
+            if (format) {
+                return format;
+            } else {
+                // '2/18/12'
+                return 'd'+Liquid.dateSep+'M'+Liquid.dateSep+'yy';
+            }
+        } else if (timestampFormat === 'long') {
+            // use of date.js
+            if (format) {
+                return format;
+            } else {
+                return 'dddd'+Liquid.dateSep+'dd'+Liquid.dateSep+'MMMM yyyy, HH'+Liquid.timeSep+'mm';
+            }
+        } else {
+            // use of date.js
+            if (format) {
+                return format;
+            } else {
+                return 'dd'+Liquid.dateSep+'MM'+Liquid.dateSep+'yyyy HH'+Liquid.timeSep+'mm'+Liquid.timeSep+'ss';
+            }
+        }
     },
     GMT2LocalDate:function(value, type) {
         if(type == 93) {
