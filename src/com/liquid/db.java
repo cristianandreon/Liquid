@@ -1255,8 +1255,9 @@ public class db {
                 //
                 try {
                     if (tbl_wrk != null && requestJson != null) {
-                        JSONArray sortColumns = null;
-                        JSONArray sortColumnsMode = null;
+                        JSONArray sortColumns = new JSONArray();
+                        JSONArray sortColumnsMode = new JSONArray();
+                        String sortMode = null;
                         JSONObject baseObject = null;
 
                         if (requestJson.has("sortColumns")) {
@@ -1271,92 +1272,95 @@ public class db {
                             baseObject = tbl_wrk.tableJson;
                         }
 
-                        if (baseObject.has("sortColumns")) {
-                            Object oSortColumns = baseObject.get("sortColumns");
-                            if (oSortColumns instanceof JSONArray) {
-                                sortColumns = baseObject.getJSONArray("sortColumns");
-                            } else if (oSortColumns instanceof String) {
-                                if (sortColumns == null) sortColumns = new JSONArray();
-                                sortColumns.put(String.valueOf(oSortColumns));
+                        /*
+                        Modalita' accettate :
+                            1) - "sort":"COLUMN,MODE", "sortMode":"SERVER/CLIENT"
+                            2) - "sort":"COLUMN" "sortModes:"MODE", "sortMode":"SERVER/CLIENT"
+                            3) - "sortColumns":[], "sortColumnsMode":[], "sortMode":"SERVER/CLIENT"
+                            4) - "sortColumns":"COL1,COL2", "sortColumnsMode":"DESC,ASC", "sortMode":"SERVER/CLIENT"
+                         */
+
+                        if (baseObject.has("sortMode")) {
+                            Object osortMode = baseObject.get("sortMode");
+                            if (osortMode instanceof JSONArray) {
+                                sortMode = ((JSONArray)osortMode).getString(0);
+                            } else if (osortMode instanceof String) {
+                                sortMode = String.valueOf(osortMode);
                             }
-                            if (baseObject.has("sortColumnsMode")) {
-                                Object osortColumnsMode = baseObject.get("sortColumnsMode");
-                                if (osortColumnsMode instanceof JSONArray) {
-                                    sortColumnsMode = baseObject.getJSONArray("sortColumnsMode");
-                                } else if (osortColumnsMode instanceof String) {
-                                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
-                                    sortColumnsMode.put(String.valueOf(osortColumnsMode));
+                        }
+
+                        if (baseObject.has("sort")) {
+                            // Case 1, 2
+                            Object oSort = baseObject.get("sort");
+                            if (oSort instanceof JSONArray) {
+                                JSONArray srcSortColumns = baseObject.getJSONArray("sort");
+                                for(int is=0; is<srcSortColumns.length(); is++) {
+                                    add_sort_item(sortColumns, sortColumnsMode, srcSortColumns);
                                 }
-                            } else if (baseObject.has("sortModes")) {
+                            } else if (oSort instanceof String) {
+                                add_sort_item(sortColumns, sortColumnsMode, oSort);
+                            }
+                            if (baseObject.has("sortModes")) {
                                 Object osortColumnsMode = baseObject.get("sortModes");
                                 if (osortColumnsMode instanceof JSONArray) {
                                     sortColumnsMode = baseObject.getJSONArray("sortModes");
                                 } else if (osortColumnsMode instanceof String) {
-                                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
-                                    sortColumnsMode.put(String.valueOf(osortColumnsMode));
-                                }
-                            } else if (baseObject.has("sortMode")) {
-                                Object osortColumnsMode = baseObject.get("sortMode");
-                                if (osortColumnsMode instanceof JSONArray) {
-                                    sortColumnsMode = baseObject.getJSONArray("sortMode");
-                                } else if (osortColumnsMode instanceof String) {
-                                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
-                                    sortColumnsMode.put(String.valueOf(osortColumnsMode));
-                                }
-                            } else if (tbl_wrk.tableJson.has("sortMode")) {
-                                Object osortColumnsMode = tbl_wrk.tableJson.get("sortMode");
-                                if (osortColumnsMode instanceof JSONArray) {
-                                    sortColumnsMode = tbl_wrk.tableJson.getJSONArray("sortMode");
-                                } else if (osortColumnsMode instanceof String) {
-                                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
-                                    sortColumnsMode.put(String.valueOf(osortColumnsMode));
-                                }
-                            } else if (tbl_wrk.tableJson.has("sortModes")) {
-                                Object osortColumnsMode = tbl_wrk.tableJson.get("sortModes");
-                                if (osortColumnsMode instanceof JSONArray) {
-                                    sortColumnsMode = tbl_wrk.tableJson.getJSONArray("sortModes");
-                                } else if (osortColumnsMode instanceof String) {
-                                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
                                     sortColumnsMode.put(String.valueOf(osortColumnsMode));
                                 }
                             }
+                        }
+                        if (baseObject.has("sortColumns")) {
+                            // Case 3, 4
+                            set_sort_columns(sortColumns, baseObject.get("sortColumns"));
+                            if (baseObject.has("sortColumnsMode")) {
+                                set_sort_mode(sortColumnsMode, baseObject.get("sortColumnsMode"));
+                            } else if (baseObject.has("sortModes")) {
+                                set_sort_mode(sortColumnsMode, baseObject.get("sortModes"));
+                            } else if (baseObject.has("sortMode")) {
+                                set_sort_mode(sortColumnsMode, baseObject.get("sortMode"));
+                            } else if (tbl_wrk.tableJson.has("sortMode")) {
+                                set_sort_mode(sortColumnsMode, tbl_wrk.tableJson.get("sortMode"));
+                            } else if (tbl_wrk.tableJson.has("sortModes")) {
+                                set_sort_mode(sortColumnsMode, tbl_wrk.tableJson.get("sortModes"));
+                            }
+                        }
+                        if (sortColumns != null) {
+                            // JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+                            // for(int i = 0; i < cols.length(); i++) {
+                            // JSONObject col = cols.getJSONObject(i);
+                            JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+                            for (int i = 0; i < sortColumns.length(); i++) {
+                                String sortColumn = sortColumns.getString(i);
+                                String sortColumnAlias = itemIdString + sortColumn + itemIdString;
 
-                            if (sortColumns != null) {
-                                // JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
-                                // for(int i = 0; i < cols.length(); i++) {
-                                // JSONObject col = cols.getJSONObject(i);
-                                JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
-                                for (int i = 0; i < sortColumns.length(); i++) {
-                                    String sortColumn = sortColumns.getString(i);
-                                    String sortColumnAlias = itemIdString + sortColumn + itemIdString;
-
-                                    if (isOracle || isPostgres || isMySQL || isSqlServer) { // need column alias
-                                        for (int ic = 0; ic < cols.length(); ic++) {
-                                            JSONObject col = cols.getJSONObject(ic);
-                                            String colName = null;
+                                if (isOracle || isPostgres || isMySQL || isSqlServer) { // need column alias
+                                    for (int ic = 0; ic < cols.length(); ic++) {
+                                        JSONObject col = cols.getJSONObject(ic);
+                                        String colName = null;
+                                        try {
+                                            colName = col.getString("name");
+                                        } catch (Exception e) {
+                                            colName = null;
+                                        }
+                                        if (colName.equalsIgnoreCase(sortColumn)) {
                                             try {
-                                                colName = col.getString("name");
-                                            } catch (Exception e) {
-                                                colName = null;
-                                            }
-                                            if (colName.equalsIgnoreCase(sortColumn)) {
-                                                try {
-                                                    sortColumnAlias = col.getString("alias");
+                                                sortColumnAlias = col.getString("alias");
 
-                                                    String sortTable = null;
-                                                    String[] colParts = colName.split("\\.");
-                                                    if (colParts.length > 1) {
-                                                        sortTable = colParts[0];
-                                                    }
-                                                    // mette l'alias del join
-                                                    sortColumnAlias = (sortTable != null ? LeftJoinMap.getAlias(leftJoinsMap, sortTable) : tableIdString + table + tableIdString) + "." + itemIdString + colParts[1] + itemIdString;
-
-                                                } catch (Exception e) {
+                                                String sortTable = null;
+                                                String[] colParts = colName.split("\\.");
+                                                if (colParts.length > 1) {
+                                                    sortTable = colParts[0];
                                                 }
+                                                // mette l'alias del join
+                                                sortColumnAlias = (sortTable != null ? LeftJoinMap.getAlias(leftJoinsMap, sortTable) : tableIdString + table + tableIdString) + "." + itemIdString + colParts[1] + itemIdString;
+
+                                            } catch (Exception e) {
                                             }
                                         }
                                     }
+                                }
 
+                                if(!"client".equalsIgnoreCase(sortMode)) {
                                     if (sortColumn != null && !sortColumn.isEmpty()) {
                                         if (sSort.length() == 0) {
                                             sSort += " ORDER BY ";
@@ -1371,17 +1375,17 @@ public class db {
                                                 + itemIdString + sortColumnAlias + itemIdString;
                                          */
                                         sSort += ""
-                                                + sortColumnAlias ;
+                                                + sortColumnAlias;
 
                                         if (sortColumnsMode != null) {
                                             sSort += " " + sortColumnsMode.getString(i);
                                         }
                                     }
                                 }
+                            }
 
-                                if (sSort.length() > 0) {
-                                    // sSort += ")";
-                                }
+                            if (sSort.length() > 0) {
+                                // sSort += ")";
                             }
                         }
                     }
@@ -1890,7 +1894,9 @@ public class db {
                         isCrossTableService,
                         targetColumnIndex,
                         service,
-                        false);
+                        false,
+                        recordset_params.request
+                );
 
                 out_string += (String) recordset[0];
                 out_values_string += (String) recordset[1];
@@ -2018,6 +2024,70 @@ public class db {
         return out_string;
     }
 
+
+
+    /**
+     *
+     * @param sortColumns
+     * @param oSortColumns
+     */
+    private static void set_sort_columns(JSONArray sortColumns, Object oSortColumns) {
+        if (oSortColumns instanceof JSONArray) {
+            sortColumns.putAll((JSONArray)oSortColumns);
+        } else if (oSortColumns instanceof String) {
+            if (sortColumns == null) sortColumns = new JSONArray();
+            String [] sort_cols = ((String)oSortColumns).split("\\.");
+            for(int is=0; is<sort_cols.length; is++) {
+                sortColumns.put(sort_cols[is]);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param sortColumnsMode
+     * @param sortMode
+     */
+    private static void set_sort_mode(JSONArray sortColumnsMode, Object sortMode) {
+        if(sortMode != null) {
+            if (sortMode instanceof JSONArray) {
+                sortColumnsMode.putAll((JSONArray)sortMode);
+            } else if (sortMode instanceof String) {
+                if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
+                String[] sort_modes = ((String) sortMode).split("\\.");
+                for (int is = 0; is < sort_modes.length; is++) {
+                    sortColumnsMode.put(String.valueOf(sort_modes[is]));
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     * @param sortColumns
+     * @param sortColumnsMode
+     * @param sortItem
+     */
+    private static void add_sort_item(JSONArray sortColumns, JSONArray sortColumnsMode, Object sortItem) {
+        if(sortItem instanceof String) {
+            String[] sortPats = ((String) sortItem).split(",");
+            if (sortPats.length == 1) {
+                sortColumns.put(sortItem);
+            } else {
+                sortColumns.put(sortPats[0]);
+                sortColumnsMode.put(sortPats[1]);
+            }
+        } else if(sortItem instanceof JSONObject) {
+            JSONObject jsortItem = (JSONObject)sortItem;
+            sortColumns.put(jsortItem.getString("col"));
+            sortColumnsMode.put(jsortItem.getString("mode"));
+
+        } else if(sortItem instanceof JSONArray) {
+            JSONArray jsortItem = (JSONArray)sortItem;
+            sortColumns.put(jsortItem.get(0));
+            sortColumnsMode.put(jsortItem.get(1));
+        }
+    }
 
 
     //
@@ -2632,15 +2702,20 @@ public class db {
                                             boolean isCrossTableService,
                                             int targetColumnIndex,
                                             String service,
-                                            boolean skipMissingField
+                                            boolean skipMissingField,
+                                            HttpServletRequest request
     ) throws Exception {
         int addedRow = 0;
         StringBuilder out_string = new StringBuilder("");
         StringBuilder out_codes_string = new StringBuilder("");
         StringBuilder out_values_string = new StringBuilder("");
         String fieldValue = null, error = "";
-        DateFormat dateFormat = new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
-        DateFormat dateTimeFormat = new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy HH" + workspace.timeSep + "mm" + workspace.timeSep + "ss.SS");
+        String reqDateSep = request != null ? (String)request.getAttribute("dateSep") : null;
+        String reqTimeSep = request != null ? (String)request.getAttribute("timeSep") : null;
+        String dateSep = reqDateSep != null ? reqDateSep : workspace.dateSep;
+        String timeSep = reqTimeSep != null ? reqTimeSep : workspace.timeSep;
+        DateFormat dateFormat = new SimpleDateFormat("dd" + dateSep + "MM" + dateSep + "yyyy");
+        DateFormat dateTimeFormat = new SimpleDateFormat("dd" + dateSep + "MM" + dateSep + "yyyy HH" + timeSep + "mm" + timeSep + "ss.SS");
         NumberFormat nf = NumberFormat.getInstance();
         ArrayList<Long> ids = new ArrayList<Long>();
         boolean renderService = "render".equalsIgnoreCase(service);
@@ -4025,9 +4100,11 @@ public class db {
 
                                                                         if (colType == 6 || colType == 93) { // datetime)
                                                                             if(request != null) {
-                                                                                Date gtmDate = utility.get_local2server_time(request, oValue);
-                                                                                if(gtmDate != null) {
-                                                                                    oValue = gtmDate;
+                                                                                if(oValue != null) {
+                                                                                    Date gtmDate = utility.get_local2server_time(request, oValue);
+                                                                                    if(gtmDate != null) {
+                                                                                        oValue = gtmDate;
+                                                                                    }
                                                                                 } else {
                                                                                     throw new Exception("Failed to get local time");
                                                                                 }

@@ -11,6 +11,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
+import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1346,6 +1347,13 @@ public class event {
                 conn = (Connection)connResult[0];
                 String connError = (String)connResult[1];
                 if (conn != null) {
+                    String reqDateSep = (String)request.getAttribute("dateSep");
+                    String reqTimeSep = (String)request.getAttribute("timeSep");
+                    String dateSep = reqDateSep != null ? reqDateSep : workspace.dateSep;
+                    String timeSep = reqTimeSep != null ? reqTimeSep : workspace.timeSep;
+                    DateFormat dateFormat = new SimpleDateFormat("dd" + dateSep + "MM" + dateSep + "yyyy");
+                    DateFormat dateTimeFormat = new SimpleDateFormat("dd" + dateSep + "MM" + dateSep + "yyyy HH" + timeSep + "mm" + timeSep + "ss.SS");
+
                     long cRow = 0;
                     long lStartTime = 0;
                     long lQueryTime = 0;
@@ -1385,10 +1393,21 @@ public class event {
 
                                     String fieldName = null;
                                     JSONObject col = cols.getJSONObject(ic);
+                                    boolean nullable = true;
 
                                     // N.B.: defaultVlaues, ovvero il dato elaborato e passato dal client, prevale sulla definizione di default del DB
                                     String colDefault = defaultVlaues != null ? defaultVlaues.get(ic) : null;
                                     colDefault = setFieldAsDefault(conn, col, colTypes[ic], colPrecs[ic], colDefault, request);
+                                    int colType = 0;
+
+                                    try {
+                                        colType = Integer.parseInt(cols.getJSONObject(ic).getString("type"));
+                                    } catch (Exception e) {
+                                    }
+                                    try {
+                                        nullable = col.getBoolean("nullable");
+                                    } catch (Exception e) {
+                                    }
 
                                     try {
                                         fieldName = col.getString("field");
@@ -1398,6 +1417,26 @@ public class event {
                                         try {
                                             fieldName = col.getString("name");
                                         } catch (Exception e) {
+                                        }
+                                    }
+
+                                    if(colType == 6) {
+                                        try {
+                                            Timestamp ts = DateUtil.toTimestamp(colDefault);
+                                            colDefault = DateUtil.toString(ts);
+                                        } catch (Exception e) {
+                                            // fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                                            throw new Exception(e);
+                                        }
+                                    } else if(colType == 93) {
+                                        try {
+                                            Timestamp ts = DateUtil.toTimestamp(colDefault);
+                                            colDefault = DateUtil.toString(ts);
+                                        } catch (Exception e) {
+                                            // fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00";
+                                            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                                            throw new Exception(e);
                                         }
                                     }
 

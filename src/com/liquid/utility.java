@@ -1763,7 +1763,7 @@ public class utility {
         return get_datalist_from_table(datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, chacheIt);
     }
 
-    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String tooltipColumn, String where, String emptyRow, boolean chacheIt) {
+    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String tooltipColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
         String out = "";
 
         ArrayList<Object> beans = null;

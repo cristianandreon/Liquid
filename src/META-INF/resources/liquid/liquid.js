@@ -798,6 +798,9 @@ class LiquidCtrl {
                                             event.newValue = validateResult[1];
                                             Liquid.registerFieldChange(liquid, event.node.id, event.node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ], event.column.colId, event.oldValue, event.newValue);
                                             Liquid.updateDependencies(liquid, liquid.tableJson.columns[iCol], null, event);
+                                            console.debug("onCellValueChanged(): NOT mirror event")
+                                        } else {
+                                            console.debug("onCellValueChanged(): mirror event")
                                         }
                                     }
                                 }
@@ -2496,6 +2499,8 @@ var Liquid = {
     lang: "it",
     dateSep: '/',
     timeSep: ':',
+    showSecond:true,
+    showMillisec:true,
     CMD_WAIT_FOR_ENABLE: 10,
     CMD_ENABLED: 15,
     CMD_VALIDATE: 20,
@@ -3657,13 +3662,11 @@ var Liquid = {
 
                 if (Liquid.debug) {
                     console.warn(liquid.tableJson.table + " n.modifications:" + liquid.modifications.length);
-                    /*
                     for(let r = 0; r < liquid.modifications.length; r++) {
                         for(let c = 0; c < liquid.modifications[r].fields.length; c++) {
                             console.warn(liquid.tableJson.table + " rowId:" + liquid.modifications[r].rowId + " field:" + liquid.modifications[r].fields[c].field + " value:" + liquid.modifications[r].fields[c].value);
                         }
                     }
-                    */
                 }
                 if (rowId === '' || rowId === null || isFormX) {
                     // N.B.: formX work always on addingRow/addingNode
@@ -5185,6 +5188,11 @@ var Liquid = {
                         var isFormX = Liquid.isFormX(liquid);
                         var isAutoInsert = Liquid.isAutoInsert(liquid);
                         if (isFormX || isAutoInsert === true) {
+                            if (xhr.params.ids) { // set data as partial
+                                if(xhr.params.ids.length == 1) {
+                                    console.warn("LIQUID: start autoInserting after loading a row");
+                                }
+                            }
                             var insertCommand = {name: "insert", isNative: true};
                             Liquid.onButton(liquid, insertCommand);
                         }
@@ -5565,6 +5573,8 @@ var Liquid = {
                         + "&targetSchema=" + (typeof liquid.tableJson.schema !== 'undefined' ? liquid.tableJson.schema : "")
                         + "&targetTable=" + (typeof liquid.tableJson.table !== 'undefined' ? liquid.tableJson.table : "")
                         + "&service=" + "render"
+                        + "&dateSep=" + Liquid.dateSep
+                        + "&timeSep=" + Liquid.timeSep
                         + (!liquid.tableJson.columnsResolved ? '&columnsResolved=false' : '')
                         , liquid.tableJson.loadDataSync === true ? false : true
                         , sFiltersJson
@@ -8178,7 +8188,7 @@ var Liquid = {
                     if (validateResult !== null) {
                         if (validateResult[0] >= 0) {
                             queue.propValue = validateResult[1];
-                            // NO : hude file can be pronlematic here
+                            // NO : huge file can be problematic here
                             // Liquid.registerFieldChange(queue.liquid, null, queue.targetRow[ queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null ], queue.targetCol.field, null, queue.propValue);
                             var rowId = queue.targetRow[queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null];
                             if (rowId === '' || rowId === null) {
@@ -11640,9 +11650,21 @@ var Liquid = {
                             var layout = Liquid.getLayoutByName(liquid, col.dependencies[id].layoutName);
                             var iRow = col.dependencies[id].iRow;
                             var obj = document.getElementById(col.dependencies[id].objId);
-                            if (iRow === 0)
-                                if (event && event.target !== obj)
-                                    Liquid.setLayoutField(liquid, layout, obj, iRow, false);
+                            var needRefresh = false;
+                            if (iRow === 0) {
+                                if (event && event.target !== obj) {
+                                    needRefresh = true;
+                                }
+                                if(obj.getAttribute("pure_value")) {
+                                    if(!obj.getAttribute("dp")) {
+                                        // non in editing
+                                        needRefresh = true;
+                                    }
+                                }
+                            }
+                            if(needRefresh) {
+                                Liquid.setLayoutField(liquid, layout, obj, iRow, false);
+                            }
                         }
                     }
                 }
@@ -14151,7 +14173,9 @@ var Liquid = {
                         if (targetObj) {
                             if (Liquid.isDate(type)) {
                                 if(targetObj.format) {
-                                    targetObj.setAttribute("org_value", value);
+                                    if(!targetObj.getAttribute("pure_value")) {
+                                        targetObj.setAttribute("pure_value", value);
+                                    }
                                 }
                                 if (value == "NULL") {
                                     value = "";
@@ -14168,7 +14192,14 @@ var Liquid = {
                                         // timestamp
                                         value = Liquid.getLocalDate(value, type);
                                         try {
-                                            format = Liquid.getTimestampFormat(format, Liquid.timestampFormat);
+                                            if (targetObj.readOnly || targetObj.disabled) {
+                                                default_format = Liquid.timestampFormat;
+                                            } else {
+                                                // default_format = null;
+                                                // formato personalizzato
+                                                default_format = Liquid.timestampFormat;
+                                            }
+                                            format = Liquid.getTimestampFormat(format, default_format);
                                             if(format) {
                                                 if(value) {
                                                     value = d.toString(format);
@@ -14196,7 +14227,8 @@ var Liquid = {
                                                     // use of date.js
                                                     d = Date.parse(value);
                                                     if (d) {
-                                                        value = d.toString(format);
+                                                        // value = d.toString(format);
+                                                        value = d.toString('dddd dd MMMM yyyy, HH:mm');
                                                     } else {
                                                         value = "";
                                                     }
@@ -14756,7 +14788,16 @@ var Liquid = {
                                             console.error("ERROR:unsupported");
                                         }
                                     } else {
-                                        newValue = obj.value;
+                                        if(obj.getAttribute("pure_value")) {
+                                            if(obj.getAttribute("dp")) {
+                                                // in editing
+                                                newValue = obj.value;
+                                            } else {
+                                                newValue = obj.getAttribute("pure_value");
+                                            }
+                                        } else {
+                                            newValue = obj.value;
+                                        }
                                     }
                                 } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
                                     newValue = obj.innerHTML;
@@ -14768,7 +14809,8 @@ var Liquid = {
                                     var validateResult = Liquid.validateField(liquid, col, newValue);
                                     if (validateResult !== null) {
                                         if (validateResult[0] >= 0) {
-                                            //newValue = validateResult[1];
+                                            // newValue = validateResult[1];
+                                            Liquid.addMirrorEvent(liquid, liquid.addingNode);
                                             Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], linkedField, null, newValue);
                                             Liquid.updateDependencies(liquid, col, null, event);
                                         }
@@ -14783,6 +14825,7 @@ var Liquid = {
                                                 if (validateResult !== null) {
                                                     if (validateResult[0] >= 0) {
                                                         // newValue = validateResult[1];
+                                                        Liquid.addMirrorEvent(liquid, nodes[baseIndex1B - 1 + linkedRow1B - 1]);
                                                         nodes[baseIndex1B - 1 + linkedRow1B - 1].setDataValue(linkedField, validateResult[1]);
                                                         Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], linkedField, null, newValue);
                                                         Liquid.updateDependencies(liquid, col, null, event);
@@ -15004,7 +15047,7 @@ var Liquid = {
         var controlName = "";
         var type = 'datetimepicker';
         var value = obj ? obj.value : "";
-        var org_value = obj.getAttribute("org_value");
+        var pure_value = obj.getAttribute("pure_value");
         var formatDate = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy';
         var timeFormat = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
         var format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy' + ' ' + timeFormat;
@@ -15021,7 +15064,7 @@ var Liquid = {
                     } else if (col.asType.toLowerCase() === 'datetime' || col.asType.toLowerCase() === 'timestamp') {
                         type = 'datetimepicker';
                         timePicker = true;
-                        format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+                        format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i'+ Liquid.timeSep + 's';
                         closeOnDateSelect = true;
                     }
                 } catch (e) {
@@ -15072,30 +15115,56 @@ var Liquid = {
                     , format: format
                     , formatDate: formatDate
                     , formatTime: timeFormat
-                    , showSecond: true
-                    , showMillisec: true
+                    , showSecond: Liquid.showSeconds
+                    , showMillisec: Liquid.showMilliSeconds
                     , stepHour: 1
                     , stepMinute: 1
                     , stepSecond: 1
                     , closeOnDateSelect: closeOnDateSelect
-                    , showTimePicker: timePicker,
-                    timepicker: timePicker,
-                    timePickerSeconds: false,
-                    timePickerIncrement: 1
+                    , showTimePicker: timePicker
+                    , timepicker: timePicker
+                    , timePickerSeconds: false
+                    , timePickerIncrement: 1
                     , dayOfWeekStart: 1
                     , changeMonth: true,
                     changeYear: true
-                    , beforeShow: function () {
+                    , beforeShowDay: function (o, $input, event) {
+                        if ($input) {
+                            var pure_value = $input[0].getAttribute("pure_value");
+                            if (pure_value) $input[0].value = pure_value;
+                        }
                     }
-                    , onShow: function (o, $input, event) {
-                        var opt = {};
-                        if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
-                        jQ1124(controlName).datetimepicker("option", opt);
-                        jQ1124(controlName).css('z-index', 90000);
-                        jQ1124().datetimepicker("value", org_value ? org_value : value);
-                        this.setOptions(opt);
-                    }, onClose: function (o) {
-                        if (liquid) liquid.gridOptions.api.stopEditing();
+                    , beforeShow: function (o, $input, event) {
+                        if($input) {
+                            var pure_value = $input[0].getAttribute("pure_value");
+                            if (pure_value) $input[0].value = pure_value;
+                        }
+                    }, onShow: function (o, $input, event) {
+                        if($input) {
+                            var opt = {};
+                            var pure_value = $input[0].getAttribute("pure_value");
+                            if (pure_value) $input[0].value = pure_value;
+                            $input[0].setAttribute("dp", "1");
+                            if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
+                            jQ1124(controlName).datetimepicker("option", opt);
+                            jQ1124(controlName).css('z-index', 90000);
+                            jQ1124().datetimepicker("value", pure_value ? pure_value : value);
+                            this.setOptions(opt);
+                            console.info("DATETIMEPICKER:onClose()");
+                        }
+                    },
+                    onClose: function (o, $input, event) {
+                        if($input) {
+                            if($input[0].getAttribute("dp")) {
+                                $input[0].setAttribute("dp", "");
+                                $input[0].setAttribute("pure_value", $input[0].value);
+                                if (liquid) liquid.gridOptions.api.stopEditing();
+                            }
+                        }
+                        console.info("DATETIMEPICKER:onClose()");
+                    },
+                    onSelectDate:function(ct,$i){
+                        // $i.datetimepicker('destroy');
                     }
                 });
                 if (bShow)
@@ -15107,30 +15176,49 @@ var Liquid = {
             controlName = '.ui-datepicker';
             var dp = jQ1124(controlName);
             jQ1124(controlName).css('z-index', 90000);
-            jQ1124(obj).datepicker().datepicker("option", {
+            jQ1124(obj).datepicker("option", {
                 showAnim: "slideDown",
                 inline: true,
-                date: org_value ? org_value : value,
+                date: pure_value ? pure_value : value,
                 dateFormat: (typeof format !== "undefined" && format ? format : 'dd' + Liquid.dateSep + 'mm' + Liquid.dateSep + 'yy'),
                 changeMonth: true,
                 changeYear: true,
-                beforeShow: function (o) {
+                beforeShowDay: function (o, $input, event) {
+                },onGenerate: function (o, $input, event) {
                     var opt = {};
                     if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
                     jQ1124(obj).datepicker("option", opt);
                     setTimeout(function () {
                         jQ1124(controlName).css('z-index', 90000);
                     }, 10);
-                },
-                onShow: function (o, $input, event) {
-                },
-                onClose: function (o) {
-                    if (liquid) {
-                        liquid.gridOptions.api.stopEditing();
-                        if (obj) obj.onchange();
+                    if($input) {
+                        var pure_value = $input[0].getAttribute("pure_value");
+                        if (pure_value) $input[0].value = pure_value;
+                    }
+                },onShow: function (o, $input, event) {
+                    if($input) {
+                        if(pure_value) $input[0].value = pure_value;
+                        $input[0].setAttribute("dp", "1");
+                        console.info("DATEPICKER:onShow()");
+                    }
+                },onClose: function (o, $input, event) {
+                    if($input) {
+                        if($input[0].getAttribute("dp")) {
+                            $input[0].setAttribute("dp", "");
+                            $input[0].setAttribute("pure_value", $input[0].value);
+                            if (liquid) {
+                                liquid.gridOptions.api.stopEditing();
+                                if (obj) obj.onchange();
+                            }
+                            console.info("DATEPICKER:onClose()");
+                        }
                     }
                 },
+                onSelectDate:function(ct,$i){
+                    // $i.datetimepicker('destroy');
+                },
                 onSelect: function (date, inst) {
+                    // $i.datetimepicker('destroy');
                 }
             });
             if (bShow)
@@ -15138,6 +15226,12 @@ var Liquid = {
         }
         return controlName;
     },
+    /**
+     * Apply column format to the picker
+     * @param datePicker
+     * @param col
+     * @returns {{}}
+     */
     setDatePickerOptions: function (datePicker, col) {
         var opt = {};
         if (col) {
@@ -15153,8 +15247,8 @@ var Liquid = {
             if (isDef(col.datepicker)) opt.datepicker = col.datepicker;
             if (isDef(col.showTimePicker)) opt.showTimePicker = col.showTimePicker;
             if (isDef(col.lang)) opt.lang = col.lang;
-            if (isDef(col.showSecond)) opt.showSecond = col.showSecond;
-            if (isDef(col.showMillisec)) opt.showMillisec = col.showMillisec;
+            if (isDef(col.showSecond)) opt.showSecond = col.showSecond; else opt.showSecond = Liquid.showSecond;
+            if (isDef(col.showMillisec)) opt.showMillisec = col.showMillisec; else opt.showMillisec = Liquid.showMillisec;
             if (isDef(col.stepHour)) opt.stepHour = col.stepHour;
             if (isDef(col.stepMinute)) opt.stepMinute = col.stepMinute;
             if (isDef(col.stepSecond)) opt.stepSecond = col.stepSecond;
@@ -15165,11 +15259,12 @@ var Liquid = {
         }
         return opt;
     },
-    setDateTimePickerNode: function (obj, type, format) {
+    setDateTimePickerNode: function (obj, type, obj_format) {
         var timePicker = true;
         var datePicker = false;
         var closeOnDateSelect = true;
-        var format = format ? format : ('d' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's');
+        // var format = format ? format : ('d' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's');
+        var format = ('d' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's');
         var formatDate = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y';
         var formatTime = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
         if (type === 'date') {
@@ -15189,7 +15284,6 @@ var Liquid = {
         if (datePicker) {
             var dpControlName = '.xdsoft_datetimepicker';
             var timeFormat = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-            // var dp = jQ1124(dpControlName);
             try {
                 jQ1124(obj).datetimepicker({
                     showAnim: "slideDown"
@@ -15197,7 +15291,8 @@ var Liquid = {
                     , format: format
                     , formatTime: formatTime
                     , formatDate: formatDate
-                    , showSecond: true, showMillisec: true
+                    , showSecond: Liquid.showSeconds
+                    , showMillisec: Liquid.showMilliSeconds
                     , stepHour: 1, stepMinute: 1, stepSecond: 1
                     , closeOnDateSelect: closeOnDateSelect
                     , showTimePicker: timePicker
@@ -15206,17 +15301,37 @@ var Liquid = {
                     , timePickerIncrement: 1
                     , dayOfWeekStart: 1
                     , changeMonth: true, changeYear: true
-                    , beforeShow: function () {
-                    }
                     , onShow: function (o, $input, event) {
-                        var opt = {lang: Liquid.lang};
-                        jQ1124(dpControlName).datetimepicker("option", opt);
-                        jQ1124(dpControlName).css('z-index', 99900);
+                        if($input) {
+                            var field = $input[0].getAttribute("linkedfield");
+                            var liquid = Liquid.getLiquid($input[0]);
+                            var opt = Liquid.setDatePickerOptions(this, liquid.tableJson.columns[Number(field)-1]);
+                            // jQ1124(obj).datetimepicker("option", opt);
+                            var pure_value = $input ? $input[0].getAttribute("pure_value") : null;
+                            if (pure_value) $($input).val(pure_value);
+                            opt.value = pure_value;
+                            // NO jQ1124(obj).val(pure_value);
+                            this.val(pure_value);
+                            // jQ1124(obj).datetimepicker("value", pure_value);
+                            // jQ1124(obj).datetimepicker({value:pure_value});
+                            // jQ1124(obj).datetimepicker({setDate:pure_value});
+                            // jQ1124(obj).datetimepicker({defaultDate:pure_value});
+                        }
+                        $input[0].setAttribute("dp", "1");
+                        jQ1124(obj).css('z-index', 99900);
                         this.setOptions(opt);
-                        console.log(jQ1124(dpControlName).css('z-index'));
-                    }
-                    , onClose: function (o) {
-                        console.log(jQ1124(dpControlName).css('z-index'));
+                        console.info("DATETIMEPICKER:onShow()");
+                    }, onClose: function (o, $input, event) {
+                        if($input) {
+                            if($input[0].getAttribute("dp")) {
+                                $input[0].setAttribute("dp", "");
+                                $input[0].setAttribute("pure_value", $input[0].value);
+                                console.info("DATETIMEPICKER:onClose()");
+                            }
+                        }
+                    },
+                    onSelectDate:function(ct,$i){
+                        // $i.datetimepicker('destroy');
                     }
                 });
             } catch (e) {
@@ -19744,7 +19859,7 @@ var Liquid = {
                                 }
                             } else{
                                 if(callback) {
-                                    callback(atob(field), null, null, null);
+                                    callback(btoa(field), null, null, null);
                                 }
                             }
                         }, null);
@@ -20622,7 +20737,7 @@ var Liquid = {
             if (format) {
                 return format;
             } else {
-                return 'dddd'+Liquid.dateSep+'dd'+Liquid.dateSep+'MMMM yyyy, HH'+Liquid.timeSep+'mm';
+                return 'dddd'+" "+'dd'+" "+'MMMM yyyy, HH'+Liquid.timeSep+'mm';
             }
         } else {
             // use of date.js
@@ -20668,6 +20783,46 @@ var Liquid = {
             }
         }
         return rowData;
+    }, startContDown:function(obj_id, final_date) {
+        if(obj_id && final_date) {
+            var dFinalDate = Date.parse(final_date);
+            var now = new Date();
+            if(d > now) {
+                glFinalDateRemains = d;
+                Liquid.showRemaining(obj_id, dFinalDate);
+            }
+        }
+    }
+    ,glTimerRemains:null
+    ,glFinalDateRemains:null
+    ,showRemaining:function(obj_id, finalDate) {
+        var now = new Date();
+        var distance = finalDate - now;
+        if (distance < 0) {
+            if(gltimerRemains) clearInterval(gltimerRemains);
+            document.getElementById(obj_id).innerHTML = '!';
+            return;
+        }
+        var _second = 1000;
+        var _minute = _second * 60;
+        var _hour = _minute * 60;
+        var _day = _hour * 24;
+
+        var days = Math.floor(distance / _day);
+        var hours = Math.floor((distance % _day) / _hour);
+        var minutes = Math.floor((distance % _hour) / _minute);
+        var seconds = Math.floor((distance % _minute) / _second);
+
+        var remainDesc = '';
+        var days_title = (days > 1 ? (Liquid.lang === 'ita' ? 'giorni' : 'days') : (Liquid.lang === 'ita' ? 'giorno' : 'day')) + ' ';
+        var hours_title = (hours > 1 ? (Liquid.lang === 'ita' ? 'ore' : 'hours') : (Liquid.lang === 'ita' ? 'ora' : 'hour')) + ' ';
+        var minutes_title = (minutes > 1 ? (Liquid.lang === 'ita' ? 'minuti' : 'minutes') : (Liquid.lang === 'ita' ? 'minuto' : 'minute')) + ' ';
+        remainDesc += days > 0 ? days + days_title : '';
+        remainDesc += hours > 0 ? hours + hours_title : '';
+        remainDesc += minutes > 0 ? minutes + 'minutes ' : '';
+        document.getElementById(obj_id).innerHTML = remainDesc;
+        if(gltimerRemains) clearInterval(gltimerRemains);
+        gltimerRemains = setInterval( function() { showRemaining(obj_id, finalDate); }, 1000);
     }
 };
 

@@ -36,6 +36,8 @@ public class ParamsUtil {
         boolean extendedMetadata = true;
         String sRequest = null;
         JSONObject requestJson = null;
+        String dateSep = null;
+        String timeSep = null;
         
         HttpServletRequest request = null;
         HttpSession session = null;
@@ -79,7 +81,13 @@ public class ParamsUtil {
                     try { 
                         if(sRequest != null && !sRequest.isEmpty()) 
                             requestJson = new JSONObject(sRequest); 
-                    } catch (Exception e) { System.err.println(e.getLocalizedMessage()); }                    
+                    } catch (Exception e) { System.err.println(e.getLocalizedMessage()); }
+
+                    try { dateSep = request.getParameter("dateSep"); } catch (Exception e) { }
+                    try { timeSep = request.getParameter("timeSep"); } catch (Exception e) { }
+
+                    request.setAttribute("dateSep", dateSep);
+                    request.setAttribute("timeSep", timeSep);
                 }
 
                 if(pageSize > 0) {

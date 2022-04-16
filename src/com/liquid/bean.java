@@ -320,7 +320,9 @@ public class bean {
                                             isCrossTableService,
                                             targetColumnIndex,
                                             null,
-                                            true);
+                                            true,
+                                            request
+                                    );
 
                                     if (recordset != null) {
                                         // Agginta eventuali errori
@@ -1746,7 +1748,7 @@ public class bean {
      * @param filteringValue
      * @return
      */
-    static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, String filteringColumn, String filteringValue) {
+    static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, String filteringColumn, String filteringValue) throws Throwable {
         ArrayList<Object> beans = load_beans(databaseSchemaTable, columns, filteringColumn+"="+filteringValue, 1);
         if(beans != null) {
             if(beans.size() > 0) {
@@ -1917,7 +1919,7 @@ public class bean {
      * @param maxRows
      * @return
      */
-    static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition, long maxRows) {
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition, long maxRows) throws Throwable {
         return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
     }
 
@@ -1933,7 +1935,7 @@ public class bean {
      * @param maxRows
      * @return
      */
-    static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition, long maxRows) {
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition, long maxRows) throws Throwable {
         return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, maxRows);
     }
 
@@ -1944,7 +1946,7 @@ public class bean {
      * @param where_condition
      * @return
      */
-    static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition) {
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition) throws Throwable {
         return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, -1);
     }
 
@@ -1956,12 +1958,12 @@ public class bean {
      * @param where_condition
      * @return
      */
-    static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition) {
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition) throws Throwable {
         return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, -1);
     }
 
 
-    static public Object load_bean(String databaseSchemaTable, String columns, String where_condition) {
+    static public Object load_bean(String databaseSchemaTable, String columns, String where_condition) throws Throwable {
         ArrayList<Object> beans = load_beans((HttpServletRequest) null, (String) columns, databaseSchemaTable, null, where_condition, 1);
         if (beans != null) {
             if (beans.size() > 0) {
@@ -1971,7 +1973,7 @@ public class bean {
         return null;
     }
 
-    static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String where_condition, long maxRows) {
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String where_condition, long maxRows) throws Throwable {
         return load_beans(request, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
     }
 
@@ -1995,11 +1997,11 @@ public class bean {
      * TODO : partial columns read still unsupported... read always all columns
      *
      */
-    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows) {
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows) throws Throwable {
         return load_beans(request, controlId, databaseSchemaTable, columns, where_condition, null, maxRows);
     }
 
-    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, ArrayList<String> where_condition_params, long maxRows) {
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, ArrayList<String> where_condition_params, long maxRows) throws Throwable {
         // crea un controllo sulla tabella
         if(databaseSchemaTable != null)
             databaseSchemaTable = databaseSchemaTable.replace("\"", "");
@@ -2187,7 +2189,8 @@ public class bean {
                         false,
                         -1,
                         null,
-                        skipMissingColumn
+                        skipMissingColumn,
+                        request
                 );
 
                 // Freee connection as soon as possible
@@ -2244,6 +2247,7 @@ public class bean {
         } catch (Throwable e) {
             errors += "Error:" + e.getLocalizedMessage();
             System.err.println("// get_beans() [" + controlId + "] Error:" + e.getLocalizedMessage());
+            throw e;
 
         } finally {
             // closing the connections (with callbacks)
