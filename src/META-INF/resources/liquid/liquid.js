@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.06
+// Liquid ver.2.07
 //
 //  First update 06-01-2020 - Last update 10-03-2022
 //
@@ -2486,7 +2486,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 1.94,
+    version: 2.07,
     appTitle: "LIQUID",
     controlid: "Liquid framework",
     debug: false,
@@ -5115,6 +5115,7 @@ var Liquid = {
                             if (liquid.addingNode) {
                                 console.error("ERROR: loadData inside insert command overlay addingNode");
                                 liquid.addingNode = null;
+                                Liquid.resetLayoutsAddingNode(liquid);
                             }
                         }
 
@@ -5364,6 +5365,7 @@ var Liquid = {
                 if (liquid.addingNode) {
                     console.error("ERROR: loadData inside insert command overlay addingNode");
                     liquid.addingNode = null;
+                    Liquid.resetLayoutsAddingNode(liquid);
                 }
                 if (liquid.autoInsertIfMissing === true) {
                     var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
@@ -6551,6 +6553,7 @@ var Liquid = {
                                             }
                                             liquid.addingRow = null;
                                             liquid.addingNode = null;
+                                            Liquid.resetLayoutsAddingNode(liquid);
                                             Liquid.resetMofifications(liquid);
                                         }
                                     }
@@ -7535,6 +7538,7 @@ var Liquid = {
                         liquid.gridOptions.api.setRowData(null);
                         liquid.addingRow = null;
                         liquid.addingNode = null;
+                        Liquid.resetLayoutsAddingNode(liquid);
                     }
                 }
                 // Turn On waiters
@@ -8373,6 +8377,7 @@ var Liquid = {
 
                                                     liquid.addingRow = null;
                                                     liquid.addingNode = null;
+                                                    Liquid.resetLayoutsAddingNode(liquid);
                                                     Liquid.resetMofifications(liquid);
 
                                                     console.warn("WARNING: row paste failed at " + liquid.controlId + " key:" + liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
@@ -8392,6 +8397,7 @@ var Liquid = {
                                                     }
                                                     liquid.addingRow = null;
                                                     liquid.addingNode = null;
+                                                    Liquid.resetLayoutsAddingNode(liquid);
                                                     Liquid.resetMofifications(liquid);
                                                 }
                                             }
@@ -8984,6 +8990,7 @@ var Liquid = {
                                 // reset addingNode/Row
                                 liquid.addingNode = null;
                                 liquid.addingRow = null;
+                                Liquid.resetLayoutsAddingNode(liquid);
 
                                 // Re-enable all foreign tables children of
                                 Liquid.setForeignTablesModeCascade(liquid);
@@ -9027,6 +9034,7 @@ var Liquid = {
                 if (command.name === "insert") {
                     liquid.addingNode = null;
                     liquid.addingRow = null;
+                    Liquid.resetLayoutsAddingNode(liquid);
                 } else if (command.name === "delete") {
                     liquid.deletingNodes = null;
                 }
@@ -9066,6 +9074,7 @@ var Liquid = {
                     // reset addingNode/Row
                     liquid.addingNode = null;
                     liquid.addingRow = null;
+                    Liquid.resetLayoutsAddingNode(liquid);
                 }
             }
         }
@@ -10138,6 +10147,7 @@ var Liquid = {
                             var res = liquid.gridOptions.api.updateRowData({remove: [liquid.addingRow]});
                             console.warn(res);
                             liquid.addingNode = null;
+                            Liquid.resetLayoutsAddingNode(liquid);
                             if (isDef(liquid.cRowBeforeAdding)) liquid.cRow = liquid.cRowBeforeAdding;
                             if (isDef(liquid.nodesBeforeAdding) && liquid.nodesBeforeAdding.length) {
                                 for (var i = 0; i < liquid.nodesBeforeAdding.length; i++) {
@@ -10152,6 +10162,7 @@ var Liquid = {
                         }
                         liquid.addingRow = null;
                         liquid.addingNode = null;
+                        Liquid.resetLayoutsAddingNode(liquid);
 
                         // refresh row on grid and layouts
                         Liquid.refreshGrids(liquid, null, "rollback");
@@ -12802,23 +12813,27 @@ var Liquid = {
                     var slideUpObjs = [];
                     if (layout.rowsContainer) {
                         var rowsContainer = [];
-                        for (var ir = 0; ir < layout.rowsContainer.length; ir++) {
-                            if (layout.rowsContainer[ir]) {
-                                var obj = layout.rowsContainer[ir].containerObj;
-                                if (obj) {
-                                    if (bOnlyAddingRow && layout.rowsContainer[ir].isAdding || !isDef(bOnlyAddingRow) || bOnlyAddingRow === false) {
-                                        if (bAnimate) {
-                                            slideUpObjs.push(layout.rowsContainer[ir].containerObj);
+                        if (layout.rowsContainer) {
+                            for (var ir = 0; ir < layout.rowsContainer.length; ir++) {
+                                if (layout.rowsContainer[ir]) {
+                                    var obj = layout.rowsContainer[ir].containerObj;
+                                    if (obj) {
+                                        if (bOnlyAddingRow && layout.rowsContainer[ir].isAdding || !isDef(bOnlyAddingRow) || bOnlyAddingRow === false) {
+                                            if (bAnimate) {
+                                                slideUpObjs.push(layout.rowsContainer[ir].containerObj);
+                                            } else {
+                                                // check is some node own content to recover (like foreign table moved across parent)
+                                                Liquid.checkLayoutChildrenForRemove(liquid, layout.rowsContainer[ir].containerObj);
+                                                layout.rowsContainer[ir].containerObj.innerHTML = "";
+                                                layout.rowsContainer[ir].containerObj.parentNode.removeChild(layout.rowsContainer[ir].containerObj);
+                                                layout.rowsContainer[ir].containerObj = null;
+                                                layout.rowsContainer[ir].isAdding = false;
+                                                layout.rowsContainer[ir].isUpdating = false;
+                                            }
+                                            delete layout.rowsContainer[ir];
                                         } else {
-                                            // check is some node own content to recover (like foreign table moved across parent)
-                                            Liquid.checkLayoutChildrenForRemove(liquid, layout.rowsContainer[ir].containerObj);
-                                            layout.rowsContainer[ir].containerObj.innerHTML = "";
-                                            layout.rowsContainer[ir].containerObj.parentNode.removeChild(layout.rowsContainer[ir].containerObj);
-                                            layout.rowsContainer[ir].containerObj = null;
+                                            rowsContainer.push(layout.rowsContainer[ir])
                                         }
-                                        delete layout.rowsContainer[ir];
-                                    } else {
-                                        rowsContainer.push(layout.rowsContainer[ir])
                                     }
                                 }
                             }
@@ -12837,6 +12852,27 @@ var Liquid = {
                             });
                     }
                     layout.pendingLink = true;
+                }
+            }
+        }
+    },
+    resetLayoutsAddingNode: function (liquid) {
+        if (liquid.tableJson.layouts) {
+            if (liquid.tableJson.layouts.length > 0) {
+                for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                    Liquid.resetLayoutAddingNode(liquid, liquid.tableJson.layouts[il]);
+                }
+            }
+        }
+    },
+    resetLayoutAddingNode: function (liquid, layout) {
+        if (liquid) {
+            if (layout) {
+                if (layout.rowsContainer) {
+                    for (var ir = 0; ir < layout.rowsContainer.length; ir++) {
+                        layout.rowsContainer[ir].isAdding = false;
+                        layout.rowsContainer[ir].isUpdating = false;
+                    }
                 }
             }
         }
@@ -19743,6 +19779,7 @@ var Liquid = {
                                     }
                                     liquid.addingRow = null;
                                     liquid.addingNode = null;
+                                    Liquid.resetLayoutsAddingNode(liquid);
 
                                     Liquid.resetMofifications(liquid);
 
@@ -20753,7 +20790,6 @@ var Liquid = {
             if(value) {
                 const d = new Date();
                 let diff = d.getTimezoneOffset();
-
                 // Liquid.dateFormat
                 if(value.lastIndexOf(".")>0) {
                     value = value.substring(0, value.lastIndexOf("."));
@@ -20761,7 +20797,7 @@ var Liquid = {
                 var valueDate = Date.parse(value, "dd/MM/yyyy HH:mm:ss");
                 if(!valueDate) valueDate = Date.parse(value, "dd/MM/yyyy HH:mm:ss.SS");
                 if(valueDate) {
-                    valueDate.addMinutes(diff);
+                    valueDate.addMinutes(diff * -1);
                     return valueDate.toString("dd/MM/yyyy HH:mm:ss");
                 } else {
                     console.error("ERROR: unable to parse data:"+value);
@@ -20774,6 +20810,7 @@ var Liquid = {
         if(liquid && rowData) {
             for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
                 if(liquid.tableJson.columns[ic].type == 93) {
+                    console.debug("LIQUID: normalizing date on "+liquid.tableJson.columns[ic].name);
                     for(var ir=0; ir<rowData.length; ir++) {
                         var sDate = rowData[ir][liquid.tableJson.columns[ic].field];
                         var newDate = Liquid.GMT2LocalDate(sDate, liquid.tableJson.columns[ic].type);
@@ -20787,8 +20824,7 @@ var Liquid = {
         if(obj_id && final_date) {
             var dFinalDate = Date.parse(final_date);
             var now = new Date();
-            if(d > now) {
-                glFinalDateRemains = d;
+            if(dFinalDate > now) {
                 Liquid.showRemaining(obj_id, dFinalDate);
             }
         }
@@ -20799,7 +20835,7 @@ var Liquid = {
         var now = new Date();
         var distance = finalDate - now;
         if (distance < 0) {
-            if(gltimerRemains) clearInterval(gltimerRemains);
+            if(Liquid.gltimerRemains) clearInterval(Liquid.gltimerRemains);
             document.getElementById(obj_id).innerHTML = '!';
             return;
         }
@@ -20817,12 +20853,14 @@ var Liquid = {
         var days_title = (days > 1 ? (Liquid.lang === 'ita' ? 'giorni' : 'days') : (Liquid.lang === 'ita' ? 'giorno' : 'day')) + ' ';
         var hours_title = (hours > 1 ? (Liquid.lang === 'ita' ? 'ore' : 'hours') : (Liquid.lang === 'ita' ? 'ora' : 'hour')) + ' ';
         var minutes_title = (minutes > 1 ? (Liquid.lang === 'ita' ? 'minuti' : 'minutes') : (Liquid.lang === 'ita' ? 'minuto' : 'minute')) + ' ';
-        remainDesc += days > 0 ? days + days_title : '';
-        remainDesc += hours > 0 ? hours + hours_title : '';
-        remainDesc += minutes > 0 ? minutes + 'minutes ' : '';
+        var seconds_title = (seconds > 1 ? (Liquid.lang === 'ita' ? 'secondi' : 'seconds') : (Liquid.lang === 'ita' ? 'secondo' : 'second')) + ' ';
+        remainDesc += days > 0 ? "<b>" + days + "</b>" + days_title : '';
+        remainDesc += hours > 0 ? "<b>" + hours + "</b>" + hours_title : '';
+        remainDesc += minutes > 0 ? "<b>" + minutes + "</b>" + minutes_title : '';
+        remainDesc += seconds > 0 ? "<b>" + seconds + "</b>" + seconds_title : '';
         document.getElementById(obj_id).innerHTML = remainDesc;
-        if(gltimerRemains) clearInterval(gltimerRemains);
-        gltimerRemains = setInterval( function() { showRemaining(obj_id, finalDate); }, 1000);
+        if(Liquid.gltimerRemains) clearInterval(Liquid.gltimerRemains);
+        gltimerRemains = setInterval( function() { Liquid.showRemaining(obj_id, finalDate); }, 1000);
     }
 };
 

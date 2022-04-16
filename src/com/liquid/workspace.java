@@ -200,17 +200,23 @@ public class workspace {
      */
     public static boolean setLanguage(HttpSession session, JspWriter out, String lang) throws IOException {
         if(session != null) {
-            if(out != null) {
-                // client-side
-                out.println("<script>");
-                out.println("Liquid.setLanguage();\n");
-                out.println("</script>");
-            }
             // server-side
             if("ITA".equalsIgnoreCase(lang) || "IT".equalsIgnoreCase(lang)) {
+                if(out != null) {
+                    // client-side
+                    out.println("<script>");
+                    out.println("Liquid.setLanguage('it');\n");
+                    out.println("</script>");
+                }
                 session.setAttribute("Liquid.lang", "IT");
                 return true;
-            } else if("ITA".equalsIgnoreCase(lang) || "IT".equalsIgnoreCase(lang)) {
+            } else {
+                if(out != null) {
+                    // client-side
+                    out.println("<script>");
+                    out.println("Liquid.setLanguage('en');\n");
+                    out.println("</script>");
+                }
                 session.setAttribute("Liquid.lang", "EN");
                 return true;
             }

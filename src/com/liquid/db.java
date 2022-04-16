@@ -2720,6 +2720,10 @@ public class db {
         ArrayList<Long> ids = new ArrayList<Long>();
         boolean renderService = "render".equalsIgnoreCase(service);
 
+        // N.B.: all time to GMT
+        TimeZone timeZone = TimeZone.getTimeZone("GMT");
+        TimeZone.setDefault(timeZone);
+
         if (rsdo != null) {
             int maxColumn = columns_alias != null ? columns_alias.length : 0;
             if (colTypes == null) {
@@ -4104,9 +4108,9 @@ public class db {
                                                                                     Date gtmDate = utility.get_local2server_time(request, oValue);
                                                                                     if(gtmDate != null) {
                                                                                         oValue = gtmDate;
+                                                                                    } else {
+                                                                                        throw new Exception("Failed to get local time");
                                                                                     }
-                                                                                } else {
-                                                                                    throw new Exception("Failed to get local time");
                                                                                 }
                                                                             }
                                                                         }
@@ -5262,6 +5266,16 @@ public class db {
                                 if (oFieldValue != null) {
                                     if (oFieldValue instanceof Date || oFieldValue instanceof Timestamp) {
                                         // N.B.: modification come from UI, date is dd/MM/yyyy HH:mm:ss
+                                        if(request != null) {
+                                            if(oFieldValue != null) {
+                                                Date gtmDate = utility.get_local2server_time(request, oFieldValue);
+                                                if(gtmDate != null) {
+                                                    oFieldValue = gtmDate;
+                                                } else {
+                                                    throw new Exception("Failed to get local time");
+                                                }
+                                            }
+                                        }
                                         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                                         fieldValue = dateFormat.format(oFieldValue);
                                     } else {
