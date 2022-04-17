@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.07
+// Liquid ver.2.08
 //
 //  First update 06-01-2020 - Last update 10-03-2022
 //
@@ -630,6 +630,7 @@ class LiquidCtrl {
                                             }
                                         }
                                         Liquid.updateStatusBar(liquid);
+                                        Liquid.updateCommandBar(liquid);
                                     } catch (e) {
                                         console.error(e);
                                     }
@@ -2171,6 +2172,9 @@ class LiquidCtrl {
                     Liquid.loadLayoutsContent(this);
                     Liquid.loadDocumentsContent(this);
                     Liquid.loadChartsContent(this);
+
+                    // refresh command bar
+                    Liquid.updateCommandBar(this);
 
                     // Align mode
                     if(typeof this.mode !== 'undefined' && this.mode !== null)
@@ -5329,9 +5333,19 @@ var Liquid = {
             } else {
                 console.error("loadData() . wrong response:" + xhr.status);
             }
+
+            if(xhr.callback) {
+                try {
+                    xhr.callback(liquid, xhr.callbackParam);
+                } catch (e) {
+                    console.error(e);
+                }
+                xhr.callback = null;
+                xhr.callbackParam = null;
+            }
         }
     },
-    loadData: function (liquid, ids, reason) {
+    loadData: function (liquid, ids, reason, callback, callbackParam) {
         var sFiltersJson = "";
         var allFilterJson = [];
         var doFilter = true;
@@ -5560,6 +5574,7 @@ var Liquid = {
 
                     Liquid.registerOnUnloadPage();
 
+
                     // Send the request
                     Liquid.sendRequest(
                         liquid
@@ -5597,6 +5612,8 @@ var Liquid = {
                         , function () {
                             Liquid.transferCanceled(event, liquid);
                         }
+                        , callback
+                        , callbackParam
                     );
 
                     liquid.gridOptions.api.showLoadingOverlay();
@@ -8955,17 +8972,19 @@ var Liquid = {
                             // Not system table
                             if (command.name === "delete") {
                                 // remove node
-                                if (command.response.data) {
-                                    if (!isSystem) {
-                                        if (command.response.data.details) {
-                                            // cause row reselection and grid/layout refresh
+                                if (command.response) {
+                                    if (command.response.data) {
+                                        if (!isSystem) {
+                                            if (command.response.data.details) {
+                                                // cause row reselection and grid/layout refresh
+                                                if (Liquid.onDeletedRow(liquid)) {
+                                                    refreshDone = true;
+                                                }
+                                            }
+                                        } else {
                                             if (Liquid.onDeletedRow(liquid)) {
                                                 refreshDone = true;
                                             }
-                                        }
-                                    } else {
-                                        if (Liquid.onDeletedRow(liquid)) {
-                                            refreshDone = true;
                                         }
                                     }
                                 }
@@ -9095,6 +9114,10 @@ var Liquid = {
                 Liquid.refreshAll(liquid, null, "onCommandDone");
             }
         }
+
+        // refresh command bar
+        Liquid.updateCommandBar(liquid);
+
         if (isDef(command.postFunc)) {
             try {
                 command.postFunc(command);
@@ -11895,10 +11918,23 @@ var Liquid = {
             var size = command.size ? command.size : command.img ? 24 : 0;
             var width = (command.img ? (command.width ? command.width : 0) : 0);
             var height = (command.img ? (command.height ? command.height : 0) : 0);
+            var labelName = "label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+            var labelValue = isDef(command[labelName]) ? command[labelName] : command.name;
+            labelName = "text" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+            labelValue = isDef(command[labelName]) ? command[labelName] : labelValue;
+
+            var tootipName = "tootip" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+            var tootipValue = isDef(command[tootipName]) ? command[tootipName] : '';
+
             div.innerHTML = "<table><tr><td style=\"width:1px\"><img class=\"" + className + "Img\" " + (command.img ? " src=\"" + (command.img ? Liquid.getImagePath(command.img) : " ") + "\"" : "")
                 + " width=" + (width ? Liquid.getCSSDim(width) : Liquid.getCSSDim(size)) + " height=" + (height ? Liquid.getCSSDim(height) : Liquid.getCSSDim(size)) + " style=\"cursor:pointer\" />"
                 + "</td>"
-                + (command.text ? "<td><div id=\"" + div.id + ".label" + "\" class=\"" + className + "Text\" style=\"cursor:pointer\">" + command.text + "</div></td>" : "")
+                + (labelValue ? "<td>"
+                + "<div id=\"" + div.id + ".label" + "\" "
+                    + "class=\"" + className + "Text\" "
+                    + "title=\"" + tootipValue + "\" "
+                    + "style=\"cursor:pointer\">" + labelValue
+                    + "</div></td>" : "")
                 + "</tr></table>"
             ;
 
@@ -16840,11 +16876,11 @@ var Liquid = {
             }
         }
     },
-    reloadAll:function(obj, event, reason) {
+    reloadAll:function(obj, event, reason, callback, callbackParam) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             liquid.onceRefreshAll = true;
-            Liquid.loadData(liquid, null, reason);
+            Liquid.loadData(liquid, null, reason, callback, callbackParam);
         }
     },
     refreshAll:function(obj, event, reason) {
@@ -17204,6 +17240,31 @@ var Liquid = {
                             style.color = "",
                                 style.cursor = "",
                                 disabled = false;
+                    }
+                }
+            }
+        }
+    },
+    updateCommandBar(liquid) {
+        if(liquid) {
+            if(liquid.tableJson.commands) {
+                for (let i = 0; i < liquid.tableJson.commands.length; i++) {
+                    if (liquid.tableJson.commands[i].name === 'delete' || liquid.tableJson.commands[i].name === 'update') {
+                        if(liquid.gridOptions.api.rowModel.rootNode.allLeafChildren && liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length) {
+                            var selNodes = null;
+                            if(isDef(liquid.gridOptions)) {
+                                if (isDef(liquid.gridOptions.api)) {
+                                    selNodes = liquid.gridOptions.api.getSelectedNodes();
+                                }
+                            }
+                            if(selNodes && selNodes.length) {
+                                Liquid.enableCommand(liquid, liquid.tableJson.commands[i].name);
+                            } else {
+                                Liquid.disableCommand(liquid, liquid.tableJson.commands[i].name);
+                            }
+                        } else {
+                            Liquid.disableCommand(liquid, liquid.tableJson.commands[i].name);
+                        }
                     }
                 }
             }
@@ -20532,9 +20593,18 @@ var Liquid = {
      * @param onCompleted           the callback when completed
      * @param onFailed              the callback when failed
      * @param onCancelled           the callback when cancelled
+     * @param callback              the callback when terminated
+     * @param callbackParam         the callback param when terminated
      * @returns {*}
      */
-    sendRequest:function(liquid, paramsObject, method, url, async, data, onReadyStateChange, reason, onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled) {
+    sendRequest:function(liquid,
+                         paramsObject,
+                         method, url, async, data,
+                         onReadyStateChange,
+                         reason,
+                         onUploadingProgress, onDownloadingProgress, onCompleted, onFailed, onCancelled,
+                         callback, callbackParam
+    ) {
         var thisLiquid = liquid;
         if(typeof LiquidStreamer !== 'undefined' && typeof LiquidStreamer.webSocket !== 'undefined' && LiquidStreamer.webSocket && async == true) {
             // Websocket
@@ -20584,6 +20654,8 @@ var Liquid = {
                 if (!isDef(liquid.xhr))
                     liquid.xhr = {};
                 liquid.xhr.params = paramsObject;
+                if(isDef(callback)) xhr.callback = callback;
+                if(isDef(callbackParam)) xhr.callbackParam = callbackParam;
             }
 
             // create the queue object
@@ -20602,6 +20674,9 @@ var Liquid = {
             var xhr = new XMLHttpRequest();
             var xhrDescription = reason;
             var xhrCount = 0;
+
+            if(isDef(callback)) xhr.callback = callback;
+            if(isDef(callbackParam)) xhr.callbackParam = callbackParam;
 
             {
                 if(isDef(onUploadingProgress)) xhr.upload.addEventListener("progress", function(event){ onUploadingProgress(liquid, event); }, false);
@@ -20859,8 +20934,11 @@ var Liquid = {
         remainDesc += minutes > 0 ? "<b>" + minutes + "</b>" + minutes_title : '';
         remainDesc += seconds > 0 ? "<b>" + seconds + "</b>" + seconds_title : '';
         document.getElementById(obj_id).innerHTML = remainDesc;
-        if(Liquid.gltimerRemains) clearInterval(Liquid.gltimerRemains);
-        gltimerRemains = setInterval( function() { Liquid.showRemaining(obj_id, finalDate); }, 1000);
+        if(!Liquid.gltimerRemains) {
+            Liquid.gltimerRemains = setInterval(function () {
+                Liquid.showRemaining(obj_id, finalDate);
+            }, 1000);
+        }
     }
 };
 

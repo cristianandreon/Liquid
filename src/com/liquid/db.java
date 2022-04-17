@@ -5739,6 +5739,11 @@ public class db {
         return workspace.getSelectionCount(tbl_wrk, (String) params);
     }
 
+    public static Object getSelectionRows(Object tbl_wrk, Object params) throws Exception {
+        return workspace.getSelectionRows(tbl_wrk, (String)params);
+    }
+
+
     static public String getData(Object tbl_wrk, Object params, String column) {
         return workspace.getData(tbl_wrk, (String) params, (String) column);
     }

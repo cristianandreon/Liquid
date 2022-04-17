@@ -887,8 +887,12 @@ public class workspace {
             return out_string;
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-            return "<script>console.error(\" get_table_controls_in_folder() Failed on folder " + sFolder + " - error:" + ex.getLocalizedMessage() + "\");</script>";
+            return get_js_console_error_report("get_table_controls_in_folder() Failed on folder " + sFolder + " - error:" + ex.getLocalizedMessage());
         }
+    }
+
+    static public String get_js_console_error_report( String err ) {
+        return "<script>console.error(atob(\""+utility.base64Encode(err)+"\"));</script>";
     }
 
     static public String get_table_controls_in_folder(HttpServletRequest request, String sFolder, boolean bLaunch ) throws Throwable {
@@ -934,7 +938,7 @@ public class workspace {
         Object sourceData = null;
         int primaryKeyIndex1B = 0;
         boolean bAllColumns = false;
-        String result = "json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + controlId + "\"}" : "<script> console.error(\"" + controlId + " not created in server\");</script>";
+        String result = "json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + controlId + "\"}" : get_js_console_error_report(controlId + " not created in server");
         long metadataTime = 0;
         Connection conn = null, connToDB = null, connToUse = null;
         boolean bCreatedSession = false;
@@ -1060,7 +1064,7 @@ public class workspace {
                 } catch (Exception e2) {
                     String err = "source json string is NOT valid on control:" + controlId + " .. error is : "+e2.getMessage();
                     System.out.println(err);
-                    return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                    return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                 }
             }
 
@@ -1132,7 +1136,7 @@ public class workspace {
                     } else {
                         String err = "source json '" + sourceURL + "' not found on control:" + controlId;
                         System.out.println(err);
-                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                     }
                 }
             }
@@ -1182,7 +1186,7 @@ public class workspace {
                     conn = (Connection) connResult[0];
                     if (conn == null) {
                         String error = "[error is : " + connResult[1] + "]";
-                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection .." + error + "\");</script>");
+                        return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : get_js_console_error_report(controlId + " not created .. no DB connection .." + error) );
                     }
                 } catch (Throwable th) {
                     String error = th.getLocalizedMessage();
@@ -1190,7 +1194,7 @@ public class workspace {
                         error = th.getCause().getLocalizedMessage();
                     }
                     error = error != null ? error.replace("\"", "\\\"") : "";
-                    return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection .." + error + "\");</script>");
+                    return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : get_js_console_error_report(controlId + " not created .. no DB connection .." + error ));
                 }
 
                 String defaultDatabase = conn.getCatalog();
@@ -1242,7 +1246,7 @@ public class workspace {
                             // Jump to database not supported if connection defined by connectioURL
                             String err = "Cannot jump to database " + database + " .. the connection is defined by connectionURL on control:" + controlId;
                             System.out.println(err);
-                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                         }
                         // closing the connections (with callbacks)
                         connection.closeConnection(conn);
@@ -1263,7 +1267,7 @@ public class workspace {
                 if (tableJson == null) {
                     String err = "json empty or not found on control:" + controlId;
                     System.out.println(err);
-                    return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                    return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                 }
 
                 try {
@@ -1319,11 +1323,11 @@ public class workspace {
                             if (!metadata.create_table(connToUse, database, schema, table, tableJson)) {
                                 // Fail
                                 String err = "database:" + database + " schema:" + schema + " Failed to create table " + table + " ... please check fields, sizes, data type ...";
-                                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                                return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                             }
                         } else {
                             String err = "database:" + database + " schema:" + schema + " table " + table + " not exist";
-                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                         }
                     }
                 }
@@ -1337,7 +1341,7 @@ public class workspace {
                         if (allColumns.size() == 0) {
                             String err = "LIQUID WARNING : No columns on database:" + database + " schema:" + schema + " table:" + table + " control:" + controlId;
                             System.out.println(err);
-                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : "<script> console.error(\"" + err + "\");</script>");
+                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                         }
                         cols = new JSONArray();
                         int icn = 1;
@@ -1759,7 +1763,7 @@ public class workspace {
 
                     try {
                         if (connToUse == null) {
-                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + controlId + " : no DB connection\"}" : "<script> console.error(\"" + controlId + " not created .. no DB connection\");</script>");
+                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + controlId + " : no DB connection\"}" : get_js_console_error_report(controlId + " not created .. no DB connection"));
                         }
                     } catch (Exception ex) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
@@ -2433,9 +2437,9 @@ public class workspace {
             if ("json".equalsIgnoreCase(returnType)) {
                 result = "{\"error\":\"" + utility.base64Encode(ex.getMessage()) + "\"}";
             } else if ("js".equalsIgnoreCase(returnType)) {
-                result = "<script> console.error(\"controlId:" + controlId + " error:" + ex.getLocalizedMessage() + "\");</script>";
+                result = get_js_console_error_report("controlId:" + controlId + " error:" + ex.getLocalizedMessage() );
             } else {
-                result = "<script> console.error(\"controlId:" + controlId + " error:" + ex.getLocalizedMessage() + "\");</script>";
+                result = get_js_console_error_report("controlId:" + controlId + " error:" + ex.getLocalizedMessage() );
             }
 
             return result;
@@ -4064,6 +4068,80 @@ public class workspace {
     }
 
     /**
+     * <h3>Get the selected rows of a control</h3>
+     * <p>
+     * This method get the primary key list selected, as including or excluding
+     * list \nEx.: 1,2,3 means the selction is three rows having as primary key
+     * "1", "2", "3" \nEx.: !4,5 means the selction is all rows NOT having as
+     * primary key "4", "5"
+     *
+     * @param controlId the control id (String)
+     * @param params the parameters from the Requiest (String)
+     *
+     * @return comma separated values string, null if no selection defined
+     * @see workspace
+     */
+    static public JSONArray getSelectionRows(String controlId, String params) throws Exception {
+        try {
+            JSONArray paramsJson = (JSONArray) (new JSONObject(params)).getJSONArray("params");
+            String [] controlIdParts = controlId.split("\\.");
+            for (int i = 0; i < paramsJson.length(); i++) {
+                Object ojson = paramsJson.get(i);
+                if (ojson instanceof JSONObject) {
+                    JSONObject obj = (JSONObject) paramsJson.get(i);
+                    String ids = null;
+                    boolean bFoundControl = false;
+                    if (obj != null) {
+                        if (obj.has("name")) {
+                            if (obj.getString("name").equalsIgnoreCase(controlId)) {
+                                bFoundControl = true;
+                            }
+                        }
+                        // Ricerca per nome tabella
+                        if(!bFoundControl) {
+                            if (obj.has("table")) {
+                                if(controlIdParts.length == 1) {
+                                    if (obj.getString("table").equalsIgnoreCase(controlId)) {
+                                        bFoundControl = true;
+                                    }
+                                } else if(controlIdParts.length > 1) {
+                                    if (obj.getString("table").equalsIgnoreCase(controlIdParts[controlIdParts.length-1])) {
+                                        if (obj.has("schema")) {
+                                            if (obj.getString("schema").equalsIgnoreCase(controlIdParts[controlIdParts.length-2])) {
+                                                bFoundControl = true;
+                                            }
+                                        } else {
+                                            bFoundControl = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if(bFoundControl) {
+                            String prefix = "";
+                            if (obj.has("rows")) {
+                                String key = null;
+                                Object oRows = obj.get("rows");
+                                if(oRows instanceof JSONArray) {
+                                    return (JSONArray)oRows;
+                                } else if(oRows instanceof String) {
+                                    throw new Exception("getSelection() : unsupported case");
+                                } else {
+                                    throw new Exception("getSelection() : unsupported case");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (JSONException ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+
+
+    /**
      * <h3>Get the current seletion count of a control</h3>
      * <p>
      * This method count how many items is defined in the selection
@@ -4161,6 +4239,15 @@ public class workspace {
             return getSelection(((workspace) tbl_wrk).controlId, params);
         }
     }
+
+    static public JSONArray getSelectionRows(Object tbl_wrk, String params) throws Exception {
+        if(tbl_wrk instanceof String) {
+            return getSelectionRows((String)tbl_wrk, params);
+        } else {
+            return getSelectionRows(((workspace) tbl_wrk).controlId, params);
+        }
+    }
+
 
     static public long getSelectionCount(Object tbl_wrk, String params) {
         return getSelectionCount(((workspace) tbl_wrk).controlId, params);
