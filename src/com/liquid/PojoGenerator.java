@@ -27,6 +27,11 @@ import javassist.CtField;
 import javassist.CtMethod;
 import javassist.Modifier;
 import javassist.NotFoundException;
+import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.ConstPool;
+import javassist.bytecode.annotation.Annotation;
+import javassist.bytecode.annotation.IntegerMemberValue;
 
 
 public class PojoGenerator {
@@ -94,6 +99,17 @@ public class PojoGenerator {
 
             cc = pool.makeClass(className);
 
+            /*
+            // create the annotation
+            ClassFile ccFile = cc.getClassFile();
+            ConstPool constpool = ccFile.getConstPool();
+            AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
+            Annotation annot = new Annotation("Expose", constpool);
+            annot.addMemberValue("value", new IntegerMemberValue(ccFile.getConstPool(), 0));
+            attr.addAnnotation(annot);
+            */
+
+
             error = "";
             props = "";
             classBody = "class "+className+"{\n";
@@ -112,7 +128,15 @@ public class PojoGenerator {
                 String propClassName = propClass.getName();
 
                 // add prop
-                cc.addField(new CtField(resolveCtClass(propClass), propName, cc));
+                CtField newField = new CtField(resolveCtClass(propClass), propName, cc);
+
+                if(propName.indexOf("$Changed") < 0 && propName.indexOf("$Read") < 0) {
+                    newField.setAttribute("Expose", "Y".getBytes());
+                } else {
+                    newField.setModifiers(Modifier.VOLATILE);
+                }
+
+                cc.addField(newField);
                 
                 props += "["+propName+"]";
                 classBody += "\n\t"+"public "+propClassName+" "+propName+";";

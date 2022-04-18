@@ -2593,6 +2593,54 @@ public class bean {
         return new Object[] { beans, nBeans, nBeansLoaded, errors, warnings };
     }
 
+    public static void removeProps(Object oBeans, String prop) throws Exception {
+        ArrayList<Object> beans = null;
+        if(oBeans instanceof ArrayList<?>) {
+            beans = (ArrayList<Object>)oBeans;
+        } else if(oBeans instanceof Object) {
+            beans = new ArrayList<Object>();
+            beans.add(oBeans);
+        } else {
+            throw new Exception("removeProps() : unsupported");
+        }
+        for (Object bean:beans) {
+            doRemoveProps(bean, prop);
+        }
+    }
+    private static void doRemoveProps(Object bean, String prop) throws Exception {
+        if(bean != null) {
+            Field [] fields = bean.getClass().getDeclaredFields();
+            for (Field field:fields) {
+                String name = field.getName();
+                if (prop.startsWith("*")) {
+                    if(name.endsWith(prop.substring(1))) {
+                        field.setAccessible(false);
+                    }
+                } else if (prop.endsWith("*")) {
+                    if(name.startsWith(prop.substring(0, prop.length()-1))) {
+                        field.setAccessible(false);
+                    }
+                } else {
+                    if(name.equalsIgnoreCase(prop)) {
+                        field.setAccessible(false);
+                    }
+                }
+            }
+        }
+    }
+
+
+    public static void removeProps(Object oBeans, char c) throws Exception {
+        ArrayList<Object> beans = null;
+        if(oBeans instanceof ArrayList<?>) {
+            beans = (ArrayList<Object>)oBeans;
+        } else if(oBeans instanceof Object) {
+            beans = new ArrayList<Object>();
+            beans.add(oBeans);
+        } else {
+            throw new Exception("removeProps() : unsupported");
+        }
+    }
 
 
     interface beansCondition {
