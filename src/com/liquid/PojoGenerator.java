@@ -132,12 +132,12 @@ public class PojoGenerator {
                 // add prop
                 CtField newField = new CtField(resolveCtClass(propClass), propName, cc);
 
-                if(propName.indexOf("$Changed") < 0 && propName.indexOf("$Read") < 0) {
-                    newField.setAttribute("Expose", "Y".getBytes());
-                } else if(propClassName.indexOf("$") > 0 && propClassName.indexOf("@") > 0) {
+                if(propName.indexOf("$Changed") > 0 || propName.indexOf("$Read") > 0 || propName.indexOf("$Parent") > 0) {
+                    newField.setModifiers(Modifier.VOLATILE);
+                } else if(propClassName.indexOf("java.lang.Object") >= 0) {
                     newField.setModifiers(Modifier.VOLATILE);
                 } else {
-                    newField.setModifiers(Modifier.VOLATILE);
+                    newField.setAttribute("Expose", "Y".getBytes());
                 }
 
                 cc.addField(newField);

@@ -1758,6 +1758,15 @@ public class bean {
         return null;
     }
 
+    static public Object load_bean(String databaseSchemaTable, String controlId, String columns, String filteringColumn, String filteringValue) throws Throwable {
+        ArrayList<Object> beans = load_beans(databaseSchemaTable, controlId, columns, filteringColumn+"="+filteringValue, 1);
+        if(beans != null) {
+            if(beans.size() > 0) {
+                return (Object)beans.get(0);
+            }
+        }
+        return null;
+    }
 
     /**
      * Create all beans from primaryKey value
@@ -1972,6 +1981,16 @@ public class bean {
         }
         return null;
     }
+    static public Object load_bean(String databaseSchemaTable, String controlId, String columns, String where_condition) throws Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, 1);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
+
 
     static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String where_condition, long maxRows) throws Throwable {
         return load_beans(request, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
