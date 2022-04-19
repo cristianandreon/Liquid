@@ -71,6 +71,8 @@ public class PojoGenerator {
                 if(mode.contains("radOnly")) {
                     bReadOnly = true;
                 }
+                if(mode.contains("nested")) {
+                }
             }
             
             try {
@@ -132,6 +134,8 @@ public class PojoGenerator {
 
                 if(propName.indexOf("$Changed") < 0 && propName.indexOf("$Read") < 0) {
                     newField.setAttribute("Expose", "Y".getBytes());
+                } else if(propClassName.indexOf("$") > 0 && propClassName.indexOf("@") > 0) {
+                    newField.setModifiers(Modifier.VOLATILE);
                 } else {
                     newField.setModifiers(Modifier.VOLATILE);
                 }

@@ -537,7 +537,7 @@ public class bean {
 
         Object[] beanResult = new Object[]{0, null, 0, null, null};
         PojoGenerator pojoGenerator = null;
-        String sPojoMode = "";
+        String sPojoMode = level == 0 ? "" : "nested";
         String errors = "";
         int res = 1;
 
@@ -1964,7 +1964,7 @@ public class bean {
 
 
     static public Object load_bean(String databaseSchemaTable, String columns, String where_condition) throws Throwable {
-        ArrayList<Object> beans = load_beans((HttpServletRequest) null, (String) columns, databaseSchemaTable, null, where_condition, 1);
+        ArrayList<Object> beans = load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, 1);
         if (beans != null) {
             if (beans.size() > 0) {
                 return beans.get(0);
