@@ -4,6 +4,7 @@
 
 package com.liquid;
 
+import com.google.gson.*;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
@@ -13,9 +14,7 @@ import org.json.JSONObject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspWriter;
 import java.beans.IntrospectionException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
@@ -2830,6 +2829,42 @@ public class bean {
     }
 
 
+
+    private static class myDateSerializer implements JsonSerializer<Date> {
+        @Override
+        public JsonElement serialize(Date date, Type type, JsonSerializationContext jsonSerializationContext) {
+            return new JsonPrimitive( new SimpleDateFormat(workspace.getDateTimeFormatString(), workspace.locale).format(date) );
+        }
+    }
+
+    static public String bean_to_json(Object beans) {
+        GsonBuilder builder = new GsonBuilder();
+        builder.excludeFieldsWithModifiers(Modifier.VOLATILE);
+        GSonExclusionStrategy strategy = new GSonExclusionStrategy();
+        builder.addSerializationExclusionStrategy(strategy);
+        builder.addDeserializationExclusionStrategy(strategy);
+        builder.setExclusionStrategies(strategy);
+
+        builder.registerTypeAdapter(Date.class, new myDateSerializer());
+        builder.registerTypeAdapter(Timestamp.class, new myDateSerializer());
+
+        /*
+        workspace.getDateTimeFormatString();
+        if(workspace.getTimestampFormat() != null) {
+            if("long".equalsIgnoreCase(workspace.getTimestampFormat())) {
+                // builder.setDateFormat("EEE, dd MMM yyyy HH"+workspace.timeSep+"mm");
+                builder.setDateFormat("dddd dd MMMM yyyy, HH"+workspace.timeSep+"mm");
+
+            } else {
+                builder.setDateFormat(workspace.getTimestampFormat());
+            }
+        } else {
+            builder.setDateFormat("dd"+workspace.dateSep+"MM"+workspace.dateSep+"yyyy HH"+workspace.timeSep+"mm"+workspace.timeSep+"ss");
+        }
+        */
+
+        return builder.create().toJson(beans);
+    }
 }
 
 

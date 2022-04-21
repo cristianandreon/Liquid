@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,7 +33,13 @@ import static com.liquid.liquidize.liquidizeJSONContent;
 
 public class workspace {
 
+    public static String getGLLang() {
+        return GLLang;
+    }
+
     static public String GLLang = "EN";
+    static public Locale locale = Locale.US;
+
     static public String genesisToken = "";
     static public int classMakeIndex = 1;
 
@@ -60,6 +67,9 @@ public class workspace {
 
     static public String dateSep = "/";
     static public String timeSep = ":";
+
+
+    static private String timestampFormat = null;
     static public boolean projectMode;
 
     static public long maxRows = 100000;
@@ -69,6 +79,64 @@ public class workspace {
 
     static public String defaultDatabase = null;
     static public String defaultSchema = null;
+
+
+
+
+    public static void setGLLang(String GLLang) {
+        if("ITA".equalsIgnoreCase(GLLang) || "IT".equalsIgnoreCase(GLLang)) {
+            workspace.GLLang = "IT";
+            workspace.locale = Locale.ITALY;
+        } else if("ENG".equalsIgnoreCase(GLLang) || "EN".equalsIgnoreCase(GLLang)) {
+            workspace.GLLang = "EN";
+            workspace.locale = Locale.US;
+        }
+    }
+
+    public Locale getLocale() {
+        return locale;
+    }
+
+    public void setLocale(Locale locale) {
+        this.locale = locale;
+    }
+
+    public static String getDateSep() {
+        return dateSep;
+    }
+
+    public static void setDateSep(String dateSep) {
+        workspace.dateSep = dateSep;
+    }
+
+    public static String getTimeSep() {
+        return timeSep;
+    }
+
+    public static void setTimeSep(String timeSep) {
+        workspace.timeSep = timeSep;
+    }
+
+    public static String getTimestampFormat() {
+        return timestampFormat;
+    }
+
+    public static void setTimestampFormat(String timestampFormat) {
+        workspace.timestampFormat = timestampFormat;
+    }
+
+    public static String getDateTimeFormatString() {
+        String timestampFormat = workspace.getTimestampFormat();
+        if("long".equalsIgnoreCase(timestampFormat)) {
+            // NO .. formato per date.js
+            // return "dddd dd MMMM yyyy, HH"+workspace.timeSep+"mm";
+            return "EEE dd MMM yyyy, HH"+workspace.timeSep+"mm";
+        } else if(timestampFormat != null && !timestampFormat.isEmpty()) {
+            return timestampFormat;
+        } else {
+            return "dd"+workspace.dateSep+"MM"+workspace.dateSep+"yyyy HH"+workspace.timeSep+"mm"+workspace.timeSep+"ss";
+        }
+    }
 
 
 
@@ -198,27 +266,31 @@ public class workspace {
      * @param lang
      * @throws IOException
      */
-    public static boolean setLanguage(HttpSession session, JspWriter out, String lang) throws IOException {
+    public static boolean setLanguage(HttpSession session, JspWriter out, Object lang) throws IOException {
         if(session != null) {
             // server-side
-            if("ITA".equalsIgnoreCase(lang) || "IT".equalsIgnoreCase(lang)) {
-                if(out != null) {
-                    // client-side
-                    out.println("<script>");
-                    out.println("Liquid.setLanguage('it');\n");
-                    out.println("</script>");
+            if (lang instanceof String) {
+                if ("ITA".equalsIgnoreCase((String)lang) || "IT".equalsIgnoreCase((String)lang)) {
+                    if (out != null) {
+                        // client-side
+                        out.println("<script>");
+                        out.println("Liquid.setLanguage('it');\n");
+                        out.println("</script>");
+                    }
+                    session.setAttribute("Liquid.lang", "IT");
+                    workspace.setGLLang("IT");
+                    return true;
+                } else {
+                    if (out != null) {
+                        // client-side
+                        out.println("<script>");
+                        out.println("Liquid.setLanguage('en');\n");
+                        out.println("</script>");
+                    }
+                    session.setAttribute("Liquid.lang", "EN");
+                    workspace.setGLLang("EN");
+                    return true;
                 }
-                session.setAttribute("Liquid.lang", "IT");
-                return true;
-            } else {
-                if(out != null) {
-                    // client-side
-                    out.println("<script>");
-                    out.println("Liquid.setLanguage('en');\n");
-                    out.println("</script>");
-                }
-                session.setAttribute("Liquid.lang", "EN");
-                return true;
             }
         }
         return false;
