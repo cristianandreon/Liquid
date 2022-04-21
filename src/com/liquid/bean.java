@@ -1944,7 +1944,7 @@ public class bean {
             sWhere = " WHERE " + keyColumn + "=" + String.valueOf(keyOrWhereCondition) + "";
 
         } else if (keyOrWhereCondition instanceof JSONArray) {
-            // TODO : TEST
+            // TODO : TEST ... (just coded)
             JSONArray whereConditions = (JSONArray)keyOrWhereCondition;
             sWhere = " WHERE";
             for(int iw=0; iw<whereConditions.length(); iw++) {
