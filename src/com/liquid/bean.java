@@ -17,10 +17,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import java.util.*;
 import java.util.Date;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -1404,12 +1405,12 @@ public class bean {
             HttpServletRequest request = (HttpServletRequest)requestParam;
             JSONArray rowsData = new JSONArray();
             if(rowData.has("params")) {
-                JSONObject rowDataMod = com.liquid.event.getJSONObject(rowData.toString(), "formX");
+                JSONObject rowDataMod = event.getJSONObject(rowData.toString(), "formX");
                 if(rowDataMod != null) {
                     // Da modification a rowData .. a carico della ricevente
                     rowsData.put(rowDataMod);
                 } else {
-                    rowDataMod = com.liquid.event.getJSONObject(rowData.toString(), "modifications");
+                    rowDataMod = event.getJSONObject(rowData.toString(), "modifications");
                     if(rowDataMod != null) {
                         // Da modification a rowData .. a carico della ricevente
                         if(rowDataMod.has("fields")) {
@@ -1528,7 +1529,7 @@ public class bean {
                                     if(json2BeanMapper.format != null) {
                                         SimpleDateFormat dateTimeFormat = new SimpleDateFormat(json2BeanMapper.format);
                                         if(prop instanceof String) {
-                                            prop = (Object) new java.sql.Timestamp(dateTimeFormat.parse((String) prop).getTime());
+                                            prop = (Object) new Timestamp(dateTimeFormat.parse((String) prop).getTime());
                                         }
                                     }
                                 } else if(json2BeanMapper.cls.getName().equalsIgnoreCase("java.sql.Date")) {
@@ -1644,8 +1645,8 @@ public class bean {
                 } else if(prop instanceof String) {
                     // String to Double/Float or to Date/Timestamp ? .. no made by the caller by json2BeanMapper
                 } else if(prop instanceof java.sql.Date) {
-                } else if(prop instanceof java.sql.Timestamp) {
-                } else if(prop instanceof java.util.Date) {
+                } else if(prop instanceof Timestamp) {
+                } else if(prop instanceof Date) {
                 } else {
                     throw th1;
                 }
@@ -1675,7 +1676,7 @@ public class bean {
      * @throws Throwable
      */
     public static Object load_bean(workspace tbl_wrk, Object primaryKey) throws Throwable {
-        ArrayList<Object> beans = load_beans((HttpServletRequest)null, tbl_wrk.controlId, null, null, null, primaryKey, 1);
+        ArrayList<Object> beans = load_beans((HttpServletRequest)null, tbl_wrk.controlId, null, null, null, primaryKey, 1, null);
         if (beans != null) {
             if (beans.size() > 0) {
                 return beans.get(0);
@@ -1694,7 +1695,7 @@ public class bean {
      * @throws Throwable
      */
     public static Object load_bean(String databaseSchemaTable, Object primaryKey) throws Throwable {
-        ArrayList<Object> beans = load_beans((HttpServletRequest)null,databaseSchemaTable, null, null, primaryKey, 1);
+        ArrayList<Object> beans = load_beans((HttpServletRequest)null,null, databaseSchemaTable, null, null, primaryKey, 1, null);
         if (beans != null) {
             if (beans.size() > 0) {
                 return beans.get(0);
@@ -1724,7 +1725,7 @@ public class bean {
      * @throws Throwable
      */
     static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, Object primaryKey) throws Exception, Throwable {
-        ArrayList<Object> beans = load_beans(request, databaseSchemaTable, columns, null, primaryKey, 1);
+        ArrayList<Object> beans = load_beans(request, null, databaseSchemaTable, columns, null, primaryKey, 1, null);
         if (beans != null) {
             if (beans.size() > 0) {
                 return beans.get(0);
@@ -1749,7 +1750,7 @@ public class bean {
      * @return
      */
     static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, String filteringColumn, String filteringValue) throws Throwable {
-        ArrayList<Object> beans = load_beans(databaseSchemaTable, columns, filteringColumn+"="+filteringValue, 1);
+        ArrayList<Object> beans = load_beans(request, null, databaseSchemaTable, columns, filteringColumn+"="+filteringValue, 1, null);
         if(beans != null) {
             if(beans.size() > 0) {
                 return (Object)beans.get(0);
@@ -1759,7 +1760,7 @@ public class bean {
     }
 
     static public Object load_bean(String databaseSchemaTable, String controlId, String columns, String filteringColumn, String filteringValue) throws Throwable {
-        ArrayList<Object> beans = load_beans(databaseSchemaTable, controlId, columns, filteringColumn+"="+filteringValue, 1);
+        ArrayList<Object> beans = load_beans(null, controlId, databaseSchemaTable, columns, filteringColumn+"="+filteringValue, 1, null);
         if(beans != null) {
             if(beans.size() > 0) {
                 return (Object)beans.get(0);
@@ -1786,7 +1787,7 @@ public class bean {
      * @throws Throwable
      */
     static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws Exception, Throwable {
-        return load_beans(request, null, databaseSchemaTable, columns, keyColumn, key, maxRows);
+        return load_beans(request, null, databaseSchemaTable, columns, keyColumn, key, maxRows, null);
     }
 
     static public workspace load_beans_get_workspace(HttpServletRequest request, String databaseSchemaTable, String controlId) throws Exception, Throwable {
@@ -1853,6 +1854,17 @@ public class bean {
         return load_beans_get_workspace(request, databaseSchemaTable, databaseSchemaTable.replace(".", "_"));
     }
 
+
+
+
+    public static ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition, long maxRows, String order_by) throws Throwable {
+        return load_beans(null, controlId, databaseSchemaTable, columns, null, where_condition, maxRows, order_by);
+    }
+
+
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String keyColumn, Object keyOrWhereCondition, long maxRows) throws Exception, Throwable {
+        return load_beans(request, controlId, databaseSchemaTable, columns, keyColumn, keyOrWhereCondition, maxRows, null);
+    }
     /**
      *  Create all beans from primaryKey value
      *
@@ -1862,8 +1874,9 @@ public class bean {
      * @param controlId
      * @param databaseSchemaTable
      * @param columns
-     * @param keyColumn
-     * @param key
+     * @param keyColumn                 (needed value if keyOrWhereCondition is ArrayList StringBuffer CharSequence ..
+     *                                  (if keyOrWhereCondition is type String "keyColumn" is omitted as "keyOrWhereCondition" is condidered as full where condition)
+     * @param keyOrWhereCondition       (value or where condition ... don't need 'WHERE' keyword)
      * @param maxRows
      *
      * @return  { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
@@ -1873,7 +1886,14 @@ public class bean {
      *
      *  TODO : partial columns read still unsupported... read always all columns
      */
-    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String keyColumn, Object key, long maxRows) throws Exception, Throwable {
+    static public ArrayList<Object> load_beans(
+            HttpServletRequest request,
+            String controlId, String databaseSchemaTable,
+            String columns,
+            String keyColumn, Object keyOrWhereCondition,
+            long maxRows,
+            String orderBy
+    ) throws Exception, Throwable {
         String sWhere = "";
 
         //
@@ -1884,36 +1904,100 @@ public class bean {
             return null;
         }
 
-        JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
-        if (keyColumn == null || keyColumn.isEmpty()) {
-            if (tbl_wrk.tableJson.has("primaryKey")) {
-                keyColumn = tbl_wrk.tableJson.getString("primaryKey");
+
+        if (keyOrWhereCondition instanceof String) {
+            if (keyColumn == null || keyColumn.isEmpty()) {
+                sWhere = " WHERE " + keyOrWhereCondition + "";
+            } else {
+                keyColumn = ((String) keyColumn).trim();
+                if (keyColumn.startsWith("WHERE ")) {
+                    keyColumn = ((String) keyColumn).substring(6);
+                }
+                sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
             }
-        }
 
-        if (keyColumn == null || keyColumn.isEmpty()) {
-            String err = "ERROR : load_beans() : primaryKey not defined in control : " + controlId;
-            System.err.println("// " + err);
-            return null;
-        }
+        } else if (keyOrWhereCondition instanceof StringBuffer) {
+            // N.B.: Need key column ...
+            if (keyColumn == null || keyColumn.isEmpty()) {
+                if (tbl_wrk.tableJson.has("primaryKey")) {
+                    keyColumn = tbl_wrk.tableJson.getString("primaryKey");
+                }
+            }
+            sWhere = " WHERE " + keyColumn + "=" + ((StringBuffer)keyOrWhereCondition).toString() + "";
 
-        if (key instanceof String) {
-            sWhere = " WHERE " + keyColumn + "='" + key + "'";
-        } else if (key instanceof Long || key instanceof Integer || key instanceof Float || key instanceof Double) {
-            sWhere = " WHERE " + keyColumn + "=" + String.valueOf(key) + "";
-        } else if (key instanceof JSONArray) {
-        } else if (key instanceof ArrayList<?>) {
-            if (key != null && ((ArrayList<?>) key).size() > 0) {
-                String keyList = workspace.arrayToString(((ArrayList<String>) key).toArray(), null, null, ",");
+        } else if (keyOrWhereCondition instanceof CharSequence) {
+            // N.B.: Need key column ...
+            if (keyColumn == null || keyColumn.isEmpty()) {
+                if (tbl_wrk.tableJson.has("primaryKey")) {
+                    keyColumn = tbl_wrk.tableJson.getString("primaryKey");
+                }
+            }
+            sWhere = " WHERE " + keyColumn + "=" + ((CharSequence)keyOrWhereCondition).toString() + "";
+
+        } else if (keyOrWhereCondition instanceof Long || keyOrWhereCondition instanceof Integer || keyOrWhereCondition instanceof Float || keyOrWhereCondition instanceof Double) {
+            // N.B.: Need key column ...
+            if (keyColumn == null || keyColumn.isEmpty()) {
+                if (tbl_wrk.tableJson.has("primaryKey")) {
+                    keyColumn = tbl_wrk.tableJson.getString("primaryKey");
+                }
+            }
+            sWhere = " WHERE " + keyColumn + "=" + String.valueOf(keyOrWhereCondition) + "";
+
+        } else if (keyOrWhereCondition instanceof JSONArray) {
+            // TODO : TEST
+            JSONArray whereConditions = (JSONArray)keyOrWhereCondition;
+            sWhere = " WHERE";
+            for(int iw=0; iw<whereConditions.length(); iw++) {
+                Object whereCondition = whereConditions.get(iw);
+                String logic = "AND";
+                String column = null;
+                String columnFilter = null;
+                String columnOp = "=";
+                if(whereCondition instanceof JSONObject) {
+                    if(((JSONObject) whereCondition).has("logic"))
+                        logic = ((JSONObject) whereCondition).getString("logic");
+                    if(((JSONObject) whereCondition).has("col"))
+                        column = ((JSONObject) whereCondition).getString("col");
+                    if(((JSONObject) whereCondition).has("column"))
+                        column = ((JSONObject) whereCondition).getString("column");
+                    if(((JSONObject) whereCondition).has("field"))
+                        column = ((JSONObject) whereCondition).getString("field");
+                    if(((JSONObject) whereCondition).has("filter"))
+                        columnFilter = ((JSONObject) whereCondition).getString("filter");
+                    if(((JSONObject) whereCondition).has("value"))
+                        columnFilter = ((JSONObject) whereCondition).getString("value");
+                    if(((JSONObject) whereCondition).has("op"))
+                        columnOp = ((JSONObject) whereCondition).getString("op");
+                    if(((JSONObject) whereCondition).has("operator"))
+                        columnOp = ((JSONObject) whereCondition).getString("operator");
+                } else if(whereCondition instanceof Object) {
+                } else if(whereCondition instanceof String) {
+                }
+                if(iw > 0) {
+                    sWhere += " " + logic;
+                }
+                sWhere = " " + column + columnOp + "'" + columnFilter + "'";
+            }
+
+        } else if (keyOrWhereCondition instanceof ArrayList<?>) {
+            if (keyOrWhereCondition != null && ((ArrayList<?>) keyOrWhereCondition).size() > 0) {
+                // N.B.: Need key column ...
+                if (keyColumn == null || keyColumn.isEmpty()) {
+                    if (tbl_wrk.tableJson.has("primaryKey")) {
+                        keyColumn = tbl_wrk.tableJson.getString("primaryKey");
+                    }
+                }
+                String keyList = workspace.arrayToString(((ArrayList<String>) keyOrWhereCondition).toArray(), null, null, ",");
                 sWhere = " WHERE " + keyColumn + " IN (" + keyList + ")";
             }
+
         } else {
-            String err = "ERROR : load_beans() : undetect key type in control : " + controlId;
+            String err = "ERROR : load_beans() : undetect keyOrWhereCondition type in control : " + controlId;
             System.err.println("// " + err);
             return null;
         }
 
-        return load_beans(request, controlId, databaseSchemaTable, columns, (String)sWhere, maxRows);
+        return load_beans_internal(request, controlId, databaseSchemaTable, columns, (String)sWhere, null, maxRows, orderBy);
     }
 
 
@@ -1929,7 +2013,7 @@ public class bean {
      * @return
      */
     static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition, long maxRows) throws Throwable {
-        return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
+        return load_beans((HttpServletRequest) null, null, databaseSchemaTable, columns, where_condition, maxRows, null);
     }
 
     /**
@@ -1945,7 +2029,7 @@ public class bean {
      * @return
      */
     static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition, long maxRows) throws Throwable {
-        return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, maxRows);
+        return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, maxRows, null);
     }
 
     /**
@@ -1956,7 +2040,7 @@ public class bean {
      * @return
      */
     static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition) throws Throwable {
-        return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, -1);
+        return load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, -1, null);
     }
 
     /**
@@ -1968,12 +2052,12 @@ public class bean {
      * @return
      */
     static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition) throws Throwable {
-        return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, -1);
+        return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, -1, null);
     }
 
 
     static public Object load_bean(String databaseSchemaTable, String columns, String where_condition) throws Throwable {
-        ArrayList<Object> beans = load_beans((HttpServletRequest) null, (String) null, databaseSchemaTable, columns, where_condition, 1);
+        ArrayList<Object> beans = load_beans((HttpServletRequest) null, (String) databaseSchemaTable, columns, where_condition, 1);
         if (beans != null) {
             if (beans.size() > 0) {
                 return beans.get(0);
@@ -1982,7 +2066,7 @@ public class bean {
         return null;
     }
     static public Object load_bean(String databaseSchemaTable, String controlId, String columns, String where_condition) throws Throwable {
-        ArrayList<Object> beans = load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, 1);
+        ArrayList<Object> beans = load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, 1, null);
         if (beans != null) {
             if (beans.size() > 0) {
                 return beans.get(0);
@@ -1993,7 +2077,7 @@ public class bean {
 
 
     static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String where_condition, long maxRows) throws Throwable {
-        return load_beans(request, (String) null, databaseSchemaTable, columns, where_condition, maxRows);
+        return load_beans(request, null, databaseSchemaTable, columns, where_condition, maxRows, null);
     }
 
 
@@ -2016,11 +2100,20 @@ public class bean {
      * TODO : partial columns read still unsupported... read always all columns
      *
      */
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows, String orderBy) throws Throwable {
+        return load_beans(request, controlId, databaseSchemaTable, columns, null, where_condition, maxRows, orderBy);
+    }
     static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, long maxRows) throws Throwable {
-        return load_beans(request, controlId, databaseSchemaTable, columns, where_condition, null, maxRows);
+        return load_beans(request, controlId, databaseSchemaTable, columns, null, where_condition, maxRows, null);
     }
 
-    static public ArrayList<Object> load_beans(HttpServletRequest request, String controlId, String databaseSchemaTable, String columns, String where_condition, ArrayList<String> where_condition_params, long maxRows) throws Throwable {
+    static public ArrayList<Object> load_beans_internal(
+            HttpServletRequest request,
+            String controlId, String databaseSchemaTable,
+            String columns,
+            String where_condition, ArrayList<String> where_condition_params, long maxRows,
+            String orderBy
+    ) throws Throwable {
         // crea un controllo sulla tabella
         if(databaseSchemaTable != null)
             databaseSchemaTable = databaseSchemaTable.replace("\"", "");
@@ -2032,6 +2125,7 @@ public class bean {
         String column_json_list = null;
         long cRow = 0, startRow = 0, endRow = maxRows;
         String errors = "";
+        String order_by_condition = null;
 
         Connection conn = null;
         PreparedStatement psdo = null;
@@ -2138,6 +2232,18 @@ public class bean {
                 }
             }
 
+            if (orderBy != null && !orderBy.isEmpty()) {
+                orderBy = orderBy.trim();
+                if (orderBy.toUpperCase().indexOf("ORDERBY ") >= 0) {
+                    order_by_condition = " ORDER BY " + orderBy.substring(8);
+                } else if (orderBy.toUpperCase().indexOf("ORDER BY ") >= 0) {
+                    order_by_condition = " ORDER BY " + orderBy.substring(9);
+                } else {
+                    order_by_condition = " ORDER BY " + orderBy;
+                }
+            }
+
+
             //
             // TODO : costruire i left join sui campi table.field
             //
@@ -2146,7 +2252,9 @@ public class bean {
             String executingQuery = "SELECT "
                     + (columnsList != null ? utility.arrayToString(columnsList, null, null, ",") : "*")
                     + " FROM " + tbl_wrk.schemaTable
-                    + (where_condition != null ? where_condition : "");
+                    + (where_condition != null ? where_condition : "")
+                    + (order_by_condition != null ? order_by_condition : "")
+                    ;
 
             Object [] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
             conn = (Connection)connResult[0];
@@ -2723,3 +2831,6 @@ public class bean {
 
 
 }
+
+
+
