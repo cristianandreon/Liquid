@@ -4441,6 +4441,8 @@ public class workspace {
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, t);
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Try to increase \"-Xmx\" \"-XX:MaxPermSize\" JVM parameters");
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Current \"-Xmx\":" + Runtime.getRuntime().maxMemory() / 1024 / 1024 + "Mb, totalMemory:" + Runtime.getRuntime().totalMemory() / 1024 / 1024 + "Mb");
+                } finally {
+                    reader.close();
                 }
             }
 

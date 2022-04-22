@@ -5,6 +5,7 @@
 package com.liquid;
 
 import static com.liquid.bean.beansToArray;
+import static com.liquid.bean.load_bean;
 import static com.liquid.event.forwardEvent;
 import static com.liquid.utility.searchProperty;
 import static com.liquid.workspace.check_database_definition;
@@ -3408,6 +3409,11 @@ public class db {
                 Object[] connResult = connection.getDBConnection();
                 conn = (Connection) connResult[0];
                 String connError = (String) connResult[1];
+                if (conn == null) {
+                    String err = "insert_row() : connect failed \n\nError is : "+connError;
+                    System.out.println("// LIQUID ERROR : " + err);
+                    return new Object [] { false, -1, utility.base64Encode(err) };
+                }
             }
 
             if (conn != null) {
@@ -3482,10 +3488,14 @@ public class db {
             System.err.println("insert_row() error : "+e.getMessage());
             retVal = false;
 
-            try {
-                if (conn != null)
-                    conn.rollback();
-            } catch (Throwable e2) {
+            if(transaction.isTransaction(request)) {
+                throw e;
+            } else {
+                try {
+                    if (conn != null)
+                        conn.rollback();
+                } catch (Throwable e2) {
+                }
             }
 
         } finally {
@@ -3525,16 +3535,30 @@ public class db {
 
 
     /**
-     * TODO: addition where conditions
      *
      * @param DatabaseSchemaTable
-     * @param Fields
-     * @param Values
-     * @param key
+     * @param Fields                fields to update, must include the "primaryKey"
+     * @param Values                values of fields to update
+     * @param primaryKey            the field used as primaryKey, must me defined in "Fields"
      * @return
      * @throws Throwable
      */
-    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String key ) throws Throwable {
+    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String primaryKey ) throws Throwable {
+        return update_row ( DatabaseSchemaTable, Fields, Values, primaryKey, null );
+    }
+
+    /**
+     * TODO: addition where conditions
+     *
+     * @param DatabaseSchemaTable
+     * @param Fields                fields to update, must include the "primaryKey"
+     * @param Values                values of fields to update
+     * @param primaryKey            the field used as primaryKey, must me defined in "Fields"
+     * @param request
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String primaryKey, HttpServletRequest request ) throws Throwable {
         boolean retVal = false;
         int new_id = 0;
         Object keyValue = null;
@@ -3551,10 +3575,18 @@ public class db {
 
         try {
 
-            Object [] connResult = connection.getDBConnection();
-            conn = (Connection)connResult[0];
-            String connError = (String)connResult[1];
-
+            if(transaction.isTransaction(request)) {
+                conn = transaction.getTransaction(request);
+            } else {
+                Object[] connResult = connection.getDBConnection();
+                conn = (Connection) connResult[0];
+                String connError = (String) connResult[1];
+                if (conn == null) {
+                    String err = "update_row() : connect failed \n\nError is : "+connError;
+                    System.out.println("// LIQUID ERROR : " + err);
+                    return new Object [] { false, -1, utility.base64Encode(err) };
+                }
+            }
 
             if (conn != null) {
                 String [] dbParts = DatabaseSchemaTable.split("\\.");
@@ -3566,7 +3598,7 @@ public class db {
 
 
                 for(int i=0, ia=0; i<Fields.length; i++) {
-                    if(key.equalsIgnoreCase(Fields[i])) {
+                    if (primaryKey.equalsIgnoreCase(Fields[i])) {
                         keyValue = Values[i];
                     } else {
                         sSTMTUpdate += (ia > 0 ? "," : "");
@@ -3579,13 +3611,13 @@ public class db {
                 if(keyValue instanceof String) {
                     keyValue = "" + keyValue + "";
                 }
-                sSTMTUpdate += " WHERE \""+key+"\"=?";
+                sSTMTUpdate += " WHERE \""+primaryKey+"\"=?";
 
                 PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
 
                 int ip=1;
                 for(int i=0; i<Values.length; i++) {
-                    if(key.equalsIgnoreCase(Fields[i])) {
+                    if(primaryKey.equalsIgnoreCase(Fields[i])) {
                     } else {
                         if (i < Fields.length) {
                             Object val = Values[i];
@@ -3639,7 +3671,7 @@ public class db {
                 } else if (val instanceof Boolean) {
                     sqlSTMTUpdate.setBoolean((ip), (boolean) val);
                 } else {
-                    System.err.println("update_row() invalid obejct type : "+ val.getClass().getName());
+                    System.err.println("update_row() invalid obejct type : "+ (val != null ? val.getClass().getName() : "null"));
                 }
 
 
@@ -3665,19 +3697,26 @@ public class db {
             System.err.println("update_row() error : "+e.getMessage());
             retVal = false;
 
-            try {
-                if (conn != null)
-                    conn.rollback();
-            } catch (Throwable e2) {
+            if(transaction.isTransaction(request)) {
+                throw e;
+            } else {
+                try {
+                    if (conn != null)
+                        conn.rollback();
+                } catch (Throwable e2) {
+                }
             }
 
         } finally {
-            try {
-                if (conn != null)
-                    conn.close();
-            } catch (Throwable e2) {
+            if(transaction.isTransaction(request)) {
+            } else {
+                try {
+                    if (conn != null)
+                        conn.close();
+                } catch (Throwable e2) {
+                }
+                conn = null;
             }
-            conn = null;
         }
 
         return new Object [] { retVal, new_id } ;
@@ -3716,6 +3755,11 @@ public class db {
                     Object[] connResult = connection.getDBConnection();
                     conn = (Connection) connResult[0];
                     String connError = (String) connResult[1];
+                    if (conn == null) {
+                        String err = "update() : connect failed \n\nError is : "+connError;
+                        System.out.println("// LIQUID ERROR : " + err);
+                        return new Object [] { false, -1, utility.base64Encode(err) };
+                    }
                 }
 
 
@@ -3814,10 +3858,14 @@ public class db {
                 System.err.println("update() error : "+e.getMessage());
                 retVal = false;
 
-                try {
-                    if (conn != null)
-                        conn.rollback();
-                } catch (Throwable e2) {
+                if(transaction.isTransaction(request)) {
+                    throw e;
+                } else {
+                    try {
+                        if (conn != null)
+                            conn.rollback();
+                    } catch (Throwable e2) {
+                    }
                 }
 
             } finally {
@@ -3860,12 +3908,12 @@ public class db {
     }
 
 
-    public static String updateField(workspace wrk, Object key_id, String status, Object requestParam) throws Throwable {
+    public static String updateField(workspace wrk, Object primaryKeyValue, String field, Object fieldValue, Object requestParam) throws Throwable {
         if (wrk != null) {
-            Object bidBean = bean.load_bean((HttpServletRequest) requestParam, "cnconline.bids", null, (Object) key_id);
-            if (bidBean != null) {
-                utility.set(bidBean, "status", "R");
-                return db.update(bidBean, wrk);
+            Object bean = load_bean((HttpServletRequest) requestParam, wrk.databaseSchemaTable, null, (Object) primaryKeyValue);
+            if (bean != null) {
+                utility.set(bean, field, fieldValue);
+                return db.update(bean, wrk);
             }
         }
         return null;
@@ -4263,7 +4311,12 @@ public class db {
                         Object [] connResult = connection.getConnection(null, request, liquid.tableJson);
                         conn = (Connection)connResult[0];
                         String connError = (String)connResult[1];
-                        // conn = (Connection)(liquid.get_connection != null ? liquid.get_connection.invoke(null) : null);
+                        if (conn == null) {
+                            String err = "processModification() : connect failed \n\nError is : "+connError;
+                            System.out.println("// LIQUID ERROR : " + err);
+                            // return new Object [] { false, -1, utility.base64Encode(err) };
+                        }
+
                     } catch (Exception ex) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -4881,6 +4934,11 @@ public class db {
                     Object [] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
                     conn = (Connection)connResult[0];
                     String connError = (String)connResult[1];
+                    if (conn == null) {
+                        String err = "count_occurences_by_column() : connect failed \n\nError is : " + connError;
+                        System.out.println("// LIQUID ERROR : " + err);
+                        // return new Object [] { false, -1, utility.base64Encode(err) };
+                    }
                 } catch (Exception ex) {
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                 }
