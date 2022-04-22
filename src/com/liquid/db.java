@@ -1427,6 +1427,7 @@ public class db {
 
                                     cRow = startRow;
                                     // WHERE utenti.utenti_id IN (65,38,
+                                    if(sWhereParams != null) sWhereParams.clear();
                                     sWhereIds = "\nWHERE " + tbl_wrk.schemaTable + "." + primaryKey + " IN (" + sIdsList + ")";
                                     executingQuery = baseQuery + sWhereIds;
                                     bCacheIdsInAvailable = true;
