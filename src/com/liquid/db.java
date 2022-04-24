@@ -2861,9 +2861,6 @@ public class db {
                                         if (ic < maxColumn || maxColumn <= 0) {
                                             JSONObject col = cols.getJSONObject(ic);
 
-                                            if (ic > 0) {
-                                                out_string.append(",");
-                                            }
                                             if (bColumnsResolved) {
                                                 fieldName = col.getString("field");
                                             } else {
@@ -2882,7 +2879,8 @@ public class db {
                                                     nf.setMaximumFractionDigits(colDigits[ic]);
                                                     fieldValue = nf.format(dFieldValue);
                                                 }
-                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                if (ic > 0) out_string.append(",");
+                                                out_string.append("\"" + fieldName + "\":\"" + (fieldValue != null ? fieldValue : "") + "\"");
                                                 field_added++;
 
                                             } else if (colTypes[ic] == 91) { //date
@@ -2891,7 +2889,8 @@ public class db {
                                                 if(renderService) {
                                                     if(fieldValue == null) fieldValue = "";
                                                 }
-                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                if (ic > 0) out_string.append(",");
+                                                out_string.append("\"" + fieldName + "\":\"" + (fieldValue != null ? fieldValue : "") + "\"");
                                                 field_added++;
 
                                             } else if (colTypes[ic] == 92) { //time
@@ -2900,7 +2899,8 @@ public class db {
                                                 if(renderService) {
                                                     if(fieldValue == null) fieldValue = "";
                                                 }
-                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                if (ic > 0) out_string.append(",");
+                                                out_string.append("\"" + fieldName + "\":\"" + (fieldValue != null ? fieldValue : "") + "\"");
                                                 field_added++;
 
                                             } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
@@ -2910,24 +2910,29 @@ public class db {
                                                     if(fieldValue == null) fieldValue = "";
                                                 }
                                                 // } catch (Exception e) { fieldValue = "00" + workspace.dateSep + "00" + workspace.dateSep + "0000 00" + workspace.timeSep + "00" + workspace.timeSep + "00"; }
-                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                if (ic > 0) out_string.append(",");
+                                                out_string.append("\"" + fieldName + "\":\"" + (fieldValue != null ? fieldValue : "") + "\"");
                                                 field_added++;
 
                                             } else if (colTypes[ic] == -7) {
                                                 fieldValue = ("" + rsdo.getBoolean(columnAlias) + "");
-                                                out_string.append("\"" + fieldName + "\":" + fieldValue + "");
+                                                if (ic > 0) out_string.append(",");
+                                                out_string.append("\"" + fieldName + "\":" + (fieldValue != null ? fieldValue : "") + "");
                                                 field_added++;
                                             } else {
                                                 fieldValue = columnAlias != null ? rsdo.getString(columnAlias) : rsdo.getString(ic + 1);
                                                 // N.B.: Protocollo JSON : nella risposta JSON il caratere "->\" è a carico del server, e di conseguenza \->\\
                                                 fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : db.NULLValue;
-                                                out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                                if (ic > 0) out_string.append(",");
+                                                out_string.append("\"" + fieldName + "\":\"" + (fieldValue != null ? fieldValue : "") + "\"");
                                                 field_added++;
                                             }
                                         }
                                     } catch (Exception e) {
                                         if(skipMissingField) {
-                                            out_string.append("\"" + fieldName + "\":\"" + fieldValue + "\"");
+                                            // IN TEST : null non significa inesistente
+                                            // if (ic > 0) out_string.append(",");
+                                            // out_string.append("\"" + fieldName + "\":null");
                                         } else {
                                             throw new Exception(e);
                                         }
@@ -5282,6 +5287,18 @@ public class db {
     static public String insert(Object bean, Object tbl_wrk, String foreignTables) {
         return insert(null, bean, tbl_wrk, foreignTables);
     }
+
+    /**
+     * Insert row from bean to DB
+     *
+     * N.B.: default defined in the control tbl_wrk are ignored
+     *
+     * @param requestParam
+     * @param bean
+     * @param tbl_wrk
+     * @param foreignTables
+     * @return
+     */
     static public String insert(Object requestParam, Object bean, Object tbl_wrk, String foreignTables) {
         String result = null;
         try {
@@ -5345,13 +5362,21 @@ public class db {
                                     if (col.has("default")) {
                                         String defaultValue = col.getString("default");
                                         if (defaultValue != null) {
-                                            // N.B.: lascia il campo non assegnato, sarà risolto dal db
-                                            setFieldValue = false;
-                                            /*
-                                            defaultValue = solveVariableField(defaultValue, request, false);
-                                            if (defaultValue != null) {
+                                            //
+                                            // NO : se nel controllo c'è un accesso alle variabili di sessione è NECESSARIO risolverle
+                                            // setFieldValue = false;
+                                            //
+                                            String newDefaultValue = solveVariableField(defaultValue, request, false);
+                                            if (newDefaultValue.compareTo(defaultValue) != 0) {
+                                                setFieldValue = true;
+                                            } else {
+                                                //
+                                                // Lascia il campo inalterato (usa il default del DB)
+                                                // N.B.: Non e' possibile usare il default del controllo poiche non sarebbe discriminabile
+                                                //      dalle espressioni usate dal DB (es uso del sequence
+                                                //
+                                                setFieldValue = false;
                                             }
-                                            */
                                         }
                                     }
                                 }

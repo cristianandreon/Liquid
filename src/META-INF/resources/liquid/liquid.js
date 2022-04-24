@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.2.08
+// Liquid ver.2.09
 //
-//  First update 06-01-2020 - Last update 10-03-2022
+//  First update 06-01-2020 - Last update 23-04-2022
 //
 //  TODO : see trello.com
 //
@@ -9073,6 +9073,28 @@ var Liquid = {
                     }
                 }
             }
+
+            //
+            // Fire events ...
+            //
+            if (command.name === "insert") {
+                // firing inserted record event
+                var eventData = {};
+                var callback = null;
+                var callbackParams = null;
+                var defaultRetval = true;
+                var bAlwaysCallback = true;
+                Liquid.onEvent(liquid, "onInsertedRow", eventData, callback, callbackParams, defaultRetval, bAlwaysCallback);
+            } else if (command.name === "delete") {
+                // firing deleted record event
+                var eventData = {};
+                var callback = null;
+                var callbackParams = null;
+                var defaultRetval = true;
+                var bAlwaysCallback = true;
+                Liquid.onEvent(liquid, "onDeletedRow", eventData, callback, callbackParams, defaultRetval, bAlwaysCallback);
+            }
+
         } else {
             // system control : recordset is at runtime
             if (command.name === "delete") {
@@ -9286,23 +9308,6 @@ var Liquid = {
                                 }
                             }
                         }
-                    }
-                    if (command.name === "insert") {
-                        // firing inserted record
-                        var eventData = {};
-                        var callback = null;
-                        var callbackParams = null;
-                        var defaultRetval = true;
-                        var bAlwaysCallback = true;
-                        Liquid.onEvent(liquid, "onInsertedRow", eventData, callback, callbackParams, defaultRetval, bAlwaysCallback);
-                    } else if (command.name === "delete") {
-                        // firing deleted record
-                        var eventData = {};
-                        var callback = null;
-                        var callbackParams = null;
-                        var defaultRetval = true;
-                        var bAlwaysCallback = true;
-                        Liquid.onEvent(liquid, "onDeletedRow", eventData, callback, callbackParams, defaultRetval, bAlwaysCallback);
                     }
                 }
             }
@@ -13783,9 +13788,7 @@ var Liquid = {
                     }
                 }
                 try {
-                    if (obj.getAttribute('debug')) {
-                        debugger;
-                    }
+                    // if (obj.getAttribute('debug')) { debugger; }
                 } catch (e) {
                 }
             }
@@ -13862,6 +13865,8 @@ var Liquid = {
                             controlName = "col." + linkeCol.field + ".row." + (iRow + 1);
 
                             newId = liquid.controlId + ".layout." + layoutIndex1B + "." + controlName;
+
+                            if(!isDef(linkeCol.field)) debugger;
 
                             obj.setAttribute('previd', (obj.id ? obj.id : "unk"));
                             obj.setAttribute('newid', newId);
@@ -14039,6 +14044,7 @@ var Liquid = {
                                 // creating lookup
                                 var lookupLiquid = Liquid.startLookup(liquid.controlId, sourceCol, lookupControlId, obj, linkeCol.lookup, linkeCol.lookupField, linkeCol.options, 'layout', "column field \"" + linkeCol.name + "\"", win);
                                 if (lookupLiquid) {
+                                    if(!isDef(linkeCol.field)) debugger;
                                     // obj.setAttribute('comboId', lookupControlId+".lookup.combo");
                                     obj.setAttribute('linkedInputId', lookupInstanceControlId + ".lookup.input");
                                     obj.setAttribute('linkedfield', linkeCol.field);
@@ -14184,37 +14190,50 @@ var Liquid = {
                 var linkedRow1B = obj.getAttribute('linkedRow1b');
                 var linkedInputId = obj.getAttribute('linkedinputid');
                 if (linkedField) {
-                    var type = liquid.tableJson.columns[Number(linkedField) - 1].type;
-                    var format = liquid.tableJson.columns[Number(linkedField) - 1].format;
-                    linkedRow1B = Number(linkedRow1B);
-                    if (linkedRow1B === iRow + 1) {
-                        var baseIndex1B = layout.baseIndex1B;
-                        var disabled = true;
-                        var nodes = null;
-                        if (isDef(liquid.gridOptions)) {
-                            if (isDef(liquid.gridOptions.api)) {
-                                nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                            }
+                    try {
+                        if (!isDef(linkedField)) {
+                            console.error("*** ERROR : incorrect link at control:" + liquid.controlId + " layout:" + layout.name + " field:" + (obj.id ? obj.id : obj.name));
+                            debugger;
                         }
-                        value = "[?]";
-                        if (baseIndex1B > 0) {
-                            var absRow = baseIndex1B - 1 + iRow;
-                            if (absRow < liquid.nRows && absRow < nodes.length) {
-                                if (nodes[absRow].data)
-                                    value = nodes[absRow].data[linkedField];
-                            } else if (Liquid.isAddingNode(liquid, absRow, nodes, true)) {
-                                if (nodes[absRow].data)
-                                    value = nodes[absRow].data[linkedField];
-                            } else {
-                                disabled = true;
-                                value = "";
+                        var type = liquid.tableJson.columns[Number(linkedField) - 1].type;
+                        var format = liquid.tableJson.columns[Number(linkedField) - 1].format;
+                        linkedRow1B = Number(linkedRow1B);
+                        if (linkedRow1B === iRow + 1) {
+                            var baseIndex1B = layout.baseIndex1B;
+                            var disabled = true;
+                            var nodes = null;
+                            if (isDef(liquid.gridOptions)) {
+                                if (isDef(liquid.gridOptions.api)) {
+                                    nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                                }
                             }
-                        } else {
-                            var isDialogX = Liquid.isDialogX(liquid);
-                            var isFormX = Liquid.isFormX(liquid);
-                            var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
-                            if (isFormX || isAutoInsert) {
-                                if (liquid.addingRow) {
+                            value = "[?]";
+                            if (baseIndex1B > 0) {
+                                var absRow = baseIndex1B - 1 + iRow;
+                                if (absRow < liquid.nRows && absRow < nodes.length) {
+                                    if (nodes[absRow].data)
+                                        value = nodes[absRow].data[linkedField];
+                                } else if (Liquid.isAddingNode(liquid, absRow, nodes, true)) {
+                                    if (nodes[absRow].data)
+                                        value = nodes[absRow].data[linkedField];
+                                } else {
+                                    disabled = true;
+                                    value = "";
+                                }
+                            } else {
+                                var isDialogX = Liquid.isDialogX(liquid);
+                                var isFormX = Liquid.isFormX(liquid);
+                                var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
+                                if (isFormX || isAutoInsert) {
+                                    if (liquid.addingRow) {
+                                        disabled = false;
+                                        value = liquid.addingRow[linkedField];
+                                    } else {
+                                        disabled = true;
+                                        value = "";
+                                    }
+                                }
+                                if (layout.rowsContainer[iRow].isAdding) {
                                     disabled = false;
                                     value = liquid.addingRow[linkedField];
                                 } else {
@@ -14222,110 +14241,106 @@ var Liquid = {
                                     value = "";
                                 }
                             }
-                            if (layout.rowsContainer[iRow].isAdding) {
-                                disabled = false;
-                                value = liquid.addingRow[linkedField];
-                            } else {
-                                disabled = true;
-                                value = "";
-                            }
-                        }
-                        var targetObj = obj;
-                        if (isDef(linkedInputId)) {
-                            if (linkedInputId === 'pending') {
-                                targetObj = null;
-                            } else {
-                                targetObj = win.document.getElementById(linkedInputId);
-                                if (targetObj) {
-                                    targetObj.style.border = '0px';
-                                    targetObj.style.backgroundColor = 'transparent';
-                                }
-                            }
-                        }
-                        if (targetObj) {
-                            if (Liquid.isDate(type)) {
-                                if(targetObj.format) {
-                                    if(!targetObj.getAttribute("pure_value")) {
-                                        targetObj.setAttribute("pure_value", value);
-                                    }
-                                }
-                                if (value == "NULL") {
-                                    value = "";
+                            var targetObj = obj;
+                            if (isDef(linkedInputId)) {
+                                if (linkedInputId === 'pending') {
+                                    targetObj = null;
                                 } else {
-                                    if (value.lastIndexOf(".") > 0) {
-                                        value = value.substring(0, value.lastIndexOf(".") - 1);
-                                    }
-                                    var d = value ? new Date(Date.parse(value)) : null;
-                                    if (type === "6" || type === "91") {
-                                        // date
-                                        if (Liquid.dateFormat) {
-                                        }
-                                    } else if (type === "93") {
-                                        // timestamp
-                                        value = Liquid.getLocalDate(value, type);
-                                        try {
-                                            if (targetObj.readOnly || targetObj.disabled) {
-                                                default_format = Liquid.timestampFormat;
-                                            } else {
-                                                // default_format = null;
-                                                // formato personalizzato
-                                                default_format = Liquid.timestampFormat;
-                                            }
-                                            format = Liquid.getTimestampFormat(format, default_format);
-                                            if(format) {
-                                                if(value) {
-                                                    value = d.toString(format);
-                                                } else {
-                                                    value = "";
-                                                }
-                                            } else {
-                                                if (Liquid.timestampFormat === 'auto') {
-                                                    value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
-                                                } else if (Liquid.timestampFormat === 'iso') {
-                                                    value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
-                                                } else if (Liquid.timestampFormat === 'gmt') {
-                                                    value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
-                                                } else if (Liquid.timestampFormat === 'date') {
-                                                    value = d.toLocaleDateString(); // '2/18/2012'
-                                                } else if (Liquid.timestampFormat === 'short') {
-                                                    // use of date.js
-                                                    d = Date.parse(value);
-                                                    if (d) {
-                                                        value = d.toShortateString(); // '2/18/2012'
-                                                    } else {
-                                                        value = "";
-                                                    }
-                                                } else if (Liquid.timestampFormat === 'long') {
-                                                    // use of date.js
-                                                    d = Date.parse(value);
-                                                    if (d) {
-                                                        // value = d.toString(format);
-                                                        value = d.toString('dddd dd MMMM yyyy, HH:mm');
-                                                    } else {
-                                                        value = "";
-                                                    }
-                                                } else {
-                                                    // use of date.js
-                                                    d = Date.parse(value);
-                                                    if (d) {
-                                                        value = value;
-                                                    } else {
-                                                        value = "";
-                                                    }
-                                                }
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                        }
+                                    targetObj = win.document.getElementById(linkedInputId);
+                                    if (targetObj) {
+                                        targetObj.style.border = '0px';
+                                        targetObj.style.backgroundColor = 'transparent';
                                     }
                                 }
                             }
-                            Liquid.setHTMLElementValue(targetObj, value);
-                            if (typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
-                                layout.firstObjId = targetObj.id;
-                                targetObj.focus();
+                            if (targetObj) {
+                                if (Liquid.isDate(type)) {
+                                    if (targetObj.format) {
+                                        if (!targetObj.getAttribute("pure_value")) {
+                                            targetObj.setAttribute("pure_value", value);
+                                        }
+                                    }
+                                    if (value == "NULL") {
+                                        value = "";
+                                    } else {
+                                        if (value.lastIndexOf(".") > 0) {
+                                            value = value.substring(0, value.lastIndexOf(".") - 1);
+                                        }
+                                        var d = value ? new Date(Date.parse(value)) : null;
+                                        if (type === "6" || type === "91") {
+                                            // date
+                                            if (Liquid.dateFormat) {
+                                            }
+                                        } else if (type === "93") {
+                                            // timestamp
+                                            value = Liquid.getLocalDate(value, type);
+                                            try {
+                                                if (targetObj.readOnly || targetObj.disabled) {
+                                                    default_format = Liquid.timestampFormat;
+                                                } else {
+                                                    // default_format = null;
+                                                    // formato personalizzato
+                                                    default_format = Liquid.timestampFormat;
+                                                }
+                                                format = Liquid.getTimestampFormat(format, default_format);
+                                                if (format) {
+                                                    if (value) {
+                                                        value = d.toString(format);
+                                                    } else {
+                                                        value = "";
+                                                    }
+                                                } else {
+                                                    if (Liquid.timestampFormat === 'auto') {
+                                                        value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
+                                                    } else if (Liquid.timestampFormat === 'iso') {
+                                                        value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
+                                                    } else if (Liquid.timestampFormat === 'gmt') {
+                                                        value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
+                                                    } else if (Liquid.timestampFormat === 'date') {
+                                                        value = d.toLocaleDateString(); // '2/18/2012'
+                                                    } else if (Liquid.timestampFormat === 'short') {
+                                                        // use of date.js
+                                                        d = Date.parse(value);
+                                                        if (d) {
+                                                            value = d.toShortateString(); // '2/18/2012'
+                                                        } else {
+                                                            value = "";
+                                                        }
+                                                    } else if (Liquid.timestampFormat === 'long') {
+                                                        // use of date.js
+                                                        d = Date.parse(value);
+                                                        if (d) {
+                                                            // value = d.toString(format);
+                                                            value = d.toString('dddd dd MMMM yyyy, HH:mm');
+                                                        } else {
+                                                            value = "";
+                                                        }
+                                                    } else {
+                                                        // use of date.js
+                                                        d = Date.parse(value);
+                                                        if (d) {
+                                                            value = value;
+                                                        } else {
+                                                            value = "";
+                                                        }
+                                                    }
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                            }
+                                        }
+                                    }
+                                }
+                                Liquid.setHTMLElementValue(targetObj, value);
+                                if (typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
+                                    layout.firstObjId = targetObj.id;
+                                    targetObj.focus();
+                                }
                             }
                         }
+                    } catch(e) {
+                        console.error("*** ERROR : internal error on control:" + liquid.controlId + " layout:" + layout.name + " field:" + (obj.id ? obj.id : obj.name));
+                        debugger;
                     }
                 } else {
                     if (bSetup) {
@@ -21569,7 +21584,7 @@ LiquidGridHeader.prototype.destroy = function () {
 };
 
 function isDef(__var) {
-    return (typeof __var !== 'undefined' && __var !== null) ? true : false;
+    return (typeof __var === 'undefined' || __var === null) ? false : true;
 }
 
 function isDefOrNull(__var) {

@@ -18,6 +18,7 @@ import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.*;
@@ -1156,7 +1157,7 @@ public class bean {
                                                 ArrayList<String> ftForeignTableList,
                                                 ArrayList<String> ftClassNameList,
                                                 ArrayList<Object> ftBeansContentList
-    ) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, NotFoundException {
+    ) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, NotFoundException, ParseException {
 
         if (ftPropNameList != null) {
             String className = obj.getClass().getName();
@@ -1207,7 +1208,7 @@ public class bean {
                                                  String parentPropName,
                                                  String parentControlId,
                                                  String parentClassName
-    ) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, NotFoundException {
+    ) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, NotFoundException, ParseException {
 
         if (parentPropName != null) {
             String className = obj.getClass().getName();
@@ -1271,8 +1272,13 @@ public class bean {
 
                             boolean hasValue = false;
                             try {
-                                value = row.get(colName);
-                                hasValue = true;
+                                if(row.isNull(colName)) {
+                                    value = null;
+                                    hasValue = true;
+                                } else {
+                                    value = row.get(colName);
+                                    hasValue = true;
+                                }
                             } catch (Exception e) {
                                 try {
                                     value = row.get(field);
@@ -1357,9 +1363,8 @@ public class bean {
         return new Object[] { bResult, keyValue, error };
     }
 
-
     /**
-     * Create new bean from the string databaseSchemaTable
+     * Create new bean from the string databaseSchemaTable (using any available control)
      *
      * @param requestParam
      * @param databaseSchemaTable
@@ -1367,10 +1372,34 @@ public class bean {
      * @throws Throwable
      */
     public static Object new_bean(Object requestParam, String databaseSchemaTable) throws Throwable {
+        return new_bean(requestParam, databaseSchemaTable, "*");
+    }
+
+    /**
+     * Create new bean from the string databaseSchemaTable
+     *
+     * @param requestParam
+     * @param databaseSchemaTable
+     * @param controlId             define the control user to create the bean (* = any bean)
+     * @return
+     * @throws Throwable
+     */
+    public static Object new_bean(Object requestParam, String databaseSchemaTable, String controlId) throws Throwable {
         HttpServletRequest request = (HttpServletRequest) requestParam;
         Object bean = null;
         if (request != null) {
-            workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable);
+            workspace tbl_wrk = null;
+            if("*".equalsIgnoreCase(controlId)) {
+                // any bean
+                tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, null);
+            } else if(controlId == null) {
+                // default (full) bean
+                tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, databaseSchemaTable.replace(".", "_"));
+            } else if(controlId != null) {
+                // defined bean
+                tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, controlId);
+            }
+
             if (tbl_wrk != null) {
                 Object[] result = create_beans_multilevel_class_internal( tbl_wrk, (JSONArray)null, (JSONArray)null, null,
                         1, 1,
@@ -1384,6 +1413,8 @@ public class bean {
                         bean = beansContent.get(0);
                     }
                 }
+            } else {
+                throw new Exception("Cannot create bean : control not found by database/schema/table:"+databaseSchemaTable);
             }
         }
         return bean;

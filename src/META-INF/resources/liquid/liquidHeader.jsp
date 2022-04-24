@@ -54,6 +54,8 @@
 <script src="<%=jspath%>/liquid/datejs/date.js"></script>
 <!-- Set the CultureInfo to -->
 <%
+    /*
+    NO : usare workspace.setLanguage() dopo il caricamento del framework
     Enumeration locales = request.getLocales();
     while (locales.hasMoreElements()) {
         Locale locale = (Locale) locales.nextElement();
@@ -66,6 +68,7 @@
             break;
         }
     }
+    */
 %>
 
 

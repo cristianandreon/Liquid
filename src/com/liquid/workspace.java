@@ -276,6 +276,7 @@ public class workspace {
                         out.println("<script>");
                         out.println("Liquid.setLanguage('it');\n");
                         out.println("</script>");
+                        out.println("<script src=\""+path+"/liquid/datejs/date-"+("it-IT")+".js\"></script>");
                     }
                     session.setAttribute("Liquid.lang", "IT");
                     workspace.setGLLang("IT");
@@ -286,6 +287,7 @@ public class workspace {
                         out.println("<script>");
                         out.println("Liquid.setLanguage('en');\n");
                         out.println("</script>");
+                        out.println("<script src=\""+path+"/liquid/datejs/date-"+("en-GB")+".js\"></script>");
                     }
                     session.setAttribute("Liquid.lang", "EN");
                     workspace.setGLLang("EN");
@@ -2130,136 +2132,14 @@ public class workspace {
                 //
                 // Comandi Predefiniti : risoluzione campi default, validazione etc
                 //
-                Object [] res = process_commands(request, tableJson, false);
+                Object [] resCmd = process_commands(request, tableJson, false);
 
-                boolean bInsertActive = (boolean)res[0];
-                boolean bUpdateActive = (boolean)res[1];
-                boolean bDeleteActive = (boolean)res[2];
-                boolean bPastedRowActive = (boolean)res[3];
+                //
+                // Eventi di sistema : creazione e raffinazione
+                //
+                Object [] resEvt = process_events(request, tableJson, false, resCmd);
 
 
-                String sOwner = null;
-                try {
-                    sOwner = tableJson.getString("owner");
-                } catch (JSONException e) {
-                }
-                if (sOwner != null && !sOwner.isEmpty()) {
-                    if (owner == null) {
-                        // owner setted inside the json : create when needed
-                    }
-                }
-
-                // Eventi di sistema
-                boolean bInsertEventFound = false;
-                boolean bUpdateEventFound = false;
-                boolean bDeleteEventFound = false;
-                boolean bPastedRowFound = false;
-                JSONArray events = null;
-                try {
-                    try {
-                        events = tableJson.getJSONArray("events");
-                    } catch (JSONException e) {
-                    }
-                    if (events != null) {
-                        for (int ie = 0; ie < events.length(); ie++) {
-                            try {
-                                JSONObject event = events.getJSONObject(ie);
-                                if (event != null) {
-                                    String eventName = null;
-                                    String server = null;
-                                    try {
-                                        eventName = event.getString("name");
-                                    } catch (JSONException ex) {
-                                    }
-                                    if (bInsertActive) {
-                                        if ("onInserting".equalsIgnoreCase(eventName)) {
-                                            try {
-                                                server = event.getString("server");
-                                            } catch (JSONException ex) {
-                                                server = null;
-                                            }
-                                            if ("com.liquid.event.onInserting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onInserting".equalsIgnoreCase(server))) {
-                                                event.put("isSystem", true);
-                                                bInsertEventFound = true;
-                                            }
-                                        }
-                                    }
-                                    if (bUpdateActive) {
-                                        if ("onUpdating".equalsIgnoreCase(eventName)) {
-                                            try {
-                                                server = event.getString("server");
-                                            } catch (JSONException ex) {
-                                                server = null;
-                                            }
-                                            if ("com.liquid.event.onUpdating".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onUpdating".equalsIgnoreCase(server))) {
-                                                event.put("isSystem", true);
-                                                bUpdateEventFound = true;
-                                            }
-                                        }
-                                    }
-                                    if (bDeleteActive) {
-                                        if ("onDeleting".equalsIgnoreCase(eventName)) {
-                                            try {
-                                                server = event.getString("server");
-                                            } catch (JSONException ex) {
-                                                server = null;
-                                            }
-                                            if ("com.liquid.event.onDeleting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onDeleting".equalsIgnoreCase(server))) {
-                                                event.put("isSystem", true);
-                                                bDeleteEventFound = true;
-                                            }
-                                        }
-                                    }
-                                    if (bPastedRowActive) {
-                                        if ("onPastedRow".equalsIgnoreCase(eventName)) {
-                                            try {
-                                                server = event.getString("server");
-                                            } catch (JSONException ex) {
-                                                server = null;
-                                            }
-                                            if ("com.liquid.event.onPastedRow".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onPastedRow".equalsIgnoreCase(server))) {
-                                                event.put("isSystem", true);
-                                                event.put("sync", true);
-                                                bPastedRowFound = true;
-                                            }
-                                        }
-                                    }
-                                    // signature
-                                    event.put("cypher", login.getSaltString(32));
-                                }
-                            } catch (JSONException e) {
-                            }
-                        }
-                    }
-                    // Add system events
-                    JSONArray newEvents = new JSONArray();
-                    if (newEvents != null) {
-                        if (!bInsertEventFound && bInsertActive) {
-                            newEvents.put(new JSONObject("{ \"name\":\"onInserting\", \"server\":\"com.liquid.event.onInserting\", \"isSystem\":true, \"cypher\":\"" + login.getSaltString(32) + "\" }"));
-                        }
-                        if (!bUpdateEventFound && bUpdateActive) {
-                            newEvents.put(new JSONObject("{ \"name\":\"onUpdating\", \"server\":\"com.liquid.event.onUpdating\", \"isSystem\":true, \"cypher\":\"" + login.getSaltString(32) + "\" }"));
-                        }
-                        if (!bDeleteEventFound && bDeleteActive) {
-                            newEvents.put(new JSONObject("{ \"name\":\"onDeleting\", \"server\":\"com.liquid.event.onDeleting\", \"isSystem\":true, \"cypher\":\"" + login.getSaltString(32) + "\" }"));
-                        }
-                        if (!bPastedRowFound && bPastedRowActive) {
-                            newEvents.put(new JSONObject("{ \"name\":\"onPastedRow\", \"server\":\"com.liquid.event.onPastedRow\", \"isSystem\":true, \"sync\":true, \"cypher\":\"" + login.getSaltString(32) + "\" }"));
-                        }
-                        if (events != null) {
-                            for (int ie = 0; ie < events.length(); ie++) {
-                                try {
-                                    newEvents.put(events.getJSONObject(ie));
-                                } catch (JSONException e) {
-                                }
-                            }
-                        }
-                        tableJson.put("events", newEvents);
-                    }
-
-                } catch (JSONException ex) {
-                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
-                }
 
             } else {
                 //
@@ -2567,12 +2447,11 @@ public class workspace {
     /**
      * processa la sezione commands
      *
-     *
      * @param request
      * @param tableJson
      * @return
      */
-    static Object[] process_commands(HttpServletRequest request, JSONObject tableJson, boolean isSystemLiquid) throws JSONException {
+    static private Object[] process_commands(HttpServletRequest request, JSONObject tableJson, boolean isSystemLiquid) throws JSONException {
 
         boolean bInsertActive = false;
         boolean bUpdateActive = false;
@@ -2826,6 +2705,147 @@ public class workspace {
         return new Object [] { bInsertActive, bUpdateActive, bDeleteActive, bPastedRowActive };
     }
 
+
+
+    /**
+     * processa la sezione events
+     *
+     * @param request
+     * @param tableJson
+     * @return
+     */
+    private static Object [] process_events(HttpServletRequest request, JSONObject tableJson, boolean isSystemLiquid, Object[] resCmd) throws JSONException {
+
+        boolean bInsertActive = (boolean) resCmd[0];
+        boolean bUpdateActive = (boolean) resCmd[1];
+        boolean bDeleteActive = (boolean) resCmd[2];
+        boolean bPastedRowActive = (boolean) resCmd[3];
+
+        boolean bInsertEventFound = false;
+        boolean bUpdateEventFound = false;
+        boolean bDeleteEventFound = false;
+        boolean bPastedRowFound = false;
+
+        String sOwner = null;
+        try {
+            sOwner = tableJson.getString("owner");
+        } catch (JSONException e) {
+        }
+        if (sOwner != null && !sOwner.isEmpty()) {
+        }
+
+        JSONArray events = null;
+        try {
+            try {
+                events = tableJson.getJSONArray("events");
+            } catch (JSONException e) {
+            }
+            if (events != null) {
+                for (int ie = 0; ie < events.length(); ie++) {
+                    try {
+                        JSONObject event = events.getJSONObject(ie);
+                        if (event != null) {
+                            String eventName = null;
+                            String server = null;
+                            try {
+                                eventName = event.getString("name");
+                            } catch (JSONException ex) {
+                            }
+                            if (bInsertActive) {
+                                if ("onInserting".equalsIgnoreCase(eventName)) {
+                                    try {
+                                        server = event.getString("server");
+                                    } catch (JSONException ex) {
+                                        server = null;
+                                    }
+                                    if ("com.liquid.event.onInserting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onInserting".equalsIgnoreCase(server))) {
+                                        event.put("isSystem", true);
+                                        bInsertEventFound = true;
+                                    }
+                                }
+                            }
+                            if (bUpdateActive) {
+                                if ("onUpdating".equalsIgnoreCase(eventName)) {
+                                    try {
+                                        server = event.getString("server");
+                                    } catch (JSONException ex) {
+                                        server = null;
+                                    }
+                                    if ("com.liquid.event.onUpdating".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onUpdating".equalsIgnoreCase(server))) {
+                                        event.put("isSystem", true);
+                                        bUpdateEventFound = true;
+                                    }
+                                }
+                            }
+                            if (bDeleteActive) {
+                                if ("onDeleting".equalsIgnoreCase(eventName)) {
+                                    try {
+                                        server = event.getString("server");
+                                    } catch (JSONException ex) {
+                                        server = null;
+                                    }
+                                    if ("com.liquid.event.onDeleting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onDeleting".equalsIgnoreCase(server))) {
+                                        event.put("isSystem", true);
+                                        bDeleteEventFound = true;
+                                    }
+                                }
+                            }
+                            if (bPastedRowActive) {
+                                if ("onPastedRow".equalsIgnoreCase(eventName)) {
+                                    try {
+                                        server = event.getString("server");
+                                    } catch (JSONException ex) {
+                                        server = null;
+                                    }
+                                    if ("com.liquid.event.onPastedRow".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onPastedRow".equalsIgnoreCase(server))) {
+                                        event.put("isSystem", true);
+                                        event.put("sync", true);
+                                        bPastedRowFound = true;
+                                    }
+                                }
+                            }
+                            // signature
+                            event.put("cypher", login.getSaltString(32));
+                        }
+                    } catch (JSONException e) {
+                    }
+                }
+            }
+            // Add system events
+            JSONArray newEvents = new JSONArray();
+            if (newEvents != null) {
+                if (!bInsertEventFound && bInsertActive) {
+                    newEvents.put(new JSONObject("{ \"name\":\"onInserting\", \"server\":\"com.liquid.event.onInserting\", \"isSystem\":true, \"cypher\":\"" + login.getSaltString(32) + "\" }"));
+                }
+                if (!bUpdateEventFound && bUpdateActive) {
+                    newEvents.put(new JSONObject("{ \"name\":\"onUpdating\", \"server\":\"com.liquid.event.onUpdating\", \"isSystem\":true, \"cypher\":\"" + login.getSaltString(32) + "\" }"));
+                }
+                if (!bDeleteEventFound && bDeleteActive) {
+                    newEvents.put(new JSONObject("{ \"name\":\"onDeleting\", \"server\":\"com.liquid.event.onDeleting\", \"isSystem\":true, \"cypher\":\"" + login.getSaltString(32) + "\" }"));
+                }
+                if (!bPastedRowFound && bPastedRowActive) {
+                    newEvents.put(new JSONObject("{ \"name\":\"onPastedRow\", \"server\":\"com.liquid.event.onPastedRow\", \"isSystem\":true, \"sync\":true, \"cypher\":\"" + login.getSaltString(32) + "\" }"));
+                }
+                if (events != null) {
+                    for (int ie = 0; ie < events.length(); ie++) {
+                        try {
+                            newEvents.put(events.getJSONObject(ie));
+                        } catch (JSONException e) {
+                        }
+                    }
+                }
+                tableJson.put("events", newEvents);
+            }
+
+        } catch (JSONException ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return new Object [] { bInsertEventFound, bUpdateEventFound, bDeleteEventFound, bPastedRowFound };
+    }
+
+
+
     /**
      * Risolve i campi varaibili collegati alle variabile ${} e %{}
      *
@@ -2906,7 +2926,7 @@ public class workspace {
                     }
                 }
             } else if(oforeignTables instanceof JSONObject) {
-                // Mistake ...
+                // Mistake in json ... wrap it to the right
                 JSONObject foreignTable = (JSONObject)oforeignTables;
                 if (foreignTable.has("options")) {
                     JSONObject options = foreignTable.getJSONObject("options");
@@ -3009,19 +3029,30 @@ public class workspace {
         return solvedCount;
     }
 
-    static private int solve_object_var(JSONObject obj, String key, String def, HttpServletRequest request) throws Exception {
+    static private int solve_object_var(JSONObject obj, String key, String expression, HttpServletRequest request) throws Exception {
         int solvedCount = 0;
-        if (def.indexOf("${") >= 0 || def.indexOf("%{") >= 0) {
-            String defSolved = db.solveVariableField(def, request, true);
-            if (defSolved != null) {
-                if (!defSolved.equals(def)) {
-                    solvedCount++;
-                    obj.put(key, defSolved);
-                }
+        if (expression.indexOf("${") >= 0 || expression.indexOf("%{") >= 0) {
+            solvedCount = solve_object_var_internal(obj, key, expression, request);
+            // Salvataggio espressione : visibile al client ..
+            obj.put(key+"_src", expression);
+        } else if (obj.has(key+"_src")) {
+            solvedCount = solve_object_var_internal(obj, key, obj.getString(key+"_src"), request);
+        }
+        return solvedCount;
+    }
+
+    static private int solve_object_var_internal(JSONObject obj, String key, String expression, HttpServletRequest request) throws Exception {
+        int solvedCount = 0;
+        String defSolved = db.solveVariableField(expression, request, true);
+        if (defSolved != null) {
+            if (!defSolved.equals(expression)) {
+                solvedCount++;
+                obj.put(key, defSolved);
             }
         }
         return solvedCount;
     }
+
 
     static public JSONArray build_query_params(String query) throws JSONException {
         if (query != null && !query.isEmpty()) {
@@ -3161,8 +3192,13 @@ public class workspace {
                 parentControlId = (String) request.getParameter("parentControlId");
             } catch (Exception e) {
             }
+
+            // Body della request (dati dal client)
             String sRequest = workspace.get_request_content(request);
+
+            // Creaizone controllo json
             return get_default_json(request, controlId, tblWrk, table, schema, database, parentControlId, null, sRequest, out);
+
         } catch (Exception e) {
             System.err.println(" get_default_json() [" + controlId + "] Error:" + e.getLocalizedMessage());
         }
@@ -3188,7 +3224,7 @@ public class workspace {
      */
     static public String get_default_json(HttpServletRequest request, String controlId, String tblWrk, String table, String schema, String database, String parentControlId, String sourceToken, String sRequest, JspWriter out) throws Throwable {
         try {
-            String result = "";
+            String result = "{\"error\":\"" + "unexpected result" + "\"}";;
             // Verifica della sorgente source : il client non può leggere un controllo in modalità auto se il padre non è autorizzato
             if ((parentControlId != null && !parentControlId.isEmpty()) || (sourceToken != null && !sourceToken.isEmpty())) {
                 workspace source_tbl_wrk = workspace.get_tbl_manager_workspace(parentControlId);
@@ -3207,9 +3243,13 @@ public class workspace {
                         if(schema != null) {
                             tableJson.put("schema", schema.replace("\"", ""));
                         }
+
                         if (sRequest != null && !sRequest.isEmpty()) {
                             //
-                            // Unione voci nella request ... es.: commands, filter, etc... deveno essere validate dal server
+                            // Unione voci nella request ...
+                            // commands, filter, etc... sono validate dal server quando viene creato il controllo padre
+                            // i campi variabili sono già risolti quando consegnati al client e devono essere ricalcolati ad ogni caricamento del controllo
+                            //
                             //
                             try {
                                 JSONObject requestTableJson = new JSONObject(sRequest);
@@ -3221,18 +3261,67 @@ public class workspace {
                                     }
                                 }
                             } catch (Exception e) {
-                                System.err.println(" get_default_json() [" + controlId + "] Error:" + e.getLocalizedMessage());
+                                String error = " get_default_json() [" + controlId + "] Error:" + e.getLocalizedMessage();
+                                System.err.println();
+                                return "{\"error\":\"" + error + "\"}";
                             }
+
+                            // Set del risultato
+                            sTableJson = tableJson.toString();
+                            result = workspace.get_table_control_from_string(request, controlId, sTableJson);
+                            tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+
+
+
+                            //
+                            // Comandi Predefiniti : risoluzione campi default, validazione etc
+                            //
+                            Object [] resCmd = process_commands(request, tbl_wrk.tableJson, false);
+
+                            //
+                            // Eventi di sistema : creazione e raffinazione
+                            //
+                            Object [] resEvt = process_events(request, tbl_wrk.tableJson, false, resCmd);
+
                         }
-                        sTableJson = tableJson.toString();
-                        result = workspace.get_table_control_from_string(request, controlId, sTableJson);
-                        tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
                     }
+
                     if (tbl_wrk != null) {
                         if (tbl_wrk.tableJson != null) {
+                            //
+                            // N.B.: TODO : Il merge delle collonne viene fatto per posizione .. usare il campo name
+                            //
+                            // Unione voci contenenti campi variabili
+                            //
+                            JSONObject tableJsonForClient = new JSONObject( tbl_wrk.tableJson.toString() );
+                            int nVars = solveClientSideVariableFields(tableJsonForClient, request);
+                            tableJsonForClient.put("nVars", nVars);
+                            if(nVars >  0) {
+                            }
+
+                            // N.B.: è più semplice tracciarli quando modificati anzichè trasferire i campi da risolvere
+                            /*
+                            JSONObject sourceTableJson = find_json_in_parent(source_tbl_wrk, null, null, table );
+
+                            // Copia prima di risolvere i campi
+                            sourceTableJson = new JSONObject( sourceTableJson.toString() );
+                            if(sourceTableJson != null) {
+                                int nVars = solveClientSideVariableFields(sourceTableJson, request);
+                                if(nVars >  0) {
+                                    // N.B.: La marginazione fatta per posizione NON e' affidabile
+                                    // Aggiunta parti risolte (o non) dal server
+                                    // utility.mergeJsonObjects(sourceTableJson, tableJsonForClient, new String [] { "preFilters" } );
+                                }
+                            }
+                            */
+
+
                             // Aggiunta sorgente
                             tbl_wrk.tableJson.put("parent", parentControlId);
-                            return tbl_wrk.tableJson.toString();
+                            tableJsonForClient.put("parent", parentControlId);
+
+                            // ritorna il json del control
+                            return tableJsonForClient.toString();
                         }
                     } else {
                         return result;
@@ -3252,6 +3341,54 @@ public class workspace {
         }
         return null;
     }
+
+    /**
+     * Search for control (define by field options) in foreignTables inside workspace wrk
+     *
+     * @param wrk
+     * @param database  (ignored)
+     * @param schema    (ignored)
+     * @param table
+     * @return
+     */
+    private static JSONObject find_json_in_parent(workspace wrk, String database, String schema, String table) {
+        if(wrk != null) {
+            if(wrk.tableJson != null) {
+                if(wrk.tableJson.has("foreignTables")) {
+                    Object oforeignTables = wrk.tableJson.get("foreignTables");
+                    if(oforeignTables instanceof JSONArray) {
+                        JSONArray fts = wrk.tableJson.getJSONArray("foreignTables");
+                        if (fts != null) {
+                            for (int ift = 0; ift < fts.length(); ift++) {
+                                JSONObject ft = fts.getJSONObject(ift);
+                                if (ft != null) {
+                                    if (ft.has("foreignTable")) {
+                                        if (ft.has("foreignColumn")) {
+                                            if (ft.has("column")) {
+                                                    if(ft.has("options")) {
+                                                    String sFt = ft.getString("foreignTable");
+                                                    String sFc = ft.getString("foreignColumn");
+                                                    String c = ft.getString("column");
+                                                    if(table.equalsIgnoreCase(sFt)) {
+                                                        Object options = ft.get("options");
+                                                        if(options instanceof JSONObject) {
+                                                            return (JSONObject) options;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
 
     /**
      * <h3>Register a button in order to use it in the browser</h3>

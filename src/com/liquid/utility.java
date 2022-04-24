@@ -45,11 +45,9 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
-import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
@@ -366,6 +364,15 @@ public class utility {
     }
      */
 
+
+    static public void set(Object bean, String property, Object value) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, ParseException {
+        try {
+            setEx(bean, property, value);
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
     /**
      * <h3>Set the property of a bean</h3>
      * <p>
@@ -380,19 +387,17 @@ public class utility {
      * @throws java.lang.IllegalAccessException
      * @see utility
      */
-    static public void set(Object bean, String property, Object value) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+    static public boolean setEx(Object bean, String property, Object value) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, ParseException {
+        boolean retVal = false;
         Field field = bean.getClass().getDeclaredField(property);
         if (field == null) {
             // Ricerca nei beans per similitudine
             field = searchProperty(bean, property, false, false);
         }
-        // debug
-        if ("bool".equalsIgnoreCase(property)) {
-            int lb = 1;
-        }
         if (field != null) {
             field.setAccessible(true);
             Class<?> propType = field.getType();
+            Object curValue = field.get(bean);
             try {
                 if (propType.equals(Boolean.class) || propType.equals(boolean.class)) {
                     if (value instanceof String) {
@@ -403,142 +408,305 @@ public class utility {
                                         "s".equalsIgnoreCase((String) value) ||
                                         "t".equalsIgnoreCase((String) value)
                         )) {
-                            field.set(bean, true);
+                            if(curValue == null || !(boolean)field.get(bean)) {
+                                field.set(bean, true);
+                                retVal = true;
+                            }
                         } else {
-                            field.set(bean, false);
+                            if(curValue == null || (boolean)field.get(bean)) {
+                                field.set(bean, false);
+                                retVal = true;
+                            }
                         }
                     } else if (value instanceof Boolean) {
-                        field.set(bean, (Boolean) value);
-                    } else if (value instanceof Integer) {
-                        if (value != null && ((Integer) value) > 0) {
+                        if(curValue == null || !(Boolean)curValue != (Boolean)value) {
                             field.set(bean, true);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Integer) {
+                        if (curValue == null || (value != null && ((Integer) value) > 0)) {
+                            if(!(boolean)field.get(bean)) {
+                                field.set(bean, true);
+                                retVal = true;
+                            }
                         } else {
-                            field.set(bean, false);
+                            if(curValue == null || (boolean)field.get(bean)) {
+                                field.set(bean, false);
+                                retVal = true;
+                            }
                         }
                     } else if (value instanceof Long) {
-                        if (value != null && ((Long) value) > 0) {
-                            field.set(bean, true);
+                        if (curValue == null || (value != null && ((Long) value) > 0)) {
+                            if(!(boolean)field.get(bean)) {
+                                field.set(bean, true);
+                                retVal = true;
+                            }
                         } else {
-                            field.set(bean, false);
+                            if(curValue == null || (boolean)field.get(bean)) {
+                                field.set(bean, false);
+                                retVal = true;
+                            }
                         }
                     } else if (value instanceof Float) {
-                        if (value != null && ((Float) value) > 0.0f) {
-                            field.set(bean, true);
+                        if (curValue == null || (value != null && ((Float) value) > 0.0f)) {
+                            if(!(boolean)field.get(bean)) {
+                                field.set(bean, true);
+                                retVal = true;
+                            }
                         } else {
-                            field.set(bean, false);
+                            if(curValue == null || (boolean)field.get(bean)) {
+                                field.set(bean, false);
+                                retVal = true;
+                            }
                         }
                     } else if (value instanceof Double) {
-                        if (value != null && ((Double) value) > 0.0f) {
-                            field.set(bean, true);
+                        if (curValue == null || value != null && ((Double) value) > 0.0f) {
+                            if(!(boolean)field.get(bean)) {
+                                field.set(bean, true);
+                                retVal = true;
+                            }
                         } else {
-                            field.set(bean, false);
+                            if(curValue == null || (boolean)field.get(bean)) {
+                                field.set(bean, false);
+                                retVal = true;
+                            }
                         }
                     } else if (value instanceof BigDecimal) {
-                        if (value != null && ((BigDecimal) value).intValue() > 0) {
-                            field.set(bean, true);
+                        if (curValue == null || (value != null && ((BigDecimal) value).intValue() > 0)) {
+                            if(!(boolean)field.get(bean)) {
+                                field.set(bean, true);
+                                retVal = true;
+                            }
                         } else {
-                            field.set(bean, false);
+                            if(curValue == null || (boolean)field.get(bean)) {
+                                field.set(bean, false);
+                                retVal = true;
+                            }
                         }
                     }
                 } else if (propType.equals(Integer.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
-                            field.set(bean, new Integer(0));
+                            if(curValue == null || (Integer)curValue != 0) {
+                                field.set(bean, new Integer(0));
+                                retVal = true;
+                            }
                         } else if ("on".equalsIgnoreCase((String) value) || "true".equalsIgnoreCase((String) value) || "y".equalsIgnoreCase((String) value) || "n".equalsIgnoreCase((String) value)) {
-                            field.set(bean, new Integer(1));
+                            if(curValue == null || (Integer)curValue != 1) {
+                                field.set(bean, new Integer(1));
+                                retVal = true;
+                            }
                         } else if ("off".equalsIgnoreCase((String) value) || "false".equalsIgnoreCase((String) value) || "n".equalsIgnoreCase((String) value)) {
-                            field.set(bean, new Integer(0));
+                            if(curValue == null || (Integer)curValue != 0) {
+                                field.set(bean, new Integer(0));
+                                retVal = true;
+                            }
                         } else {
                             try {
                                 if (value != null) {
                                     if (!"null".equalsIgnoreCase(String.valueOf(value))) {
-                                        field.set(bean, Integer.parseInt((String) value));
+                                        if(curValue == null || (Integer)curValue != Integer.parseInt((String) value)) {
+                                            field.set(bean, Integer.parseInt((String) value));
+                                            retVal = true;
+                                        }
                                     } else {
-                                        field.set(bean, null);
+                                        if(curValue == null || curValue != null) {
+                                            field.set(bean, null);
+                                            retVal = true;
+                                        }
                                     }
                                 } else {
-                                    field.set(bean, null);
+                                    if(curValue == null || curValue != value) {
+                                        field.set(bean, value);
+                                        retVal = true;
+                                    }
                                 }
                             } catch (Exception e) {
                                 Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
+                                throw e;
                             }
                         }
                     } else if (value instanceof Object) {
-                        field.set(bean, (Integer) value);
+                        if(curValue == null || curValue != (Integer)value) {
+                            field.set(bean, (Integer) value);
+                            retVal = true;
+                        }
                     }
                 } else if (propType.equals(Long.class)) {
                     if (value instanceof String) {
                         if (value == null || ((String) value).isEmpty()) {
                             if (!"null".equalsIgnoreCase(String.valueOf(value))) {
-                                field.set(bean, new Long(0));
+                                if(curValue == null || (Long)curValue != 0L) {
+                                    field.set(bean, new Long(0));
+                                    retVal = true;
+                                }
+
                             } else {
-                                field.set(bean, null);
+                                if(curValue == null || (Long)curValue != null) {
+                                    field.set(bean, null);
+                                    retVal = true;
+                                }
                             }
                         } else {
                             try {
-                                field.set(bean, Long.parseLong((String) value));
+                                if(curValue == null || (Long)curValue != Long.parseLong((String) value)) {
+                                    field.set(bean, Long.parseLong((String) value));
+                                    retVal = true;
+                                }
                             } catch (Exception e) {
+                                Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
+                                throw e;
                             }
                         }
                     } else if (value instanceof Object) {
-                        field.set(bean, (Long) value);
+                        if(curValue == null || (Long)curValue != (Long) value) {
+                            field.set(bean, (Long) value);
+                            retVal = true;
+                        }
                     }
                 } else if (propType.equals(Float.class)) {
                     if (value instanceof String) {
-                        if (value == null || ((String) value).isEmpty()) {
+                        if (curValue == null || value == null || ((String) value).isEmpty()) {
                             if (!"null".equalsIgnoreCase(String.valueOf(value))) {
-                                field.set(bean, new Float(0.0f));
+                                if(curValue == null || (Float)curValue != 0.0f) {
+                                    field.set(bean, new Float(0.0f));
+                                    retVal = true;
+                                }
                             } else {
-                                field.set(bean, null);
+                                if(curValue == null || (Float)curValue != null) {
+                                    field.set(bean, null);
+                                    retVal = true;
+                                }
                             }
                         } else {
                             try {
-                                field.set(bean, Float.valueOf(((String) value).replaceAll(",", ".")));
+                                Float newValue = Float.valueOf(((String) value).replaceAll(",", "."));
+                                if(curValue == null || ((Float)field.get(bean)).compareTo(newValue) != 0) {
+                                    field.set(bean, newValue);
+                                    retVal = true;
+                                }
                             } catch (Exception e) {
+                                Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
+                                throw e;
                             }
                         }
                     } else if (value instanceof Object) {
-                        field.set(bean, (Float) value);
+                        if(curValue == null || ((Float)field.get(bean)).compareTo((Float) value) != 0) {
+                            field.set(bean, (Float) value);
+                        }
                     }
                 } else if (propType.equals(java.lang.Double.class)) {
                     if (value instanceof String) {
-                        if (value == null || ((String) value).isEmpty()) {
+                        if (curValue == null || value == null || ((String) value).isEmpty()) {
                             if (!"null".equalsIgnoreCase(String.valueOf(value))) {
-                                field.set(bean, new Double(0.0));
+                                if(curValue == null || ((Double)field.get(bean)).compareTo(0.0) > 0) {
+                                    field.set(bean, new Double(0.0));
+                                    retVal = true;
+                                }
                             } else {
-                                field.set(bean, null);
+                                if(curValue == null || ((Double)field.get(bean)) != null) {
+                                    field.set(bean, null);
+                                    retVal = true;
+                                }
                             }
                         } else {
                             try {
-                                field.set(bean, Double.valueOf(((String) value).replaceAll(",", ".")));
+                                Double newValue = Double.valueOf(((String) value).replaceAll(",", "."));
+                                if(curValue == null || ((Double)field.get(bean)).compareTo(newValue) > 0) {
+                                    field.set(bean, newValue);
+                                    retVal = true;
+                                }
                             } catch (Exception e) {
+                                Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, e);
+                                throw e;
                             }
                         }
                     } else if (value instanceof Object) {
-                        field.set(bean, (Double) value);
+                        if(curValue == null || ((Double)field.get(bean)).compareTo((Double) value) > 0) {
+                            field.set(bean, (Double) value);
+                            retVal = true;
+                        }
                     }
                 } else if (propType.equals(java.lang.String.class)) {
                     if (value instanceof String) {
-                        field.set(bean, (String) value);
+                        if(curValue == null || ((String)field.get(bean)).compareTo((String) value) != 0) {
+                            field.set(bean, (String) value);
+                            retVal = true;
+                        }
                     } else if (value instanceof Object) {
-                        field.set(bean, String.valueOf(value));
+                        if(curValue == null || ((String)field.get(bean)).compareTo(String.valueOf(value)) != 0) {
+                            field.set(bean, String.valueOf(value));
+                            retVal = true;
+                        }
                     }
                 } else if (propType.equals(java.util.Date.class)) {
-                    field.set(bean, (value != null ? DateUtil.toDate(value) : null));
-                } else if (propType.equals(java.sql.Date.class)) {
-                    field.set(bean, (value != null ? DateUtil.toDate(value) : null));
-                } else if (propType.equals(java.sql.Timestamp.class)) {
-                    field.set(bean, (value != null ? DateUtil.toTimestamp(value) : null));
-                    // dbSqlDateTime = (java.sql.Timestamp) 2020-05-27 10:41:53.149992
-                    // value = (java.lang.String) "27-05-2020 10:35:47.788"
-                } else if (propType.equals(java.sql.Time.class)) {
-                    if (value instanceof java.sql.Time) {
-                        field.set(bean, value);
+                    java.sql.Date newDate = DateUtil.toDate(value);
+                    if(newDate != null) {
+                        java.util.Date newValue = (newDate != null ? newDate : null);
+                        if(curValue == null || ((java.util.Date)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, newValue);
+                            retVal = true;
+                        }
                     } else {
-                        field.set(bean, DateUtil.toTime(value));
+                        if(curValue != null) {
+                            field.set(bean, null);
+                            retVal = true;
+                        }
+                    }
+                } else if (propType.equals(java.sql.Date.class)) {
+                    java.sql.Date newDate = DateUtil.toDate(value);
+                    if(value != null) {
+                        java.sql.Date newValue = (value != null ? new java.sql.Date( newDate.getTime()) : null);
+                        if(curValue == null || ((java.sql.Date)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, newValue);
+                            retVal = true;
+                        }
+                    } else {
+                        if(curValue != null) {
+                            field.set(bean, null);
+                            retVal = true;
+                        }
+                    }
+                } else if (propType.equals(java.sql.Timestamp.class)) {
+                    Timestamp newDate = DateUtil.toTimestamp(value);
+                    if(newDate != null) {
+                        java.sql.Timestamp newValue = (value != null ? new java.sql.Timestamp( newDate.getTime()) : null);
+                        if(curValue == null || ((java.sql.Timestamp)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, newValue);
+                            retVal = true;
+                        }
+                    } else {
+                        if(curValue != null) {
+                            field.set(bean, null);
+                            retVal = true;
+                        }
+                    }
+                } else if (propType.equals(java.sql.Time.class)) {
+                    Timestamp newDate = DateUtil.toTimestamp(value);
+                    if(newDate != null) {
+                        java.sql.Time newValue = (value != null ? new java.sql.Time( newDate.getTime()) : null);
+                        if(curValue == null || ((java.sql.Time)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, newValue);
+                            retVal = true;
+                        }
+                    } else {
+                        if(curValue != null) {
+                            field.set(bean, null);
+                            retVal = true;
+                        }
                     }
                 } else {
-                    field.set(bean, value);
+                    if(value != null) {
+                        if (curValue == null || !curValue.equals(value)) {
+                            field.set(bean, value);
+                            retVal = true;
+                        }
+                    } else {
+                        if(curValue != null) {
+                            field.set(bean, null);
+                            retVal = true;
+                        }
+                    }
                 }
 
                 // set changed, avoiding mirrored events
@@ -566,35 +734,16 @@ public class utility {
                             }
                         }
                     }
-                    /*
-                    OBSOLETO
-                    try {
-                        bean.getClass().getMethod("setChanged", String.class, boolean.class).invoke(bean, property, true);
-                    } catch (Throwable th) {
-                        Method[] methods = bean.getClass().getMethods();
-                        for(int i=0; i<methods.length; i++) {
-                            if(methods[i].getName().equalsIgnoreCase(property)) {
-                                System.err.println("{"+bean.getClass()+"}.Method #"+(i+1)+":" + methods[i].toString());
-                            }
-                        }
-                        try {
-                            // Ricerca nel bean corrispondenza esatta
-                            field = searchProperty(bean, property+"$Changed", true, false);
-                            if(field != null)
-                                field.set(bean, value);
-                        } catch (Throwable th2) {
-                            Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, th2);
-                        }
-                    }
-                     */
                 }
 
             } catch (ParseException ex) {
                 Logger.getLogger(utility.class.getName()).log(Level.SEVERE, null, ex);
+                throw ex;
             }
         }
-        return;
+        return retVal;
     }
+
 
     /**
      * <h3>Get the property of a bean</h3>
@@ -1088,6 +1237,63 @@ public class utility {
 
         return new Object[]{true};
     }
+
+
+
+    /**
+     * Aggiunge gli oggetti json target (esecuzione multilivello)
+     * N.B.: La marginazione su oggetti JSONArray viene fatta per posizione
+     *
+     * @param source
+     * @param target
+     * @param excludingList
+     * @return
+     * @throws Exception
+     */
+    public static int mergeJsonObjects(JSONObject source, JSONObject target, String[] excludingList) throws Exception {
+        int insertCount = 0;
+        for (Object keyObject : JSONObject.getNames(source)) {
+            String key = (String) keyObject;
+            Object obj = source.get(key);
+            if(excludingList == null || excludingList != null && !utility.contains(excludingList, key)) {
+                if (target.has(key)) {
+                    if (obj instanceof JSONObject) {
+                        insertCount += mergeJsonObjects(source, target.getJSONObject(key), excludingList);
+                    } else if (obj instanceof JSONArray) {
+                        insertCount += mergeJsonArrays((JSONArray) obj, target.getJSONArray(key), excludingList);
+                    } else {
+                        target.put(key, obj);
+                        insertCount++;
+                    }
+                } else {
+                    target.put(key, obj);
+                    insertCount++;
+                }
+            }
+        }
+        return insertCount;
+    }
+
+
+    public static int mergeJsonArrays(JSONArray source, JSONArray target, String[] excludingList) throws Exception {
+        int insertCount = 0;
+        JSONArray objs = (JSONArray)source;
+        for(int i=0; i<objs.length(); i++) {
+            Object obj = objs.get(i);
+            if(obj instanceof JSONObject) {
+                insertCount += mergeJsonObjects((JSONObject) obj, target.getJSONObject(i), new String[]{"preFilters"});
+            } else if(obj instanceof JSONArray) {
+                insertCount += mergeJsonArrays((JSONArray) obj, target.getJSONArray(i), excludingList);
+            } else {
+                // target.put(i, obj);
+                target.putAll(source);
+                return 1;
+            }
+            // TODO : check length
+        }
+        return insertCount;
+    }
+
 
     /**
      * Aggiunge l'oggetto json target
@@ -1971,6 +2177,14 @@ public class utility {
 
     public static String objArrayToString(ArrayList<Object> columns, String prefix, String postfix, String separator) {
         return arrayToString(columns.toArray(), prefix, postfix, separator);
+    }
+
+
+    private static boolean contains(String[] list, Object key) {
+        for (int i = 0; i < list.length; i++) {
+            if (list[i].compareTo(String.valueOf(key)) == 0) return true;
+        }
+        return false;
     }
 
     public static boolean contains(ArrayList<Object> controlIds, Object controlId) {
