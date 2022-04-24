@@ -2703,6 +2703,7 @@ var LiquidEditing = {
                 +"<datalist id=\"nameDatalist\">"
                 +"<option value=\"onFirstLoad\">on first time loaded control</option>"
                 +"<option value=\"onLoad\">on loaded windows</option>"
+                +"<option value=\"onLoadData\">on loaded data</option>"
                 +"<option value=\"onRowSelected\">on row selected</option>"
                 +"<option value=\"onRowUnSelected\">on row unselected</option>"
                 +"<option value=\"onRowClicked\">on row clicked</option>"        

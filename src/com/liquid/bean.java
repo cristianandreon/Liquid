@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 
 import static com.liquid.db.get_query_info;
 import static com.liquid.db.get_recordset;
+import static com.liquid.utility.resetAllChanged;
 import static com.liquid.utility.searchProperty;
 
 
@@ -1353,6 +1354,8 @@ public class bean {
                                 }
                             }
                         }
+                        // Set all changed marker to false
+                        resetAllChanged(obj);
                     }
                 } catch (Exception ex) {
                     Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
@@ -1830,8 +1833,7 @@ public class bean {
                 runtimeControlId = workspace.getControlIdFromTable(databaseSchemaTable);
                 tbl_wrk = workspace.get_tbl_manager_workspace(runtimeControlId);
                 if (tbl_wrk == null) {
-                    runtimeControlId = workspace.getControlIdFromTable(databaseSchemaTable);
-                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db(runtimeControlId, controlId);
+                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, controlId);
                 }
             }
         } else {

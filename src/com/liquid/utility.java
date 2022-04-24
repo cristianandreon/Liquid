@@ -566,17 +566,10 @@ public class utility {
                     }
                 } else if (propType.equals(Float.class)) {
                     if (value instanceof String) {
-                        if (curValue == null || value == null || ((String) value).isEmpty()) {
-                            if (!"null".equalsIgnoreCase(String.valueOf(value))) {
-                                if(curValue == null || (Float)curValue != 0.0f) {
-                                    field.set(bean, new Float(0.0f));
-                                    retVal = true;
-                                }
-                            } else {
-                                if(curValue == null || (Float)curValue != null) {
-                                    field.set(bean, null);
-                                    retVal = true;
-                                }
+                        if (value == null || ((String) value).isEmpty() || "null".equalsIgnoreCase((String)value)) {
+                            if(curValue != null) {
+                                field.set(bean, null);
+                                retVal = true;
                             }
                         } else {
                             try {
@@ -590,6 +583,16 @@ public class utility {
                                 throw e;
                             }
                         }
+                    } else if (value instanceof Double) {
+                        if(curValue == null || ((Float)field.get(bean)).compareTo(new Float((Double) value)) != 0) {
+                            field.set(bean, new Float((Float)value));
+                            retVal = true;
+                        }
+                    } else if (value instanceof Float) {
+                        if(curValue == null || ((Float)field.get(bean)).compareTo((Float) value) != 0) {
+                            field.set(bean, (Float)value);
+                            retVal = true;
+                        }
                     } else if (value instanceof Object) {
                         if(curValue == null || ((Float)field.get(bean)).compareTo((Float) value) != 0) {
                             field.set(bean, (Float) value);
@@ -597,22 +600,15 @@ public class utility {
                     }
                 } else if (propType.equals(java.lang.Double.class)) {
                     if (value instanceof String) {
-                        if (curValue == null || value == null || ((String) value).isEmpty()) {
-                            if (!"null".equalsIgnoreCase(String.valueOf(value))) {
-                                if(curValue == null || ((Double)field.get(bean)).compareTo(0.0) > 0) {
-                                    field.set(bean, new Double(0.0));
-                                    retVal = true;
-                                }
-                            } else {
-                                if(curValue == null || ((Double)field.get(bean)) != null) {
-                                    field.set(bean, null);
-                                    retVal = true;
-                                }
+                        if (value == null || ((String) value).isEmpty() || "null".equalsIgnoreCase((String)value)) {
+                            if(curValue != null) {
+                                field.set(bean, null);
+                                retVal = true;
                             }
                         } else {
                             try {
                                 Double newValue = Double.valueOf(((String) value).replaceAll(",", "."));
-                                if(curValue == null || ((Double)field.get(bean)).compareTo(newValue) > 0) {
+                                if(curValue == null || ((Double)field.get(bean)).compareTo(newValue) != 0) {
                                     field.set(bean, newValue);
                                     retVal = true;
                                 }
@@ -621,8 +617,18 @@ public class utility {
                                 throw e;
                             }
                         }
+                    } else if (value instanceof Float) {
+                        if(curValue == null || ((Double)field.get(bean)).compareTo(new Double((Float) value)) != 0) {
+                            field.set(bean, new Double((Float)value));
+                            retVal = true;
+                        }
+                    } else if (value instanceof Double) {
+                        if(curValue == null || ((Double)curValue).compareTo((Double) value) != 0) {
+                            field.set(bean, (Double)value);
+                            retVal = true;
+                        }
                     } else if (value instanceof Object) {
-                        if(curValue == null || ((Double)field.get(bean)).compareTo((Double) value) > 0) {
+                        if(curValue == null || ((Double)field.get(bean)).compareTo((Double) value) != 0) {
                             field.set(bean, (Double) value);
                             retVal = true;
                         }
@@ -905,6 +911,27 @@ public class utility {
             }
         }
     }
+
+    static public void resetAllChanged(Object bean) throws NoSuchFieldException, IllegalAccessException {
+        if (bean != null) {
+            Field[] fields = bean.getClass().getDeclaredFields();
+            for (Field f : fields) {
+                try {
+                    String fieldName = f.getName();
+                    if (fieldName.indexOf("$Changed") < 0 && fieldName.indexOf("$tableKey") < 0 && fieldName.indexOf("$Read") < 0) {
+                        Field field = bean.getClass().getDeclaredField(fieldName + "$Changed");
+                        if (field != null) {
+                            field.setAccessible(true);
+                            field.set(bean, false);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("resetAllChanged() error:"+e.getMessage());
+                }
+            }
+        }
+    }
+
 
     static private PropertyDescriptor getPropertyDescriptor(Class<?> bean, String propertyname) throws IntrospectionException {
         BeanInfo beanInfo = Introspector.getBeanInfo(bean);

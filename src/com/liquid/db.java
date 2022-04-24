@@ -4158,6 +4158,11 @@ public class db {
 
                                                                         if (colType == 6 || colType == 93) { // datetime)
                                                                             if(request != null) {
+                                                                                if (oValue != null) {
+                                                                                    if (oValue instanceof String && ((String) oValue).isEmpty()) {
+                                                                                        oValue = null;
+                                                                                    }
+                                                                                }
                                                                                 if(oValue != null) {
                                                                                     Date gtmDate = utility.get_local2server_time(request, oValue);
                                                                                     if(gtmDate != null) {
@@ -4748,8 +4753,10 @@ public class db {
             } else if(oValue instanceof java.sql.Timestamp) {
                 // preserva il tipo dato
                 valueType = colTypes;
+            } else if(oValue == null) {
+                valueType = colTypes;
             } else {
-                throw new Exception("unsupported case");
+                throw new Exception("format_db_value() : unsupported case");
             }
         } else if (colTypes == 92) { // time
             // TODO: 24/09/2020 Test to do

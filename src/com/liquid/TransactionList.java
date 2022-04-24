@@ -6,10 +6,7 @@
 package com.liquid;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -236,6 +233,8 @@ public class TransactionList {
                             stmt.setDouble(ip, (Double) oParam);
                         } else if(oParam instanceof Boolean) {
                             stmt.setString(ip, (String) params.get(ic));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.VARCHAR);
                         } else {
                             stmt.setString(ip, (String) params.get(ic));
                         }
@@ -243,6 +242,8 @@ public class TransactionList {
                         // Integer number
                         if(oParam instanceof String) {
                             stmt.setInt(ip, Integer.parseInt((String)oParam));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.INTEGER);
                         } else {
                             stmt.setInt(ip, (Integer)oParam);
                         }
@@ -250,6 +251,8 @@ public class TransactionList {
                         // Float
                         if(oParam instanceof String) {
                             stmt.setFloat(ip, Float.parseFloat((String)oParam));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.FLOAT);
                         } else {
                             stmt.setFloat(ip, (Float)oParam);
                         }
@@ -257,6 +260,8 @@ public class TransactionList {
                         // Double
                         if(oParam instanceof String) {
                             stmt.setDouble(ip, Double.parseDouble((String)oParam));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.DATE);
                         } else {
                             stmt.setDouble(ip, (Double)oParam);
                         }
@@ -264,6 +269,8 @@ public class TransactionList {
                         // bigint number
                         if(oParam instanceof String) {
                             stmt.setLong(ip, Long.parseLong((String)oParam));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.BIGINT);
                         } else {
                             stmt.setLong(ip, (Long)oParam);
                         }
@@ -271,6 +278,8 @@ public class TransactionList {
                         // boolean
                         if(oParam instanceof String) {
                             stmt.setBoolean(ip, ("true".equalsIgnoreCase((String)oParam) ? true : false));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.BOOLEAN);
                         } else {
                             stmt.setBoolean(ip, ((Boolean)oParam ? true : false));
                         }
@@ -283,6 +292,8 @@ public class TransactionList {
                             stmt.setDate(ip, new java.sql.Date(((Timestamp)oParam).getTime()));
                         } else if(oParam instanceof java.util.Date) {
                             stmt.setDate(ip, new java.sql.Date(((java.util.Date)oParam).getTime()));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.DATE);
                         } else {
                             throw new Exception("invalid date object");
                         }
@@ -295,6 +306,8 @@ public class TransactionList {
                             stmt.setTimestamp(ip, (Timestamp)oParam);
                         } else if(oParam instanceof java.util.Date) {
                             stmt.setTimestamp(ip, new java.sql.Timestamp(((java.util.Date)oParam).getTime()));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.TIMESTAMP);
                         } else {
                             throw new Exception("invalid date object");
                         }
@@ -307,12 +320,16 @@ public class TransactionList {
                             stmt.setDate(ip, (java.sql.Date) oParam);
                         } else if(oParam instanceof java.sql.Timestamp) {
                             stmt.setDate(ip, new java.sql.Date( ((java.sql.Timestamp)oParam).getTime() ));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.DATE);
                         } else {
                             stmt.setDate(ip, DateUtil.toDate(oParam));
                         }
                     } else if (value_type == 92) { // time
                         if(oParam instanceof String) {
                             stmt.setTime(ip, DateUtil.getTime(oParam));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.TIME);
                         } else {
                             stmt.setTime(ip, (java.sql.Time)oParam);
                         }

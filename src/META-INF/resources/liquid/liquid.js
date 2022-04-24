@@ -5326,9 +5326,7 @@ var Liquid = {
                 // Processo dei filtri (es. distint clientside)
                 Liquid.processFilterAfterLoadData(liquid);
 
-                if (bFirstTimeLoad) {
-                    Liquid.onEvent(liquid, "onLoadData", null, null);
-                }
+                Liquid.onEvent(liquid, "onLoadData", null, null);
 
             } else {
                 console.error("loadData() . wrong response:" + xhr.status);
@@ -11694,10 +11692,12 @@ var Liquid = {
                                 if (event && event.target !== obj) {
                                     needRefresh = true;
                                 }
-                                if(obj.getAttribute("pure_value")) {
-                                    if(!obj.getAttribute("dp")) {
-                                        // non in editing
-                                        needRefresh = true;
+                                if(obj) {
+                                    if (obj.getAttribute("pure_value")) {
+                                        if (!obj.getAttribute("dp")) {
+                                            // non in editing
+                                            needRefresh = true;
+                                        }
                                     }
                                 }
                             }
@@ -20713,7 +20713,7 @@ var Liquid = {
                     try {
                         xhr.setRequestHeader("Accept-Encoding", "none");
                     } catch(e) {
-                        console.error(e)
+                        console.warn(e)
                     }
                 }
                 xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
