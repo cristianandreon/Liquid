@@ -1970,7 +1970,7 @@ public class utility {
         public ArrayList<Object> beans = null;
     }
 
-    static ArrayList<DataListCache> glDataListCache = new ArrayList<DataListCache>();
+    public static ArrayList<DataListCache> glDataListCache = new ArrayList<DataListCache>();
 
 
     public static DataListCache get_datalist_from_cahce(String databaseSchemaTable, String codeColumn, String descColumn, String where) {

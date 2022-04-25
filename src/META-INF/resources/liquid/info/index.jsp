@@ -7,16 +7,22 @@
     errorPage=""
     %>
 <%@ page import="com.liquid.*" %>
+<%@ page import="static com.liquid.utility.glDataListCache" %>
+<%@ page import="static com.liquid.metadata.metaDataTable" %>
 <%!
 
     %><%
 
+        Info.message = "";
+
         String act = request.getParameter("act");
         if("resetTableMetadata".equalsIgnoreCase(act)) {
             com.liquid.metadata.invalidateMetadata();
+            Info.message += "["+metaDataTable.size()  + " Table metadata cache resetted]";
         }
         if("resetDatalist".equalsIgnoreCase(act)) {
             utility.resetDatalistCache();
+            Info.message += "["+glDataListCache.size() + " Datalist resetted]";
         }
 
     %>

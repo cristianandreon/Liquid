@@ -19,7 +19,9 @@ import javax.servlet.http.HttpServletResponse;
  * @author Cristitan
  */
 public class Info {
-    
+
+    static public String message;
+
     public static String getVersion() {
         return "1.16";
     }
@@ -318,8 +320,12 @@ public class Info {
                         + "</td>";
 
                 out_string += "</tr>";
-                metadata.invalidateMetadata();
-                utility.resetDatalistCache();
+
+                if(Info.message != null && !Info.message.isEmpty()) {
+                    out_string += "<tr style=\"background-color:transparent\">";
+                    out_string += "<td colspan='3'>" + Info.message + "</td>";
+                    out_string += "</tr>";
+                }
 
             }
         } catch (Exception ex) {
