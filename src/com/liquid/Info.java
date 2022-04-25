@@ -298,6 +298,29 @@ public class Info {
                         + "</td>";
                 
                 out_string += "</tr>";
+
+                out_string += "<tr style=\"background-color:lightGray\">";
+                out_string += "<td>"+"Resets"+"</td>";
+                out_string += "<td>"
+                        + "<span style=\"font-size: 85%;\">"
+                        + "<a href='' onclick='javascript:location.href=\"./index.jsp/act=resetTableMetadata\"'>Reset Tables Metadata</a>"
+                        + "</span>"
+                        + "<span style=\"font-size: 85%;\">"
+                        + "<a href='' onclick='javascript:location.href=\"./index.jsp/act=resetDatalist\"'>Reset Datalist</a>"
+                        + "</span>"
+                        + "</td>";
+                out_string += "<td>"
+                        + "Service count:"+workspace.glTblWorkspaces.get(i).nConnections
+                        + "<br/>"
+                        + "<br/>"
+                        + "N.Sessions:"+workspace.glTblWorkspaces.get(i).sessions.size()
+                        + "<br/>"
+                        + "</td>";
+
+                out_string += "</tr>";
+                metadata.invalidateMetadata();
+                utility.resetDatalistCache();
+
             }
         } catch (Exception ex) {
             Logger.getLogger(Info.class.getName()).log(Level.SEVERE, null, ex);

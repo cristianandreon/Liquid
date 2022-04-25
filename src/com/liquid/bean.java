@@ -1909,6 +1909,10 @@ public class bean {
      * @param keyColumn                 (needed value if keyOrWhereCondition is ArrayList StringBuffer CharSequence ..
      *                                  (if keyOrWhereCondition is type String "keyColumn" is omitted as "keyOrWhereCondition" is condidered as full where condition)
      * @param keyOrWhereCondition       (value or where condition ... don't need 'WHERE' keyword)
+     *                                  (String = full where condition if keyColumn is null)
+     *                                  (StringBufffer or CharSequence = primary key value : neee keyColumn)
+     *                                  (* for all rows)
+     *                                  (null throw expetion)
      * @param maxRows
      *
      * @return  { Object bean, int nBeans, int nBeansLoaded, String errors, String warning }
@@ -1938,14 +1942,18 @@ public class bean {
 
 
         if (keyOrWhereCondition instanceof String) {
-            if (keyColumn == null || keyColumn.isEmpty()) {
-                sWhere = " WHERE " + keyOrWhereCondition + "";
+            if("*".equalsIgnoreCase((String)keyOrWhereCondition)) {
+                sWhere = " WHERE 1=1";
             } else {
-                keyColumn = ((String) keyColumn).trim();
-                if (keyColumn.startsWith("WHERE ")) {
-                    keyColumn = ((String) keyColumn).substring(6);
+                if (keyColumn == null || keyColumn.isEmpty()) {
+                    sWhere = " WHERE " + keyOrWhereCondition + "";
+                } else {
+                    keyColumn = ((String) keyColumn).trim();
+                    if (keyColumn.startsWith("WHERE ")) {
+                        keyColumn = ((String) keyColumn).substring(6);
+                    }
+                    sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
                 }
-                sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
             }
 
         } else if (keyOrWhereCondition instanceof StringBuffer) {
@@ -2026,7 +2034,7 @@ public class bean {
         } else {
             String err = "ERROR : load_beans() : undetect keyOrWhereCondition type in control : " + controlId;
             System.err.println("// " + err);
-            return null;
+            throw new Exception(err);
         }
 
         return load_beans_internal(request, controlId, databaseSchemaTable, columns, (String)sWhere, null, maxRows, orderBy);

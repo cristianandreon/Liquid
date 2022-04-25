@@ -30,6 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.liquid.liquidize.liquidizeJSONContent;
+import static com.liquid.utility.resetDatalistCache;
 
 public class workspace {
 
@@ -639,6 +640,7 @@ public class workspace {
             // reset metadata cache
             if(!keepMetadata) {
                 metadata.invalidateMetadata();
+                utility.resetDatalistCache();
             }
             if (out != null) {
                 String path = workspace.path != null ? workspace.path : "";

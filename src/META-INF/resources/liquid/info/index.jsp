@@ -4,12 +4,20 @@
     import="javax.servlet.*"
     import="javax.servlet.http.*"
     import="javax.servlet.jsp.*"
-    import="com.liquid.Info"
-    import="com.liquid.workspace"
-    errorPage="" 
-    %><%!
+    errorPage=""
+    %>
+<%@ page import="com.liquid.*" %>
+<%!
 
     %><%
+
+        String act = request.getParameter("act");
+        if("resetTableMetadata".equalsIgnoreCase(act)) {
+            com.liquid.metadata.invalidateMetadata();
+        }
+        if("resetDatalist".equalsIgnoreCase(act)) {
+            utility.resetDatalistCache();
+        }
 
     %>
 <html>

@@ -1965,7 +1965,6 @@ public class utility {
     }
 
 
-
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
         public ArrayList<Object> beans = null;
@@ -2004,7 +2003,7 @@ public class utility {
         if (dataListCache != null) {
             beans = dataListCache.beans;
         } else {
-            beans = bean.load_beans(databaseSchemaTable, null, where, 0);
+            beans = bean.load_beans(databaseSchemaTable, null, (where != null && !where.isEmpty() ? where : "*"), 0);
         }
         out += "<datalist id=\"" + datalistId + "\">";
         if (emptyRow != null) {
@@ -2032,6 +2031,84 @@ public class utility {
         }
         return out;
     }
+
+
+    /**
+     * Create search input HRML control
+     *
+     * @param inputId
+     * @param databaseSchemaTable
+     * @param codeColumn
+     * @param descColumn
+     * @param tooltipColumn
+     * @param where
+     * @param emptyRow
+     * @param chacheIt
+     * @param onChange
+     * @param style
+     * @return
+     * @throws Throwable
+     */
+    public static String get_search_datalist_from_table(
+            String inputId, String databaseSchemaTable, String codeColumn,
+            String descColumn, String tooltipColumn,
+            String where, String emptyRow, boolean chacheIt,
+            String onChange, String style
+    ) throws Throwable {
+
+        String input = "<input class=\"auctionEditboxClass\"\n" +
+                "id=\""+inputId+"\"\n" +
+                "type=\"text\"\n" +
+                "value=\"\"\n" +
+                "placeholder=\"\"\n" +
+                "onchange=\""+onChange+"\"\n" +
+                "style=\""+style+"\"\n" +
+                "list=\""+(inputId+"_list")+"\"\n" +
+                "onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\"\n" +
+                "onblur=\"if(!this.value) { this.value=this.placeholder; onchange(this); }\"\n" +
+                ">\n";
+
+        String datalist = com.liquid.utility.get_datalist_from_table(
+                inputId+"_list",
+                databaseSchemaTable,
+                codeColumn,
+                descColumn,
+                tooltipColumn,
+                where, emptyRow, chacheIt
+        );
+
+        String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
+
+        return input + "\n" + datalist + "\n" + reset;
+    }
+
+
+    public static String get_search_text_box(
+            String inputId,
+            String onChange, String style
+    ) throws Throwable {
+
+        String input = "<input class=\"auctionEditboxClass\"\n" +
+                "id=\""+inputId+"\"\n" +
+                "type=\"text\"\n" +
+                "value=\"\"\n" +
+                "placeholder=\"\"\n" +
+                "onchange=\""+onChange+"\"\n" +
+                "style=\""+style+"\"\n" +
+                ">\n";
+
+        String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
+
+        return input + "\n" + reset;
+    }
+
+
+    public static String get_reset_button( String inputId ) {
+        return "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
+    }
+
+
+
 
     public static void resetDatalistCache() {
         glDataListCache.clear();

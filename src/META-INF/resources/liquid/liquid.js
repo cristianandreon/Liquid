@@ -650,6 +650,9 @@ class LiquidCtrl {
                                 }
                             } else {
                                 // Unselect item on lookup
+                                if(event.node.id == liquid.lastSelectedId) {
+                                    liquid.lastSelectedId = null;
+                                }
                                 if(liquid.mode === "lookup") {
                                     if(liquid.status === "open") {
                                         // Why to close the lookup ???
@@ -15390,9 +15393,9 @@ var Liquid = {
                     , changeMonth: true, changeYear: true
                     , onShow: function (o, $input, event) {
                         if($input) {
-                            var field = $input[0].getAttribute("linkedfield");
+                            var field = $input ? $input[0].getAttribute("linkedfield") : null;
                             var liquid = Liquid.getLiquid($input[0]);
-                            var opt = Liquid.setDatePickerOptions(this, liquid.tableJson.columns[Number(field)-1]);
+                            var opt = Liquid.setDatePickerOptions(this, field ? liquid.tableJson.columns[Number(field)-1] : null);
                             // jQ1124(obj).datetimepicker("option", opt);
                             var pure_value = $input ? $input[0].getAttribute("pure_value") : null;
                             if (pure_value) $($input).val(pure_value);
