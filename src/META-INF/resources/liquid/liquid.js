@@ -697,6 +697,8 @@ class LiquidCtrl {
                                             }
                                         }
                                     }
+                                    Liquid.onEvent(liquid, "onRowSelected", null);
+                                    liquid.lastSelectedId = null;
                                 }
                             }
                             Liquid.updateCaption(liquid);
