@@ -3750,7 +3750,16 @@ public class db {
             String sSTMTUpdate = null;
 
             if(DatabaseSchemaTable == null || bean == null || primaryKey == null) {
-                return new Object [] { false, -1, "missing database or bean or primary key name" };
+                if(bean != null) {
+                    String beanPrimaryKey = (String)utility.get(bean, "$primaryKey");
+                    if(beanPrimaryKey != null) {
+                        primaryKey = beanPrimaryKey;
+                    } else {
+                        return new Object[]{false, -1, "missing database or bean or primary key name"};
+                    }
+                } else {
+                    return new Object[]{false, -1, "missing database or bean or primary key name"};
+                }
             }
 
             try {
@@ -3919,7 +3928,7 @@ public class db {
             Object bean = load_bean((HttpServletRequest) requestParam, wrk.databaseSchemaTable, null, (Object) primaryKeyValue);
             if (bean != null) {
                 utility.set(bean, field, fieldValue);
-                return db.update(bean, wrk);
+                return db.update(bean, wrk, (HttpServletRequest) requestParam);
             }
         }
         return null;
@@ -5144,7 +5153,7 @@ public class db {
         out_string += "]";
         out_string += ",\"queryTime\":" + (lQueryTime - lStartTime);
         out_string += ",\"retrieveTime\":" + (lRetrieveTime - lQueryTime);
-        out_string += ",\"query\":\"" + utility.base64Encode((executingQuery != null ? executingQuery : "N/D")) + "\"";
+        out_string += ",\"query\":\"" + utility.base64Encode((executingQuery != null ? executingQuery : "N/D"))+ "\"";
         out_string += ",\"error\":\"" + utility.base64Encode((error != null ? error : "")) + "\"";
         out_string += "}";
 
@@ -5192,12 +5201,12 @@ public class db {
      * changed primary keys ] } ] }
      * @see db
      */
-    static public String save(Object bean, Object tbl_wrk) throws Exception, NoSuchFieldException, IllegalAccessException {
+    static public String save(Object bean, Object tbl_wrk, HttpServletRequest request) throws Exception, NoSuchFieldException, IllegalAccessException {
         if(tbl_wrk instanceof String) {
             tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String)tbl_wrk);
         }
         if(tbl_wrk != null) {
-            return insertUpdate(bean, tbl_wrk);
+            return insertUpdate(bean, tbl_wrk, request);
         } else {
             return null;
         }
@@ -5219,12 +5228,14 @@ public class db {
      * changed primary keys ] } ] }
      * @see db
      */
-    static public String insertUpdate(Object bean, Object tbl_wrk) throws Exception, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    static public String insertUpdate(Object bean, Object tbl_wrk, HttpServletRequest request) throws Exception, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
         workspace tblWrk = (workspace)tbl_wrk;
         String primaryKey = tblWrk.tableJson.getString("primaryKey");
         String databaseSchemaTable = null;
         Object primaryKeyValue = utility.getEx(bean, primaryKey);
         boolean foundRow = false;
+
+
         if(primaryKeyValue != null) {
             String where_condition = "";
             ArrayList<Object> selectedBeans = null;
@@ -5264,9 +5275,9 @@ public class db {
             }
         }
         if(foundRow) {        
-            return update(bean, tbl_wrk);
+            return update(bean, tbl_wrk, request);
         } else {
-            return insert(bean, tbl_wrk, null);
+            return insert(request, bean, tbl_wrk, null);
         }
     }
     
@@ -5291,8 +5302,8 @@ public class db {
     static public String insert(Object requestParam, Object bean, Object tbl_wrk) {
         return insert(requestParam, bean, tbl_wrk, null);
     }
-    static public String insert(Object bean, Object tbl_wrk, String foreignTables) {
-        return insert(null, bean, tbl_wrk, foreignTables);
+    static public String insert(Object bean, Object tbl_wrk, String foreignTables, HttpServletRequest request) {
+        return insert(request, bean, tbl_wrk, foreignTables);
     }
 
     /**
@@ -5554,7 +5565,7 @@ public class db {
      * changed primary keys ] } ] }
      * @see db
      */
-    static public String update(Object bean, Object tbl_wrk) {
+    static public String update(Object bean, Object tbl_wrk, HttpServletRequest request) {
         try {
             if (bean != null) {
                 if (tbl_wrk != null) {

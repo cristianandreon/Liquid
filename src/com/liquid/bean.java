@@ -558,9 +558,9 @@ public class bean {
 
             JSONArray cols = null;
             String table = null;
-            String primaryKey = null;
             String parentControlId = null;
             boolean bReadOnly = false;
+            String primaryKey = null;
 
             if(tbl_wrk.tableJson.has("readOnly")) {
                 Object oReadOnly = tbl_wrk.tableJson.get("readOnly");
@@ -621,6 +621,9 @@ public class bean {
             }
             // proprietà Table@rowId
             props.put("$tableKey", String.class);
+
+            // proprietà chiave primaria
+            props.put("$primaryKey", String.class);
 
             // Attributo Id del controllo parent
             attributes.put("$Parent" + "$controlId", String.class);
@@ -966,10 +969,6 @@ public class bean {
                 }
             }
 
-            boolean projectMode = false;
-            if (workspace.genesisToken != null && !workspace.genesisToken.isEmpty()) {
-                projectMode = true;
-            }
 
             className = className.replaceAll("@", "0");
             // .replaceAll("-", "_")
@@ -981,7 +980,7 @@ public class bean {
             }
 
             // rebuld every time the class if we are in project mode
-            if (projectMode) {
+            if (workspace.projectMode) {
                 if (clazz != null) {
                     className += "__rev$" + workspace.classMakeIndex++;
                     clazz = null;
@@ -1009,9 +1008,9 @@ public class bean {
                     for (int ir = 0; ir < rowsJson.length(); ir++) {
                         Object obj = clazz.newInstance();
                         JSONObject row = rowsJson.getJSONObject(ir);
-                        // String primaryKeyValue = null;
 
                         // Valorizza le proprietà corrispondenti ai campi
+                        // @return Object [] { bResult, primaryKey, error, primaryKeyValue }
                         Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, request);
                         if (resSet != null) {
                             if (!(boolean) resSet[0]) {
@@ -1022,8 +1021,9 @@ public class bean {
                             //
                             // set this table@rowId as processed
                             //
-                            String primaryKeyValue = String.valueOf( resSet[1] );
-                            utility.set(obj, "$tableKey", (String)(table+"@"+primaryKeyValue) );
+                            String primaryKeyValue = String.valueOf( resSet[3] );
+                            utility.set(obj, "$tableKey", (String)(table+"@"+primaryKey) );
+                            utility.set(obj, "$primaryKey", (String)(primaryKey) );
 
                         } else {
                             errors += "[Null result setting row " + (ir + 1) + "/" + (rowsJson.length()) + "]";
@@ -1063,6 +1063,7 @@ public class bean {
                     // set this table@rowId as processed
                     //
                     utility.set(obj, "$tableKey", (Object) mainTableKey);
+                    utility.set(obj, "$primaryKey", (String) primaryKey);
 
                     rowsObject.add(obj);
                 }
@@ -1235,11 +1236,13 @@ public class bean {
      * @param obj
      * @param tbl_wrk
      * @param row
-     * @return Object [] { bResult, keyValue, error }
+     * @return Object [] { bResult, primaryKey, error, primaryKeyValue }
      */
     static public Object[] set_bean_by_json_row_data(Object obj, workspace tbl_wrk, JSONObject row, HttpServletRequest request) {
         boolean bResult = false;
-        String keyValue = null;
+        String primaryKeyField = null;
+        Object primaryKeyValue = null;
+        String primaryKey = null;
         String error = "";
         if (obj != null) {
             if (tbl_wrk != null) {
@@ -1251,10 +1254,10 @@ public class bean {
 
                         if(tbl_wrk.tableJson.has("primaryKey")) {
                             try {
-                                keyValue = row.getString(tbl_wrk.tableJson.getString("primaryKey"));
+                                primaryKey = row.getString(tbl_wrk.tableJson.getString("primaryKey"));
                             } catch (Exception e) {
                                 try {
-                                    keyValue = row.getString(tbl_wrk.tableJson.getString("primaryKeyField"));
+                                    primaryKeyField = row.getString(tbl_wrk.tableJson.getString("primaryKeyField"));
                                 } catch (Exception e2) {
                                 }
                             }
@@ -1263,13 +1266,26 @@ public class bean {
                         for (int ic = 0; ic < cols.length(); ic++) {
                             String colName = cols.getJSONObject(ic).has("runtimeName") ? cols.getJSONObject(ic).getString("runtimeName") : cols.getJSONObject(ic).getString("name");
                             boolean autoIncString = cols.getJSONObject(ic).has("autoIncString") ? cols.getJSONObject(ic).getBoolean("autoIncString") : false;
-                            String field = null;
+                            String field = null, name = null;
                             String defaultValue = null;
                             Object value = null;
 
                             try {
+                                name = cols.getJSONObject(ic).getString("name");
                                 field = cols.getJSONObject(ic).getString("field");
                             } catch (Exception e) { /* value = String.valueOf(ic+1); */ }
+
+                            if(primaryKey == null) {
+                                if(field.equalsIgnoreCase(primaryKeyField)) {
+                                    primaryKey = name;
+                                }
+                            }
+                            if(primaryKeyField == null) {
+                                if(name.equalsIgnoreCase(primaryKey)) {
+                                    primaryKeyField = field;
+                                }
+                            }
+
 
                             boolean hasValue = false;
                             try {
@@ -1347,10 +1363,9 @@ public class bean {
                                     Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
                                     bResult = false;
                                 }
-                                try {
-                                    utility.set(obj, colName + "$Changed", false);
-                                } catch (Throwable th) {
-                                    error = "[ ERROR setting " + colName + "$Changed" + " : " + th.getLocalizedMessage() + "]";
+
+                                if(field.equalsIgnoreCase(primaryKeyField)) {
+                                    primaryKeyValue = value;
                                 }
                             }
                         }
@@ -1363,7 +1378,7 @@ public class bean {
                 }
             }
         }
-        return new Object[] { bResult, keyValue, error };
+        return new Object[] { bResult, primaryKey, error, primaryKeyValue };
     }
 
     /**
@@ -1908,7 +1923,7 @@ public class bean {
      * @param columns
      * @param keyColumn                 (needed value if keyOrWhereCondition is ArrayList StringBuffer CharSequence ..
      *                                  (if keyOrWhereCondition is type String "keyColumn" is omitted as "keyOrWhereCondition" is condidered as full where condition)
-     * @param keyOrWhereCondition       (value or where condition ... don't need 'WHERE' keyword)
+     * @param keyOrWhereCondition       (value or where condition ... need 'WHERE' keyword to set where condition, otherwise means value of the primaty key)
      *                                  (String = full where condition if keyColumn is null)
      *                                  (StringBufffer or CharSequence = primary key value : neee keyColumn)
      *                                  (* for all rows)
@@ -1937,7 +1952,7 @@ public class bean {
         //
         workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, controlId);
         if (tbl_wrk == null) {
-            return null;
+            throw new Exception("load_beans() : ControlId not found");
         }
 
 
@@ -1945,17 +1960,20 @@ public class bean {
             if("*".equalsIgnoreCase((String)keyOrWhereCondition)) {
                 sWhere = " WHERE 1=1";
             } else {
-                if (keyColumn == null || keyColumn.isEmpty()) {
-                    sWhere = " WHERE " + keyOrWhereCondition + "";
+                if (((String)keyOrWhereCondition).trim().startsWith("WHERE ")) {
+                    sWhere = " " + keyOrWhereCondition + "";
                 } else {
-                    keyColumn = ((String) keyColumn).trim();
-                    if (keyColumn.startsWith("WHERE ")) {
-                        keyColumn = ((String) keyColumn).substring(6);
+                    if (keyColumn == null || keyColumn.isEmpty()) {
+                        sWhere = " WHERE " + keyOrWhereCondition + "";
+                    } else {
+                        keyColumn = ((String) keyColumn).trim();
+                        if (keyColumn.startsWith("WHERE ")) {
+                            keyColumn = ((String) keyColumn).substring(6);
+                        }
+                        sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
                     }
-                    sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
                 }
             }
-
         } else if (keyOrWhereCondition instanceof StringBuffer) {
             // N.B.: Need key column ...
             if (keyColumn == null || keyColumn.isEmpty()) {
@@ -2671,6 +2689,8 @@ public class bean {
                                                         for (int ir = 0; ir < nBeans; ir++) {
                                                             JSONObject row = rowsJson.getJSONObject(ir);
                                                             tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+
+                                                            // @return Object [] { bResult, primaryKey, error, primaryKeyValue }
                                                             Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, request);
                                                             if (resSet != null) {
                                                                 if (!(boolean) resSet[0]) {

@@ -650,9 +650,6 @@ class LiquidCtrl {
                                 }
                             } else {
                                 // Unselect item on lookup
-                                if(event.node.id == liquid.lastSelectedId) {
-                                    liquid.lastSelectedId = null;
-                                }
                                 if(liquid.mode === "lookup") {
                                     if(liquid.status === "open") {
                                         // Why to close the lookup ???
@@ -697,7 +694,9 @@ class LiquidCtrl {
                                             }
                                         }
                                     }
-                                    Liquid.onEvent(liquid, "onRowSelected", null);
+                                    if(event.node.id == liquid.lastSelectedId) {
+                                        Liquid.onEvent(liquid, "onRowSelected", null);
+                                    }
                                     liquid.lastSelectedId = null;
                                 }
                             }

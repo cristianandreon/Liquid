@@ -918,7 +918,10 @@ public class utility {
             for (Field f : fields) {
                 try {
                     String fieldName = f.getName();
-                    if (fieldName.indexOf("$Changed") < 0 && fieldName.indexOf("$tableKey") < 0 && fieldName.indexOf("$Read") < 0) {
+                    if (fieldName.indexOf("$Changed") < 0
+                            && fieldName.indexOf("$tableKey") < 0
+                            && fieldName.indexOf("$primaryKey") < 0
+                            && fieldName.indexOf("$Read") < 0) {
                         Field field = bean.getClass().getDeclaredField(fieldName + "$Changed");
                         if (field != null) {
                             field.setAccessible(true);

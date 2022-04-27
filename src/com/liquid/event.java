@@ -815,7 +815,7 @@ public class event {
                         }
 
                         // ES.: Aggiornamento riga nel DB
-                        String updateResult = db.update(bean, tbl_wrk);
+                        String updateResult = db.update(bean, tbl_wrk, request);
 
                         // ES.: Passa al risultato l'elenco degli id modificati, per il refresh nel client
                         updateResults += (updateResults.length() > 0 ? "," : "") + (updateResult != null ? updateResult : "");
@@ -924,7 +924,7 @@ public class event {
                         if (Messagebox.show("Updating table (set priority += 1) ... continue operation ?", "Liquid", Messagebox.OK + Messagebox.CANCEL + Messagebox.QUESTION, 30, Messagebox.CANCEL) == Messagebox.OK) {
 
                             // ES.: Aggiornamento riga nel DB
-                            String updateResult = db.update(bean, tbl_wrk);
+                            String updateResult = db.update(bean, tbl_wrk, request);
 
                             // ES.: Passa al risultato l'elenco degli id modificati, per il refresh nel client
                             updateResults += (updateResults.length() > 0 ? "," : "") + updateResult;
