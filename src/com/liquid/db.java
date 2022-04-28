@@ -3472,6 +3472,11 @@ public class db {
                     }
                 }
 
+                if(workspace.projectMode) {
+                    System.out.print("// LIQUID Query: ");
+                    System.out.println(sqlSTMTUpdate);
+                }
+
                 int res = sqlSTMTUpdate.executeUpdate();
                 if (res < 0) {
                     System.err.println("Error updating db");
@@ -3681,6 +3686,11 @@ public class db {
                 }
 
 
+                if(workspace.projectMode) {
+                    System.out.print("// LIQUID Query: ");
+                    System.out.println(sqlSTMTUpdate);
+                }
+
                 int res = sqlSTMTUpdate.executeUpdate();
                 if (res < 0) {
                     System.err.println("Error updating db");
@@ -3843,6 +3853,11 @@ public class db {
                                 }
                             }
 
+
+                            if(workspace.projectMode) {
+                                System.out.print("// LIQUID Query: ");
+                                System.out.println(sqlSTMTUpdate);
+                            }
 
                             int res = sqlSTMTUpdate.executeUpdate();
                             if (res < 0) {
@@ -4444,7 +4459,7 @@ public class db {
                                         try {
                                             if (workspace.projectMode) {
                                                 executingQuery = tableTransactList.getSQL(liquid, i);
-                                                System.out.println("Query:" + executingQuery);
+                                                System.out.println("// LIQUID Query:" + executingQuery);
                                             }
                                             int res = 0;
                                             Object[] resArray = tableTransactList.executeSQL(liquid, i, connToUse, Statement.RETURN_GENERATED_KEYS);
@@ -4784,13 +4799,13 @@ public class db {
                         oValue = value = "CONVERT(DATETIME,'" + value + ")";
                         valueType = 0; // is an expression
                     }
-                } else if(oValue instanceof java.sql.Date) {
+                } else if (oValue instanceof java.sql.Date) {
                     // preserva il tipo dato
                     valueType = colTypes;
-                } else if(oValue instanceof java.util.Date) {
+                } else if (oValue instanceof java.util.Date) {
                     // preserva il tipo dato
                     valueType = colTypes;
-                } else if(oValue instanceof java.sql.Timestamp) {
+                } else if (oValue instanceof java.sql.Timestamp) {
                     // preserva il tipo dato
                     valueType = colTypes;
                 } else {
@@ -5772,6 +5787,12 @@ public class db {
                                 psdo.setObject(ip+1, params.get(ip));
                             }
                         }
+
+                        if(workspace.projectMode) {
+                            System.out.print("// LIQUID Query: ");
+                            System.out.println(psdo);
+                        }
+
                         int res = psdo.executeUpdate();
 
                         return "{\"res\":"+res+"}";

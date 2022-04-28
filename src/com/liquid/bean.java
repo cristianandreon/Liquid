@@ -1289,7 +1289,7 @@ public class bean {
 
                             boolean hasValue = false;
                             try {
-                                if(row.isNull(colName)) {
+                                if(row.has(colName) && row.isNull(colName)) {
                                     value = null;
                                     hasValue = true;
                                 } else {
@@ -1960,14 +1960,14 @@ public class bean {
             if("*".equalsIgnoreCase((String)keyOrWhereCondition)) {
                 sWhere = " WHERE 1=1";
             } else {
-                if (((String)keyOrWhereCondition).trim().startsWith("WHERE ")) {
+                if (((String)keyOrWhereCondition).trim().toUpperCase().startsWith("WHERE ")) {
                     sWhere = " " + keyOrWhereCondition + "";
                 } else {
                     if (keyColumn == null || keyColumn.isEmpty()) {
                         sWhere = " WHERE " + keyOrWhereCondition + "";
                     } else {
                         keyColumn = ((String) keyColumn).trim();
-                        if (keyColumn.startsWith("WHERE ")) {
+                        if (keyColumn.trim().toUpperCase().startsWith("WHERE ")) {
                             keyColumn = ((String) keyColumn).substring(6);
                         }
                         sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
