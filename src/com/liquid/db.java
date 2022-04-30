@@ -2856,7 +2856,7 @@ public class db {
 
                             } else {
                                 for (int ic = 0; ic < cols.length(); ic++) {
-                                    String columnAlias = ic < columns_alias.length ? (columns_alias != null ? columns_alias[ic] : null) : null;
+                                    String columnAlias = columns_alias != null && (ic < columns_alias.length) ? (columns_alias != null ? columns_alias[ic] : null) : null;
                                     try {
                                         if (ic < maxColumn || maxColumn <= 0) {
                                             JSONObject col = cols.getJSONObject(ic);

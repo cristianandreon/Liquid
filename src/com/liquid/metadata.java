@@ -655,11 +655,11 @@ public class metadata {
      */
     static public Class getJavaClass(Object oType) {
         if (oType instanceof Integer) {
-            return getJavaClass((Integer) oType);
+            return getJavaClass((int)(Integer) oType);
         } else if (oType instanceof Long) {
-            return getJavaClass(((Long) oType).intValue());
+            return getJavaClass((int)((Long) oType).intValue());
         } else if (oType instanceof String) {
-            return getJavaClass(Integer.parseInt((String) oType));
+            return getJavaClass((int)Integer.parseInt((String) oType));
         }
         return null;
     }

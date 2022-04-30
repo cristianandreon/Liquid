@@ -377,16 +377,18 @@ public class liquidize {
     }
     static String liquidizeString( String baseName, String controlIdSeparator, boolean bLastPart ) {
         String result = "";
-        String [] sParts = baseName.toString().split("\\.");
-        for(int ip=(bLastPart ? sParts.length-1 : 0); ip<sParts.length; ip++) {
-            String [] sSubParts =  sParts[ip].split("_");
-            result += (result.length()>0 ? (controlIdSeparator != null ? controlIdSeparator : "") : "");
-            for(int ips=0; ips<sSubParts.length; ips++) {
-                // String part = sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length()).toLowerCase();
-                if(sSubParts[ips].length()>0) {
-                    sSubParts[ips] = sSubParts[ips].replace("\"", "");
-                    String part = sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length());
-                    if(!part.isEmpty()) result += part;
+        if(baseName != null) {
+            String[] sParts = baseName.toString().split("\\.");
+            for (int ip = (bLastPart ? sParts.length - 1 : 0); ip < sParts.length; ip++) {
+                String[] sSubParts = sParts[ip].split("_");
+                result += (result.length() > 0 ? (controlIdSeparator != null ? controlIdSeparator : "") : "");
+                for (int ips = 0; ips < sSubParts.length; ips++) {
+                    // String part = sSubParts[ips].substring(0, 1).toUpperCase()+sSubParts[ips].substring(1, sSubParts[ips].length()).toLowerCase();
+                    if (sSubParts[ips].length() > 0) {
+                        sSubParts[ips] = sSubParts[ips].replace("\"", "");
+                        String part = sSubParts[ips].substring(0, 1).toUpperCase() + sSubParts[ips].substring(1, sSubParts[ips].length());
+                        if (!part.isEmpty()) result += part;
+                    }
                 }
             }
         }

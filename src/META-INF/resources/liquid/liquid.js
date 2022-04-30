@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.09
+// Liquid ver.2.10
 //
 //  First update 06-01-2020 - Last update 23-04-2022
 //
@@ -796,10 +796,10 @@ class LiquidCtrl {
                             if(iCol !== null && iCol >= 0) {
                                 if(liquid.tableJson.columns[iCol].isReflected === true)
                                     return;
-                                var validateResult = Liquid.validateField(liquid, liquid.tableJson.columns[iCol], event.newValue);
-                                if(validateResult !== null) {
-                                    if(validateResult[0] >= 0) {
-                                        if(!Liquid.isMirrorEvent(liquid, event.node) ) {
+                                if(!Liquid.isMirrorEvent(liquid, event.node) ) {
+                                    var validateResult = Liquid.validateField(liquid, liquid.tableJson.columns[iCol], event.newValue);
+                                    if(validateResult !== null) {
+                                        if(validateResult[0] >= 0) {
                                             event.newValue = validateResult[1];
                                             Liquid.registerFieldChange(liquid, event.node.id, event.node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ], event.column.colId, event.oldValue, event.newValue);
                                             Liquid.updateDependencies(liquid, liquid.tableJson.columns[iCol], null, event);
@@ -2494,7 +2494,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.07,
+    version: 2.10,
     appTitle: "LIQUID",
     controlid: "Liquid framework",
     debug: false,
@@ -2507,8 +2507,8 @@ var Liquid = {
     lang: "it",
     dateSep: '/',
     timeSep: ':',
-    showSecond:true,
-    showMillisec:true,
+    showSecond:false,
+    showMillisec:false,
     CMD_WAIT_FOR_ENABLE: 10,
     CMD_ENABLED: 15,
     CMD_VALIDATE: 20,
@@ -4148,6 +4148,7 @@ var Liquid = {
                 if (isDef(col.validate)) {
                     var command = col.validate;
                     var liquidCommandParams = Liquid.buildCommandParams(liquid, command, null);
+                    liquidCommandParams.params.push({data:{col:col, value:value}});
                     if (command.client) {
                         if (command.clientAfter !== true || command.clientBefore === true) {
                             validateResult = Liquid.executeClientSide(liquid, "validate:" + command.name, command.client, liquidCommandParams, command.isNative);
@@ -4173,7 +4174,7 @@ var Liquid = {
                                 liquid.xhr.open('POST', glLiquidServlet
                                     + '?operation=exec'
                                     + '&className=' + encodeURI(command.server)
-                                    // + '&clientData=' + encodeURI(clientData)
+                                    + '&clientData=' + encodeURI(JSON.stringify({validateField:col.name}))
                                     + '&controlId=' + liquid.controlId + (typeof liquid.srcForeignWrk !== "undefined" && liquid.srcForeignWrk ? '&tblWrk=' + liquid.srcForeignWrk : "")
                                     , false
                                 );
@@ -4215,7 +4216,7 @@ var Liquid = {
                                         try {
                                             // \b \f \n \r \t
                                             var responseText = Liquid.getXHRResponse(liquid.xhr.responseText);
-                                            responseText = responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                                            responseText = responseText ? responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : responseText;
                                             httpResultJson = JSON.parse(responseText);
                                             command.response = httpResultJson;
                                             if (httpResultJson) {
@@ -4227,6 +4228,8 @@ var Liquid = {
                                                     } catch (e) {
                                                         err = httpResultJson.error;
                                                     }
+                                                    // Implicit fail
+                                                    httpResultJson.fail = true;
                                                     Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "ERROR", err, {
                                                         text: "OK",
                                                         func: function () {
@@ -4246,12 +4249,12 @@ var Liquid = {
                                                         }
                                                     }, null);
                                                     anyMessage = true;
-                                                } else if (httpResultJson.message) {
+                                                } else if (httpResultJson.message || httpResultJson.info) {
                                                     var msg = null;
                                                     try {
-                                                        msg = atob(httpResultJson.message);
+                                                        msg = atob(httpResultJson.message ? httpResultJson.message : httpResultJson.info);
                                                     } catch (e) {
-                                                        msg = httpResultJson.message;
+                                                        msg = httpResultJson.message ? httpResultJson.message : httpResultJson.info;
                                                     }
                                                     Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "MESSAGE", msg, {
                                                         text: "OK",
@@ -5041,10 +5044,13 @@ var Liquid = {
                 var result = {retVal: 0, selectionChanged: false};
                 var bFoundSelection = false;
                 var bFirstTimeLoad = false;
+                var datasetReplaced = true;
                 var disableLinkedControlRefresh = false;
+                var allowPartialLoadDatasetReplace = false;
+
                 try {
                     // \b \f \n \r \t
-                    var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b"); // .replace(/(?:[\r\\])/g, "\\\\");
+                    var responseText = xhr.responseText ? xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : xhr.responseText;
                     responseText = responseText.substring(0, responseText.lastIndexOf("}") + 1);
 
 
@@ -5056,10 +5062,18 @@ var Liquid = {
                     liquid.loadCounter++;
                     liquid.absoluteLoadCounter++;
 
+                    if(Liquid.isFormX(liquid) || Liquid.isDialogX(liquid)) {
+                        allowPartialLoadDatasetReplace = true
+                    }
+
                     if (responseText) {
                         var httpResultJson = JSON.parse(responseText);
                         if (!xhr.params.ids) { // set data as partial
                             liquid.nRows = httpResultJson.nRows;
+                        } else {
+                            if (allowPartialLoadDatasetReplace) {
+                                liquid.nRows = httpResultJson.nRows;
+                            }
                         }
 
                         // columns redifined by server
@@ -5075,10 +5089,14 @@ var Liquid = {
                         // current selection
                         var selNodes = liquid.gridOptions.api.getSelectedNodes();
 
+                        // set full rowset ?
+                        var setFullRowset = false;
+
                         if (xhr.params.ids) { // set data as partial
                             result.retVal = 2;
                             var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                             var itemsToUpdate = [];
+                            var FieldsFoundCounter = 0;
                             for (var ir = 0; ir < httpResultJson.resultSet.length; ir++) {
                                 var idRs = httpResultJson.resultSet[ir][liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                                 if (isDef(nodes) && nodes.length > 0) {
@@ -5086,6 +5104,7 @@ var Liquid = {
                                         var data = nodes[ind].data;
                                         var id = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                                         if (id === idRs) {
+                                            FieldsFoundCounter++;
                                             for (var ic = 0; ic < liquid.tableJson.columns.length; ic++) {
                                                 var col = liquid.tableJson.columns[ic];
                                                 if (Liquid.addFlashingField(liquid, col, data, httpResultJson.resultSet[ir])) {
@@ -5099,11 +5118,23 @@ var Liquid = {
                                     }
                                 }
                             }
-                        } else {  // set data as full
+                            if (!FieldsFoundCounter) {
+                                if (allowPartialLoadDatasetReplace) {
+                                    // set data as full
+                                    setFullRowset = true;
+                                    datasetReplaced = true;
+                                }
+                            }
+                        } else {
+                            // set data as full
+                            setFullRowset = true;
+                        }
+
+                        if(setFullRowset) {
                             result.retVal = 1;
                             try {
                                 if (isDef(httpResultJson.resultSet)) {
-                                    if(Object.keys(httpResultJson.resultSet).length === 0) {
+                                    if (Object.keys(httpResultJson.resultSet).length === 0) {
                                         liquid.gridOptions.api.setRowData(null);
                                     } else {
                                         httpResultJson.resultSet = Liquid.Recordset2LocalDate(liquid, httpResultJson.resultSet);
@@ -5126,7 +5157,6 @@ var Liquid = {
                                 Liquid.resetLayoutsAddingNode(liquid);
                             }
                         }
-
                         if (liquid.nRows <= 0) {
                             // server didn't compute ?
                             var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
@@ -5162,6 +5192,7 @@ var Liquid = {
                         if ((!bFoundSelection && selNodes && selNodes.length > 0)
                             || (anyFieldsChange)
                             || (bFirstTimeLoad)
+                            || (datasetReplaced)
                             || (liquid.onceRefreshAll)
                         ) {
                             var refreshReason = "";
@@ -6562,7 +6593,7 @@ var Liquid = {
                                         if (selNodes) {
                                             Liquid.addMirrorEvent(liquid, selNodes[0]);
                                         }
-                                        if (Liquid.onPreparedRow(liquid, false) > 0) {
+                                        if (Liquid.onPreparedRow(liquid, false, false) > 0) {
                                             // N.B.: onPastedRow is system event
                                             Liquid.onEvent(liquid, "onPastedRow", liquid.addingRow, null, null, false);
                                         } else {
@@ -8717,7 +8748,7 @@ var Liquid = {
             if (xhr.status === 200) {
                 try {
                     // \b \f \n \r \t
-                    var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b");
+                    var responseText = xhr.responseText ? xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : xhr.responseText;
                     responseText = Liquid.getXHRResponse(responseText);
                     if (responseText) {
                         httpResultJson = JSON.parse(responseText);
@@ -8872,7 +8903,7 @@ var Liquid = {
             }
             if (command.name === "insert") {
                 Liquid.addRow(liquid);
-                Liquid.onPreparedRow(liquid, true);
+                Liquid.onPreparedRow(liquid, true, false);
             } else if (command.name === "update") {
             } else if (command.name === "delete") {
                 // no prepare operations here
@@ -9364,12 +9395,16 @@ var Liquid = {
                                     || addingValue === ''
                                     || (addingValue == 'N' && liquid.tableJson.columns[ic].size == 1)
                                 ) {
+                                    var tooltipValue = null;
                                     var fieldName = liquid.tableJson.columns[ic].name;
                                     var labelName = "label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+                                    var tooltipName = "tooltip" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
                                     if (isDef(liquid.tableJson.columns[ic][labelName]))
                                         fieldName = liquid.tableJson.columns[ic][labelName];
+                                    if (isDef(liquid.tableJson.columns[ic][tooltipName]))
+                                        tooltipValue = liquid.tableJson.columns[ic][tooltipName];
                                     msg += (Liquid.lang === 'eng' ? " the field " : "il campo ") + "<b>"
-                                        + fieldName
+                                        + fieldName + (tooltipValue ? " ("+tooltipValue+") " : "")
                                         + "</b>" + (Liquid.lang === 'eng' ? " is required" : " e' richiesto") + "</br>";
                                     liquid.tableJson.columns[ic].isChecked = true;
                                     liquid.tableJson.columns[ic].isValidated = false;
@@ -10348,7 +10383,7 @@ var Liquid = {
                         if (command.name === "insert") {
                             Liquid.addRow(obj, command);
                             var result = Liquid.onEvent(obj, "onInserting", liquid.addingRow, function (liquid, result) {
-                                Liquid.onPreparedRow(liquid, true);
+                                Liquid.onPreparedRow(liquid, true, false);
                             }, liquid, defaultValue, bAlwaysCallback);
                             if (result.systemResult === defaultValue) {
                                 liquid.currentCommand.step = Liquid.CMD_ENABLED;
@@ -13928,7 +13963,15 @@ var Liquid = {
                                 }
                             }
 
-                            obj.title = "" + linkeCol.name + "";
+                            var tooltip = linkeCol["name"];
+                            var tooltipName = "tooltip" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+                            var labelName = "label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+                            if (isDef(linkeCol[labelName]))
+                                tooltip = linkeCol[labelName];
+                            if (isDef(linkeCol[tooltipName]))
+                                tooltip = linkeCol[tooltipName];
+
+                            obj.title = "" + tooltip + "";
 
 
                             // max size
@@ -15202,7 +15245,7 @@ var Liquid = {
             try {
                 jQ1124(obj).datetimepicker({
                     showAnim: "slideDown"
-                    , step: 1
+                    , step: 60
                     , format: format
                     , formatDate: formatDate
                     , formatTime: timeFormat
@@ -15210,12 +15253,13 @@ var Liquid = {
                     , showMillisec: Liquid.showMilliSeconds
                     , stepHour: 1
                     , stepMinute: 1
-                    , stepSecond: 1
+                    , stepSecond: 15
+                    , defaultDate:true
+                    , defaultTime:'00:00'
                     , closeOnDateSelect: closeOnDateSelect
                     , showTimePicker: timePicker
                     , timepicker: timePicker
                     , timePickerSeconds: false
-                    , timePickerIncrement: 1
                     , dayOfWeekStart: 1
                     , changeMonth: true,
                     changeYear: true
@@ -15241,6 +15285,7 @@ var Liquid = {
                             jQ1124(controlName).css('z-index', 90000);
                             jQ1124().datetimepicker("value", pure_value ? pure_value : value);
                             this.setOptions(opt);
+                            jQ1124.datetimepicker.setLocale(opt.lang);
                             console.info("DATETIMEPICKER:onClose()");
                         }
                     },
@@ -15334,7 +15379,7 @@ var Liquid = {
             if (isDef(col.startDate)) opt.startDate = col.startDate;
             if (isDef(col.format)) opt.format = col.format;
             if (isDef(col.timeFormat)) opt.timeFormat = col.timeFormat;
-            if (isDef(col.allowTimes)) opt.allowTimes = col.allowTimes;
+            if (isDef(col.allowTimes)) opt.allowTimes = col.allowTimes; else opt.allowTimes = true;
             if (isDef(col.datepicker)) opt.datepicker = col.datepicker;
             if (isDef(col.showTimePicker)) opt.showTimePicker = col.showTimePicker;
             if (isDef(col.lang)) opt.lang = col.lang;
@@ -15346,8 +15391,8 @@ var Liquid = {
             if (isDef(col.dayOfWeekStart)) opt.dayOfWeekStart = col.dayOfWeekStart;
             if (isDef(col.changeMonth)) opt.changeMonth = col.changeMonth;
             if (isDef(col.changeYear)) opt.changeYear = col.changeYear;
-            opt.lang = Liquid.lang;
         }
+        opt.lang = Liquid.lang;
         return opt;
     },
     setDateTimePickerNode: function (obj, type, obj_format) {
@@ -15401,12 +15446,7 @@ var Liquid = {
                             var pure_value = $input ? $input[0].getAttribute("pure_value") : null;
                             if (pure_value) $($input).val(pure_value);
                             opt.value = pure_value;
-                            // NO jQ1124(obj).val(pure_value);
                             this.val(pure_value);
-                            // jQ1124(obj).datetimepicker("value", pure_value);
-                            // jQ1124(obj).datetimepicker({value:pure_value});
-                            // jQ1124(obj).datetimepicker({setDate:pure_value});
-                            // jQ1124(obj).datetimepicker({defaultDate:pure_value});
                         }
                         $input[0].setAttribute("dp", "1");
                         jQ1124(obj).css('z-index', 99900);
@@ -17816,7 +17856,7 @@ var Liquid = {
         }
         return "";
     },
-    onPreparedRow:function(obj, bRegisterModify) {
+    onPreparedRow:function(obj, bRegisterModify, bValidate) {
         var retVal = true;
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
@@ -17845,7 +17885,7 @@ var Liquid = {
                                 for (var ic = 0; ic < liquid.tableJson.columns.length; ic++) {
                                     var col = liquid.tableJson.columns[ic];
                                     if (col.isReflected !== true || isDef(col.default)) {
-                                        var validateResult = Liquid.validateField(liquid, col, liquid.addingRow[col.field]);
+                                        var validateResult = bValidate ? (Liquid.validateField(liquid, col, liquid.addingRow[col.field])) : ([1, liquid.addingRow[col.field]]);
                                         if (validateResult !== null) {
                                             if (validateResult[0] >= 0) {
                                                 liquid.addingRow[col.field] = validateResult[1];
@@ -19849,7 +19889,7 @@ var Liquid = {
                                         }
                                     }
                                 }
-                                if(Liquid.onPreparedRow(liquid, false) > 0) {
+                                if(Liquid.onPreparedRow(liquid, false, true) > 0) {
                                     // N.B.: onPastedRow is system event
                                     Liquid.onEvent(liquid, "onPastedRow", liquid.addingRow, null, null, false);
                                 } else {

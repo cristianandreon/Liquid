@@ -8,6 +8,7 @@ import com.google.gson.*;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -161,6 +162,7 @@ public class bean {
         String errors = "";
         String executingQuery = null;
         Connection conn = null;
+        String connError = null;
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
 
@@ -189,9 +191,14 @@ public class bean {
                         // Connessione al DB ( da pr4edefinita, da JSON o da sessione )
                         try {
 
-                            Object [] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
-                            conn = (Connection)connResult[0];
-                            String connError = (String)connResult[1];
+                            if(transaction.isTransaction(request)) {
+                                conn = transaction.getTransaction(request);
+                            } else {
+                                Object[] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
+                                conn = (Connection) connResult[0];
+                                connError = (String) connResult[1];
+                            }
+
                             if (conn != null) {
                                 String columnsList = (String) queryInfo[0];
                                 String primaryKey = (String) queryInfo[1];
@@ -410,9 +417,10 @@ public class bean {
                                 System.err.println("// get_bean() no connection ... error is : "+connError);
                             }
 
-                        } catch (Throwable e) {
-                            errors += "Error:" + e.getLocalizedMessage();
-                            System.err.println("// get_bean() [" + controlId + "] Error:" + e.getLocalizedMessage());
+                        } catch (Throwable th) {
+                            errors += "Error:" + th.getLocalizedMessage();
+                            System.err.println("// get_bean() [" + controlId + "] Error:" + th.getLocalizedMessage());
+                            throw new Exception(th);
 
                         } finally {
 
@@ -431,16 +439,22 @@ public class bean {
                                 }
                             }
                             try {
-                                if (conn != null) {
-                                    if(!conn.getAutoCommit()) {
-                                        conn.commit();
+                                if(transaction.isTransaction(request)) {
+                                } else {
+                                    if (conn != null) {
+                                        if (!conn.getAutoCommit()) {
+                                            conn.commit();
+                                        }
                                     }
                                 }
                             } catch (SQLException ex) {
                                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
                             }
                             // closing the connections (with callbacks)
-                            connection.closeConnection(conn);
+                            if(transaction.isTransaction(request)) {
+                            } else {
+                                connection.closeConnection(conn);
+                            }
                         }
                     }
                 } else {
@@ -1276,12 +1290,12 @@ public class bean {
                             } catch (Exception e) { /* value = String.valueOf(ic+1); */ }
 
                             if(primaryKey == null) {
-                                if(field.equalsIgnoreCase(primaryKeyField)) {
+                                if(field != null && field.equalsIgnoreCase(primaryKeyField)) {
                                     primaryKey = name;
                                 }
                             }
                             if(primaryKeyField == null) {
-                                if(name.equalsIgnoreCase(primaryKey)) {
+                                if(name != null && name.equalsIgnoreCase(primaryKey)) {
                                     primaryKeyField = field;
                                 }
                             }
@@ -1364,7 +1378,7 @@ public class bean {
                                     bResult = false;
                                 }
 
-                                if(field.equalsIgnoreCase(primaryKeyField)) {
+                                if(field != null && field.equalsIgnoreCase(primaryKeyField)) {
                                     primaryKeyValue = value;
                                 }
                             }
@@ -1817,6 +1831,253 @@ public class bean {
         return null;
     }
 
+
+    /**
+     * Loan bean from SQL
+     *
+     * @param request
+     * @param sql
+     * @param params
+     * @param maxRows
+     * @return
+     * @throws Exception
+     * @throws Throwable
+     */
+    static public Object load_bean(HttpServletRequest request, String sql, ArrayList<Object> params, long maxRows) throws Exception, Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest)null, sql, params,1);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * Loan beans from SQL
+     *
+     * @param request
+     * @param sql
+     * @param params
+     * @param maxRows
+     * @return
+     * @throws Exception
+     * @throws Throwable
+     */
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String sql, ArrayList<Object> params, long maxRows) throws Exception, Throwable {
+        ArrayList<Object> beans = null;
+        String controlId = null;
+        String errors = "", connError = null;
+        workspace tbl_wrk = null;
+        Connection conn = null;
+        JSONArray cols = new JSONArray();
+
+        if(sql != null) {
+
+            try {
+
+                controlId = get_query_hash(sql);
+                tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+                if (tbl_wrk == null) {
+                    tbl_wrk = new workspace();
+                    tbl_wrk.tableJson = new JSONObject();
+                    tbl_wrk.tableJson.put("columns", cols);
+                    tbl_wrk.controlId = controlId;
+                    workspace.glTblWorkspaces.add(tbl_wrk);
+                } else {
+                    cols = tbl_wrk.tableJson.getJSONArray("columns");
+                }
+
+                if(transaction.isTransaction(request)) {
+                    conn = transaction.getTransaction(request);
+                } else {
+                    Object[] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
+                    conn = (Connection) connResult[0];
+                    connError = (String) connResult[1];
+                }
+
+
+                long lStartTime = System.currentTimeMillis();
+                PreparedStatement psdo = null;
+                ResultSet rsdo = null;
+                try {
+                    // TODO: Migliramento sicurezza nel caso di stringa malformata
+                    // N.B.: Gestione degli apici a carico della chiamante (SQL Ignection)
+                    if (conn != null) {
+                        psdo = conn.prepareStatement(sql);
+                        if(params != null) {
+                            for (int iParam = 0; iParam < params.size(); iParam++) {
+                                db.set_statement_param( psdo, iParam+1, params.get(iParam) );
+                            }
+                        }
+                        rsdo = psdo.executeQuery();
+                    } else {
+                        String error = " [" + (controlId) + "] Connection Error:" + connError + "]";
+                        errors += error;
+                        System.err.println(error);
+                    }
+                } catch (Exception e) {
+                    errors += " [" + (controlId) + "] Query Error:" + e.getLocalizedMessage() + " executingQuery:" + sql + "]" + "[Driver:" + tbl_wrk.driverClass + "]";
+                    System.err.println(sql);
+                    System.err.println("// Error:" + e.getLocalizedMessage());
+                    throw e;
+                }
+
+                long lQueryTime = System.currentTimeMillis();
+
+                if (rsdo != null) {
+                    String fieldValue = null;
+                    String column_alias_list = null;
+
+                    if(cols.length() == 0) {
+                        ResultSetMetaData rsmd = rsdo.getMetaData();
+                        if (rsmd != null) {
+                            for (int ic = 1; ic < rsmd.getColumnCount() + 1; ic++) {
+                                JSONObject col = new JSONObject();
+                                String name = rsmd.getColumnLabel(ic);
+                                // column_alias_list += (ic > 0 ? "," : "") + name;
+                                col.put("name", name);
+                                col.put("type", rsmd.getColumnType(ic));
+                                col.put("size", rsmd.getColumnDisplaySize(ic));
+                                col.put("precision", rsmd.getPrecision(ic));
+                                col.put("scale", rsmd.getScale(ic));
+                                cols.put(col);
+                            }
+                        }
+                        tbl_wrk.tableJson.put("table", rsmd.getTableName(1));
+                        tbl_wrk.tableJson.put("schema", rsmd.getSchemaName(1));
+                        tbl_wrk.tableJson.put("database", rsmd.getCatalogName(1));
+                        tbl_wrk.databaseSchemaTable = workspace.getDatabaseSchemaTable(rsmd.getCatalogName(1), rsmd.getSchemaName(1), rsmd.getTableName(1));
+                    } else {
+                        column_alias_list = null;
+                    }
+
+                    String[] columns_alias = null; // column_alias_list.split(",");
+                    String[] columns_json = null;
+                    boolean bColumnsResolved = false;
+
+                    int[] colTypes = null; // new int[cols.length()];
+                    int[] colPrecs = null; // new int[cols.length()];
+                    int[] colDigits = null; // new int[cols.length()];
+                    boolean[] colNullable = null; // new boolean[cols.length()];
+                    String primaryKeyColumn = null;
+                    int cRow = 0, startRow = 0, endRow = 0;
+                    boolean skipMissingColumn = false;
+
+
+                    // TODO : parametri da valorizzare e debug
+                    Object[] recordset = get_recordset(tbl_wrk,
+                            sql,
+                            rsdo,
+                            cols,
+                            colTypes,
+                            colPrecs,
+                            colDigits,
+                            colNullable,
+                            primaryKeyColumn,
+                            cRow, startRow, endRow, maxRows,
+                            columns_alias,
+                            columns_json,
+                            null,
+                            bColumnsResolved,
+                            false,
+                            false,
+                            -1,
+                            null,
+                            skipMissingColumn,
+                            request
+                    );
+
+                    // Freee connection as soon as possible
+                    if (rsdo != null) {
+                        rsdo.close();
+                    }
+                    if (psdo != null) {
+                        psdo.close();
+                    }
+                    if(transaction.isTransaction(request)) {
+                    } else {
+                        if (conn != null) {
+                            if (!conn.getAutoCommit()) {
+                                conn.commit();
+                            }
+                        }
+                    }
+
+
+                    // closing the connections (with callbacks)
+                    if(transaction.isTransaction(request)) {
+                    } else {
+                        connection.closeConnection(conn);
+                    }
+                    conn = null;
+
+
+                    if (recordset != null) {
+                        // Agginta eventuali errori
+                        // out_values_string += (String)recordset[1];
+                        // out_codes_string += (String)recordset[2];
+                        // ids = (ArrayList<Long>)recordset[3];
+                        errors += (String) recordset[4];
+
+                        String fieldSets = (String) recordset[0];
+                        fieldSets = fieldSets != null ? fieldSets.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t").replace("\f", "\\f").replace("\b", "\\b") : "";
+
+                        JSONArray rowsJson = new JSONArray("[" + fieldSets + "]");
+                        int resultBean = 0, level = 0;
+
+                        // Array foreign tables di partenza
+                        // JSONArray foreignTablesJson = null;
+                        // try { foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables"); } catch(Exception e) {}
+                        // Array foreign tables di partenza
+                        JSONArray foreignTablesJson = null;
+                        if(tbl_wrk.tableJson.has("foreignTables")) {
+                            foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables");
+                        }
+
+                        //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
+                        Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
+                        if ((int) beanResult[0] >= 0) {
+                            // Updating the foreignTables (some info may be added)
+                            try { tbl_wrk.tableJson.put("foreignTables", foreignTablesJson); } catch (Exception e) { }
+                            return (ArrayList<Object>) beanResult[1];
+                        } else {
+                            throw new Exception("Create bean error:"+beanResult[3]);
+                        }
+                    }
+                }
+
+            } catch (Throwable e) {
+                errors += "Error:" + e.getLocalizedMessage();
+                System.err.println("// get_beans() [" + controlId + "] Error:" + e.getLocalizedMessage());
+                if(transaction.isTransaction(request)) {
+                    throw e;
+                } else {
+                    throw e;
+                }
+
+            } finally {
+                // closing the connections (with callbacks)
+                if(transaction.isTransaction(request)) {
+                } else {
+                    connection.closeConnection(conn);
+                }
+            }
+        }
+        return null;
+    }
+
+
+    private static String get_query_hash(String sql) {
+        int hash = 7;
+        for (int i = 0; i < sql.length(); i++) {
+            hash = hash*31 + sql.charAt(i);
+        }
+        return "SQL#"+hash;
+    }
+
+
     /**
      * Create all beans from primaryKey value
      *
@@ -2186,6 +2447,7 @@ public class bean {
         String order_by_condition = null;
 
         Connection conn = null;
+        String connError = null;
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
 
@@ -2314,9 +2576,13 @@ public class bean {
                     + (order_by_condition != null ? order_by_condition : "")
                     ;
 
-            Object [] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
-            conn = (Connection)connResult[0];
-            String connError = (String)connResult[1];
+            if(transaction.isTransaction(request)) {
+                conn = transaction.getTransaction(request);
+            } else {
+                Object[] connResult = connection.getConnection(null, request, tbl_wrk.tableJson);
+                conn = (Connection) connResult[0];
+                connError = (String) connResult[1];
+            }
 
             long lStartTime = System.currentTimeMillis();
             try {
@@ -2326,7 +2592,7 @@ public class bean {
                     psdo = conn.prepareStatement(executingQuery);
                     if(where_condition_params != null) {
                         for (int iParam = 0; iParam < where_condition_params.size(); iParam++) {
-                            psdo.setString(iParam + 1, where_condition_params.get(iParam));
+                            db.set_statement_param( psdo, iParam+1, where_condition_params.get(iParam) );
                         }
                     }
                     rsdo = psdo.executeQuery();
@@ -2385,14 +2651,20 @@ public class bean {
                 if (psdo != null) {
                     psdo.close();
                 }
-                if (conn != null) {
-                    if(!conn.getAutoCommit()) {
-                        conn.commit();
+                if(transaction.isTransaction(request)) {
+                } else {
+                    if (conn != null) {
+                        if (!conn.getAutoCommit()) {
+                            conn.commit();
+                        }
                     }
                 }
 
                 // closing the connections (with callbacks)
-                connection.closeConnection(conn);
+                if(transaction.isTransaction(request)) {
+                } else {
+                    connection.closeConnection(conn);
+                }
                 conn = null;
 
                 if (recordset != null) {
@@ -2432,11 +2704,18 @@ public class bean {
         } catch (Throwable e) {
             errors += "Error:" + e.getLocalizedMessage();
             System.err.println("// get_beans() [" + controlId + "] Error:" + e.getLocalizedMessage());
-            throw e;
+            if(transaction.isTransaction(request)) {
+                throw e;
+            } else {
+                throw e;
+            }
 
         } finally {
             // closing the connections (with callbacks)
-            connection.closeConnection(conn);
+            if(transaction.isTransaction(request)) {
+            } else {
+                connection.closeConnection(conn);
+            }
         }
         return null;
     }

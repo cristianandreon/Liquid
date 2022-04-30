@@ -41,6 +41,8 @@ public class DateUtil {
     public static DateFormat IN_TIMESTAMP_FORMAT = new SimpleDateFormat("d/M/yy H:mm:ss.SSS");
     public static DateFormat IN_TIMESTAMP_FORMAT2 = new SimpleDateFormat("dd/MM/yyyy H:mm:ss.SSS");
 
+    public static DateFormat IN_TIMESTAMP_FORMAT3 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     public static DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyyMMddkkmmss");
 
     public static Calendar calendar = new GregorianCalendar();
@@ -472,7 +474,11 @@ public class DateUtil {
         try {
             return new java.sql.Timestamp(IN_TIMESTAMP_FORMAT.parse(((String)value).replace("-", "/")).getTime());
         } catch(Exception e) {
-            return new java.sql.Timestamp(IN_TIMESTAMP_FORMAT2.parse(((String)value).replace("-", "/")).getTime());
+            try {
+                return new java.sql.Timestamp(IN_TIMESTAMP_FORMAT2.parse(((String)value).replace("-", "/")).getTime());
+            } catch(Exception e2) {
+                return new java.sql.Timestamp(IN_TIMESTAMP_FORMAT3.parse((String)value).getTime());
+            }
         }
     }
 

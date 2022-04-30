@@ -21,7 +21,8 @@ public class transaction {
      */
     public static boolean isTransaction(HttpServletRequest request) throws SQLException {
         if(request != null) {
-            return (boolean) request.getSession().getAttribute("Liquid.connection");
+            Object oConnection = request.getSession().getAttribute("Liquid.connection");
+            return (boolean) (oConnection instanceof Boolean ? oConnection : false);
         } else {
             return false;
         }

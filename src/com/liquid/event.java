@@ -110,6 +110,7 @@ public class event {
                 try {
                     return process_next_event(retVal, tbl_wrk, params, clientData, (Object) request);
                 } catch (Exception e) {
+                    System.err.println(e);
                 }
 
 
@@ -123,7 +124,7 @@ public class event {
                 System.err.println(" execute() [" + controlId + "] Error:" + th.getLocalizedMessage());
             }
 
-            if (error != null) {
+            if (error != null && !error.isEmpty()) {
                 errorJson = "{ \"error\":\"" + utility.base64Encode(error.getBytes()) + "\"}";
             }
 
@@ -132,7 +133,7 @@ public class event {
             System.err.println(" execute() [" + controlId + "] Error:" + e.getLocalizedMessage());
             errorJson = "{ \"error\":\"" + utility.base64Encode(error.getBytes()) + "\"}";
         }
-        return errorJson;
+        return errorJson != null && !errorJson.isEmpty() ? error : retVal;
     }
 
 
