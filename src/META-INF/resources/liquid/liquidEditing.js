@@ -1142,11 +1142,11 @@ var LiquidEditing = {
                                             if(foreignLiquid) {
                                                 controlId = sel["FOREIGN_TABLE"];
                                             } else {
-                                                foreignLiquid = Liquid.getProperty(sel["FOREIGN_TABLE"]);
+                                                foreignLiquid = Liquid.getJSProperty(sel["FOREIGN_TABLE"]);
                                                 if(foreignLiquid) {
                                                     controlId = foreignLiquid;
                                                 } else {
-                                                    foreignLiquid = Liquid.getProperty(globalVarName);
+                                                    foreignLiquid = Liquid.getJSProperty(globalVarName);
                                                     if(foreignLiquid) { // point to js global var
                                                         controlId = globalVarName+".json";
                                                     }                                                    

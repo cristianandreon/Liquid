@@ -519,7 +519,7 @@ public class workspace {
                 if(utility.compare_db_schema_table(wrkDatabaseSchemaTable, srcDatabaseSchemaTable)) {
                     if(controlId != null) {
                         if(controlId.equalsIgnoreCase(tblWorkspace.controlId)) {
-                            return foundWorkspace;
+                            return tblWorkspace;
                         }
                         String [] controlIdParts = controlId.split("\\@");
                         String [] tblWrkControlIdParts = tblWorkspace.controlId.split("\\@");
@@ -1089,6 +1089,8 @@ public class workspace {
                             //
                             // Contenuto modificato : distruzione di tutti i controlli nidificati (es. foreign tables)
                             //
+                            String info = "Control was changed:" + controlId + " ..reloading..";
+                            System.out.println(info);
                             if(tblWorkspace.tableJson.has("foreignTables")) {
                                 Object oforeignTables = tblWorkspace.tableJson.get("foreignTables");
                                 if(oforeignTables instanceof JSONArray) {
@@ -2584,13 +2586,16 @@ public class workspace {
                                     cmd.put("size", 20);
                                 }
                                 if (text == null) {
-                                    cmd.put("text", "Aggiungi");
+                                    cmd.put("text", "Add");
+                                    cmd.put("text_it", "Aggiungi");
                                 }
                                 if (labels == null) {
-                                    cmd.put("labels", new JSONArray("[\"Salva\"]"));
+                                    cmd.put("labels", new JSONArray("[\"Save\"]"));
+                                    cmd.put("labels_it", new JSONArray("[\"Salva\"]"));
                                 }
                                 if (rollback == null || rollback.isEmpty()) {
-                                    cmd.put("rollback", "Annulla");
+                                    cmd.put("rollback", "Cancel");
+                                    cmd.put("rollback_it", "Annulla");
                                 }
                                 if (rollbackImg == null || rollbackImg.isEmpty()) {
                                     cmd.put("rollbackImg", "cancel.png");
@@ -2612,13 +2617,16 @@ public class workspace {
                                     cmd.put("size", 20);
                                 }
                                 if (text == null) {
-                                    cmd.put("text", "Modifica");
+                                    cmd.put("text", "Modify");
+                                    cmd.put("text_it", "Modifica");
                                 }
                                 if (labels == null) {
-                                    cmd.put("labels", new JSONArray("[\"Salva\"]"));
+                                    cmd.put("labels", new JSONArray("[\"Save\"]"));
+                                    cmd.put("labels_it", new JSONArray("[\"Salva\"]"));
                                 }
                                 if (rollback == null || rollback.isEmpty()) {
-                                    cmd.put("rollback", "Annulla");
+                                    cmd.put("rollback", "Cancel");
+                                    cmd.put("rollback_it", "Annulla");
                                 }
                                 if (rollbackImg == null || rollbackImg.isEmpty()) {
                                     cmd.put("rollbackImg", "cancel.png");
@@ -2639,13 +2647,16 @@ public class workspace {
                                     cmd.put("size", 20);
                                 }
                                 if (text == null) {
-                                    cmd.put("text", "Cancella");
+                                    cmd.put("text", "Delete");
+                                    cmd.put("text_it", "Cancella");
                                 }
                                 if (labels == null) {
-                                    cmd.put("labels", new JSONArray("[\"Conferma\"]"));
+                                    cmd.put("labels", new JSONArray("[\"Confirm\"]"));
+                                    cmd.put("labels_it", new JSONArray("[\"Conferma\"]"));
                                 }
                                 if (rollback == null || rollback.isEmpty()) {
-                                    cmd.put("rollback", "Annulla");
+                                    cmd.put("rollback", "Cancel");
+                                    cmd.put("rollback_it", "Annulla");
                                 }
                                 if (rollbackImg == null || rollbackImg.isEmpty()) {
                                     cmd.put("rollbackImg", "cancel.png");

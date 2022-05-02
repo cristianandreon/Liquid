@@ -3540,7 +3540,7 @@ public class db {
      * @return json of the operation's result (String)
      * @see db
      */
-    public static String insertFields(Object p1, Object p2, Object p3, Object p4, Object p5) {
+    public static String insertFields(Object p1, Object p2, Object p3, Object p4, Object p5) throws SQLException {
         return processModification(p1, p2, p3, p4, p5, "insert");
     }
 
@@ -3652,6 +3652,8 @@ public class db {
                                 sqlSTMTUpdate.setString((ip), (String) val);
                             } else if (val instanceof Boolean) {
                                 sqlSTMTUpdate.setBoolean((ip), (boolean) val);
+                            } else if (val == null) {
+                                sqlSTMTUpdate.setNull((ip), Types.NULL);
                             } else {
                                 System.err.println("update_row() invalid obejct type : "+ val.getClass().getName());
                             }
@@ -3738,6 +3740,10 @@ public class db {
         return new Object [] { retVal, new_id } ;
     }
 
+
+    public static String update(HttpServletRequest request, Object bean, workspace wrk) throws Throwable {
+        return db.update(bean, wrk, (HttpServletRequest) request);
+    }
 
 
     public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKey) throws Throwable {
@@ -3929,11 +3935,11 @@ public class db {
      * @return json of the operation's result (String)
      * @see db
      */
-    public static String updateFields(Object p1, Object p2, Object p3, Object p4, Object p5) {
+    public static String updateFields(Object p1, Object p2, Object p3, Object p4, Object p5) throws SQLException {
         return processModification(p1, p2, p3, p4, p5, "update");
     }
 
-    public static String updateFields(Object p1, Object p2, Object p3, Object p4) {
+    public static String updateFields(Object p1, Object p2, Object p3, Object p4) throws SQLException {
         return processModification(p1, p2, p3, p4, null, "update");
     }
 
@@ -3964,7 +3970,7 @@ public class db {
      * @return json of the operation's result (String)
      * @see db
      */
-    public static String deleteRow(Object p1, Object p2, Object p3, Object p4, Object p5) {
+    public static String deleteRow(Object p1, Object p2, Object p3, Object p4, Object p5) throws SQLException {
         return processModification(p1, p2, p3, p4, p5, "delete");
     }
 
@@ -3982,7 +3988,7 @@ public class db {
      * @return json of the operation's result (String)
      * @see db
      */    
-    static public String processModification(Object p1, Object p2, Object p3, Object p4, Object p5, String type) {
+    static public String processModification(Object p1, Object p2, Object p3, Object p4, Object p5, String type) throws SQLException {
         Connection conn = null, connToDB = null, connToUse = null;
         String retVal = "", retValCbk = "";
         int nForeignUpdates = 0, nUpdates = 0;
@@ -3993,12 +3999,12 @@ public class db {
         TransactionList tableTransactList = new TransactionList();
         boolean bUseAutoCommit = false;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
+        HttpServletRequest request = (HttpServletRequest) p4;
 
         try {
 
             if (p1 != null) {
                 workspace liquid = (workspace) p1;
-                HttpServletRequest request = (HttpServletRequest) p4;
                 String database = null;
                 String schema = null;
                 String table = null;
@@ -4343,15 +4349,18 @@ public class db {
                 if (tableTransactList.transactionList != null || foreignTableTransactList.transactionList != null) {
                     try {
                         // Connessione al DB ( da predefinita, da JSON o da sessione )
-                        Object [] connResult = connection.getConnection(null, request, liquid.tableJson);
-                        conn = (Connection)connResult[0];
-                        String connError = (String)connResult[1];
-                        if (conn == null) {
-                            String err = "processModification() : connect failed \n\nError is : "+connError;
-                            System.out.println("// LIQUID ERROR : " + err);
-                            // return new Object [] { false, -1, utility.base64Encode(err) };
+                        if(transaction.isTransaction(request)) {
+                            conn = transaction.getTransaction(request);
+                        } else {
+                            Object[] connResult = connection.getConnection(null, request, liquid.tableJson);
+                            conn = (Connection) connResult[0];
+                            String connError = (String) connResult[1];
+                            if (conn == null) {
+                                String err = "processModification() : connect failed \n\nError is : " + connError;
+                                System.out.println("// LIQUID ERROR : " + err);
+                                // return new Object [] { false, -1, utility.base64Encode(err) };
+                            }
                         }
-
                     } catch (Exception ex) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -4368,11 +4377,14 @@ public class db {
                             String db = conn.getCatalog();
                             if (!db.equalsIgnoreCase(database)) {
                                 // closing the connections (with callbacks)
-                                connection.closeConnection(conn);
-                                conn = null;
-                                Object [] connResult = connection.getDBConnection(database);
-                                connToUse = connToDB = (Connection)connResult[0];
-                                
+                                if(transaction.isTransaction(request)) {
+                                    conn = transaction.getTransaction(request);
+                                } else {
+                                    connection.closeConnection(conn);
+                                    conn = null;
+                                    Object[] connResult = connection.getDBConnection(database);
+                                    connToUse = connToDB = (Connection) connResult[0];
+                                }
                             }
                         }
 
@@ -4535,11 +4547,13 @@ public class db {
             retVal = "{\"error\":\"" + utility.base64Encode("Fatal error:" + th.getLocalizedMessage()) + "\"}";
 
         } finally {
-            // closing the connections (with callbacks)
-            connection.closeConnection(conn);
-
-            // closing the connections (with callbacks)
-            connection.closeConnection(connToDB);
+            if(transaction.isTransaction(request)) {
+            } else {
+                // closing the connections (with callbacks)
+                connection.closeConnection(conn);
+                // closing the connections (with callbacks)
+                connection.closeConnection(connToDB);
+            }
         }
         return retVal;
     }
@@ -5207,7 +5221,8 @@ public class db {
      * This method execute an insert or update statement by the given bean
      *
      * @param bean bean to insert or update (Object)
-     * @param tbl_wrk the table workspace of the control (Object)
+     * @param tbl_wrk the table workspace of the control (Object or string (controlId) )
+     *                N.B.: if a bean was created by another controlId tbl_wrk will be replaced by the original controlId
      *
      * @return the detail of operation as json object { "tables":[ {
      * "table":"table name", "ids":[ list of changed primary keys ] } ]
@@ -5218,12 +5233,28 @@ public class db {
      */
     static public String save(Object bean, Object tbl_wrk, HttpServletRequest request) throws Exception, NoSuchFieldException, IllegalAccessException {
         if(tbl_wrk instanceof String) {
-            tbl_wrk = workspace.get_tbl_manager_workspace_from_db((String)tbl_wrk);
+            String databaseSchemaTable = (String)tbl_wrk;
+            tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable);
+        } else if(tbl_wrk == null) {
+            String databaseSchemaTable = (String)utility.get(bean, "$databaseSchemaTable");
+            String controlId = (String)utility.get(bean, "$controlId");
+            tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, controlId);
+        } else if(tbl_wrk instanceof workspace) {
+            // Check correct databaseSchemaTable/controId
+            String databaseSchemaTable = (String)utility.get(bean, "$databaseSchemaTable");
+            String controlId = (String)utility.get(bean, "$controlId");
+            if(databaseSchemaTable != null && !databaseSchemaTable.isEmpty()) {
+                if(controlId != null && !controlId.isEmpty()) {
+                    if(!databaseSchemaTable.equalsIgnoreCase( ((workspace)tbl_wrk).databaseSchemaTable) || !controlId.equalsIgnoreCase( ((workspace)tbl_wrk).controlId)) {
+                        tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, controlId);
+                    }
+                }
+            }
         }
         if(tbl_wrk != null) {
             return insertUpdate(bean, tbl_wrk, request);
         } else {
-            return null;
+            throw new Exception("Control not found .. cannot update db");
         }
     }
 
@@ -7018,13 +7049,18 @@ public class db {
             } else if (Param instanceof Array) {
                 psdo.setArray(iParam, (Array)Param);
             } else if (Param instanceof ArrayList) {
-                if(Param != null) {
-                    if(((ArrayList) Param).size() > 0) {
-                        Object firstObject = ((ArrayList<Object>)Param).get(0);
-                        String typeName = javaToSQLName(firstObject);
-                        java.sql.Array arrayParam = psdo.getConnection().createArrayOf(typeName, ((ArrayList<Object>)Param).toArray() );
-                        psdo.setArray(iParam, arrayParam);
-                    }
+                if(((ArrayList) Param).size() > 0) {
+                    Object firstObject = ((ArrayList<Object>)Param).get(0);
+                    String typeName = javaToSQLName(firstObject);
+                    java.sql.Array arrayParam = psdo.getConnection().createArrayOf(typeName, ((ArrayList<Object>)Param).toArray() );
+                    psdo.setArray(iParam, arrayParam);
+                }
+            } else if (Param instanceof List) {
+                if(((List) Param).size() > 0) {
+                    Object firstObject = ((List<Object>)Param).get(0);
+                    String typeName = javaToSQLName(firstObject);
+                    java.sql.Array arrayParam = psdo.getConnection().createArrayOf(typeName, ((List<Object>)Param).toArray() );
+                    psdo.setArray(iParam, arrayParam);
                 }
             }
         }

@@ -639,6 +639,11 @@ public class bean {
             // proprietà chiave primaria
             props.put("$primaryKey", String.class);
 
+            // DatabaseSchemaTable/ControlId
+            props.put("$databaseSchemaTable", String.class);
+            props.put("$controlId", String.class);
+
+
             // Attributo Id del controllo parent
             attributes.put("$Parent" + "$controlId", String.class);
             // Attributo nome classe del controllo parent
@@ -1039,6 +1044,9 @@ public class bean {
                             utility.set(obj, "$tableKey", (String)(table+"@"+primaryKey) );
                             utility.set(obj, "$primaryKey", (String)(primaryKey) );
 
+                            utility.set(obj, "$databaseSchemaTable", (String)(tbl_wrk.databaseSchemaTable) );
+                            utility.set(obj, "$controlId", (String)(tbl_wrk.controlId) );
+
                         } else {
                             errors += "[Null result setting row " + (ir + 1) + "/" + (rowsJson.length()) + "]";
                             res = -1;
@@ -1078,6 +1086,8 @@ public class bean {
                     //
                     utility.set(obj, "$tableKey", (Object) mainTableKey);
                     utility.set(obj, "$primaryKey", (String) primaryKey);
+                    utility.set(obj, "$databaseSchemaTable", (String)(tbl_wrk.databaseSchemaTable) );
+                    utility.set(obj, "$controlId", (String)(tbl_wrk.controlId) );
 
                     rowsObject.add(obj);
                 }
@@ -1811,7 +1821,7 @@ public class bean {
      * @param filteringValue
      * @return
      */
-    static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, String filteringColumn, String filteringValue) throws Throwable {
+    static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String columns, String filteringColumn, Object filteringValue) throws Throwable {
         ArrayList<Object> beans = load_beans(request, null, databaseSchemaTable, columns, filteringColumn+"="+filteringValue, 1, null);
         if(beans != null) {
             if(beans.size() > 0) {
@@ -1821,7 +1831,7 @@ public class bean {
         return null;
     }
 
-    static public Object load_bean(String databaseSchemaTable, String controlId, String columns, String filteringColumn, String filteringValue) throws Throwable {
+    static public Object load_bean(String databaseSchemaTable, String controlId, String columns, String filteringColumn, Object filteringValue) throws Throwable {
         ArrayList<Object> beans = load_beans(null, controlId, databaseSchemaTable, columns, filteringColumn+"="+filteringValue, 1, null);
         if(beans != null) {
             if(beans.size() > 0) {
