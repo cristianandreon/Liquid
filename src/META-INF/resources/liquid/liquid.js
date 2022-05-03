@@ -15370,8 +15370,8 @@ var Liquid = {
                     , stepHour: 1
                     , stepMinute: 1
                     , stepSecond: 15
-                    , defaultDate:true
-                    , defaultTime:'00:00'
+                    // , defaultDate:true
+                    // , defaultTime:'00:00'
                     , closeOnDateSelect: closeOnDateSelect
                     , showTimePicker: timePicker
                     , timepicker: timePicker

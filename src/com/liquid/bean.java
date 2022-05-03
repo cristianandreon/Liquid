@@ -827,6 +827,8 @@ public class bean {
                                             props.put(ftPropName + "$Changed", boolean.class);
                                         }
 
+                                        // System.out.println(" *** DEBUG: ftPropName:"+ftPropName);
+
                                         //
                                         // Attribute to the class (header) in order to detect child beans
                                         //
@@ -1010,6 +1012,10 @@ public class bean {
             // Create the pojo if missing
             //
             if (clazz == null) {
+
+                // className = "MyAuctionDetails"
+                // ftPropNameList = ["BID_DETAILS$AUCTION_DETAIL_ID$ID"]
+
                 pojoGenerator = new PojoGenerator();
                 clazz = pojoGenerator.generate(className, props, attributes, sPojoMode);
                 if (clazz == null) {

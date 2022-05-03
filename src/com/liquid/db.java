@@ -1348,12 +1348,17 @@ public class db {
                                                 sortColumnAlias = col.getString("alias");
 
                                                 String sortTable = null;
+                                                String sortCol = null;
                                                 String[] colParts = colName.split("\\.");
                                                 if (colParts.length > 1) {
                                                     sortTable = colParts[0];
+                                                    sortCol = colParts[1];
+                                                } else {
+                                                    sortCol = colParts[0];
                                                 }
+
                                                 // mette l'alias del join
-                                                sortColumnAlias = (sortTable != null ? LeftJoinMap.getAlias(leftJoinsMap, sortTable) : tableIdString + table + tableIdString) + "." + itemIdString + colParts[1] + itemIdString;
+                                                sortColumnAlias = (sortTable != null ? LeftJoinMap.getAlias(leftJoinsMap, sortTable) : tableIdString + table + tableIdString) + "." + itemIdString + sortCol + itemIdString;
 
                                             } catch (Exception e) {
                                             }
@@ -2034,14 +2039,19 @@ public class db {
      * @param oSortColumns
      */
     private static void set_sort_columns(JSONArray sortColumns, Object oSortColumns) {
-        if (oSortColumns instanceof JSONArray) {
-            sortColumns.putAll((JSONArray)oSortColumns);
-        } else if (oSortColumns instanceof String) {
-            if (sortColumns == null) sortColumns = new JSONArray();
-            String [] sort_cols = ((String)oSortColumns).split("\\.");
-            for(int is=0; is<sort_cols.length; is++) {
-                sortColumns.put(sort_cols[is]);
+        try {
+            if (oSortColumns instanceof JSONArray) {
+                sortColumns.putAll((JSONArray) oSortColumns);
+            } else if (oSortColumns instanceof String) {
+                if (sortColumns == null) sortColumns = new JSONArray();
+                String[] sort_cols = ((String) oSortColumns).split("\\.");
+                for (int is = 0; is < sort_cols.length; is++) {
+                    sortColumns.put(sort_cols[is]);
+                }
             }
+        } catch (Exception e) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+            throw e;
         }
     }
 
@@ -2051,16 +2061,21 @@ public class db {
      * @param sortMode
      */
     private static void set_sort_mode(JSONArray sortColumnsMode, Object sortMode) {
-        if(sortMode != null) {
-            if (sortMode instanceof JSONArray) {
-                sortColumnsMode.putAll((JSONArray)sortMode);
-            } else if (sortMode instanceof String) {
-                if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
-                String[] sort_modes = ((String) sortMode).split("\\.");
-                for (int is = 0; is < sort_modes.length; is++) {
-                    sortColumnsMode.put(String.valueOf(sort_modes[is]));
+        try {
+            if(sortMode != null) {
+                if (sortMode instanceof JSONArray) {
+                    sortColumnsMode.putAll((JSONArray)sortMode);
+                } else if (sortMode instanceof String) {
+                    if (sortColumnsMode == null) sortColumnsMode = new JSONArray();
+                    String[] sort_modes = ((String) sortMode).split("\\.");
+                    for (int is = 0; is < sort_modes.length; is++) {
+                        sortColumnsMode.put(String.valueOf(sort_modes[is]));
+                    }
                 }
             }
+        } catch (Exception e) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+            throw e;
         }
     }
 

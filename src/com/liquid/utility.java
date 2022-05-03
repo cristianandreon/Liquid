@@ -1308,22 +1308,27 @@ public class utility {
 
 
     public static int mergeJsonArrays(JSONArray source, JSONArray target, String[] excludingList) throws Exception {
-        int insertCount = 0;
-        JSONArray objs = (JSONArray)source;
-        for(int i=0; i<objs.length(); i++) {
-            Object obj = objs.get(i);
-            if(obj instanceof JSONObject) {
-                insertCount += mergeJsonObjects((JSONObject) obj, target.getJSONObject(i), new String[]{"preFilters"});
-            } else if(obj instanceof JSONArray) {
-                insertCount += mergeJsonArrays((JSONArray) obj, target.getJSONArray(i), excludingList);
-            } else {
-                // target.put(i, obj);
-                target.putAll(source);
-                return 1;
+        try {
+            int insertCount = 0;
+            JSONArray objs = (JSONArray)source;
+            for(int i=0; i<objs.length(); i++) {
+                Object obj = objs.get(i);
+                if(obj instanceof JSONObject) {
+                    insertCount += mergeJsonObjects((JSONObject) obj, target.getJSONObject(i), new String[]{"preFilters"});
+                } else if(obj instanceof JSONArray) {
+                    insertCount += mergeJsonArrays((JSONArray) obj, target.getJSONArray(i), excludingList);
+                } else {
+                    // target.put(i, obj);
+                    target.putAll(source);
+                    return 1;
+                }
+                // TODO : check length
             }
-            // TODO : check length
+            return insertCount;
+        } catch (Exception e) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+            throw e;
         }
-        return insertCount;
     }
 
 
