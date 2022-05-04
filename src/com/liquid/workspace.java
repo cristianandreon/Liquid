@@ -431,14 +431,18 @@ public class workspace {
         if (sessions != null) {
             ThreadSession threadSession = ThreadSession.getThreadSessionInfo();
             if (threadSession != null) {
-                for (ThreadSession session : sessions) {
-                    if (session.sessionId.equals(threadSession.sessionId)) {
-                        return session.workspaceOwner;
+                if(threadSession.sessionId != null) {
+                    for (ThreadSession session : sessions) {
+                        if(session.sessionId != null) {
+                            if (threadSession.sessionId.compareTo(session.sessionId) == 0) {
+                                return session.workspaceOwner;
+                            }
+                        }
                     }
-                }
-                for (ThreadSession session : sessions) {
-                    if ("*".equalsIgnoreCase(session.sessionId)) {
-                        return session.workspaceOwner;
+                    for (ThreadSession session : sessions) {
+                        if ("*".equalsIgnoreCase(session.sessionId)) {
+                            return session.workspaceOwner;
+                        }
                     }
                 }
                 // No owner set / no owner defined in the json ... this is not an error
@@ -613,7 +617,7 @@ public class workspace {
             hostName = InetAddress.getLocalHost().getHostName();
             if(hostName.equalsIgnoreCase(onlyToHost)) {
                 System.out.println("LIQUID: Enabling project mode by working in host "+onlyToHost);
-                return enableProjectMode(out, keepMetadata);
+                // return enableProjectMode(out, keepMetadata);
             }
         } catch (UnknownHostException e) {
             e.printStackTrace();

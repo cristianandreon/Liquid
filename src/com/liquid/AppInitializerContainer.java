@@ -19,5 +19,6 @@ public class AppInitializerContainer implements javax.servlet.ServletContainerIn
         if(!AppInitializer.bHttpSessionListnerAdded) {
             sc.addListener(new HttpSessionCollector()); // javax.servlet.ServletContext.addListener(Ljava/util/EventListener;)V
         }
+        AppInitializer.check_libs();
     }
 }

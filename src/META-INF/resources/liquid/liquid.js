@@ -1333,7 +1333,12 @@ class LiquidCtrl {
                                 // tabs
                                 this.homeTabId = controlId + ".homeTable." + this.tableJson.table;
                                 this.homeName = (isDef(this.tableJson.name) ? (this.tableJson.name ? this.tableJson.name : this.tableJson.table ) : this.tableJson.table);
-                                var homeHTML = "<li><a href=\"javascript:void(0)\" id=\"" + this.homeTabId + "\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"Liquid.onForeignTable(this)\">" + this.homeName + "</a></li>";
+                                var homeHTML = "<li><a href=\"javascript:void(0)\" " +
+                                    "id=\"" + this.homeTabId + "\" " +
+                                    "class=\"liquidTab liquidForeignTableEnabled\" " +
+                                    (this.tableJson.listTabVisible === false ? "style=\"display:none\"" : "") + " " +
+                                    "onClick=\"Liquid.onForeignTable(this)\">" + this.homeName + "</a></li>";
+
                                 this.foreignTablesTabsObj.innerHTML = ""
                                     + "<div style=\"float:left; width:100%; text-align:center;\" id=\""+controlId+".foreignTable.container\" class=\"liquidForeignTablesContainer\"><ul>"
                                     + homeHTML

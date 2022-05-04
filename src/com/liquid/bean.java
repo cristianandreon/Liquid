@@ -568,6 +568,7 @@ public class bean {
             ArrayList<Object> ftBeansContentList = new ArrayList<Object>();
             ArrayList<Object> rowsObject = new ArrayList<Object>();
             Class<?> clazz = null;
+
             String className = "" + tbl_wrk.controlId.replace(".", "_") + "";
 
             JSONArray cols = null;
@@ -756,40 +757,44 @@ public class bean {
                                         //
                                         // chiamata da codice ?
                                         //
-                                        if(tbl_wrk.tableJson.has("loadALL")) {
+                                        if( "*".equalsIgnoreCase(filteringForeignTables)
+                                                || (filteringForeignTablesList != null && filteringForeignTablesList.contains(ft))
+                                                || (tbl_wrk.tableJson.has("loadALL") && tbl_wrk.tableJson.getBoolean("loadALL"))
+                                        ) {
+
                                             try {
-                                                if(tbl_wrk.tableJson.getBoolean("loadALL")) {
-                                                    // load default workspace
-                                                    String ftConnectionDriver = (tbl_wrk.tableJson.has("connectionDriver") ? (tbl_wrk.tableJson.getString("connectionDriver")!= null ? tbl_wrk.tableJson.getString("connectionDriver") : null) : null );
-                                                    String ftConnectionURL = (tbl_wrk.tableJson.has("connectionURL") ? (tbl_wrk.tableJson.getString("connectionURL")!= null ? tbl_wrk.tableJson.getString("connectionURL") : null) : null );
-                                                    String ftDatabase = (tbl_wrk.tableJson.has("database") ? (tbl_wrk.tableJson.getString("database")!= null ? tbl_wrk.tableJson.getString("database") : tbl_wrk.defaultDatabase)  : tbl_wrk.defaultDatabase );
-                                                    String ftSchema = (tbl_wrk.tableJson.has("schema") ? (tbl_wrk.tableJson.getString("schema")!= null ? tbl_wrk.tableJson.getString("schema") : tbl_wrk.defaultSchema) : tbl_wrk.defaultSchema );
-                                                    JSONObject sRequestJSON = new JSONObject();
-                                                    if(ftConnectionDriver != null && !ftConnectionDriver.isEmpty()) {
-                                                        sRequestJSON.put("cnnectionDriver", ftConnectionDriver);
-                                                    }
-                                                    if(ftConnectionURL != null && !ftConnectionURL.isEmpty()) {
-                                                        sRequestJSON.put("connectionURL", ftConnectionURL);
-                                                    }
-                                                    sRequestJSON.put("foreignTables", "*");
-                                                    if(bReadOnly)
-                                                        sRequestJSON.put("readOnly", true);
 
-                                                    String ftJson = workspace.get_default_json( (HttpServletRequest)null, ftControlId, null, ft, ftSchema, ftDatabase, tbl_wrk.controlId, tbl_wrk.token, sRequestJSON.toString(), (JspWriter)null );
-                                                    if(ftJson != null && !ftJson.isEmpty()) {
-                                                        ft_tbl_wrk = workspace.get_tbl_manager_workspace(ftControlId);
-                                                        if (ft_tbl_wrk != null) {
-                                                            // OK
-                                                            ft_tbl_wrk.tableJson.put("loadALL", true);
-                                                            if(bReadOnly)
-                                                                ft_tbl_wrk.tableJson.put("readOnly", true);
 
-                                                        } else {
-                                                            Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// Error loading foreign table control '" + ftControlId + "' :" + " workspace not found");
-                                                        }
+                                                // load default workspace
+                                                String ftConnectionDriver = (tbl_wrk.tableJson.has("connectionDriver") ? (tbl_wrk.tableJson.getString("connectionDriver")!= null ? tbl_wrk.tableJson.getString("connectionDriver") : null) : null );
+                                                String ftConnectionURL = (tbl_wrk.tableJson.has("connectionURL") ? (tbl_wrk.tableJson.getString("connectionURL")!= null ? tbl_wrk.tableJson.getString("connectionURL") : null) : null );
+                                                String ftDatabase = (tbl_wrk.tableJson.has("database") ? (tbl_wrk.tableJson.getString("database")!= null ? tbl_wrk.tableJson.getString("database") : tbl_wrk.defaultDatabase)  : tbl_wrk.defaultDatabase );
+                                                String ftSchema = (tbl_wrk.tableJson.has("schema") ? (tbl_wrk.tableJson.getString("schema")!= null ? tbl_wrk.tableJson.getString("schema") : tbl_wrk.defaultSchema) : tbl_wrk.defaultSchema );
+                                                JSONObject sRequestJSON = new JSONObject();
+                                                if(ftConnectionDriver != null && !ftConnectionDriver.isEmpty()) {
+                                                    sRequestJSON.put("cnnectionDriver", ftConnectionDriver);
+                                                }
+                                                if(ftConnectionURL != null && !ftConnectionURL.isEmpty()) {
+                                                    sRequestJSON.put("connectionURL", ftConnectionURL);
+                                                }
+                                                sRequestJSON.put("foreignTables", "*");
+                                                if(bReadOnly)
+                                                    sRequestJSON.put("readOnly", true);
+
+                                                String ftJson = workspace.get_default_json( (HttpServletRequest)null, ftControlId, null, ft, ftSchema, ftDatabase, tbl_wrk.controlId, tbl_wrk.token, sRequestJSON.toString(), (JspWriter)null );
+                                                if(ftJson != null && !ftJson.isEmpty()) {
+                                                    ft_tbl_wrk = workspace.get_tbl_manager_workspace(ftControlId);
+                                                    if (ft_tbl_wrk != null) {
+                                                        // OK
+                                                        ft_tbl_wrk.tableJson.put("loadALL", true);
+                                                        if(bReadOnly)
+                                                            ft_tbl_wrk.tableJson.put("readOnly", true);
+
                                                     } else {
-                                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// Error loading foreign table control '" + ftControlId + "' :" + "Empty json response");
+                                                        Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// Error loading foreign table control '" + ftControlId + "' :" + " workspace not found");
                                                     }
+                                                } else {
+                                                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// Error loading foreign table control '" + ftControlId + "' :" + "Empty json response");
                                                 }
                                             } catch (Exception e) {
                                                 Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// Error loading foreign table control '" + ftControlId + "' :" + e.getLocalizedMessage());
@@ -992,8 +997,19 @@ public class bean {
 
 
             className = className.replaceAll("@", "0");
+
             // .replaceAll("-", "_")
             // className = className.replace("$", "_");
+
+            // Aggiunta del postfisso
+            String postfix = "";
+            if("*".equalsIgnoreCase(filteringForeignTables)) {
+                postfix = "_ALL";
+            } else if(filteringForeignTables != null && !filteringForeignTables.isEmpty()) {
+                postfix = "_"+workspace.getHash(filteringForeignTables);;
+            }
+            className += postfix;
+
 
             try {
                 clazz = Class.forName(className);
@@ -1013,8 +1029,13 @@ public class bean {
             //
             if (clazz == null) {
 
-                // className = "MyAuctionDetails"
-                // ftPropNameList = ["BID_DETAILS$AUCTION_DETAIL_ID$ID"]
+                if("MyAuctionDetails".equalsIgnoreCase(className)) {
+                     // ftPropNameList = ["BID_DETAILS$AUCTION_DETAIL_ID$ID"]
+                     Logger.getLogger(db.class.getName()).log(Level.INFO, "// className: " + className + "...");
+                     if(ftPropNameList.size() > 0) {
+                         Logger.getLogger(db.class.getName()).log(Level.INFO, "// no. foreign tables: " + ftPropNameList.size() + "...");
+                     }
+                 }
 
                 pojoGenerator = new PojoGenerator();
                 clazz = pojoGenerator.generate(className, props, attributes, sPojoMode);
@@ -2709,8 +2730,16 @@ public class bean {
                     Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
                     if ((int) beanResult[0] >= 0) {
                         // Updating the foreignTables (some info may be added)
-                        try { tbl_wrk.tableJson.put("foreignTables", foreignTablesJson); } catch (Exception e) { }
-                        return (ArrayList<Object>) beanResult[1];
+                        if(beanResult[3] != null && !((String)beanResult[3]).isEmpty()) {
+                            throw new Exception("Create bean error:"+beanResult[3]);
+                        } else {
+                            try {
+                                tbl_wrk.tableJson.put("foreignTables", foreignTablesJson);
+                            } catch (Exception e) {
+                                System.err.println("// get_beans() [" + controlId + "] Error:" + e.getLocalizedMessage());
+                            }
+                            return (ArrayList<Object>) beanResult[1];
+                        }
                     } else {
                         throw new Exception("Create bean error:"+beanResult[3]);
                     }
