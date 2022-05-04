@@ -2261,15 +2261,17 @@ public class bean {
                 if (((String)keyOrWhereCondition).trim().toUpperCase().startsWith("WHERE ")) {
                     sWhere = " " + keyOrWhereCondition + "";
                 } else {
+                    // N.B.: Need key column ...
                     if (keyColumn == null || keyColumn.isEmpty()) {
-                        sWhere = " WHERE " + keyOrWhereCondition + "";
-                    } else {
-                        keyColumn = ((String) keyColumn).trim();
-                        if (keyColumn.trim().toUpperCase().startsWith("WHERE ")) {
-                            keyColumn = ((String) keyColumn).substring(6);
+                        if (tbl_wrk.tableJson.has("primaryKey")) {
+                            keyColumn = tbl_wrk.tableJson.getString("primaryKey");
                         }
-                        sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
                     }
+                    keyColumn = ((String) keyColumn).trim();
+                    if (keyColumn.toUpperCase().startsWith("WHERE ")) {
+                        keyColumn = ((String) keyColumn).substring(6);
+                    }
+                    sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
                 }
             }
         } else if (keyOrWhereCondition instanceof StringBuffer) {
@@ -2723,7 +2725,13 @@ public class bean {
                     // Array foreign tables di partenza
                     JSONArray foreignTablesJson = null;
                     if(tbl_wrk.tableJson.has("foreignTables")) {
-                        foreignTablesJson = tbl_wrk.tableJson.getJSONArray("foreignTables");
+                        Object oforeignTables = tbl_wrk.tableJson.get("foreignTables");
+                        if(oforeignTables instanceof JSONArray) {
+                            foreignTablesJson = (JSONArray)oforeignTables;
+                        } else {
+                            // throw new Exception("Create bean error:"+"ForeignTables in unexpected format");
+                            // Non risolte : non rischiesto esplicitamente
+                        }
                     }
 
                     //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
