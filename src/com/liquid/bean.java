@@ -2267,11 +2267,15 @@ public class bean {
                             keyColumn = tbl_wrk.tableJson.getString("primaryKey");
                         }
                     }
-                    keyColumn = ((String) keyColumn).trim();
-                    if (keyColumn.toUpperCase().startsWith("WHERE ")) {
-                        keyColumn = ((String) keyColumn).substring(6);
+                    if(keyColumn != null) {
+                        keyColumn = ((String) keyColumn).trim();
+                        if (keyColumn.toUpperCase().startsWith("WHERE ")) {
+                            keyColumn = ((String) keyColumn).substring(6);
+                        }
+                        sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
+                    } else {
+                        sWhere = " " + keyOrWhereCondition + "";
                     }
-                    sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
                 }
             }
         } else if (keyOrWhereCondition instanceof StringBuffer) {
