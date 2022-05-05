@@ -21145,13 +21145,17 @@ var Liquid = {
     },
     Recordset2LocalDate:function(liquid, rowData) {
         if(liquid && rowData) {
-            for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
-                if(liquid.tableJson.columns[ic].type == 93) {
-                    console.debug("LIQUID: normalizing date on "+liquid.tableJson.columns[ic].name);
-                    for(var ir=0; ir<rowData.length; ir++) {
-                        var sDate = rowData[ir][liquid.tableJson.columns[ic].field];
-                        var newDate = Liquid.GMT2LocalDate(sDate, liquid.tableJson.columns[ic].type);
-                        rowData[ir][liquid.tableJson.columns[ic].field] = newDate;
+            if(liquid.tableJson.toLocalTimezone) {
+                if (liquid.tableJson) {
+                    for (let ic = 0; ic < liquid.tableJson.columns.length; ic++) {
+                        if (liquid.tableJson.columns[ic].type == 93) {
+                            console.debug("LIQUID: normalizing date on " + liquid.tableJson.columns[ic].name);
+                            for (var ir = 0; ir < rowData.length; ir++) {
+                                var sDate = rowData[ir][liquid.tableJson.columns[ic].field];
+                                var newDate = Liquid.GMT2LocalDate(sDate, liquid.tableJson.columns[ic].type);
+                                rowData[ir][liquid.tableJson.columns[ic].field] = newDate;
+                            }
+                        }
                     }
                 }
             }
