@@ -1934,8 +1934,10 @@ public class db {
             }
 
         } catch (Throwable e) {
+            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
             error += "Error:" + e.getLocalizedMessage();
             System.err.println("// get_table_recordset() [" + controlId + "] Error:" + e.getLocalizedMessage());
+
 
         } finally {
             try {
