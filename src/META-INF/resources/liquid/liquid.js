@@ -607,7 +607,11 @@ class LiquidCtrl {
                                                             if(liquid.tableJson.transaction === 'single') {
                                                                 console.info("Row change");
                                                             } else {
-                                                                Liquid.onCommand(liquid, "update");
+                                                                if(!isDef(liquid.currentCommand)) {
+                                                                    Liquid.onCommand(liquid, "update");
+                                                                } else {
+                                                                    // Chnage row inside command
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -12086,7 +12090,7 @@ var Liquid = {
             labelName = "text" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
             labelValue = labelValue ? labelValue : isDef(command[labelName]) ? command[labelName] : null;
             labelValue = labelValue ? labelValue : command.text;
-            labelValue = labelValue ? labelValue : command.name;
+            // labelValue = labelValue ? labelValue : command.name;
 
             var tootipName = "tootip" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
             var tootipValue = isDef(command[tootipName]) ? command[tootipName] : '';
