@@ -9,11 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -37,6 +33,8 @@ public class wsHttpServletRequest implements HttpServletRequest {
     ArrayList<String> params = null;
     ArrayList<String> values = null;
     String body = null;
+
+    Map<String, Object> attributes = null;
 
     /**
      * Build request from JSON object
@@ -202,13 +200,17 @@ public class wsHttpServletRequest implements HttpServletRequest {
     }
 
     @Override
-    public Object getAttribute(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Object getAttribute(String a) {
+        if(attributes != null) {
+            return attributes.get(a);
+        } else {
+            return null;
+        }
     }
 
     @Override
     public Enumeration getAttributeNames() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        throw new UnsupportedOperationException("wsHttpServletRequest.getAttributeNames error : not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
@@ -297,13 +299,15 @@ public class wsHttpServletRequest implements HttpServletRequest {
     }
 
     @Override
-    public void setAttribute(String string, Object o) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void setAttribute(String a, Object o) {
+        if(attributes == null)
+            attributes = new HashMap<>();
+        attributes.put(a, o);
     }
 
     @Override
-    public void removeAttribute(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void removeAttribute(String a) {
+        attributes.remove(a);
     }
 
     @Override
