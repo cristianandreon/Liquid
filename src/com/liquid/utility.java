@@ -1974,6 +1974,17 @@ public class utility {
         return event.invoke(clsInstance, methodName, Params);
     }
 
+    public static ArrayList<Object> arrayFromJson(JSONArray json_array, String prop) {
+        ArrayList<Object> objList = new ArrayList<>();
+        for (int id = 0; id < json_array.length(); id++) {
+            JSONObject json = json_array.getJSONObject(id);
+            if (json != null) {
+                objList.add(json.get(prop));
+            }
+        }
+        return objList;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
