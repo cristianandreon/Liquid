@@ -1259,6 +1259,16 @@ public class workspace {
             } catch (Exception e) {
             }
 
+            // Wrappers
+            try {
+                if(tableJson.has("order"))
+                    tableJson.put("sort", tableJson.get("order"));
+                if(tableJson.has("orderby"))
+                    tableJson.put("sort", tableJson.get("orderby"));
+            } catch (Exception e) {
+            }
+
+
             if(sourceData != null) {
 
             } else {
@@ -3688,23 +3698,23 @@ public class workspace {
 
     
     
-    static public String get_file_content(HttpServletRequest request, String fileName) {
+    static public String get_file_content(HttpServletRequest request, String fileName) throws Exception {
         return get_file_content(request, fileName, false, true);
     }
-    static public String get_file_content(HttpServletRequest request, String fileName, String charset) {
+    static public String get_file_content(HttpServletRequest request, String fileName, String charset) throws Exception {
         return get_file_content(request, fileName, false, true, Charset.forName(charset));
     }
-    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName) {
+    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName) throws Exception {
         return get_file_content(request, fileName, trackFileName, true);
     }
-    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode) {
+    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode) throws Exception {
         return get_file_content(request, fileName, trackFileName, b64Encode, StandardCharsets.UTF_8);
     }
-    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode, String charset) {
+    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode, String charset) throws Exception {
         return get_file_content (request, fileName, trackFileName, b64Encode, Charset.forName(charset));
     }
 
-    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode, Charset charset) {
+    static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode, Charset charset) throws Exception {
         String fileContent = "", lineContent;
         String fullFileName = null;
         String foundFileName = null;
@@ -3783,9 +3793,11 @@ public class workspace {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "get_file_content() : File not found!");
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "fullFileName:"+fullFileName);
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "localFileName:"+localFileName);
+                throw new Exception("File not found: '"+fileName+"'");
             }
         } catch (Throwable ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+            throw ex;
         }
 
         if (trackFileName) {

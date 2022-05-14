@@ -1905,7 +1905,7 @@ public class event {
      * @param freeParam
      * @return
      */
-    static public String uploadDocument(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
+    static public String uploadDocument(Object tbl_wrk, Object params, Object clientData, Object requestParam) {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
             if (tbl_wrk != null) {
@@ -1913,7 +1913,7 @@ public class event {
                 Class cls = null;
                 try {
                     // TODO : controllo della dimensione del file
-                    HttpServletRequest request = (HttpServletRequest) freeParam;
+                    HttpServletRequest request = (HttpServletRequest) requestParam;
                     if (request != null) {
                         // data:*/*;base64,
                         if (tblWrk != null) {

@@ -42,7 +42,7 @@ html, body { height: 100% }
 .liquidLookup { z-index: 10; position: relative; font-family: verdana; font-size: 12px; border:1px solid gray; width:calc(100% - 2px); height:27px; }
 .liquidLookupIconContainer { display:inline-block; float:right; position:absolute; z-index:100; top:0px; right:5px; zoom:0.6; filter:grayscale(0.6); }
 .liquidLookupOpen { position: fixed; z-index: 99000; }
-.liquidCommandBar { width:100%; height:32px; overflow: hidden; background-color: whitesmoke; z-index: 111; position: relative; font-family: verdana; font-size: 12px; color: rgba(90, 30, 30, 1.0); border-top:1px solid lightGray; border-bottom:1px solid lightGray; }
+.liquidCommandBar { width:100%; height:32px; display: inline-flex; overflow: hidden; background-color: whitesmoke; z-index: 111; position: relative; font-family: verdana; font-size: 12px; color: rgba(90, 30, 30, 1.0); border-top:1px solid lightGray; border-bottom:1px solid lightGray; }
 .liquidCommandBarButton  { border:1px solid transparent; }
 .liquidCommandBarImg { margin-top: 2px; margin-left:5px; margin-right:7px; }
 .liquidCommandBarText { display:inline-block; font-size: 10px; margin-right:25px; position: relative; top: -2px; }

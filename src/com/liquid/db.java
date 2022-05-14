@@ -1289,7 +1289,6 @@ public class db {
                                 sortMode = String.valueOf(osortMode);
                             }
                         }
-
                         if (baseObject.has("sort")) {
                             // Case 1, 2
                             Object oSort = baseObject.get("sort");
@@ -1377,8 +1376,10 @@ public class db {
 
                                         sSort += sortColumnAlias;
 
-                                        if (sortColumnsMode != null) {
+                                        if (sortColumnsMode != null && sortColumnsMode.length() > i) {
                                             sSort += " " + sortColumnsMode.getString(i);
+                                        } else {
+                                            sSort += " ASC";
                                         }
                                     }
                                 }

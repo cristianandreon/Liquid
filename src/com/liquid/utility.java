@@ -2124,6 +2124,7 @@ public class utility {
     }
 
 
+
     public static String get_reset_button( String inputId ) {
         return "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
     }
@@ -2242,11 +2243,11 @@ public class utility {
         return "";
     }
 
-    public static String getFileContent(String fileName) {
+    public static String getFileContent(String fileName) throws Exception {
         return workspace.get_file_content((HttpServletRequest) null, fileName, false, false);
     }
 
-    public static String get_file_content(String fileName) {
+    public static String get_file_content(String fileName) throws Exception {
         return workspace.get_file_content((HttpServletRequest) null, fileName, false, false);
     }
 
