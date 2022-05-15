@@ -2175,9 +2175,9 @@ public class db {
                 } catch (Exception e) {
                 }
 
-                filterOp = filtersCol.has("op") ? filtersCol.getString("op") : filterOp;
+                filterOp = filtersCol.has("op") ? filtersCol.getString("op").trim() : filterOp;
 
-                filterLogic = filtersCol.has("logic") ? filtersCol.getString("logic") : filterLogic;
+                filterLogic = filtersCol.has("logic") ? filtersCol.getString("logic").trim() : filterLogic;
 
                 filterSensitiveCase = filtersCol.has("sensitiveCase") ? filtersCol.getBoolean("sensitiveCase") : filterSensitiveCase;
 
@@ -2348,7 +2348,7 @@ public class db {
                             }
                         }
                         if (ich > ichs) {
-                            filterOp = filterValue.substring(ichs, ich);
+                            filterOp = filterValue.substring(ichs, ich).trim();
                             filterValue = filterValue.substring(ich);
                         }
                     }
@@ -2358,9 +2358,10 @@ public class db {
                     if(filterValue != null) {
                         int commaIndex = filterValue.indexOf(",");
 
+                        // NO : usare l'operatore esplicito
                         // ?!?!?! Danger ?!?!?!
                         if (commaIndex == 0 || commaIndex > 0 && filterValue.charAt(commaIndex - 1) != '\\') {
-                            filterOp = "IN";
+                            // filterOp = "IN";
                         }
 
                         if (filterValue.indexOf("*") >= 0) {
@@ -2372,7 +2373,13 @@ public class db {
 
                         if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                             if (filterValue.indexOf(",") >= 0) {
-                                filterOp = "IN";
+                                if(filterOp == null || filterOp.isEmpty()) {
+                                    if (filterValue.trim().indexOf("!") == 0) {
+                                        filterOp = "NOT IN";
+                                    } else {
+                                        filterOp = "IN";
+                                    }
+                                }
                             }
                         }
 
@@ -2425,16 +2432,19 @@ public class db {
                         }
                     }
 
-                    if ("IN".equalsIgnoreCase(filterOp)) {
+                    if ("IN".equalsIgnoreCase(filterOp) || "NOT IN".equalsIgnoreCase(filterOp)) {
                         preFix = "(";
                         postFix = ")";
                         if (filterValue == null || filterValue.isEmpty()) {
                             if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                                 preFix = "";
                                 postFix = "";
-                                filterValue = "NULL";
+                                // filterValue = "NULL";
+                                // (NOT)IN(NULL) -> (NOT)IN(0)
+                                filterValue = "0";
                             } else {
-                                filterValue = "''";
+                                // filterValue = "''";
+                                filterValue = null;
                             }
                         }
                     }
@@ -2554,7 +2564,7 @@ public class db {
 
                         // Formattazione del dato
                         Object filterValueObject = null;
-                        if ("IN".equalsIgnoreCase(filterOp)) {
+                        if ("IN".equalsIgnoreCase(filterOp) || "NOT IN".equalsIgnoreCase(filterOp)) {
                             // Conversione in Array
                             if(filterValue != null) {
                                 String[] filterValues = filterValue.split(",");
@@ -2564,6 +2574,8 @@ public class db {
 
                                     if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
                                         // numeric
+                                        if(val.startsWith("'")) val = val.substring(1);
+                                        if(val.endsWith("'")) val = val.substring(0, val.length()-2);
                                     } else {
                                         val = "'" + val + "'";
                                     }
@@ -2581,7 +2593,7 @@ public class db {
                         // compute the value by metadata
                         //
                         int filterValueType = (int)1;
-                        if ("IN".equalsIgnoreCase(filterOp)) {
+                        if ("IN".equalsIgnoreCase(filterOp) || "NOT IN".equalsIgnoreCase(filterOp)) {
                             //
                             // Un disastro con i parametri ....
                             // e = (PSQLException) org.postgresql.util.PSQLException: ERROR: operator does not exist: bigint = bigint[] Hint: No operator matches the given name and argument types. You might need to add explicit type casts. Position: 78
@@ -2626,7 +2638,7 @@ public class db {
                         //
                         if (filterValueType == 1) {
                             if(filterValue != null) {
-                                if ("IN".equalsIgnoreCase(filterOp)) {
+                                if ("IN".equalsIgnoreCase(filterOp) || "NOT IN".equalsIgnoreCase(filterOp)) {
                                 } else {
                                     if (filterValue.indexOf("'") >= 0) {
                                         filterValue = filterValue.replace("'", "''");

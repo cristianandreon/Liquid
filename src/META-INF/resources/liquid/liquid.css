@@ -122,7 +122,9 @@ html, body { height: 100% }
 .liquidRichEditor { width:74%; height:74%; top:8%; left:8%; position:absolute; display:block; background-color: transparent; }
 .liquidSelect { font-size:10pt; font-family:verdana; height: 23px; background-color: #eaeaea; }    
 .liquidFiltersSelect { font-size:9pt; font-family:verdana; height: 27px; background-color: #eaeaea; }
-.liquidButtonHOver{ background-color:rgba(3, 169, 244, 0.20) !important; border:1px solid rgba(3, 169, 244, 0.75) !important; transition: all 1s ease-Out; box-shadow: 5px 6px 6px rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
+.liquidButtonHOver{ background-color:rgba(3, 169, 244, 0.20) !important; border:1px solid rgba(3, 169, 244, 0.75) !important; transition: all 1s ease-Out; box-shadow: 5px 6px 6px
+rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
+.liquidImgHOver{ filter:grayscale(0.05) !important; transition: all 1s ease-Out; }
 .liquidFormXContainer {  background-color: whitesmoke; }
 .liquidDialogXContainer {  background-color: whitesmoke; }
 .liquidFilterBt:hover { filter:grayscale(0.0) !important; transition: all 0.5s ease-Out; }

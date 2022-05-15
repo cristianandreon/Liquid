@@ -56,8 +56,18 @@ public class ParamsUtil {
                     try { tblWrk = (String) request.getParameter("tblWrk"); } catch (Exception e) {}  
                     try {
                         String sCacheIds = (String) request.getParameter("cacheIds");
-                        try { cacheIds = "true".equalsIgnoreCase(sCacheIds) ? 1 : Integer.parseInt((String) request.getParameter("cacheIds")); } catch (Exception e) {}
-                        try { cacheIds = "auto".equalsIgnoreCase(sCacheIds) ? 2 : cacheIds; } catch (Exception e) {}
+                        if("auto".equalsIgnoreCase(sCacheIds)) {
+                            cacheIds = 2;
+                        } else {
+                            try {
+                                if ("true".equalsIgnoreCase(sCacheIds)) {
+                                    cacheIds = 1;
+                                } else {
+                                    cacheIds = Integer.parseInt(sCacheIds);
+                                }
+                            } catch (Exception e) {
+                            }
+                        }
                     } catch (Exception e) {}
                     try { columnsResolved = request.getParameter("columnsResolved"); } catch (Exception e) {}
                     try { startRow = Integer.parseInt((String) request.getParameter("startRow")); } catch (NumberFormatException e) {}
