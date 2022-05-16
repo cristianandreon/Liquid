@@ -3245,7 +3245,21 @@ var Liquid = {
                 if (typeof obj[propName] !== 'undefined') {
                     // backup
                     obj[sourcePropName] = obj[propName];
-                    if (obj[propName].startsWith("@")) {
+                    expression = obj[propName];
+                }
+            } else if (typeof obj === 'string') {
+                expression = obj;
+            }
+
+            if(expression) {
+                // replace values by search in dataset or in globar var
+                retObj.retVal = "";
+                for (var ic = 0; ic < expression.length; ic++) {
+                    var s = ic;
+                    var e = ic;
+                    if (expression[ic] === '$') {
+                        ic += Liquid.parseExpression(liquid, expression, retObj);
+                    } else if (expression[ic] === "@") {
                         var targetObj = Liquid.getObjectByName(liquid, obj[propName].substring(1));
                         if (targetObj) {
                             var nameItems = obj[propName].substring(1).split(".");
@@ -3254,33 +3268,27 @@ var Liquid = {
                                 // if (typeof retVal === 'undefined' && (nameItems.length>=2 && nameItems[1].toLowerCase() === 'table')) {
                                 // in the name of flexibility : extracting property "table" of @contol.table fail
                                 retObj.retVal = targetObj;
-                                obj[propName] = targetObj;
+                                if (typeof obj === 'object') {
+                                    obj[propName] = targetObj;
+                                }
                                 retObj.types.push(typeof (obj[propName]));
                             } else {
-                                obj[propName] = retVal;
+                                if (typeof obj === 'object') {
+                                    obj[propName] = retVal;
+                                }
                                 retObj.types.push(typeof (obj[propName]));
                             }
                         } else {
                             retVal = '';
-                            obj[propName] = '';
-                            retObj.types.push(typeof (obj[propName]));
+                            if (typeof obj === 'object') {
+                                obj[propName] = '';
+                                retObj.types.push(typeof (obj[propName]));
+                            } else {
+                                retObj.types.push(typeof (obj));
+                            }
                         }
-                    } else if (obj[propName].startsWith("${")) {
-                        Liquid.parseExpression(liquid, obj[propName], retObj );
                     } else {
-                        retObj.retVal += obj[ic];
-                    }
-                }
-            } else if (typeof obj === 'string') {
-                // replace values by search in dataset or in globar var
-                retObj.retVal = "";
-                for (var ic = 0; ic < obj.length; ic++) {
-                    var s = ic;
-                    var e = ic;
-                    if (obj[ic] === '@' || obj[ic] === '$') {
-                        Liquid.parseExpression(liquid, obj, retObj);
-                    } else {
-                        retObj.retVal += obj[ic];
+                        retObj.retVal += expression[ic];
                     }
                 }
             } else {
@@ -3291,9 +3299,10 @@ var Liquid = {
         return [ retObj.status, retObj.retVal, retObj.pendingControlId, retObj.types ];
     },
     parseExpression:function(liquid, obj, retObj) {
+        let charProcessed = 0;
         let currentRow = retObj.iRow;
         let ic = 0, s = 0, e = 0;
-        if (obj[ic] === '@' || obj[ic] === '$') {
+        if (obj[ic] === '$') {
             ic++;
             if (obj[ic] === '{') {
                 // in dataset
@@ -3301,6 +3310,7 @@ var Liquid = {
                 while (obj[ic] !== '}' && ic < obj.length)
                     ic++;
                 e = ic;
+                charProcessed += e-(s-1)+1;
                 var searchingProp = obj.substring(s, e);
                 var auxProp = null;
                 if (searchingProp) {
@@ -3378,9 +3388,11 @@ var Liquid = {
                 if (targetObj) {
                     retObj.retVal += Liquid.getObjectProperty(targetObj, obj.substring(ic));
                     retObj.types.push("globalVar");
+                    charProcessed += obj.length;
                 }
             }
         }
+        return charProcessed;
     },
     getObjectByName: function (liquid, propertyName) {
         var targetObj = null;
@@ -10220,16 +10232,17 @@ var Liquid = {
         }
     },
     onButton: function (obj, command) {
-        var retVal = null;
+        let retVal = null;
         if (command) {
-            var confirmName = "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
-            var cmdConfirm = command[confirmName];
-            var liquid = Liquid.getLiquid(obj);
+            let doConfirm = command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE ? true : false;
+            let confirmName = "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+            let cmdConfirm = command[confirmName];
+            let liquid = Liquid.getLiquid(obj);
             result = Liquid.solveExpressionField(command, confirmName, liquid);
             if (result[0] === 'ready') {
                 cmdConfirm = result[1];
             }
-            if ((cmdConfirm ? confirm(cmdConfirm) : true)) {
+            if ((cmdConfirm && doConfirm ? confirm(cmdConfirm) : true)) {
                 // wrap to more specific and already defined command
                 if (command.name === "return" || command.name === "cancel") {
                     if (isDef(liquid.currentCommand)) {
@@ -10245,7 +10258,7 @@ var Liquid = {
                     }
                 } else if (command.name === "insert" || command.name === "update") {
                     // complete system command by missing default fields
-                    var bCmdFound = false;
+                    let bCmdFound = false;
                     if (liquid.tableJson.commands) {
                         for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
                             var cmd = liquid.tableJson.commands[icmd];

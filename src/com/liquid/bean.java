@@ -1050,7 +1050,7 @@ public class bean {
 
             if (clazz != null) {
 
-                if (rowsJson != null) {
+                if (rowsJson != null && rowsJson.length() > 0) {
                     for (int ir = 0; ir < rowsJson.length(); ir++) {
                         Object obj = clazz.newInstance();
                         JSONObject row = rowsJson.getJSONObject(ir);
