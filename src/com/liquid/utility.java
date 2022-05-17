@@ -1361,7 +1361,7 @@ public class utility {
      */
     public static String mergeJsonObject(String ssource, String starget) throws Exception {
         JSONObject source = new JSONObject(ssource);
-        JSONObject target = new JSONObject(starget);
+        JSONObject target = starget != null ? new JSONObject(starget) : new JSONObject();
         for (Object keyObject : JSONObject.getNames(source)) {
             String key = (String) keyObject;
             Object obj = source.get(key);

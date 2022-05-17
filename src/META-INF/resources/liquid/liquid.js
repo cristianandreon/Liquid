@@ -2180,8 +2180,13 @@ class LiquidCtrl {
 
 
                     // start inserting a row
-                    if(this.tableJson.autoLoad !== false || isRebuilding === true || this.tableJson.isSystem === true) { // action onload disabled or rebuilding or system
-                        var isAutoInsert = Liquid.isAutoInsert(this);
+                    var isAutoInsert = Liquid.isAutoInsert(this);
+                    if(this.tableJson.autoLoad !== false || isRebuilding === true || this.tableJson.isSystem === true) {
+                        // action onload disabled or rebuilding or system
+                        if(isFormX || isAutoInsert === true) {
+                            Liquid.autoInsert(this);
+                        }
+                    } else if(this.tableJson.autoLoad === false) {
                         if(isFormX || isAutoInsert === true) {
                             Liquid.autoInsert(this);
                         }
@@ -2796,7 +2801,10 @@ var Liquid = {
                             }
                         }
                     }
-                    if (!searchingNames) return null;
+                    if (!searchingNames) {
+                        console.error("LIQUID: control not found by '"+searchingNameOrObject+"'");
+                        return null;
+                    }
                 } else if (typeof searchingNameOrObject === "string") {
                     searchingNames = searchingNameOrObject.split(".");
                     if (typeof searchingNames === "undefined")
@@ -2835,6 +2843,7 @@ var Liquid = {
         } catch (e) {
             console.error(e);
         }
+        console.error("LIQUID: control not found by '"+searchingNameOrObject+"'");
         return null;
     },
     getLiquidByFullScan: function (obj) {
@@ -8264,7 +8273,7 @@ var Liquid = {
                         }
                         nUpdates += Liquid.formToObjectUpdate(targetObj, propName, propValue);
                     }
-                } else if (obj.childNodes[j].nodeName === 'TEXTAREA') {
+                } else if (obj.childNodes[j].nodeName.toUpperCase() === 'TEXTAREA') {
                     var propName = obj.childNodes[j].id;
                     var propValue = obj.childNodes[j].value;
                     nUpdates += Liquid.formToObjectUpdate(targetObj, propName, propValue);
@@ -9540,6 +9549,14 @@ var Liquid = {
                         if (liquid.tableJson.columns[ic].required) {
                             if (!liquid.tableJson.columns[ic].isValidated) {
                                 var addingValue = curRow[Number(liquid.tableJson.columns[ic].field)];
+                                // Is a file ?
+                                var addingValueAsFilesSize = curRow[liquid.tableJson.columns[ic].name+".filesSize"];
+                                var addingValueAsFilesName = curRow[liquid.tableJson.columns[ic].name+".filesName"];
+                                if(typeof addingValueAsFilesSize != 'undefined') {
+                                    if(Number(addingValueAsFilesSize) > 0) {
+                                        addingValue = addingValueAsFilesName;
+                                    }
+                                }
                                 if (!addingValue
                                     || addingValue === ''
                                     || (addingValue == 'N' && liquid.tableJson.columns[ic].size == 1)
@@ -10234,7 +10251,7 @@ var Liquid = {
     onButton: function (obj, command) {
         let retVal = null;
         if (command) {
-            let doConfirm = command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE ? true : false;
+            let doConfirm = command.fromToolbar && (command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE) ? true : false;
             let confirmName = "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
             let cmdConfirm = command[confirmName];
             let liquid = Liquid.getLiquid(obj);
@@ -15146,9 +15163,9 @@ var Liquid = {
                                             obj.dataset.filesName = filesName;
                                             obj.dataset.filesSize = filesSize;
                                             var additionFileInfo = col.name + ".filesName";
-                                            liquid.addingRow[additionFileInfo] = filesName;
+                                            if(liquid.addingRow) liquid.addingRow[additionFileInfo] = filesName;
                                             additionFileInfo = col.name + ".filesSize";
-                                            liquid.addingRow[additionFileInfo] = filesSize;
+                                            if(liquid.addingRow) liquid.addingRow[additionFileInfo] = filesSize;
                                             Liquid.formFilesToObjectExchange(queue);
                                             doUpdate = false;
                                         } else {
@@ -15176,9 +15193,10 @@ var Liquid = {
                                     var validateResult = Liquid.validateField(liquid, col, newValue);
                                     if (validateResult !== null) {
                                         if (validateResult[0] >= 0) {
-                                            // newValue = validateResult[1];
+                                            let rowId = liquid.tableJson.primaryKeyField ? liquid.addingRow[liquid.tableJson.primaryKeyField] : null;
+                                            let nodeId = liquid.addingNode ? liquid.addingNode.id : null;
                                             Liquid.addMirrorEvent(liquid, liquid.addingNode);
-                                            Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, liquid.addingRow[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], linkedField, null, newValue);
+                                            Liquid.registerFieldChange(liquid, nodeId, rowId, linkedField, null, newValue);
                                             Liquid.updateDependencies(liquid, col, null, event);
                                         }
                                     }
