@@ -2162,17 +2162,21 @@ public class db {
                             //
                             filterValue = solveVariableField(filterValue, request, true);
 
-                            if(!filterValue.equalsIgnoreCase(String.valueOf(oFilterValue))) {
-                                // Espressione risolta : reimposta l'oggetto originale (verrà usato come dato sorgente per rispettare il tipo dato)
-                                // oFilterValue = filterValue;
+                            if(oFilterValue != null && filterValue != null) {
+                                if (String.valueOf(oFilterValue).compareTo(filterValue) != 0) {
+                                    // Espressione risolta : reimposta l'oggetto originale (verrà usato come dato sorgente per rispettare il tipo dato)
+                                    // oFilterValue = filterValue;
+                                }
+                            } else {
                             }
-
                             filterValueIsSet = true;
                         } else if(oFilterValue instanceof JSONArray) {
                             filterValueIsSet = true;
                         }
                     }
                 } catch (Exception e) {
+                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
+                    throw new Exception("LIQUID SERVER : Error in filters:"+e.getMessage());
                 }
 
                 filterOp = filtersCol.has("op") ? filtersCol.getString("op").trim() : filterOp;

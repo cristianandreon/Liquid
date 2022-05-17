@@ -396,13 +396,17 @@ public class bean {
                                             //
                                             //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
                                             //
-                                            Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, foreignTables, level, maxRows, request);
-                                            if (beanResult != null) {
-                                                resultBean = (int) beanResult[0];
-                                                if (resultBean > 0) {
-                                                    result = (ArrayList<Object>) beanResult[1];
+                                            if(rowsJson.length() > 0) {
+                                                Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, foreignTables, level, maxRows, request);
+                                                if (beanResult != null) {
+                                                    resultBean = (int) beanResult[0];
+                                                    if (resultBean > 0) {
+                                                        result = (ArrayList<Object>) beanResult[1];
+                                                    }
+                                                    errors += (String) beanResult[3];
                                                 }
-                                                errors += (String) beanResult[3];
+                                            } else {
+                                                resultBean = 0;
                                             }
                                         } else {
                                             System.err.println("// get_bean() format:" + format + " unrecognized...");
@@ -959,32 +963,35 @@ public class bean {
                                         //
                                         // Create the bean (empty) from the control ft_tbl_wrk
                                         //
-                                        Object[] ftBeanResult = create_beans_multilevel_class_internal( ft_tbl_wrk, ftRowsJson, foreignTableForeignTablesJson, foreignTableForeignTables, level + 1, maxRows, runtimeForeignTables, request );
-                                        if (ftBeanResult != null) {
-                                            int ftResult = (int) ftBeanResult[0];
-                                            ArrayList<Object> ftBeansContent = (ArrayList<Object>) ftBeanResult[1];
-                                            String ftClassName = (String) ftBeanResult[4];
+                                        if(ftRowsJson.length() >= 0) {
+                                            // TODO: verificare il bean vuoto
+                                            Object[] ftBeanResult = create_beans_multilevel_class_internal(ft_tbl_wrk, ftRowsJson, foreignTableForeignTablesJson, foreignTableForeignTables, level + 1, maxRows, runtimeForeignTables, request);
+                                            if (ftBeanResult != null) {
+                                                int ftResult = (int) ftBeanResult[0];
+                                                ArrayList<Object> ftBeansContent = (ArrayList<Object>) ftBeanResult[1];
+                                                String ftClassName = (String) ftBeanResult[4];
 
-                                            ftPropNameList.add(ftPropName);
-                                            ftControlIdList.add(ftControlId);
-                                            ftClassNameList.add(ftClassName);
+                                                ftPropNameList.add(ftPropName);
+                                                ftControlIdList.add(ftControlId);
+                                                ftClassNameList.add(ftClassName);
 
-                                            //
-                                            // N.B.: ftBeansContentList is an list with an empty bean,
-                                            //      adding it due to it contains the child beans data (controlId/className/...)
-                                            //
-                                            ftBeansContentList.add(ftBeansContent);
+                                                //
+                                                // N.B.: ftBeansContentList is an list with an empty bean,
+                                                //      adding it due to it contains the child beans data (controlId/className/...)
+                                                //
+                                                ftBeansContentList.add(ftBeansContent);
 
-                                            try {
-                                                Class clazzChk = Class.forName(ftClassName);
-                                                if (clazzChk == null) {
-                                                    throw new Throwable("Null class");
-                                                } else {
+                                                try {
+                                                    Class clazzChk = Class.forName(ftClassName);
+                                                    if (clazzChk == null) {
+                                                        throw new Throwable("Null class");
+                                                    } else {
+                                                    }
+                                                } catch (Throwable th) {
+                                                    String err = "Error getting class " + ftClassName + ":" + th.getLocalizedMessage();
+                                                    Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// " + err);
+                                                    errors += "[SERVER ERROR]: unable to create class:" + err;
                                                 }
-                                            } catch (Throwable th) {
-                                                String err = "Error getting class " + ftClassName + ":" + th.getLocalizedMessage();
-                                                Logger.getLogger(db.class.getName()).log(Level.SEVERE, "// "+err);
-                                                errors += "[SERVER ERROR]: unable to create class:" + err;
                                             }
                                         }
                                     }
@@ -2739,21 +2746,25 @@ public class bean {
                     }
 
                     //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
-                    Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
-                    if ((int) beanResult[0] >= 0) {
-                        // Updating the foreignTables (some info may be added)
-                        if(beanResult[3] != null && !((String)beanResult[3]).isEmpty()) {
-                            throw new Exception("Create bean error:"+beanResult[3]);
-                        } else {
-                            try {
-                                tbl_wrk.tableJson.put("foreignTables", foreignTablesJson);
-                            } catch (Exception e) {
-                                System.err.println("// get_beans() [" + controlId + "] Error:" + e.getLocalizedMessage());
+                    if(rowsJson.length() > 0) {
+                        Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
+                        if ((int) beanResult[0] >= 0) {
+                            // Updating the foreignTables (some info may be added)
+                            if (beanResult[3] != null && !((String) beanResult[3]).isEmpty()) {
+                                throw new Exception("Create bean error:" + beanResult[3]);
+                            } else {
+                                try {
+                                    tbl_wrk.tableJson.put("foreignTables", foreignTablesJson);
+                                } catch (Exception e) {
+                                    System.err.println("// get_beans() [" + controlId + "] Error:" + e.getLocalizedMessage());
+                                }
+                                return (ArrayList<Object>) beanResult[1];
                             }
-                            return (ArrayList<Object>) beanResult[1];
+                        } else {
+                            throw new Exception("Create bean error:" + beanResult[3]);
                         }
                     } else {
-                        throw new Exception("Create bean error:"+beanResult[3]);
+                        // Recordset vuoto -> zero bean
                     }
                 }
             }
