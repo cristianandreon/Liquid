@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.14
+// Liquid ver.2.16
 //
 //  First update 06-01-2020 - Last update 18-05-2022
 //
@@ -3269,10 +3269,10 @@ var Liquid = {
                     if (expression[ic] === '$') {
                         ic += Liquid.parseExpression(liquid, expression, retObj);
                     } else if (expression[ic] === "@") {
-                        var targetObj = Liquid.getObjectByName(liquid, obj[propName].substring(1));
+                        var targetObj = Liquid.getObjectByName(liquid, expression.substring(1));
                         if (targetObj) {
-                            var nameItems = obj[propName].substring(1).split(".");
-                            retObj.retVal = Liquid.getObjectProperty(targetObj, obj[propName].substring(1 + nameItems[0].length + 1));
+                            var nameItems = expression.substring(1).split(".");
+                            retObj.retVal = Liquid.getObjectProperty(targetObj, expression.substring(1 + nameItems[0].length + 1));
                             if (typeof retObj.retVal === 'undefined') {
                                 // if (typeof retVal === 'undefined' && (nameItems.length>=2 && nameItems[1].toLowerCase() === 'table')) {
                                 // in the name of flexibility : extracting property "table" of @contol.table fail
@@ -5521,11 +5521,15 @@ var Liquid = {
                         if (liquid.filtersJson[liquid.curFilter].columns[iflt]) {
                             if (liquid.filtersJson[liquid.curFilter].columns[iflt].value !== null) {
                                 let filterColumn = liquid.filtersJson[liquid.curFilter].columns[iflt];
-                                if (filterColumn.value.indexOf("${")>=0 || filterColumn.value.indexOf("@{")>=0) {
-                                    // solve variable filters
-                                    var result = Liquid.solveExpressionField(filterColumn,"value", liquid);
-                                    if (result[0] === 'ready') {
-                                        filterColumn.value = result[1] != null ? result[1] : "";
+                                if (filterColumn) {
+                                    if (filterColumn.value) {
+                                        if (filterColumn.value.indexOf("${") >= 0 || filterColumn.value.indexOf("@{") >= 0) {
+                                            // solve variable filters
+                                            var result = Liquid.solveExpressionField(filterColumn, "value", liquid);
+                                            if (result[0] === 'ready') {
+                                                filterColumn.value = result[1] != null ? result[1] : "";
+                                            }
+                                        }
                                     }
                                 }
                                 filterColumns.push(filterColumn);
