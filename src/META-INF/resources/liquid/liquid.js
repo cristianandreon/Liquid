@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.2.13
+// Liquid ver.2.14
 //
-//  First update 06-01-2020 - Last update 13-05-2022
+//  First update 06-01-2020 - Last update 18-05-2022
 //
 //  TODO : see trello.com
 //
@@ -10264,13 +10264,15 @@ var Liquid = {
                 if (command.name === "return" || command.name === "cancel") {
                     if (isDef(liquid.currentCommand)) {
                         if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update") {
-                            command = liquid.currentCommand.rollbackCommand;
+                            // merge the commands
+                            command = Liquid.mergeCommand(liquid.currentCommand.rollbackCommand, command);
                         }
                     }
                 } else if (command.name === "ok") {
                     if (isDef(liquid.currentCommand)) {
                         if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update" || liquid.currentCommand.name === "paste") {
-                            command = liquid.currentCommand;
+                            // merge the commands
+                            command = Liquid.mergeCommand(liquid.currentCommand, command);
                         }
                     }
                 } else if (command.name === "insert" || command.name === "update") {
@@ -19343,30 +19345,49 @@ var Liquid = {
             }
         } catch(e) { console.error(e); }
     },
+    mergeCommand:function(currentCommand, command) {
+        let result_command = deepClone(currentCommand);
+        result_command.client = Liquid.pushObjToArray(command.client, result_command.client);
+        result_command.server = Liquid.pushObjToArray(command.server, result_command.server);
+        return result_command;
+    },
+    pushObjToArray:function(source, target) {
+        if(isDef(source)) {
+            if (isDef(target)) {
+                if (!Array.isArray(target)) {
+                    target = [target];
+                }
+                target.push(source);
+            } else {
+                target = source;
+            }
+        }
+        return target;
+    },
 
-    /*  ES. lookup
-    columns:[
-                {...}
-                {
-                    "name":"TAB_TIPO_DISPOSITIVO.COD_TIPODISPOSITIVO",
-                    "label":"COD_TIPODISPOSITIVO",
-                    ...
-                    "lookup":"TAB_TIPO_DISPOSITIVO",        (nome della lookup per condivisione)
-                    "foreignTable":"TAB_TIPO_DISPOSITIVO",  (tabella esterna)
-                    "foreignColumn":"COD_TIPODISPOSITIVO",  (colonna nella tabella esterna)
-                    "column":"COD_TIPODISPOSITIVO",         (colonna nella tabella sorgente)
-                    "options":{
-                        "lookupField":"COD_TIPODISPOSITIVO",    (colonna "descrizione" nella tabella esterna)
-                        "idColumn":"COD_TIPODISPOSITIVO",       (colonna "id" nella tabella esterna)
-                        "idColumnTarget":"COD_TIPODISPOSITIVO", (colonna "id" destinazione nella tabella sorgente)
-                        "autoSelect":false,
-                        "columns":[{"name":"COD_TIPODISPOSITIVO"},{"name":"DES_TIPODISPOSITIVO"}],
-                        "navVisible":true,
-                        "height":200
-                },
-                {...}
-            ]
-     */
+/*  ES. lookup
+columns:[
+            {...}
+            {
+                "name":"TAB_TIPO_DISPOSITIVO.COD_TIPODISPOSITIVO",
+                "label":"COD_TIPODISPOSITIVO",
+                ...
+                "lookup":"TAB_TIPO_DISPOSITIVO",        (nome della lookup per condivisione)
+                "foreignTable":"TAB_TIPO_DISPOSITIVO",  (tabella esterna)
+                "foreignColumn":"COD_TIPODISPOSITIVO",  (colonna nella tabella esterna)
+                "column":"COD_TIPODISPOSITIVO",         (colonna nella tabella corrente)
+                "options":{
+                    "lookupField":"COD_TIPODISPOSITIVO",    (colonna "descrizione" nella tabella esterna)
+                    "idColumn":"COD_TIPODISPOSITIVO",       (colonna "id" nella tabella esterna)
+                    "idColumnTarget":"COD_TIPODISPOSITIVO", (colonna "id" destinazione nella tabella corrente)
+                    "autoSelect":false,
+                    "columns":[{"name":"COD_TIPODISPOSITIVO"},{"name":"DES_TIPODISPOSITIVO"}],
+                    "navVisible":true,
+                    "height":200
+            },
+            {...}
+        ]
+ */
     /**
      *
      * @param controlId     (Id of calling control)
