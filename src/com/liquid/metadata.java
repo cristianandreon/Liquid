@@ -5,6 +5,7 @@
 package com.liquid;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.sql.*;
 import java.util.Arrays;
@@ -660,6 +661,8 @@ public class metadata {
             return getJavaClass((int)((Long) oType).intValue());
         } else if (oType instanceof String) {
             return getJavaClass((int)Integer.parseInt((String) oType));
+        } else if (oType instanceof BigDecimal) {
+            return getJavaClass((int)((BigDecimal) oType).intValue());
         }
         return null;
     }
@@ -673,7 +676,9 @@ public class metadata {
      * @return the CLass mathcing the type
      */
     static public Class getJavaClass(int type) {
-        if (type == 2 || type == 4 || type == -5 || type == -6 || type == 5) {
+        if (type == 1) {
+            return String.class;
+        } else if (type == 2 || type == 4 || type == -5 || type == -6 || type == 5) {
             // SMALLINT	short	Integer
             // INTEGER	int	Integer
             return Integer.class;

@@ -1882,12 +1882,11 @@ public class bean {
      * @param request
      * @param sql
      * @param params
-     * @param maxRows
      * @return
      * @throws Exception
      * @throws Throwable
      */
-    static public Object load_bean(HttpServletRequest request, String sql, ArrayList<Object> params, long maxRows) throws Exception, Throwable {
+    static public Object load_bean(HttpServletRequest request, String sql, ArrayList<Object> params) throws Exception, Throwable {
         ArrayList<Object> beans = load_beans((HttpServletRequest)null, sql, params,1);
         if (beans != null) {
             if (beans.size() > 0) {
