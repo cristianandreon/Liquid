@@ -4690,7 +4690,7 @@ var Liquid = {
         liquid.columnDefs = new Array();
         liquid.columnList = new Array();
 
-        if(isDef(liquid.tableJson.checkboxSelection)) {
+        if(liquid.tableJson.checkboxSelection === true) {
             if(liquid.tableJson.columns) {
                 if(liquid.tableJson.columns[0].visible === false) {
                     console.error("ERROR: first column must me visible when rowSelection is defined");
