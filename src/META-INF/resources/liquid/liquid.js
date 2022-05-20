@@ -2598,6 +2598,7 @@ var Liquid = {
     timeFormat: null,
     timestampFormat: null,
     localStorageFiledSize: 1024 * 2,
+    MaxSlideShowPages:100,
     setLanguage: function (language, serverSide) {
         if (isDef(language)) {
             var lang_list = language.split(';');
@@ -5413,6 +5414,12 @@ var Liquid = {
                 if (liquid.navObj) {
                     Liquid.updateStatusBar(liquid);
                 }
+
+                if(liquid.tableJson.navBarStyle === 'slideShow') {
+                    Liquid.addSlideShowItemsToLayout(liquid, null, true);
+                }
+
+
 
                 if (isDef(liquid.pendingControlIds)) {
                     for (var il = 0; il < liquid.pendingControlIds.length; il++) {
@@ -13098,6 +13105,10 @@ var Liquid = {
                             }
                             layout.containerObj.style.display = lastDisplay;
 
+                            if(liquid.tableJson.navBarStyle === 'slideShow') {
+                                Liquid.addSlideShowItemsToLayout(liquid, layout, true);
+                            }
+
                             Liquid.refreshLayout(liquid, layout, true);
 
                             var mode = "readonly";
@@ -13820,6 +13831,35 @@ var Liquid = {
                 }
             } else {
                 Liquid.onLayoutMode(layout.layoutTabObj, rowIndex1B - 1, "readonly");
+            }
+        }
+    },
+    addSlideShowItemsToLayout:function(liquid, layout, bSetup) {
+        let layouts = layout ? [layout] : liquid.tableJson.layouts;
+        for(let il=0; il<layouts.length; il++) {
+            let layout = layouts[il];
+            let slideShowId = liquid.controlId + "." + "slideShow";
+            let slideShowObj = document.getElementById(slideShowId);
+            let htmlCode = "<!-- Slideshow container -->"
+                + "<div class=\"slideshow-container\">"
+                + "<a class=\"slideshow-prev\" onclick=\"plusSlides(-1)\">&#10094;</a>"
+                + "<a class=\"slideshow-next\" onclick=\"plusSlides(1)\">&#10095;</a>"
+                + "</div>"
+                + "<div style=\"text-align:center; position:relative; top:-25px; z-index:200\">";
+            let mp = liquid.nRows;
+            if (mp > Liquid.MaxSlideShowPages) mp = Liquid.MaxSlideShowPages;
+            for (let ip = 0; ip < mp; ip++) {
+                htmlCode += "<span class=\"slideshow-dot\" onclick=\"currentSlide(" + (ip + 1) + "\"></span>";
+            }
+            htmlCode += "</div>";
+            if (!slideShowObj) {
+                let newObj = document.createElement("div");
+                newObj.className = "slideshow-root";
+                newObj.innerHTML = htmlCode;
+                newObj.id = slideShowId;
+                layout.containerObj.appendChild(newObj);
+            } else {
+                slideShowObj.innerHTML = htmlCode;
             }
         }
     },
