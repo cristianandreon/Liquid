@@ -1973,9 +1973,9 @@ public class event {
                             String date = rsdo.getString("date");
                             String note = rsdo.getString("note");
                             String type = rsdo.getString("type");
-                            String index = rsdo.getString("id");
+                            String id = rsdo.getString("id");
                             String options = "";
-                            String fieldSet = "{" + "\"file\":\""+(file!=null?file:"")+"\", \"size\":"+size+",\"note\":\""+note+"\""+",\"type\":\""+type+"\""+",\"index\":\""+index+"\"" + "}";
+                            String fieldSet = "{" + "\"file\":\""+(file!=null?file:"")+"\", \"size\":"+size+",\"note\":\""+note+"\""+",\"type\":\""+type+"\""+",\"id\":\""+id+"\"" + "}";
                             resultSet.append( (nRecs>0?",":"") + fieldSet);
                             nRecs++;
                         }
@@ -2006,6 +2006,10 @@ public class event {
      *
      * @param tbl_wrk
      * @param b64FileContent
+     * @param fileName
+     * @param fileSize
+     * @param docType
+     * @param userData
      * @param database
      * @param schema
      * @param table
@@ -2023,6 +2027,7 @@ public class event {
      */
     static public String uploadDocument(Object tbl_wrk,
                                         String b64FileContent, String fileName, Long fileSize,
+                                        String docType, String userData,
                                         String database, String schema, String table, String name, Object rowId,
                                         Object clientData, Object requestParam) throws Throwable {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
@@ -2039,6 +2044,8 @@ public class event {
                 dmsParamsJson.put("file", fileName != null ? fileName : null);
                 dmsParamsJson.put("size", fileSize != null ? fileSize : null);
                 dmsParamsJson.put("content", b64FileContent != null ? b64FileContent : null);
+                dmsParamsJson.put("doc_type", docType != null ? docType : null);
+                dmsParamsJson.put("user_data", userData != null ? userData : null);
                 JSONArray ids = new JSONArray();
                 ids.put(rowId);
                 dmsParamsJson.put("ids", ids);
@@ -2070,24 +2077,21 @@ public class event {
             if (tbl_wrk != null) {
                 workspace tblWrk = (workspace) tbl_wrk;
                 Class cls = null;
-                try {
-                    // TODO : controllo della dimensione del file
-                    HttpServletRequest request = (HttpServletRequest) requestParam;
-                    if (request != null) {
-                        // data:*/*;base64,
-                        if (tblWrk != null) {
-                            if (clientData != null) {
-                                String docName = (String) clientData;
-                                if (docName != null) {
-                                    if(tblWrk.tableJson.has("documents")) {
-                                        JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
-                                        for (int i = 0; i < documents.length(); i++) {
-                                            JSONObject document = (JSONObject) documents.get(i);
-                                            if (document != null) {
-                                                if (docName.equalsIgnoreCase(document.getString("name"))) {
-                                                    if (document.has("maxSize")) {
+                HttpServletRequest request = (HttpServletRequest) requestParam;
+                if (request != null) {
+                    // data:*/*;base64,
+                    if (tblWrk != null) {
+                        if (clientData != null) {
+                            String docName = (String) clientData;
+                            if (docName != null) {
+                                if(tblWrk.tableJson.has("documents")) {
+                                    JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
+                                    for (int i = 0; i < documents.length(); i++) {
+                                        JSONObject document = (JSONObject) documents.get(i);
+                                        if (document != null) {
+                                            if (docName.equalsIgnoreCase(document.getString("name"))) {
+                                                if (document.has("maxSize")) {
 
-                                                    }
                                                 }
                                             }
                                         }
@@ -2095,45 +2099,38 @@ public class event {
                                 }
                             }
                         }
+                    }
 
-                        JSONObject paramsJson = new JSONObject((String) params);
-                        JSONObject paramJson = paramsJson.getJSONObject("params");
+                    JSONObject paramsJson = new JSONObject((String) params);
+                    JSONObject paramJson = paramsJson.getJSONObject("params");
 
 
-                        if(paramJson.has("file")) {
-                            String file = paramJson.getString("file");
-                            Path path = new File(file).toPath();
-                            if (path != null) {
-                                // fileContent = Files.readAllBytes( path ) ;
-                                paramJson.put("nimeType", Files.probeContentType(path));
-                            }
-                        }
-
-                        // collecting keys for the link
-                        ArrayList<String> keyList = utility.get_dms_keys(tblWrk, (String) params);
-                        if(keyList != null) {
-                            try {
-                                cls = Class.forName("app.liquid.dms.connection");
-                                Object classInstance = (Object) cls.newInstance();
-                                Method method = cls.getMethod("uploadDocument", Object.class, Object.class, Object.class, Object.class);
-                                return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) keyList);
-                            } catch (Throwable th){
-                                //
-                                // default implementation
-                                //
-                                return uploadDocumentDefault( tbl_wrk, paramsJson.toString(), clientData, keyList );
-                            }
-                        } else {
-                            throw new InvalidParameterException("Unable to build DMS keys");
+                    if(paramJson.has("file")) {
+                        String file = paramJson.getString("file");
+                        Path path = new File(file).toPath();
+                        if (path != null) {
+                            // fileContent = Files.readAllBytes( path ) ;
+                            paramJson.put("nimeType", Files.probeContentType(path));
                         }
                     }
-                } catch (Throwable th) {
-                    System.err.println(" app.liquid.dms.connection.uploadDocument() Error:" + th.getLocalizedMessage());
-                    Method[] methods = cls.getMethods();
-                    for (int i = 0; i < methods.length; i++) {
-                        System.err.println(" Method #" + (i + 1) + ":" + methods[i].toString());
+
+                    // collecting keys for the link
+                    ArrayList<String> keyList = utility.get_dms_keys(tblWrk, (String) params);
+                    if(keyList != null) {
+                        try {
+                            cls = Class.forName("app.liquid.dms.connection");
+                            Object classInstance = (Object) cls.newInstance();
+                            Method method = cls.getMethod("uploadDocument", Object.class, Object.class, Object.class, Object.class);
+                            return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) keyList);
+                        } catch (Throwable th){
+                            //
+                            // default implementation
+                            //
+                            return uploadDocumentDefault( tbl_wrk, paramsJson.toString(), clientData, keyList );
+                        }
+                    } else {
+                        throw new InvalidParameterException("Unable to build DMS keys");
                     }
-                    throw th;
                 }
             }
         } catch (Throwable th2) {
@@ -2146,7 +2143,7 @@ public class event {
 
 
     /**
-     * Default upload file into DMS implementation : set file name, write file, create index in DB
+     * Default upload file into DMS implementation : set file name, write file, create row in DB
      *
      * @param tbl_wrk
      * @param params
@@ -2160,7 +2157,7 @@ public class event {
         PreparedStatement psdo = null;
         String sQuery = null;
         String sWhere = "";
-        String dmsSchema = null, dmsTable = null, dmsRootFolder = null;
+        String dmsSchema = null, dmsTable = null, dmsDocType = null, dmsRootFolder = null;
         long dmsMaxFileSize = 0;
         int nRecs = 0;
 
@@ -2177,6 +2174,11 @@ public class event {
             if(ft != null) {
                 ft.setAccessible(true);
                 dmsTable = (String) ft.get(null);
+            }
+            Field fdt = cls.getDeclaredField("dmsDocType");
+            if(fdt != null) {
+                fdt.setAccessible(true);
+                dmsDocType = (String) fdt.get(null);
             }
             Field fr = cls.getDeclaredField("dmsRootFolder");
             if(fr != null) {
@@ -2255,6 +2257,21 @@ public class event {
                 paramJson.put("note", "");
             }
 
+            Object doc_type_id = null;
+            if(paramJson.has("doc_type_id")) {
+                doc_type_id = paramJson.get("doc_type_id");
+            } else {
+                if (paramJson.has("doc_type")) {
+                    doc_type_id = "(SELECT id FROM \"cnconline\".\""+dmsDocType+"\" WHERE \"type\"='"+paramJson.get("doc_type")+"')";
+                }
+            }
+            Object user_data = null;
+            if(paramJson.has("user_data")) {
+                user_data = paramJson.get("user_data");
+            }
+
+
+
             // paramJson : { database: ... , schema: ..., table: ..., name: ..., ids:nodesKey, file:"", size:"", note:"", fileContent:"" mimeType:""};
             if(requestParam != null) {
                 Object [] connRes = connection.getDBConnection();
@@ -2274,16 +2291,25 @@ public class event {
                     for (int i=0; i<keyList.size(); i++) {
 
                         sQuery = "INSERT INTO \""+dmsSchema+"\".\""+dmsTable+"\" " +
-                                "(\"file\",\"size\",\"note\",\"type\",\"hash\",\"link\")" +
+                                "(\"file\",\"size\",\"note\",\"type\",\"hash\",\"link\",\"doc_type_id\",\"user_data\")" +
                                 " VALUES " +
-                                "('"+fileAbsolutePath
-                                +"','"+paramJson.getInt("size")
-                                +"','"+paramJson.getString("note")
-                                +"','"+paramJson.getString("nimeType")
-                                +"','"+paramJson.getString("hash")
-                                +"','"+keyList.get(i)
-                                +"')";
+                                "('"+fileAbsolutePath+"'"
+                                +",'"+paramJson.getInt("size")+"'"
+                                +",'"+paramJson.getString("note")+"'"
+                                +",'"+paramJson.getString("nimeType")+"'"
+                                +",'"+paramJson.getString("hash")+"'"
+                                +",'"+keyList.get(i)+"'"
+                                +","+doc_type_id
+                                +",?"
+                                +")";
                         psdo = conn.prepareStatement(sQuery);
+                        if(user_data instanceof String) {
+                            psdo.setString(1, (String)user_data);
+                        } else if(user_data instanceof byte []) {
+                            psdo.setString(1, (String)utility.base64Encode((byte[]) user_data));
+                        } else {
+                            psdo.setNull(1, Types.VARCHAR);
+                        }
                         int res = psdo.executeUpdate();
                         if(res >= 0) {
                             String fieldSet = "{"
@@ -2293,6 +2319,7 @@ public class event {
                                     + ",\"type\":\"" + paramJson.getString("nimeType") + "\""
                                     + ",\"hash\":\"" + paramJson.getString("hash") + "\""
                                     + ",\"link\":\"" + keyList.get(i) + "\""
+                                    + ",\"doc_type_id\":\"" + doc_type_id + "\""
                                     + "}";
                             resultSet.append(nRecs > 0 ? "," : "" + fieldSet);
                             nRecs++;
@@ -2328,7 +2355,7 @@ public class event {
      *
      * @param tbl_wrk
      * @param params
-     * @param clientData
+     * @param clientData    "content" -> download as content, "getLink" -> download the data, default download as file
      * @param requestParam
      * @return
      */
@@ -2336,23 +2363,52 @@ public class event {
         String error = "", resultSet = "";
         Object[] result = null;
         try {
-            if (tbl_wrk != null) {
-                workspace tblWrk = (workspace) tbl_wrk;
-                Class cls = null;
-                try {
-                    cls = Class.forName("app.liquid.dms.connection");
-                    Method method = cls.getMethod("downloadDocument", Object.class, Object.class, Object.class, Object.class);
-                    Object classInstance = (Object) cls.newInstance();
-                    result = (Object[]) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
-                } catch (Throwable th) {
-                    // default implementatio
-                    result = downloadDocumentDefault( tbl_wrk, params, clientData, requestParam );
+            workspace tblWrk = (workspace) tbl_wrk;
+            Class cls = null;
+            try {
+                cls = Class.forName("app.liquid.dms.connection");
+                Method method = cls.getMethod("downloadDocument", Object.class, Object.class, Object.class, Object.class);
+                Object classInstance = (Object) cls.newInstance();
+                result = (Object[]) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
+            } catch (Throwable th) {
+                // default implementatio
+                result = downloadDocumentDefault( tbl_wrk, params, clientData, requestParam );
+            }
+            HttpServletRequest request = (HttpServletRequest) requestParam;
+            HttpServletResponse response = (HttpServletResponse) request.getAttribute("response");
+            if("getLink".equalsIgnoreCase((String)clientData)) {
+                String outData = "{"
+                        +"\"fileName\":\"\""
+                        +",\"fileMimeType\":\"\""
+                        +",\"file\":\"\""
+                        +",\"size\":\"\""
+                        +",\"date\":\"\""
+                        +",\"note\":\"\""
+                        +",\"type\":\"\""
+                        +",\"link\":\"\""
+                        +",\"hash\":\"\""
+                        +",\"id\":\"\""
+                        +"\"doc_type\":\"\""
+                        +",\"doc_type_desc\":\"\""
+                        +",\"user_data\":\"\""
+                        +"}";
+                response.getOutputStream().write(outData.getBytes());
+            } else {
+                if (result[2] != null) {
+                    response.setContentType((String) result[1]);
+                    if ("content".equalsIgnoreCase((String) clientData)) {
+                        // download as content
+                    } else {
+                        // download as file
+                        response.setHeader("Content-Disposition", "attachment; filename=" + (String) result[0]);
+                    }
+                    response.getOutputStream().write((byte[]) result[2]);
+                } else {
+                    String err = (String)result[15];
+                    response.setContentType((String) result[1]);
+                    response.setStatus(500);
+                    response.getOutputStream().write((err != null ? err : "File not found").getBytes());
                 }
-                HttpServletRequest request = (HttpServletRequest) requestParam;
-                HttpServletResponse response = (HttpServletResponse) request.getAttribute("response");
-                response.setContentType((String) result[1]);
-                response.setHeader("Content-Disposition", "attachment; filename=" + (String) result[0]);
-                response.getOutputStream().write((byte[]) result[2]);
             }
         } catch (Throwable e) {
             error += "Error:" + e.getLocalizedMessage();
@@ -2370,68 +2426,120 @@ public class event {
         ResultSet rsdo = null;
         String sQuery = null;
         String sWhere = "";
-        String dmsSchema = null, dmsTable = null;
+        String error = null;
+        String dmsSchema = null, dmsTable = null, dmsDocType = null;
         int nRecs = 0;
+        String file = null, date = null, note = null, type = null, link = null, hash = null, id = null, doc_type = null, doc_type_desc = null, user_data = null;
+        long size = 0;
 
         try {
 
-            // root table
+            // root table data
             Class cls = Class.forName("app.liquid.dms.connection");
             Field fs = cls.getDeclaredField("dmsSchema");
-            if(fs != null)
+            if(fs != null) {
+                fs.setAccessible(true);
                 dmsSchema = (String) fs.get(null);
+            }
             Field ft = cls.getDeclaredField("dmsTable");
-            if(ft != null)
+            if(ft != null) {
+                ft.setAccessible(true);
                 dmsTable = (String) ft.get(null);
+            }
+            Field fdt = cls.getDeclaredField("dmsDocType");
+            if(fdt != null) {
+                fdt.setAccessible(true);
+                dmsDocType = (String) fdt.get(null);
+            }
+
+
 
             JSONObject paramsJson = new JSONObject((String)params);
             JSONObject paramJson = paramsJson.getJSONObject("params");
-            // { paramJson:..., schema:..., table:..., ids:..., index: ... };
+            // { paramJson:..., schema:..., table:..., ids:..., id: ... };
             if(paramJson != null) {
+
+                String sid = paramJson.has("id") ? paramJson.getString("id") : null;
+                String slink = paramJson.has("link") ? paramJson.getString("link") : null;
+
                 Object [] connRes = connection.getDBConnection();
                 conn = (Connection)connRes[0];
                 if(conn != null) {
-                    sQuery = "SELECT * from \""+dmsSchema+"\".\""+dmsTable+"\" WHERE (id='"+paramJson.getString("index")+"')";
+                    String cols = "D.file, D.size, D.date, D.note, D.type, D.link, D.hash, D.id, DT.type as doc_type";
+                    if("IT".equalsIgnoreCase(workspace.getGLLang())) {
+                        cols += ", DT.type_desc_it as doc_type_desc";
+                    } else {
+                        cols += ", DT.type_desc as doc_type_desc";
+                    }
+                    sQuery = "SELECT "+cols+" " +
+                            "from \"" + dmsSchema + "\".\"" + dmsTable + "\" D " +
+                            "LEFT JOIN \""+ dmsSchema + "\".\"" + dmsDocType +"\" DT ON DT.id=doc_type_id ";
+
+                    if(sid != null && !sid.isEmpty()) {
+                        sQuery += "WHERE (id='" + sid + "')";
+                    } else if(slink != null && !slink.isEmpty()) {
+                        if(slink.startsWith("DMS://"))
+                            slink = slink.substring(6);
+                        sQuery += "WHERE (link='" + slink + "')";
+                    } else {
+                        throw new Exception("Cannot download document : missing search key");
+                    }
+
                     psdo = conn.prepareStatement(sQuery);
                     rsdo = psdo.executeQuery();
                     if(rsdo != null) {
-                        while(rsdo.next()) {
-                            String file = rsdo.getString("file");
-                            int size = rsdo.getInt("size");
-                            String date = rsdo.getString("date");
-                            String note = rsdo.getString("note");
-                            String type = rsdo.getString("type");
-                            String index = rsdo.getString("id");
-                            String options = "";
-                            Path path = new File(file).toPath();
-                            if(path != null) {
-                                fileName = file ;
-                                fileMimeType = Files.probeContentType(path);
-                                fileContent = Files.readAllBytes( path ) ;
+                        if(rsdo.next()) {
+                            file = rsdo.getString("file");
+                            size = rsdo.getInt("size");
+                            date = rsdo.getString("date");
+                            note = rsdo.getString("note");
+                            type = rsdo.getString("type");
+                            doc_type = rsdo.getString("doc_type");
+                            doc_type_desc = rsdo.getString("doc_type_desc");
+                            link = rsdo.getString("link");
+                            hash = rsdo.getString("hash");
+                            id = rsdo.getString("id");
+
+                            if("getLink".equalsIgnoreCase((String)clientData)) {
+                                // Non necessario leggere il contenuto
                             } else {
-                                System.err.println("ERROR : File \"" + file+"\" not found");
+                                Path path = new File(file).toPath();
+                                if (path != null) {
+                                    fileName = file;
+                                    fileMimeType = Files.probeContentType(path);
+                                    fileContent = Files.readAllBytes(path);
+                                } else {
+                                    String err = "ERROR : File \"" + file + "\" not found";
+                                    System.err.println(err);
+                                    throw new Exception(err);
+                                }
                             }
                             nRecs++;
                         }
                     }
-                    if(rsdo != null) rsdo.close();
-                    if(psdo != null) psdo.close();
                 }
             }
         } catch (Throwable e) {
-            System.err.println("Query Error:" + e.getLocalizedMessage() + sQuery);
+            error = "Internal Error:" + e.getLocalizedMessage();
+            System.err.println(error);            
         } finally {
             try {
-                conn.close();
+                if(rsdo != null) rsdo.close();
+                if(psdo != null) psdo.close();
+                if(conn != null) conn.close();
             } catch (SQLException ex) {
                 Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        return new Object[] { (Object)fileName, (Object)fileMimeType, (Object)fileContent };
+        return new Object[] {
+                (Object)fileName, (Object)fileMimeType, (Object)fileContent,
+                (Object)file, (Object)size,
+                (Object)date, (Object)note, (Object)type, (Object)link, (Object)hash, (Object)id,
+                (Object)doc_type, (Object)doc_type_desc, (Object)user_data,
+                (Object)nRecs,
+                (Object)error
+        };
     }
-
-
-
 
 
     /**
@@ -2445,18 +2553,16 @@ public class event {
     static public String deleteDocument(Object tbl_wrk, Object params, Object clientData, Object requestParam) {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
-            if (tbl_wrk != null) {
-                workspace tblWrk = (workspace) tbl_wrk;
-                Class cls = null;
-                try {
-                    cls = Class.forName("app.liquid.dms.connection");
-                    Method method = cls.getMethod("deleteDocument", Object.class, Object.class, Object.class, Object.class);
-                    Object classInstance = (Object) cls.newInstance();
-                    return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
-                } catch (Throwable th) {
-                    // Default implementation
-                    return deleteDocumentDefault( tbl_wrk, params, clientData, requestParam );
-                }
+            workspace tblWrk = (workspace) tbl_wrk;
+            Class cls = null;
+            try {
+                cls = Class.forName("app.liquid.dms.connection");
+                Method method = cls.getMethod("deleteDocument", Object.class, Object.class, Object.class, Object.class);
+                Object classInstance = (Object) cls.newInstance();
+                return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
+            } catch (Throwable th) {
+                // Default implementation
+                return deleteDocumentDefault( tbl_wrk, params, clientData, requestParam );
             }
         } catch (Throwable e) {
             error += "Error:" + e.getLocalizedMessage();
@@ -2496,16 +2602,16 @@ public class event {
 
             JSONObject paramsJson = new JSONObject((String)params);
             JSONObject paramJson = paramsJson.getJSONObject("params");
-            // { paramJson:..., schema:..., table:..., ids:..., index: ... };
+            // { paramJson:..., schema:..., table:..., ids:..., id: ... };
             if(paramJson != null) {
                 Object [] connRes = connection.getDBConnection();
                 conn = (Connection)connRes[0];
                 if(conn != null) {
-                    sQuery = "DELETE FROM \""+dmsSchema+"\".\""+dmsTable+"\" WHERE (id='"+paramJson.getString("index")+"')";
+                    sQuery = "DELETE FROM \""+dmsSchema+"\".\""+dmsTable+"\" WHERE (id='"+paramJson.getString("id")+"')";
                     psdo = conn.prepareStatement(sQuery);
                     int res = psdo.executeUpdate();
                     if(res >= 0) {
-                        String fieldSet = "{" + "\"id\":\""+(paramJson.getString("index")) + "}";
+                        String fieldSet = "{" + "\"id\":\""+(paramJson.getString("id")) + "}";
                         resultSet.append( (nRecs>0?",":"") + fieldSet);
                         nRecs++;
                     }
@@ -2583,7 +2689,7 @@ public class event {
 
                 JSONObject paramsJson = new JSONObject((String)params);
                 JSONObject paramJson = paramsJson.getJSONObject("params");
-                // { paramJson:..., schema:..., table:..., ids:..., index: ... };
+                // { paramJson:..., schema:..., table:..., ids:..., id: ... };
                 if(paramJson != null) {
                     Object [] connRes = connection.getDBConnection();
                     conn = (Connection)connRes[0];
@@ -2595,11 +2701,11 @@ public class event {
                             throw new Exception("No keys defined");
                         }
                         for(int ik=0; ik<keyList.size(); ik++) {
-                            sQuery = "UPDATE \""+dmsSchema+"\".\""+dmsTable+"\" SET " +"note='"+paramJson.getString("note")+"'"+ " WHERE (id='"+paramJson.getString("index")+"')";
+                            sQuery = "UPDATE \""+dmsSchema+"\".\""+dmsTable+"\" SET " +"note='"+paramJson.getString("note")+"'"+ " WHERE (id='"+paramJson.getString("id")+"')";
                             psdo = conn.prepareStatement(sQuery);
                             int res = psdo.executeUpdate();
                             if(res >= 0) {
-                                String fieldSet = "{" + "\"id\":\""+(paramJson.getString("index")) + "}";
+                                String fieldSet = "{" + "\"id\":\""+(paramJson.getString("id")) + "}";
                                 resultSet.append( (nRecs>0?",":"") + fieldSet);
                                 nRecs++;
                             }

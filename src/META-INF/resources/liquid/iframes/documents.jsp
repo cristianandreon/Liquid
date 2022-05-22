@@ -42,7 +42,7 @@
                 addNewDocuemntRow();
             }
             
-            function addDocuemnt( docItem, index ) {
+            function addDocuemnt( docItem, id ) {
                 if(docItem) {
                     var table = document.getElementById("liquidDocumentsX.table");
                     if(table) {
@@ -61,12 +61,12 @@
                         cell2.innerHTML = docItem.name;
                         cell3.innerHTML = (docItem.size / 1024).toFixed(1);
                         cell4.innerHTML = docItem.note;
-                        cell4.id = (glControlId !== null ? glControlId+".liquidDocumentsX.note."+docItem.index : "");
+                        cell4.id = (glControlId !== null ? glControlId+".liquidDocumentsX.note."+docItem.id : "");
                         
                         var itemId = (glControlId !== null ? glControlId+".liquidDocumentsX.table" : "");
-                        var cmdDownload = "<img src=\"../.././liquid/images/download.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".download\" title=\""+"Download document"+"\" onClick=\"window.parent.Liquid.onDownloadDocument('"+itemId+"',event); downloadDocument("+docItem.index+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.0); cursor:pointer\" />";
-                        var cmdDelete = "<img src=\"../.././liquid/images/delete.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".delete\" title=\""+"delete document"+"\" onClick=\"window.parent.Liquid.onDeleteDocument('"+itemId+"',event); deleteDocument("+docItem.index+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.0); cursor:pointer\" />";
-                        var cmdUpdate = "<img src=\"../.././liquid/images/update.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".upload\" title=\""+"Update row"+"\" onClick=\"window.parent.Liquid.onUpdateDocument('"+itemId+"',event); updateDocument("+docItem.index+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.0); cursor:pointer\" />";
+                        var cmdDownload = "<img src=\"../.././liquid/images/download.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".download\" title=\""+"Download document"+"\" onClick=\"window.parent.Liquid.onDownloadDocument('"+itemId+"',event); downloadDocument("+docItem.id+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.0); cursor:pointer\" />";
+                        var cmdDelete = "<img src=\"../.././liquid/images/delete.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".delete\" title=\""+"delete document"+"\" onClick=\"window.parent.Liquid.onDeleteDocument('"+itemId+"',event); deleteDocument("+docItem.id+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.0); cursor:pointer\" />";
+                        var cmdUpdate = "<img src=\"../.././liquid/images/update.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".upload\" title=\""+"Update row"+"\" onClick=\"window.parent.Liquid.onUpdateDocument('"+itemId+"',event); updateDocument("+docItem.id+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.0); cursor:pointer\" />";
                         var cmdsHTML = "" + cmdDownload + "" + cmdDelete + "" + cmdUpdate;
                         
                         cell5.innerHTML = cmdsHTML;
@@ -254,7 +254,7 @@
                     }
                 }
             }
-            function downloadDocument( index ) {
+            function downloadDocument( id ) {
                 var liquid = glLiquid;
                 var docName = glDocName;
                 var nodes = glNodes;
@@ -268,7 +268,7 @@
                         for (var iN=0; iN<nodes.length; iN++) {
                             nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                         }
-                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, index:String(index) };
+                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, id:String(id) };
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', glLiquidServlet + '?operation=exec'
                                 + '&className=' + encodeURI(owner)
@@ -310,7 +310,7 @@
                     }
                 }
             }
-            function deleteDocument( index ) {
+            function deleteDocument( id ) {
                 var liquid = glLiquid;
                 var docName = glDocName;
                 var nodes = glNodes;
@@ -325,7 +325,7 @@
                         for (var iN=0; iN<nodes.length; iN++) {
                             nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                         }
-                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, index:String(index) };
+                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, id:String(id) };
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', glLiquidServlet + '?operation=exec'
                                 + '&className=' + encodeURI(owner)
@@ -363,7 +363,7 @@
                     }
                 }
             }
-            function updateDocument( index ) {
+            function updateDocument( id ) {
                 var liquid = glLiquid;
                 var docName = glDocName;
                 var nodes = glNodes;
@@ -380,7 +380,7 @@
                         }
                         var curNote = document.getElementById("" + liquid.controlId + ".error").innerHTML = atob(httpResultJson.error);
                         var note = prompt();
-                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, note:note, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, index:String(index) };
+                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, note:note, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, id:String(id) };
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', glLiquidServlet + '?operation=exec'
                                 + '&className=' + encodeURI(owner)

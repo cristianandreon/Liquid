@@ -9352,6 +9352,11 @@ var Liquid = {
                 }
             }
         }
+        if(liquid) {
+            if (liquid.commandEndCallback) {
+                liquid.commandEndCallback(liquid, command);
+            }
+        }
     },
     /**
      * Enable a command
@@ -10281,11 +10286,13 @@ var Liquid = {
         if (command) {
             let doConfirm = command.fromToolbar && (command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE) ? true : false;
             let confirmName = "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
-            let cmdConfirm = command[confirmName];
+            let cmdConfirm = command ? command[confirmName] : null;
             let liquid = Liquid.getLiquid(obj);
-            result = Liquid.solveExpressionField(command, confirmName, liquid);
-            if (result[0] === 'ready') {
-                cmdConfirm = result[1];
+            if(cmdConfirm) {
+                result = Liquid.solveExpressionField(command, confirmName, liquid);
+                if (result[0] === 'ready') {
+                    cmdConfirm = result[1];
+                }
             }
             if ((cmdConfirm && doConfirm ? confirm(cmdConfirm) : true)) {
                 // wrap to more specific and already defined command
@@ -10565,6 +10572,13 @@ var Liquid = {
                     }
 
                     if (command.step === 0) { // prepare
+
+                        if(liquid) {
+                            if (liquid.commandStartCallback) {
+                                liquid.commandStartCallback(liquid, command);
+                            }
+                        }
+
                         if (command.linkedLabelObj)
                             if (isDef(command.labels))
                                 if (command.labels.length >= 1)
@@ -13343,7 +13357,6 @@ var Liquid = {
                             console.error("ERROR: unable to access to dsocument at layout:" + layout.name + ", error:" + e);
                         }
                     }
-
                     if (containerObj.offsetWidth > 0 && containerObj.offsetHeight > 0) {
                         // if visible
                         var headerContainerObjId = containerObj.id + ".header";
@@ -13444,7 +13457,6 @@ var Liquid = {
                             }
                         }
                     }
-
                     var nRows = 0;
                     if (typeof layout.nRows !== 'undefined' && (layout.nRows === 0 || layout.nRows === 'auto')) {
                         if (layout.bodyContainerObj && layout.bodyContainerObj.offsetWidth > 0 && layout.bodyContainerObj.offsetHeight > 0) {
@@ -13573,7 +13585,6 @@ var Liquid = {
                             updateBodyHeight = true;
                         }
                     }
-
                     if (updateBodyHeight) {
                         layout.bodyContainerObj.style.height = "calc(100% - " + (layout.headerContainerObj.offsetHeight + layout.footerContainerObj.offsetHeight) + "px)";
                         layout.bodyContainerObj.style.minHeight = "calc(100% - " + (layout.headerContainerObj.offsetHeight + layout.footerContainerObj.offsetHeight) + "px)";
@@ -13666,7 +13677,6 @@ var Liquid = {
                             } else {
                                 console.error("ERROR : no template defined for layout : " + layout.name, " at row #" + ir);
                             }
-
                             layout.bodyContainerObj.appendChild(rowObj);
                             if (layout.rowsContainer.length < ir + 1) {
                                 layout.rowsContainer.push({
@@ -13708,7 +13718,6 @@ var Liquid = {
                             }
                         }
                     }
-
                     if(layout.inlineMode === true) {
                         layout.firstNodeId = null;
                     }
@@ -13718,8 +13727,6 @@ var Liquid = {
                         // nRows from cur nodes
                         layout.baseIndex1B = Liquid.getNodeIndex(liquid, layout.firstNodeId);
                     }
-
-
                     var nodes = null;
                     if (isDef(liquid.gridOptions)) {
                         if (isDef(liquid.gridOptions.api)) {
@@ -13802,11 +13809,8 @@ var Liquid = {
             Liquid.executeTemplateRowScript(liquid, layout, layout.baseIndex1B - 1 + ir);
         }
         Liquid.executeTemplateRowScript(liquid, layout, 'footer');
-
         Liquid.check_for_layout_loaded_event(liquid, layout);
-
         Liquid.check_for_layouts_loaded_event(liquid);
-
 
         // startup currencies fields
         $('input.liquidCurrency').currencyInput();
@@ -13896,7 +13900,7 @@ var Liquid = {
         if (liquid) {
             var lay_coord = Liquid.getLayoutCoords(liquid, obj.id);
             if (lay_coord.layout) {
-                let lastCRow = liquid.cRow;
+                lay_coord.layout.lastCRow = liquid.cRow;
                 if(nSteps > 0) {
                     Liquid.command(liquid, "next");
                 } else {
@@ -13905,7 +13909,7 @@ var Liquid = {
                 Liquid.onSlideShowUpdateCurrent(liquid);
                 if(liquid.slideShowCallback) {
                     try {
-                        liquid.slideShowCallback(liquid, lay_coord.layout, LastCRow, cRow);
+                        liquid.slideShowCallback(liquid, lay_coord.layout, lay_coord.layout.LastCRow, cRow);
                     } catch (e) {
                         console.error(e);
                     }
@@ -13919,7 +13923,7 @@ var Liquid = {
             var lay_coord = Liquid.getLayoutCoords(liquid, obj.id);
             if (lay_coord.layout) {
                 if(cRow >= 0 && cRow<liquid.nRows) {
-                    let lastCRow = liquid.cRow;
+                    lay_coord.layout.lastCRow = liquid.cRow;
                     var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                     if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
                         nodes[cRow].setSelected(true);
@@ -13943,7 +13947,7 @@ var Liquid = {
 
                     if(liquid.slideShowCallback) {
                         try {
-                            liquid.slideShowCallback(liquid, lay_coord.layout, lastCRow, cRow);
+                            liquid.slideShowCallback(liquid, lay_coord.layout, lay_coord.layout.lastCRow, cRow);
                         } catch (e) {
                             console.error(e);
                         }
@@ -14249,6 +14253,9 @@ var Liquid = {
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'FORM') {
                 liquid.linkedForm = obj;
+            } else if (obj.nodeName.toUpperCase() === 'PICTURE' || obj.nodeName.toUpperCase() === 'EMBED' || obj.nodeName.toUpperCase() === 'AUDIO' || obj.nodeName.toUpperCase() === 'VIDEO') {
+                objLinkers = [obj.innerHTML, obj.id, obj.classList];
+                objLinkersTarget = [null, null, "className"];
             }
 
             // search for aux linked obj
@@ -14347,6 +14354,7 @@ var Liquid = {
                             obj.setAttribute('linkedfield', linkeCol.field);
                             obj.setAttribute('linkedname', linkeCol.name);
                             obj.setAttribute('linkedrow1b', iRow + 1);
+                            obj.setAttribute('astype', linkeCol.asType);
 
                             // We need uniquie id
                             obj.id = newId;
@@ -14601,6 +14609,7 @@ var Liquid = {
                                 obj.setAttribute('newid', newId);
                                 obj.setAttribute('linkedid', newId);
                                 obj.setAttribute('name', obj.id);
+                                obj.setAttribute('astype', null);
 
                                 // we need unique id ... only in linked to field nodes
                                 if (obj.id) {
@@ -14791,6 +14800,8 @@ var Liquid = {
                                     obj.value = value;
                                 } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
                                     obj.innerHTML = value;
+                                } else if (obj.nodeName.toUpperCase() === 'PICTURE' || obj.nodeName.toUpperCase() === 'EMBED' || obj.nodeName.toUpperCase() === 'AUDIO' || obj.nodeName.toUpperCase() === 'VIDEO') {
+                                    obj.innerHTML = value;
                                 }
                             } catch (e) {
                             }
@@ -14800,7 +14811,9 @@ var Liquid = {
             }
             if (obj.childNodes) {
                 for (var j = 0; j < obj.childNodes.length; j++) {
-                    if (!obj.classList.contains("liquidForeignTablesContent")) {
+                    if (!obj.classList.contains("liquidForeignTablesContent")
+                        && !obj.classList.contains("liquidDialogXTheme")
+                        && !obj.classList.contains("liquidShow")) {
                         Liquid.setLayoutField(liquid, layout, obj.childNodes[j], iRow, bSetup);
                     }
                 }
@@ -17650,11 +17663,19 @@ var Liquid = {
                 }
                 return 1;
             } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P') {
-                jQ1124(targetObj).html(value);
-                // targetObj.innertHTML = value;
-                // targetObj.innerText = String(value);
-                if(isDef(disabled)) {
-                    if(targetObj.type !== "checkbox") {
+                var astype = targetObj.getAttribute('astype');
+                if(astype == 'color') {
+                    if(value && value.trim().toLowerCase().startsWith("0x")) {
+                        value = "#" + value.trim().substring(2);
+                    }
+                    jQ1124(targetObj).css("backgroundColor", value);
+                } else {
+                    jQ1124(targetObj).html(value);
+                    // targetObj.innertHTML = value;
+                    // targetObj.innerText = String(value);
+                }
+                if (isDef(disabled)) {
+                    if (targetObj.type !== "checkbox") {
                         targetObj.disabled = disabled;
                     }
                 }
@@ -17667,6 +17688,37 @@ var Liquid = {
                     }
                 }
                 return 0;
+            } else if(targetObj.nodeName.toUpperCase() === 'PICTURE' || targetObj.nodeName.toUpperCase() === 'EMBED' || targetObj.nodeName.toUpperCase() === 'AUDIO' || targetObj.nodeName.toUpperCase() === 'VIDEO') {
+                /*
+                    src: It is used to hold the path of media content.
+                    media: It is used to define the type of the media content.
+                    srcset: It is used to specify the URL of image used in different situations.
+                    sizes: It is used to specify the sizes of image in different page layout.
+                    type: It is used to specify the MIME-type resource.
+                 */
+                if(value.startsWith("DMS://")) {
+                    let src = glLiquidServlet + '?operation=downloadDocument&link='+value;
+                    const videoRequest = fetch(src, {cache: "force-cache"}).then(response => response.blob());
+                    videoRequest.then(blob => {
+                        if(targetObj.nodeName.toUpperCase() === 'VIDEO') {
+                            if(blob.type.indexOf("video")>=0) {
+                                targetObj.src = window.URL.createObjectURL(blob);
+                            } else {
+                                targetObj.poster = window.URL.createObjectURL(blob);
+                            }
+                        } else {
+                        }
+                    });
+                    /*
+                    jQ1124(targetObj).slideDown("fast", function () {
+                        targetObj.innerText = '';
+                        targetObj.innerHTML = '';
+                    });
+                     */
+                } else {
+                    targetObj.innerHTML = value;
+                }
+
             } else {
                 console.error("Unknown control type : " + targetObj.nodeName);
                 targetObj.innerHTML = value;

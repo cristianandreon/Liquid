@@ -162,7 +162,16 @@
             // Set the language in the session
             workspace.setLanguage(session, out, request.getParameter("language"));
 
-            
+
+            // Servlet DMS : download document content
+        } else if ("downloadDocument".equalsIgnoreCase(operation)) {
+            String clientData = "content";
+            String params = "{\"params\":{\"link\":\""+(request.getParameter("link") != null ? request.getParameter("link") : "") +"\"}}";
+            workspace tbl_wrk = null;
+            event.downloadDocument((Object)tbl_wrk, (Object)params, (Object) clientData, (Object)request);
+
+
+
         } else {
             out.println( "<br/><h1><center>Welcome in Liquid ver. "+workspace.version_string+"</center><br/></h1>");
             if(operation != null) {
