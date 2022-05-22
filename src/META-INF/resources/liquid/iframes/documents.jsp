@@ -193,7 +193,6 @@
                                 }
                             }
                             const reader = new FileReader();
-                            reader.readAsDataURL(file);
                             reader.onerror = function(result) { console.log('ERROR: uploadDocument() : ', result.message); };
                             reader.onloadend = function(result) {
                                 var nodeKeys = [];
@@ -201,7 +200,17 @@
                                 for (var iN=0; iN<nodes.length; iN++) {
                                     nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                                 }
-                                var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, file:fileName, size:fileSize, note:note, content:result.target.result };
+                                var params = {
+                                    database:liquid.tableJson.database,
+                                    schema:liquid.tableJson.schema,
+                                    table:liquid.tableJson.table,
+                                    name:(typeof doc.name!=='undefined'?doc.name:""),
+                                    ids:nodeKeys,
+                                    file:fileName,
+                                    size:fileSize,
+                                    note:note,
+                                    content:result.target.result
+                                };
                                 var xhr = new XMLHttpRequest();
                                 xhr.open('POST', glLiquidServlet + '?operation=exec'
                                         + '&className=' + encodeURI(owner)
@@ -238,6 +247,7 @@
                                     }
                                 };
                             };
+                            reader.readAsDataURL(file);
                         } else {
                             alert(parent.window.Liquid.NoSelectedFileMessage);
                         }

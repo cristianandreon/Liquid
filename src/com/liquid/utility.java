@@ -193,6 +193,13 @@ public class utility {
     }
 
 
+    /**
+     * create lisy of key for DMS from [database][schema][table][dms folder name][list of is in ids]
+     *
+     * @param tblWrk
+     * @param params
+     * @return
+     */
     static public ArrayList<String> get_dms_keys(workspace tblWrk, String params) {
         ArrayList<String> keyList = null;
         try {
@@ -255,9 +262,9 @@ public class utility {
                     }
 
                     keyList = new ArrayList<String>();
-                    String id;
+                    Object id;
                     for (int i = 0; i < ids.length(); i++) {
-                        id = ids.getString(i);
+                        id = ids.get(i);
                         keyList.add(database + "." + schema + "." + table + "." + name + "." + id);
                     }
                 }
@@ -1360,14 +1367,16 @@ public class utility {
      * @throws Exception
      */
     public static String mergeJsonObject(String ssource, String starget) throws Exception {
-        JSONObject source = new JSONObject(ssource);
-        JSONObject target = starget != null ? new JSONObject(starget) : new JSONObject();
-        for (Object keyObject : JSONObject.getNames(source)) {
-            String key = (String) keyObject;
-            Object obj = source.get(key);
-            target.put(key, obj);
+        JSONObject sourceJson = ssource != null && !ssource.isEmpty() ? new JSONObject(ssource) : null;
+        JSONObject targetJson = starget != null ? new JSONObject(starget) : new JSONObject();
+        if(sourceJson != null) {
+            for (Object keyObject : JSONObject.getNames(sourceJson)) {
+                String key = (String) keyObject;
+                Object obj = sourceJson.get(key);
+                targetJson.put(key, obj);
+            }
         }
-        return target.toString();
+        return targetJson.toString();
     }
 
     /**
@@ -2812,6 +2821,15 @@ public class utility {
         while( (read = is.read(buffer)) > 0) {
             digest.update(buffer, 0, read);
         }
+        byte[] md5sum = digest.digest();
+        BigInteger bigInt = new BigInteger(1, md5sum);
+        String output = bigInt.toString(16);
+        return utility.base64Encode(output);
+    }
+
+    static public String get_file_content_md5(byte [] buffer) throws NoSuchAlgorithmException, IOException {
+        MessageDigest digest = MessageDigest.getInstance("MD5");
+        digest.update(buffer, 0, buffer.length);
         byte[] md5sum = digest.digest();
         BigInteger bigInt = new BigInteger(1, md5sum);
         String output = bigInt.toString(16);

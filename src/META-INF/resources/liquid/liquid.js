@@ -11,7 +11,7 @@
 /* */
 
 //
-// Liquid ver.2.16
+// Liquid ver.2.17
 //
 //  First update 06-01-2020 - Last update 18-05-2022
 //
@@ -628,16 +628,8 @@ class LiquidCtrl {
                                             Liquid.refreshLinkedLiquids(liquid, true);
                                         }
                                         // update current position
-                                        liquid.cRow = event.node.rowIndex;
-                                        if(isDef(liquid.tableJson.layouts)) {
-                                            for(let il=0; il<liquid.tableJson.layouts.length; il++) {
-                                                var layout = liquid.tableJson.layouts[il];
-                                                layout.currentRow1B = event.node.rowIndex+1 - (layout.baseIndex1B-1);
-                                                layout.currentAbsoluteRow1B = event.node.rowIndex+1;
-                                            }
-                                        }
-                                        Liquid.updateStatusBar(liquid);
-                                        Liquid.updateCommandBar(liquid);
+                                        Liquid.updateCRow(liquid, event.node.rowIndex)
+                                        Liquid.onSlideShowUpdateCurrent(liquid);
                                     } catch (e) {
                                         console.error(e);
                                     }
@@ -1711,7 +1703,7 @@ class LiquidCtrl {
                             }
                             // Append grid object and link to fields
                             for(let ig = 0; ig < this.tableJson.grids.length; ig++) {
-                                var grid = this.tableJson.grids[ig];
+                                let grid = this.tableJson.grids[ig];
                                 if(grid) {
                                     this.dockerRoot.appendChild(grid.containerObj);
                                     if(isDef(grid.columns)) {
@@ -1956,9 +1948,9 @@ class LiquidCtrl {
                                 if(typeof this.tableJson.multipanels[ic].height === 'undefined')
                                     this.tableJson.multipanels[ic].height = 100;
 
-                                var foreignWrk = this.tableJson.multipanels[ic].foreignWrk ? this.tableJson.multipanels[ic].foreignWrk : null;
-                                var ftName = this.tableJson.multipanels[ic].name ? this.tableJson.multipanels[ic].name : this.tableJson.multipanels[ic].foreignTable;
-                                var ftId = this.tableJson.multipanels[ic].foreignTable+"$"+this.tableJson.multipanels[ic].foreignColumn+"$"+this.tableJson.multipanels[ic].column;
+                                let foreignWrk = this.tableJson.multipanels[ic].foreignWrk ? this.tableJson.multipanels[ic].foreignWrk : null;
+                                let ftName = this.tableJson.multipanels[ic].name ? this.tableJson.multipanels[ic].name : this.tableJson.multipanels[ic].foreignTable;
+                                let ftId = this.tableJson.multipanels[ic].foreignTable+"$"+this.tableJson.multipanels[ic].foreignColumn+"$"+this.tableJson.multipanels[ic].column;
 
                                 this.tableJson.multipanels[ic].controlId = ftId + "@" + this.controlId;
                                 this.tableJson.multipanels[ic].controlObjectId = this.controlId + ".multiPanels." + ftId + ".content";
@@ -2265,7 +2257,7 @@ class LiquidCtrl {
                     var eventFunc = this.onLoaded[ie];
                     if (eventFunc) {
                         try {
-                            var result = eventFunc();
+                            eventFunc();
                         } catch (e) {
                             console.error("ERROR: on event onLoaded:" + e);
                         }
@@ -2273,11 +2265,11 @@ class LiquidCtrl {
                 }
             }
             if (typeof this.onLoadedOnce !== 'undefined' && this.onLoadedOnce) {
-                for (var ie = 0; ie < this.onLoadedOnce.length; ie++) {
+                for (let ie = 0; ie < this.onLoadedOnce.length; ie++) {
                     var eventFunc = this.onLoadedOnce[ie];
                     if (eventFunc) {
                         try {
-                            var result = eventFunc();
+                            let result = eventFunc();
                         } catch (e) {
                             console.error("ERROR: on event onLoadedOnce:" + e);
                         }
@@ -2384,8 +2376,7 @@ class LiquidMenuXCtrl {
                 this.menuIconObj.className = "liquidMenuXIcon liquidMenuXchange";
                 this.menuIconObj.onclick = function() { Liquid.toggleMenu(this); };
                 this.menuIconObj.style.position = "absolute";
-                var menuIconHTML = "<div id=\""+this.controlId+".menuXIcon\" class=\"\" ><div class=\"liquidMenuXbar1\"></div><div class=\"liquidMenuXbar2\"></div><div class=\"liquidMenuXbar3\"></div></div>";
-                this.menuIconObj.innerHTML = menuIconHTML;
+                this.menuIconObj.innerHTML = "<div id=\""+this.controlId+".menuXIcon\" class=\"\" ><div class=\"liquidMenuXbar1\"></div><div class=\"liquidMenuXbar2\"></div><div class=\"liquidMenuXbar3\"></div></div>";
                 this.menuIconObj.style.zIndex = 92000;
                 this.menuIconObj.style.filter = filter;
                 this.outDivObj.appendChild( this.menuIconObj );
@@ -2717,10 +2708,10 @@ var Liquid = {
      * @returns {{dataset}|*}
      */
     getParentNode: function (obj, fieldName) {
-        var liquid = Liquid.getLiquid(obj);
+        let liquid = Liquid.getLiquid(obj);
         // if (liquid) obj = liquid.outDivObj;
         obj = Liquid.getParentNodeByClass(obj, "liquidLayoutRowContainer");
-        var found = Liquid.getParentNodeProcess(obj, fieldName);
+        let found = Liquid.getParentNodeProcess(obj, fieldName);
         if (found)
             return found;
     },
@@ -2811,7 +2802,7 @@ var Liquid = {
                     if (typeof searchingNames === "undefined")
                         searchingNames = [searchingNameOrObject];
                 } else {
-                    console.error("getLiquid:undetected type of search:" + (typeof searchingNameOrObject));
+                    console.warn("getLiquid:undetected type of search:" + (typeof searchingNameOrObject));
                 }
                 if (Liquid.projectMode) {
                     var count = 0;
@@ -2844,7 +2835,7 @@ var Liquid = {
         } catch (e) {
             console.error(e);
         }
-        console.error("LIQUID: control not found by '"+searchingNameOrObject+"'");
+        console.warn("LIQUID: control not found by '"+searchingNameOrObject+"'");
         return null;
     },
     getLiquidByFullScan: function (obj) {
@@ -4407,6 +4398,14 @@ var Liquid = {
                     if (isDef(data)) {
                         for (var ic = 0; ic < columns.length; ic++) {
                             fullData[columns[ic].name] = data[columns[ic].field];
+                            let filesSizeField = columns[ic].name+".filesSize";
+                            let filesNameField =columns[ic].name+".filesName";
+                            if(isDef(data[filesSizeField])) {
+                                fullData[filesSizeField] = data[filesSizeField];
+                            }
+                            if(isDef(data[filesNameField])) {
+                                fullData[filesNameField] = data[filesNameField];
+                            }
                         }
                     }
                     return fullData;
@@ -4669,12 +4668,14 @@ var Liquid = {
             */
         }
 
-        if (!isDef(liquid.tableJson.primaryKeyField)) {
-            if (isDef(liquid.tableJson.primaryKey)) {
-                var keyColumn = Liquid.getColumn(liquid, liquid.tableJson.primaryKey);
-                if (keyColumn) liquid.tableJson.primaryKeyField = keyColumn.field;
-            } else {
-                console.error("ERROR: controlId:" + liquid.controlId + " missing primary key");
+        if(!Liquid.isFormX(liquid)) {
+            if (!isDef(liquid.tableJson.primaryKeyField)) {
+                if (isDef(liquid.tableJson.primaryKey)) {
+                    var keyColumn = Liquid.getColumn(liquid, liquid.tableJson.primaryKey);
+                    if (keyColumn) liquid.tableJson.primaryKeyField = keyColumn.field;
+                } else {
+                    console.error("ERROR: controlId:" + liquid.controlId + " missing primary key");
+                }
             }
         }
         if (liquid.tableJson) {
@@ -8378,7 +8379,7 @@ var Liquid = {
                             // NO : huge file can be problematic here
                             // Liquid.registerFieldChange(queue.liquid, null, queue.targetRow[ queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null ], queue.targetCol.field, null, queue.propValue);
                             var rowId = queue.targetRow[queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null];
-                            if (rowId === '' || rowId === null) {
+                            if (rowId === '' || rowId === null || typeof rowId === 'undefined') {
                                 if (queue.liquid.addingNode) {
                                     queue.liquid.addingNode.data[queue.targetCol.field] = queue.propValue;
                                 }
@@ -9844,6 +9845,18 @@ var Liquid = {
         }
         return false;
     },
+    updateCRow:function(liquid, cRow) {
+        liquid.cRow = cRow;
+        if (isDef(liquid.tableJson.layouts)) {
+            for (let il = 0; il < liquid.tableJson.layouts.length; il++) {
+                var layout = liquid.tableJson.layouts[il];
+                layout.currentRow1B = cRow + 1 - (layout.baseIndex1B - 1);
+                layout.currentAbsoluteRow1B = cRow + 1;
+            }
+        }
+        Liquid.updateStatusBar(liquid);
+        Liquid.updateCommandBar(liquid);
+    },
     setNodesSelected: function (obj, ids) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
@@ -9896,9 +9909,11 @@ var Liquid = {
                         if (!hasSetSetVisible) {
                             hasSetSetVisible = true;
                             if (isDef(setVisible)) {
-                                liquid.cRow = i; // help avoiding closing on unselect
+                                // help avoiding closing on unselect
+                                Liquid.updateCRow(liquid, i);
                                 liquid.gridOptions.api.ensureIndexVisible(nodes[i].rowIndex, "top");
                                 liquid.gridOptions.api.setFocusedCell(i, 'start', 'top');
+                                Liquid.onSlideShowUpdateCurrent(liquid);
                             }
                         }
                     }
@@ -9906,9 +9921,11 @@ var Liquid = {
                     if (alreadySelected && alreadySelected.length) {
                         var i = alreadySelected[0];
                         if (isDef(setVisible)) {
-                            liquid.cRow = i; // help avoiding closing on unselect
+                            // help avoiding closing on unselect
+                            Liquid.updateCRow(liquid, i);
                             liquid.gridOptions.api.ensureIndexVisible(nodes[i].rowIndex, "top");
                             liquid.gridOptions.api.setFocusedCell(i, 'start', 'top');
+                            Liquid.onSlideShowUpdateCurrent(liquid);
                         }
                     }
                 }
@@ -10276,7 +10293,9 @@ var Liquid = {
                     if (isDef(liquid.currentCommand)) {
                         if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update") {
                             // merge the commands
-                            command = Liquid.mergeCommand(liquid.currentCommand.rollbackCommand, command);
+                            if(liquid.currentCommand.rollbackCommand) {
+                                command = Liquid.mergeCommand(liquid.currentCommand.rollbackCommand, command);
+                            }
                         }
                     }
                 } else if (command.name === "ok") {
@@ -10301,7 +10320,6 @@ var Liquid = {
                         }
                     }
                     if (!bCmdFound) {
-                        console.error("*** ERROR: command '" + command.name + "' not defined in control '" + liquid.controlId + "'");
                         if (command.name === "insert") {
                             if (!command.server && !command.client) {
                                 command.server = "com.liquid.event.insertRow";
@@ -10310,6 +10328,8 @@ var Liquid = {
                             if (!command.server && !command.client) {
                                 command.server = "com.liquid.event.updateRow";
                             }
+                        } else {
+                            console.error("*** ERROR: command '" + command.name + "' not defined in control '" + liquid.controlId + "'");
                         }
                     }
                 }
@@ -10401,7 +10421,10 @@ var Liquid = {
                             console.warn(res);
                             liquid.addingNode = null;
                             Liquid.resetLayoutsRowState(liquid);
-                            if (isDef(liquid.cRowBeforeAdding)) liquid.cRow = liquid.cRowBeforeAdding;
+                            if (isDef(liquid.cRowBeforeAdding)) {
+                                Liquid.updateCRow(liquid, liquid.cRowBeforeAdding);
+                                Liquid.onSlideShowUpdateCurrent(liquid);
+                            }
                             if (isDef(liquid.nodesBeforeAdding) && liquid.nodesBeforeAdding.length) {
                                 for (var i = 0; i < liquid.nodesBeforeAdding.length; i++) {
                                     liquid.nodesBeforeAdding[i].setSelected(true);
@@ -10522,9 +10545,10 @@ var Liquid = {
                             liquid.enableOverscroll = false;
                             liquid.gridOptions.api.setFocusedCell(cRow, 'start', 'top');
                             liquid.gridOptions.api.ensureIndexVisible(cRow, "top");
-                            liquid.cRow = cRow;
+                            Liquid.updateCRow(liquid, cRow);
                             Liquid.stopFlashingFields();
                             Liquid.updateStatusBar(liquid);
+                            Liquid.onSlideShowUpdateCurrent(liquid);
                         }
                         Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
                         return true;
@@ -11602,9 +11626,11 @@ var Liquid = {
 
                 if (liquid.dockerTblCenter) {
                     if (liquid.mode != 'lookup') {
-                        if (liquid.outDivObj.offsetWidth > 0) {
-                            // liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
-                            liquid.dockerTblCenter.style.width = "calc(100% - " + (liquid.dockerTblRight.offsetWidth + liquid.dockerTblLeft.offsetWidth) + "px)";
+                        if (liquid.outDivObj) {
+                            if (liquid.outDivObj.offsetWidth > 0) {
+                                // liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                                liquid.dockerTblCenter.style.width = "calc(100% - " + (liquid.dockerTblRight.offsetWidth + liquid.dockerTblLeft.offsetWidth) + "px)";
+                            }
                         }
                     }
                 }
@@ -12928,18 +12954,20 @@ var Liquid = {
                 nameItems = obj.split(".");
             }
             if (nameItems && nameItems.length > 2) {
+                let layoutIndex = null;
                 if (!isNaN(nameItems[2])) {
-                    let layoutIndex = nameItems[2] - 1;
-                    if (nameItems.length > 2) {
-                        return {
-                            layout: liquid.tableJson.layouts[layoutIndex],
-                            itemIndex: nameItems[4] - 1,
-                            layoutIndex: layoutIndex,
-                            col: nameItems[4] - 1,
-                            row: nameItems[6] - 1
-                        };
-                    }
+                    layoutIndex = nameItems[2] - 1;
+                } else {
+                    // search by name
+                    layoutIndex = Liquid.getLayoutIndexByName(liquid, nameItems[2]);
                 }
+                return {
+                    layout: liquid.tableJson.layouts[layoutIndex],
+                    itemIndex: nameItems[4] - 1,
+                    layoutIndex: layoutIndex,
+                    col: nameItems[4] - 1,
+                    row: nameItems[6] - 1
+                };
             }
         }
         return null;
@@ -13838,18 +13866,18 @@ var Liquid = {
         let layouts = layout ? [layout] : liquid.tableJson.layouts;
         for(let il=0; il<layouts.length; il++) {
             let layout = layouts[il];
-            let slideShowId = liquid.controlId + "." + "slideShow";
+            let slideShowId = liquid.controlId + "." + layout.name + "." + "slideShow";
             let slideShowObj = document.getElementById(slideShowId);
             let htmlCode = "<!-- Slideshow container -->"
                 + "<div class=\"slideshow-container\">"
-                + "<a class=\"slideshow-prev\" onclick=\"plusSlides(-1)\">&#10094;</a>"
-                + "<a class=\"slideshow-next\" onclick=\"plusSlides(1)\">&#10095;</a>"
+                + "<a id='"+slideShowId+".next"+"' class=\"slideshow-prev\" onclick=\"Liquid.onSlideShowStep(this, -1)\">&#10094;</a>"
+                + "<a id='"+slideShowId+".prev"+"' class=\"slideshow-next\" onclick=\"Liquid.onSlideShowStep(this, 1)\">&#10095;</a>"
                 + "</div>"
                 + "<div style=\"text-align:center; position:relative; top:-25px; z-index:200\">";
             let mp = liquid.nRows;
             if (mp > Liquid.MaxSlideShowPages) mp = Liquid.MaxSlideShowPages;
             for (let ip = 0; ip < mp; ip++) {
-                htmlCode += "<span class=\"slideshow-dot\" onclick=\"currentSlide(" + (ip + 1) + "\"></span>";
+                htmlCode += "<span id='"+slideShowId+".dot."+(ip+1)+"' class=\"slideshow-dot\" onclick=\"Liquid.onSlideShowCurrent(this, " + (ip) + ")\"></span>";
             }
             htmlCode += "</div>";
             if (!slideShowObj) {
@@ -13860,6 +13888,87 @@ var Liquid = {
                 layout.containerObj.appendChild(newObj);
             } else {
                 slideShowObj.innerHTML = htmlCode;
+            }
+        }
+    },
+    onSlideShowStep:function(obj, nSteps) {
+        var liquid = Liquid.getLiquid(obj.id);
+        if (liquid) {
+            var lay_coord = Liquid.getLayoutCoords(liquid, obj.id);
+            if (lay_coord.layout) {
+                let lastCRow = liquid.cRow;
+                if(nSteps > 0) {
+                    Liquid.command(liquid, "next");
+                } else {
+                    Liquid.command(liquid, "previous");
+                }
+                Liquid.onSlideShowUpdateCurrent(liquid);
+                if(liquid.slideShowCallback) {
+                    try {
+                        liquid.slideShowCallback(liquid, lay_coord.layout, LastCRow, cRow);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            }
+        }
+    },
+    onSlideShowCurrent:function(obj, cRow) {
+        var liquid = Liquid.getLiquid(obj.id);
+        if (liquid) {
+            var lay_coord = Liquid.getLayoutCoords(liquid, obj.id);
+            if (lay_coord.layout) {
+                if(cRow >= 0 && cRow<liquid.nRows) {
+                    let lastCRow = liquid.cRow;
+                    var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                    if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
+                        nodes[cRow].setSelected(true);
+                    } else {
+                        if (liquid.gridOptions.rowSelection === 'single') {
+                            nodes[cRow].setSelected(true);
+                        } else if (typeof liquid.tableJson.rowMultiSelectWithClick !== true) {
+                            nodes[cRow].setSelected(true);
+                        } else {
+                            // no selection
+                        }
+                    }
+                    liquid.enableOverscroll = false;
+                    liquid.gridOptions.api.setFocusedCell(cRow, 'start', 'top');
+                    liquid.gridOptions.api.ensureIndexVisible(cRow, "top");
+                    Liquid.updateCRow(liquid, cRow);
+                    Liquid.stopFlashingFields();
+                    Liquid.updateStatusBar(liquid);
+                    Liquid.onSlideShowUpdateCurrent(liquid);
+                    liquid.refreshLayout(liquid, lay_coord.layout, false);
+
+                    if(liquid.slideShowCallback) {
+                        try {
+                            liquid.slideShowCallback(liquid, lay_coord.layout, lastCRow, cRow);
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                }
+            }
+        }
+    },
+    onSlideShowUpdateCurrent:function(liquid) {
+        if(liquid) {
+            if (liquid.tableJson.layouts) {
+                for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                    let layout = liquid.tableJson.layouts[il];
+                    if (layout) {
+                        if (layout.curSlideShowDot) {
+                            layout.curSlideShowDot.classList.remove("slideshow-dot-current");
+                        }
+                        let slideShowId = liquid.controlId + "." + layout.name + "." + "slideShow";
+                        let obj = document.getElementById(slideShowId + ".dot." + (liquid.cRow + 1));
+                        layout.curSlideShowDot = obj;
+                        if (layout.curSlideShowDot) {
+                            layout.curSlideShowDot.classList.add("slideshow-dot-current");
+                        }
+                    }
+                }
             }
         }
     },
@@ -16962,9 +17071,11 @@ var Liquid = {
                     }
                 }
                 // restore center docker
-                if (liquid.outDivObj.offsetWidth > 0) {
-                    // liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
-                    liquid.dockerTblCenter.style.width = "calc(100% - " + (liquid.dockerTblRight.offsetWidth + liquid.dockerTblLeft.offsetWidth) + "px)";
+                if (liquid.outDivObj) {
+                    if (liquid.outDivObj.offsetWidth > 0) {
+                        // liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                        liquid.dockerTblCenter.style.width = "calc(100% - " + (liquid.dockerTblRight.offsetWidth + liquid.dockerTblLeft.offsetWidth) + "px)";
+                    }
                 }
                 liquid.aggridContainerObj.style.height = liquid.aggridContainerLastHeight;
                 liquid.aggridContainerDocked = false;
@@ -17606,10 +17717,10 @@ var Liquid = {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             if(liquid.navObj) {
-                var cRow  = document.getElementById(liquid.controlId + ".cRow");
-                var nRows = document.getElementById(liquid.controlId + ".nRows");
-                var cPage  = document.getElementById(liquid.controlId + ".cPage");
-                var nPages  = document.getElementById(liquid.controlId + ".nPages");
+                var cRow = document.getElementById(liquid.controlId + ".cRow");
+                var nRows= document.getElementById(liquid.controlId + ".nRows");
+                var cPage = document.getElementById(liquid.controlId + ".cPage");
+                var nPages = document.getElementById(liquid.controlId + ".nPages");
 
                 if(cRow) cRow.innerHTML = liquid.cRow + 1 + (liquid.pageSize > 0 ? liquid.cPage * liquid.pageSize : 0);
                 if(nRows) nRows.innerHTML = liquid.nRows;
@@ -19399,9 +19510,15 @@ var Liquid = {
         if(isDef(source)) {
             if (isDef(target)) {
                 if (!Array.isArray(target)) {
-                    target = [target];
+                    target = target ? [target] : [];
                 }
-                target.push(source);
+                if (!Array.isArray(source)) {
+                    target.push(source);
+                } else {
+                    for(let i=0; i<source.length; i++) {
+                        target.push(source[i]);
+                    }
+                }
             } else {
                 target = source;
             }

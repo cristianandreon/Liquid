@@ -49,7 +49,7 @@ public class workspace {
     public static String path = null;
     static public String pythonPath = null;
     static public String pythonExecutable = null;
-    public static String version_string = "2.15";
+    public static String version_string = "2.17";
 
     //
     // key persistent on server but hidden on the client
@@ -3072,12 +3072,48 @@ public class workspace {
         int solvedCount = 0;
         String defSolved = db.solveVariableField(expression, request, true);
         if (defSolved != null) {
-            if (!defSolved.equals(expression)) {
+            if (defSolved.compareTo(expression) != 0) {
                 solvedCount++;
-                obj.put(key, defSolved);
+                if(obj != null && key != null)
+                    obj.put(key, defSolved);
             }
         }
         return solvedCount;
+    }
+
+    /**
+     * Solve expression of each json object keys
+     * @param expression
+     * @param request
+     * @return
+     * @throws Exception
+     */
+    static public int solve_object_var(Object expression, HttpServletRequest request) throws Exception {
+        int solvedCount = 0;
+        if(expression instanceof JSONObject) {
+            JSONObject expressionJson = (JSONObject) expression;
+            for (String key : expressionJson.keySet() ) {
+                Object oExpression = expressionJson.get(key);
+                if(oExpression instanceof String) {
+                    if(((String)oExpression).startsWith("base64,")) {
+                        // file content ... skip it
+                    } else {
+                        String defSolved = db.solveVariableField((String) oExpression, request, true);
+                        if (defSolved != null) {
+                            if (defSolved.compareTo((String) oExpression) != 0) {
+                                solvedCount++;
+                                expressionJson.put(key, defSolved);
+                            }
+                        }
+                    }
+                } else {
+                    // no expression to solve
+                }
+            }
+            return solvedCount;
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
 
 

@@ -3417,12 +3417,12 @@ public class db {
      * @param Fields
      * @param Values
      * @param request
-     * @return Object [] (boolean, int)
+     * @return Object [] (boolean OK/KO, Object newId/error num, String error)
      * @throws Throwable
      */
     static public Object [] insert_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, HttpServletRequest request ) throws Throwable {
         boolean retVal = false;
-        int new_id = 0;
+        Object new_id = null;
 
         Connection conn = null;
         String sSTMTUpdate = null;
@@ -3511,7 +3511,28 @@ public class db {
                 } else {
                     ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
                     if (rs != null && rs.next()) {
-                        new_id = rs.getInt(1);
+                        switch (rs.getMetaData().getColumnType(1)) {
+                            case Types.INTEGER:
+                                new_id = rs.getInt(1);
+                                break;
+                            case Types.NUMERIC:
+                                new_id = rs.getInt(1);
+                                break;
+                            case Types.NVARCHAR:
+                            case Types.VARCHAR:
+                                new_id = rs.getString(1);
+                                break;
+                            case Types.BIGINT:
+                            case Types.DECIMAL:
+                                new_id = rs.getBigDecimal(1);
+                                break;
+                            case Types.ROWID:
+                                new_id = rs.getRowId(1);
+                                break;
+                            default:
+                                throw new UnsupportedOperationException("ID type non implemented ... please update me");
+                        }
+
                         retVal = true;
                     }
                     if (rs != null)
@@ -3661,6 +3682,8 @@ public class db {
                             Object val = Values[i];
                             if (val instanceof Integer) {
                                 sqlSTMTUpdate.setInt((ip), (int) val);
+                            } else if (val instanceof BigDecimal) {
+                                sqlSTMTUpdate.setBigDecimal((ip), (BigDecimal) val);
                             } else if (val instanceof Long) {
                                 sqlSTMTUpdate.setLong((ip), (long) val);
                             } else if (val instanceof Float) {
@@ -3694,6 +3717,8 @@ public class db {
                 // ip++;
                 if (val instanceof Integer) {
                     sqlSTMTUpdate.setInt((ip), (int) val);
+                } else if (val instanceof BigDecimal) {
+                    sqlSTMTUpdate.setBigDecimal((ip), (BigDecimal) val);
                 } else if (val instanceof Long) {
                     sqlSTMTUpdate.setLong((ip), (long) val);
                 } else if (val instanceof Float) {
