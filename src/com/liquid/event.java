@@ -2258,11 +2258,13 @@ public class event {
             }
 
             Object doc_type_id = null;
+            boolean bResolveDocTypeId = false;
             if(paramJson.has("doc_type_id")) {
                 doc_type_id = paramJson.get("doc_type_id");
             } else {
                 if (paramJson.has("doc_type")) {
                     doc_type_id = "(SELECT id FROM \"cnconline\".\""+dmsDocType+"\" WHERE \"type\"='"+paramJson.get("doc_type")+"')";
+                    bResolveDocTypeId = true;
                 }
             }
             Object user_data = null;
@@ -2302,7 +2304,7 @@ public class event {
                                 +","+doc_type_id
                                 +",?"
                                 +")";
-                        psdo = conn.prepareStatement(sQuery);
+                        psdo = conn.prepareStatement(sQuery, Statement.RETURN_GENERATED_KEYS);
                         if(user_data instanceof String) {
                             psdo.setString(1, (String)user_data);
                         } else if(user_data instanceof byte []) {
@@ -2312,6 +2314,29 @@ public class event {
                         }
                         int res = psdo.executeUpdate();
                         if(res >= 0) {
+                            if(bResolveDocTypeId) {
+                                ResultSet rs = psdo.getGeneratedKeys();
+                                PreparedStatement psdoRead = null;
+                                ResultSet rsdoRead = null;
+                                doc_type_id = null;
+                                try {
+                                    if (rs != null && rs.next()) {
+                                        sQuery = "SELECT doc_type_id FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" " +
+                                                "WHERE id=" + rs.getString(1);
+                                        psdoRead = conn.prepareStatement(sQuery);
+                                        rsdoRead = psdoRead.executeQuery();
+                                        if (rsdoRead != null) {
+                                            if (rsdoRead.next()) {
+                                                doc_type_id = rsdoRead.getString(1);
+                                            }
+                                        }
+                                    }
+                                } finally {
+                                    if(rs != null) rs.close();
+                                    if(psdoRead != null) psdoRead.close();
+                                    if(rsdoRead != null) rsdoRead.close();
+                                }
+                            }
                             String fieldSet = "{"
                                     + "\"file\":\"" + (paramJson.getString("file")) + "\""
                                     + ",\"size\":" + paramJson.getInt("size")

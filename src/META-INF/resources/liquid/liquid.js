@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.2.17
+// Liquid ver.2.18
 //
-//  First update 06-01-2020 - Last update 18-05-2022
+//  First update 06-01-2020 - Last update 25-05-2022
 //
 //  TODO : see trello.com
 //
@@ -2590,6 +2590,9 @@ var Liquid = {
     timestampFormat: null,
     localStorageFiledSize: 1024 * 2,
     MaxSlideShowPages:100,
+    MinSlideShowPages:1,
+    pdfJsPath:"/PDF.js/build/",
+    pdfJsDebug:false,
     setLanguage: function (language, serverSide) {
         if (isDef(language)) {
             var lang_list = language.split(';');
@@ -5338,6 +5341,7 @@ var Liquid = {
                                 console.debug("[SERVER] QUERY:" + atob(httpResultJson.query));
                                 console.debug("[SERVER] QUERY-TIME:" + httpResultJson.queryTime);
                                 console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
+                                console.debug("[SERVER] NO.ROWS:" + httpResultJson.nRows);
                             } catch (e) {
                                 debugger;
                             }
@@ -5347,6 +5351,7 @@ var Liquid = {
                                 console.error("[SERVER] ERROR:" + atob(httpResultJson.error) + " on loadData() on control " + liquid.controlId);
                                 console.debug("[SERVER] QUERY-TIME:" + httpResultJson.queryTime);
                                 console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
+                                console.debug("[SERVER] NO.ROWS:" + httpResultJson.nRows);
                             } catch (e) {
                                 debugger;
                                 console.error(e);
@@ -5418,9 +5423,10 @@ var Liquid = {
 
                 if(liquid.tableJson.navBarStyle === 'slideShow') {
                     Liquid.addSlideShowItemsToLayout(liquid, null, true);
+                    if(liquid.tableJson.slideShowStart === 'auto' || liquid.tableJson.slideShowStart === true) {
+                        Liquid.startSlideShow(liquid, null);
+                    }
                 }
-
-
 
                 if (isDef(liquid.pendingControlIds)) {
                     for (var il = 0; il < liquid.pendingControlIds.length; il++) {
@@ -10625,6 +10631,10 @@ var Liquid = {
                             Liquid.setLayoutsRowStateByCommand(liquid, command);
 
                         } else if (command.name === "update") {
+                            if(liquid.tableJson.commandBarVisible !== true) {
+                                Liquid.setProperty(obj, "commandBarVisible", true);
+                                liquid.tableJson.commandBarTemporaryVisible = true;
+                            }
                             var result = Liquid.onEvent(obj, "onUpdating", null, null, null, defaultValue, bAlwaysCallback);
                             if (result.Result === defaultValue || result.systemResult === true) {
                                 liquid.currentCommand.step = Liquid.CMD_ENABLED;
@@ -13866,6 +13876,56 @@ var Liquid = {
             }
         }
     },
+    onSlideShowLoop:function(event, liquid) {
+        liquid.glLoopeTimeMs += liquid.glLooperIntervalMs;
+        if (liquid.glLoopeTimeMs >= liquid.glLoopeNextTimeMs) {
+            // console.info("next frame");
+            liquid.glLoopeTimeMs = 0.0;
+            Liquid.command(liquid, "next", function () {
+                let duration = Liquid.getField(liquid, "duration")
+                liquid.glLoopeNextTimeMs = (duration ? Number(duration) : 0) * 1000;
+                if (liquid.glLoopeNextTimeMs <= 0) liquid.glLoopeNextTimeMs = 5000;
+                // console.info("done next frame .. duration:" + liquid.glLoopeNextTimeMs);
+            });
+        }
+    },
+    startSlideShow:function(liquid, layout) {
+        if (liquid) {
+            liquid.glLooperIntervalMs = 250;
+            liquid.glLoopeTimeMs = 0;
+            liquid.glNumFrame = 0;
+            if (typeof liquid.glGalleryInterval === 'undefined') {
+                console.info("Starting frame loop on " + liquid.controlId);
+                liquid.glCurFrame = 0;
+                liquid.glNumFrame = liquid.nRows;
+                if (liquid.glNumFrame > 1) {
+                    let duration = Liquid.getField(liquid, "duration")
+                    liquid.glLoopeNextTimeMs = (duration ? Number(duration) : 0) * 1000;
+                    // console.info("Starting frame .. glNumFrame:" + liquid.glNumFrame);
+                    if (liquid.glLoopeNextTimeMs <= 0) liquid.glLoopeNextTimeMs = 5000;
+                    // console.info("duration:" + glLoopeNextTimeMs);
+                    Liquid.setUserProp(liquid, 'Frame', liquid.glCurFrame);
+                    Liquid.setUserProp(liquid, 'NumFrame', liquid.glNumFrame);
+                    liquid.glGalleryInterval = setInterval( function() { Liquid.onSlideShowLoop(event,liquid); }, liquid.glLooperIntervalMs);
+                }
+                liquid.slideShowCallback = function (liquid, layout, LastCRow, cRow) {
+                    if (liquid.glGalleryInterval)
+                        clearInterval(liquid.glGalleryInterval);
+                    liquid.glGalleryInterval = setInterval( function() { Liquid.onSlideShowLoop(event,liquid); }, liquid.glLooperIntervalMs);
+                }
+                liquid.commandStartCallback = function (liquid, command) {
+                    if (liquid.glGalleryInterval)
+                        clearInterval(liquid.glGalleryInterval);
+                    liquid.glGalleryInterval = null;
+                }
+                liquid.commandEndCallback = function (liquid, command) {
+                    if (liquid.glGalleryInterval)
+                        clearInterval(liquid.glGalleryInterval);
+                    liquid.glGalleryInterval = setInterval(function() { Liquid.onSlideShowLoop(event,liquid); }, liquid.glLooperIntervalMs);
+                }
+            }
+        }
+    },
     addSlideShowItemsToLayout:function(liquid, layout, bSetup) {
         let layouts = layout ? [layout] : liquid.tableJson.layouts;
         for(let il=0; il<layouts.length; il++) {
@@ -13880,18 +13940,20 @@ var Liquid = {
                 + "<div style=\"text-align:center; position:relative; top:-25px; z-index:200\">";
             let mp = liquid.nRows;
             if (mp > Liquid.MaxSlideShowPages) mp = Liquid.MaxSlideShowPages;
-            for (let ip = 0; ip < mp; ip++) {
-                htmlCode += "<span id='"+slideShowId+".dot."+(ip+1)+"' class=\"slideshow-dot\" onclick=\"Liquid.onSlideShowCurrent(this, " + (ip) + ")\"></span>";
-            }
-            htmlCode += "</div>";
-            if (!slideShowObj) {
-                let newObj = document.createElement("div");
-                newObj.className = "slideshow-root";
-                newObj.innerHTML = htmlCode;
-                newObj.id = slideShowId;
-                layout.containerObj.appendChild(newObj);
-            } else {
-                slideShowObj.innerHTML = htmlCode;
+            if(mp > Liquid.MinSlideShowPages) {
+                for (let ip = 0; ip < mp; ip++) {
+                    htmlCode += "<span id='" + slideShowId + ".dot." + (ip + 1) + "' class=\"slideshow-dot\" onclick=\"Liquid.onSlideShowCurrent(this, " + (ip) + ")\"></span>";
+                }
+                htmlCode += "</div>";
+                if (!slideShowObj) {
+                    let newObj = document.createElement("div");
+                    newObj.className = "slideshow-root";
+                    newObj.innerHTML = htmlCode;
+                    newObj.id = slideShowId;
+                    layout.containerObj.appendChild(newObj);
+                } else {
+                    slideShowObj.innerHTML = htmlCode;
+                }
             }
         }
     },
@@ -14254,6 +14316,9 @@ var Liquid = {
             } else if (obj.nodeName.toUpperCase() === 'FORM') {
                 liquid.linkedForm = obj;
             } else if (obj.nodeName.toUpperCase() === 'PICTURE' || obj.nodeName.toUpperCase() === 'EMBED' || obj.nodeName.toUpperCase() === 'AUDIO' || obj.nodeName.toUpperCase() === 'VIDEO') {
+                objLinkers = [obj.innerHTML, obj.id, obj.classList];
+                objLinkersTarget = [null, null, "className"];
+            } else if (obj.nodeName.toUpperCase() === 'CANVAS') {
                 objLinkers = [obj.innerHTML, obj.id, obj.classList];
                 objLinkersTarget = [null, null, "className"];
             }
@@ -17680,6 +17745,28 @@ var Liquid = {
                     }
                 }
                 return 0;
+            } else if(targetObj.nodeName.toUpperCase() === 'CANVAS') {
+                var astype = targetObj.getAttribute('astype');
+                if(value.endsWith(".pdf)")) {
+                    load_pdf_to_canvas(targetObj, value);
+                } else if(value.endsWith(".png)") || value.endsWith(".jpg)") || value.endsWith(".jpeg)") || value.endsWith(".gif)")) {
+                    load_image_to_canvas(targetObj, value);
+                } else {
+                    if(value.startsWith("DMS://")) {
+                        let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
+                        const canvasRequest = fetch(src, {cache: "force-cache"}).then(response => response.blob());
+                        canvasRequest.then(blob => {
+                            if (blob.type.indexOf("video") >= 0) {
+                                targetObj.src = window.URL.createObjectURL(blob);
+                            } else if (blob.type.indexOf("application/pdf") >= 0) {
+                                load_pdf_to_canvas(targetObj, window.URL.createObjectURL(blob));
+                            } else {
+                                load_image_to_canvas(targetObj, window.URL.createObjectURL(blob));
+                            }
+                        });
+                    }
+                }
+
             } else if(targetObj.nodeName.toUpperCase() === 'IMG') {
                 jQ1124(targetObj).attr("src", value);
                 if(isDef(disabled)) {
@@ -22456,6 +22543,79 @@ function deepClone(obj, hash = new WeakMap()) {
     return Object.assign(result, ...Object.keys(obj).map (key => ( { [key]: ( key === 'linkedLabelObj' || key === 'linkedObj' || key === 'linkedCmd' ? null : deepClone(obj[key], hash)) }) ));
 }
 
+/**
+ * Show image in canvas
+ * @param canvas
+ * @param url
+ */
+function load_image_to_canvas(canvas, url) {
+    var img = new Image();
+    var context = canvas.getContext('2d');
+    img.onload = function(){
+        context.drawImage(img,0,0);
+    };
+    img.src = url;
+}
+
+/**
+ * Show pdf in canvas
+ * @param canvas
+ * @param url
+ */
+function load_pdf_to_canvas(canvas, url) {
+    // Loaded via <script> tag, create shortcut to access PDF.js exports.
+    // var pdfjsLib = window['/PDF.js/build/pdf'];
+    var pdfjsLib = window.pdfjsLib;
+    if(pdfjsLib) {
+
+        // The workerSrc property shall be specified.
+        pdfjsLib.GlobalWorkerOptions.workerSrc = Liquid.pdfJsPath + '/pdf.worker.js';
+
+        // Asynchronous download of PDF
+        var loadingTask = pdfjsLib.getDocument(url);
+
+        loadingTask.promise.then(function (pdf) {
+            if(Liquid.pdfJsDebug)
+                console.log('PDF loaded');
+
+            // Fetch the first page
+            var pageNumber = 1;
+            pdf.getPage(pageNumber).then(function (page) {
+                if(Liquid.pdfJsDebug)
+                    console.log('Page loaded');
+
+                var scale = 1.0;
+                var viewport = page.getViewport({scale: scale});
+
+                // Prepare canvas using PDF page dimensions
+                var context = canvas.getContext('2d');
+
+                var new_scale = canvas.width / viewport.width;
+                viewport = page.getViewport({scale: new_scale});
+
+                // canvas.height = viewport.height;
+                // canvas.width = viewport.width;
+
+                // Render PDF page into canvas context
+                var renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                var renderTask = page.render(renderContext);
+                renderTask.promise.then(function () {
+                    if(Liquid.pdfJsDebug)
+                        console.log('Page rendered');
+                });
+            });
+        }, function (reason) {
+            // PDF loading error
+            console.error(reason);
+        });
+    } else {
+        alert("Missing lib : pdfjsLib .. please add \"pdf.js\" (defauly path is '/PDF.js/build') to the project");
+    }
+}
+
 function getCurrentTimetick() {
     return ((new Date().getTime() * 1000) + 621355968000000000);
 }
@@ -22493,6 +22653,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } catch (e) {
     }
 });
+
 
 
 // set language

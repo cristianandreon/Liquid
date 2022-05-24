@@ -34,6 +34,8 @@ import static com.liquid.utility.resetDatalistCache;
 
 public class workspace {
 
+    public static String version_string = "2.18";
+
     public static String getGLLang() {
         return GLLang;
     }
@@ -49,7 +51,6 @@ public class workspace {
     public static String path = null;
     static public String pythonPath = null;
     static public String pythonExecutable = null;
-    public static String version_string = "2.17";
 
     //
     // key persistent on server but hidden on the client
