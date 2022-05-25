@@ -2080,13 +2080,22 @@ public class bean {
                         }
 
                         //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
-                        Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
-                        if ((int) beanResult[0] >= 0) {
-                            // Updating the foreignTables (some info may be added)
-                            try { tbl_wrk.tableJson.put("foreignTables", foreignTablesJson); } catch (Exception e) { }
-                            return (ArrayList<Object>) beanResult[1];
+                        if(rowsJson.length() > 0) {
+                            Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
+                            if ((int) beanResult[0] >= 0) {
+                                //
+                                // Updating the foreignTables (some info may be added)
+                                //
+                                try {
+                                    tbl_wrk.tableJson.put("foreignTables", foreignTablesJson);
+                                } catch (Exception e) {
+                                }
+                                return (ArrayList<Object>) beanResult[1];
+                            } else {
+                                throw new Exception("Create bean error:" + beanResult[3]);
+                            }
                         } else {
-                            throw new Exception("Create bean error:"+beanResult[3]);
+                            return null;
                         }
                     }
                 }
