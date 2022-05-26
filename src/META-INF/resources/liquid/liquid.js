@@ -4225,7 +4225,14 @@ var Liquid = {
         }
         return null;
     },
-    validateField: function (liquid, col, value) {  // validate a field for change
+    /**
+     * validate a field for change
+     * @param liquid
+     * @param col
+     * @param value
+     * @returns {(number|*)[]|null}
+     */
+    validateField: function (liquid, col, value) {
         var validateResult = [1, value];
         if (liquid) {
             if (col) {
@@ -9441,18 +9448,20 @@ var Liquid = {
                 for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
                     var cmd = liquid.tableJson.commands[icmd];
                     if (cmd.name === commandName) {
-                        if (cmd.linkedObj) {
-                            if (bEnable === true) {
-                                cmd.linkedObj.classList.remove("liquidCommandDisabled");
-                            } else if (bEnable === false) {
-                                cmd.linkedObj.classList.add("liquidCommandDisabled");
-                            }
-                            if (bShow === true) {
-                                cmd.linkedObj.style.visibility = '';
-                                cmd.linkedObj.style.display = '';
-                            } else if (bShow === false) {
-                                cmd.linkedObj.style.visibility = '';
-                                cmd.linkedObj.style.display = 'none';
+                        if (!isDef(cmd.disabledByCommand)) {
+                            if (cmd.linkedObj) {
+                                if (bEnable === true) {
+                                    cmd.linkedObj.classList.remove("liquidCommandDisabled");
+                                } else if (bEnable === false) {
+                                    cmd.linkedObj.classList.add("liquidCommandDisabled");
+                                }
+                                if (bShow === true) {
+                                    cmd.linkedObj.style.visibility = '';
+                                    cmd.linkedObj.style.display = '';
+                                } else if (bShow === false) {
+                                    cmd.linkedObj.style.visibility = '';
+                                    cmd.linkedObj.style.display = 'none';
+                                }
                             }
                         }
                     }
@@ -10306,6 +10315,7 @@ var Liquid = {
         if (liquid.tableJson.commands) {
             for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
                 var cmd = liquid.tableJson.commands[icmd];
+                cmd.disabledByCommand = null;
                 if (cmd.linkedObj) {
                     cmd.linkedObj.classList.remove("liquidCommandDisabled");
                 }
@@ -10639,6 +10649,7 @@ var Liquid = {
                                 if (cmd.name !== command.name && (!cmd.linkedCmd || (cmd.linkedCmd && cmd.name !== cmd.linkedCmd.name))) {
                                     if (cmd.linkedObj) {
                                         cmd.linkedObj.classList.add("liquidCommandDisabled");
+                                        cmd.disabledByCommand = true;
                                     }
                                 }
                             }
@@ -15416,7 +15427,23 @@ var Liquid = {
                             }
                             obj = Liquid.getItemObjFromHTMLElement(obj);
                             var doUpdate = true;
+                            var isValid = true;
                             if (obj) {
+                                if (obj.type === 'tel') {
+                                    if(!obj.checkValidity()) {
+                                        isValid = false;
+                                    }
+                                } else if (obj.type === 'email') {
+                                    if(!obj.checkValidity()) {
+                                        isValid = false;
+                                    }
+                                }
+                                if (isDef(col.pattern)) {
+                                    if (!value.match(col.pattern)) {
+                                        isValid = false;
+                                    }
+                                }
+                                Liquid.invalidateLayoutField(liquid, lay_coord.layout, col.name, isValid);
                                 if (obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
                                     if (obj.type === 'checkbox') {
                                         if (Liquid.isBoolean(col.type)) {
@@ -15487,6 +15514,7 @@ var Liquid = {
                                     newValue = obj.innerHTML;
                                 }
                             }
+
                             if (doUpdate) {
                                 var isFormX = Liquid.isFormX(liquid);
                                 if (isFormX) {
