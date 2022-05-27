@@ -2018,22 +2018,46 @@ class LiquidCtrl {
                         var tr = document.createElement("tr");
                         for(let i=0; i<this.tableJson.actions.length; i++) {
                             var td = document.createElement("td");
-                            var bt = document.createElement("button");
-                            bt.className = "liquidActionBt";
-                            bt.style.borderWidth = "1px";
-                            bt.style.borderStyle = "solid";
-                            // div.onmouseover = Liquid.toolbarButtonMouseOver
-                            // div.onmouseout = Liquid.toolbarButtonMouseOut
+                            var bt = null;
+                            if(this.tableJson.actions[i].type == 'check' || this.tableJson.actions[i].type == 'checkbox') {
+                                bt = document.createElement("input");
+                                let div = document.createElement("div");
+                                div.style.fontSize="13px";
+                                div.appendChild(bt);
+                                bt.type = 'checkbox';
+                                if(this.tableJson.actions[i].size) {
+                                    if(!isNaN(this.tableJson.actions[i].size)) {
+                                        bt.style.width = this.tableJson.actions[i].size+"px";
+                                        bt.style.height = this.tableJson.actions[i].size+"px";
+                                    } else {
+                                        bt.style.width = this.tableJson.actions[i].size;
+                                        bt.style.height = this.tableJson.actions[i].size;
+                                    }
+                                }
+                                let txt = this.tableJson.actions[i].text ? this.tableJson.actions[i].text : this.tableJson.actions[i].name;
+                                div.innerHTML += ""+txt+"";
+                                td.appendChild(div);
+                            } else {
+                                bt = document.createElement("button");
+                                bt.className = "liquidActionBt";
+                                bt.style.borderWidth = "1px";
+                                bt.style.borderStyle = "solid";
+                                var size = this.tableJson.actions[i].size ? this.tableJson.actions[i].size : "32";
+                                bt.innerHTML = "" + (this.tableJson.actions[i].img ? "<img class=\"liquidActionImg\" src=\"" + Liquid.getImagePath(this.tableJson.actions[i].img) + "\"" + " width=" + size + " height=" + size + " style=\"cursor:pointer\" />" : "")
+                                    + (this.tableJson.actions[i].text ? "<div class=\"liquidActionText\" style=\"cursor:pointer\">" + this.tableJson.actions[i].text + "</div>" : "")
+                                    + "";
+                                td.appendChild(bt);
+                            }
+                            var titleName = "title" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+                            bt.title = this.tableJson.actions[i][titleName] ? this.tableJson.actions[i][titleName] : "";
                             bt.onclick = Liquid.onCommandBarClickDeferred;
                             bt.style.pointerEvents = 'all';
                             bt.style.cursor = 'pointer';
                             bt.id = controlId + ".action." + this.tableJson.actions[i].name;
-                            var size = this.tableJson.actions[i].size ? this.tableJson.actions[i].size : "32";
-                            bt.innerHTML = "" + (this.tableJson.actions[i].img ? "<img class=\"liquidActionImg\" src=\"" + Liquid.getImagePath(this.tableJson.actions[i].img) + "\"" + " width=" + size + " height=" + size + " style=\"cursor:pointer\" />" : "")
-                                + (this.tableJson.actions[i].text ? "<div class=\"liquidActionText\" style=\"cursor:pointer\">" + this.tableJson.actions[i].text + "</div>" : "")
-                                + "";
-                            td.appendChild(bt);
+                            // div.onmouseover = Liquid.toolbarButtonMouseOver
+                            // div.onmouseout = Liquid.toolbarButtonMouseOut
                             tr.appendChild(td);
+                            this.tableJson.actions[i].id = bt.id;
                         }
                         tbody.appendChild(tr);
                         tbl.appendChild(tbody);
@@ -3253,6 +3277,7 @@ var Liquid = {
         var retVal = "";
         var currentRow = iRow;
         var retObj = { retVal:retVal, types:types, status:status, pendingControlId:pendingControlId, iRow:iRow };
+        var expression = null;
         if (obj) {
             if (typeof obj === 'object') {
                 // solve and backup object property
@@ -3268,7 +3293,6 @@ var Liquid = {
             } else if (typeof obj === 'string') {
                 expression = obj;
             }
-
             if(expression) {
                 // replace values by search in dataset or in globar var
                 retObj.retVal = "";
@@ -5376,8 +5400,10 @@ var Liquid = {
                             }
                         }
                         if (httpResultJson.error) {
+                            let error = null;
+                            try { error = atob(httpResultJson.error); } catch(e) { error = httpResultJson.error; }
                             try {
-                                console.error("[SERVER] ERROR:" + atob(httpResultJson.error) + " on loadData() on control " + liquid.controlId);
+                                console.error("[SERVER] ERROR:" +  + " on loadData() on control " + liquid.controlId);
                                 console.debug("[SERVER] QUERY-TIME:" + httpResultJson.queryTime);
                                 console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
                                 console.debug("[SERVER] NO.ROWS:" + httpResultJson.nRows);
@@ -5386,25 +5412,19 @@ var Liquid = {
                                 console.error(e);
                             }
                             Liquid.setErrorDiv(liquid, httpResultJson.error, "error");
+                            Liquid.showToast(Liquid.appTitle, error, "error");
                         } else {
                             Liquid.setErrorDiv(liquid, null);
                         }
                         if (httpResultJson.warning) {
-                            try {
-                                console.warn("[SERVER] WARNING:" + atob(httpResultJson.warning));
-                            } catch (e) {
-                                console.error(e);
-                                debugger;
-                            }
+                            let warning = null;
+                            try { warning = atob(httpResultJson.warning); } catch (e) { warning = httpResultJson.warning; }
+                            console.warn("[SERVER] WARNING:" + warning);
                         }
                         if (httpResultJson.message) {
                             try {
                                 var msg = null;
-                                try {
-                                    msg = atob(httpResultJson.message);
-                                } catch (e) {
-                                    msg = httpResultJson.message;
-                                }
+                                try { msg = atob(httpResultJson.message); } catch (e) { msg = httpResultJson.message; }
                                 var title = (typeof httpResultJson.title !== 'undefined' && httpResultJson.title ? atob(httpResultJson.title) : (Liquid.lang === 'eng' ? "SERVER MESSAGE" : "MESSAGGIO DAL SERVER"));
                                 console.info("[SERVER] MESSAGE:" + msg);
                                 Liquid.dialogBox(null, title, msg, {
@@ -5520,7 +5540,8 @@ var Liquid = {
         if (typeof liquid.tableJson !== 'undefined') {
 
             var overlayNoRowsTemplate = (typeof liquid.tableJson.noRowsMessage !== "undefined" ? liquid.tableJson.noRowsMessage : Liquid.noRowsMessage);
-            liquid.gridOptions.overlayNoRowsTemplate = overlayNoRowsTemplate;
+            if(liquid.gridOptions)
+                liquid.gridOptions.overlayNoRowsTemplate = overlayNoRowsTemplate;
 
             if (isDef(liquid.tableJson.rowData)) {
                 // fixed data :

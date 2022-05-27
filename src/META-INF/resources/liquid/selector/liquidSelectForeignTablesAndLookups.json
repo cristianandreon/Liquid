@@ -47,7 +47,7 @@
 ,"resize":"both"
 ,"autoSizeColumns":true
 ,"autoLoad":false
-,"autoInsertIfMissing":true
+,"autoInsertIfMissing":false
 ,"autoSelect":true
 ,"pageSize":0
 ,"width":"800"
@@ -67,6 +67,7 @@
 ]
 ,"actions":[
      {"name":"cancel", "img":"cancel.png", "size":20, "text":"Annulla", "client":"Liquid.close"  }
+    ,{"name":"nestedForeignKey", "img":"checed.png", "size":20, "text":"Nested Foreign Key", "type":"checkbox" }
     ,{"name":"ok", "img":"add.png", "size":20, "text":"OK", "client":"Liquid.close"  }
     ]
 ,"grids":[ ]

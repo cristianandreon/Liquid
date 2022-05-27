@@ -588,6 +588,7 @@ var LiquidEditing = {
                     selectorFTLiquid.tableJson.database = Liquid.curDatabase;
                     selectorFTLiquid.tableJson.schema = Liquid.curSchema;
                     selectorFTLiquid.tableJson.table = table;
+                    selectorFTLiquid.tableJson.autoInsertIfMissing = true;
                     Liquid.loadData(selectorFTLiquid, null, "newWindow");
                     selectorFTLiquid.onPostClosed = "LiquidEditing.onNewWindowProcess3('"+obj_id+"','"+mode+"','"+parentObjId+"','"+table+"')";
                 }
@@ -1468,7 +1469,7 @@ var LiquidEditing = {
     onLiquidConnectionOk:function(objId) {
         var obj = document.getElementById(objId);
         Liquid.formToObjectExchange(obj, Liquid);
-        if(Liquid.curConnectionURL && Liquid.curConnectionURL) {
+        if(isDef(Liquid.curConnectionURL) && isDef(Liquid.curConnectionURL)) {
             var xhr = new XMLHttpRequest();
             try {
                 xhr.open('POST', glLiquidServlet + '?operation=setConnection' 
