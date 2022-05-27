@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.2.18
+// Liquid ver.2.19
 //
-//  First update 06-01-2020 - Last update 25-05-2022
+//  First update 06-01-2020 - Last update 27-05-2022
 //
 //  TODO : see trello.com
 //
@@ -7154,12 +7154,12 @@ var Liquid = {
         tr.appendChild(td);
 
         td = document.createElement("td");
-        if (liquid.filtersJson.length > 1) {
+        if (liquid.filtersJson.length > 0) {
             td.id = liquid.controlId + ".FiltersSelector";
             td.className = "liquidFiltersSelector";
             var filterList = document.createElement("div");
             liquid.filtersSelectorId = liquid.controlId + ".filtersSelector";
-            var filterHTML = "<select id=\"" + liquid.filtersSelectorId + "\" style=\"width: 100%;\" class=\"liquidFiltersSelect\" onchange=\"Liquid.onFilterTab(event)\" >";
+            var filterHTML = "<select id=\"" + liquid.filtersSelectorId + "\" style=\"width: 100%; right:36px; position:relative; height:100%; border:1px solid lightgrey; background: transparent;\" class=\"liquidFiltersSelect\" onchange=\"Liquid.onFilterTab(event)\" >";
             if (liquid.filtersJson) {
                 for (var i = 0; i < liquid.filtersJson.length; i++) {
                     var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
@@ -7310,12 +7310,12 @@ var Liquid = {
                                                         var selNodes = targetLiquid.gridOptions.api.getSelectedNodes();
                                                         if (selNodes && selNodes.length) {
                                                             selNodes[0].setDataValue(col.field, newValue);
-                                                            Liquid.registerFieldChange(liquid, null, selNodes[0].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, newValue);
+                                                            Liquid.registerFieldChange(targetLiquid, null, selNodes[0].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, newValue);
                                                             Liquid.updateDependencies(targetLiquid, col, null);
                                                         }
                                                     }
 
-                                                    Liquid.setGridFieldAsChanged(liquid, gridControl, true);
+                                                    Liquid.setGridFieldAsChanged(targetLiquid, gridControl, true);
                                                 }
                                             } else {
                                                 if (targetLiquid.tableJson.layouts) {
@@ -8888,7 +8888,7 @@ var Liquid = {
                             }
                         }
                         if(!commandFoundXMsg) {
-                            var err = "LIQUID: command " + commandName + " not found";
+                            var err = "LIQUID: ERROR: command '" + commandName + "' not defined in control '" + liquid.controlId + "'";
                             console.error(err);
                             Liquid.showToast(Liquid.appTitle, err, "error");
                         }
@@ -17393,61 +17393,63 @@ var Liquid = {
     },
     setLayoutsRowStateByCommand(liquid, command) {
         if(liquid) {
-            for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
-                var layout = liquid.tableJson.layouts[il];
-                if (layout.pageLoaded) {
-                    if (layout.templateRows) {
-                        let templateIndex = Liquid.getTemplateRowIndex(command);
-                        if (isDef(layout.templateRows[templateIndex].source)) {
-                            if (layout.currentRow1B > 0) {
-                                if (layout.rowsContainer[layout.currentRow1B - 1]) {
-                                    layout.currentCommandRow1B = layout.currentRow1B;
-                                    if (layout.templateRows[0].source != layout.templateRows[templateIndex].source) {
-                                        if (layout.rowsContainer) {
-                                            if (layout.rowsContainer.length > 0) {
-                                                layout.rowsContainer[currentRow1B - 1].incomingSource = layout.templateRows[templateIndex].source;
-                                                Liquid.refreshLayout(liquid, layout, false);
+            if(liquid.tableJson.layouts) {
+                for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                    var layout = liquid.tableJson.layouts[il];
+                    if (layout.pageLoaded) {
+                        if (layout.templateRows) {
+                            let templateIndex = Liquid.getTemplateRowIndex(command);
+                            if (isDef(layout.templateRows[templateIndex].source)) {
+                                if (layout.currentRow1B > 0) {
+                                    if (layout.rowsContainer[layout.currentRow1B - 1]) {
+                                        layout.currentCommandRow1B = layout.currentRow1B;
+                                        if (layout.templateRows[0].source != layout.templateRows[templateIndex].source) {
+                                            if (layout.rowsContainer) {
+                                                if (layout.rowsContainer.length > 0) {
+                                                    layout.rowsContainer[currentRow1B - 1].incomingSource = layout.templateRows[templateIndex].source;
+                                                    Liquid.refreshLayout(liquid, layout, false);
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                        } else {
+                            var err = "ERROR: setLayoutsRowStateByCommand() : missing templateRow on '" + liquid.controlId + "'";
+                            console.error(err);
+                            Liquid.showToast(Liquid.appTitle, err, "error");
                         }
-                    } else {
-                        var err = "ERROR: setLayoutsRowStateByCommand() : missing templateRow on '"+liquid.controlId+"'";
-                        console.error(err);
-                        Liquid.showToast(Liquid.appTitle, err, "error");
                     }
-                }
-                if (layout.rowsContainer) {
-                    if (layout.rowsContainer.length > 0) {
-                        if (layout.currentCommandRow1B > 0) {
-                            if (layout.rowsContainer[layout.currentCommandRow1B - 1]) {
-                                let commandName = command ? command.name : null;
-                                if (commandName === "update") {
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = true;
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isDeleting = false;
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
-                                } else if (commandName === "insert") {
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isDeleting = false;
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = true;
-                                } else if (commandName === "delete") {
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isDeleting = true;
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
-                                } else {
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isDeleting = false;
-                                    layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
+                    if (layout.rowsContainer) {
+                        if (layout.rowsContainer.length > 0) {
+                            if (layout.currentCommandRow1B > 0) {
+                                if (layout.rowsContainer[layout.currentCommandRow1B - 1]) {
+                                    let commandName = command ? command.name : null;
+                                    if (commandName === "update") {
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = true;
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isDeleting = false;
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
+                                    } else if (commandName === "insert") {
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isDeleting = false;
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = true;
+                                    } else if (commandName === "delete") {
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isDeleting = true;
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
+                                    } else {
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isUpdating = false;
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isDeleting = false;
+                                        layout.rowsContainer[layout.currentCommandRow1B - 1].isAdding = false;
+                                    }
                                 }
                             }
                         }
+                    } else {
+                        var err = "ERROR: setLayoutsRowStateByCommand() : missing layout.rowsContainer on '" + liquid.controlId + "'";
+                        console.error(err);
+                        Liquid.showToast(Liquid.appTitle, err, "error");
                     }
-                } else {
-                    var err = "ERROR: setLayoutsRowStateByCommand() : missing layout.rowsContainer on '"+liquid.controlId+"'";
-                    console.error(err);
-                    Liquid.showToast(Liquid.appTitle, err, "error");
                 }
             }
         }
@@ -19555,9 +19557,9 @@ var Liquid = {
             else if(liquid.tableJson.modeless || liquid.tableJson.modless)
                 Liquid.setFocus(liquid);
             if(doOnFirstLoad) {
-                Liquid.onEvent(obj, "onFirstLoad", null, null);
+                Liquid.onEvent(liquid, "onFirstLoad", null, null);
             }
-            Liquid.onEvent(obj, "onLoad", null, null);
+            Liquid.onEvent(liquid, "onLoad", null, null);
         }
         Liquid.createNavigatorsBar();
         return retVal;
