@@ -5,6 +5,14 @@
 package com.liquid;
 
 import com.liquid.python.python;
+import org.apache.commons.lang.StringUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.JspWriter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -14,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.InvalidParameterException;
-import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.text.DateFormat;
 import java.text.NumberFormat;
@@ -23,18 +30,6 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspWriter;
-
-import com.mysql.cj.xdevapi.JsonArray;
-import com.mysql.cj.xdevapi.JsonValue;
-import org.apache.commons.lang.StringUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import static com.liquid.liquidize.liquidizeJSONContent;
 
 public class event {
 
@@ -57,7 +52,7 @@ public class event {
          * @return less than 0 for fail, 0 for none, greater than 0 for success
          * @see db
          */
-        public String callback(Object p1, Object p2, Object p3, Object p4, Object p5);
+        String callback(Object p1, Object p2, Object p3, Object p4, Object p5);
     }
 
     static public String execute(HttpServletRequest request, JspWriter out) {
