@@ -6028,7 +6028,8 @@ public class db {
         return result;
     }
 
-    static public String syncronizeTable(String databaseSchemaTable, String sourceRowsFilters,
+    static public String syncronizeTable(
+            String databaseSchemaTable, String sourceRowsFilters,
             String targetDatabaseSchemaTable, String targetRowsFilters,
             String columnsRelation
     ) {
@@ -6066,12 +6067,13 @@ public class db {
      * ] ,"deletedCount":n }
      * @see db
      */
-    static public String syncronizeTable(String sourceDatabaseSchemaTable, String sSourceRowsFilters,
+    static public String syncronizeTable(
+            String sourceDatabaseSchemaTable, String sSourceRowsFilters,
             String targetDatabaseSchemaTable, String sTargetRowsFilters,
             String sColumnsRelation,
             String methodGetPrimaryKey, Object instanceGetPrimaryKey,
             String mode,
-             HttpServletRequest request
+            HttpServletRequest request
     ) {
         JSONObject resultJSON = new JSONObject();
         String result = "";
