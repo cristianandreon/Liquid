@@ -264,13 +264,19 @@ public class TransactionList {
                             stmt.setNull(ip, Types.DOUBLE);
                         } else if(oParam instanceof Float) {
                             stmt.setDouble(ip, new Double((Float)oParam));
+                        } else if(oParam instanceof BigDecimal) {
+                            stmt.setBigDecimal(ip, (BigDecimal)oParam);
                         } else {
                             stmt.setDouble(ip, (Double)oParam);
                         }
                     } else if (value_type == -5) {
                         // bigint number
                         if(oParam instanceof String) {
-                            stmt.setLong(ip, Long.parseLong((String)oParam));
+                            stmt.setLong(ip, Long.parseLong((String) oParam));
+                        } else if(oParam instanceof Integer) {
+                            stmt.setLong(ip, new Long((Integer)oParam));
+                        } else if(oParam instanceof BigDecimal) {
+                            stmt.setLong(ip, ((BigDecimal)oParam).longValue());
                         } else if(oParam == null) {
                             stmt.setNull(ip, Types.BIGINT);
                         } else {

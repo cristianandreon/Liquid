@@ -1416,10 +1416,12 @@ public class workspace {
                             if (!metadata.create_table(connToUse, database, schema, table, tableJson)) {
                                 // Fail
                                 String err = "database:" + database + " schema:" + schema + " Failed to create table " + table + " ... please check fields, sizes, data type ...";
+                                System.out.println(err);
                                 return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                             }
                         } else {
                             String err = "database:" + database + " schema:" + schema + " table " + table + " not exist";
+                            System.out.println(err);
                             return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                         }
                     }

@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.2.20
+// Liquid ver.2.21
 //
-//  First update 06-01-2020 - Last update 29-05-2022
+//  First update 06-01-2020 - Last update 30-05-2022
 //
 //  TODO : see trello.com
 //
@@ -4389,6 +4389,7 @@ var Liquid = {
                                                     }
                                                     // Implicit fail
                                                     httpResultJson.fail = true;
+                                                    console.error(err);
                                                     Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "ERROR", err, {
                                                         text: "OK",
                                                         func: function () {
@@ -4402,24 +4403,35 @@ var Liquid = {
                                                     } catch (e) {
                                                         warn = httpResultJson.warning;
                                                     }
+                                                    console.warn(warn);
                                                     Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "WARNING", warn, {
                                                         text: "OK",
                                                         func: function () {
                                                         }
                                                     }, null);
                                                     anyMessage = true;
-                                                } else if (httpResultJson.message || httpResultJson.info) {
+                                                } else if (httpResultJson.message) {
                                                     var msg = null;
                                                     try {
-                                                        msg = atob(httpResultJson.message ? httpResultJson.message : httpResultJson.info);
+                                                        msg = atob(httpResultJson.message);
                                                     } catch (e) {
-                                                        msg = httpResultJson.message ? httpResultJson.message : httpResultJson.info;
+                                                        msg = httpResultJson.message;
                                                     }
+                                                    console.info(msg);
                                                     Liquid.dialogBox(null, httpResultJson.title ? httpResultJson.title : "MESSAGE", msg, {
                                                         text: "OK",
                                                         func: function () {
                                                         }
                                                     }, null);
+                                                    anyMessage = true;
+                                                } else if (httpResultJson.info) {
+                                                    var msg = null;
+                                                    try {
+                                                        msg = atob(httpResultJson.info);
+                                                    } catch (e) {
+                                                        msg = httpResultJson.info;
+                                                    }
+                                                    console.info(msg);
                                                     anyMessage = true;
                                                 }
 
@@ -5628,7 +5640,7 @@ var Liquid = {
                                     // Espressione originale
                                     filterColumn.value = filterColumn.sourcevalue;
                                 }
-                                if (liquid.filtersJson[i_flt].columns[i_flt_col].value !== null) {
+                                if (isDef(filterColumn.value)) {
                                     if (filterColumn.value.indexOf("${") >= 0 || filterColumn.value.indexOf("@{") >= 0) {
                                         // solve variable filters
                                         var result = Liquid.solveExpressionField(filterColumn, "value", liquid);

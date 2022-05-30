@@ -635,13 +635,23 @@ public class utility {
                             retVal = true;
                         }
                     } else if (value instanceof BigDecimal) {
-                        if(curValue == null || ((BigDecimal)curValue).compareTo((BigDecimal) value) != 0) {
-                            field.set(bean, (BigDecimal)value);
+                        if(curValue == null || ((Double)curValue).compareTo((Double) value) != 0) {
+                            field.set(bean, ((BigDecimal)value).doubleValue());
+                            retVal = true;
+                        }
+                    } else if (value instanceof Long) {
+                        if(curValue == null || ((Double)curValue).compareTo((Double) value) != 0) {
+                            field.set(bean, new Double((Long)value));
+                            retVal = true;
+                        }
+                    } else if (value instanceof Integer) {
+                        if(curValue == null || ((Double)curValue).compareTo((Double) value) != 0) {
+                            field.set(bean, new Double(((Integer)value)));
                             retVal = true;
                         }
                     } else if (value instanceof Object) {
                         if(curValue == null || ((Double)field.get(bean)).compareTo((Double) value) != 0) {
-                            field.set(bean, (Double) value);
+                            field.set(bean, new Double(String.valueOf(value)));
                             retVal = true;
                         }
                     }

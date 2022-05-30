@@ -1129,9 +1129,9 @@ public class db {
                             JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                             if (requestJson.has("filtersJson")) {
                                 JSONArray filtersCols = requestJson.getJSONArray("filtersJson");    // filtri valorizzati
-                                JSONArray allFiltersDefinition = null;                                  // tutti i gruppi di filtro
-                                JSONObject filtersDefinition = null;                                    // filtri del gruppo corrente
-                                JSONArray filtersDefinitionCols = null;                                 // definizione delle colonne
+                                JSONArray allFiltersDefinition = null;                                  // (SOLO INFORMATIVO) tutti i gruppi di filtro
+                                JSONObject filtersDefinition = null;                                    // (SOLO INFORMATIVO) filtri del gruppo corrente
+                                JSONArray filtersDefinitionCols = null;                                 // (SOLO INFORMATIVO) definizione delle colonne
                                 int curFilter = -1;
 
                                 if (requestJson.has("curFilter")) {
@@ -1152,37 +1152,22 @@ public class db {
                                     }
                                 }
 
-                                if (allFiltersDefinition != null) {
-                                    for (int i_flt = 0; i_flt < allFiltersDefinition.length(); i_flt++) {
+                                if (filtersCols != null) {
+                                    //
+                                    // N.B.: filtersCols continene le definizioni del filtro impacchettate dal client
+                                    //
+                                    Object[] resWhere = process_filters_json(
+                                            tbl_wrk, table, cols,
+                                            isOracle, isMySQL, isPostgres, isSqlServer,
+                                            sWhere, sWhereParams, filtersCols, filtersDefinitionCols, leftJoinsMap,
+                                            tableIdString, itemIdString,
+                                            recordset_params.request);
 
-                                        filtersDefinition = allFiltersDefinition.getJSONObject(i_flt);
+                                    String errorWhere = (String) resWhere[1];
+                                    if (errorWhere != null && !errorWhere.isEmpty())
+                                        error += "[" + errorWhere + "]";
 
-                                        boolean visible = true;
-                                        if (filtersDefinition.has("visible")) {
-                                            visible = filtersDefinition.getBoolean("visible");
-                                        }
-                                        if (visible == false || curFilter == i_flt) {
-
-                                            //
-                                            // N.B.: non c'è necessità di impacchettarlo come filtersCols (che ha filtri nascosti uniti al filtro corrente)
-                                            //      filtersDefinitionCols non è attualmente usato
-                                            //
-                                            // filtersDefinitionCols = (filtersDefinition != null ? filtersDefinition.getJSONArray("columns") : null);
-
-                                            Object[] resWhere = process_filters_json(
-                                                    tbl_wrk, table, cols,
-                                                    isOracle, isMySQL, isPostgres, isSqlServer,
-                                                    sWhere, sWhereParams, filtersCols, filtersDefinitionCols, leftJoinsMap,
-                                                    tableIdString, itemIdString,
-                                                    recordset_params.request);
-
-                                            String errorWhere = (String) resWhere[1];
-                                            if (errorWhere != null && !errorWhere.isEmpty())
-                                                error += "[" + errorWhere + "]";
-
-                                            sWhere = (String) resWhere[2];
-                                        }
-                                    }
+                                    sWhere = (String) resWhere[2];
                                 }
                             }
 
@@ -2571,8 +2556,9 @@ public class db {
                             bUseParams = false;
                         } else {
                             if(bFoundCol) {
-                                if(filterValue != null)
-                                    filterValue = filterValue.toLowerCase();
+                                if(filterValue != null) {
+                                    oFilterValue = filterValue = filterValue.toLowerCase();
+                                }
                                 sensitiveCasePreOp = "lower(";
                                 sensitiveCasePostOp = ")";
                             } else {
@@ -2732,9 +2718,11 @@ public class db {
                             sWhere += "?";
                             sWhereParams.add(filterValueObject);
                         } else {
-                            sWhere += preFix +
-                                    (filterValue != null ? filterValue : "NULL")
-                                    + postFix;
+                            sWhere += ""
+                                    + preFix
+                                    + (filterValue != null ? filterValue : "NULL")
+                                    + postFix
+                                    ;
                         }
                                 
                         
@@ -4777,6 +4765,7 @@ public class db {
                                                 }
                                             }
                                         } catch (Throwable th) {
+                                            Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
                                             if(executingQuery == null)
                                             	executingQuery = tableTransactList.getSQL(liquid, i);
                                             String tableDesc = liquid.schemaTable.replace(tableIdString, "");
