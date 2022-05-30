@@ -634,6 +634,11 @@ public class utility {
                             field.set(bean, (Double)value);
                             retVal = true;
                         }
+                    } else if (value instanceof BigDecimal) {
+                        if(curValue == null || ((BigDecimal)curValue).compareTo((BigDecimal) value) != 0) {
+                            field.set(bean, (BigDecimal)value);
+                            retVal = true;
+                        }
                     } else if (value instanceof Object) {
                         if(curValue == null || ((Double)field.get(bean)).compareTo((Double) value) != 0) {
                             field.set(bean, (Double) value);
@@ -708,6 +713,35 @@ public class utility {
                             retVal = true;
                         }
                     }
+                } else if (propType.equals(java.math.BigDecimal.class)) {
+                    if (value instanceof String) {
+                        BigDecimal newValue = new BigDecimal((String)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal) newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Object) {
+                        BigDecimal newValue = new BigDecimal(String.valueOf(value));
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof BigDecimal) {
+                        BigDecimal newValue = (BigDecimal)value;
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value == null) {
+                        if(curValue != null) {
+                            field.set(bean, null);
+                            retVal = true;
+                        }
+                    } else {
+                        field.set(bean, value);
+                        retVal = true;
+                    }
+
                 } else {
                     if(value != null) {
                         if (curValue == null || !curValue.equals(value)) {
@@ -1370,10 +1404,13 @@ public class utility {
         JSONObject sourceJson = ssource != null && !ssource.isEmpty() ? new JSONObject(ssource) : null;
         JSONObject targetJson = starget != null ? new JSONObject(starget) : new JSONObject();
         if(sourceJson != null) {
-            for (Object keyObject : JSONObject.getNames(sourceJson)) {
-                String key = (String) keyObject;
-                Object obj = sourceJson.get(key);
-                targetJson.put(key, obj);
+            String[] names = JSONObject.getNames(sourceJson);
+            if(names != null) {
+                for (Object keyObject : names) {
+                    String key = (String) keyObject;
+                    Object obj = sourceJson.get(key);
+                    targetJson.put(key, obj);
+                }
             }
         }
         return targetJson.toString();

@@ -611,6 +611,7 @@ var LiquidEditing = {
                         cols.push( { name:"data1" } );
                     }
                 }
+                let nestedFK = Liquid.getAction(selectorFTLiquid, "nestedForeignKey", "value");
 
                 if(cols) {
                     var defaultVal = "";
@@ -676,7 +677,7 @@ var LiquidEditing = {
                         // Applica le foreign key
                         var selectorFTLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
                         if(selectorFTLiquid) {
-                            LiquidEditing.process_foreign_tables_selector(newLiquid, selectorFTLiquid, "batch");
+                            LiquidEditing.process_foreign_tables_selector(newLiquid, selectorFTLiquid, "batch", nestedFK);
                             Liquid.rebuild(newLiquid, newLiquid.outDivObjOrId, newLiquid.tableJsonSource);
                         }
 
@@ -1660,8 +1661,9 @@ var LiquidEditing = {
         if(liquid) {
             var nameItems = obj_id.split(".");
             var selectorFTLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
+            let nestedFK = Liquid.getAction(selectorFTLiquid, "nestedForeignKey", "value");
             if(selectorFTLiquid.lastAction && selectorFTLiquid.lastAction.name==="ok") {
-                LiquidEditing.process_foreign_tables_selector(liquid, selectorFTLiquid, "single");
+                LiquidEditing.process_foreign_tables_selector(liquid, selectorFTLiquid, "single", nestedFK);
                 Liquid.setAskForSave(liquid, true);
                 Liquid.rebuild(liquid, liquid.outDivObjOrId, liquid.tableJsonSource);
             }
@@ -1673,7 +1675,7 @@ var LiquidEditing = {
      * @param liquid
      * @param selectorFTLiquid
      */
-    process_foreign_tables_selector:function(liquid, selectorFTLiquid, mode) {
+    process_foreign_tables_selector:function(liquid, selectorFTLiquid, mode, nestedFK) {
         if (selectorFTLiquid.tableJson.selections) {
             for (var isel = 0; isel < selectorFTLiquid.tableJson.selections.length; isel++) {
                 var sel = selectorFTLiquid.tableJson.selections[isel];
@@ -1681,7 +1683,7 @@ var LiquidEditing = {
                     var foreignName = mode === 'batch' ?
                         sel["FOREIGN_TABLE"]
                         :
-                        prompt("Enter folder name", "" + sel["FOREIGN_TABLE"]);
+                        prompt("Enter foreign table name", "" + sel["FOREIGN_TABLE"]);
                     if (foreignName) {
                         var newForeignTableJson = null;
                         var newLookupJson = null;
@@ -1716,7 +1718,7 @@ var LiquidEditing = {
                                 column: sel["COLUMN"],
                                 foreignTable: sel["FOREIGN_TABLE"],
                                 foreignColumn: sel["FOREIGN_COLUMN"],
-                                options: {editable: true, autoSelect: true, autoSizeColumns: true}
+                                options: { editable: true, autoSelect: true, autoSizeColumns: true , "foreignTables":(nestedFK ? "**":"") }
                             };
                             newForeignTableJson["height"] = Liquid.defaultMultipanelHeight;
                             newForeignTableJson["text"] = sel["FOREIGN_TABLE"];

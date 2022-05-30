@@ -1684,14 +1684,19 @@ public class workspace {
                 }
 
                 boolean readAllForeignTables = false;
+                boolean readAllNestedForeignTables = false;
                 boolean updateAllForeignTables = false;
 
                 if ("*".equalsIgnoreCase(foreignTables)) {
                     readAllForeignTables = true;
                 }
+                if ("**".equalsIgnoreCase(foreignTables)) {
+                    readAllForeignTables = true;
+                    readAllNestedForeignTables = true;
+                }
 
                 String sourceForeignTables = tableJson.has("sourceForeignTables") ? tableJson.getString("sourceForeignTables") : null;
-                if ("*".equalsIgnoreCase(sourceForeignTables)) {
+                if ("*".equalsIgnoreCase(sourceForeignTables) || "**".equalsIgnoreCase(sourceForeignTables)) {
                     updateAllForeignTables = true;
                 }
 
@@ -1735,7 +1740,7 @@ public class workspace {
                                 ArrayList<String> allColumns = metadata.getAllColumnsAsArray(database, schema, table, conn);
                                 for (metadata.ForeignKey foreignKey : foreignKeysOnTable) {
                                     // Verifica tutte le foreign table tabella se presente *
-                                    if ("*".equalsIgnoreCase(foreignTables) || "all".equalsIgnoreCase(foreignTables)) {
+                                    if ("*".equalsIgnoreCase(foreignTables) || "**".equalsIgnoreCase(foreignTables) || "all".equalsIgnoreCase(foreignTables)) {
                                         // verifica la presenza delle colonne necessarie alla foreignTable : velocizza il processo evitando la query inneestata
                                         String type = foreignKey.type;
                                         cols = tableJson.getJSONArray("columns");
@@ -1769,23 +1774,18 @@ public class workspace {
                                                 String ft = null, fc = null, type = null;
                                                 JSONObject foreignableJson = foreignTablesJson.getJSONObject(ift);
                                                 if (foreignableJson != null) {
-                                                    try {
+                                                    if(foreignableJson.has("foreignTable")) {
                                                         ft = foreignableJson.getString("foreignTable");
-                                                    } catch (Exception e) {
-                                                    };
-                                                    try {
+                                                    }
+                                                    if(foreignableJson.has("column")) {
                                                         fc = foreignableJson.getString("column");
-                                                    } catch (Exception e) {
-                                                    };
-
-                                                    try {
+                                                    }
+                                                    if(foreignableJson.has("type")) {
                                                         type = foreignableJson.getString("type");
                                                         if("exp".equalsIgnoreCase(type)) {
                                                         } else {
                                                         }
-                                                    } catch (Exception e) {
-                                                    };
-
+                                                    }
                                                     if (ft != null) {
                                                         if (fc != null) {
                                                             if (foreignKey.foreignTable.equalsIgnoreCase(ft)) {

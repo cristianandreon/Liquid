@@ -139,7 +139,7 @@ public class liquidize {
                 String sep = ",";
                 out += "{";
                 if(json.has("build_comment")) json.remove("build_comment");
-                out += sTabular + "\"build_comment\":\"create by liquid v. "+Info.getVersion()+"\"";
+                out += sTabular + "\"build_comment\":\"created by liquid v. "+Info.getVersion()+"\"";
                         
                 for(int i=0; i<glJSONPropsList.size(); i++) {
                     out += liquidizeAddProp( json, glJSONPropsList.get(i), null, cLevel, true, sep );

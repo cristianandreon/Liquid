@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.2.19
+// Liquid ver.2.20
 //
-//  First update 06-01-2020 - Last update 27-05-2022
+//  First update 06-01-2020 - Last update 29-05-2022
 //
 //  TODO : see trello.com
 //
@@ -3995,13 +3995,13 @@ var Liquid = {
             console.error("[SERVER] ERROR:" + err + " on " + commandOrEvent.name + " on control " + liquid.controlId);
             if (showErrors) Liquid.setErrorDiv(liquid, obj.error, "error");
             if (isDef(obj.query)) {
-                console.error("[SERVER] QUERY:\n\n" + atob(obj.query));
+                console.error("[SERVER] QUERY on "+liquid.controlId+":\n\n" + atob(obj.query));
             }
         } else {
             if (Liquid.projectMode) {
                 if (obj.query) {
                     try {
-                        console.info("[SERVER] QUERY:\n\n" + atob(obj.query));
+                        console.info("[SERVER] QUERY on "+liquid.controlId+":\n\n" + atob(obj.query));
                     } catch (e) {
                         console.error(e);
                     }
@@ -5430,7 +5430,7 @@ var Liquid = {
 
                         if (httpResultJson.debug || Liquid.projectMode) {
                             try {
-                                console.debug("[SERVER] QUERY:" + atob(httpResultJson.query));
+                                console.debug("[SERVER] QUERY on "+liquid.controlId+":" + atob(httpResultJson.query));
                                 console.debug("[SERVER] QUERY-TIME:" + httpResultJson.queryTime);
                                 console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
                                 console.debug("[SERVER] NO.ROWS:" + httpResultJson.nRows);
@@ -5617,31 +5617,33 @@ var Liquid = {
             if (liquid.curFilter < liquid.filtersJson.length) {
                 if (!isDef(liquid.curFilter)) liquid.curFilter = 0;
                 if (liquid.curFilter < 0) liquid.curFilter = 0;
-                if (isDef(liquid.filtersJson[liquid.curFilter].columns)) {
-                    // discharge null values
-                    filterColumns = [];
-                    for (let iflt = 0; iflt < liquid.filtersJson[liquid.curFilter].columns.length; iflt++) {
-                        if (liquid.filtersJson[liquid.curFilter].columns[iflt]) {
-                            if (liquid.filtersJson[liquid.curFilter].columns[iflt].value !== null) {
-                                let filterColumn = liquid.filtersJson[liquid.curFilter].columns[iflt];
-                                if (filterColumn) {
-                                    if (filterColumn.value) {
-                                        if (filterColumn.value.indexOf("${") >= 0 || filterColumn.value.indexOf("@{") >= 0) {
-                                            // solve variable filters
-                                            var result = Liquid.solveExpressionField(filterColumn, "value", liquid);
-                                            if (result[0] === 'ready') {
-                                                filterColumn.value = result[1] != null ? result[1] : "";
-                                            }
+                // discharge null values
+                let filterColumns = [];
+                for (let i_flt = 0; i_flt < liquid.filtersJson.length; i_flt++) {
+                    if (i_flt == liquid.curFilter || liquid.filtersJson[i_flt].visible === false) {
+                        for (let i_flt_col = 0; i_flt_col < liquid.filtersJson[i_flt].columns.length; i_flt_col++) {
+                            if (liquid.filtersJson[i_flt].columns[i_flt_col]) {
+                                let filterColumn = liquid.filtersJson[i_flt].columns[i_flt_col];
+                                if(isDef(filterColumn.sourcevalue)) {
+                                    // Espressione originale
+                                    filterColumn.value = filterColumn.sourcevalue;
+                                }
+                                if (liquid.filtersJson[i_flt].columns[i_flt_col].value !== null) {
+                                    if (filterColumn.value.indexOf("${") >= 0 || filterColumn.value.indexOf("@{") >= 0) {
+                                        // solve variable filters
+                                        var result = Liquid.solveExpressionField(filterColumn, "value", liquid);
+                                        if (result[0] === 'ready') {
+                                            filterColumn.value = result[1] != null ? result[1] : "";
                                         }
                                     }
+                                    filterColumns.push(filterColumn);
                                 }
-                                filterColumns.push(filterColumn);
                             }
                         }
                     }
-                    allFilterJson = filterColumns;
-                    allFilterJson.curFilter = liquid.curFilter;
                 }
+                allFilterJson = filterColumns;
+                allFilterJson.curFilter = liquid.curFilter;
             }
         }
         if (isDef(liquid.runtimeFiltersJson)) { // runtime filter : internal use
@@ -6324,59 +6326,65 @@ var Liquid = {
             if (liquid.filtersJson) {
                 if (!isDef(liquid.curFilter)) liquid.curFilter = 0;
                 if (liquid.curFilter < 0) liquid.curFilter = 0;
-                var filtersJson = liquid.filtersJson[liquid.curFilter];
-                if (filtersJson) {
-                    if (isDef(filtersJson.columns)) {
-                        if (filtersJson.columns.length > 0) {
-                            var bDoFilter = false;
-                            if (filtersJson.columns.length) {
-                                for (var i = 0; i < filtersJson.columns.length; i++) {
-                                    var element = document.getElementById(liquid.controlId + ".filters." + (liquid.curFilter + 1) + "." + filtersJson.columns[i].runtimeName + ".filter");
-                                    if (element) {
-                                        if (isDef(element.dataset.linkedInputId))
-                                            element = document.getElementById(element.dataset.linkedInputId);
-                                        var elementValue = null;
-                                        if (element.nodeName === "SELECT") {
-                                            elementValue = element.options[element.selectedIndex].getAttribute("value");
-                                        } else {
-                                            elementValue = element.value;
-                                        }
-                                        if (filtersJson.columns[i].value !== elementValue) {
-                                            filtersJson.columns[i].value = (elementValue === '' ? null : (elementValue === '""' ? "" : elementValue));
-                                            if (filtersJson.columns[i].value) {
-                                                var ic = 0;
-                                                while (filtersJson.columns[i].value.charAt(ic) === ' ')
-                                                    ic++;
-                                                if (filtersJson.columns[i].value.charAt(ic) === '<'
-                                                    || filtersJson.columns[i].value.charAt(ic) === '>'
-                                                    || filtersJson.columns[i].value.charAt(ic) === '!'
-                                                    || filtersJson.columns[i].value.charAt(ic) === '%'
-                                                ) {
-                                                    filtersJson.columns[i].op = filtersJson.columns[i].value.charAt(ic);
-                                                    filtersJson.columns[i].value = filtersJson.columns[i].value.substr(ic + 1);
-                                                } else if (filtersJson.columns[i].value.substring(0, 5) === 'like ') {
-                                                    filtersJson.columns[i].op = "like";
-                                                    filtersJson.columns[i].value = filtersJson.columns[i].value.substr(5);
-                                                } else if (filtersJson.columns[i].value.substring(0, 3) === 'in ') {
-                                                    filtersJson.columns[i].op = "in";
-                                                    filtersJson.columns[i].value = filtersJson.columns[i].value.substr(3);
+                if (liquid.curFilter >= liquid.filtersJson.length) liquid.curFilter = liquid.filtersJson.length - 1;
+                for (let i_flt = 0; i_flt < liquid.filtersJson.length; i_flt++) {
+                     var filtersJson = liquid.filtersJson[i_flt];
+                    if (filtersJson) {
+                        if(liquid.curFilter == i_flt || filtersJson.visible === false) {
+                            // filtro corrente o nascosto (sempre attivo)
+                            if (isDef(filtersJson.columns)) {
+                                if (filtersJson.columns.length > 0) {
+                                    var bDoFilter = false;
+                                    if (filtersJson.columns.length) {
+                                        for (var i = 0; i < filtersJson.columns.length; i++) {
+                                            var element = document.getElementById(liquid.controlId + ".filters." + (i_flt + 1) + "." + filtersJson.columns[i].runtimeName + ".filter");
+                                            if (element) {
+                                                if (isDef(element.dataset.linkedInputId))
+                                                    element = document.getElementById(element.dataset.linkedInputId);
+                                                var elementValue = null;
+                                                if (element.nodeName === "SELECT") {
+                                                    elementValue = element.options[element.selectedIndex].getAttribute("value");
                                                 } else {
-                                                    if (!isDef(filtersJson.columns[i].op)) {
-                                                        // let server decide
-                                                        filtersJson.columns[i].op = "";
-                                                    }
+                                                    elementValue = element.value;
                                                 }
+                                                if (filtersJson.columns[i].value !== elementValue) {
+                                                    filtersJson.columns[i].value = (elementValue === '' ? null : (elementValue === '""' ? "" : elementValue));
+                                                    if (filtersJson.columns[i].value) {
+                                                        var ic = 0;
+                                                        while (filtersJson.columns[i].value.charAt(ic) === ' ')
+                                                            ic++;
+                                                        if (filtersJson.columns[i].value.charAt(ic) === '<'
+                                                            || filtersJson.columns[i].value.charAt(ic) === '>'
+                                                            || filtersJson.columns[i].value.charAt(ic) === '!'
+                                                            || filtersJson.columns[i].value.charAt(ic) === '%'
+                                                        ) {
+                                                            filtersJson.columns[i].op = filtersJson.columns[i].value.charAt(ic);
+                                                            filtersJson.columns[i].value = filtersJson.columns[i].value.substr(ic + 1);
+                                                        } else if (filtersJson.columns[i].value.substring(0, 5) === 'like ') {
+                                                            filtersJson.columns[i].op = "like";
+                                                            filtersJson.columns[i].value = filtersJson.columns[i].value.substr(5);
+                                                        } else if (filtersJson.columns[i].value.substring(0, 3) === 'in ') {
+                                                            filtersJson.columns[i].op = "in";
+                                                            filtersJson.columns[i].value = filtersJson.columns[i].value.substr(3);
+                                                        } else {
+                                                            if (!isDef(filtersJson.columns[i].op)) {
+                                                                // let server decide
+                                                                filtersJson.columns[i].op = "";
+                                                            }
+                                                        }
+                                                    }
+                                                    if (!isDef(filtersJson.columns[i].table)) filtersJson.columns[i].table = "";
+                                                    bDoFilter = true;
+                                                    liquid.cPage = 0;
+                                                }
+                                            } else {
+                                                // no html element : assume changed externally at runtime
+                                                bDoFilter = true;
                                             }
-                                            if (!isDef(filtersJson.columns[i].table)) filtersJson.columns[i].table = "";
-                                            bDoFilter = true;
-                                            liquid.cPage = 0;
                                         }
-                                    } else {
-                                        // no html element : assume changed externally at runtime
-                                        bDoFilter = true;
+                                        filtersJson.curFilter = liquid.curFilter;
                                     }
                                 }
-                                filtersJson.curFilter = liquid.curFilter;
                             }
                         }
                     }
@@ -7220,13 +7228,28 @@ var Liquid = {
             var filterList = document.createElement("div");
             liquid.filtersSelectorId = liquid.controlId + ".filtersSelector";
             var filterHTML = "<select id=\"" + liquid.filtersSelectorId + "\" style=\"width: 100%; right:36px; position:relative; height:100%; border:1px solid lightgrey; background: transparent;\" class=\"liquidFiltersSelect\" onchange=\"Liquid.onFilterTab(event)\" >";
+            let firstFilterVisible = null;
             if (liquid.filtersJson) {
                 for (var i = 0; i < liquid.filtersJson.length; i++) {
-                    var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
-                    filterHTML += "<option id=\"" + liquid.controlId + ".filter." + (i + 1) + ".selector\" value=\"x\">" + (name) + "</option>";
                     if(liquid.filtersJson.visible !== false) {
-                        filterCount++;
+                        if(liquid.filtersJson[i].visible !== false) {
+                            var name = typeof liquid.filtersJson[i].name !== 'undefined' ? liquid.filtersJson[i].name : Liquid.defaultFilterName;
+                            filterHTML += "<option id=\"" + liquid.controlId + ".filter." + (i + 1) + ".selector\" value=\"x\">" + (name) + "</option>";
+                            filterCount++;
+                            // Init current filter
+                            if(!isDef(liquid.curFilter)) {
+                                liquid.curFilter = i;
+                            }
+                            if(!firstFilterVisible) {
+                                firstFilterVisible = i;
+                            }
+                        }
                     }
+                }
+            }
+            if(isDef(liquid.curFilter)) {
+                if(liquid.filtersJson[liquid.curFilter].visible === false) {
+                    liquid.curFilter = firstFilterVisible ? firstFilterVisible : 0;
                 }
             }
             filterHTML += "</select>";
@@ -7266,10 +7289,15 @@ var Liquid = {
                 var tbody = document.createElement("tbody");
                 liquid.filtersFirstId = null;
 
-                if (isDef(filterJson.rows))
+                if (!isDef(filterJson.nRows) && isDef(filterJson.rows))
                     filterJson.nRows = filterJson.rows;
-                if (isDef(filterJson.cols))
+                if (!isDef(filterJson.nRows))
+                    filterJson.nRows = filterJson.columns.length;
+
+                if (!isDef(filterJson.nCols) && isDef(filterJson.cols))
                     filterJson.nCols = filterJson.cols;
+                if (!isDef(filterJson.nCols))
+                    filterJson.nCols = 1;
 
                 for (var r = 0; r < filterJson.nRows; r++) {
                     var tr = document.createElement("tr");
@@ -8390,6 +8418,7 @@ var Liquid = {
                     || nodeName === 'TD'
                     || nodeName === 'DIV'
                     || nodeName === 'SPAN'
+                    || Liquid.isHNode(nodeName)
                     || nodeName === 'P') {
                     nUpdates += Liquid.formToObjectExchange(obj.childNodes[j], targetObj);
                 }
@@ -9437,6 +9466,9 @@ var Liquid = {
         // refresh command bar
         Liquid.updateCommandBar(liquid);
 
+        // restore command status
+        Liquid.restoreCommands(liquid);
+
         if (isDef(command.postFunc)) {
             try {
                 command.postFunc(command);
@@ -9873,6 +9905,26 @@ var Liquid = {
                             if (liquid.tableJson.actions[i].client !== client)
                                 liquid.tableJson.actions[i].client = [liquid.tableJson.actions[i].client, client];
                         }
+                    }
+                }
+            }
+        }
+    },
+    getAction(liquid, actionName, prop) {
+        if (liquid) {
+            for (var i = 0; i < liquid.tableJson.actions.length; i++) {
+                if (liquid.tableJson.actions[i].name === actionName) {
+                    if(prop == "value") {
+                        let obj = document.getElementById( liquid.tableJson.actions[i].id );
+                        if(obj) {
+                            if(obj.type == 'check') {
+                                return obj.checked ? true : false;
+                            } else if(obj.type == 'text') {
+                                return obj.value;
+                            }
+                        }
+                    } else {
+                        console.error("ERROR : getAction() : unknown prop:"+prop);
                     }
                 }
             }
@@ -10623,10 +10675,12 @@ var Liquid = {
                             }
                         }
                         Liquid.resetMofifications(liquid);
+                        Liquid.processCommandPostFunc(liquid, command);
                         return retVal;
 
                     } else if (command.name === "filter") {
                         Liquid.onExecuteFilter(liquid);
+                        Liquid.processCommandPostFunc(liquid, command);
                         return retVal;
 
                     } else if (command.name === "next" || command.name === "previous") {
@@ -10674,16 +10728,19 @@ var Liquid = {
                             Liquid.onSlideShowUpdateCurrent(liquid);
                         }
                         Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
+                        Liquid.processCommandPostFunc(liquid, command);
                         return true;
 
                     } else if (command.name === "copy") {
                         retVal = Liquid.copyToClipBorad(liquid);
                         Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
+                        Liquid.processCommandPostFunc(liquid, command);
                         return retVal;
 
                     } else if (command.name === "paste") {
                         retVal = Liquid.pasteFromClipBorad(liquid);
                         Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
+                        Liquid.processCommandPostFunc(liquid, command);
                         return retVal;
                     }
 
@@ -10939,7 +10996,6 @@ var Liquid = {
 
                         Liquid.restoreGrids(liquid);
                         Liquid.restoreLayouts(liquid);
-                        Liquid.restoreCommands(liquid);
                         if (Liquid.isNativeCommand(command)) {
                             if (command.rollbackCommand)
                                 if (command.rollbackCommand.linkedObj)
@@ -10994,6 +11050,18 @@ var Liquid = {
             }
         }
         return retVal;
+    },
+    processCommandPostFunc(liquid, command) {
+        if(command) {
+            if (isDef(command.postFunc)) {
+                try {
+                    command.postFunc(command);
+                } catch (e) {
+                    console.error("ERROR : ProcessCommandPostFunc() : "+e);
+                }
+            }
+            command.postFunc = null;
+        }
     },
     // get the HTML Element owning the value
     getItemObj: function (column) {
@@ -11138,10 +11206,17 @@ var Liquid = {
         return fields;
     },
     getFilterLabel: function (obj, filterCol) {
-        if (filterCol)
+        if (filterCol) {
             if (isDef(filterCol.label)) {
                 return filterCol.label;
             }
+        }
+        if (isDef(filterCol.name)) {
+        } else {
+            if (isDef(filterCol.col)) {
+                filterCol.name = filterCol.col;
+            }
+        }
         var column = Liquid.getColumn(obj, filterCol.name);
         if (column) {
             if (isDef(column.label)) {
@@ -11150,7 +11225,7 @@ var Liquid = {
             var parts = column.name.split('.');
             return parts.length > 1 ? parts[parts.length - 1] : column.name;
         }
-        return "";
+        return "(*)";
     },
     getColumnTooltip: function (liquid, col) {
         if (liquid) {
@@ -14005,7 +14080,7 @@ var Liquid = {
             liquid.glLoopeTimeMs = 0.0;
             Liquid.command(liquid, "next", function () {
                 let duration = Liquid.getField(liquid, "duration")
-                liquid.glLoopeNextTimeMs = (duration ? Number(duration) : 0) * 1000;
+                liquid.glLoopeNextTimeMs = (duration ? Number(duration) : 0) * 1;
                 if (liquid.glLoopeNextTimeMs <= 0) liquid.glLoopeNextTimeMs = 5000;
                 // console.info("done next frame .. duration:" + liquid.glLoopeNextTimeMs);
             });
@@ -14022,7 +14097,7 @@ var Liquid = {
                 liquid.glNumFrame = liquid.nRows;
                 if (liquid.glNumFrame > 1) {
                     let duration = Liquid.getField(liquid, "duration")
-                    liquid.glLoopeNextTimeMs = (duration ? Number(duration) : 0) * 1000;
+                    liquid.glLoopeNextTimeMs = (duration ? Number(duration) : 0) * 1;
                     // console.info("Starting frame .. glNumFrame:" + liquid.glNumFrame);
                     if (liquid.glLoopeNextTimeMs <= 0) liquid.glLoopeNextTimeMs = 5000;
                     // console.info("duration:" + glLoopeNextTimeMs);
@@ -14093,7 +14168,7 @@ var Liquid = {
                 Liquid.onSlideShowUpdateCurrent(liquid);
                 if(liquid.slideShowCallback) {
                     try {
-                        liquid.slideShowCallback(liquid, lay_coord.layout, lay_coord.layout.LastCRow, cRow);
+                        liquid.slideShowCallback(liquid, lay_coord.layout, lay_coord.layout.LastCRow, liquid.cRow);
                     } catch (e) {
                         console.error(e);
                     }
@@ -14123,11 +14198,12 @@ var Liquid = {
                     liquid.enableOverscroll = false;
                     liquid.gridOptions.api.setFocusedCell(cRow, 'start', 'top');
                     liquid.gridOptions.api.ensureIndexVisible(cRow, "top");
+
                     Liquid.updateCRow(liquid, cRow);
                     Liquid.stopFlashingFields();
                     Liquid.updateStatusBar(liquid);
                     Liquid.onSlideShowUpdateCurrent(liquid);
-                    liquid.refreshLayout(liquid, lay_coord.layout, false);
+                    Liquid.refreshLayout(liquid, lay_coord.layout, false);
 
                     if(liquid.slideShowCallback) {
                         try {
@@ -14444,7 +14520,7 @@ var Liquid = {
             if (obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
                 objLinkers = [obj.id, obj.className];
                 objLinkersTarget = [null, "className"];
-            } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
+            } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(obj.nodeName)) {
                 objLinkers = [obj.innerHTML, obj.id, obj.classList];
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'A' || obj.nodeName.toUpperCase() === 'BUTTON' || obj.nodeName.toUpperCase() === 'IMG') {
@@ -15000,7 +15076,7 @@ var Liquid = {
                                 value = "[COLUMN '" + objLinkerDesc + "'NOT FOUND]";
                                 if (obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
                                     obj.value = value;
-                                } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
+                                } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(obj.nodeName)) {
                                     obj.innerHTML = value;
                                 } else if (obj.nodeName.toUpperCase() === 'PICTURE' || obj.nodeName.toUpperCase() === 'EMBED' || obj.nodeName.toUpperCase() === 'AUDIO' || obj.nodeName.toUpperCase() === 'VIDEO') {
                                     obj.innerHTML = value;
@@ -15576,7 +15652,7 @@ var Liquid = {
                                             newValue = obj.value;
                                         }
                                     }
-                                } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P') {
+                                } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(obj.nodeName)) {
                                     newValue = obj.innerHTML;
                                 }
                             }
@@ -17878,6 +17954,7 @@ var Liquid = {
     },
     // return 0 in non Input or TEXTAREA
     setHTMLElementValue:function(targetObj, value, disabled) {
+        var imageMode = 'auto';
         if(targetObj) {
             if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
                 if(targetObj.type === 'checkbox') {
@@ -17898,7 +17975,7 @@ var Liquid = {
                     }
                 }
                 return 1;
-            } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P') {
+            } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(targetObj.nodeName)) {
                 var astype = targetObj.getAttribute('astype');
                 if(astype == 'color') {
                     if(value && value.trim().toLowerCase().startsWith("0x")) {
@@ -17921,7 +17998,7 @@ var Liquid = {
                 if(value.endsWith(".pdf)")) {
                     load_pdf_to_canvas(targetObj, value);
                 } else if(value.endsWith(".png)") || value.endsWith(".jpg)") || value.endsWith(".jpeg)") || value.endsWith(".gif)")) {
-                    load_image_to_canvas(targetObj, value);
+                    load_image_to_canvas(targetObj, value, imageMode);
                 } else {
                     if(value.startsWith("DMS://")) {
                         let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
@@ -17932,20 +18009,12 @@ var Liquid = {
                             } else if (blob.type.indexOf("application/pdf") >= 0) {
                                 load_pdf_to_canvas(targetObj, window.URL.createObjectURL(blob));
                             } else {
-                                load_image_to_canvas(targetObj, window.URL.createObjectURL(blob));
+                                load_image_to_canvas(targetObj, window.URL.createObjectURL(blob), imageMode);
                             }
                         });
                     }
                 }
 
-            } else if(targetObj.nodeName.toUpperCase() === 'IMG') {
-                jQ1124(targetObj).attr("src", value);
-                if(isDef(disabled)) {
-                    if(targetObj.type !== "checkbox") {
-                        targetObj.disabled = disabled;
-                    }
-                }
-                return 0;
             } else if(targetObj.nodeName.toUpperCase() === 'PICTURE' || targetObj.nodeName.toUpperCase() === 'EMBED' || targetObj.nodeName.toUpperCase() === 'AUDIO' || targetObj.nodeName.toUpperCase() === 'VIDEO') {
                 /*
                     src: It is used to hold the path of media content.
@@ -17967,14 +18036,21 @@ var Liquid = {
                         } else {
                         }
                     });
-                    /*
-                    jQ1124(targetObj).slideDown("fast", function () {
-                        targetObj.innerText = '';
-                        targetObj.innerHTML = '';
-                    });
-                     */
                 } else {
                     targetObj.innerHTML = value;
+                }
+            } else if(targetObj.nodeName.toUpperCase() === 'IMG') {
+                if(value.startsWith("DMS://")) {
+                    let src = glLiquidServlet + '?operation=downloadDocument&link='+value;
+                    const videoRequest = fetch(src, {cache: "force-cache"}).then(response => response.blob());
+                    videoRequest.then(blob => {
+                        if(targetObj.nodeName.toUpperCase() === 'IMG') {
+                            targetObj.src = window.URL.createObjectURL(blob);
+                        } else {
+                        }
+                    });
+                } else {
+                    targetObj.src = value;
                 }
 
             } else {
@@ -17982,6 +18058,14 @@ var Liquid = {
                 targetObj.innerHTML = value;
             }
         }
+        if(isDef(disabled)) {
+            targetObj.disabled = disabled;
+        }
+    },
+    isHNode:function(nodeName) {
+        if(nodeName)
+            return (nodeName.toUpperCase() === 'H1' || nodeName.toUpperCase() === 'H2' || nodeName.toUpperCase() === 'H3' || nodeName.toUpperCase() === 'H4' || nodeName.toUpperCase() === 'H5' || nodeName.toUpperCase() === 'H6' || nodeName.toUpperCase() === 'H7' || nodeName.toUpperCase() === 'H8' || nodeName.toUpperCase() === 'H9');
+        return false;
     },
     setAutoresizeColumn:function(obj, processChildren) {
         var liquid = Liquid.getLiquid(obj);
@@ -22729,11 +22813,27 @@ function deepClone(obj, hash = new WeakMap()) {
  * @param canvas
  * @param url
  */
-function load_image_to_canvas(canvas, url) {
+function load_image_to_canvas(canvas, url, mode) {
     var img = new Image();
     var context = canvas.getContext('2d');
-    img.onload = function(){
-        context.drawImage(img,0,0);
+    img.canvas = canvas;
+    img.mode = mode;
+    img.onload = function(event){
+        try {
+            if(this.width > 2048 || this.height > 2048) {
+                console.warn("LIAUID : Image too large : "+this.width+"x"+this.height + " at "+this.src);
+            }
+            if(this.mode === 'original') {
+                context.drawImage(this, 0, 0, this.width, this.height);
+            } else if(this.mode === 'auto') {
+                context.drawImage(this, 0, 0, this.width, this.height, this.canvas.width, this.canvas.height);
+            } else{
+                context.drawImage(this, 0, 0);
+            }
+        } catch (e) {
+            context.drawImage(this, 0, 0);
+            console.error(e);
+        }
     };
     img.src = url;
 }

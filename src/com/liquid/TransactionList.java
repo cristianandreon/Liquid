@@ -261,7 +261,9 @@ public class TransactionList {
                         if(oParam instanceof String) {
                             stmt.setDouble(ip, Double.parseDouble((String)oParam));
                         } else if(oParam == null) {
-                            stmt.setNull(ip, Types.DATE);
+                            stmt.setNull(ip, Types.DOUBLE);
+                        } else if(oParam instanceof Float) {
+                            stmt.setDouble(ip, new Double((Float)oParam));
                         } else {
                             stmt.setDouble(ip, (Double)oParam);
                         }
@@ -332,6 +334,15 @@ public class TransactionList {
                             stmt.setNull(ip, Types.TIME);
                         } else {
                             stmt.setTime(ip, (java.sql.Time)oParam);
+                        }
+                    } else if (value_type == Types.NUMERIC) {
+                        // bigint number
+                        if(oParam instanceof String) {
+                            stmt.setBigDecimal(ip, new BigDecimal((String)oParam));
+                        } else if(oParam == null) {
+                            stmt.setNull(ip, Types.NUMERIC);
+                        } else {
+                            stmt.setBigDecimal(ip, new BigDecimal(Double.parseDouble(String.valueOf(oParam))));
                         }
                     } else {
                         // unknown : srting

@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspWriter;
@@ -2036,6 +2037,7 @@ public class event {
                 dmsParamsJson.put("schema", schema != null ? schema : tblWrk.tableJson.has("schema") ? tblWrk.tableJson.getString("schema") : null);
                 dmsParamsJson.put("table", table != null ? table : tblWrk.tableJson.has("table") ? tblWrk.tableJson.getString("table") : null);
                 dmsParamsJson.put("name", name != null ? name : tblWrk.tableJson.has("name") ? tblWrk.tableJson.getString("name") : null);
+                dmsParamsJson.put("row", rowId != null ? String.valueOf(rowId) : null);
                 dmsParamsJson.put("file", fileName != null ? fileName : null);
                 dmsParamsJson.put("size", fileSize != null ? fileSize : null);
                 dmsParamsJson.put("content", b64FileContent != null ? b64FileContent : null);
@@ -2141,9 +2143,9 @@ public class event {
      * Default upload file into DMS implementation : set file name, write file, create row in DB
      *
      * @param tbl_wrk
-     * @param params
+     * @param params        (parametri usate per comporre il nome del file)
      * @param clientData
-     * @param requestParam
+     * @param requestParam  (Campo link nel DB; elenco identificatori ArrayList<String> per identificare i records ai quali il doc è collegato)
      * @return
      */
     static public String uploadDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam ) throws Throwable {
@@ -2206,27 +2208,38 @@ public class event {
 
             int added = 0;
             String fileAbsolutePath = dmsRootFolder;
+            // Database
             String comp = paramJson.has("database") ? paramJson.getString("database") : null;
             if(comp != null && !comp.isEmpty()) {
                 fileAbsolutePath += (added > 0 ? "." : "") + "D." + comp;
             }
+            // Schema
             comp = paramJson.has("schema") ? paramJson.getString("schema") : null;
             if(comp != null && !comp.isEmpty()) {
-                fileAbsolutePath += (added > 0 ? "." : "") + "S." + comp;
+                fileAbsolutePath += (added > 0 ? "." : "") + ".S." + comp;
             }
+            // Table
             comp = paramJson.has("table") ? paramJson.getString("table") : null;
             if(comp != null && !comp.isEmpty()) {
-                fileAbsolutePath += (added > 0 ? "." : "") + "T." + comp;
+                fileAbsolutePath += (added > 0 ? "." : "") + ".T." + comp;
             }
+            // Row
+            comp = paramJson.has("row") ? paramJson.getString("row") : null;
+            if(comp != null && !comp.isEmpty()) {
+                fileAbsolutePath += (added > 0 ? "." : "") + ".R." + comp;
+            }
+            // DMS folder name
             comp = paramJson.has("name") ? paramJson.getString("name") : null;
             if(comp != null && !comp.isEmpty()) {
-                fileAbsolutePath += (added > 0 ? "." : "") + "N." + comp;
+                fileAbsolutePath += (added > 0 ? "." : "") + ".N." + comp;
             }
+            // Time tick
             long tick = System.currentTimeMillis();
-            fileAbsolutePath += (added > 0 ? "." : "") + "TK." + tick;
+            fileAbsolutePath += (added > 0 ? "." : "") + ".TK." + tick;
 
+            // File name
             String fileName = paramJson.getString("file");
-            fileAbsolutePath += (added > 0 ? "." : "") + "F." + fileName;
+            fileAbsolutePath += (added > 0 ? "." : "") + ".F." + fileName;
 
 
             // Scrittura file
@@ -2383,51 +2396,57 @@ public class event {
         String error = "", resultSet = "";
         Object[] result = null;
         try {
-            workspace tblWrk = (workspace) tbl_wrk;
-            Class cls = null;
-            try {
-                cls = Class.forName("app.liquid.dms.connection");
-                Method method = cls.getMethod("downloadDocument", Object.class, Object.class, Object.class, Object.class);
-                Object classInstance = (Object) cls.newInstance();
-                result = (Object[]) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
-            } catch (Throwable th) {
-                // default implementatio
-                result = downloadDocumentDefault( tbl_wrk, params, clientData, requestParam );
-            }
             HttpServletRequest request = (HttpServletRequest) requestParam;
             HttpServletResponse response = (HttpServletResponse) request.getAttribute("response");
-            if("getLink".equalsIgnoreCase((String)clientData)) {
-                String outData = "{"
-                        +"\"fileName\":\"\""
-                        +",\"fileMimeType\":\"\""
-                        +",\"file\":\"\""
-                        +",\"size\":\"\""
-                        +",\"date\":\"\""
-                        +",\"note\":\"\""
-                        +",\"type\":\"\""
-                        +",\"link\":\"\""
-                        +",\"hash\":\"\""
-                        +",\"id\":\"\""
-                        +"\"doc_type\":\"\""
-                        +",\"doc_type_desc\":\"\""
-                        +",\"user_data\":\"\""
-                        +"}";
-                response.getOutputStream().write(outData.getBytes());
-            } else {
-                if (result[2] != null) {
-                    response.setContentType((String) result[1]);
-                    if ("content".equalsIgnoreCase((String) clientData)) {
-                        // download as content
-                    } else {
-                        // download as file
-                        response.setHeader("Content-Disposition", "attachment; filename=" + (String) result[0]);
-                    }
-                    response.getOutputStream().write((byte[]) result[2]);
+            workspace tblWrk = (workspace) tbl_wrk;
+            Class cls = null;
+
+            ServletOutputStream out_stream = response.getOutputStream();
+
+            if (out_stream != null) {
+
+                try {
+                    cls = Class.forName("app.liquid.dms.connection");
+                    Method method = cls.getMethod("downloadDocument", Object.class, Object.class, Object.class, Object.class);
+                    Object classInstance = (Object) cls.newInstance();
+                    result = (Object[]) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
+                } catch (Throwable th) {
+                    // default implementatio
+                    result = downloadDocumentDefault(tbl_wrk, params, clientData, requestParam);
+                }
+                if ("getLink".equalsIgnoreCase((String) clientData)) {
+                    String outData = "{"
+                            + "\"fileName\":\"\""
+                            + ",\"fileMimeType\":\"\""
+                            + ",\"file\":\"\""
+                            + ",\"size\":\"\""
+                            + ",\"date\":\"\""
+                            + ",\"note\":\"\""
+                            + ",\"type\":\"\""
+                            + ",\"link\":\"\""
+                            + ",\"hash\":\"\""
+                            + ",\"id\":\"\""
+                            + "\"doc_type\":\"\""
+                            + ",\"doc_type_desc\":\"\""
+                            + ",\"user_data\":\"\""
+                            + "}";
+                    response.getOutputStream().write(outData.getBytes());
                 } else {
-                    String err = (String)result[15];
-                    response.setContentType((String) result[1]);
-                    response.setStatus(500);
-                    response.getOutputStream().write((err != null ? err : "File not found").getBytes());
+                    if (result[2] != null) {
+                        response.setContentType((String) result[1]);
+                        if ("content".equalsIgnoreCase((String) clientData)) {
+                            // download as content
+                        } else {
+                            // download as file
+                            response.setHeader("Content-Disposition", "attachment; filename=" + (String) result[0]);
+                        }
+                        out_stream.write((byte[]) result[2]);
+                    } else {
+                        String err = (String) result[15];
+                        response.setContentType((String) result[1]);
+                        response.setStatus(500);
+                        response.getOutputStream().write((err != null ? err : "File not found").getBytes());
+                    }
                 }
             }
         } catch (Throwable e) {
@@ -2491,19 +2510,21 @@ public class event {
                     } else {
                         cols += ", DT.type_desc as doc_type_desc";
                     }
-                    sQuery = "SELECT "+cols+" " +
-                            "from \"" + dmsSchema + "\".\"" + dmsTable + "\" D " +
-                            "LEFT JOIN \""+ dmsSchema + "\".\"" + dmsDocType +"\" DT ON DT.id=doc_type_id ";
+                    sQuery = "SELECT "+cols+""
+                            + " from \"" + dmsSchema + "\".\"" + dmsTable + "\" D"
+                            + " LEFT JOIN \""+ dmsSchema + "\".\"" + dmsDocType +"\" DT ON DT.id=doc_type_id";
 
                     if(sid != null && !sid.isEmpty()) {
-                        sQuery += "WHERE (id='" + sid + "')";
+                        sQuery += " WHERE (id='" + sid + "')";
                     } else if(slink != null && !slink.isEmpty()) {
                         if(slink.startsWith("DMS://"))
                             slink = slink.substring(6);
-                        sQuery += "WHERE (link='" + slink + "')";
+                        sQuery += " WHERE (link='" + slink + "')";
                     } else {
                         throw new Exception("Cannot download document : missing search key");
                     }
+
+                    sQuery +=" ORDER BY \"date\" DESC";
 
                     psdo = conn.prepareStatement(sQuery);
                     rsdo = psdo.executeQuery();

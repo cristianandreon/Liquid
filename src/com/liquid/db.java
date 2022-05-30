@@ -25,6 +25,7 @@ import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -1127,23 +1128,21 @@ public class db {
                         if (tbl_wrk != null && requestJson != null) {
                             JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                             if (requestJson.has("filtersJson")) {
-                                JSONArray filtersCols = requestJson.getJSONArray("filtersJson");
-                                JSONArray filtersDefinition = null;
-                                JSONArray filtersDefinitionCols = null;
+                                JSONArray filtersCols = requestJson.getJSONArray("filtersJson");    // filtri valorizzati
+                                JSONArray allFiltersDefinition = null;                                  // tutti i gruppi di filtro
+                                JSONObject filtersDefinition = null;                                    // filtri del gruppo corrente
+                                JSONArray filtersDefinitionCols = null;                                 // definizione delle colonne
                                 int curFilter = -1;
 
                                 if (requestJson.has("curFilter")) {
                                     curFilter = requestJson.getInt("curFilter");
+
                                     if (requestJson.has("filters")) {
-                                        try {
-                                            filtersDefinition = tbl_wrk.tableJson.getJSONArray("filters");
-                                        } catch (Exception e) {
+                                        allFiltersDefinition = requestJson.getJSONArray("filters");
+                                    } else {
+                                        if (tbl_wrk.tableJson.has("filters")) {
+                                            allFiltersDefinition = tbl_wrk.tableJson.getJSONArray("filters");
                                         }
-                                    }
-                                    try {
-                                        if(curFilter < 0) curFilter = 0;
-                                        filtersDefinitionCols = (filtersDefinition != null ? filtersDefinition.getJSONObject(curFilter).getJSONArray("columns") : null);
-                                    } catch (Exception e) {
                                     }
                                 } else {
                                     if (filtersCols.length() > 0) {
@@ -1153,18 +1152,38 @@ public class db {
                                     }
                                 }
 
-                                Object [] resWhere = process_filters_json(
-                                        tbl_wrk, table, cols,
-                                        isOracle, isMySQL, isPostgres, isSqlServer,
-                                        sWhere, sWhereParams, filtersCols, filtersDefinitionCols, leftJoinsMap,
-                                        tableIdString, itemIdString,
-                                        recordset_params.request);
+                                if (allFiltersDefinition != null) {
+                                    for (int i_flt = 0; i_flt < allFiltersDefinition.length(); i_flt++) {
 
-                                String errorWhere = (String)resWhere[1];
-                                if(errorWhere != null && !errorWhere.isEmpty())
-                                    error += "[" + errorWhere + "]";
+                                        filtersDefinition = allFiltersDefinition.getJSONObject(i_flt);
 
-                                sWhere = (String)resWhere[2];
+                                        boolean visible = true;
+                                        if (filtersDefinition.has("visible")) {
+                                            visible = filtersDefinition.getBoolean("visible");
+                                        }
+                                        if (visible == false || curFilter == i_flt) {
+
+                                            //
+                                            // N.B.: non c'è necessità di impacchettarlo come filtersCols (che ha filtri nascosti uniti al filtro corrente)
+                                            //      filtersDefinitionCols non è attualmente usato
+                                            //
+                                            // filtersDefinitionCols = (filtersDefinition != null ? filtersDefinition.getJSONArray("columns") : null);
+
+                                            Object[] resWhere = process_filters_json(
+                                                    tbl_wrk, table, cols,
+                                                    isOracle, isMySQL, isPostgres, isSqlServer,
+                                                    sWhere, sWhereParams, filtersCols, filtersDefinitionCols, leftJoinsMap,
+                                                    tableIdString, itemIdString,
+                                                    recordset_params.request);
+
+                                            String errorWhere = (String) resWhere[1];
+                                            if (errorWhere != null && !errorWhere.isEmpty())
+                                                error += "[" + errorWhere + "]";
+
+                                            sWhere = (String) resWhere[2];
+                                        }
+                                    }
+                                }
                             }
 
                             if(requestJson.has("ids")) {
@@ -2161,17 +2180,29 @@ public class db {
                             // N.B.: risolve le variabili di sessione
                             //
                             filterValue = solveVariableField(filterValue, request, true);
-
                             if(oFilterValue != null && filterValue != null) {
                                 if (String.valueOf(oFilterValue).compareTo(filterValue) != 0) {
                                     // Espressione risolta : reimposta l'oggetto originale (verrà usato come dato sorgente per rispettare il tipo dato)
-                                    // oFilterValue = filterValue;
+                                    oFilterValue = filterValue;
                                 }
-                            } else {
                             }
                             filterValueIsSet = true;
                         } else if(oFilterValue instanceof JSONArray) {
                             filterValueIsSet = true;
+                        } else if(oFilterValue instanceof Boolean) {
+                            filterValueIsSet = true;
+                        } else if(oFilterValue instanceof Integer) {
+                            filterValueIsSet = true;
+                        } else if(oFilterValue instanceof Long) {
+                            filterValueIsSet = true;
+                        } else if(oFilterValue instanceof BigDecimal) {
+                            filterValueIsSet = true;
+                        } else if(oFilterValue instanceof Float) {
+                            filterValueIsSet = true;
+                        } else if(oFilterValue instanceof Double) {
+                            filterValueIsSet = true;
+                        } else {
+                            throw new Exception("Filter type not implemented:"+oFilterValue.getClass().getName());
                         }
                     }
                 } catch (Exception e) {
@@ -2360,6 +2391,9 @@ public class db {
                     boolean bUseParams = true;
 
                     if(filterValue != null) {
+                        //
+                        // String
+                        //
                         int commaIndex = filterValue.indexOf(",");
 
                         // NO : usare l'operatore esplicito
@@ -2401,7 +2435,9 @@ public class db {
                         }
 
                     } else if(oFilterValue instanceof JSONArray) {
+                        //
                         // Se array -> l'operatore diventa 'IN'
+                        //
                         JSONArray filterValueArray = ((JSONArray) oFilterValue);
                         filterValue = "";
                         for (int ifv = 0; ifv < filterValueArray.length(); ifv++) {
@@ -2412,6 +2448,10 @@ public class db {
                         }
                         preFix = "";
                         postFix = "";
+
+                    } else if(oFilterValue instanceof Boolean) {
+
+                    } else if(oFilterValue instanceof BigDecimal || oFilterValue instanceof Integer || oFilterValue instanceof Long) {
 
                     } else {
                         // wrap to is null ... id not numeric
@@ -2588,7 +2628,7 @@ public class db {
                                 filterValueObject = (Object) filterValueObjects;
                                 filterValue = utility.objArrayToString(filterValueObjects, null, null, ",");
                             }
-                        } else{
+                        } else {
                         }
                         
                         
@@ -2607,12 +2647,11 @@ public class db {
                             postFix = ")";
                             
                         } else {
-                            Object[] fres = format_db_value(tbl_wrk, type, nullable, filterValue, filterOp);
-                            filterValue = (String) fres[0];
+                            Object[] fres = format_db_value(tbl_wrk, type, nullable, oFilterValue, filterOp);
                             filterValueType = (int) fres[1];
 
                             // uso dei parametri : conversione del dato in formato java
-                            filterValueObject = toJavaType(type, (Object)filterValue, (String)fres[0], (int)fres[1], true);
+                            filterValueObject = toJavaType(type, (Object)fres[0], (Object)fres[0], (int)fres[1], true);
 
                             if (filterValueType == 0) {
                                 // expression
@@ -2624,10 +2663,38 @@ public class db {
                                 postFix = "";
                                 preFixCol = "TRUNC(";
                                 postFixCol = ")";
+                            } else if (filterValueType == 1) {
+                                filterValue = (String) fres[0];
+                            } else if (filterValueType == Types.BIT) {
+                                filterValue = null;
+                                sensitiveCasePreOp = "";
+                                sensitiveCasePostOp = "";
+                            } else if (filterValueType == Types.BIGINT
+                                    || filterValueType == Types.TINYINT
+                                    || filterValueType == Types.SMALLINT
+                                    || filterValueType == Types.INTEGER
+                                    || filterValueType == Types.BIGINT
+                                    || filterValueType == Types.FLOAT
+                                    || filterValueType == Types.REAL
+                                    || filterValueType == Types.DOUBLE
+                                    || filterValueType == Types.NUMERIC
+                                    || filterValueType == Types.DECIMAL
+                            ) {
+                                filterValue = null;
+                                sensitiveCasePreOp = "";
+                                sensitiveCasePostOp = "";
+                            } else {
+                                filterValue = null;
+                                System.err.println("Invalid java type in filter:"+filterValueType);
                             }
                         }
 
-                        
+
+                        // NB.:
+                        //  oFilterValue = valore originale del filtro
+                        //  filterValueObject = valore del filtro in tipo classe Object
+                        //  filterValue = valore del filtro in tipo classe String
+
                         // is next operator logic not 'OR' ? closing parent
                         if("OR".equalsIgnoreCase(filterNextLogic)) {
                             if(parentesisCount == 0) {
@@ -2665,7 +2732,7 @@ public class db {
                             sWhere += "?";
                             sWhereParams.add(filterValueObject);
                         } else {
-                            sWhere +=  preFix +
+                            sWhere += preFix +
                                     (filterValue != null ? filterValue : "NULL")
                                     + postFix;
                         }
@@ -3573,6 +3640,162 @@ public class db {
     }
 
 
+
+    /**
+     * Insert or update row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param Fields
+     * @param Values
+     * @param request
+     * @return Object [] (boolean OK/KO, Object newId/error num, String error)
+     * @throws Throwable
+     */
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, Object [] keys, HttpServletRequest request ) throws Throwable {
+        boolean retVal = false;
+        Object new_id = null;
+
+        Connection conn = null;
+        String sSTMTUpdate = null;
+
+        if(DatabaseSchemaTable == null || Fields == null || Values == null) {
+            return new Object [] { false, -1 };
+        }
+        if(Fields.length > Values.length) {
+            return new Object [] { false, -1 };
+        }
+
+        try {
+
+            if(transaction.isTransaction(request)) {
+                conn = transaction.getTransaction(request);
+            } else {
+                Object[] connResult = connection.getDBConnection();
+                conn = (Connection) connResult[0];
+                String connError = (String) connResult[1];
+                if (conn == null) {
+                    String err = "insert_update_row() : connect failed \n\nError is : "+connError;
+                    System.out.println("// LIQUID ERROR : " + err);
+                    return new Object [] { false, -1, utility.base64Encode(err) };
+                }
+            }
+
+            if (conn != null) {
+                String [] dbParts = DatabaseSchemaTable.split("\\.");
+                if(dbParts.length >= 3) {
+                    DatabaseSchemaTable = dbParts[1]+"."+dbParts[2];
+                }
+
+                sSTMTUpdate = "INSERT INTO "+DatabaseSchemaTable+" (";
+
+                ArrayList<Object> params = new ArrayList<Object>();
+                for(int i=0; i<Fields.length; i++) {
+                    sSTMTUpdate += (i > 0 ? "," : "") + "\"" + Fields[i] + "\"";
+                }
+                sSTMTUpdate += ") VALUES (";
+                for(int i=0; i<Fields.length; i++) {
+                    sSTMTUpdate += (i > 0 ? "," : "") + "?";
+                    params.add(Values[i]);
+                }
+
+
+                String sUpdatingFields = "";
+                String sConflictFields = "";
+                for(int i=0; i<Fields.length; i++) {
+                    if(ArrayUtils.contains(keys, Fields[i])) {
+                        sConflictFields += (sConflictFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"";
+                    } else {
+                        sUpdatingFields += (sUpdatingFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"" + "=?";
+                        params.add(Values[i]);
+                    }
+                }
+
+                sSTMTUpdate += ") ON CONFLICT("+sConflictFields+") DO UPDATE SET "+sUpdatingFields+"";
+
+                PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
+
+                for(int i=0; i<params.size(); i++) {
+                    set_statement_param( sqlSTMTUpdate, i+1, params.get(i) );
+                }
+
+
+                if(workspace.projectMode) {
+                    System.out.print("// LIQUID Query: ");
+                    System.out.println(sqlSTMTUpdate);
+                }
+
+                int res = sqlSTMTUpdate.executeUpdate();
+                if (res < 0) {
+                    System.err.println("Error updating db");
+                    retVal = false;
+                } else {
+                    ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
+                    if (rs != null && rs.next()) {
+                        switch (rs.getMetaData().getColumnType(1)) {
+                            case Types.INTEGER:
+                                new_id = rs.getInt(1);
+                                break;
+                            case Types.NUMERIC:
+                                new_id = rs.getInt(1);
+                                break;
+                            case Types.NVARCHAR:
+                            case Types.VARCHAR:
+                                new_id = rs.getString(1);
+                                break;
+                            case Types.BIGINT:
+                            case Types.DECIMAL:
+                                new_id = rs.getBigDecimal(1);
+                                break;
+                            case Types.ROWID:
+                                new_id = rs.getRowId(1);
+                                break;
+                            default:
+                                throw new UnsupportedOperationException("ID type non implemented ... please update me");
+                        }
+
+                        retVal = true;
+                    }
+                    if (rs != null)
+                        rs.close();
+                }
+                sqlSTMTUpdate.close();
+                sqlSTMTUpdate = null;
+            }
+
+
+        } catch (Exception e) {
+            System.err.println("insert_update_row() error : "+e.getMessage());
+            retVal = false;
+
+            if(transaction.isTransaction(request)) {
+                throw e;
+            } else {
+                try {
+                    if (conn != null)
+                        conn.rollback();
+                } catch (Throwable e2) {
+                }
+            }
+
+        } finally {
+            if(transaction.isTransaction(request)) {
+            } else {
+                try {
+                    if (conn != null)
+                        conn.close();
+                } catch (Throwable e2) {
+                }
+            }
+            conn = null;
+        }
+
+        return new Object [] { retVal, new_id } ;
+    }
+
+
+
     /**
      * <h3>Insert a record in a table</h3>
      * <p>
@@ -3598,7 +3821,7 @@ public class db {
      * @param DatabaseSchemaTable
      * @param Fields                fields to update, must include the "primaryKey"
      * @param Values                values of fields to update
-     * @param primaryKey            the field used as primaryKey, must me defined in "Fields"
+     * @param primaryKey            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
      * @return
      * @throws Throwable
      */
@@ -3612,7 +3835,7 @@ public class db {
      * @param DatabaseSchemaTable
      * @param Fields                fields to update, must include the "primaryKey"
      * @param Values                values of fields to update
-     * @param primaryKey            the field used as primaryKey, must me defined in "Fields"
+     * @param primaryKey            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
      * @param request
      * @return
      * @throws Throwable
@@ -3667,10 +3890,14 @@ public class db {
                     }
                 }
 
-                if(keyValue instanceof String) {
-                    keyValue = "" + keyValue + "";
+                if(primaryKey.startsWith("WHERE ")) {
+                    sSTMTUpdate += " " + primaryKey;
+                } else {
+                    if(keyValue instanceof String) {
+                        keyValue = "" + keyValue + "";
+                    }
+                    sSTMTUpdate += " WHERE \""+primaryKey+"\"=?";
                 }
-                sSTMTUpdate += " WHERE \""+primaryKey+"\"=?";
 
                 PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
 
@@ -3713,32 +3940,34 @@ public class db {
                 }
 
                 // primary key
-                Object val = keyValue;
-                // ip++;
-                if (val instanceof Integer) {
-                    sqlSTMTUpdate.setInt((ip), (int) val);
-                } else if (val instanceof BigDecimal) {
-                    sqlSTMTUpdate.setBigDecimal((ip), (BigDecimal) val);
-                } else if (val instanceof Long) {
-                    sqlSTMTUpdate.setLong((ip), (long) val);
-                } else if (val instanceof Float) {
-                    sqlSTMTUpdate.setFloat((ip), (float) val);
-                } else if (val instanceof Double) {
-                    sqlSTMTUpdate.setDouble((ip), (double) val);
-                } else if (val instanceof Timestamp) {
-                    sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
-                } else if (val instanceof java.sql.Date) {
-                    sqlSTMTUpdate.setDate((ip), (java.sql.Date) val);
-                } else if (val instanceof java.util.Date) {
-                    sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())) );
-                } else if (val instanceof String) {
-                    sqlSTMTUpdate.setString((ip), (String) val);
-                } else if (val instanceof Boolean) {
-                    sqlSTMTUpdate.setBoolean((ip), (boolean) val);
+                if(primaryKey.startsWith("WHERE ")) {
                 } else {
-                    System.err.println("update_row() invalid obejct type : "+ (val != null ? val.getClass().getName() : "null"));
+                    Object val = keyValue;
+                    // ip++;
+                    if (val instanceof Integer) {
+                        sqlSTMTUpdate.setInt((ip), (int) val);
+                    } else if (val instanceof BigDecimal) {
+                        sqlSTMTUpdate.setBigDecimal((ip), (BigDecimal) val);
+                    } else if (val instanceof Long) {
+                        sqlSTMTUpdate.setLong((ip), (long) val);
+                    } else if (val instanceof Float) {
+                        sqlSTMTUpdate.setFloat((ip), (float) val);
+                    } else if (val instanceof Double) {
+                        sqlSTMTUpdate.setDouble((ip), (double) val);
+                    } else if (val instanceof Timestamp) {
+                        sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
+                    } else if (val instanceof java.sql.Date) {
+                        sqlSTMTUpdate.setDate((ip), (java.sql.Date) val);
+                    } else if (val instanceof java.util.Date) {
+                        sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())));
+                    } else if (val instanceof String) {
+                        sqlSTMTUpdate.setString((ip), (String) val);
+                    } else if (val instanceof Boolean) {
+                        sqlSTMTUpdate.setBoolean((ip), (boolean) val);
+                    } else {
+                        System.err.println("update_row() invalid obejct type : " + (val != null ? val.getClass().getName() : "null"));
+                    }
                 }
-
 
                 if(workspace.projectMode) {
                     System.out.print("// LIQUID Query: ");
@@ -4745,7 +4974,12 @@ public class db {
      * @param nullable
      * @param oValue
      * @param operator
-     * @return
+     * @return Object [] { oValue, valueType };
+     *              oValue = value as Object class
+     *              valueType = Types.XXX (see Types.java) or :
+     *                  1   ->      Generic string
+     *                  0   ->      Expression
+     *                 -1  ->       Truncate data (made by caller)
      */
     static public Object[] format_db_value(workspace tbl_wrk, int colTypes, boolean nullable, Object oValue, String operator) throws Exception {
 
@@ -4766,7 +5000,7 @@ public class db {
         if ((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("sqlserver.")) || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("sqlserver"))) {
             isSqlServer = true;
         }
-        int valueType = 1; // string
+        int valueType = Types.CHAR; // string
         
         if (colTypes == 8 || colTypes == 7) { // float
             if(oValue instanceof String) {
@@ -4891,6 +5125,8 @@ public class db {
                     oValue = 0;
                 }
                 valueType = colTypes; // is a number
+            } else {
+                valueType = colTypes; // is a number
             }
 
         } else if (colTypes == -7) { // boolean
@@ -4910,6 +5146,8 @@ public class db {
                 return new Object[]{oValue, valueType};
             } else {
             }
+        } else if (colTypes == Types.NUMERIC) { // boolean
+            valueType = colTypes; // is a boolean
         }
 
         return new Object [] { oValue, valueType };
@@ -5647,7 +5885,7 @@ public class db {
         return result;
     }
 
-    // Metodo aggiornamento db da bean
+    
     /**
      * <h3>Update the bean to the database</h3>
      * <p>
@@ -5748,9 +5986,12 @@ public class db {
 
 
     /**
-     * Aggiornamento diretto del bean senza workspace
-     *
+     * Update DB by a bean (no workspace needed)
+     * 
+     * @param conn
      * @param bean
+     * @param databaseSchemaTable
+     * @param primaryKey        (use "WHERE ..." for direct where condition)
      * @return
      */
     static public String update(Connection conn, Object bean, String databaseSchemaTable, String primaryKey) {
@@ -5828,7 +6069,7 @@ public class db {
 
                                 }
 
-                                if (fieldName.equals(primaryKey)) {
+                                if (fieldName.equals(primaryKey) && !primaryKey.startsWith("WHERE ")) {
                                     primaryKeyValue = fieldData;
                                 } else {
                                     boolean isChanged = utility.isChanged(bean, fieldName);
@@ -5845,48 +6086,49 @@ public class db {
                 }
 
 
-                if (primaryKeyValue != null) {
 
-                    try {
 
-                        String[] tableParts = databaseSchemaTable.split("\\.");
-                        if (tableParts.length == 1) {
-                            table = tableParts[0];
-                        } else if (tableParts.length == 2) {
-                            table = tableParts[1];
-                            schema = tableParts[0];
-                        } else if (tableParts.length == 3) {
-                            table = tableParts[2];
-                            schema = tableParts[1];
-                            database = tableParts[0];
+                try {
+
+                    String[] tableParts = databaseSchemaTable.split("\\.");
+                    if (tableParts.length == 1) {
+                        table = tableParts[0];
+                    } else if (tableParts.length == 2) {
+                        table = tableParts[1];
+                        schema = tableParts[0];
+                    } else if (tableParts.length == 3) {
+                        table = tableParts[2];
+                        schema = tableParts[1];
+                        database = tableParts[0];
+                    }
+
+                    String sql = null;
+                    if (primaryKeyValue != null) {
+                        sql = "UPDATE " + schema + "." + table + " SET " + sFields + " WHERE " + primaryKey + "=" + primaryKeyValue;
+                    } else {
+                        if(primaryKey.startsWith("WHERE ")) {
+                            sql = "UPDATE " + schema + "." + table + " SET " + sFields + " " + primaryKey;
                         }
-
-                        String sql = "UPDATE " + schema + "." + table + " SET " + sFields + " WHERE " + primaryKey + "=" + primaryKeyValue;
-
+                    }
+                    if (sql != null) {
                         psdo = conn.prepareStatement(sql);
-
-                        if(params != null) {
-                            for(int ip=0; ip<params.size(); ip++) {
-                                psdo.setObject(ip+1, params.get(ip));
+                        if (params != null) {
+                            for (int ip = 0; ip < params.size(); ip++) {
+                                psdo.setObject(ip + 1, params.get(ip));
                             }
                         }
-
-                        if(workspace.projectMode) {
+                        if (workspace.projectMode) {
                             System.out.print("// LIQUID Query: ");
                             System.out.println(psdo);
                         }
-
                         int res = psdo.executeUpdate();
-
-                        return "{\"res\":"+res+"}";
-
-                    } catch (Throwable th) {
-
-                        return "{\"res\":-1, \"error\":\""+th.getMessage()+"\"}";
-
-                    } finally {
-                        if(psdo != null)
-                            psdo.close();
+                        return "{\"res\":" + res + "}";
+                    }
+                } catch (Throwable th) {
+                    return "{\"res\":-1, \"error\":\""+th.getMessage()+"\"}";
+                } finally {
+                    if(psdo != null) {
+                        psdo.close();
                     }
                 }
             }
@@ -6853,7 +7095,7 @@ public class db {
      * @param wrapNullToZero
      * @return
      */
-    public static Object toJavaType(int typeCode, Object value, String expression, int type, boolean wrapNullToZero) throws Exception {
+    public static Object toJavaType(int typeCode, Object value, Object expression, int type, boolean wrapNullToZero) throws Exception {
         switch (typeCode) {
             case Types.ARRAY:
                 return (Array) value;
@@ -6993,25 +7235,25 @@ public class db {
                 if(value instanceof java.sql.Time) {
                     return (java.sql.Time)value;
                 } else {
-                    return (String) expression;
+                    return (Object) expression;
                 }
             case Types.TIME_WITH_TIMEZONE:
                 if(value instanceof java.sql.Time) {
                     return (java.sql.Time)value;
                 } else {
-                    return (String) expression;
+                    return (Object) expression;
                 }
             case Types.TIMESTAMP:
                 if(value instanceof java.sql.Timestamp) {
                     return (java.sql.Timestamp)value;
                 } else {
-                    return (String) expression;
+                    return (Object) expression;
                 }
             case Types.TIMESTAMP_WITH_TIMEZONE:
                 if(value instanceof java.sql.Timestamp) {
                     return (java.sql.Timestamp) value;
                 } else {
-                    return (String) expression;
+                    return (Object) expression;
                 }
             case Types.TINYINT:
                 return (Byte)value;
@@ -7022,7 +7264,7 @@ public class db {
         }
     }
 
-    public static Object toJavaType(int typeCode, Object value, String expression, int type) throws Exception {
+    public static Object toJavaType(int typeCode, Object value, Object expression, int type) throws Exception {
         return toJavaType(typeCode, value, expression, type, false);
     }
 

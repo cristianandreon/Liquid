@@ -678,7 +678,9 @@ public class metadata {
     static public Class getJavaClass(int type) {
         if (type == 1) {
             return String.class;
-        } else if (type == 2 || type == 4 || type == -5 || type == -6 || type == 5) {
+        } else if (type == Types.NUMERIC || type == Types.DECIMAL) {
+            return java.math.BigDecimal.class;
+        } else if (type == 4 || type == -5 || type == -6 || type == 5) {
             // SMALLINT	short	Integer
             // INTEGER	int	Integer
             return Integer.class;
