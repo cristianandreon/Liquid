@@ -2041,6 +2041,14 @@ public class utility {
         return objList;
     }
 
+    public static  Map<String, Object> request_params_to_hash_map(HttpServletRequest request, String[] params) {
+        Map<String, Object> parametersString = new HashMap<String, Object>();
+        for (String k : params ) {
+            parametersString.put(k, request.getParameter(k));
+        }
+        return parametersString;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
