@@ -18,17 +18,13 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.Part;
+import javax.servlet.http.*;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class wsHttpServletRequest implements HttpServletRequest {
-    
+
     String sessionId = null;
     ArrayList<String> params = null;
     ArrayList<String> values = null;
@@ -38,21 +34,22 @@ public class wsHttpServletRequest implements HttpServletRequest {
 
     /**
      * Build request from JSON object
-     * @param requestJson 
+     *
+     * @param requestJson
      */
-    wsHttpServletRequest(JSONObject requestJson) throws JSONException {
-        if(requestJson != null) {
-            if(requestJson.has("url")) {
+    public wsHttpServletRequest(JSONObject requestJson) throws JSONException {
+        if (requestJson != null) {
+            if (requestJson.has("url")) {
                 String url = requestJson.getString("url");
-                if(url != null) {
-                    String [] params = url.split("\\?");
-                    if(params.length>1) {
+                if (url != null) {
+                    String[] params = url.split("\\?");
+                    if (params.length > 1) {
                         this.params = new ArrayList<String>();
                         this.values = new ArrayList<String>();
                         params = params[1].split("&");
-                        for(int ip=0; ip<params.length;ip++) {
-                            String [] couple = params[ip].split("=");
-                            if(couple != null && couple.length > 1) {
+                        for (int ip = 0; ip < params.length; ip++) {
+                            String[] couple = params[ip].split("=");
+                            if (couple != null && couple.length > 1) {
                                 String value = couple[1];
                                 String param = couple[0];
                                 this.params.add(param);
@@ -64,11 +61,11 @@ public class wsHttpServletRequest implements HttpServletRequest {
                     }
                 }
             }
-            if(requestJson.has("data")) {
+            if (requestJson.has("data")) {
                 Object oBody = requestJson.get("data");
                 this.body = oBody != null ? String.valueOf(oBody) : null;
             }
-            if(requestJson.has("sessionId")) {
+            if (requestJson.has("sessionId")) {
                 this.sessionId = requestJson.getString("sessionId");
             }
         }
@@ -201,7 +198,7 @@ public class wsHttpServletRequest implements HttpServletRequest {
 
     @Override
     public Object getAttribute(String a) {
-        if(attributes != null) {
+        if (attributes != null) {
             return attributes.get(a);
         } else {
             return null;
@@ -240,8 +237,8 @@ public class wsHttpServletRequest implements HttpServletRequest {
 
     @Override
     public String getParameter(String string) {
-        for(int ip=0; ip<params.size(); ip++) {
-            if(string.equals(params.get(ip))) {
+        for (int ip = 0; ip < params.size(); ip++) {
+            if (string.equals(params.get(ip))) {
                 return values.get(ip);
             }
         }
@@ -300,7 +297,7 @@ public class wsHttpServletRequest implements HttpServletRequest {
 
     @Override
     public void setAttribute(String a, Object o) {
-        if(attributes == null)
+        if (attributes == null)
             attributes = new HashMap<>();
         attributes.put(a, o);
     }
@@ -429,5 +426,96 @@ public class wsHttpServletRequest implements HttpServletRequest {
     public DispatcherType getDispatcherType() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+
+    public HttpSession session = new HttpSession() {
+
+        Map<String, Object> session_attributes = new HashMap<>();
+
+        @Override
+        public long getCreationTime() {
+            return 0;
+        }
+
+        @Override
+        public String getId() {
+            return null;
+        }
+
+        @Override
+        public long getLastAccessedTime() {
+            return 0;
+        }
+
+        @Override
+        public ServletContext getServletContext() {
+            return null;
+        }
+
+        @Override
+        public void setMaxInactiveInterval(int i) {
+
+        }
+
+        @Override
+        public int getMaxInactiveInterval() {
+            return 0;
+        }
+
+        @Override
+        public HttpSessionContext getSessionContext() {
+            return null;
+        }
+
+        @Override
+        public Object getAttribute(String s) {
+            return session_attributes.get(s);
+        }
+
+        @Override
+        public Object getValue(String s) {
+            return null;
+        }
+
+        @Override
+        public Enumeration<String> getAttributeNames() {
+            return null;
+        }
+
+        @Override
+        public String[] getValueNames() {
+            return new String[0];
+        }
+
+        @Override
+        public void setAttribute(String s, Object o) {
+            session_attributes.put(s, o);
+        }
+
+        @Override
+        public void putValue(String s, Object o) {
+
+        }
+
+        @Override
+        public void removeAttribute(String s) {
+
+        }
+
+        @Override
+        public void removeValue(String s) {
+
+        }
+
+        @Override
+        public void invalidate() {
+
+        }
+
+        @Override
+        public boolean isNew() {
+            return false;
+        }
+    };
+
 
 }

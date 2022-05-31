@@ -963,7 +963,7 @@ public class bean {
                                         //
                                         // Create the bean (empty) from the control ft_tbl_wrk
                                         //
-                                        if(ftRowsJson.length() >= 0) {
+                                        if(ftRowsJson == null || (ftRowsJson != null && ftRowsJson.length() >= 0)) {
                                             // TODO: verificare il bean vuoto
                                             Object[] ftBeanResult = create_beans_multilevel_class_internal(ft_tbl_wrk, ftRowsJson, foreignTableForeignTablesJson, foreignTableForeignTables, level + 1, maxRows, runtimeForeignTables, request);
                                             if (ftBeanResult != null) {

@@ -5,6 +5,7 @@
 package com.liquid;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -21,7 +22,7 @@ public class transaction {
      */
     public static boolean isTransaction(HttpServletRequest request) throws SQLException {
         if(request != null) {
-            Object oConnection = request.getSession().getAttribute("Liquid.connection");
+            Object oConnection = request.getAttribute("Liquid.connection");
             return (boolean) (oConnection instanceof Boolean ? oConnection : false);
         } else {
             return false;
@@ -36,7 +37,7 @@ public class transaction {
      */
     public static Connection getTransaction(HttpServletRequest request) throws SQLException {
         if(request != null) {
-            return (Connection)request.getSession().getAttribute("Liquid.connection.conn");
+            return (Connection)request.getAttribute("Liquid.connection.conn");
         } else {
             return null;
         }
@@ -48,9 +49,9 @@ public class transaction {
      */
     public static void commit(HttpServletRequest request) throws SQLException {
         if(request != null) {
-            Connection conn = (Connection)request.getSession().getAttribute("Liquid.connection.conn");
+            Connection conn = (Connection)request.getAttribute("Liquid.connection.conn");
             conn.commit();
-            request.getSession().setAttribute("Liquid.connection.commit", true);
+            request.setAttribute("Liquid.connection.commit", true);
         }
     }
 
@@ -60,9 +61,9 @@ public class transaction {
      */
     public static void rollback(HttpServletRequest request) throws SQLException {
         if(request != null) {
-            Connection conn = (Connection) request.getSession().getAttribute("Liquid.connection.conn");
+            Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
             conn.rollback();
-            request.getSession().setAttribute("Liquid.connection.rollback", true);
+            request.setAttribute("Liquid.connection.rollback", true);
         }
     }
 
@@ -72,21 +73,21 @@ public class transaction {
      */
     public static void closeTransaction(HttpServletRequest request) throws SQLException {
         if(request != null) {
-            Connection conn = (Connection) request.getSession().getAttribute("Liquid.connection.conn");
-            if((boolean) request.getSession().getAttribute("Liquid.connection.commit") == false && (boolean) request.getSession().getAttribute("Liquid.connection.rollback") == false) {
-                if((boolean)request.getSession().getAttribute("Liquid.connection.commitAsDefault") == true) {
+            Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
+            if((boolean) request.getAttribute("Liquid.connection.commit") == false && (boolean) request.getAttribute("Liquid.connection.rollback") == false) {
+                if((boolean)request.getAttribute("Liquid.connection.commitAsDefault") == true) {
                     conn.commit();
-                } else if((boolean)request.getSession().getAttribute("Liquid.connection.commitAsDefault") == false) {
+                } else if((boolean)request.getAttribute("Liquid.connection.commitAsDefault") == false) {
                     conn.rollback();
                 } else {
                     System.err.println("Please define commit or rollback as default");
                 }
             }
-            request.getSession().setAttribute("Liquid.connection", false);
-            request.getSession().setAttribute("Liquid.connection.conn", null);
-            request.getSession().setAttribute("Liquid.connection.commit", false);
-            request.getSession().setAttribute("Liquid.connection.rollback", false);
-            request.getSession().setAttribute("Liquid.connection.commitAsDefault", null);
+            request.setAttribute("Liquid.connection", false);
+            request.setAttribute("Liquid.connection.conn", null);
+            request.setAttribute("Liquid.connection.commit", false);
+            request.setAttribute("Liquid.connection.rollback", false);
+            request.setAttribute("Liquid.connection.commitAsDefault", null);
             conn.close();
         }
     }
@@ -118,11 +119,11 @@ public class transaction {
                 }
             }
             sconn.setAutoCommit(false);
-            request.getSession().setAttribute("Liquid.connection", true);
-            request.getSession().setAttribute("Liquid.connection.conn", sconn);
-            request.getSession().setAttribute("Liquid.connection.commit", false);
-            request.getSession().setAttribute("Liquid.connection.rollback", false);
-            request.getSession().setAttribute("Liquid.connection.commitAsDefault", commitAsDefault);
+            request.setAttribute("Liquid.connection", true);
+            request.setAttribute("Liquid.connection.conn", sconn);
+            request.setAttribute("Liquid.connection.commit", false);
+            request.setAttribute("Liquid.connection.rollback", false);
+            request.setAttribute("Liquid.connection.commitAsDefault", commitAsDefault);
             return true;
         } else {
             return false;
