@@ -1139,10 +1139,20 @@ public class db {
                                     curFilter = requestJson.getInt("curFilter");
 
                                     if (requestJson.has("filters")) {
-                                        allFiltersDefinition = requestJson.getJSONArray("filters");
+                                            JSONArray filterCols = null;
+                                            Object oFilters = requestJson.get("filters");
+                                            if(oFilters instanceof JSONArray) {
+                                            } else if(oFilters instanceof JSONObject) {
+                                            }
+                                        // allFiltersDefinition = requestJson.getJSONArray("filters");
                                     } else {
                                         if (tbl_wrk.tableJson.has("filters")) {
-                                            allFiltersDefinition = tbl_wrk.tableJson.getJSONArray("filters");
+                                            JSONArray filterCols = null;
+                                            Object oFilters = tbl_wrk.tableJson.get("filters");
+                                            if(oFilters instanceof JSONArray) {
+                                            } else if(oFilters instanceof JSONObject) {
+                                            }
+                                            // allFiltersDefinition = tbl_wrk.tableJson.getJSONArray("filters");
                                         }
                                     }
                                 } else {
