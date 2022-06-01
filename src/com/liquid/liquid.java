@@ -19,6 +19,7 @@ public class liquid {
      * @param preFilters        the pre-filters (Object [] : name, value, operator(><= ..), logic(AND/OR) Mode (RW/RO)
      * @param filters           the filters (Object [] : name, value, operator(><= ..), logic(AND/OR) Mode (RW/RO)
      * @param userProps         the user properties to append to the control
+     * @param langSupport
      * @return
      * @throws Throwable
      */
@@ -32,7 +33,8 @@ public class liquid {
             , ArrayList<Object[]> preFilters
             , ArrayList<Object[]> filters
             , ArrayList<Object[]> userProps
-            ) throws Throwable {
+            , boolean langSupport
+    ) throws Throwable {
 
         String scriptToExec = "";
 
@@ -76,7 +78,15 @@ public class liquid {
 
 
         // script da eseguire per visualizzare il popup
-        scriptToExec = "Liquid.startPopup('"+controlId+"','" + sPopupJson + "');";
+        scriptToExec = "";
+
+        // Supportlo lingua corrente
+        if(!langSupport) {
+            scriptToExec += "Liquid.translateLabels=false;";
+        }
+
+        scriptToExec += "Liquid.startPopup('"+controlId+"','" + sPopupJson + "');";
+
 
 
         // setFilters(obj, columnName, filterName, filterValue, filterOperator, filterLogic)
@@ -123,6 +133,7 @@ public class liquid {
             , ArrayList<Object[]> preFilters
             , ArrayList<Object[]> filters
             , ArrayList<Object[]> userProps
+            , boolean langSupport
     ) throws Throwable {
         return startPopup(
                 request
@@ -133,7 +144,7 @@ public class liquid {
                 , preFilters
                 , filters
                 , userProps
-        );
+                , langSupport);
     }
 
     public static String startPopup(
@@ -143,6 +154,7 @@ public class liquid {
             , Object owner
             , ArrayList<Object[]> filters
             , ArrayList<Object[]> userProps
+            , boolean langSupport
     ) throws Throwable {
         return startPopup(
                 request
@@ -152,8 +164,8 @@ public class liquid {
                 , owner
                 , null
                 , filters
-                , userProps
-            );
+                , userProps,
+                langSupport);
     }
 
     public static String startPopupFromString(
@@ -164,6 +176,7 @@ public class liquid {
             , ArrayList<Object[]> preFilters
             , ArrayList<Object[]> filters
             , ArrayList<Object[]> userProps
+            , boolean langSupport
     ) throws Throwable {
         return startPopup(
                 request
@@ -173,8 +186,8 @@ public class liquid {
                 , owner
                 , preFilters
                 , filters
-                , userProps
-        );
+                , userProps,
+                langSupport);
     }
 
     public static String startPopupFromString(
@@ -184,6 +197,7 @@ public class liquid {
             , Object owner
             , ArrayList<Object[]> filters
             , ArrayList<Object[]> userProps
+            , boolean langSupport
     ) throws Throwable {
         return startPopup(
                 request
@@ -193,8 +207,8 @@ public class liquid {
                 , owner
                 , null
                 , filters
-                , userProps
-        );
+                , userProps,
+                langSupport);
     }
 
 

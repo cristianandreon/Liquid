@@ -11,9 +11,9 @@
 /* */
 
 //
-// Liquid ver.2.21
+// Liquid ver.2.22
 //
-//  First update 06-01-2020 - Last update 30-05-2022
+//  First update 06-01-2020 - Last update 01-06-2022
 //
 //  TODO : see trello.com
 //
@@ -2632,6 +2632,7 @@ var Liquid = {
     MinSlideShowPages:1,
     pdfJsPath:"/PDF.js/build/",
     pdfJsDebug:false,
+    translateLabels:true,
     setLanguage: function (language, serverSide) {
         if (isDef(language)) {
             var lang_list = language.split(';');
@@ -4999,7 +5000,7 @@ var Liquid = {
                     // Tool tip also in the fields ?
                     var tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].name : null;
 
-                    var labelName = "label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+                    var labelName = (Liquid.translateLabels ? ("label" + Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "") : "label");
                     var labelValue = isDef(liquid.tableJson.columns[ic][labelName]) ? liquid.tableJson.columns[ic][labelName] : liquid.tableJson.columns[ic].name;
 
                     var colData = {
@@ -9733,7 +9734,7 @@ var Liquid = {
                                 ) {
                                     var tooltipValue = null;
                                     var fieldName = liquid.tableJson.columns[ic].name;
-                                    var labelName = "label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+                                    var labelName = (Liquid.translateLabels ? ("label" + Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "") : "label");
                                     var tooltipName = "tooltip" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
                                     if (isDef(liquid.tableJson.columns[ic][labelName]))
                                         fieldName = liquid.tableJson.columns[ic][labelName];
@@ -10220,8 +10221,13 @@ var Liquid = {
                         if (idsSelected.length > 0) idsSelected += ",";
                         if (typeof value === 'string') value = value.replace(/\/"/g, "\"");
                         if (typeof value === 'string') value = value.replaceAll("\\\\\"", "\"");
-                        if (value)
-                            idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
+                        if (value) {
+                            if (typeof value === 'string') {
+                                idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
+                            } else {
+                                idsSelected += '"' + value + '"';
+                            }
+                        }
                     }
                 }
                 // escluse list
@@ -10230,8 +10236,13 @@ var Liquid = {
                     var value = liquid.selection.exclude[i];
                     if (typeof value === 'string') value = value.replace(/\/"/g, "\"");
                     if (typeof value === 'string') value = value.replaceAll("\\\\\"", "\"");
-                    if (value)
-                        idsUnselected += (value.startsWith('"') ? "" : '"') + +value + (value.endsWith('"') ? "" : '"');
+                    if (value) {
+                        if (typeof value === 'string') {
+                            idsUnselected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
+                        } else {
+                            idsUnselected += '"' + value + '"';
+                        }
+                    }
                 }
             } else {
                 // working with include list
@@ -10240,8 +10251,13 @@ var Liquid = {
                     var value = liquid.selection.include[i];
                     if (typeof value === 'string') value = value.replace(/\/"/g, "\"");
                     if (typeof value === 'string') value = value.replaceAll("\\\\\"", "\"");
-                    if (value)
-                        idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
+                    if (value) {
+                        if (typeof value === 'string') {
+                            idsSelected += (value.startsWith('"') ? "" : '"') + value + (value.endsWith('"') ? "" : '"');
+                        } else {
+                            idsSelected += '"' + value + '"';
+                        }
+                    }
                 }
             }
         }
@@ -12465,7 +12481,7 @@ var Liquid = {
             var size = command.size ? command.size : command.img ? 24 : 0;
             var width = (command.img ? (command.width ? command.width : 0) : 0);
             var height = (command.img ? (command.height ? command.height : 0) : 0);
-            var labelName = "label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+            var labelName = (Liquid.translateLabels ? ("label" + Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "") : "label");
             var labelValue = isDef(command[labelName]) ? command[labelName] : null;
             labelName = "text" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
             labelValue = labelValue ? labelValue : isDef(command[labelName]) ? command[labelName] : null;
@@ -14679,7 +14695,7 @@ var Liquid = {
 
                             var tooltip = linkeCol["name"];
                             var tooltipName = "tooltip" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
-                            var labelName = "label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+                            var labelName = (Liquid.translateLabels ? ("label" + Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "") : "label");
                             if (isDef(linkeCol[labelName]))
                                 tooltip = linkeCol[labelName];
                             if (isDef(linkeCol[tooltipName]))

@@ -18,6 +18,9 @@ import org.json.JSONObject;
 /**
  *
  * @author Cristitan
+ *
+ * N.B.: In aplini application server (site.geisoft.org) out.flush non scrive e quindo non ilvia il messagebox al client se non dopo che il flusso e' stato chiuso
+ *
  */
 public class Messagebox {
     

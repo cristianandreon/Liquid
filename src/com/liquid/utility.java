@@ -1947,7 +1947,10 @@ public class utility {
                                     field1B = Integer.parseInt(sfield1B);
                                     colMap.add(field1B);
                                 } catch (Exception e) {
+                                    colMap.add(0);
                                 }
+                            } else {
+                                colMap.add(0);
                             }
                         }
                         if (field1B > 0) {

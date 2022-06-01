@@ -2654,6 +2654,7 @@ public class db {
                                 // expression
                                 preFix = "";
                                 postFix = "";
+                                filterValue = (String)filterValueObject;
                             } else if (filterValueType == -1) {
                                 // truncate
                                 preFix = "";
@@ -2689,8 +2690,8 @@ public class db {
 
                         // NB.:
                         //  oFilterValue = valore originale del filtro
-                        //  filterValueObject = valore del filtro in tipo classe Object
-                        //  filterValue = valore del filtro in tipo classe String
+                        //  filterValueObject = valore del filtro in tipo classe Object (usato con i parametri)
+                        //  filterValue = valore del filtro in tipo classe String (usato per le espressioni)
 
                         // is next operator logic not 'OR' ? closing parent
                         if("OR".equalsIgnoreCase(filterNextLogic)) {
