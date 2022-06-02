@@ -19625,8 +19625,13 @@ var Liquid = {
     },
     onClosingStart:function(params) {
         if(params) {
-            let obj = params.obj;
-            var liquid = params.liquid ? params.liquid : Liquid.getLiquid(obj);
+            let obj, liquid;
+            if(typeof params === 'object') {
+                obj = ? params.obj : null;
+                liquid = params.liquid ? params.liquid : Liquid.getLiquid(obj);
+            } else if(typeof params === 'string') {
+                liquid = Liquid.getLiquid(params);
+            }
             var closeParams = params;
             if (liquid) {
                 liquid.outDivObj.classList.add('liquidHide');
@@ -19637,8 +19642,13 @@ var Liquid = {
     },
     onClosed:function(params) {
         if(params) {
-            let obj = params.obj;
-            var liquid = params.liquid ? params.liquid : Liquid.getLiquid(obj);
+            let obj, liquid;
+            if(typeof params === 'object') {
+                obj = ? params.obj : null;
+                liquid = params.liquid ? params.liquid : Liquid.getLiquid(obj);
+            } else if(typeof params === 'string') {
+                liquid = Liquid.getLiquid(params);
+            }
             if (liquid) {
                 delete liquid.modifications;
                 if (liquid === glLastFocusedLiquid)
