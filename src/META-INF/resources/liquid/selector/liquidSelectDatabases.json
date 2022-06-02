@@ -29,6 +29,7 @@
 ,"pageSize":0
 ,"width":"355"
 ,"height":"500"
+,"zIndex": 40000
 ,"caption":"Select database"
 ,"owner":"com.liquid.event"
 ,"navVisible":true

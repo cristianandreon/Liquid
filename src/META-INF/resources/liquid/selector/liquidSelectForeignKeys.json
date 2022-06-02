@@ -46,6 +46,7 @@
 ,"pageSize":0
 ,"width":"800"
 ,"height":"500"
+,"zIndex": 40000
 ,"caption":"Select foreign key"
 ,"owner":"com.liquid.event"
 ,"navVisible":true

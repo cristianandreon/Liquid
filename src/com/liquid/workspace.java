@@ -3853,6 +3853,7 @@ public class workspace {
                     } catch (JSONException ex) {
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                         Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "fileName:"+fileName);
+                        throw ex;
                     }
                 }
             }
@@ -3939,12 +3940,13 @@ public class workspace {
                 } else {
                     return "{\"result\":1,\"message\":\"liquidJsonsProjectFolder resetted\"}";
                 }
+            } else {
+                return "{\"result\":-1,\"message\":\"You are not running in 'Project Mode' .. cannot set folder project\"}";
             }
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
             return "{\"result\":-1,\"error\":\"" + ex.getLocalizedMessage() + "\"}";
         }
-        return "{\"result\":0}";
     }
 
     /**

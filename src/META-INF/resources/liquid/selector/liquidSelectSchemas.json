@@ -25,6 +25,7 @@
 ,"cache":true
 ,"left":"center"
 ,"top":"center"
+,"zIndex": 40000
 ,"resize":"both"
 ,"autoSizeColumns":true
 ,"autoLoad":false

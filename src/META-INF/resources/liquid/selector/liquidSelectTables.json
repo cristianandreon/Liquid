@@ -33,6 +33,7 @@
 ,"pageSize":0
 ,"width":"600"
 ,"height":"500"
+,"zIndex": 40000
 ,"caption":"Select table/view"
 ,"owner":"com.liquid.event"
 ,"navVisible":true

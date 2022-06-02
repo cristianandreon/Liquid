@@ -50,6 +50,8 @@ public class liquidize {
         ,"foreignColumn"
         ,"column"
         ,"options"
+        ,"editor"
+        ,"values"
     ));
 
     

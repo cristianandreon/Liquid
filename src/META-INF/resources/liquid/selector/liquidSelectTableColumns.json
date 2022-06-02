@@ -34,6 +34,7 @@
 ,"resize":"both"
 ,"left":"center"
 ,"top":"center"
+,"zIndex": 40000
 ,"autoSizeColumns":true
 ,"autoLoad":false
 ,"pageSize":0
