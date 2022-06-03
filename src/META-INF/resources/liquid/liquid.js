@@ -19627,7 +19627,7 @@ var Liquid = {
         if(params) {
             let obj, liquid;
             if(typeof params === 'object') {
-                obj = ? params.obj : null;
+                obj = params.obj;
                 liquid = params.liquid ? params.liquid : Liquid.getLiquid(obj);
             } else if(typeof params === 'string') {
                 liquid = Liquid.getLiquid(params);
@@ -19644,7 +19644,7 @@ var Liquid = {
         if(params) {
             let obj, liquid;
             if(typeof params === 'object') {
-                obj = ? params.obj : null;
+                obj = params.obj;
                 liquid = params.liquid ? params.liquid : Liquid.getLiquid(obj);
             } else if(typeof params === 'string') {
                 liquid = Liquid.getLiquid(params);
