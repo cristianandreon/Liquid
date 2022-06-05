@@ -3559,7 +3559,7 @@ public class db {
                         } else if (val instanceof Boolean) {
                             sqlSTMTUpdate.setBoolean((i + 1), (boolean) val);
                         } else if (val == null) {
-                            sqlSTMTUpdate.setNull((i + 1), 1);
+                            sqlSTMTUpdate.setNull((i + 1), Types.NULL);
                         } else {
                             System.err.println("insert_row() invalid obejct type : "+ val.getClass().getName());
                         }

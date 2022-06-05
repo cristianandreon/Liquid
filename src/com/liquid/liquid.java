@@ -4,9 +4,61 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.JspWriter;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 public class liquid {
+
+    static public Object is_session_expired_class_instance;
+    static public Method is_session_expired_method;
+
+    static public String is_session_expired_method_name;
+
+    /**
+     * set the callback to chech if the session was expired
+     * @param classInstance
+     * @param methodName class.method inside classInstance to call ( args : HttpServletRequest, HttpServletResponse, JspWriter )
+     */
+    static public void set_session_expired_callback (Object classInstance, String methodName) {
+        if(classInstance != null && methodName != null) {
+            is_session_expired_class_instance = classInstance;
+            is_session_expired_method = null;
+            is_session_expired_method_name = methodName;
+        } else {
+            is_session_expired_class_instance = null;
+            is_session_expired_method = null;
+            is_session_expired_method_name = null;
+        }
+    }
+
+
+    /**
+     * check is the session was expired by callback application's method
+     *
+     * @param request
+     * @param response
+     * @param out
+     * @return
+     * @throws Exception
+     */
+    static public boolean is_session_expired (HttpServletRequest request, HttpServletResponse response, JspWriter out) throws Exception {
+        if(is_session_expired_class_instance != null && is_session_expired_method_name != null) {
+            if(is_session_expired_method == null) {
+                Object[] result = event.get_method_by_class_name(is_session_expired_method_name, is_session_expired_class_instance);
+                // Object classInstance = result[0];
+                is_session_expired_method = (Method) result[1];
+            }
+            if(is_session_expired_method != null) {
+                return (boolean)is_session_expired_method.invoke(is_session_expired_class_instance, request, response, out);
+            } else {
+                throw new Exception("invalid metdod:"+is_session_expired_method_name);
+            }
+        } else {
+            return false;
+        }
+    }
 
     /**
      *

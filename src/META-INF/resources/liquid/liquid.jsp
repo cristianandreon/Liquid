@@ -58,31 +58,42 @@
 
         if ("get".equalsIgnoreCase(operation)) {
             // get processed json configuration from the server
-            out.print( db.get_table_recordset(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( db.get_table_recordset(request, out) );
 
         } else if ("getJson".equalsIgnoreCase(operation)) {
             // get the json configuration from the server
-            out.print( workspace.get_file_content(request, request.getParameter("fileURL")) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( workspace.get_file_content(request, request.getParameter("fileURL")) );
 
         } else if ("setJson".equalsIgnoreCase(operation)) {
             // write json configuration to the server
-            out.print( workspace.set_file_content(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( workspace.set_file_content(request, out) );
 
         } else if ("setProjectFolder".equalsIgnoreCase(operation)) {
             // Set the working folder of the project (where to save new json configurations)
-            out.print( workspace.set_project_folder(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( workspace.set_project_folder(request, out) );
             
         } else if ("auto".equalsIgnoreCase(operation)) {
             // get the default json configuration of a control
-            out.print( workspace.get_default_json(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( workspace.get_default_json(request, out) );
 
         } else if ("registerControl".equalsIgnoreCase(operation)) {
             // register a json configuraqtion
-            out.print( workspace.get_table_control(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( workspace.get_table_control(request, out) );
 
         } else if ("exec".equalsIgnoreCase(operation)) {
             // execution of commands, events ...
-            try { out.print( event.execute(request, out) ); } catch (Exception e) {}
+            if(!liquid.is_session_expired (request, response, out)) {
+                try {
+                    out.print(event.execute(request, out));
+                } catch (Exception e) {
+                }
+            }
         
             
             
@@ -91,25 +102,34 @@
         //          E' eventualmente possibile lanciare codice python (risiedente su file nel server) da js con executeClientSide
         } else if ("pythonExec".equalsIgnoreCase(operation)) {
             // callbacks n python
-            try { out.print( event.pythonExecute(request, out) ); } catch (Exception e) {}
+            if(!liquid.is_session_expired (request, response, out)) {
+                try {
+                    out.print(event.pythonExecute(request, out));
+                } catch (Exception e) {
+                }
+            }
             
             
             
         } else if ("setPrefilter".equalsIgnoreCase(operation)) {
             // validate and set the prefilter (hidden to user)
-            out.print( db.set_prefilters(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( db.set_prefilters(request, out) );
 
         } else if ("getColumnsManager".equalsIgnoreCase(operation)) {
             // Get the WinX of the columns manager
-            out.print( ColumnsManager.get_table_column_windowx_json(request, operation, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( ColumnsManager.get_table_column_windowx_json(request, operation, out) );
 
         } else if ("setColumnsManager".equalsIgnoreCase(operation)) {
             // Save the columns manager modifications
-            out.print( ColumnsManager.set_table_column_windowx_json(request, operation, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( ColumnsManager.set_table_column_windowx_json(request, operation, out) );
 
         } else if ("countOccurences".equalsIgnoreCase(operation)) {
             // Count the occurences
-            out.print( db.count_occurences_by_column(request, operation, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( db.count_occurences_by_column(request, operation, out) );
 
 
             
@@ -123,47 +143,57 @@
 
         } else if ("register".equalsIgnoreCase(operation)) {
             // Login Service : register user
-            out.print( login.register(request, response, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( login.register(request, response, out) );
 
         } else if ("recovery".equalsIgnoreCase(operation)) {
             // Login Service : recovery password
-            out.print( login.recovery(request, response, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( login.recovery(request, response, out) );
             
         } else if ("validateEmail".equalsIgnoreCase(operation)) {
             // Login Service : validazione email
-            response.sendRedirect( login.validate_email(request, response, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                response.sendRedirect( login.validate_email(request, response, out) );
 
         } else if ("email".equalsIgnoreCase(operation)) {
             // Emailer Service : sending
-            out.print( emailer.send(request, response, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print(emailer.send(request, response, out));
 
             
 
         } else if ("search".equalsIgnoreCase(operation)) {
             // Search service 
-            out.print( metadata.searchOnDatabases(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( metadata.searchOnDatabases(request, out) );
 
         } else if ("setConnection".equalsIgnoreCase(operation)) {
             // Set a connection to DB
-            out.print( connection.setConnectionString(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( connection.setConnectionString(request, out) );
 
         } else if ("getConnection".equalsIgnoreCase(operation)) {
             // Read a connection to DB
-            out.print( connection.getConnectionString(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( connection.getConnectionString(request, out) );
 
         } else if ("getConnectionDesc".equalsIgnoreCase(operation)) {
             // Get the description of the connection to DB
-            out.print( connection.getConnectionDesc(request, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( connection.getConnectionDesc(request, out) );
 
 
 
         } else if ("startWorker".equalsIgnoreCase(operation)) {
             // Servizio lettura della connessione
-            out.print( worker.start_worker(request, operation, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( worker.start_worker(request, operation, out) );
 
         } else if ("getWorker".equalsIgnoreCase(operation)) {
             // Get a worker data
-            out.print( worker.get_worker(request, operation, out) );
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( worker.get_worker(request, operation, out) );
 
             
 
@@ -183,15 +213,18 @@
 
         } else if ("setLanguage".equalsIgnoreCase(operation)) {
             // Set the language in the session
-            workspace.setLanguage(session, out, request.getParameter("language"));
+            if(!liquid.is_session_expired (request, response, out))
+                workspace.setLanguage(session, out, request.getParameter("language"));
 
 
             // Servlet DMS : download document content
         } else if ("downloadDocument".equalsIgnoreCase(operation)) {
-            String clientData = "content";
-            String params = "{\"params\":{\"link\":\""+(request.getParameter("link") != null ? request.getParameter("link") : "") +"\"}}";
-            workspace tbl_wrk = null;
-            event.downloadDocument((Object)tbl_wrk, (Object)params, (Object) clientData, (Object)request);
+            if(!liquid.is_session_expired (request, response, out)) {
+                String clientData = "content";
+                String params = "{\"params\":{\"link\":\"" + (request.getParameter("link") != null ? request.getParameter("link") : "") + "\"}}";
+                workspace tbl_wrk = null;
+                event.downloadDocument((Object) tbl_wrk, (Object) params, (Object) clientData, (Object) request);
+            }
 
 
 

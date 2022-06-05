@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.23
+// Liquid ver.2.24
 //
-//  First update 06-01-2020 - Last update 02-06-2022
+//  First update 06-01-2020 - Last update 05-06-2022
 //
 //  TODO : see trello.com
 //
@@ -2572,7 +2572,7 @@ var Liquid = {
 
     version: 2.12,
     appTitle: "LIQUID",
-    controlid: "Liquid framework",
+    controlId: "Liquid framework",
     debug: false,
     debugWorker: false,
     curDriver: "",
@@ -5361,6 +5361,7 @@ var Liquid = {
                         }
 
                         if(setFullRowset) {
+                            console.debug("INFO: setFullRowset on control '"+liquid.controlId+"'");
                             result.retVal = 1;
                             try {
                                 if (isDef(httpResultJson.resultSet)) {
@@ -5381,7 +5382,7 @@ var Liquid = {
                             }
                             liquid.lastSelectedId = null;
                             // check
-                            if (liquid.addingNode) {
+                            if (liquid.addingNode || liquid.addingRow) {
                                 console.error("ERROR: loadData inside insert command overlay addingNode");
                                 liquid.addingNode = null;
                                 Liquid.resetLayoutsRowState(liquid);
@@ -5592,6 +5593,7 @@ var Liquid = {
                     if (liquid.nRows === 0) {
                         // no row
                         Liquid.onButton(liquid, { name: "insert", fromToolbar:false });
+                        console.debug("INFO: autoInsertingIfMissing on control '"+liquid.controlId+"'");
                     }
                     liquid.autoInsertIfMissing = false;
                 }
@@ -7052,8 +7054,8 @@ var Liquid = {
                                         } else {
                                             try {
                                                 var json = JSON.parse(globalVar);
-                                                if (isDef(json.controlid)) {
-                                                    sourceControlId = json.controlid;
+                                                if (isDef(json.controlId)) {
+                                                    sourceControlId = json.controlId;
                                                     sourceControlJSON = globalVar;
                                                 }
                                             } catch (e) {
@@ -8911,6 +8913,9 @@ var Liquid = {
             if (isDef(liquid.tableJson)) {
                 var isCommandFound = false;
                 var commandFoundXMsg = false;
+                if(Liquid.debug) {
+                    console.debug("INFO: command:" + commandName + " on control:" + liquid.controlId);
+                }
                 liquid.gridOptions.api.stopEditing();
                 if (liquid.tableJson.commands) {
                     var searchingCommandName = commandName.toLowerCase();
@@ -8941,6 +8946,9 @@ var Liquid = {
                                     liquid.currentCommand.fromToolbar = false;
                                     return Liquid.onButton(liquid, liquid.currentCommand);
                                 }
+                            }
+                            if(liquid.controlId == 'bid_details$auction_detail_id$id@NewBidDetail') {
+                                debugger;
                             }
                             if (command.isNative) {
                                 // native step command .. continue or start
@@ -10520,7 +10528,21 @@ var Liquid = {
     onButton: function (obj, command) {
         let retVal = null;
         if (command) {
-            let doConfirm = command.fromToolbar && (command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE) ? true : false;
+            let doConfirm = false;
+            if(command.fromToolbar) {
+                if (command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE) {
+                    doConfirm = true;
+                }
+            } else {
+                if(command.visible === false || command.hidden === true) {
+                    if (command.isNative) {
+                        if (command.name === 'delete') {
+                            command.step = Liquid.CMD_EXECUTE;
+                        }
+                    }
+                    doConfirm = true;
+                }
+            }
             let confirmName = "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
             let cmdConfirm = command ? command[confirmName] : null;
             let liquid = Liquid.getLiquid(obj);
@@ -10811,15 +10833,12 @@ var Liquid = {
                         Liquid.processCommandPostFunc(liquid, command);
                         return retVal;
                     }
-
                     if (command.step === 0) { // prepare
-
                         if(liquid) {
                             if (liquid.commandStartCallback) {
                                 liquid.commandStartCallback(liquid, command);
                             }
                         }
-
                         if (command.linkedLabelObj)
                             if (isDef(command.labels))
                                 if (command.labels.length >= 1)
@@ -10846,38 +10865,49 @@ var Liquid = {
                             }
                         }
                         let defaultValue = "noEventDef";
-                        let bAlwaysCallback = false;
+                        let bAlwaysCallback = true;
                         let bContinue = false;
                         if (command.name === "insert") {
                             Liquid.addRow(obj, command);
-                            var result = Liquid.onEvent(obj, "onInserting", liquid.addingRow, function (liquid, result) {
-                                Liquid.onPreparedRow(liquid, true, false);
-                            }, liquid, defaultValue, bAlwaysCallback);
+
+                            if(command.hidden === true || command.visible === false) {
+                            } else {
+                                if (liquid.tableJson.commandBarVisible === false) {
+                                    Liquid.setProperty(obj, "commandBarVisible", true);
+                                    liquid.tableJson.commandBarTemporaryVisible = true;
+                                }
+                            }
+                            var result = Liquid.onEvent(obj,
+                                "onInserting",
+                                liquid.addingRow,
+                                function (liquid, result) {
+                                    Liquid.onPreparedRow(liquid, true, false);
+                                    // set layout rows state by command
+                                    Liquid.setLayoutsRowStateByCommand(liquid, command);
+                                    Liquid.refreshGrids(liquid, null, "new row");
+                                    Liquid.refreshLayouts(liquid);
+                                    Liquid.refreshDocuments(liquid);
+                                    Liquid.refreshCharts(liquid);
+                                    // validazione dei layouts
+                                    if (liquid.tableJson.layouts) {
+                                        for (let il = 0; il < liquid.tableJson.layouts.length; il++) {
+                                            Liquid.invalidateLayoutField(liquid, liquid.tableJson.layouts[il], "*", true);
+                                        }
+                                    }
+                                }, liquid, defaultValue, bAlwaysCallback);
+
                             if (result.systemResult === defaultValue) {
                                 liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 bContinue = true;
                             }
-                            if (Liquid.isFormX(liquid)) {
-                                Liquid.refreshGrids(liquid, null, "new row");
-                                Liquid.refreshLayouts(liquid);
-                                Liquid.refreshDocuments(liquid);
-                                Liquid.refreshCharts(liquid);
-                            }
-
-                            // validazione dei layouts
-                            if (liquid.tableJson.layouts) {
-                                for (let il = 0; il < liquid.tableJson.layouts.length; il++) {
-                                    Liquid.invalidateLayoutField(liquid, liquid.tableJson.layouts[il], "*", true);
-                                }
-                            }
-
-                            // set layout rows state by command
-                            Liquid.setLayoutsRowStateByCommand(liquid, command);
 
                         } else if (command.name === "update") {
-                            if(liquid.tableJson.commandBarVisible === false) {
-                                Liquid.setProperty(obj, "commandBarVisible", true);
-                                liquid.tableJson.commandBarTemporaryVisible = true;
+                            if(command.hidden === true || command.visible === false) {
+                            } else {
+                                if (liquid.tableJson.commandBarVisible === false) {
+                                    Liquid.setProperty(obj, "commandBarVisible", true);
+                                    liquid.tableJson.commandBarTemporaryVisible = true;
+                                }
                             }
                             var result = Liquid.onEvent(obj, "onUpdating", null, null, null, defaultValue, bAlwaysCallback);
                             if (result.Result === defaultValue || result.systemResult === true) {
@@ -10897,9 +10927,12 @@ var Liquid = {
                                     dataList.push(liquid.deletingNodes[ir].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
                                 }
                                 if(dataList.length > 0) {
-                                    if(liquid.tableJson.commandBarVisible === false) {
-                                        Liquid.setProperty(obj, "commandBarVisible", true);
-                                        liquid.tableJson.commandBarTemporaryVisible = true;
+                                    if(command.hidden === true || command.visible === false) {
+                                    } else {
+                                        if (liquid.tableJson.commandBarVisible === false) {
+                                            Liquid.setProperty(obj, "commandBarVisible", true);
+                                            liquid.tableJson.commandBarTemporaryVisible = true;
+                                        }
                                     }
                                     var result = Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bAlwaysCallback);
                                     if (result.systemResult === defaultValue) {
@@ -13613,11 +13646,8 @@ var Liquid = {
                             curNodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                         }
                     }
-
                     layout.firstNodeId = curNodes && curNodes.length ? curNodes[0].id : null;
                     Liquid.linkLayoutToFields(liquid, layout, layout.containerObj, bSetup);
-
-
                     var bRestoreList = false;
                     if (layout) {
                         bRestoreList = Liquid.resizeIfDocked(liquid, layout);
@@ -13652,6 +13682,11 @@ var Liquid = {
     },
     linkLayoutToFields: function (liquid, layout, containerObj, bSetup) {
         if (liquid) {
+
+            if(liquid.controlId == 'bid_details$auction_detail_id$id@NewBidDetail') {
+                debugger;
+            }
+
             if (layout) {
                 if (containerObj) {
                     var slideDownContainerObjs = [];
@@ -14190,7 +14225,7 @@ var Liquid = {
             liquid.glLoopeTimeMs = 0;
             liquid.glNumFrame = 0;
             if (typeof liquid.glGalleryInterval === 'undefined') {
-                console.info("Starting frame loop on " + liquid.controlId);
+                if(Liquid.debug) console.info("Starting frame loop on " + liquid.controlId);
                 liquid.glCurFrame = 0;
                 liquid.glNumFrame = liquid.nRows;
                 if (liquid.glNumFrame > 1) {
@@ -14616,21 +14651,21 @@ var Liquid = {
             var objLinkers = null;
             var objLinkersTarget = null;
             if (obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
-                objLinkers = [obj.id, obj.className];
+                objLinkers = [obj.id, obj.name, obj.className];
                 objLinkersTarget = [null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(obj.nodeName)) {
-                objLinkers = [obj.innerHTML, obj.id, obj.classList];
+                objLinkers = [obj.innerHTML, obj.id, obj.name, obj.classList];
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'A' || obj.nodeName.toUpperCase() === 'BUTTON' || obj.nodeName.toUpperCase() === 'IMG') {
-                objLinkers = [obj.innerHTML, obj.id, obj.classList];
+                objLinkers = [obj.innerHTML, obj.id, obj.name, obj.classList];
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'FORM') {
                 liquid.linkedForm = obj;
             } else if (obj.nodeName.toUpperCase() === 'PICTURE' || obj.nodeName.toUpperCase() === 'EMBED' || obj.nodeName.toUpperCase() === 'AUDIO' || obj.nodeName.toUpperCase() === 'VIDEO') {
-                objLinkers = [obj.innerHTML, obj.id, obj.classList];
+                objLinkers = [obj.innerHTML, obj.id, obj.name, obj.classList];
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'CANVAS') {
-                objLinkers = [obj.innerHTML, obj.id, obj.classList];
+                objLinkers = [obj.innerHTML, obj.id, obj.name, obj.classList];
                 objLinkersTarget = [null, null, "className"];
             }
 
@@ -14691,16 +14726,18 @@ var Liquid = {
                             }
                             if (objLinkersTarget) {
                                 if (objLinkersTarget[il] === 'className') {
-                                    // solve className
-                                    var result = Liquid.solveExpressionFieldOnRow(objLinkers[il], null, liquid, iRow);
-                                    var expr = result[1];
-                                    if (expr) {
-                                        try {
-                                            expr = eval(expr);
-                                        } catch (e) {
-                                        }
-                                        if (objLinkersTarget[il] === 'className') {
-                                            obj.className = expr;
+                                    if(linkCount == 0) {
+                                        // solve className
+                                        var result = Liquid.solveExpressionFieldOnRow(objLinkers[il], null, liquid, iRow);
+                                        var expr = result[1];
+                                        if (expr) {
+                                            try {
+                                                expr = eval(expr);
+                                            } catch (e) {
+                                            }
+                                            if (objLinkersTarget[il] === 'className') {
+                                                obj.className = expr;
+                                            }
                                         }
                                     }
                                 }
@@ -15161,7 +15198,7 @@ var Liquid = {
                                         }
                                     }
                                 }
-                                Liquid.setHTMLElementValue(targetObj, value);
+                                Liquid.setHTMLElementValue(targetObj, value, null, layout);
                                 if (typeof layout.firstObjId === 'undefined' || !layout.firstObjId) {
                                     layout.firstObjId = targetObj.id;
                                     targetObj.focus();
@@ -15553,6 +15590,16 @@ var Liquid = {
                     var fieldKey = subKey.substring(0, index);
                     fieldKey = fieldKey.replace(/'/g, "").replace(/"/g, "");
                     var linkedCol = Liquid.getColumn(liquid, fieldKey);
+                    if(linkedCol) {
+                        if(linkedCol.translated === true) {
+                            var colName = (linkedCol.runtimeName ? linkedCol.runtimeName : linkedCol.name);
+                            var fieldKey = (Liquid.translateLabels ? (colName + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "label");
+                            var translatedLinkedCol = Liquid.getColumn(liquid, fieldKey);
+                            if (translatedLinkedCol) {
+                                linkedCol = translatedLinkedCol;
+                            }
+                        }
+                    }
                     return linkedCol;
                 }
             }
@@ -16121,7 +16168,7 @@ var Liquid = {
                             jQ1124().datetimepicker("value", pure_value ? pure_value : value);
                             this.setOptions(opt);
                             jQ1124.datetimepicker.setLocale(opt.lang);
-                            console.info("DATETIMEPICKER:onClose()");
+                            if(Liquid.debug) console.info("DATETIMEPICKER:onClose()");
                         }
                     },
                     onClose: function (o, $input, event) {
@@ -16132,7 +16179,7 @@ var Liquid = {
                                 if (liquid) liquid.gridOptions.api.stopEditing();
                             }
                         }
-                        console.info("DATETIMEPICKER:onClose()");
+                        if(Liquid.debug) console.info("DATETIMEPICKER:onClose()");
                     },
                     onSelectDate:function(ct,$i){
                         // $i.datetimepicker('destroy');
@@ -16170,7 +16217,7 @@ var Liquid = {
                     if($input) {
                         if(pure_value) $input[0].value = pure_value;
                         $input[0].setAttribute("dp", "1");
-                        console.info("DATEPICKER:onShow()");
+                        if(Liquid.debug) console.info("DATEPICKER:onShow()");
                     }
                 },onClose: function (o, $input, event) {
                     if($input) {
@@ -16181,7 +16228,7 @@ var Liquid = {
                                 liquid.gridOptions.api.stopEditing();
                                 if (obj) obj.onchange();
                             }
-                            console.info("DATEPICKER:onClose()");
+                            if(Liquid.debug) console.info("DATEPICKER:onClose()");
                         }
                     }
                 },
@@ -16286,13 +16333,13 @@ var Liquid = {
                         $input[0].setAttribute("dp", "1");
                         jQ1124(obj).css('z-index', 99900);
                         this.setOptions(opt);
-                        console.info("DATETIMEPICKER:onShow()");
+                        if(Liquid.debug) console.info("DATETIMEPICKER:onShow()");
                     }, onClose: function (o, $input, event) {
                         if($input) {
                             if($input[0].getAttribute("dp")) {
                                 $input[0].setAttribute("dp", "");
                                 $input[0].setAttribute("pure_value", $input[0].value);
-                                console.info("DATETIMEPICKER:onClose()");
+                                if(Liquid.debug) console.info("DATETIMEPICKER:onClose()");
                             }
                         }
                     },
@@ -17456,7 +17503,7 @@ var Liquid = {
                     // put the list visible
                     if (liquid.tableJson.listTabVisible === false) {
                         if (liquid.tableJson.listVisible !== false) {
-                            console.info("LIQUID: force visibility of list on control '" + liquid.controlId + "'");
+                            if(Liquid.debug) console.info("LIQUID: force visibility of list on control '" + liquid.controlId + "'");
                             liquid.aggridContainerObj.style.visibility = 'visible';
                             liquid.aggridContainerObj.style.display = '';
                         }
@@ -17475,42 +17522,46 @@ var Liquid = {
                 liquid.aggridContainerObj.style.height = "100%";
                 liquid.aggridContainerDocked = true;
             } else {
-                liquid.listRootObj.appendChild(liquid.listObj);
-                if (isDef(liquid.currentDock)) {
-                    if (isDef(liquid.currentDock.columns)) {
-                        for (let j = 0; j < liquid.tableJson.columns.length; j++) {
-                            if (isDef(liquid.tableJson.columns[j].colId)) {
-                                if (liquid.tableJson.columns[j].visible !== false) {
-                                    liquid.gridOptions.columnApi.setColumnsVisible([liquid.tableJson.columns[j].colId], true);
-                                } else {
-                                    liquid.gridOptions.setColumnsVisible([liquid.tableJson.columns[j].colId], false);
+                if (liquid.currentDock) {
+                    if(liquid.listObj.parentNode != liquid.listRootObj) {
+                        liquid.listRootObj.appendChild(liquid.listObj);
+                    }
+                    if (isDef(liquid.currentDock)) {
+                        if (isDef(liquid.currentDock.columns)) {
+                            for (let j = 0; j < liquid.tableJson.columns.length; j++) {
+                                if (isDef(liquid.tableJson.columns[j].colId)) {
+                                    if (liquid.tableJson.columns[j].visible !== false) {
+                                        liquid.gridOptions.columnApi.setColumnsVisible([liquid.tableJson.columns[j].colId], true);
+                                    } else {
+                                        liquid.gridOptions.setColumnsVisible([liquid.tableJson.columns[j].colId], false);
+                                    }
                                 }
                             }
                         }
+                        if (liquid.currentDock.parentNode) {
+                            liquid.currentDock.parentNode.style.width = liquid.currentDock.parentNodeLastWidth;
+                            liquid.currentDock.parentNode.style.height = liquid.currentDock.parentNodeLastHeight;
+                        }
                     }
-                    if (liquid.currentDock.parentNode) {
-                        liquid.currentDock.parentNode.style.width = liquid.currentDock.parentNodeLastWidth;
-                        liquid.currentDock.parentNode.style.height = liquid.currentDock.parentNodeLastHeight;
+                    if (isDef(liquid.currentDock)) {
+                        if (isDef(liquid.currentDock.width)) {
+                            liquid.currentDock.width = parentNode.offsetWidth;
+                        }
+                        if (isDef(liquid.currentDock.height)) {
+                            liquid.currentDock.height = parentNode.offsetHeight;
+                        }
                     }
+                    // restore center docker
+                    if (liquid.outDivObj) {
+                        if (liquid.outDivObj.offsetWidth > 0) {
+                            // liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
+                            liquid.dockerTblCenter.style.width = "calc(100% - " + (liquid.dockerTblRight.offsetWidth + liquid.dockerTblLeft.offsetWidth) + "px)";
+                        }
+                    }
+                    liquid.aggridContainerObj.style.height = liquid.aggridContainerLastHeight;
+                    liquid.aggridContainerDocked = false;
+                    liquid.currentDock = null;
                 }
-                if (isDef(liquid.currentDock)) {
-                    if (isDef(liquid.currentDock.width)) {
-                        liquid.currentDock.width = parentNode.offsetWidth;
-                    }
-                    if (isDef(liquid.currentDock.height)) {
-                        liquid.currentDock.height = parentNode.offsetHeight;
-                    }
-                }
-                // restore center docker
-                if (liquid.outDivObj) {
-                    if (liquid.outDivObj.offsetWidth > 0) {
-                        // liquid.dockerTblCenter.style.width = (liquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - liquid.dockerTblLeft.offsetWidth) + "px";
-                        liquid.dockerTblCenter.style.width = "calc(100% - " + (liquid.dockerTblRight.offsetWidth + liquid.dockerTblLeft.offsetWidth) + "px)";
-                    }
-                }
-                liquid.aggridContainerObj.style.height = liquid.aggridContainerLastHeight;
-                liquid.aggridContainerDocked = false;
-                liquid.currentDock = null;
             }
         }
     },
@@ -17530,6 +17581,7 @@ var Liquid = {
                             Liquid.onLayoutMode(lay_coords.layout.containerObj, null, "readonly");
                         }
                     }
+                    var bRestoreList = false;
                     if (liquid.tableJson.layouts[lay_coords.layoutIndex]) {
                         bRestoreList = Liquid.resizeIfDocked(liquid, liquid.tableJson.layouts[lay_coords.layoutIndex]);
                     } else {
@@ -17671,7 +17723,7 @@ var Liquid = {
                                         if (layout.templateRows[0].source != layout.templateRows[templateIndex].source) {
                                             if (layout.rowsContainer) {
                                                 if (layout.rowsContainer.length > 0) {
-                                                    layout.rowsContainer[currentRow1B - 1].incomingSource = layout.templateRows[templateIndex].source;
+                                                    layout.rowsContainer[layout.currentRow1B - 1].incomingSource = layout.templateRows[templateIndex].source;
                                                     Liquid.refreshLayout(liquid, layout, false);
                                                 }
                                             }
@@ -17949,7 +18001,7 @@ var Liquid = {
                                 value = data[liquid.tableJson.columns[iCol].field];
                             }
                         }
-                        Liquid.setHTMLElementValue(itemObj, value);
+                        Liquid.setHTMLElementValue(itemObj, value, null, grid);
                     }
                 } else {
                     // not linked to column
@@ -18095,7 +18147,7 @@ var Liquid = {
         Liquid.setForeignTablesModeCascade(liquidRoot);
     },
     // return 0 in non Input or TEXTAREA
-    setHTMLElementValue:function(targetObj, value, disabled) {
+    setHTMLElementValue:function(targetObj, value, disabled, layoutOrGrid) {
         var imageMode = 'auto';
         if(targetObj) {
             if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
@@ -18108,8 +18160,14 @@ var Liquid = {
                 } else if(targetObj.type === 'file') {
                     console.warn("WARNING : cannot set file of a form element " + targetObj.id);
                 } else {
-                    if(targetObj.type === 'number') if (isDef(value)) if(isNaN(Number(value))) value = value.replace(/\,/g, ".");
-                    targetObj.value = value
+                    if(targetObj.type === 'number')
+                        if (isDef(value)) if(isNaN(Number(value))) value = value.replace(/\,/g, ".");
+                    if(targetObj.type === 'number') {
+                        if(isNaN(value)) {
+                            console.error("LIQUID: cannot set numeric field with value:'"+value+"' .. please check layout:"+(isDef(layoutOrGrid) ? layoutOrGrid.name : ""));
+                        }
+                    }
+                    targetObj.value = value;
                 }
                 if(isDef(disabled)) {
                     if(targetObj.type !== "checkbox") {
@@ -20688,7 +20746,7 @@ columns:[
                 Liquid.dialogBox(null, resultJson.title ? resultJson.title : "MESSAGE", msg, { text:"OK", func:function() { } }, null);
             }
             if(hShowConsole) {
-                console.info("[SERVER] MESSAGE:" + msg);
+                if(Liquid.debug) console.info("[SERVER] MESSAGE:" + msg);
             }
         }
         if(bHandleClientSite) {

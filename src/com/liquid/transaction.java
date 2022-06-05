@@ -5,9 +5,9 @@
 package com.liquid;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class transaction {
 
@@ -127,6 +127,20 @@ public class transaction {
             return true;
         } else {
             return false;
+        }
+    }
+
+    public static boolean exec(String sql, HttpServletRequest request) throws Exception {
+        if(request != null) {
+            Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
+            if (conn != null) {
+                Statement stmt = conn.createStatement();
+                return stmt.execute(sql);
+            } else {
+                throw new Exception("Invalid connection");
+            }
+        } else {
+            throw new Exception("Invalid request");
         }
     }
 

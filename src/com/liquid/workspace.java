@@ -35,11 +35,9 @@ import static com.liquid.utility.resetDatalistCache;
 public class workspace {
 
     public static String version_string = "2.18";
-
     public static String getGLLang() {
         return GLLang;
     }
-
     static public String GLLang = "EN";
     static public Locale locale = Locale.US;
 

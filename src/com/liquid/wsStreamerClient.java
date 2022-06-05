@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspWriter;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -382,51 +383,81 @@ public class wsStreamerClient {
                     
                     wsHttpServletRequest request = new wsHttpServletRequest(requestJson);
                     operation = request != null ? request.getParameter("operation") : null;
+                    HttpServletResponse response = null;
+                    JspWriter out = null;
 
                     if("get".equalsIgnoreCase(operation)) {
-
-                        send( outputStream, db.get_table_recordset( (HttpServletRequest)request, (JspWriter)null ), token );
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            send(outputStream, db.get_table_recordset((HttpServletRequest) request, (JspWriter) null), token);
+                            retVal = true;
+                        }
                         
                     } else if ("getJson".equalsIgnoreCase(operation)) {
                         // get the json configuration from the server
-                        send( outputStream,  workspace.get_file_content((HttpServletRequest)request, request.getParameter("fileURL")), token );
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            send(outputStream, workspace.get_file_content((HttpServletRequest) request, request.getParameter("fileURL")), token);
+                            retVal = true;
+                        }
 
                     } else if ("setJson".equalsIgnoreCase(operation)) {
                         // write json configuration to the server
-                        send( outputStream,  workspace.set_file_content((HttpServletRequest)request, (JspWriter)null), token );
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            send(outputStream, workspace.set_file_content((HttpServletRequest) request, (JspWriter) null), token);
+                            retVal = true;
+                        }
 
                     } else if ("setProjectFolder".equalsIgnoreCase(operation)) {
                         // Set the working folder of the project (where to save new json configurations)
-                        send( outputStream,  workspace.set_project_folder((HttpServletRequest)request, (JspWriter)null), token );
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            send(outputStream, workspace.set_project_folder((HttpServletRequest) request, (JspWriter) null), token);
+                            retVal = true;
+                        }
 
                     } else if ("auto".equalsIgnoreCase(operation)) {
                         // get the default json configuration of a control
-                        send( outputStream, workspace.get_default_json( (HttpServletRequest)request, (JspWriter)null ), token );
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            send(outputStream, workspace.get_default_json((HttpServletRequest) request, (JspWriter) null), token);
+                            retVal = true;
+                        }
 
                     } else if ("registerControl".equalsIgnoreCase(operation)) {
                         // register a json configuraqtion
-                        send( outputStream,  workspace.get_table_control((HttpServletRequest)request, (JspWriter)null), token );
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            send(outputStream, workspace.get_table_control((HttpServletRequest) request, (JspWriter) null), token);
+                            retVal = true;
+                        }
 
                     } else if ("exec".equalsIgnoreCase(operation)) {
                         // execution of commands, events ...
-                        try { send( outputStream,  event.execute((HttpServletRequest)request, (JspWriter)null), token ); } catch (Exception e) {}
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            try {
+                                send(outputStream, event.execute((HttpServletRequest) request, (JspWriter) null), token);
+                            } catch (Exception e) {
+                            }
+                            retVal = true;
+                        }
 
                     } else if ("start_tail".equalsIgnoreCase(operation)) {
                         // execution of commands, events ...
-                        try { if(!FileTail.start_tail_file(outputStream, (HttpServletRequest)request, (JspWriter)null, token )) { }; } catch (Exception e) {}
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            try {
+                                if (!FileTail.start_tail_file(outputStream, (HttpServletRequest) request, (JspWriter) null, token)) {
+                                }
+                            } catch (Exception e) {
+                            }
+                            retVal = true;
+                        }
 
                     } else if ("stop_tail".equalsIgnoreCase(operation)) {
                         // execution of commands, events ...
-                        try { if(!FileTail.stop_tail_file(outputStream, (HttpServletRequest)request, (JspWriter)null, token )) { }; } catch (Exception e) {}
-                        retVal = true;
+                        if(!liquid.is_session_expired (request, response, out)) {
+                            try {
+                                if (!FileTail.stop_tail_file(outputStream, (HttpServletRequest) request, (JspWriter) null, token)) {
+                                }
+                            } catch (Exception e) {
+                            }
+                            retVal = true;
+                        }
 
                     } else {
                         Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "[LIQUID Streamer] unsupported operation : "+operation);
