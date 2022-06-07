@@ -165,8 +165,8 @@ public class liquid {
             for (int iF = 0; iF < userProps.size(); iF++) {
                 Object[] userProp = userProps.get(iF);
                 if (userProp != null) {
-                    String name = (String) userProp[0];
-                    String value = (String) userProp[1];
+                    String name = String.valueOf(userProp[0]);
+                    String value = String.valueOf(userProp[1]);
                     if (name != null) {
                         scriptToExec += "Liquid.setUserProp('" + controlId + "','" + name + "'," + (value != null ? "'"+value+"'" : "null") + ");";
                     }
@@ -347,8 +347,8 @@ public class liquid {
             for (int iF = 0; iF < fieldsValue.size(); iF++) {
                 Object[] fieldValue = fieldsValue.get(iF);
                 if (fieldValue != null) {
-                    String name = (String) fieldValue[0];
-                    String value = (String) fieldValue[1];
+                    String name = String.valueOf(fieldValue[0]);
+                    String value = String.valueOf(fieldValue[1]);
                     if (name != null) {
                         scriptToExec += "Liquid.setField('" + controlId + "','" + name + "'," + (value != null ? "'"+value+"'" : "null") + ");";
                     }
@@ -361,8 +361,8 @@ public class liquid {
             for (int iF = 0; iF < userProps.size(); iF++) {
                 Object[] userProp = userProps.get(iF);
                 if (userProp != null) {
-                    String name = (String) userProp[0];
-                    String value = (String) userProp[1];
+                    String name = String.valueOf(userProp[0]);
+                    String value = String.valueOf(userProp[1]);
                     if (name != null) {
                         scriptToExec += "Liquid.setUserProp('" + controlId + "','" + name + "'," + (value != null ? "'"+value+"'" : "null") + ");";
                     }
