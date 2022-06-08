@@ -2107,7 +2107,7 @@ public class event {
                         Path path = new File(file).toPath();
                         if (path != null) {
                             // fileContent = Files.readAllBytes( path ) ;
-                            paramJson.put("nimeType", Files.probeContentType(path));
+                            paramJson.put("mimeType", Files.probeContentType(path));
                         }
                     }
 
@@ -2306,7 +2306,7 @@ public class event {
                                 "('"+fileAbsolutePath+"'"
                                 +",'"+paramJson.getInt("size")+"'"
                                 +",'"+paramJson.getString("note")+"'"
-                                +",'"+paramJson.getString("nimeType")+"'"
+                                +",'"+paramJson.getString("mimeType")+"'"
                                 +",'"+paramJson.getString("hash")+"'"
                                 +",'"+keyList.get(i)+"'"
                                 +","+doc_type_id
@@ -2349,7 +2349,7 @@ public class event {
                                     + "\"file\":\"" + (paramJson.getString("file")) + "\""
                                     + ",\"size\":" + paramJson.getInt("size")
                                     + ",\"note\":\"" + paramJson.getString("note") + "\""
-                                    + ",\"type\":\"" + paramJson.getString("nimeType") + "\""
+                                    + ",\"type\":\"" + paramJson.getString("mimeType") + "\""
                                     + ",\"hash\":\"" + paramJson.getString("hash") + "\""
                                     + ",\"link\":\"" + keyList.get(i) + "\""
                                     + ",\"doc_type_id\":\"" + doc_type_id + "\""
