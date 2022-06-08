@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -2040,6 +2041,11 @@ public class event {
                 dmsParamsJson.put("row", rowId != null ? String.valueOf(rowId) : null);
                 dmsParamsJson.put("file", fileName != null ? fileName : null);
                 dmsParamsJson.put("size", fileSize != null ? fileSize : null);
+
+                ServletContext context = ((HttpServletRequest)requestParam).getSession().getServletContext();
+                String mimeType = context.getMimeType(fileName);
+                dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
+
                 dmsParamsJson.put("content", b64FileContent != null ? b64FileContent : null);
                 dmsParamsJson.put("doc_type", docType != null ? docType : null);
                 dmsParamsJson.put("user_data", userData != null ? userData : null);
@@ -2103,11 +2109,13 @@ public class event {
 
 
                     if(paramJson.has("file")) {
-                        String file = paramJson.getString("file");
-                        Path path = new File(file).toPath();
-                        if (path != null) {
-                            // fileContent = Files.readAllBytes( path ) ;
-                            paramJson.put("mimeType", Files.probeContentType(path));
+                        if(!paramJson.has("mimeType")) {
+                            String file = paramJson.getString("file");
+                            Path path = new File(file).toPath();
+                            if (path != null) {
+                                // fileContent = Files.readAllBytes( path ) ;
+                                paramJson.put("mimeType", Files.probeContentType(path));
+                            }
                         }
                     }
 
