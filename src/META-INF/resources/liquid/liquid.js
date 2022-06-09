@@ -5561,12 +5561,7 @@ var Liquid = {
                     Liquid.updateStatusBar(liquid);
                 }
 
-                if(liquid.tableJson.navBarStyle === 'slideShow') {
-                    Liquid.addSlideShowItemsToLayout(liquid, null, true);
-                    if(liquid.tableJson.slideShowStart === 'auto' || liquid.tableJson.slideShowStart === true) {
-                        Liquid.startSlideShow(liquid, null);
-                    }
-                }
+                Liquid.updateSlideshowBar(liquid);
 
                 if (isDef(liquid.pendingControlIds)) {
                     for (var il = 0; il < liquid.pendingControlIds.length; il++) {
@@ -8755,6 +8750,7 @@ var Liquid = {
                                                             if (liquid.navObj) {
                                                                 Liquid.updateStatusBar(liquid);
                                                             }
+                                                            Liquid.updateSlideshowBar(liquid);
                                                         }
                                                     }
                                                     liquid.addingRow = null;
@@ -9529,6 +9525,13 @@ var Liquid = {
 
         // restore command status
         Liquid.restoreCommands(liquid);
+
+        if (liquid.navObj) {
+            Liquid.updateStatusBar(liquid);
+        }
+
+        Liquid.updateSlideshowBar(liquid);
+
 
         if (isDef(command.postFunc)) {
             try {
@@ -11017,8 +11020,8 @@ var Liquid = {
                             // verify current selections
                             var selNodes = liquid.gridOptions.api.getSelectedNodes();
                             let missingNodes = Liquid.isNodesInNodes(selNodes, liquid.deletingNodes, liquid.tableJson.primaryKeyField);
-                            if(missingNodes != null && missingNodes.length > 0) {
-                                // Selection was changed
+                            if(command.fromToolbar !== true && (missingNodes != null && missingNodes.length > 0)) {
+                                // Selection was changed : update
                                 let defaultValue = "noEventDef";
                                 let bAlwaysCallback = false;
                                 let bContinue = false;
@@ -14212,8 +14215,8 @@ var Liquid = {
             // console.info("next frame");
             liquid.glLoopeTimeMs = 0.0;
             Liquid.command(liquid, "next", function () {
-                let duration = Liquid.getField(liquid, "duration")
-                liquid.glLoopeNextTimeMs = (duration ? Number(duration) : 0) * 1;
+                let durationMs = Liquid.getField(liquid, "duration")
+                liquid.glLoopeNextTimeMs = (durationMs ? Number(durationMs) : 0) * 1;
                 if (liquid.glLoopeNextTimeMs <= 0) liquid.glLoopeNextTimeMs = 5000;
                 // console.info("done next frame .. duration:" + liquid.glLoopeNextTimeMs);
             });
@@ -14229,8 +14232,8 @@ var Liquid = {
                 liquid.glCurFrame = 0;
                 liquid.glNumFrame = liquid.nRows;
                 if (liquid.glNumFrame > 1) {
-                    let duration = Liquid.getField(liquid, "duration")
-                    liquid.glLoopeNextTimeMs = (duration ? Number(duration) : 0) * 1;
+                    let durationMs = Liquid.getField(liquid, "duration")
+                    liquid.glLoopeNextTimeMs = (durationMs ? Number(durationMs) : 0) * 1;
                     // console.info("Starting frame .. glNumFrame:" + liquid.glNumFrame);
                     if (liquid.glLoopeNextTimeMs <= 0) liquid.glLoopeNextTimeMs = 5000;
                     // console.info("duration:" + glLoopeNextTimeMs);
@@ -14258,32 +14261,36 @@ var Liquid = {
     },
     addSlideShowItemsToLayout:function(liquid, layout, bSetup) {
         let layouts = layout ? [layout] : liquid.tableJson.layouts;
+        let mp = liquid.nRows;
         for(let il=0; il<layouts.length; il++) {
             let layout = layouts[il];
             let slideShowId = liquid.controlId + "." + layout.name + "." + "slideShow";
             let slideShowObj = document.getElementById(slideShowId);
             let htmlCode = "<!-- Slideshow container -->"
-                + "<div class=\"slideshow-container\">"
-                + "<a id='"+slideShowId+".next"+"' class=\"slideshow-prev\" onclick=\"Liquid.onSlideShowStep(this, -1)\">&#10094;</a>"
-                + "<a id='"+slideShowId+".prev"+"' class=\"slideshow-next\" onclick=\"Liquid.onSlideShowStep(this, 1)\">&#10095;</a>"
+                + "<div class=\"slideshow-container\">";
+            if(mp > Liquid.MinSlideShowPages) {
+                htmlCode += ""
+                    + "<a id='" + slideShowId + ".next" + "' class=\"slideshow-prev\" onclick=\"Liquid.onSlideShowStep(this, -1)\">&#10094;</a>"
+                    + "<a id='" + slideShowId + ".prev" + "' class=\"slideshow-next\" onclick=\"Liquid.onSlideShowStep(this, 1)\">&#10095;</a>"
+            }
+            htmlCode += ""
                 + "</div>"
                 + "<div style=\"text-align:center; position:relative; top:-25px; z-index:200\">";
-            let mp = liquid.nRows;
             if (mp > Liquid.MaxSlideShowPages) mp = Liquid.MaxSlideShowPages;
             if(mp > Liquid.MinSlideShowPages) {
                 for (let ip = 0; ip < mp; ip++) {
                     htmlCode += "<span id='" + slideShowId + ".dot." + (ip + 1) + "' class=\"slideshow-dot\" onclick=\"Liquid.onSlideShowCurrent(this, " + (ip) + ")\"></span>";
                 }
-                htmlCode += "</div>";
-                if (!slideShowObj) {
-                    let newObj = document.createElement("div");
-                    newObj.className = "slideshow-root";
-                    newObj.innerHTML = htmlCode;
-                    newObj.id = slideShowId;
-                    layout.containerObj.appendChild(newObj);
-                } else {
-                    slideShowObj.innerHTML = htmlCode;
-                }
+            }
+            htmlCode += "</div>";
+            if (!slideShowObj) {
+                let newObj = document.createElement("div");
+                newObj.className = "slideshow-root";
+                newObj.innerHTML = htmlCode;
+                newObj.id = slideShowId;
+                layout.containerObj.appendChild(newObj);
+            } else {
+                slideShowObj.innerHTML = htmlCode;
             }
         }
     },
@@ -15674,16 +15681,18 @@ var Liquid = {
                         var asType = obj.getAttribute('astype');
                         var firstNodeId = lay_coord.layout.firstNodeId;
                         var baseIndex1B = Liquid.getNodeIndex(liquid, firstNodeId);
-                        lay_coord.layout.currentRow1B = linkedRow1B - (baseIndex1B ? baseIndex1B - 1 : 0);
-                        lay_coord.layout.currentAbsoluteRow1B = linkedRow1B;
-                        var nodes = null;
-                        if (isDef(liquid.gridOptions)) {
-                            if (isDef(liquid.gridOptions.api)) {
-                                nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                                var isddingNode = Liquid.isAddingNode(liquid, baseIndex1B - 1 + linkedRow1B - 1, nodes, true);
-                                let cNode = baseIndex1B - 1 + linkedRow1B - 1;
-                                if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
-                                    nodes[baseIndex1B - 1 + linkedRow1B - 1].setSelected(true);
+                        if(!obj.classList.contains("slideshow-prev") && !obj.classList.contains("slideshow-next")) {
+                            lay_coord.layout.currentRow1B = linkedRow1B - (baseIndex1B ? baseIndex1B - 1 : 0);
+                            lay_coord.layout.currentAbsoluteRow1B = linkedRow1B;
+                            var nodes = null;
+                            if (isDef(liquid.gridOptions)) {
+                                if (isDef(liquid.gridOptions.api)) {
+                                    nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                                    var isddingNode = Liquid.isAddingNode(liquid, baseIndex1B - 1 + linkedRow1B - 1, nodes, true);
+                                    let cNode = baseIndex1B - 1 + linkedRow1B - 1;
+                                    if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
+                                        nodes[baseIndex1B - 1 + linkedRow1B - 1].setSelected(true);
+                                    }
                                 }
                             }
                         }
@@ -18380,6 +18389,14 @@ var Liquid = {
                                 disabled = false;
                     }
                 }
+            }
+        }
+    },
+    updateSlideshowBar:function(liquid) {
+        if(liquid.tableJson.navBarStyle === 'slideShow') {
+            Liquid.addSlideShowItemsToLayout(liquid, null, true);
+            if(liquid.tableJson.slideShowStart === 'auto' || liquid.tableJson.slideShowStart === true) {
+                Liquid.startSlideShow(liquid, null);
             }
         }
     },
