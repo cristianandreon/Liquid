@@ -5494,7 +5494,7 @@ var Liquid = {
                             let error = null;
                             try { error = atob(httpResultJson.error); } catch(e) { error = httpResultJson.error; }
                             try {
-                                console.error("[SERVER] ERROR:" +  + " on loadData() on control " + liquid.controlId);
+                                console.error("[SERVER] ERROR:" + error + " on loadData() on control " + liquid.controlId);
                                 console.debug("[SERVER] QUERY-TIME:" + httpResultJson.queryTime);
                                 console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
                                 console.debug("[SERVER] NO.ROWS:" + httpResultJson.nRows);
@@ -23071,8 +23071,12 @@ function load_image_to_canvas(canvas, url, mode) {
                 context.drawImage(this, 0, 0);
             }
         } catch (e) {
-            context.drawImage(this, 0, 0);
             console.error(e);
+            try {
+                context.drawImage(this, 0, 0, this.canvas.width, this.canvas.height, this.canvas.width, this.canvas.height);
+            } catch (e) {
+                context.drawImage(this, 0, 0);
+            }
         }
     };
     img.src = url;

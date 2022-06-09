@@ -2112,8 +2112,19 @@ public class db {
 
         } else if(sortItem instanceof JSONArray) {
             JSONArray jsortItem = (JSONArray)sortItem;
-            sortColumns.put(jsortItem.get(0));
-            sortColumnsMode.put(jsortItem.get(1));
+            for(int i=0; i<jsortItem.length(); i++) {
+                Object oSort = jsortItem.get(i);
+                if(oSort instanceof String) {
+                    String [] sortParts = ((String)oSort).split("[, ]");
+                    if(sortParts.length == 1) {
+                        sortColumns.put(sortParts[0]);
+                        sortColumnsMode.put("ASC");
+                    } else {
+                        sortColumns.put(sortParts[0]);
+                        sortColumnsMode.put("ASC".equalsIgnoreCase(sortParts[1]) ? "ASC" : "DESC");
+                    }
+                }
+            }
         }
     }
 
@@ -7373,7 +7384,16 @@ public class db {
     }
 
 
-
+    /**
+     * Risolve l'espressione
+     * N.B.: Per essere assegnata la variabile deve essere != da NULL
+     *
+     * @param value
+     * @param request
+     * @param solveSessionVars
+     * @return
+     * @throws Exception
+     */
     static public String solveVariableField( String value, HttpServletRequest request, boolean solveSessionVars) throws Exception {
         //
         // varibili di sessione e altre dipendenti dal client
