@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.24
+// Liquid ver.2.25
 //
-//  First update 06-01-2020 - Last update 05-06-2022
+//  First update 06-01-2020 - Last update 11-06-2022
 //
 //  TODO : see trello.com
 //
@@ -3213,6 +3213,29 @@ var Liquid = {
                 }
             }
             return liquidCommandParams;
+        }
+    },
+    onFormFileChange:function(obj, column) {
+        if(obj && column) {
+            let approvedHTML = "";
+            let count = 1;
+            let files = obj.files; // puts all files into an array
+            let maxSize = isDef(column.maxSize) ? column.maxSize : 0;
+            let minSize = isDef(column.minSize) ? column.minSize : 0;
+            for (var x in files) {
+                var filesize = ((files[x].size / 1024) / 1024).toFixed(4); // MB
+                if (files[x].name != "item" && typeof files[x].name != "undefined") {
+                    if ((filesize <= maxSize || maxSize == 0) && (filesize >= minSize || minSize == 0)) {
+                        if (count > 1) {
+                            approvedHTML += ", " + files[x].name;
+                        } else {
+                            approvedHTML += files[x].name;
+                        }
+                        count++;
+                    }
+                }
+            }
+            $(obj).val(approvedHTML);
         }
     },
     addForeignTableCommandParam: function (pLiquid, params) {
@@ -8943,9 +8966,6 @@ var Liquid = {
                                     return Liquid.onButton(liquid, liquid.currentCommand);
                                 }
                             }
-                            if(liquid.controlId == 'bid_details$auction_detail_id$id@NewBidDetail') {
-                                debugger;
-                            }
                             if (command.isNative) {
                                 // native step command .. continue or start
                                 command.fromToolbar = false;
@@ -13686,7 +13706,7 @@ var Liquid = {
     linkLayoutToFields: function (liquid, layout, containerObj, bSetup) {
         if (liquid) {
 
-            if(liquid.controlId == 'bid_details$auction_detail_id$id@NewBidDetail') {
+            if(liquid.controlId == '...') {
                 debugger;
             }
 
@@ -15598,7 +15618,7 @@ var Liquid = {
                     fieldKey = fieldKey.replace(/'/g, "").replace(/"/g, "");
                     var linkedCol = Liquid.getColumn(liquid, fieldKey);
                     if(linkedCol) {
-                        if(linkedCol.translated === true) {
+                        if(linkedCol.translated === true || linkedCol.translate === true) {
                             var colName = (linkedCol.runtimeName ? linkedCol.runtimeName : linkedCol.name);
                             var fieldKey = (Liquid.translateLabels ? (colName + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "label");
                             var translatedLinkedCol = Liquid.getColumn(liquid, fieldKey);
@@ -15774,6 +15794,7 @@ var Liquid = {
                                                     if (col) {
                                                         if (isDef(col.link)) linkToFile = col.link;
                                                         if (isDef(col.fileLink)) linkToFile = col.fileLink;
+                                                        Liquid.onFormFileChange(obj, col);
                                                     }
                                                 }
                                             }
@@ -16515,7 +16536,7 @@ var Liquid = {
      *
      * @param obj           :   html Node
      * @param columnName    :   Database table's field
-     * @param filterName    :   Name of the filter filed (func support multiple filters on same table fields)
+     * @param filterName    :   Name of the filter (func support multiple filters on same field)
      * @param filterValue   :   Value of the filter
      * @param filterOperator:   filter operator (>, < = ...)
      * @param filterLogic   :   filter logic operator with previour filter (and / or)
@@ -16532,33 +16553,31 @@ var Liquid = {
                         var filtersJson = liquid.filtersJson[iFilter];
                         if (filtersJson) {
                             for (var i = 0; i < filtersJson.columns.length; i++) {
-                                if (filtersJson.columns[i].name == columnName && filtersJson.columns[i].op == filterOperator) {
-                                    if (filterName === null || typeof filterName === 'undefined' || filterName === '' || filterName == filtersJson.columns[i].filterName || filterName == filtersJson.columns[i].runtimeName) {
-                                        bAddFilter = false;
-                                        var element = document.getElementById(liquid.controlId + ".filters." + (iFilter + 1) + "." + filtersJson.columns[i].runtimeName + ".filter");
-                                        if (element) {
-                                            if (element.value != filterValue) {
-                                                if (filterValue !== "" && filterValue !== null) {
-                                                    element.value = filterValue;
-                                                } else {
-                                                    element.value = null;
-                                                }
-                                            }
-                                            if (isDef(filterOperator)) {
-                                                filtersJson.columns[i].op = filterOperator;
-                                            }
-                                        } else {
-                                            if (filterValue !== null && filterValue !== "") {
-                                                filtersJson.columns[i].value = filterValue;
+                                if (Liquid.isFilterColumnEqual(filterName, columnName, filterOperator, filtersJson.columns[i])) {
+                                    bAddFilter = false;
+                                    var element = document.getElementById(liquid.controlId + ".filters." + (iFilter + 1) + "." + filtersJson.columns[i].runtimeName + ".filter");
+                                    if (element) {
+                                        if (element.value != filterValue) {
+                                            if (filterValue !== "" && filterValue !== null) {
+                                                element.value = filterValue;
                                             } else {
-                                                filtersJson.columns[i].value = null;
+                                                element.value = null;
                                             }
                                         }
-                                        if (isDef(filterLogic)) {
-                                            filtersJson.columns[i].logic = filterLogic;
+                                        if (isDef(filterOperator)) {
+                                            filtersJson.columns[i].op = filterOperator;
                                         }
-                                        break;
+                                    } else {
+                                        if (filterValue !== null && filterValue !== "") {
+                                            filtersJson.columns[i].value = filterValue;
+                                        } else {
+                                            filtersJson.columns[i].value = null;
+                                        }
                                     }
+                                    if (isDef(filterLogic)) {
+                                        filtersJson.columns[i].logic = filterLogic;
+                                    }
+                                    break;
                                 }
                             }
                             if (bAddFilter == false) {
@@ -16609,10 +16628,31 @@ var Liquid = {
                     }
                 }
             } else {
-                console.error("ERROR: setFilter() : column '" + columnName + "' not found in control:" + liquid.controlId);
+                let err = "ERROR: setFilter() : column '" + columnName + "' not found in control:" + liquid.controlId;
+                console.error(err);
+                Liquid.showToast(Liquid.appTitle, err, "error");
             }
         } else {
-            console.error("ERROR: setFilter() : control '" + liquid.controlId + "' not found");
+            let err = "ERROR: setFilter() : control '" + obj + "' not found";
+            console.error(err);
+            Liquid.showToast(Liquid.appTitle, err, "error");
+        }
+    },
+    isFilterColumnEqual:function(filterName, columnName, filterOperator, filterColumn) {
+        if(filterColumn) {
+            let filterColumnFound = false;
+            if (isDef(filterColumn.filterName) && filterName) {
+                // Detect by filter name
+                if (filterColumn.filterName == filterName) {
+                    filterColumnFound = true;
+                }
+            } else {
+                // Detect by column name and operator if defined
+                if (filtersJson.columns[i].name == columnName && (filtersJson.columns[i].op == filterOperator || !isDef(filterOperator))) {
+                    filterColumnFound = true;
+                }
+            }
+            return filterColumnFound;
         }
     },
     /**
@@ -16721,7 +16761,7 @@ var Liquid = {
     },
     mergeFilterColumn: function (filterColumns, filterColumn, addIfMissing) {
         for (let i = 0; i < filterColumns.length; i++) {
-            if (filterColumns[i].name == filterColumn.name) {
+            if (Liquid.isFilterColumnEqual(filterColumn.filterName, filterColumn.name, filterColumn.op, filterColumns[i])) {
                 filterColumns[i] = Object.assign({}, filterColumns[i], filterColumn);
                 return true;
             }

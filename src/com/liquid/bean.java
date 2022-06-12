@@ -2393,6 +2393,10 @@ public class bean {
         return load_beans((HttpServletRequest) null, null, databaseSchemaTable, columns, where_condition, maxRows, null);
     }
 
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String columns, String where_condition, long maxRows, String orderBy) throws Throwable {
+        return load_beans((HttpServletRequest) null, null, databaseSchemaTable, columns, where_condition, maxRows, orderBy);
+    }
+
     /**
      *
      * Create all beans for given where condition

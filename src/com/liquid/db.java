@@ -3845,7 +3845,7 @@ public class db {
      *
      * @param DatabaseSchemaTable
      * @param Fields                fields to update, must include the "primaryKey"
-     * @param Values                values of fields to update
+     * @param Values                values of fields to update (use instanceof StringBuffer or Expression for SQL Espression)
      * @param primaryKey            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
      * @param request
      * @return
@@ -3923,7 +3923,7 @@ public class db {
                     } else {
                         if (i < Fields.length) {
                             Object val = Values[i];
-                            if (val instanceof Expression) {
+                            if (val instanceof Expression || val instanceof StringBuffer) {
                                 // Already processed
                             } else {
                                 if (val instanceof Integer) {

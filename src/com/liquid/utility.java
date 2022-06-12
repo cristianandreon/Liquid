@@ -2079,11 +2079,41 @@ public class utility {
         return null;
     }
 
+    /**
+     *
+     * @param datalistId
+     * @param databaseSchemaTable
+     * @param codeColumn
+     * @param descColumn
+     * @param where
+     * @param emptyRow
+     * @param chacheIt
+     * @return
+     */
     public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) {
         return get_datalist_from_table(datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, chacheIt);
     }
 
-    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String tooltipColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
+
+    /**
+     *
+     * @param datalistId
+     * @param databaseSchemaTable
+     * @param codeColumn
+     * @param descColumn
+     * @param tooltipColumn
+     * @param where
+     * @param order
+     * @param emptyRow
+     * @param chacheIt
+     * @return
+     * @throws Throwable
+     */
+    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable,
+                                                 String codeColumn, String descColumn, String tooltipColumn,
+                                                 String where, String order,
+                                                 String emptyRow,
+                                                 boolean chacheIt) throws Throwable {
         String out = "";
 
         ArrayList<Object> beans = null;
@@ -2091,7 +2121,7 @@ public class utility {
         if (dataListCache != null) {
             beans = dataListCache.beans;
         } else {
-            beans = bean.load_beans(databaseSchemaTable, null, (where != null && !where.isEmpty() ? where : "*"), 0);
+            beans = bean.load_beans(databaseSchemaTable, null, (where != null && !where.isEmpty() ? where : "*"), 0, order);
         }
         out += "<datalist id=\"" + datalistId + "\">";
         if (emptyRow != null) {
@@ -2130,6 +2160,7 @@ public class utility {
      * @param descColumn
      * @param tooltipColumn
      * @param where
+     * @param order
      * @param emptyRow
      * @param chacheIt
      * @param onChange
@@ -2140,7 +2171,7 @@ public class utility {
     public static String get_search_datalist_from_table(
             String inputId, String databaseSchemaTable, String codeColumn,
             String descColumn, String tooltipColumn,
-            String where, String emptyRow, boolean chacheIt,
+            String where, String order, String emptyRow, boolean chacheIt,
             String onChange, String style
     ) throws Throwable {
 
@@ -2162,7 +2193,7 @@ public class utility {
                 codeColumn,
                 descColumn,
                 tooltipColumn,
-                where, emptyRow, chacheIt
+                where, order, emptyRow, chacheIt
         );
 
         String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
@@ -2171,6 +2202,14 @@ public class utility {
     }
 
 
+    /**
+     *
+     * @param inputId
+     * @param onChange
+     * @param style
+     * @return
+     * @throws Throwable
+     */
     public static String get_search_text_box(
             String inputId,
             String onChange, String style
@@ -2191,18 +2230,30 @@ public class utility {
     }
 
 
-
+    /**
+     *
+     * @param inputId
+     * @return
+     */
     public static String get_reset_button( String inputId ) {
         return "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
     }
 
 
-
-
+    /**
+     * reset datalist readed data
+     */
     public static void resetDatalistCache() {
         glDataListCache.clear();
     }
 
+
+    /**
+     *
+     * @param fileName
+     * @param fileContent
+     * @return
+     */
     public static boolean set_file_content(String fileName, String fileContent) {
         BufferedWriter out = null;
         File f = new File(fileName);
@@ -2245,6 +2296,12 @@ public class utility {
         return true;
     }
 
+    /**
+     *
+     * @param cDate
+     * @param days
+     * @return
+     */
     public static java.util.Date addToDate(Date cDate, int days) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(cDate);
@@ -2253,18 +2310,30 @@ public class utility {
     }
 
 
+    /**
+     *
+     * @param cDate
+     * @param format
+     * @return
+     */
     public static String dateToString(Date cDate, String format) {
         DateFormat dateFormat = format != null ? new SimpleDateFormat(format) : new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
         return dateFormat.format(cDate);
     }
 
+    /**
+     *
+     * @param cDate
+     * @param format
+     * @return
+     */
     public static String dateToString(long cDate, String format) {
         DateFormat dateFormat = format != null ? new SimpleDateFormat(format) : new SimpleDateFormat("dd" + workspace.dateSep + "MM" + workspace.dateSep + "yyyy");
         return dateFormat.format(new Date(cDate));
     }
 
-    static class MyErrorHandler implements ErrorHandler {
 
+    static class MyErrorHandler implements ErrorHandler {
         public void warning(SAXParseException e) throws SAXException {
             show("Warning", e);
             throw (e);
