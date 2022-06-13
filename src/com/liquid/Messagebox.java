@@ -43,7 +43,7 @@ public class Messagebox {
     static long checkerIntervelMsec = 10 * 1000;
 
     // TODO : DEBUG modalita di consegna dati
-    static int deliveryMode = 0;
+    static int deliveryMode = 1;
         // 0   ->   Do nothing
         // 1   ->   close stream
         // 2    ->  Fill buffer-size
@@ -159,7 +159,16 @@ public class Messagebox {
 
 
                         if(deliveryMode == 0) {
-                            // IN TEST
+
+                            // NON RISOLVE
+                            if(!threadSession.response.isCommitted()) {
+                                threadSession.response.setHeader("Connection", "keep-alive");
+                                threadSession.response.setHeader("Content-Length", "-1");
+                                threadSession.response.setHeader("Cache-Control", "no-store");
+                            }
+
+
+                            // NON RISOLVE
                             messageJson += "<Liquid>\n\n</Liquid>";
                             // NON RISOLVE
                             // threadSession.response.setBufferSize(messageJson.length());
@@ -188,7 +197,7 @@ public class Messagebox {
                         }
 
                         if(deliveryMode == 1) {
-                            // OK : Needed so secure senda data to client : but can send back dialogbox once
+                            // OK : Needed so secure send a data to client : but can send back dialogbox once
                             writer.close();
                         }
                     }

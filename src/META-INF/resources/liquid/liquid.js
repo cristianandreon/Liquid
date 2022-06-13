@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.25
+// Liquid ver.2.26
 //
-//  First update 06-01-2020 - Last update 11-06-2022
+//  First update 06-01-2020 - Last update 13-06-2022
 //
 //  TODO : see trello.com
 //
@@ -10566,7 +10566,7 @@ var Liquid = {
                     doConfirm = true;
                 }
             }
-            let confirmName = "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+            let confirmName = (Liquid.translateLabels ? "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "") : "confirm");
             let cmdConfirm = command ? command[confirmName] : null;
             let liquid = Liquid.getLiquid(obj);
             if(cmdConfirm) {
@@ -12209,6 +12209,7 @@ var Liquid = {
                             if (liquid.tableJson.actions[i].name === cmdName) {
                                 var command = liquid.tableJson.actions[i];
                                 command.fromToolbar = true;
+                                command.step = Liquid.CMD_EXECUTE;
                                 liquid.lastAction = command;
                                 return Liquid.onButton(liquid, command);
                             }
