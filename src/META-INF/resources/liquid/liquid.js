@@ -2652,6 +2652,10 @@ var Liquid = {
     pdfJsPath:"/PDF.js/build/",
     pdfJsDebug:false,
     translateLabels:true,
+    ERROR_STRING:"ERROR",
+    WARNING_STRING:"WARNING",
+    QUESTION_STRING:"QUESTION",
+    INFO_STRING:"INFO",
     setLanguage: function (language, serverSide) {
         if (isDef(language)) {
             var lang_list = language.split(';');
@@ -2683,6 +2687,10 @@ var Liquid = {
                     Liquid.Discharge = "Annulla";
                     Liquid.swapCellsMessage = "Confermi lo scambio delle celle ?";
                     Liquid.moveCellsMessage = "Confermi lo spostamento della cella ?";
+                    Liquid.ERROR_STRING = "ERRORE";
+                    Liquid.WARNING_STRING = "ATTENZIONE";
+                    Liquid.QUESTION_STRING = "DOMANDA";
+                    Liquid.INFO_STRING = "INFORMAZIONE";
                 } else if (lang === 'en' || lang === 'eng') {
                     Liquid.lang = langFound = 'eng';
                     Liquid.loadingMessage = "<div class=\"lds-ring-main\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Loading data...</span>";
@@ -2702,6 +2710,10 @@ var Liquid = {
                     Liquid.Discharge = "Discharge";
                     Liquid.swapCellsMessage = "Do you want to swap the cells ?";
                     Liquid.moveCellsMessage = "Do you want to move the cell ?";
+                    Liquid.ERROR_STRING = "ERROR";
+                    Liquid.WARNING_STRING = "WARNING";
+                    Liquid.QUESTION_STRING = "QUESTION";
+                    Liquid.INFO_STRING = "INFO";
                 }
                 if (langFound) {
                     if (serverSide === true) {
@@ -10554,7 +10566,12 @@ var Liquid = {
             let doConfirm = false;
             if(command.fromToolbar) {
                 if (command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE) {
-                    doConfirm = true;
+                    if(command.isCommandConfirmed === true) {
+                        command.isCommandConfirmed = false;
+                        doConfirm = false;
+                    } else {
+                        doConfirm = true;
+                    }
                 }
             } else {
                 if(command.visible === false || command.hidden === true) {
@@ -10575,7 +10592,25 @@ var Liquid = {
                     cmdConfirm = result[1];
                 }
             }
-            if ((cmdConfirm && doConfirm ? confirm(cmdConfirm) : true)) {
+            let cmdConfirmConfirmed = false;
+            if(cmdConfirm && doConfirm) {
+                Liquid.messageBox(null, Liquid.QUESTION_STRING, cmdConfirm,
+                    function() {
+                        command.isCommandConfirmed = true;
+                        Liquid.onButton(obj, command);
+                        console.info("command "+command.name+" confirmed");
+                    },
+                    function() {
+                        command.isCommandConfirmed = false;
+                        Liquid.onButton(obj, command);
+                        console.info("command "+command.name+" NOY confirmed");
+                    }
+                    );
+                return;
+            } else {
+                cmdConfirmConfirmed = true;
+            }
+            if (cmdConfirmConfirmed) {
                 // wrap to more specific and already defined command
                 if (command.name === "return" || command.name === "cancel") {
                     if (isDef(liquid.currentCommand)) {
@@ -18806,7 +18841,7 @@ var Liquid = {
                     Liquid.onButton(liquid, { name:"insert" });
                 } else {
                     Liquid.dialogBox( (liquid ? (liquid.parentObj ? liquid.parentObj : liquid.outDivObj) : liquid.outDivObj) ,
-                        "ERROR",
+                        Liquid.ERROR_STRING,
                         (Liquid.lang === 'eng' ? "Cannot break current command:"+liquid.currentCommand.name : "Interruzione comando corrente :"+liquid.currentCommand.name+" non supportata"),
                         { text:"Ok", func:function() { } },
                     );
@@ -18858,7 +18893,7 @@ var Liquid = {
                             Liquid.onButton(liquid, { name:"update" });
                         } else {
                             Liquid.dialogBox( (liquid ? (liquid.parentObj ? liquid.parentObj : liquid.outDivObj) : liquid.outDivObj) ,
-                                "ERROR",
+                                Liquid.ERROR_STRING,
                                 (Liquid.lang === 'eng' ? "Cannot break current command:"+liquid.currentCommand.name : "Interruzione comando corrente :"+liquid.currentCommand.name+" non supportata"),
                                 { text:"Ok", func:function() { } },
                             );
@@ -19693,7 +19728,7 @@ var Liquid = {
     onErrorClick:function( obj ) {
         var liquid = Liquid.getLiquid( obj );
         Liquid.dialogBox( (liquid ? (liquid.parentObj ? liquid.parentObj : liquid.outDivObj) : liquid.outDivObj) ,
-            "ERROR",
+            Liquid.ERROR_STRING,
             (obj.innerText ? obj.innerText : obj.innerHTML),
             { text:"Ok", func:function() { } },
         );
@@ -20776,14 +20811,14 @@ columns:[
             var err = null;
             try { err = atob(resultJson.error); } catch(e) { err = resultJson.error; }
             if(bShowMessage) {
-                Liquid.dialogBox(null, resultJson.title ? resultJson.title : "ERROR", err, { text:"OK", func:function() { } }, null);
+                Liquid.dialogBox(null, resultJson.title ? resultJson.title : Liquid.ERROR_STRING, err, { text:"OK", func:function() { } }, null);
             }
             if(hShowConsole) {
                 console.error("[SERVER] ERROR:" + err);
             }
             if(bShowMessage) {
                 Liquid.dialogBox(liquid.parentObj ? liquid.parentObj : liquid.outDivObj,
-                    "ERROR",
+                    Liquid.ERROR_STRING,
                     err,
                     { text:"Ok", func:function() { } },
                 );
