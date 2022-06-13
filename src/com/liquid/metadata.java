@@ -1372,17 +1372,25 @@ public class metadata {
         Connection connToDB = null, connToUse = conn;
         String result = null;
         try {
+            if(conn == null) {
+                Object[] connResult = connection.getDBConnection(database);
+                conn = (Connection) connResult[0];
+                String connError = (String) connResult[1];
+                connToUse = connToDB = conn;
+            }
             if (database == null || database.isEmpty()) {
                 database = conn.getCatalog();
             } else {
-                conn.setCatalog(database);
-                String db = conn.getCatalog();
-                if (!db.equalsIgnoreCase(database)) {
-                    // set catalog not supported : connect to different DB
-                    Object[] connResult = connection.getDBConnection(database);
-                    conn = (Connection) connResult[0];
-                    String connError = (String) connResult[1];
-                    connToUse = connToDB = conn;
+                if(conn != null) {
+                    conn.setCatalog(database);
+                    String db = conn.getCatalog();
+                    if (!db.equalsIgnoreCase(database)) {
+                        // set catalog not supported : connect to different DB
+                        Object[] connResult = connection.getDBConnection(database);
+                        conn = (Connection) connResult[0];
+                        String connError = (String) connResult[1];
+                        connToUse = connToDB = conn;
+                    }
                 }
             }
 

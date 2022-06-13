@@ -3351,6 +3351,9 @@ public class workspace {
                             // Controllo predefinito automatico da tabella : set di tutte le colonne
                             tableJson.put("columns", "*");
 
+                            String primaryKey = metadata.getPrimaryKeyData(database, schema, table, null);
+                            tableJson.put("primaryKey", primaryKey);
+
                             result = workspace.get_table_control_from_string(request, controlId, tableJson.toString());
                             tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
                             // tbl_wrk = get_table_control(request, controlId, tableJson.toString(), null, null, "json");
