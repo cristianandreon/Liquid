@@ -4449,11 +4449,15 @@ public class db {
                                                     JSONObject fieldJSON = (JSONObject) fieldsJSON.get(iF);
                                                     if (fieldJSON != null) {
                                                         String dbDefault = null, srcDefault = null;
+                                                        Object oField = null;
                                                         String field = null;
                                                         Object oValue = null;
                                                         int valueType = 0;
 
-                                                        field = fieldJSON.has("field") ? fieldJSON.getString("field") : null;
+                                                        oField = fieldJSON.has("field") ? fieldJSON.get("field") : null;
+                                                        if(oField instanceof String) {
+                                                            field = (String)oField;
+                                                        }
 
                                                         oValue = fieldJSON.has("value") ? fieldJSON.get("value") : null;
 

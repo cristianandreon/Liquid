@@ -3356,7 +3356,7 @@ var Liquid = {
                     var s = ic;
                     var e = ic;
                     if (expression[ic] === '$') {
-                        ic += Liquid.parseExpression(liquid, expression, retObj);
+                        ic += Liquid.parseExpression(liquid, expression.substring(ic), retObj);
                     } else if (expression[ic] === "@") {
                         var targetObj = Liquid.getObjectByName(liquid, expression.substring(1));
                         if (targetObj) {
@@ -3426,7 +3426,11 @@ var Liquid = {
                         if (nameItems[0] !== 'this' && (liquid && liquid.controlId != nameItems[0])) {
                             searchingLiquid = Liquid.getLiquid(nameItems[0]);
                             // ... currentRow is relative to searchingLiquid
-                            currentRow = searchingLiquid.cRow;
+                            if(searchingLiquid) {
+                                currentRow = searchingLiquid.cRow;
+                            } else {
+                                console.error("Control not found:"+nameItems[0])
+                            }
                         }
                     }
                     var value = "";
@@ -3473,9 +3477,11 @@ var Liquid = {
                             }
                         }
                     } else {
-                        if (isDef(searchingLiquid.tableJson[searchingProp])) {
-                            value = searchingLiquid.tableJson[searchingProp];
-                            retObj.types.push(typeVar);
+                        if (isDef(searchingLiquid)) {
+                            if (isDef(searchingLiquid.tableJson[searchingProp])) {
+                                value = searchingLiquid.tableJson[searchingProp];
+                                retObj.types.push(typeVar);
+                            }
                         }
                     }
                     retObj.retVal += value ? value : "";
@@ -10560,13 +10566,13 @@ var Liquid = {
             }
         }
     },
-    onButton: function (obj, command) {
+    onButton: async function (obj, command) {
         let retVal = null;
         if (command) {
             let doConfirm = false;
-            if(command.fromToolbar) {
+            if (command.fromToolbar) {
                 if (command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE) {
-                    if(command.isCommandConfirmed === true) {
+                    if (command.isCommandConfirmed === true) {
                         command.isCommandConfirmed = false;
                         doConfirm = false;
                     } else {
@@ -10574,13 +10580,13 @@ var Liquid = {
                     }
                 }
             } else {
-                if(command.visible === false || command.hidden === true) {
+                if (command.visible === false || command.hidden === true) {
                     if (command.isNative) {
                         if (command.name === 'delete') {
                             command.step = Liquid.CMD_EXECUTE;
                         }
                     }
-                    if(command.isCommandConfirmed === true) {
+                    if (command.isCommandConfirmed === true) {
                         command.isCommandConfirmed = false;
                         doConfirm = false;
                     } else {
@@ -10591,26 +10597,17 @@ var Liquid = {
             let confirmName = (Liquid.translateLabels ? "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "") : "confirm");
             let cmdConfirm = command ? command[confirmName] : null;
             let liquid = Liquid.getLiquid(obj);
-            if(cmdConfirm) {
+            if (cmdConfirm) {
                 result = Liquid.solveExpressionField(command, confirmName, liquid);
                 if (result[0] === 'ready') {
                     cmdConfirm = result[1];
                 }
             }
             let cmdConfirmConfirmed = false;
-            if(cmdConfirm && doConfirm) {
-                Liquid.messageBox(null, Liquid.QUESTION_STRING, cmdConfirm,
-                    function() {
-                        command.isCommandConfirmed = true;
-                        Liquid.onButton(obj, command);
-                        console.info("command "+command.name+" confirmed");
-                    },
-                    function() {
-                        command.isCommandConfirmed = false;
-                        console.info("command "+command.name+" NOY confirmed");
-                    }
-                    );
-                return;
+            if (cmdConfirm && doConfirm) {
+                if(await Liquid.messageBox(null, Liquid.QUESTION_STRING, cmdConfirm, true, true) > 0) {
+                    cmdConfirmConfirmed = true;
+                }
             } else {
                 cmdConfirmConfirmed = true;
             }
@@ -10620,7 +10617,7 @@ var Liquid = {
                     if (isDef(liquid.currentCommand)) {
                         if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update") {
                             // merge the commands
-                            if(liquid.currentCommand.rollbackCommand) {
+                            if (liquid.currentCommand.rollbackCommand) {
                                 command = Liquid.mergeCommand(liquid.currentCommand.rollbackCommand, command);
                             }
                         }
@@ -10896,7 +10893,7 @@ var Liquid = {
                         return retVal;
                     }
                     if (command.step === 0) { // prepare
-                        if(liquid) {
+                        if (liquid) {
                             if (liquid.commandStartCallback) {
                                 liquid.commandStartCallback(liquid, command);
                             }
@@ -10932,7 +10929,7 @@ var Liquid = {
                         if (command.name === "insert") {
                             Liquid.addRow(obj, command);
 
-                            if(command.hidden === true || command.visible === false) {
+                            if (command.hidden === true || command.visible === false) {
                             } else {
                                 if (liquid.tableJson.commandBarVisible === false) {
                                     Liquid.setProperty(obj, "commandBarVisible", true);
@@ -10964,7 +10961,7 @@ var Liquid = {
                             }
 
                         } else if (command.name === "update") {
-                            if(command.hidden === true || command.visible === false) {
+                            if (command.hidden === true || command.visible === false) {
                             } else {
                                 if (liquid.tableJson.commandBarVisible === false) {
                                     Liquid.setProperty(obj, "commandBarVisible", true);
@@ -10988,8 +10985,8 @@ var Liquid = {
                                     // let key = liquid.deletingNodes[ir].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                                     dataList.push(liquid.deletingNodes[ir].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
                                 }
-                                if(dataList.length > 0) {
-                                    if(command.hidden === true || command.visible === false) {
+                                if (dataList.length > 0) {
+                                    if (command.hidden === true || command.visible === false) {
                                     } else {
                                         if (liquid.tableJson.commandBarVisible === false) {
                                             Liquid.setProperty(obj, "commandBarVisible", true);
@@ -11079,7 +11076,7 @@ var Liquid = {
                             // verify current selections
                             var selNodes = liquid.gridOptions.api.getSelectedNodes();
                             let missingNodes = Liquid.isNodesInNodes(selNodes, liquid.deletingNodes, liquid.tableJson.primaryKeyField);
-                            if(command.fromToolbar !== true && (missingNodes != null && missingNodes.length > 0)) {
+                            if (command.fromToolbar !== true && (missingNodes != null && missingNodes.length > 0)) {
                                 // Selection was changed : update
                                 let defaultValue = "noEventDef";
                                 let bAlwaysCallback = false;
@@ -11102,7 +11099,7 @@ var Liquid = {
                                 Liquid.refreshLayouts(liquid, true);
                                 return false;
                             } else {
-                                if(command.fromToolbar === true) {
+                                if (command.fromToolbar === true) {
                                     // Se la barra non è visibile il click è interpretato come conferma
                                 } else {
                                     // N.B.: Se la barra di conferma è attiva il nodo puo essere delezionato
@@ -11187,7 +11184,7 @@ var Liquid = {
                             if (command.linkedCmd.restoreView) Liquid.onGridTab(liquid.listGridTabObj);
                         }
 
-                        if(liquid.tableJson.commandBarTemporaryVisible === true) {
+                        if (liquid.tableJson.commandBarTemporaryVisible === true) {
                             Liquid.setProperty(obj, "commandBarVisible", false);
                             liquid.tableJson.commandBarTemporaryVisible = false;
                         }
@@ -19547,44 +19544,57 @@ var Liquid = {
      * @param onCancel
      * @returns {n|d}
      */
-    messageBox:function(parentObj, title, message, onOk, onCancel) {
-        return Liquid.dialogBox(parentObj, title, message, onOk, onCancel);
+    messageBox:async function (parentObj, title, message, onOk, onCancel) {
+        return Liquid.dialogBoxInternal(parentObj, title, message, onOk, onCancel);
     },
-    dialogBox:function(parentObj, title, message, onOk, onCancel) {
-        var buttons = [ ];
-        if(onOk) buttons.push( {
-            text: (isDef(onOk.text) ? onOk.text : "Ok"),
-            click: function() {
-                try { (isDef(onOk) ? (isDef(onOk.func) ? onOk.func() : (typeof onOk === 'function' ? onOk() : "")) : ""); } catch (e) { console.error("ERROR:"+e); }
-                jQ1124( this ).dialog( "close" );
-            }
-        } );
-        if(onCancel) buttons.push( {
-            text:(isDef(onCancel.text) ? onCancel.text : "Cancel"),
-            click:function() {
-                try { (isDef(onCancel) ? (isDef(onCancel.func) ? onCancel.func() : (typeof onCancel === 'function' ? onCancel() : "")) : ""); } catch (e) { console.error("ERROR:"+e); }
-                jQ1124( this ).dialog( "close" );
-            }
-        } );
-        var icon = "";
-
-        if(title.indexOf("QUESTION")>=0) icon = Liquid.getImagePath("question.png");
-        if(title.indexOf("ERROR")>=0) icon = Liquid.getImagePath("error.png");
-        if(title.indexOf("WARNING")>=0) icon = Liquid.getImagePath("warning.png");
-        if(title.indexOf("INFO")>=0) icon = Liquid.getImagePath("info.png");
-        if(title.indexOf("MESSAGE")>=0) icon = Liquid.getImagePath("info.png");
-        if(title.indexOf("TEXT")>=0) icon = Liquid.getImagePath("info.png");
-        if(title.indexOf("NOTIFY")>=0) icon = Liquid.getImagePath("info.png");
-        if(title.indexOf("DEBUG")>=0) icon = Liquid.getImagePath("debug.png");
-
-        if(title.indexOf("DOMANDA")>=0) icon = Liquid.getImagePath("question.png");
-        if(title.indexOf("ERRORE")>=0) icon = Liquid.getImagePath("error.png");
-        if(title.indexOf("ATTENZIONE")>=0) icon = Liquid.getImagePath("warning.png");
-        if(title.indexOf("MESSAGGIO")>=0) icon = Liquid.getImagePath("info.png");
-        if(title.indexOf("TESTO")>=0) icon = Liquid.getImagePath("info.png");
-        if(title.indexOf("NOTIFICA")>=0) icon = Liquid.getImagePath("info.png");
-
-        return Liquid.dialogBoxButtons(parentObj, title, message, buttons, icon);
+    dialogBox:async function (parentObj, title, message, onOk, onCancel) {
+        return Liquid.dialogBoxInternal(parentObj, title, message, onOk, onCancel);
+    },
+    dialogBoxInternal:async function(parentObj, title, message, onOk, onCancel) {
+        return new Promise((resolve, reject) => {
+            var buttons = [];
+            if (onOk) buttons.push({
+                text: (isDef(onOk.text) ? onOk.text : "Ok"),
+                click: function () {
+                    try {
+                        (isDef(onOk) ? (isDef(onOk.func) ? onOk.func() : (typeof onOk === 'function' ? onOk() : "")) : "");
+                    } catch (e) {
+                        console.error("ERROR:" + e);
+                    }
+                    jQ1124(this).dialog("close");
+                    resolve(1)
+                }
+            });
+            if (onCancel) buttons.push({
+                text: (isDef(onCancel.text) ? onCancel.text : "Cancel"),
+                click: function () {
+                    try {
+                        (isDef(onCancel) ? (isDef(onCancel.func) ? onCancel.func() : (typeof onCancel === 'function' ? onCancel() : "")) : "");
+                    } catch (e) {
+                        console.error("ERROR:" + e);
+                    }
+                    jQ1124(this).dialog("close");
+                    resolve(-1);
+                }
+            });
+            var icon = "";
+            if (title.indexOf("QUESTION") >= 0) icon = Liquid.getImagePath("question.png");
+            if (title.indexOf("ERROR") >= 0) icon = Liquid.getImagePath("error.png");
+            if (title.indexOf("WARNING") >= 0) icon = Liquid.getImagePath("warning.png");
+            if (title.indexOf("INFO") >= 0) icon = Liquid.getImagePath("info.png");
+            if (title.indexOf("MESSAGE") >= 0) icon = Liquid.getImagePath("info.png");
+            if (title.indexOf("TEXT") >= 0) icon = Liquid.getImagePath("info.png");
+            if (title.indexOf("NOTIFY") >= 0) icon = Liquid.getImagePath("info.png");
+            if (title.indexOf("DEBUG") >= 0) icon = Liquid.getImagePath("debug.png");
+            if (title.indexOf("DOMANDA") >= 0) icon = Liquid.getImagePath("question.png");
+            if (title.indexOf("ERRORE") >= 0) icon = Liquid.getImagePath("error.png");
+            if (title.indexOf("ATTENZIONE") >= 0) icon = Liquid.getImagePath("warning.png");
+            if (title.indexOf("MESSAGGIO") >= 0) icon = Liquid.getImagePath("info.png");
+            if (title.indexOf("TESTO") >= 0) icon = Liquid.getImagePath("info.png");
+            if (title.indexOf("NOTIFICA") >= 0) icon = Liquid.getImagePath("info.png");
+            Liquid.dialogBoxButtons(parentObj, title, message, buttons, icon);
+        }
+    );
     },
     /**
      * Show a message by a dialog box
@@ -19668,6 +19678,10 @@ var Liquid = {
             objDlg.css('position', 'fixed');
             objDlg.css('top', top > 0 ? top : 0);
             objDlg.css('left', left > 0 ? left : 0);
+
+            let response = new Promise((resolve, reject) => {
+            });
+
         } catch (e) {
             alert("Liquid ERROR: unable to show jQ1124(...).dialog\n\nMay be you are using incompatible version of jquery\n\nPlease check it your web page...\n\n\nOriginal message:\n\n"+message);
         }
