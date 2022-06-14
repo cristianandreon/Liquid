@@ -10580,7 +10580,12 @@ var Liquid = {
                             command.step = Liquid.CMD_EXECUTE;
                         }
                     }
-                    doConfirm = true;
+                    if(command.isCommandConfirmed === true) {
+                        command.isCommandConfirmed = false;
+                        doConfirm = false;
+                    } else {
+                        doConfirm = true;
+                    }
                 }
             }
             let confirmName = (Liquid.translateLabels ? "confirm" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "") : "confirm");
@@ -10602,7 +10607,6 @@ var Liquid = {
                     },
                     function() {
                         command.isCommandConfirmed = false;
-                        Liquid.onButton(obj, command);
                         console.info("command "+command.name+" NOY confirmed");
                     }
                     );

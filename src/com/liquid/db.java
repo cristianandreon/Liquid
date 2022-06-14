@@ -27,7 +27,6 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -2655,7 +2654,7 @@ public class db {
                             postFix = ")";
                             
                         } else {
-                            Object[] fres = format_db_value(tbl_wrk, type, nullable, oFilterValue, filterOp);
+                            Object[] fres = format_db_value(tbl_wrk, type, nullable, oFilterValue, filterOp, null);
                             filterValueType = (int) fres[1];
 
                             // uso dei parametri : conversione del dato in formato java
@@ -2689,6 +2688,10 @@ public class db {
                                     || filterValueType == Types.NUMERIC
                                     || filterValueType == Types.DECIMAL
                             ) {
+                                filterValue = null;
+                                sensitiveCasePreOp = "";
+                                sensitiveCasePostOp = "";
+                            } else if (filterValueType == -999) {
                                 filterValue = null;
                                 sensitiveCasePreOp = "";
                                 sensitiveCasePostOp = "";
@@ -4445,17 +4448,15 @@ public class db {
                                                 for (int iF = 0; iF < fieldsJSON.length(); iF++) {
                                                     JSONObject fieldJSON = (JSONObject) fieldsJSON.get(iF);
                                                     if (fieldJSON != null) {
+                                                        String dbDefault = null, srcDefault = null;
                                                         String field = null;
                                                         Object oValue = null;
                                                         int valueType = 0;
-                                                        try {
-                                                            field = fieldJSON.getString("field");
-                                                        } catch (Exception e) {
-                                                        }
-                                                        try {
-                                                            oValue = fieldJSON.get("value");
-                                                        } catch (Exception e) {
-                                                        }
+
+                                                        field = fieldJSON.has("field") ? fieldJSON.getString("field") : null;
+
+                                                        oValue = fieldJSON.has("value") ? fieldJSON.get("value") : null;
+
                                                         if (field != null && !field.isEmpty() && cols != null) {
                                                             for (int ic = 0; ic < cols.length(); ic++) {
                                                                 JSONObject col = cols.getJSONObject(ic);
@@ -4470,16 +4471,12 @@ public class db {
                                                                 String tPrimaryKey = col.has("primaryKey") ? col.getString("primaryKey") : null;
 
                                                                 String[] colParts = tName.split("\\.");
-                                                                boolean autoIncString = false;
-                                                                try {
-                                                                    autoIncString = col.getBoolean("autoIncString");
-                                                                } catch (Exception e) {
-                                                                }
-                                                                boolean nullable = true;
-                                                                try {
-                                                                    nullable = col.getBoolean("nullable");
-                                                                } catch (Exception e) {
-                                                                }
+                                                                boolean autoIncString = col.has("autoIncString") ? col.getBoolean("autoIncString") : null;
+                                                                boolean nullable = col.has("nullable") ? col.getBoolean("nullable") : null;
+
+                                                                dbDefault = col.has("dbDefault") ? col.getString("dbDefault") : null;
+                                                                srcDefault = col.has("default_src") ? col.getString("default_src") : null;
+
                                                                 boolean isExternalField = false;
                                                                 boolean addExternalField = false;
 
@@ -4540,60 +4537,66 @@ public class db {
                                                                         //
                                                                         // compute the value by metadata
                                                                         //
-                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null);
+                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, dbDefault);
                                                                         oValue = (Object) fres[0];
                                                                         valueType = (int) fres[1];
 
-                                                                        if (colParts.length > 1 || foreignTable != null && !foreignTable.isEmpty()) {
-                                                                            if (colParts.length > 1) {
-                                                                                foreignTable = colParts[0];
-                                                                            }
-                                                                            if (!foreignTable.equalsIgnoreCase(table)) {
-                                                                                // campo esterno
-                                                                                isExternalField = true;
-                                                                                if (foreignBEdit
-                                                                                        || "y".equalsIgnoreCase(foreignEdit)
-                                                                                        || "yes".equalsIgnoreCase(foreignEdit)
-                                                                                        || "s".equalsIgnoreCase(foreignEdit)
-                                                                                        || "si".equalsIgnoreCase(foreignEdit)
-                                                                                        || (tTable != null && !tTable.isEmpty() && tPrimaryKey != null && !tPrimaryKey.isEmpty())
-                                                                                ) {
-                                                                                    if (colParts.length > 1) {
-                                                                                        tName = colParts[1];
-                                                                                    }
-                                                                                    if (foreignColumn != null && !foreignColumn.isEmpty()) {
-                                                                                        addExternalField = true;
-                                                                                        if ("insert".equalsIgnoreCase(sType)) {
-                                                                                            // TODO : Inserimento in tabella esterna : legame con la tabella principale e ignezione degli ID
-                                                                                            //          Ma in transazione non sono disponibili : disabilitazione delle transazione e uso dell'autocommit
-                                                                                            // foreignTableTransactList.add( col.getString("foreignTable"), tName, value, sourceColumn, null, "insert" );
-                                                                                            // bUseAutoCommit = true;
-                                                                                        } else if ("delete".equalsIgnoreCase(sType)) {
-                                                                                            foreignTableTransactList.add(col.getString("foreignTable"), tName, oValue, valueType, sourceColumn, null, "delete", rowId, nodeId);
-                                                                                        } else if ("update".equalsIgnoreCase(sType)) {
-                                                                                            // TODO : lettura dei valori dal client
-                                                                                            String foreignValue = "(SELECT " + itemIdString + sourceColumn + itemIdString
-                                                                                                    + " FROM " + liquid.schemaTable
-                                                                                                    + "\nWHERE " + tableIdString + liquid.tableJson.getString("primaryKey") + tableIdString
-                                                                                                    + "=" + rowId + ")";
-                                                                                            foreignTableTransactList.add((schema != null ? tableIdString + schema + tableIdString + "." : "") + tableIdString + foreignTable + tableIdString, tName, oValue, valueType, sourceColumn, foreignColumn + "=" + foreignValue + "", "update", rowId, nodeId);
+                                                                        if(valueType == -999) {
+                                                                            // data truncated
+                                                                        } else {
+                                                                            if (colParts.length > 1 || foreignTable != null && !foreignTable.isEmpty()) {
+                                                                                if (colParts.length > 1) {
+                                                                                    foreignTable = colParts[0];
+                                                                                }
+                                                                                if (!foreignTable.equalsIgnoreCase(table)) {
+                                                                                    // campo esterno
+                                                                                    isExternalField = true;
+                                                                                    if (foreignBEdit
+                                                                                            || "y".equalsIgnoreCase(foreignEdit)
+                                                                                            || "yes".equalsIgnoreCase(foreignEdit)
+                                                                                            || "s".equalsIgnoreCase(foreignEdit)
+                                                                                            || "si".equalsIgnoreCase(foreignEdit)
+                                                                                            || (tTable != null && !tTable.isEmpty() && tPrimaryKey != null && !tPrimaryKey.isEmpty())
+                                                                                    ) {
+                                                                                        if (colParts.length > 1) {
+                                                                                            tName = colParts[1];
                                                                                         }
-                                                                                    } else {
-                                                                                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, "Missing foreign column in controlId:" + liquid.controlId + " field:" + col.getString("name"));
+                                                                                        if (foreignColumn != null && !foreignColumn.isEmpty()) {
+                                                                                            addExternalField = true;
+                                                                                            if ("insert".equalsIgnoreCase(sType)) {
+                                                                                                // TODO : Inserimento in tabella esterna : legame con la tabella principale e ignezione degli ID
+                                                                                                //          Ma in transazione non sono disponibili : disabilitazione delle transazione e uso dell'autocommit
+                                                                                                // foreignTableTransactList.add( col.getString("foreignTable"), tName, value, sourceColumn, null, "insert" );
+                                                                                                // bUseAutoCommit = true;
+                                                                                            } else if ("delete".equalsIgnoreCase(sType)) {
+                                                                                                foreignTableTransactList.add(col.getString("foreignTable"), tName, oValue, valueType, sourceColumn, null, "delete", rowId, nodeId);
+                                                                                            } else if ("update".equalsIgnoreCase(sType)) {
+                                                                                                // TODO : lettura dei valori dal client
+                                                                                                String foreignValue = "(SELECT " + itemIdString + sourceColumn + itemIdString
+                                                                                                        + " FROM " + liquid.schemaTable
+                                                                                                        + "\nWHERE " + tableIdString + liquid.tableJson.getString("primaryKey") + tableIdString
+                                                                                                        + "=" + rowId + ")";
+                                                                                                foreignTableTransactList.add((schema != null ? tableIdString + schema + tableIdString + "." : "") + tableIdString + foreignTable + tableIdString, tName, oValue, valueType, sourceColumn, foreignColumn + "=" + foreignValue + "", "update", rowId, nodeId);
+                                                                                            }
+                                                                                        } else {
+                                                                                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, "Missing foreign column in controlId:" + liquid.controlId + " field:" + col.getString("name"));
+                                                                                        }
                                                                                     }
+                                                                                } else {
+                                                                                    tName = colParts[1];
                                                                                 }
                                                                             } else {
-                                                                                tName = colParts[1];
+                                                                                tName = colParts[0];
                                                                             }
-                                                                        } else {
-                                                                            tName = colParts[0];
-                                                                        }
-                                                                        if (!isExternalField) {
-                                                                            if ("insert".equalsIgnoreCase(sType)) {
-                                                                                tableTransactList.add((schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString + schema + itemIdString + "." : "") + tableIdString + table + tableIdString, tName, oValue, valueType, null, null, "insert", rowId, nodeId);
+                                                                            if (isExternalField) {
+                                                                                // gia processato sopra
+                                                                            } else {
+                                                                                if ("insert".equalsIgnoreCase(sType)) {
+                                                                                    tableTransactList.add((schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString + schema + itemIdString + "." : "") + tableIdString + table + tableIdString, tName, oValue, valueType, null, null, "insert", rowId, nodeId);
 
-                                                                            } else if ("update".equalsIgnoreCase(sType)) {
-                                                                                tableTransactList.add((schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString + schema + tableIdString + "." : "") + tableIdString + table + tableIdString, tName, oValue, valueType, null, itemIdString + liquid.tableJson.getString("primaryKey") + itemIdString + "='" + rowId + "'", "update", rowId, nodeId);
+                                                                                } else if ("update".equalsIgnoreCase(sType)) {
+                                                                                    tableTransactList.add((schema != null && (isOracle || isPostgres || isSqlServer) ? tableIdString + schema + tableIdString + "." : "") + tableIdString + table + tableIdString, tName, oValue, valueType, null, itemIdString + liquid.tableJson.getString("primaryKey") + itemIdString + "='" + rowId + "'", "update", rowId, nodeId);
+                                                                                }
                                                                             }
                                                                         }
                                                                     }
@@ -4800,6 +4803,7 @@ public class db {
                                             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
                                             if(executingQuery == null)
                                             	executingQuery = tableTransactList.getSQL(liquid, i);
+                                            System.err.println("LIQUID ERROR: executingQuery:"+executingQuery);
                                             String tableDesc = liquid.schemaTable.replace(tableIdString, "");
                                             tableUpdates.add("{\"table\":\"" + tableDesc + "\",\"ids\":[], \"error\":\"" + utility.base64Encode(tableDesc+" : "+th.getLocalizedMessage()) + "\", \"query\":\"" + utility.base64Encode(executingQuery) + "\" }");
                                             String fieldValue = tableTransactList.transactionList.get(i).rowId;
@@ -4995,14 +4999,16 @@ public class db {
      * @param nullable
      * @param oValue
      * @param operator
+     * @param sDefault
      * @return Object [] { oValue, valueType };
-     *              oValue = value as Object class
-     *              valueType = Types.XXX (see Types.java) or :
-     *                  1   ->      Generic string
-     *                  0   ->      Expression
-     *                 -1  ->       Truncate data (made by caller)
+     * oValue = value as Object class
+     * valueType = Types.XXX (see Types.java) or :
+     * 1   ->      Generic string
+     * 0   ->      Expression
+     * -1  ->       Truncate data (made by caller)
+     * -999->       Skip field
      */
-    static public Object[] format_db_value(workspace tbl_wrk, int colTypes, boolean nullable, Object oValue, String operator) throws Exception {
+    static public Object[] format_db_value(workspace tbl_wrk, int colTypes, boolean nullable, Object oValue, String operator, String sDefault) throws Exception {
 
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
 
@@ -5169,6 +5175,15 @@ public class db {
             }
         } else if (colTypes == Types.NUMERIC) { // boolean
             valueType = colTypes; // is a boolean
+        }
+
+        if(sDefault != null && !sDefault.isEmpty()) {
+            if(sDefault.equalsIgnoreCase(String.valueOf(oValue))) {
+                // Campo espressione da risolvere nel DB
+                // N.B.: il campo dev'essere risoldo dal DB
+                oValue = null;
+                valueType = -999;
+            }
         }
 
         return new Object [] { oValue, valueType };

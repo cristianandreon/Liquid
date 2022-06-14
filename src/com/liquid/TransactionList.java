@@ -166,10 +166,16 @@ public class TransactionList {
                 tableIdString = "\"";
             }
             if ("insert".equalsIgnoreCase(transaction.type)) {
+                int colCount = 0;
                 sql = "INSERT INTO " + (transaction.table.startsWith(itemIdString) ? "" : itemIdString) + transaction.table + (transaction.table.endsWith(itemIdString) ? "" : itemIdString) + "";
                 sql += " (";
                 for (int ic = 0; ic < transaction.columns.size(); ic++) {
-                    sql += (ic > 0 ? "," : "") + itemIdString + transaction.columns.get(ic) + itemIdString;
+                    int value_type = transaction.valueTypes.get(ic);
+                    if (value_type == -1) {
+                    } else {
+                        sql += (colCount > 0 ? "," : "") + itemIdString + transaction.columns.get(ic) + itemIdString;
+                        colCount++;
+                    }
                 }
                 sql += ") VALUES (";
                 for (int ic = 0; ic < transaction.values.size(); ic++) {
@@ -179,6 +185,8 @@ public class TransactionList {
                         // expression : put in the statement
                         sql += (ic > 0 ? "," : "") + transaction.values.get(ic);
                         params.add(null);
+                    } else if (value_type == -1) {
+                        // data truncated
                     } else {
                         // value : put in parameters
                         sql += (ic > 0 ? "," : "") + "?";
@@ -196,6 +204,8 @@ public class TransactionList {
                         // expression : put in the statement
                         sql += "=" + transaction.values.get(ic);
                         params.add(null);
+                    } else if (value_type == -1) {
+                        // data truncated
                     } else {
                         // value : put in parameters
                         sql += "=?";
@@ -350,6 +360,8 @@ public class TransactionList {
                         } else {
                             stmt.setBigDecimal(ip, new BigDecimal(Double.parseDouble(String.valueOf(oParam))));
                         }
+                    } else if (value_type == -1) {
+                        // data truncated
                     } else {
                         // unknown : srting
                         stmt.setString(ip, String.valueOf(params.get(ic)));

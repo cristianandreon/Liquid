@@ -1983,7 +1983,11 @@ public class workspace {
                                                         bStoreMetadataDefualt = true;
                                                     }
                                                     if (bStoreMetadataDefualt) {
-                                                        col.put("default", (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null));
+                                                        String columnDef = (mdCol.columnDef != null ? mdCol.columnDef.replace("'", "`") : null);
+                                                        if(columnDef != null) {
+                                                            col.put("default", columnDef);
+                                                            col.put("dbDefault", columnDef);
+                                                        }
                                                     }
 
                                                     if (colForeignTable != null && !colForeignTable.isEmpty()) { // campo esterno
@@ -3065,6 +3069,11 @@ public class workspace {
             obj.put(key+"_src", expression);
         } else if (obj.has(key+"_src")) {
             solvedCount = solve_object_var_internal(obj, key, obj.getString(key+"_src"), request);
+        } else if(expression != null && !expression.isEmpty()) {
+            if("default".equalsIgnoreCase(key)) {
+                // N.B.: Inviato al client
+                obj.put("dbDefault", expression);
+            }
         }
         return solvedCount;
     }
