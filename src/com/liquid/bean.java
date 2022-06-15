@@ -2318,12 +2318,7 @@ public class bean {
             if(keyColumn != null) {
                 sWhere = " WHERE " + keyColumn + "=" + String.valueOf(keyOrWhereCondition) + "";
             } else {
-                if (tbl_wrk.tableJson.has("primaryKey")) {
-                    keyColumn = tbl_wrk.tableJson.getString("primaryKey");
-                    sWhere = " WHERE " + keyColumn + "=" + String.valueOf(keyOrWhereCondition) + "";
-                } else {
-                    throw new Exception("Invalid primary column in control:" + tbl_wrk.controlId);
-                }
+                throw new Exception("Invalid primary column in control:"+tbl_wrk.controlId);
             }
 
         } else if (keyOrWhereCondition instanceof JSONArray) {

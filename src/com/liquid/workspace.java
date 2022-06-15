@@ -1476,7 +1476,7 @@ public class workspace {
                                             primaryKeyIndex1B = ic + 1;
                                         }
                                     } else {
-                                        if (colName.equals(primaryKey)) {
+                                        if (colName.compareTo(primaryKey) == 0) {
                                             primaryKeyIndex1B = ic + 1;
                                         }
                                     }
@@ -3361,7 +3361,13 @@ public class workspace {
                             tableJson.put("columns", "*");
 
                             String primaryKey = metadata.getPrimaryKeyData(database, schema, table, null);
-                            tableJson.put("primaryKey", primaryKey);
+                            if(primaryKey != null && !primaryKey.isEmpty()) {
+                                tableJson.put("primaryKey", primaryKey);
+                            } else {
+                                if(workspace.projectMode) {
+                                    System.err.println("get_default_json() : no primary key on table:" + table);
+                                }
+                            }
 
                             result = workspace.get_table_control_from_string(request, controlId, tableJson.toString());
                             tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
@@ -4966,7 +4972,7 @@ public class workspace {
             for (int i = 0; i < sessions.size(); i++) {
                 ThreadSession ts = sessions.get(i);
                 if (ts != null) {
-                    if (threadSession.sessionId.equalsIgnoreCase(ts.sessionId)) {
+                    if (ts.sessionId.equalsIgnoreCase(threadSession.sessionId)) {
                         return i + 1;
                     }
                 }
