@@ -503,6 +503,22 @@ public class connection {
     }
 
     /**
+     *
+     * @param driver
+     * @param host
+     * @param port
+     * @param database
+     * @param user
+     * @param password
+     * @param service
+     * @return
+     * @throws Throwable
+     */
+    static public boolean addLiquidDBConnection( String driver, String host, String port, String database, String user, String password, String service ) throws Throwable {
+        return addLiquidDBConnection( driver, host, port, database, user, password, service, true );
+    }
+
+    /**
      * Add connection source
      * @param driver
      * @param host
