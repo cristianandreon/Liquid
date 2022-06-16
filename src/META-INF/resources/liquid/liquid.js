@@ -267,6 +267,10 @@ class LiquidCtrl {
         if(this.tableJson) {
             // if(typeof parentObjId !== 'undefined' && parentObjId) this.tableJson.parentObjId = parentObjId;
 
+            if(!isDef(this.mode)) {
+                this.mode = "";
+            }
+
             //
             // overlay options ...
             //
