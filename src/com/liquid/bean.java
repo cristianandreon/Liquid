@@ -2273,12 +2273,15 @@ public class bean {
                 if (((String)keyOrWhereCondition).trim().toUpperCase().startsWith("WHERE ")) {
                     sWhere = " " + keyOrWhereCondition + "";
                 } else {
-                    // N.B.: Need key column ...
+                    // N.B.: Need key column ???
+                    // (String = full where condition if keyColumn is null)
+                    /*
                     if (keyColumn == null || keyColumn.isEmpty()) {
                         if (tbl_wrk.tableJson.has("primaryKey")) {
                             keyColumn = tbl_wrk.tableJson.getString("primaryKey");
                         }
                     }
+                    */
                     if(keyColumn != null) {
                         keyColumn = ((String) keyColumn).trim();
                         if (keyColumn.toUpperCase().startsWith("WHERE ")) {
@@ -2286,7 +2289,12 @@ public class bean {
                         }
                         sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
                     } else {
-                        sWhere = " " + keyOrWhereCondition + "";
+                        String skeyOrWhereCondition = String.valueOf(keyOrWhereCondition);
+                        if (skeyOrWhereCondition.startsWith("WHERE ")) {
+                            sWhere = " " + skeyOrWhereCondition + "";
+                        } else {
+                            sWhere = " WHERE " + skeyOrWhereCondition + "";
+                        }
                     }
                 }
             }
