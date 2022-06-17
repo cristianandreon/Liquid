@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.26
+// Liquid ver.2.27
 //
-//  First update 06-01-2020 - Last update 13-06-2022
+//  First update 06-01-2020 - Last update 16-06-2022
 //
 //  TODO : see trello.com
 //
@@ -266,6 +266,10 @@ class LiquidCtrl {
 
         if(this.tableJson) {
             // if(typeof parentObjId !== 'undefined' && parentObjId) this.tableJson.parentObjId = parentObjId;
+
+            if(!isDef(this.mode)) {
+                this.mode = "";
+            }
 
             //
             // overlay options ...
@@ -14447,13 +14451,13 @@ var Liquid = {
         }
     },
     isWinX: function (liquid) {
-        return (liquid.mode.toLowerCase() == 'winx');
+        return (liquid.mode ? liquid.mode.toLowerCase() == 'winx' : false);
     },
     isFormX: function (liquid) {
-        return (liquid.mode.toLowerCase() == 'formx');
+        return (liquid.mode ? liquid.mode.toLowerCase() == 'formx' : false);
     },
     isDialogX: function (liquid) {
-        return (liquid.mode.toLowerCase() == 'dialogx');
+        return (liquid.mode ? liquid.mode.toLowerCase() == 'dialogx' : false);
     },
     isAutoInsert: function (liquid, layout) {
         var autoInsert = false;
