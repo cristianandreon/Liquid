@@ -4972,8 +4972,14 @@ public class workspace {
             for (int i = 0; i < sessions.size(); i++) {
                 ThreadSession ts = sessions.get(i);
                 if (ts != null) {
-                    if (ts.sessionId.equalsIgnoreCase(threadSession.sessionId)) {
-                        return i + 1;
+                    if (ts.sessionId != null) {
+                        if (ts.sessionId.equalsIgnoreCase(threadSession.sessionId)) {
+                            return i + 1;
+                        }
+                    } else {
+                        if(threadSession.sessionId == null) {
+                            return i + 1;
+                        }
                     }
                 }
             }

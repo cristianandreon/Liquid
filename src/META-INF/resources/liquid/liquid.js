@@ -8981,13 +8981,15 @@ var Liquid = {
                                 if (liquid.currentCommand.name === command.name) {
                                     liquid.currentCommand.postFunc = commandPostFunc;
                                     liquid.currentCommand.fromToolbar = false;
-                                    return Liquid.onButton(liquid, liquid.currentCommand);
+                                    return Liquid.onButton(liquid, liquid.currentCommand)
+                                        .then(function(response) { return response; });
                                 }
                             }
                             if (command.isNative) {
                                 // native step command .. continue or start
                                 command.fromToolbar = false;
-                                return Liquid.onButton(liquid, command);
+                                return Liquid.onButton(liquid, command)
+                                    .then(function(response) { return response; });
                             } else {
                                 // Single step command
                                 isCommandFound = true;
@@ -9096,11 +9098,13 @@ var Liquid = {
                                 Liquid.closeAllPopupMenuCommand(liquid, event);
                             }
                             command.fromToolbar = false;
-                            return Liquid.onButton(liquid, command);
+                            return Liquid.onButton(liquid, command)
+                                .then(function(response) { return response; });
                         } else if (liquid.menuCommands[i].name + "-rollback" === commandName) {
                             var command = liquid.menuCommands[i].rollbackCommand;
                             command.fromToolbar = false;
-                            return Liquid.onButton(liquid, command);
+                            return Liquid.onButton(liquid, command)
+                                .then(function(response) { return response; });
                         }
                     }
                 }
@@ -10038,7 +10042,6 @@ var Liquid = {
             if (client) {
                 try {
                     var clients = null;
-                    var retVal = null;
                     if (client instanceof Array) {
                         clients = client;
                     } else {
@@ -10567,7 +10570,7 @@ var Liquid = {
         }
     },
     onButton: async function (obj, command) {
-        let retVal = null;
+        var retVal = null;
         if (command) {
             let doConfirm = false;
             if (command.fromToolbar) {
