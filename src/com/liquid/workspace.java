@@ -32,6 +32,9 @@ import java.util.logging.Logger;
 import static com.liquid.liquidize.liquidizeJSONContent;
 import static com.liquid.utility.resetDatalistCache;
 
+/**
+ * N.B.: LIMIT 1 : cannot create same controlId on different database.schhema.table
+ */
 public class workspace {
 
     public static String version_string = "2.18";
@@ -92,6 +95,7 @@ public class workspace {
             workspace.locale = Locale.US;
         }
     }
+
 
     public Locale getLocale() {
         return locale;
@@ -482,7 +486,7 @@ public class workspace {
     }
 
     /**
-     * restituisce il workspace di un controllo
+     * return the workspave by controlId
      *
      * @param controlId
      * @return
@@ -504,6 +508,26 @@ public class workspace {
         }
         return null;
     }
+
+
+    /**
+     * Check that controlId is a valid name for new one
+     *
+     * @param controlId
+     * @return
+     */
+    public static boolean is_valid_for_new_control_Id(String controlId) {
+        for (int i = 0; i < glTblWorkspaces.size(); i++) {
+            workspace tblWorkspace = glTblWorkspaces.get(i);
+            if(tblWorkspace != null) {
+                if (tblWorkspace.controlId.equalsIgnoreCase(controlId)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
 
     /**
      * restituisce il workspace di un controllo

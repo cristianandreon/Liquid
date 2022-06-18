@@ -2187,6 +2187,13 @@ public class bean {
                 }
                 String sRequest = "";
                 String parentControlId = null;
+
+                // Controllo LIMIT 1 : non può esistere lo stesso controlId su tabelle diverse
+                if(!workspace.is_valid_for_new_control_Id(controlId)) {
+                    throw new Exception("Invalid controlId:"+controlId+" .. already exist, cannot link to "+databaseSchemaTable);
+                }
+
+
                 String sTableJson = workspace.get_default_json(request, controlId, controlId, table, schema, database, parentControlId, workspace.sourceSpecialToken, sRequest, null);
                 tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
                 if (tbl_wrk != null) {
