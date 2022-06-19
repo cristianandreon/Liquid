@@ -1609,7 +1609,7 @@ public class bean {
                     if(beanProp != null && !beanProp.isEmpty()) {
                         // to bean ..
 
-                        boolean bThrowExceptIfMissing = true;
+                        boolean bThrowExceptIfMissing = false;
                         String exceptMessage = null;
 
                         // wrap prop:
