@@ -1412,8 +1412,8 @@ public class utility {
      */
     public static String mergeJsonObject(String ssource, String starget) throws Exception {
         JSONObject sourceJson = ssource != null && !ssource.isEmpty() ? new JSONObject(ssource) : null;
-        JSONObject targetJson = starget != null ? new JSONObject(starget) : new JSONObject();
-        if(sourceJson != null) {
+        JSONObject targetJson = starget != null  && !starget.isEmpty() ? new JSONObject(starget) : null;
+        if(sourceJson != null && targetJson != null) {
             String[] names = JSONObject.getNames(sourceJson);
             if(names != null) {
                 for (Object keyObject : names) {
@@ -1423,7 +1423,11 @@ public class utility {
                 }
             }
         }
-        return targetJson.toString();
+        if(targetJson != null) {
+            return targetJson.toString();
+        } else {
+            return starget;
+        }
     }
 
     /**

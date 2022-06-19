@@ -4771,7 +4771,7 @@ public class workspace {
         if (table != null && !table.isEmpty()) {
             table = table.replaceAll("`", "");
             table = table.replaceAll("\"", "");
-            return liquidize.liquidizeString(table, controlIdSeparator, true);
+            return liquidize.liquidizeString(table, controlIdSeparator, false);
         }
         return null;
     }

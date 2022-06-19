@@ -2158,7 +2158,7 @@ public class bean {
                 runtimeControlId = workspace.getControlIdFromTable(databaseSchemaTable);
                 tbl_wrk = workspace.get_tbl_manager_workspace(runtimeControlId);
                 if (tbl_wrk == null) {
-                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, controlId);
+                    tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, runtimeControlId);
                 }
             }
         } else {
