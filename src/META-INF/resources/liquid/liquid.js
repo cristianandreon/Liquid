@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.27
+// Liquid ver.2.28
 //
-//  First update 06-01-2020 - Last update 16-06-2022
+//  First update 06-01-2020 - Last update 19-06-2022
 //
 //  TODO : see trello.com
 //
@@ -267,8 +267,8 @@ class LiquidCtrl {
         if(this.tableJson) {
             // if(typeof parentObjId !== 'undefined' && parentObjId) this.tableJson.parentObjId = parentObjId;
 
-            if(!isDef(this.mode)) {
-                this.mode = "";
+            if(!isDef(this.tableJson.mode)) {
+                this.tableJson.mode = "";
             }
 
             //
@@ -286,9 +286,8 @@ class LiquidCtrl {
             if(typeof this.tableJson.mode === 'undefined') {
                 this.tableJson.mode = this.mode;
             }
-            if(typeof this.mode === 'undefined') {
-                this.mode = this.tableJson.mode;
-            }
+            this.mode = this.tableJson.mode;
+
 
             if(!isDef(this.rootControlId)) { // overlay rootControlId from server (typically for queryX
                 if(isDef(this.tableJson.rootControlId)) {
@@ -16694,7 +16693,7 @@ var Liquid = {
                 }
             } else {
                 // Detect by column name and operator if defined
-                if (filtersJson.columns[i].name == columnName && (filtersJson.columns[i].op == filterOperator || !isDef(filterOperator))) {
+                if (filterColumn.name == columnName && (filterColumn.op == filterOperator || !isDef(filterOperator))) {
                     filterColumnFound = true;
                 }
             }
