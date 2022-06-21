@@ -7210,6 +7210,12 @@ public class db {
                     return (Double) ((Double) value).doubleValue();
                 } else if (value instanceof Float) {
                     return (Double) ((Float) value).doubleValue();
+                } else if (value instanceof Integer) {
+                    return (Double) ((Integer) value).doubleValue();
+                } else if (value instanceof Long) {
+                    return (Double) ((Long) value).doubleValue();
+                } else if (value instanceof Short) {
+                    return (Double) ((Short) value).doubleValue();
                 } else {
                     return (Double) value;
                 }
@@ -7224,6 +7230,12 @@ public class db {
                     return (Float) ((Double) value).floatValue();
                 } else if (value instanceof Float) {
                     return (Float) ((Float) value).floatValue();
+                } else if (value instanceof Integer) {
+                    return (Float) ((Integer) value).floatValue();
+                } else if (value instanceof Long) {
+                    return (Float) ((Long) value).floatValue();
+                } else if (value instanceof Short) {
+                    return (Float) ((Short) value).floatValue();
                 } else {
                     return (Float) value;
                 }

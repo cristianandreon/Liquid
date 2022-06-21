@@ -754,6 +754,9 @@ public class bean {
                                     // Include questa classe nel bean
                                     //
                                     String ftControlId = "" + ft + "$" + foreignColumnDescriptor + "$" + columnDescriptor + "@" + tbl_wrk.controlId + "";
+                                    // N,B. il controlo non puo' avere lo stesso nome dei controlli caricati da json in quanto load_beans non definisce le colonne, pertanto il cotrollo andrebbe in conflitto
+                                    ftControlId += "$bean";
+
                                     JSONArray ftRowsJson = null;
                                     workspace ft_tbl_wrk = workspace.get_tbl_manager_workspace(ftControlId);
 

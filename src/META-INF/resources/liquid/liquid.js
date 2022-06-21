@@ -14838,7 +14838,9 @@ var Liquid = {
                             obj.setAttribute('linkedfield', linkeCol.field);
                             obj.setAttribute('linkedname', linkeCol.name);
                             obj.setAttribute('linkedrow1b', iRow + 1);
-                            obj.setAttribute('astype', linkeCol.asType);
+                            if(isDef(linkeCol.asType)) {
+                                obj.setAttribute('astype', linkeCol.asType);
+                            }
 
                             if(isDef(linkeCol.asType)) {
                                 if(linkeCol.asType == 'tel' || linkeCol.asType == 'cell' || linkeCol.asType == 'email' || linkeCol.asType == 'website') {
