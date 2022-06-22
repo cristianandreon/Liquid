@@ -1191,7 +1191,7 @@ public class db {
                                 String sIdsList = "";
                                 String apex = "";
 
-                                if (iTypePrimaryKey == 3 || iTypePrimaryKey == 4 || iTypePrimaryKey == 7 || iTypePrimaryKey == 8 || iTypePrimaryKey == -5 || iTypePrimaryKey == -6) {
+                                if (isNumeric(iTypePrimaryKey)) {
                                     // numeric
                                 } else {
                                     apex = "'";
@@ -2461,7 +2461,7 @@ public class db {
 
                     } else {
                         // wrap to is null ... id not numeric
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
+                        if (isNumeric(type)) {
                             filterValue = "0";
                         } else if (type == 6 || type == 91 || type == 93) { // date, datetime
                             filterOp = "IS";
@@ -2511,7 +2511,7 @@ public class db {
                     }
 
                     if ("LIKE".equalsIgnoreCase(filterOp) || "FULLLIKE".equalsIgnoreCase(filterOp) || "%".equalsIgnoreCase(filterOp)) {
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
+                        if (isNumeric(type)) {
                             // numeric : like unsupported
                             filterOp = "=";
                         } else {
@@ -2541,7 +2541,7 @@ public class db {
 
                     if (">".equalsIgnoreCase(filterOp)) {
                         if (col != null) {
-                            if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
+                            if (isNumeric(type)) {
                                 // numeric
                             } else {
                                 // > 0 applicato alle stringhe -> NOT null
@@ -2565,7 +2565,7 @@ public class db {
                     String sensitiveCasePreOp = "";
                     String sensitiveCasePostOp = "";
                     if (!filterSensitiveCase) {
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
+                        if (isNumeric(type)) {
                             // numeric
                         } else if (type == 6 || type == 92 || type == 93) {
                             //
@@ -2593,7 +2593,7 @@ public class db {
                     // Numeric ?
                     //
                     if (bUseParams) {
-                        if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
+                        if (isNumeric(type)) {
                             // numeric
                         }
                     }
@@ -2623,7 +2623,7 @@ public class db {
                                 for (int iv = 0; iv < filterValues.length; iv++) {
                                     String val = filterValues[iv];
 
-                                    if (type == 8 || type == 7 || type == 6 || type == 4 || type == 3 || type == -5 || type == -6) {
+                                    if (isNumeric(type)) {
                                         // numeric
                                         if(val.startsWith("'")) val = val.substring(1);
                                         if(val.endsWith("'")) val = val.substring(0, val.length()-2);
@@ -4163,6 +4163,10 @@ public class db {
                                     sqlSTMTUpdate.setDate((i + 1), new java.sql.Date(((java.util.Date)val).getTime()));
                                 } else if (val instanceof String) {
                                     sqlSTMTUpdate.setString((i + 1), (String) val);
+                                } else if (val instanceof BigDecimal) {
+                                    sqlSTMTUpdate.setBigDecimal((i + 1), (BigDecimal) val);
+                                } else {
+                                    throw new Exception("Unrecognized param type:"+val.getClass().getName());
                                 }
                             }
 
@@ -5155,7 +5159,7 @@ public class db {
             }
 
 
-        } else if (colTypes == 8 || colTypes == 7 || colTypes == 4 || colTypes == 3 || colTypes == -5 || colTypes == -6) {
+        } else if (isNumeric(colTypes)) {
             // numeric
             if(oValue instanceof String) {
                 String value = (String) oValue;
@@ -7200,9 +7204,15 @@ public class db {
                             return new java.math.BigDecimal(0);
                     return (java.math.BigDecimal) new java.math.BigDecimal(String.valueOf(value));
                 } else if (value instanceof Double) {
-                    return (java.math.BigDecimal) new java.math.BigDecimal(((Double) value).doubleValue());
+                    return (java.math.BigDecimal) new java.math.BigDecimal(((Double) value));
                 } else if (value instanceof Float) {
-                    return (java.math.BigDecimal) new java.math.BigDecimal(((Float) value).doubleValue());
+                    return (java.math.BigDecimal) new java.math.BigDecimal(((Float) value));
+                } else if (value instanceof Long) {
+                    return (java.math.BigDecimal) new java.math.BigDecimal(((Long) value));
+                } else if (value instanceof Integer) {
+                    return (java.math.BigDecimal) new java.math.BigDecimal(((Integer) value));
+                } else if (value instanceof Short) {
+                    return (java.math.BigDecimal) new java.math.BigDecimal(((Short) value));
                 } else {
                     return (java.math.BigDecimal) value;
                 }

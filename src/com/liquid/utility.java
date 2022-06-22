@@ -730,8 +730,32 @@ public class utility {
                             field.set(bean, (BigDecimal) newValue);
                             retVal = true;
                         }
-                    } else if (value instanceof Object) {
-                        BigDecimal newValue = new BigDecimal(String.valueOf(value));
+                    } else if (value instanceof Double) {
+                        BigDecimal newValue = new BigDecimal((Double)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Float) {
+                        BigDecimal newValue = new BigDecimal((Float)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Long) {
+                        BigDecimal newValue = new BigDecimal((Long)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Integer) {
+                        BigDecimal newValue = new BigDecimal((Integer)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Short) {
+                        BigDecimal newValue = new BigDecimal((Short)value);
                         if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
                             field.set(bean, (BigDecimal)newValue);
                             retVal = true;
@@ -745,6 +769,12 @@ public class utility {
                     } else if (value == null) {
                         if(curValue != null) {
                             field.set(bean, null);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Object) {
+                        BigDecimal newValue = new BigDecimal(String.valueOf(value));
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
                             retVal = true;
                         }
                     } else {
