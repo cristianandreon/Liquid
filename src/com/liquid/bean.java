@@ -690,7 +690,16 @@ public class bean {
                                 }
                                 if(fcolumnsKey != null) {
                                     JSONArray json_foreign_columns = null;
-                                    try { json_foreign_columns = foreignableJson.getJSONArray(fcolumnsKey); } catch (Exception e) { }
+                                    try {
+                                        Object oForeignTableJson = foreignableJson.get(fcolumnsKey);
+                                        if(oForeignTableJson instanceof JSONArray) {
+                                            json_foreign_columns = (JSONArray)oForeignTableJson;
+                                        } else if(oForeignTableJson instanceof JSONObject) {
+                                            json_foreign_columns = new JSONArray();
+                                            json_foreign_columns.put(oForeignTableJson);
+                                        }
+                                        // json_foreign_columns = foreignableJson.getJSONArray(fcolumnsKey);
+                                    } catch (Exception e) { }
                                     if (json_foreign_columns != null) {
                                         for (int ia = 0; ia < json_foreign_columns.length(); ia++) {
                                             foreignColumns.add(json_foreign_columns.getString(ia));
@@ -712,7 +721,17 @@ public class bean {
                                 }
                                 if(columnsKey != null) {
                                     JSONArray json_columns = null;
-                                    try { json_columns = foreignableJson.getJSONArray(columnsKey); } catch (Exception e) { }
+                                    try {
+                                        // json_columns = foreignableJson.getJSONArray(columnsKey);
+                                        Object o_columns_json = foreignableJson.get(columnsKey);
+                                        if(o_columns_json instanceof JSONArray) {
+                                            json_columns = (JSONArray)o_columns_json;
+                                        } else if(o_columns_json instanceof JSONObject) {
+                                            json_columns = new JSONArray();
+                                            json_columns.put(o_columns_json);
+                                        }
+
+                                    } catch (Exception e) { }
                                     if (json_columns != null) {
                                         for (int ia = 0; ia < json_columns.length(); ia++) {
                                             columns.add(json_columns.getString(ia));
@@ -910,7 +929,11 @@ public class bean {
                                         String foreignTableForeignTables = "";
 
                                         JSONArray nestedForeignTablesJson = null;
-                                        try { nestedForeignTablesJson = foreignableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
+                                        try {
+                                            if(foreignableJson.has("foreignTables")) {
+                                                nestedForeignTablesJson = foreignableJson.getJSONArray("foreignTables");
+                                            }
+                                        } catch (Exception e) { }
 
 
                                         if (nestedForeignTablesJson != null) {
@@ -939,7 +962,20 @@ public class bean {
                                         //
                                         if (ft_tbl_wrk != null) {
                                             nestedForeignTablesJson = null;
-                                            try { nestedForeignTablesJson = ft_tbl_wrk.tableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
+                                            try {
+                                                if(ft_tbl_wrk.tableJson.has("foreignTables")) {
+                                                    Object oNestedForeignTablesJson = ft_tbl_wrk.tableJson.get("foreignTables");
+                                                    if(oNestedForeignTablesJson instanceof JSONArray) {
+                                                        nestedForeignTablesJson = (JSONArray)oNestedForeignTablesJson;
+                                                    } else if(oNestedForeignTablesJson instanceof JSONArray) {
+                                                        nestedForeignTablesJson = new JSONArray();
+                                                        nestedForeignTablesJson.put( oNestedForeignTablesJson );
+                                                    } else if(oNestedForeignTablesJson instanceof String) {
+                                                        // NON risolta : controllo non processato
+                                                        System.err.println("ERROR : foreignTables metadata not read on control:"+ft_tbl_wrk.controlId);
+                                                    }
+                                                }
+                                            } catch (Exception e) { }
 
                                             if(nestedForeignTablesJson != null) {
                                                 for (int inft = 0; inft < nestedForeignTablesJson.length(); inft++) {
@@ -1325,15 +1361,19 @@ public class bean {
                         }
 
                         for (int ic = 0; ic < cols.length(); ic++) {
+                            JSONObject col = cols.getJSONObject(ic);
                             String colName = cols.getJSONObject(ic).has("runtimeName") ? cols.getJSONObject(ic).getString("runtimeName") : cols.getJSONObject(ic).getString("name");
                             boolean autoIncString = cols.getJSONObject(ic).has("autoIncString") ? cols.getJSONObject(ic).getBoolean("autoIncString") : false;
                             String field = null, name = null;
                             String defaultValue = null;
                             Object value = null;
 
+                            name = col.getString("name");
+
                             try {
-                                name = cols.getJSONObject(ic).getString("name");
-                                field = cols.getJSONObject(ic).getString("field");
+                                if(col.has("field")) {
+                                    field = col.getString("field");
+                                }
                             } catch (Exception e) { /* value = String.valueOf(ic+1); */ }
 
                             if(primaryKey == null) {
@@ -1353,7 +1393,7 @@ public class bean {
                                 if(row.has(colName) && row.isNull(colName)) {
                                     value = null;
                                     hasValue = true;
-                                } else {
+                                } else if(row.has(colName)) {
                                     value = row.get(colName);
                                     hasValue = true;
                                 }

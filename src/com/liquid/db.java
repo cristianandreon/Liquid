@@ -2851,17 +2851,18 @@ public class db {
             for (int ic = 0; ic < cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
                 try {
-                    String type = col.getString("type");
-                    if(!type.isEmpty()) {
-                        colTypes[ic] = Integer.parseInt(type);
-                    } else {
-                        colTypes[ic] = 1;
+                    colTypes[ic] = 1;
+                    if(col.has("type")) {
+                        String type = String.valueOf(col.get("type"));
+                        if(!type.isEmpty()) {
+                            colTypes[ic] = Integer.parseInt(type);
+                        }
                     }
                 } catch (Exception e) {
                 }
                 try {
                     if(col.has("precision")) {
-                        colPrecs[ic] = Integer.parseInt(col.getString("precision"));
+                        colPrecs[ic] = Integer.parseInt(String.valueOf(col.get("precision")));
                     }
                 } catch (Exception e) {
                     colPrecs[ic] = -1;
@@ -2874,7 +2875,9 @@ public class db {
                     colDigits[ic] = -1;
                 }
                 try {
-                    colNullable[ic] = cols.getJSONObject(ic).getBoolean("nullable");
+                    if(col.has("nullable")) {
+                        colNullable[ic] = col.getBoolean("nullable");
+                    }
                 } catch (Exception e) {
                     colNullable[ic] = true;
                 }
@@ -4423,11 +4426,15 @@ public class db {
 
                                     if (modificationJSON != null) {
                                         try {
-                                            rowId = modificationJSON.getString("rowId");
+                                            if(modificationJSON.has("rowId")) {
+                                                rowId = modificationJSON.getString("rowId");
+                                            }
                                         } catch (Exception e) {
                                         }
                                         try {
-                                            nodeId = modificationJSON.getString("nodeId");
+                                            if(modificationJSON.has("nodeId")) {
+                                                nodeId = modificationJSON.getString("nodeId");
+                                            }
                                         } catch (Exception e) {
                                         }
                                         if (rowId != null && !rowId.isEmpty() || "insert".equalsIgnoreCase(sType)) {

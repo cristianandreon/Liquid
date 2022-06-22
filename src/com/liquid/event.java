@@ -442,40 +442,44 @@ public class event {
      * @throws JSONException
      */
     static public String transfer_client_to_result(Object clientToTransfer, String result) throws JSONException {
-        JSONObject retValJSON = new JSONObject(result);
-        if (clientToTransfer != null) {
-            if (retValJSON.has("client")) {
-                Object retValClient = retValJSON.get("client");
-                JSONArray newRetValClient = null;
-                if (retValClient instanceof String) {
-                    if (clientToTransfer instanceof String) {
-                        newRetValClient = new JSONArray();
-                        newRetValClient.put(retValClient);
-                        newRetValClient.put(clientToTransfer);
-                    } else if (clientToTransfer instanceof JSONArray) {
-                        newRetValClient = new JSONArray();
-                        newRetValClient.put(retValClient);
-                        for (int i = 0; i < ((JSONArray) clientToTransfer).length(); i++) {
-                            newRetValClient.put(((JSONArray) clientToTransfer).get(i));
+        if(result != null && !result.isEmpty()) {
+            JSONObject retValJSON = new JSONObject(result);
+            if (clientToTransfer != null) {
+                if (retValJSON.has("client")) {
+                    Object retValClient = retValJSON.get("client");
+                    JSONArray newRetValClient = null;
+                    if (retValClient instanceof String) {
+                        if (clientToTransfer instanceof String) {
+                            newRetValClient = new JSONArray();
+                            newRetValClient.put(retValClient);
+                            newRetValClient.put(clientToTransfer);
+                        } else if (clientToTransfer instanceof JSONArray) {
+                            newRetValClient = new JSONArray();
+                            newRetValClient.put(retValClient);
+                            for (int i = 0; i < ((JSONArray) clientToTransfer).length(); i++) {
+                                newRetValClient.put(((JSONArray) clientToTransfer).get(i));
+                            }
                         }
-                    }
-                    if (newRetValClient != null) {
-                        retValJSON.put("client", newRetValClient);
-                    }
+                        if (newRetValClient != null) {
+                            retValJSON.put("client", newRetValClient);
+                        }
 
-                } else if (retValClient instanceof JSONArray) {
-                    if (clientToTransfer instanceof String) {
-                        ((JSONArray) retValClient).put(clientToTransfer);
-                    } else if (clientToTransfer instanceof JSONArray) {
-                        for (int i = 0; i < ((JSONArray) clientToTransfer).length(); i++) {
-                            ((JSONArray) retValClient).put(((JSONArray) clientToTransfer).get(i));
+                    } else if (retValClient instanceof JSONArray) {
+                        if (clientToTransfer instanceof String) {
+                            ((JSONArray) retValClient).put(clientToTransfer);
+                        } else if (clientToTransfer instanceof JSONArray) {
+                            for (int i = 0; i < ((JSONArray) clientToTransfer).length(); i++) {
+                                ((JSONArray) retValClient).put(((JSONArray) clientToTransfer).get(i));
+                            }
                         }
+                        retValJSON.put("client", retValClient);
                     }
-                    retValJSON.put("client", retValClient);
                 }
             }
+            return retValJSON.toString();
+        } else {
+            return result;
         }
-        return retValJSON.toString();
     }
 
     /**
@@ -1195,18 +1199,22 @@ public class event {
         boolean autoIncString = false;
 
         if (colDefault == null || defaultVlaue.isEmpty()) {
-            try {
-                colDefault = col.getString("default");
-            } catch (Exception e) {
+            if(col.has("default")) {
+                try {
+                    colDefault = col.getString("default");
+                } catch (Exception e) {
+                }
             }
         }
         if (colDefault != null && !colDefault.isEmpty()) {
             String fieldName = null, fieldValue = null;
             NumberFormat nf = NumberFormat.getInstance();
 
-            try {
-                autoIncString = col.getBoolean("autoIncString");
-            } catch (JSONException e) {
+            if(col.has("autoIncString")) {
+                try {
+                    autoIncString = col.getBoolean("autoIncString");
+                } catch (JSONException e) {
+                }
             }
 
             String bkColDefault = colDefault;
@@ -1383,17 +1391,22 @@ public class event {
                             int[] colTypes = new int[cols.length()];
                             int[] colPrecs = new int[cols.length()];
                             for (int ic = 0; ic < cols.length(); ic++) {
-                                try {
-                                    colTypes[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("type"));
-                                } catch (Exception e) {
+                                JSONObject col = cols.getJSONObject(ic);
+                                if (col.has("type")) {
+                                    try {
+                                        colTypes[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("type"));
+                                    } catch (Exception e) {
+                                    }
                                 }
-                                try {
-                                    colPrecs[ic] = Integer.parseInt(cols.getJSONObject(ic).getString("precision"));
-                                } catch (Exception e) {
-                                    colPrecs[ic] = -1;
+                                if (col.has("precision")) {
+                                    try {
+                                        colPrecs[ic] = Integer.parseInt(col.getString("precision"));
+                                    } catch (Exception e) {
+                                        colPrecs[ic] = -1;
+                                    }
                                 }
                                 if (rowData != null) {
-                                    defaultVlaues.add(rowData.getString(cols.getJSONObject(ic).getString("field")));
+                                    defaultVlaues.add(rowData.getString(col.getString("field")));
                                 } else {
                                     defaultVlaues.add("");
                                 }
