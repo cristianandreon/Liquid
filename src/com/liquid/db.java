@@ -2930,7 +2930,7 @@ public class db {
                                     }
                                 } else if (colTypes[ic] == 92) { //time
                                     try {
-                                        java.sql.Time dbSqlTime = rsdo.getTime(columns_alias[0]);
+                                        Time dbSqlTime = rsdo.getTime(columns_alias[0]);
                                         fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
                                         if (renderService) {
                                             if (fieldValue == null) fieldValue = "";
@@ -2943,7 +2943,7 @@ public class db {
                                     }
                                 } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
                                     try {
-                                        java.sql.Time dbSqlDateTime = rsdo.getTime(columns_alias[0]);
+                                        Time dbSqlDateTime = rsdo.getTime(columns_alias[0]);
                                         fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
                                         if (renderService) {
                                             if (fieldValue == null) fieldValue = "";
@@ -3005,7 +3005,7 @@ public class db {
                                                 field_added++;
 
                                             } else if (colTypes[ic] == 92) { //time
-                                                java.sql.Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic + 1);
+                                                Time dbSqlTime = columnAlias != null ? rsdo.getTime(columnAlias) : rsdo.getTime(ic + 1);
                                                 fieldValue = dbSqlTime != null ? dateFormat.format(dbSqlTime) : null;
                                                 if(renderService) {
                                                     if(fieldValue == null) fieldValue = "";
@@ -3015,7 +3015,7 @@ public class db {
                                                 field_added++;
 
                                             } else if (colTypes[ic] == 6 || colTypes[ic] == 93) { // datetime
-                                                java.sql.Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic + 1);
+                                                Timestamp dbSqlDateTime = columnAlias != null ? rsdo.getTimestamp(columnAlias) : rsdo.getTimestamp(ic + 1);
                                                 fieldValue = dbSqlDateTime != null ? dateTimeFormat.format(dbSqlDateTime) : null;
                                                 if(renderService) {
                                                     if(fieldValue == null) fieldValue = "";
@@ -3026,7 +3026,7 @@ public class db {
                                                 field_added++;
 
                                             } else if (colTypes[ic] == -7) {
-                                                fieldValue = ("" + rsdo.getBoolean(columnAlias) + "");
+                                                fieldValue = "" + (columnAlias != null ? rsdo.getBoolean(columnAlias) : rsdo.getBoolean(ic + 1));
                                                 if (ic > 0) out_string.append(",");
                                                 out_string.append("\"" + fieldName + "\":" + (fieldValue != null ? fieldValue : "") + "");
                                                 field_added++;
@@ -3657,7 +3657,20 @@ public class db {
     }
 
 
-
+    /**
+     * Insert or update row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param Fields
+     * @param Values
+     * @return Object [] (boolean OK/KO, Object newId/error num, String error)
+     * @throws Throwable
+     */
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, Object [] keys) throws Throwable {
+        return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, null );
+    }
     /**
      * Insert or update row by Fields and Values
      *
