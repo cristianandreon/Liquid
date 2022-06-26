@@ -2211,6 +2211,20 @@ public class db {
                             throw new Exception("Filter type not implemented:"+oFilterValue.getClass().getName());
                         }
                     }
+
+                    if (filtersCol.isNull("value") || !filtersCol.has("value")) {
+                        if (filtersCol.has("op")) {
+                            Object op = filtersCol.get("op");
+                            if(op instanceof String) {
+                                if("IS NOT NULL".equalsIgnoreCase((String)op)) {
+                                    oFilterValue = null;
+                                    filterValue = null;
+                                    filterValueIsSet = true;
+                                }
+                            }
+                        }
+                    }
+
                 } catch (Exception e) {
                     Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, e);
                     throw new Exception("LIQUID SERVER : Error in filters:"+e.getMessage());
@@ -2462,13 +2476,22 @@ public class db {
                     } else {
                         // wrap to is null ... id not numeric
                         if (isNumeric(type)) {
-                            filterValue = "0";
+                            if(filterOp != null && !filterOp.isEmpty()) {
+                            } else {
+                                filterValue = "0";
+                            }
                         } else if (type == 6 || type == 91 || type == 93) { // date, datetime
-                            filterOp = "IS";
-                            filterValue = "NULL";
+                            if(filterOp != null && !filterOp.isEmpty()) {
+                            } else {
+                                filterOp = "IS";
+                                filterValue = "NULL";
+                            }
                         } else {
-                            filterOp = "IS";
-                            filterValue = "NULL";
+                            if(filterOp != null && !filterOp.isEmpty()) {
+                            } else {
+                                filterOp = "IS";
+                                filterValue = "NULL";
+                            }
                         }
                     }
 
@@ -2477,9 +2500,17 @@ public class db {
                         if ("NULL".equalsIgnoreCase(filterValue)) {
                             preFix = " ";
                             postFix = "";
-                            filterValue = "NULL";
+                            filterValue = null;
+                            oFilterValue = null;
                             bUseParams = false;
                         }
+                    }
+                    if ("IS NOT NULL".equalsIgnoreCase(filterOp) || "IS NULL".equalsIgnoreCase(filterOp)) {
+                        preFix = " ";
+                        postFix = "";
+                        filterValue = null;
+                        oFilterValue = null;
+                        bUseParams = false;
                     }
 
                     if ("IN".equalsIgnoreCase(filterOp) || "NOT IN".equalsIgnoreCase(filterOp)) {
@@ -2746,7 +2777,7 @@ public class db {
                         } else {
                             sWhere += ""
                                     + preFix
-                                    + (filterValue != null ? filterValue : "NULL")
+                                    + (filterValue != null ? filterValue : "")
                                     + postFix
                                     ;
                         }
@@ -4520,11 +4551,19 @@ public class db {
                                                                                     }
                                                                                 }
                                                                                 if(oValue != null) {
-                                                                                    Date gtmDate = utility.get_local2server_time(request, oValue);
-                                                                                    if(gtmDate != null) {
-                                                                                        oValue = gtmDate;
-                                                                                    } else {
-                                                                                        throw new Exception("Failed to get local time");
+                                                                                    boolean parseString = true;
+                                                                                    if(oValue instanceof String) {
+                                                                                        if("CURRENT_TIMESTAMP".equalsIgnoreCase((String)oValue)) {
+                                                                                            parseString = false;
+                                                                                        }
+                                                                                    }
+                                                                                    if(parseString) {
+                                                                                        Date gtmDate = utility.get_local2server_time(request, oValue);
+                                                                                        if (gtmDate != null) {
+                                                                                            oValue = gtmDate;
+                                                                                        } else {
+                                                                                            throw new Exception("Failed to get local time");
+                                                                                        }
                                                                                     }
                                                                                 }
                                                                             }
@@ -5078,7 +5117,10 @@ public class db {
                     // refine
                     if (isOracle || isPostgres) {
                         if (colTypes == 6 || colTypes == 93) { // date, datetime
-                            if (value.endsWith(" 0:0:0")) {
+                            if (value.equalsIgnoreCase("CURRENT_TIMESTAMP")) {
+                                oValue = value;
+                                valueType = 0; // is an expression
+                            } else if (value.endsWith(" 0:0:0")) {
                                 oValue = value = "TO_DATE('" + value.substring(0, value.length() - 6) + "','YYYY-MM-DD')";
                                 valueType = 0; // is an expression
                             } else if (value.length() > 9) {
@@ -5096,7 +5138,10 @@ public class db {
                         }
                     } else if (isMySQL) {
                         if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
-                            if (value.endsWith(" 0:0:0")) {
+                            if (value.equalsIgnoreCase("CURRENT_TIMESTAMP")) {
+                                oValue = value;
+                                valueType = 0; // is an expression
+                            } else if (value.endsWith(" 0:0:0")) {
                                 oValue = value = "STR_TO_DATE('" + value.substring(0, value.length() - 6) + "','%Y-%m-%d')";
                                 valueType = -1; // truncate
                             } else if (value.length() > 9) {
@@ -5111,12 +5156,17 @@ public class db {
                             valueType = 0; // is an expression
                         }
                     } else if (isSqlServer) {
-                        if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
-                            oValue = value = "CONVERT(DATETIME,'" + value + "')";
+                        if (value.equalsIgnoreCase("CURRENT_TIMESTAMP")) {
+                            oValue = value;
                             valueType = 0; // is an expression
-                        } else if (colTypes == 91) { // date
-                            oValue = value = "CONVERT(DATETIME,'" + value + ")";
-                            valueType = 0; // is an expression
+                        } else {
+                            if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
+                                oValue = value = "CONVERT(DATETIME,'" + value + "')";
+                                valueType = 0; // is an expression
+                            } else if (colTypes == 91) { // date
+                                oValue = value = "CONVERT(DATETIME,'" + value + ")";
+                                valueType = 0; // is an expression
+                            }
                         }
                     }
                 } else {
