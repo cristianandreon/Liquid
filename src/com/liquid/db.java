@@ -963,16 +963,18 @@ public class db {
                                                 }
                                                 if (colParts.length > 1) {
                                                     String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength);
+                                                    String column_translated = getColumnTranslated(tbl_wrk, recordset_params.session, col);
                                                     aliasIndex++;
                                                     column_alias = "A" + "_" + columnName;
                                                     column_json_list += colParts[0] + "_" + columnName;
-                                                    column_list += colMode + tableIdString + colParts[0] + tableIdString + "." + itemIdString + colParts[1] + itemIdString + asKeyword + column_alias;
+                                                    column_list += colMode + tableIdString + colParts[0] + tableIdString + "." + itemIdString + column_translated + itemIdString + asKeyword + column_alias;
                                                 } else {
                                                     String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength);
+                                                    String column_translated = getColumnTranslated(tbl_wrk, recordset_params.session, col);
                                                     aliasIndex++;
                                                     column_alias = /*table*/ "A_" + columnName;
                                                     column_json_list += columnName;
-                                                    column_list += colMode + itemIdString + table + itemIdString + "." + itemIdString + col.getString("name") + itemIdString + asKeyword + column_alias;
+                                                    column_list += colMode + itemIdString + table + itemIdString + "." + itemIdString + column_translated + itemIdString + asKeyword + column_alias;
                                                 }
                                             }
 

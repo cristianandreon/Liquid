@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.28
+// Liquid ver.2.29
 //
-//  First update 06-01-2020 - Last update 19-06-2022
+//  First update 06-01-2020 - Last update 27-06-2022
 //
 //  TODO : see trello.com
 //
@@ -3058,8 +3058,15 @@ var Liquid = {
             };
             if (controlIdList) {
                 for (var io = 0; io < controlIdList.length; io++) {
-                    var paramObj = document.getElementById(controlIdList[io]);
-                    var pLiquid = Liquid.getLiquid(paramObj);
+                    var paramObj = null;
+                    if(controlIdList[io]) {
+                        if (controlIdList[io].toLowerCase() === 'this' || controlIdList[io].toLowerCase() === 'self') {
+                            paramObj = liquid;
+                        } else {
+                            paramObj = document.getElementById(controlIdList[io]);
+                        }
+                    }
+                    var pLiquid = paramObj ? Liquid.getLiquid(paramObj) : null;
                     if (pLiquid) {
                         if (pLiquid === liquid) liquidProcessed = true;
                         var selectionData = Liquid.getSelectedPrimaryKeys(pLiquid);
@@ -8892,7 +8899,12 @@ var Liquid = {
                     retVal = callback(callbackParams);
                 } else {
                     if (event.clientAfter !== true || event.clientBefore === true) {
-                        retVal = Liquid.executeClientSide(liquid, "event:" + event.name, event.client, (event.params ? event.params : eventData), event.isNative);
+                        retVal = Liquid.executeClientSide(
+                            liquid,
+                            "event:" + event.name,
+                            event.client,
+                            (eventParams ? eventParams : (event.params ? event.params : eventData )),
+                            event.isNative);
                     }
                 }
             }
