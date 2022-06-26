@@ -4872,7 +4872,17 @@ public class db {
                                             	executingQuery = tableTransactList.getSQL(liquid, i);
                                             System.err.println("LIQUID ERROR: executingQuery:"+executingQuery);
                                             String tableDesc = liquid.schemaTable.replace(tableIdString, "");
-                                            tableUpdates.add("{\"table\":\"" + tableDesc + "\",\"ids\":[], \"error\":\"" + utility.base64Encode(tableDesc+" : "+th.getLocalizedMessage()) + "\", \"query\":\"" + utility.base64Encode(executingQuery) + "\" }");
+
+                                            String errorMessage = th.getMessage();
+                                            // String errorMessage th.getLocalizedMessage();
+                                            if(errorMessage.indexOf("duplicate key value") >= 0) {
+                                                if (workspace.GLLang.equalsIgnoreCase("IT")) {
+                                                    errorMessage = "Elemento gia' presente .. non e' possibile aggiungerlo";
+                                                } else {
+                                                    errorMessage = "This item is already defined .. cannot add it";
+                                                }
+                                            }
+                                            tableUpdates.add("{\"table\":\"" + tableDesc + "\",\"ids\":[], \"error\":\"" + utility.base64Encode(tableDesc+" : "+errorMessage) + "\", \"query\":\"" + utility.base64Encode(executingQuery) + "\" }");
                                             String fieldValue = tableTransactList.transactionList.get(i).rowId;
                                             fieldValue = fieldValue != null ? fieldValue.replace("\\", "\\\\").replace("\"", "\\\"") : "";
                                             modificationsFaild.add("{\"rowId\":\"" + fieldValue + "\",\"nodeId\":\"" + tableTransactList.transactionList.get(i).nodeId + "\"}");

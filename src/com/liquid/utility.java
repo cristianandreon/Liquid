@@ -725,7 +725,7 @@ public class utility {
                     }
                 } else if (propType.equals(java.math.BigDecimal.class)) {
                     if (value instanceof String) {
-                        BigDecimal newValue = new BigDecimal((String)value);
+                        BigDecimal newValue = new BigDecimal((String)value != null && !((String) value).isEmpty() ? (String)value : (String) "0");
                         if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
                             field.set(bean, (BigDecimal) newValue);
                             retVal = true;
@@ -1741,6 +1741,66 @@ public class utility {
         return null;
     }
 
+    /**
+     * Get the error/warning/... from a result json sring
+     * @param result
+     * @return
+     * @throws JSONException
+     */
+    static public JSONObject get_result_messages(String result) throws JSONException {
+        JSONObject messageJson = new JSONObject();
+        JSONObject resultJson = new JSONObject(result);
+        if (resultJson != null) {
+            if (resultJson.has("tables")) {
+            } else if (resultJson.has("details")) {
+                JSONArray details = (JSONArray) resultJson.getJSONArray("details");
+                if (details != null) {
+                    for (int id = 0; id < details.length(); id++) {
+                        Object detail = details.get(id);
+                        if (detail instanceof JSONObject) {
+                            JSONObject detailJson = (JSONObject) detail;
+                            if (detailJson.has("error")) {
+                                messageJson.put("error", detailJson.get("error"));
+                            }
+                            if (detailJson.has("warning")) {
+                                messageJson.put("warning", detailJson.get("warning"));
+                            }
+                            if (detailJson.has("info")) {
+                                messageJson.put("info", detailJson.get("info"));
+                            }
+                            if (detailJson.has("message")) {
+                                messageJson.put("message", detailJson.get("message"));
+                            }
+                            if (detailJson.has("tables")) {
+                                JSONArray table_details = (JSONArray) detailJson.getJSONArray("tables");
+                                if (table_details != null) {
+                                    for (int idt = 0; idt < table_details.length(); idt++) {
+                                        Object table_detail = table_details.get(idt);
+                                        if (table_detail instanceof JSONObject) {
+                                            JSONObject detailTableJson = (JSONObject) table_detail;
+                                            if (detailTableJson.has("error")) {
+                                                messageJson.put("error", detailTableJson.get("error"));
+                                            }
+                                            if (detailTableJson.has("warning")) {
+                                                messageJson.put("warning", detailTableJson.get("warning"));
+                                            }
+                                            if (detailTableJson.has("info")) {
+                                                messageJson.put("info", detailTableJson.get("info"));
+                                            }
+                                            if (detailTableJson.has("message")) {
+                                                messageJson.put("message", detailTableJson.get("message"));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return messageJson;
+    }
 
     /**
      * Transfer error to global result
