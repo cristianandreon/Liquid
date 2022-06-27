@@ -2249,6 +2249,8 @@ public class bean {
         return tbl_wrk;
     }
 
+
+
     /**
      *
      * @param request
@@ -2312,7 +2314,7 @@ public class bean {
         //
         workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, controlId);
         if (tbl_wrk == null) {
-            throw new Exception("load_beans() : ControlId not found");
+            throw new Exception("load_beans() : Control '"+controlId+"' not found");
         }
 
 
@@ -3245,6 +3247,70 @@ public class bean {
         } else {
             throw new Exception("removeProps() : unsupported");
         }
+    }
+
+    public static String toHTML(ArrayList<Object> beans,
+                              String[] columns, String[] labels, String[] keys,
+                              String rowCallback,
+                              String tableClass, String tableStyle,
+                              String cellClass, String cellStyle,
+                              String Mode) {
+        String out = null;
+
+        if(beans != null) {
+            if(beans.size()>0) {
+                out = "<table class=\"" + (tableClass != null ? tableClass : "") + "\" style='" + (tableStyle != null ? tableStyle : "") + "'>";
+                out += "<thead>";
+                out += "<tr>";
+                for (int j = 0; j < labels.length; j++) {
+                    String label = labels[j];
+                    if (label != null && !label.isEmpty()) {
+                        out += "<th" + (cellClass != null ? " class='" + cellClass + "'" : "") + (cellStyle != null ? " style='" + cellStyle + "'" : "") + ">";
+                        out += label;
+                        out += "</th>";
+                    }
+                }
+                out += "</tr>";
+                out += "</thead>";
+                out += "<tbody>";
+                for (int i = 0; i < beans.size(); i++) {
+                    Object bean = beans.get(i);
+                    if (bean != null) {
+                        String onclick = "";
+                        out += "<tr>";
+                        for (int j = 0; j < columns.length; j++) {
+                            String label = labels[j];
+                            if (label != null && !label.isEmpty()) {
+                                String value = null;
+                                String column = columns[j];
+                                String[] column_parts = column.split("\\|");
+                                if (column_parts.length == 1) {
+                                    value = String.valueOf(utility.getEx(bean, column));
+                                } else if (column_parts.length > 1) {
+                                    Object val1 = utility.getEx(bean, column_parts[0]);
+                                    value = val1 != null ? String.valueOf(val1) : String.valueOf(utility.getEx(bean, column_parts[1]));
+                                }
+                                if ("null".equalsIgnoreCase(value)) {
+                                    value = "";
+                                }
+                                if (utility.contains(Arrays.asList(keys), column)) {
+                                    onclick += " " + rowCallback + "(" + value + ")";
+                                }
+                                if (column != null && !column.isEmpty()) {
+                                    out += "<td title='"+value+"'" + (cellClass != null ? " class='" + cellClass + "'" : "") + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + ">";
+                                    out += value;
+                                    out += "</td>";
+                                }
+                            }
+                        }
+                        out += "</tr>";
+                    }
+                }
+                out += "</tbody>";
+                out += "</table>";
+            }
+        }
+        return out;
     }
 
 

@@ -427,7 +427,7 @@ public class utility {
                         }
                     } else if (value instanceof Boolean) {
                         if(curValue == null || !(Boolean)curValue != (Boolean)value) {
-                            field.set(bean, true);
+                            field.set(bean, value);
                             retVal = true;
                         }
                     } else if (value instanceof Integer) {

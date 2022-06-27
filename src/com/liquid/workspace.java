@@ -2830,8 +2830,8 @@ public class workspace {
                                     }
                                     if ("com.liquid.event.onInserting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onInserting".equalsIgnoreCase(server))) {
                                         event.put("isSystem", true);
-                                        bInsertEventFound = true;
                                     }
+                                    bInsertEventFound = true;
                                 }
                             }
                             if (bUpdateActive) {
@@ -2843,8 +2843,8 @@ public class workspace {
                                     }
                                     if ("com.liquid.event.onUpdating".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onUpdating".equalsIgnoreCase(server))) {
                                         event.put("isSystem", true);
-                                        bUpdateEventFound = true;
                                     }
+                                    bUpdateEventFound = true;
                                 }
                             }
                             if (bDeleteActive) {
@@ -2856,8 +2856,8 @@ public class workspace {
                                     }
                                     if ("com.liquid.event.onDeleting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onDeleting".equalsIgnoreCase(server))) {
                                         event.put("isSystem", true);
-                                        bDeleteEventFound = true;
                                     }
+                                    bDeleteEventFound = true;
                                 }
                             }
                             if (bPastedRowActive) {
@@ -2870,8 +2870,8 @@ public class workspace {
                                     if ("com.liquid.event.onPastedRow".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onPastedRow".equalsIgnoreCase(server))) {
                                         event.put("isSystem", true);
                                         event.put("sync", true);
-                                        bPastedRowFound = true;
                                     }
+                                    bPastedRowFound = true;
                                 }
                             }
                             // signature
@@ -5059,6 +5059,32 @@ public class workspace {
         }
         return null;
     }
+
+
+    static public void reset_all_workspace()  {
+        glTblWorkspaces.clear();
+    }
+    static public void reset_workspace(String databaseSchemaTable, String controlId) {
+        String database = null, table = null, schema = null, primaryKey = null;
+        workspace tbl_wrk = null;
+        for (int i = 0; i < glTblWorkspaces.size(); i++) {
+            workspace tblWorkspace = glTblWorkspaces.get(i);
+            if (tblWorkspace != null) {
+                String wrkDatabaseSchemaTable = liquidize.liquidizeString(tblWorkspace.databaseSchemaTable, controlIdSeparator);
+                if (utility.compare_db_schema_table(wrkDatabaseSchemaTable, databaseSchemaTable)) {
+                    if (controlId != null) {
+                        if (controlId.equalsIgnoreCase(tblWorkspace.controlId)) {
+                            glTblWorkspaces.set(i, null);
+                        }
+                    } else {
+                        glTblWorkspaces.set(i, null);
+                    }
+                }
+            }
+        }
+    }
+
+
 
     /**
      *

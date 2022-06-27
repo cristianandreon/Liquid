@@ -43,7 +43,7 @@
 //
 //
 //
-// *** Automatic event firing ***
+// *** Automatic event firing (on NON SYstem command) ***
 //
 //      suppose a command named "my_command", the event's processor strip underline and make first char to uppercase :
 //
@@ -8984,7 +8984,7 @@ var Liquid = {
                 retVal = true;
             }
 
-            return retVal !== null ? retVal : defaultRetval;
+            return isDef(retVal) ? retVal : defaultRetval;
         }
         return defaultRetval;
     },
@@ -11039,7 +11039,7 @@ var Liquid = {
                                 }
                             }
                             var result = Liquid.onEvent(obj, "onUpdating", null, null, null, defaultValue, bAlwaysCallback);
-                            if (result.Result === defaultValue || result.systemResult === true) {
+                            if (result.result === defaultValue || result.systemResult === true) {
                                 liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 bContinue = true;
                             }
@@ -18836,6 +18836,8 @@ var Liquid = {
                                 } else {
                                     console.error("LIQUID: prop non recognized:"+rowId);
                                 }
+                            } else {
+                                console.error("LIQUID: field not found:"+field);
                             }
                             if(shouldRefresh) {
                                 setTimeout(function () {
