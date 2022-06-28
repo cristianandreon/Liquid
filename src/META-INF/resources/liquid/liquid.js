@@ -22494,6 +22494,15 @@ columns:[
                 Liquid.showRemaining(obj_id, finalDate);
             }, 1000);
         }
+    },
+    onOptionSelected:function(obj, id_obj_id) {
+        if(obj) {
+            let id_obj = document.getElementById(id_obj_id);
+            if(id_obj) {
+                let code = obj.list.childNodes[i].getAttribute("code")
+                id_obj.setAttribute("code",  code);
+            }
+        }
     }
 };
 

@@ -2184,13 +2184,12 @@ public class utility {
      * @param chacheIt
      * @return
      */
-    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) {
-        return get_datalist_from_table(datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, chacheIt);
+    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
+        return get_datalist_from_table(datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, null, emptyRow, null, chacheIt);
     }
 
 
     /**
-     *
      * @param datalistId
      * @param databaseSchemaTable
      * @param codeColumn
@@ -2199,6 +2198,7 @@ public class utility {
      * @param where
      * @param order
      * @param emptyRow
+     * @param currentValue
      * @param chacheIt
      * @return
      * @throws Throwable
@@ -2207,6 +2207,7 @@ public class utility {
                                                  String codeColumn, String descColumn, String tooltipColumn,
                                                  String where, String order,
                                                  String emptyRow,
+                                                 String currentValue,
                                                  boolean chacheIt) throws Throwable {
         String out = "";
 
@@ -2217,16 +2218,51 @@ public class utility {
         } else {
             beans = bean.load_beans(databaseSchemaTable, null, (where != null && !where.isEmpty() ? where : "*"), 0, order);
         }
-        out += "<datalist id=\"" + datalistId + "\">";
+        boolean codeHidden = false;
+        String [] codeColumnParts = null;
+        String idColumn = null;
+        if(codeColumn != null) {
+            codeColumnParts = codeColumn.split("\\|");
+            if (codeColumnParts.length > 1) {
+                codeColumn = codeColumnParts[0];
+                idColumn = codeColumnParts[1];
+                codeHidden = true;
+            }
+        }
+        out += "<datalist " +
+                "id=\"" + datalistId + "\" " +
+                (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
+                ">";
+        int iCurrent = 0;
+        if(currentValue != null) {
+            if (beans != null) {
+                for (int i = 0; i < beans.size(); i++) {
+                    String code = (codeColumn != null ? String.valueOf(utility.getEx(beans.get(i), codeColumn)) : null);
+                    if(currentValue.compareTo(code) == 0) {
+                        iCurrent = i + 1;
+                        break;
+                    }
+                }
+            }
+        }
         if (emptyRow != null) {
-            out += "<option title=\"" + ("") + "\" selected value=\"" + emptyRow + "\">" + " " + "</option>";
+            out += "<option title=\"" + ("") + "\" " +
+                    (iCurrent == 0 ? "selected " : "") +
+                    "value=\"" + emptyRow + "\">" + " " + "</option>";
         }
         if (beans != null) {
             for (int i = 0; i < beans.size(); i++) {
-                String code = (codeColumn != null ? (String) utility.getEx(beans.get(i), codeColumn) : null);
+                String code = (codeColumn != null ? String.valueOf(utility.getEx(beans.get(i), codeColumn)) : null);
                 String desc = (descColumn != null ? (String) utility.getEx(beans.get(i), descColumn) : null);
                 String tooltip = (tooltipColumn != null ? (String) (utility.has(beans.get(i), tooltipColumn) ? utility.getEx(beans.get(i), tooltipColumn) : null) : null);
-                out += "<option title=\"" + (tooltip != null ? tooltip.replace("\"", "'") : "") + "\" value=\"" + code + "\" > " + desc + " </option>";
+                out += "<option " +
+                        (iCurrent == i+1 ? "selected " : "") +
+                        "data-id=\""+code+"\" " +
+                        "data-code=\""+code+"\" " +
+                        "name=\""+desc+"\" " +
+                        "" + (tooltip != null ? "title=\"" + tooltip.replace("\"", "'") +"\"" : "") +
+                        (codeHidden ? "" : "value=\"" + code + "\" ") +
+                        ">" + desc + "</option>";
             }
         }
         out += "</datalist>";
@@ -2287,7 +2323,7 @@ public class utility {
                 codeColumn,
                 descColumn,
                 tooltipColumn,
-                where, order, emptyRow, chacheIt
+                where, order, emptyRow, null, chacheIt
         );
 
         String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
