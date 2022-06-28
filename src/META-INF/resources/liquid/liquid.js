@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.29
+// Liquid ver.2.30
 //
 //  First update 06-01-2020 - Last update 27-06-2022
 //
@@ -15269,9 +15269,12 @@ var Liquid = {
                             if (targetObj) {
                                 if (Liquid.isDate(type)) {
                                     if (targetObj.format) {
-                                        if (!targetObj.getAttribute("pure_value")) {
-                                            targetObj.setAttribute("pure_value", value);
-                                        }
+                                        try {
+                                            let pure_value = targetObj.getAttribute("pure_value");
+                                            if (!targetObj.getAttribute("pure_value") || (pure_value != null && pure_value.toUpperCase() == 'CURRENT_TIMESTAMP')) {
+                                                targetObj.setAttribute("pure_value", value);
+                                            }
+                                        } catch(e) { console.error(e) }
                                     }
                                     if (value == "NULL") {
                                         value = "";
@@ -19336,7 +19339,7 @@ var Liquid = {
             if(!selNodes || selNodes.length === 0) {
                 if( Liquid.isFormX(liquid) || Liquid.isAutoInsert(liquid) ) {
                     if(!liquid.addingNode) {
-                        console.error("*** ERROR: missing addingNode .. maybe you missed \"insert\" command");
+                        console.debug("*** DEBUG: missing addingNode .. maybe you missed \"insert\" command");
                     } else {
                         selNodes = [ liquid.addingNode ];
                     }

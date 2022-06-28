@@ -3545,10 +3545,10 @@ public class db {
         String sSTMTUpdate = null;
 
         if(DatabaseSchemaTable == null || Fields == null || Values == null) {
-            return new Object [] { false, -1 };
+            return new Object [] { false, -1, "invalid params" };
         }
         if(Fields.length > Values.length) {
-            return new Object [] { false, -1 };
+            return new Object [] { false, -1, "size fields/values mismath" };
         }
 
         try {
@@ -3575,7 +3575,7 @@ public class db {
                 sSTMTUpdate = "INSERT INTO "+DatabaseSchemaTable+" (";
 
                 for(int i=0; i<Fields.length; i++) {
-                    sSTMTUpdate += (i > 0 ? "," : "") + "\"" + Fields[i] + "\"";
+                    sSTMTUpdate += (i > 0 ? "," : "") + "\"" + Fields[i].replace("\"", "") + "\"";
                 }
                 sSTMTUpdate += ") VALUES (";
                 for(int i=0; i<Fields.length; i++) {
@@ -6272,11 +6272,11 @@ public class db {
 
 
     /**
-     * <h3>Insert the bean to the database</h3>
+     * <h3>delete the bean from the database</h3>
      * <p>
-     * This method execute an insert statement by the given bean
+     * This method execute an delete statement by the given bean
      *
-     * @param bean bean to insert (Object)
+     * @param bean bean to delete (Object)
      * @param tbl_wrk the table workspace of the control (Object)
      *
      * @return the detail of operation as json object { "tables":[ {

@@ -30,6 +30,7 @@ import static com.liquid.db.get_query_info;
 import static com.liquid.db.get_recordset;
 import static com.liquid.utility.resetAllChanged;
 import static com.liquid.utility.searchProperty;
+import static com.liquid.workspace.getDateTimeFormatString;
 
 
 // Note : for big resultset : use the pagination
@@ -3285,7 +3286,20 @@ public class bean {
                                 String column = columns[j];
                                 String[] column_parts = column.split("\\|");
                                 if (column_parts.length == 1) {
-                                    value = String.valueOf(utility.getEx(bean, column));
+                                    Object oValue = utility.getEx(bean, column);
+                                    if(oValue instanceof Timestamp) {
+                                        value = new SimpleDateFormat(getDateTimeFormatString(), workspace.locale).format((Timestamp) oValue);
+                                    } else if(oValue instanceof Double || oValue instanceof Float) {
+                                        value = String.format("%.2f", oValue);
+                                    } else if(oValue instanceof Boolean) {
+                                        if("IT".equalsIgnoreCase(workspace.GLLang)) {
+                                            value = (boolean) oValue ? "V" : "F";
+                                        } else {
+                                            value = (boolean) oValue ? "T" : "F";
+                                        }
+                                    } else {
+                                        value = String.valueOf(oValue);
+                                    }
                                 } else if (column_parts.length > 1) {
                                     Object val1 = utility.getEx(bean, column_parts[0]);
                                     value = val1 != null ? String.valueOf(val1) : String.valueOf(utility.getEx(bean, column_parts[1]));
@@ -3378,7 +3392,7 @@ public class bean {
     private static class myDateSerializer implements JsonSerializer<Date> {
         @Override
         public JsonElement serialize(Date date, Type type, JsonSerializationContext jsonSerializationContext) {
-            return new JsonPrimitive( new SimpleDateFormat(workspace.getDateTimeFormatString(), workspace.locale).format(date) );
+            return new JsonPrimitive( new SimpleDateFormat(getDateTimeFormatString(), workspace.locale).format(date) );
         }
     }
 
