@@ -1954,11 +1954,15 @@ public class event {
             // root table
             Class cls = Class.forName("app.liquid.dms.connection");
             Field fs = cls.getDeclaredField("dmsSchema");
-            if(fs != null)
+            if(fs != null) {
+                fs.setAccessible(true);
                 dmsSchema = (String) fs.get(null);
+            }
             Field ft = cls.getDeclaredField("dmsTable");
-            if(ft != null)
+            if(ft != null) {
+                ft.setAccessible(true);
                 dmsTable = (String) ft.get(null);
+            }
 
             //  params :
             // { database:... , schema:... , table:... , name:... , ids:nodeKeys };
@@ -1971,7 +1975,7 @@ public class event {
                     for(int ik=0; ik<keyList.size(); ik++) {
                         sWhere += sWhere.length()>0?" OR ":"" + "link='"+keyList.get(ik)+"'";
                     }
-                    sQuery = "SELECT * from \""+dmsSchema+"\".\""+dmsTable+"\" WHERE ("+sWhere+")";
+                    sQuery = "SELECT * from \""+dmsSchema+"\".\""+dmsTable+"\" WHERE ("+sWhere+") + ORDER BY date DESC";
                     psdo = conn.prepareStatement(sQuery);
                     rsdo = psdo.executeQuery();
                     if(rsdo != null) {
@@ -2646,7 +2650,7 @@ public class event {
         StringBuilder resultSet = new StringBuilder("{\"resultSet\":[");
         Connection conn = null;
         PreparedStatement psdo = null;
-        String sQuery = null;
+        String sQuery = null, sQuerySel = null;
         String sWhere = "";
         String dmsSchema = null, dmsTable = null;
         int nRecs = 0;
@@ -2656,11 +2660,15 @@ public class event {
             // root table
             Class cls = Class.forName("app.liquid.dms.connection");
             Field fs = cls.getDeclaredField("dmsSchema");
-            if(fs != null)
+            if(fs != null) {
+                fs.setAccessible(true);
                 dmsSchema = (String) fs.get(null);
+            }
             Field ft = cls.getDeclaredField("dmsTable");
-            if(ft != null)
+            if(ft != null) {
+                ft.setAccessible(true);
                 dmsTable = (String) ft.get(null);
+            }
 
             JSONObject paramsJson = new JSONObject((String)params);
             JSONObject paramJson = paramsJson.getJSONObject("params");
@@ -2669,15 +2677,48 @@ public class event {
                 Object [] connRes = connection.getDBConnection();
                 conn = (Connection)connRes[0];
                 if(conn != null) {
-                    sQuery = "DELETE FROM \""+dmsSchema+"\".\""+dmsTable+"\" WHERE (id='"+paramJson.getString("id")+"')";
-                    psdo = conn.prepareStatement(sQuery);
-                    int res = psdo.executeUpdate();
-                    if(res >= 0) {
-                        String fieldSet = "{" + "\"id\":\""+(paramJson.getString("id")) + "}";
-                        resultSet.append( (nRecs>0?",":"") + fieldSet);
-                        nRecs++;
+                    if(paramJson.has("id")) {
+                        String id = paramJson.getString("id");
+                        sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (id='" + id + "')";
+                        sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + id + "')";
+                    } else if(paramJson.has("link")) {
+                        String link = paramJson.getString("link");
+                        if(link.startsWith("DMS://")) link = link.substring(6);
+                        sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
+                        sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
                     }
-                    if(psdo != null) psdo.close();
+                    if(sQuery != null) {
+                        psdo = conn.prepareStatement(sQuerySel);
+                        ResultSet rsdo = psdo.executeQuery();
+                        if(rsdo != null) {
+                            if(rsdo.next()) {
+                                String file = rsdo.getString("file");
+                                if(file != null && !file.isEmpty()) {
+                                    boolean resDel = new File(file).delete();
+                                    if(!resDel) {
+
+                                    }
+                                }
+                            }
+                            rsdo.close();;
+                        }
+                        psdo.close();
+
+
+                        psdo = conn.prepareStatement(sQuery);
+                        int res = psdo.executeUpdate();
+                        if (res >= 0) {
+                            String fieldSet;
+                            if(paramJson.has("id")) {
+                                fieldSet = "{" + "\"id\":\"" + (paramJson.getString("id")) + ",\"res\":" + res + " }";
+                            } else {
+                                fieldSet = "{" + "\"link\":\"" + (paramJson.getString("link")) + ",\"res\":" + res + "}";
+                            }
+                            resultSet.append((nRecs > 0 ? "," : "") + fieldSet);
+                            nRecs++;
+                        }
+                        if (psdo != null) psdo.close();
+                    }
                 }
             }
         } catch (Throwable e) {
@@ -2743,11 +2784,15 @@ public class event {
                 // root table
                 Class cls = Class.forName("app.liquid.dms.connection");
                 Field fs = cls.getDeclaredField("dmsSchema");
-                if(fs != null)
+                if(fs != null) {
+                    fs.setAccessible(true);
                     dmsSchema = (String) fs.get(null);
+                }
                 Field ft = cls.getDeclaredField("dmsTable");
-                if(ft != null)
+                if(ft != null) {
+                    ft.setAccessible(true);
                     dmsTable = (String) ft.get(null);
+                }
 
                 JSONObject paramsJson = new JSONObject((String)params);
                 JSONObject paramJson = paramsJson.getJSONObject("params");

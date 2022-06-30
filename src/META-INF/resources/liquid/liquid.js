@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.30
+// Liquid ver.2.31
 //
-//  First update 06-01-2020 - Last update 27-06-2022
+//  First update 06-01-2020 - Last update 29-06-2022
 //
 //  TODO : see trello.com
 //
@@ -131,12 +131,10 @@ class LiquidCtrl {
                     }
                 }
                 this.outDivObj = document.createElement("div");
-                this.outDivObj.style.width = "800px";
-                this.outDivObj.style.height = "600px";
-                this.outDivObj.style.position = "600px";
                 this.outDivObj.style.position = 'absolute';
                 this.outDivObj.id = this.outDivId;
                 document.body.insertBefore(this.outDivObj, document.body.firstChild);
+                this.outDivCreated = true;
             }
         }
 
@@ -269,6 +267,23 @@ class LiquidCtrl {
 
             if(!isDef(this.tableJson.mode)) {
                 this.tableJson.mode = "";
+            }
+
+            if(this.outDivCreated) {
+                if (this.tableJson) {
+                    if (isDef(this.tableJson.width)) {
+                        this.outDivObj.style.width = this.tableJson.width;
+                    } else {
+                        this.outDivObj.style.minWidth = "300px";
+                        this.outDivObj.style.margin = "auto";
+                    }
+                    if (isDef(this.tableJson.height)) {
+                        this.outDivObj.style.height = this.tableJson.height;
+                    } else {
+                        this.outDivObj.style.minHeight = "100px";
+                        this.outDivObj.style.margin = "auto";
+                    }
+                }
             }
 
             //
@@ -2683,6 +2698,7 @@ var Liquid = {
     pdfJsPath:"/PDF.js/build/",
     pdfJsDebug:false,
     translateLabels:true,
+    cacheControl:"reload",
     ERROR_STRING:"ERROR",
     WARNING_STRING:"WARNING",
     QUESTION_STRING:"QUESTION",
@@ -3285,7 +3301,9 @@ var Liquid = {
                     }
                 }
             }
-            $(obj).val(approvedHTML);
+            try {
+                $(obj).val(approvedHTML);
+            } catch (e) { console.error(e); }
         }
     },
     addForeignTableCommandParam: function (pLiquid, params) {
@@ -5508,7 +5526,7 @@ var Liquid = {
                             if (!bFoundSelection && selNodes && selNodes.length > 0) {
                                 reason = "unselect";
                             } else if (anyFieldsChange) {
-                                reason = "reload";
+                                reason = Liquid.cacheControl;
                             } else if (liquid.onceRefreshAll) {
                                 reason = "refreshAll";
                             }
@@ -17868,7 +17886,7 @@ var Liquid = {
                         } else if (layout.emptyRows === 'hide') {
                             // hide
                             layout.rowsContainer[ir].containerObj.style.display = "none";
-                        } else {
+                        } else if (layout.emptyRows === 'blur') {
                             // blur
                             layout.rowsContainer[ir].containerObj.style.filter = "grayscale(.5) opacity(0.5) blur(2px)";
                             layout.rowsContainer[ir].containerObj.style.pointerEvents = 'none';
@@ -18383,7 +18401,7 @@ var Liquid = {
                 } else {
                     if(value.startsWith("DMS://")) {
                         let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
-                        const canvasRequest = fetch(src, {cache: "force-cache"}).then(response => response.blob());
+                        const canvasRequest = fetch(src, {cache: Liquid.cacheControl}).then(response => response.blob());
                         canvasRequest.then(blob => {
                             if (blob.type.indexOf("video") >= 0) {
                                 targetObj.src = window.URL.createObjectURL(blob);
@@ -18406,7 +18424,7 @@ var Liquid = {
                  */
                 if(value.startsWith("DMS://")) {
                     let src = glLiquidServlet + '?operation=downloadDocument&link='+value;
-                    const videoRequest = fetch(src, {cache: "force-cache"}).then(response => response.blob());
+                    const videoRequest = fetch(src, {cache: Liquid.cacheControl}).then(response => response.blob());
                     videoRequest.then(blob => {
                         if(targetObj.nodeName.toUpperCase() === 'VIDEO') {
                             if(blob.type.indexOf("video")>=0) {
@@ -18423,7 +18441,7 @@ var Liquid = {
             } else if(targetObj.nodeName.toUpperCase() === 'IMG') {
                 if(value.startsWith("DMS://")) {
                     let src = glLiquidServlet + '?operation=downloadDocument&link='+value;
-                    const videoRequest = fetch(src, {cache: "force-cache"}).then(response => response.blob());
+                    const videoRequest = fetch(src, {cache: Liquid.cacheControl}).then(response => response.blob());
                     videoRequest.then(blob => {
                         if(targetObj.nodeName.toUpperCase() === 'IMG') {
                             targetObj.src = window.URL.createObjectURL(blob);

@@ -3579,37 +3579,49 @@ public class db {
                 }
                 sSTMTUpdate += ") VALUES (";
                 for(int i=0; i<Fields.length; i++) {
-                    sSTMTUpdate += (i > 0 ? "," : "") + "?";
+                    Object val = Values[i];
+                    if (val instanceof Expression) {
+                        sSTMTUpdate += (i > 0 ? "," : "") + ""+((Expression) val).getMethodName() +"";
+                    } else if (val instanceof StringBuffer) {
+                        sSTMTUpdate += (i > 0 ? "," : "") + ((StringBuffer)val).toString();
+                    } else {
+                        sSTMTUpdate += (i > 0 ? "," : "") + "?";
+                    }
                 }
                 sSTMTUpdate += ")";
 
                 PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
 
+                int ip = 1;
                 for(int i=0; i<Values.length; i++) {
                     if(i < Fields.length) {
                         Object val = Values[i];
                         if (val instanceof Integer) {
-                            sqlSTMTUpdate.setInt((i + 1), (int) val);
+                            sqlSTMTUpdate.setInt(ip++, (int) val);
                         } else if (val instanceof Long) {
-                            sqlSTMTUpdate.setLong((i + 1), (long) val);
+                            sqlSTMTUpdate.setLong(ip++, (long) val);
                         } else if (val instanceof Float) {
-                            sqlSTMTUpdate.setFloat((i + 1), (float) val);
+                            sqlSTMTUpdate.setFloat(ip++, (float) val);
                         } else if (val instanceof Double) {
-                            sqlSTMTUpdate.setDouble((i + 1), (double) val);
+                            sqlSTMTUpdate.setDouble(ip++, (double) val);
                         } else if (val instanceof Timestamp) {
-                            sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
+                            sqlSTMTUpdate.setTimestamp(ip++, (Timestamp) val);
                         } else if (val instanceof java.util.Date) {
-                            sqlSTMTUpdate.setDate((i + 1), (new java.sql.Date(((java.util.Date) val).getTime())) );
+                            sqlSTMTUpdate.setDate(ip++, (new java.sql.Date(((java.util.Date) val).getTime())) );
                         } else if (val instanceof java.sql.Date) {
-                            sqlSTMTUpdate.setDate((i + 1), (java.sql.Date)val);
+                            sqlSTMTUpdate.setDate(ip++, (java.sql.Date)val);
                         } else if (val instanceof java.util.Date) {
-                            sqlSTMTUpdate.setDate((i + 1), new java.sql.Date(((java.util.Date)val).getTime()));
+                            sqlSTMTUpdate.setDate(ip++, new java.sql.Date(((java.util.Date)val).getTime()));
                         } else if (val instanceof String) {
-                            sqlSTMTUpdate.setString((i + 1), (String) val);
+                            sqlSTMTUpdate.setString(ip++, (String) val);
                         } else if (val instanceof Boolean) {
-                            sqlSTMTUpdate.setBoolean((i + 1), (boolean) val);
+                            sqlSTMTUpdate.setBoolean(ip++, (boolean) val);
                         } else if (val == null) {
-                            sqlSTMTUpdate.setNull((i + 1), Types.NULL);
+                            sqlSTMTUpdate.setNull(ip++, Types.NULL);
+                        } else if (val instanceof Expression) {
+                            // non come parametro .. iniettato sopra
+                        } else if (val instanceof StringBuffer) {
+                            // non come parametro .. iniettato sopra
                         } else {
                             System.err.println("insert_row() invalid obejct type : "+ val.getClass().getName());
                         }
