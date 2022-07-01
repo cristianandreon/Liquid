@@ -2175,7 +2175,7 @@ public class utility {
 
     /**
      *
-     * @param datalistId
+     * @param controlId
      * @param databaseSchemaTable
      * @param codeColumn
      * @param descColumn
@@ -2190,15 +2190,15 @@ public class utility {
 
 
     /**
-     * @param datalistId
+     * @param inputId               ID of the control (code)
      * @param databaseSchemaTable
-     * @param codeColumn
-     * @param descColumn
-     * @param tooltipColumn
+     * @param codeColumn            Code field in the database
+     * @param descColumn            Description field in the database
+     * @param tooltipColumn         Tooltip field in the database
      * @param where
      * @param order
-     * @param emptyRow
-     * @param currentValue
+     * @param emptyRow              Show empty row (emptyRow define the code of the option element)
+     * @param currentValue          current code value (as selected)
      * @param chacheIt
      * @return
      * @throws Throwable
@@ -2210,8 +2210,8 @@ public class utility {
                                                  String currentValue,
                                                  boolean chacheIt) throws Throwable {
         String out = "";
-        String datalistId = inputId+"_list";
-        String descId = inputId+"_desc";
+        String datalistId = inputId+".list";
+        String descId = inputId+".desc";
         ArrayList<Object> beans = null;
         DataListCache dataListCache = get_datalist_from_cahce(databaseSchemaTable, codeColumn, descColumn, where);
         if (dataListCache != null) {
@@ -2223,17 +2223,22 @@ public class utility {
         String [] codeColumnParts = null;
         String idColumn = null;
         if(codeColumn != null) {
-            codeColumnParts = codeColumn.split("\\|");
+            /*codeColumnParts = codeColumn.split("\\|");
             if (codeColumnParts.length > 1) {
                 codeColumn = codeColumnParts[0];
                 idColumn = codeColumnParts[1];
                 codeHidden = true;
-            }
+            }*/
+            codeHidden = true;
         }
-        out += "<input type=\"text\" id=\""+descId+"\" style=\"\"" + "value=\"" + "" + "\" />";
+        if(codeHidden) {
+            out += "<input type=\"text\" id=\"" + descId + "\" style=\"\"" + "value=\"" + "" + "\" />";
+        }
         out += "<datalist " +
                 "id=\"" + datalistId + "\" " +
-                (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
+                "class='liquidDatalist' "+
+                "data-inputid=\""+inputId+"\" " +
+                // (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
                 ">";
         int iCurrent = 0;
         if(currentValue != null) {
@@ -2279,7 +2284,10 @@ public class utility {
                 glDataListCache.add(dataListCache);
             }
         }
-        out += "<script>Liquid.setupDescDatalist('"+inputId+"','"+descId+"','"+datalistId+"')</script>";
+        if(codeHidden) {
+            // No attavato da document ready in liquid.js
+            // out += "<script>Liquid.setupDescDatalist('" + inputId + "','" + descId + "','" + datalistId + "')</script>";
+        }
         return out;
     }
 
@@ -2315,7 +2323,6 @@ public class utility {
                 "placeholder=\"\"\n" +
                 "onchange=\""+onChange+"\"\n" +
                 "style=\""+style+"\"\n" +
-                "list=\""+(inputId+"_list")+"\"\n" +
                 "onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\"\n" +
                 "onblur=\"if(!this.value) { this.value=this.placeholder; onchange(this); }\"\n" +
                 ">\n";
@@ -2329,7 +2336,18 @@ public class utility {
                 where, order, emptyRow, null, chacheIt
         );
 
-        String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
+        String descId = inputId+".desc";
+        String reset = "<button class=\"close-icon\" " +
+                "onclick=\"" +
+                "if(document.getElementById('"+inputId+"').value) { " +
+                "document.getElementById('"+inputId+"').value=''; " +
+                "document.getElementById('"+inputId+"').placeholder=''; " +
+                "document.getElementById('"+inputId+"').onchange(); " +
+                "document.getElementById('"+descId+"').value=''; " +
+                "document.getElementById('"+descId+"').placeholder=''; " +
+                "document.getElementById('"+descId+"').onchange(); " +
+                "} else {}\">" +
+                "</button>";
 
         return input + "\n" + datalist + "\n" + reset;
     }

@@ -22547,6 +22547,15 @@ columns:[
             }
         }
     },
+    setupAllDescDatalist:function() {
+        var datalists = document.getElementsByClassName("liquidDatalist");
+        if (datalists) {
+            for (var i = 0; i < datalists.length; i++) {
+                let inputId = datalists[i].getAttribute("data-inputid");
+                Liquid.setupDescDatalist(inputId, inputId+".desc", inputId+".list");
+            }
+        }
+    },
     /**
      * Inizialize control for custo datalist manage
      *
@@ -22555,16 +22564,19 @@ columns:[
      * @param datalistId
      */
     setupDescDatalist:function(inputId, descId, datalistId) {
-        let inputObj = null; // document.getElementById(inputId);
+        let inputObj = document.getElementById(inputId);
         let descObj = document.getElementById(descId);
         let rootNode = descObj.parentNode;
-        for(let i=0; i<rootNode.childNodes.length; i++) {
-            var node = rootNode.childNodes[i];
-            if (node.dataset) {
-                var prevId = node.getAttribute('previd');
-                if (prevId == inputId) {
-                    inputObj = rootNode.childNodes[i];
-                    break;
+        if(!inputObj) {
+            // renamed by layout
+            for (let i = 0; i < rootNode.childNodes.length; i++) {
+                var node = rootNode.childNodes[i];
+                if (node.dataset) {
+                    var prevId = node.getAttribute('previd');
+                    if (prevId == inputId) {
+                        inputObj = rootNode.childNodes[i];
+                        break;
+                    }
                 }
             }
         }
@@ -22587,7 +22599,7 @@ columns:[
             descObj.onblur = function() { this.value=this.getAttribute('rel') }
             descObj.onchange = function() { this.setAttribute('rel',this.value); Liquid.onChangedDescDatalist(this) };
 
-            descObj.setAttribute('code_id', inputObj.id);
+            descObj.setAttribute('inputid', inputObj.id);
 
             if(inputObj.value) {
                 var selectedOption = descObj.list.options.item(inputObj.value);
@@ -22595,6 +22607,7 @@ columns:[
                     descObj.value = selectedOption.value;
                 }
             }
+            console.info("SETUP datalist "+inputId+" done.")
         }
     },
     /**
@@ -22604,7 +22617,7 @@ columns:[
     onChangedDescDatalist:function(obj) {
         var selectedOption = obj.list.options.namedItem(obj.value);
         if (selectedOption) {
-            let code_id = obj.getAttribute('code_id');
+            let code_id = obj.getAttribute('inputid');
             let code_obj = document.getElementById(code_id);
             if(code_obj) {
                 code_obj.value = selectedOption.getAttribute('data-code');
@@ -23496,6 +23509,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }));
         });
     } catch (e) {
+        console.error(e);
+    }
+    try {
+        Liquid.setupAllDescDatalist();
+    } catch (e) {
+        console.error(e);
     }
 });
 
