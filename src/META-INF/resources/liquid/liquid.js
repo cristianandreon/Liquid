@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.31
+// Liquid ver.2.32
 //
-//  First update 06-01-2020 - Last update 29-06-2022
+//  First update 06-01-2020 - Last update 01-07-2022
 //
 //  TODO : see trello.com
 //
@@ -5493,7 +5493,6 @@ var Liquid = {
                         }
                         liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(liquid.nRows / liquid.gridOptions.paginationPageSize)) : 1;
 
-
                         // Initially selected ...
                         if (bFirstTimeLoad) {
                             if (liquid.tableJson.checkboxSelection) {
@@ -5506,7 +5505,8 @@ var Liquid = {
                             selNodes = liquid.gridOptions.api.getSelectedNodes();
                             if (!selNodes || selNodes.length === 0) {
                                 if (isDef(liquid.tableJson.autoSelect) || isDef(liquid.tableJson.tempAutoSelect)) {
-                                    if (Liquid.setNodesSelectedDefault(liquid)) { // no other refresh actions needed
+                                    if (Liquid.setNodesSelectedDefault(liquid)) {
+                                        // no other refresh actions needed .. implicit by row select
                                         disableLinkedControlRefresh = true;
                                     }
                                     if (isDef(liquid.tableJson.tempAutoSelect)) delete liquid.tableJson.tempAutoSelect;
@@ -5541,6 +5541,13 @@ var Liquid = {
                                     Liquid.refreshLinkedLiquids(liquid);
                                 Liquid.showHideChildWaiters(liquid, false);
                             } else {
+                                // Inline layputs nedd to be refreshed
+                                for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                                    var layout = liquid.tableJson.layouts[il];
+                                    if(layout.rowStyle == 'inline') {
+                                        Liquid.refreshLayout(liquid, layout, false);
+                                    }
+                                }
                                 Liquid.showHideChildWaiters(liquid, false);
                             }
                         } else {
@@ -10296,13 +10303,16 @@ var Liquid = {
                 if (isDef(liquid.tableJson.autoSelect)) {
                     var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                     if (isDef(nodes) && nodes.length > 0) {
-                        retVal = true;
-                        if (typeof liquid.tableJson.autoSelect === 'string' && liquid.tableJson.autoSelect.toLowerCase() === 'last')
+                        if (typeof liquid.tableJson.autoSelect === 'string' && liquid.tableJson.autoSelect.toLowerCase() === 'last') {
                             nodes[nodes.length - 1].setSelected(true);
-                        else if (typeof liquid.tableJson.autoSelect === 'string' && liquid.tableJson.autoSelect.toLowerCase() === 'first')
+                            retVal = true;
+                        }else if (typeof liquid.tableJson.autoSelect === 'string' && liquid.tableJson.autoSelect.toLowerCase() === 'first') {
                             nodes[0].setSelected(true);
-                        else if (liquid.tableJson.autoSelect === true)
+                            retVal = true;
+                        }else if (liquid.tableJson.autoSelect === true) {
                             nodes[0].setSelected(true);
+                            retVal = true;
+                        }
                     }
                 }
             } catch (e) {
@@ -13653,6 +13663,9 @@ var Liquid = {
                                 Liquid.addSlideShowItemsToLayout(liquid, layout, true);
                             }
 
+                            if(isDef(liquid.tableJson.autoLoad) && liquid.tableJson.autoLoad == true) {
+                            } else {
+                            }
                             Liquid.refreshLayout(liquid, layout, true);
 
 
@@ -14084,6 +14097,7 @@ var Liquid = {
                         layout.bodyContainerObj.style.minHeight = "calc(100% - " + (layout.headerContainerObj.offsetHeight + layout.footerContainerObj.offsetHeight) + "px)";
                         layout.itemsMaxHeight = layout.itemsMaxHeight - (layout.headerContainerObj.offsetHeight + layout.footerContainerObj.offsetHeight) / nRows;
                     }
+
                     //
                     // Clone body template contents to rows
                     //
@@ -14149,20 +14163,6 @@ var Liquid = {
                             rowObj.style.border = "0px solid red";
                             rowObj.style.width = "100%";
 
-                            if (isDef(layout.rowHeight)) {
-                                if (layout.rowHeight.toLowerCase() === 'auto') {
-                                    rowObj.style.height = !isNaN(layout.itemsMaxHeight) ? layout.itemsMaxHeight + "px" : (layout.itemsMaxHeight ? layout.itemsMaxHeight : "100%");
-                                } else {
-                                    rowObj.style.height = !isNaN(layout.rowHeight) ? layout.rowHeight + "px" : "";
-                                }
-                            }
-                            if(layout.rowStyle==="inline" || layout.rowStyle==="flex" || layout.rowStyle==="inline-flex") {
-                                rowObj.style.display = "inline-flex";
-                                rowObj.style.width = "auto";
-                                layout.inlineMode = true;
-                            }
-
-                            rowObj.style.paddingTop = rowObj.style.paddingBottom = (!isNaN(layout.rowPadding) ? layout.rowPadding + "px" : (layout.rowPadding ? layout.rowPadding : ""));
                             rowObj.id = liquid.controlId + ".layout." + layout.name + ".rowContainer." + (ir + 1);
 
                             // link dei campi
@@ -14210,6 +14210,25 @@ var Liquid = {
                             if (isAdding) {
                                 Liquid.scrollToBottomLayout(liquid, layout);
                             }
+                        } else {
+                            rowObj = layout.rowsContainer[ir].containerObj;
+                        }
+
+                        if(rowObj) {
+                            if (isDef(layout.rowHeight)) {
+                                if (layout.rowHeight.toLowerCase() === 'auto') {
+                                    rowObj.style.height = !isNaN(layout.itemsMaxHeight) ? layout.itemsMaxHeight + "px" : (layout.itemsMaxHeight ? layout.itemsMaxHeight : "100%");
+                                } else {
+                                    rowObj.style.height = !isNaN(layout.rowHeight) ? layout.rowHeight + "px" : "";
+                                }
+                            }
+                            if (layout.rowStyle === "inline" || layout.rowStyle === "flex" || layout.rowStyle === "inline-flex") {
+                                rowObj.style.display = "inline-flex";
+                                rowObj.style.width = "auto";
+                                layout.inlineMode = true;
+                            }
+
+                            rowObj.style.paddingTop = rowObj.style.paddingBottom = (!isNaN(layout.rowPadding) ? layout.rowPadding + "px" : (layout.rowPadding ? layout.rowPadding : ""));
                         }
                     }
                     if(layout.inlineMode === true) {
@@ -14328,6 +14347,9 @@ var Liquid = {
                         } else {
                             mode = "readonly";
                         }
+                    }
+                    if (layout.rowStyle === "inline" || layout.rowStyle === "flex" || layout.rowStyle === "inline-flex") {
+                        containerObj.style.display = "inline-flex";
                     }
                     if (ir>=0) {
                         Liquid.onLayoutMode(layout.layoutTabObj, ir, mode);
@@ -14913,7 +14935,7 @@ var Liquid = {
 
                     if (linkCount) {
                         if (linkedCol) {
-                            var prevId = obj.getAttribute('previd', obj.id);
+                            var prevId = obj.getAttribute('previd');
                             controlName = "col." + linkedCol.field + ".row." + (iRow + 1);
 
                             newId = liquid.controlId + ".layout." + layoutIndex1B + "." + controlName;
@@ -15183,7 +15205,7 @@ var Liquid = {
 
                                 // Append only record link
                                 if (!isDef(layout.noneCounter)) layout.noneCounter = 1;
-                                var prevId = obj.getAttribute('previd', obj.id);
+                                var prevId = obj.getAttribute('previd');
 
                                 obj.setAttribute('linkedrow1b', iRow + 1);
                                 controlName = "col." + "none" + (layout.noneCounter++) + ".row." + (iRow + 1);
@@ -22522,6 +22544,74 @@ columns:[
             if(id_obj) {
                 let code = obj.list.childNodes[i].getAttribute("code")
                 id_obj.setAttribute("code",  code);
+            }
+        }
+    },
+    /**
+     * Inizialize control for custo datalist manage
+     *
+     * @param inputId
+     * @param descId
+     * @param datalistId
+     */
+    setupDescDatalist:function(inputId, descId, datalistId) {
+        let inputObj = null; // document.getElementById(inputId);
+        let descObj = document.getElementById(descId);
+        let rootNode = descObj.parentNode;
+        for(let i=0; i<rootNode.childNodes.length; i++) {
+            var node = rootNode.childNodes[i];
+            if (node.dataset) {
+                var prevId = node.getAttribute('previd');
+                if (prevId == inputId) {
+                    inputObj = rootNode.childNodes[i];
+                    break;
+                }
+            }
+        }
+        if(descObj && inputObj) {
+            inputObj.type = "hidden";
+            inputObj.setAttribute('list', null);
+            descObj.setAttribute('list', datalistId);
+            descObj.style.width = inputObj.style.width;
+            descObj.style.height = inputObj.style.height;
+            if(inputObj.offsetWidth>0) descObj.style.width = inputObj.offsetWidth+"px";
+            if(inputObj.offsetHeight>0) descObj.style.height = inputObj.offsetHeight+"px";
+            descObj.classList = inputObj.classList;
+            descObj.style.backgroundColor = inputObj.style.backgroundColor;
+            descObj.style.color = inputObj.style.color;
+            descObj.style.border = inputObj.style.border;
+            descObj.style.display = inputObj.style.display;
+            descObj.placeholder = inputObj.placeholder;
+
+            descObj.onmousedown = function() { this.setAttribute('rel',this.value); this.placeholder=this.value; this.value ='' };
+            descObj.onblur = function() { this.value=this.getAttribute('rel') }
+            descObj.onchange = function() { this.setAttribute('rel',this.value); Liquid.onChangedDescDatalist(this) };
+
+            descObj.setAttribute('code_id', inputObj.id);
+
+            if(inputObj.value) {
+                var selectedOption = descObj.list.options.item(inputObj.value);
+                if (selectedOption) {
+                    descObj.value = selectedOption.value;
+                }
+            }
+        }
+    },
+    /**
+     * Default callback for custom datalist manage
+     * @param obj
+     */
+    onChangedDescDatalist:function(obj) {
+        var selectedOption = obj.list.options.namedItem(obj.value);
+        if (selectedOption) {
+            let code_id = obj.getAttribute('code_id');
+            let code_obj = document.getElementById(code_id);
+            if(code_obj) {
+                code_obj.value = selectedOption.getAttribute('data-code');
+                var event = new Event('change');
+                code_obj.dispatchEvent(event);
+            } else {
+                console.error("ERROR : Missing code_id control");
             }
         }
     }

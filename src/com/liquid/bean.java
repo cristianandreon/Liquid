@@ -1390,15 +1390,13 @@ public class bean {
 
 
                             boolean hasValue = false;
-                            try {
-                                if(row.has(colName) && row.isNull(colName)) {
-                                    value = null;
-                                    hasValue = true;
-                                } else if(row.has(colName)) {
-                                    value = row.get(colName);
-                                    hasValue = true;
-                                }
-                            } catch (Exception e) {
+                            if (row.has(colName) && row.isNull(colName)) {
+                                value = null;
+                                hasValue = true;
+                            } else if (row.has(colName)) {
+                                value = row.get(colName);
+                                hasValue = true;
+                            } else {
                                 try {
                                     value = row.get(field);
                                     hasValue = true;

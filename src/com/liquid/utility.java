@@ -2184,8 +2184,8 @@ public class utility {
      * @param chacheIt
      * @return
      */
-    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
-        return get_datalist_from_table(datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, null, emptyRow, null, chacheIt);
+    public static String get_datalist_from_table(String controlId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
+        return get_datalist_from_table(controlId, databaseSchemaTable, codeColumn, descColumn, null, where, null, emptyRow, null, chacheIt);
     }
 
 
@@ -2203,14 +2203,15 @@ public class utility {
      * @return
      * @throws Throwable
      */
-    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable,
+    public static String get_datalist_from_table(String inputId, String databaseSchemaTable,
                                                  String codeColumn, String descColumn, String tooltipColumn,
                                                  String where, String order,
                                                  String emptyRow,
                                                  String currentValue,
                                                  boolean chacheIt) throws Throwable {
         String out = "";
-
+        String datalistId = inputId+"_list";
+        String descId = inputId+"_desc";
         ArrayList<Object> beans = null;
         DataListCache dataListCache = get_datalist_from_cahce(databaseSchemaTable, codeColumn, descColumn, where);
         if (dataListCache != null) {
@@ -2229,6 +2230,7 @@ public class utility {
                 codeHidden = true;
             }
         }
+        out += "<input type=\"text\" id=\""+descId+"\" style=\"\"" + "value=\"" + "" + "\" />";
         out += "<datalist " +
                 "id=\"" + datalistId + "\" " +
                 (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
@@ -2277,6 +2279,7 @@ public class utility {
                 glDataListCache.add(dataListCache);
             }
         }
+        out += "<script>Liquid.setupDescDatalist('"+inputId+"','"+descId+"','"+datalistId+"')</script>";
         return out;
     }
 
@@ -2318,7 +2321,7 @@ public class utility {
                 ">\n";
 
         String datalist = com.liquid.utility.get_datalist_from_table(
-                inputId+"_list",
+                inputId,
                 databaseSchemaTable,
                 codeColumn,
                 descColumn,

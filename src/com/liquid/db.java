@@ -7247,6 +7247,8 @@ public class db {
                     return (Long) ((Double) value).longValue();
                 } else if (value instanceof Float) {
                     return (Long) ((Float) value).longValue();
+                } else if (value instanceof Integer) {
+                    return (Long) ((Integer) value).longValue();
                 } else {
                     return (Long) value;
                 }
