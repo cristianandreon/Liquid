@@ -2231,8 +2231,9 @@ public class utility {
             }*/
             codeHidden = true;
         }
+
         if(codeHidden) {
-            out += "<input type=\"text\" id=\"" + descId + "\" style=\"\"" + "value=\"" + "" + "\" />";
+            out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:'hidden'\"" + "value=\"" + "" + "\" />";
         }
         out += "<datalist " +
                 "id=\"" + datalistId + "\" " +

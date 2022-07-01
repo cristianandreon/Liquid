@@ -22583,16 +22583,18 @@ columns:[
         if(descObj && inputObj) {
             inputObj.type = "hidden";
             inputObj.setAttribute('list', null);
+
             descObj.setAttribute('list', datalistId);
             descObj.style.width = inputObj.style.width;
             descObj.style.height = inputObj.style.height;
             if(inputObj.offsetWidth>0) descObj.style.width = inputObj.offsetWidth+"px";
             if(inputObj.offsetHeight>0) descObj.style.height = inputObj.offsetHeight+"px";
-            descObj.classList = inputObj.classList;
+            descObj.classList.add(inputObj.classList);
             descObj.style.backgroundColor = inputObj.style.backgroundColor;
             descObj.style.color = inputObj.style.color;
             descObj.style.border = inputObj.style.border;
             descObj.style.display = inputObj.style.display;
+            descObj.style.visibility = '';
             descObj.placeholder = inputObj.placeholder;
 
             descObj.onmousedown = function() { this.setAttribute('rel',this.value); this.placeholder=this.value; this.value ='' };
