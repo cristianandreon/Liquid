@@ -8,7 +8,6 @@ import com.google.gson.*;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
-import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -17,7 +16,6 @@ import javax.servlet.jsp.JspWriter;
 import java.beans.IntrospectionException;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,10 +24,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.liquid.db.get_query_info;
-import static com.liquid.db.get_recordset;
-import static com.liquid.utility.resetAllChanged;
-import static com.liquid.utility.searchProperty;
+import static com.liquid.db.*;
+import static com.liquid.utility.*;
 import static com.liquid.workspace.getDateTimeFormatString;
 
 
@@ -141,8 +137,7 @@ public class bean {
      */
     static public Object get_bean(Object requestParam, String ids, String format, String fields, String foreignTables, long maxRows) throws Exception {
         HttpServletRequest request = (HttpServletRequest) requestParam;
-        Object result = null;
-        String controlId = null, tblWrk = null, errors = "";
+        String controlId = null, tblWrk = null;
         if (request != null) {
             try {
                 controlId = (String) request.getParameter("controlId");
@@ -3249,11 +3244,11 @@ public class bean {
     }
 
     public static String toHTML(ArrayList<Object> beans,
-                              String[] columns, String[] labels, String[] keys,
-                              String rowCallback,
-                              String tableClass, String tableStyle,
-                              String cellClass, String cellStyle,
-                              String Mode) {
+                                String[] columns, String[] labels, String[] keys,
+                                String rowCallback,
+                                String tableClass, String tableStyle,
+                                String cellClass, String cellStyle,
+                                HttpServletRequest request, String Mode) throws Exception {
         String out = null;
 
         if(beans != null) {
@@ -3275,45 +3270,80 @@ public class bean {
                 for (int i = 0; i < beans.size(); i++) {
                     Object bean = beans.get(i);
                     if (bean != null) {
-                        String onclick = "";
                         out += "<tr>";
+
+                        ArrayList<String> values = new ArrayList<String>();
+                        ArrayList<String> titles = new ArrayList<String>();
+                        ArrayList<String> dataIds = new ArrayList<String>();
+                        ArrayList<String> onClicks = new ArrayList<String>();
+
                         for (int j = 0; j < columns.length; j++) {
                             String label = labels[j];
-                            if (label != null && !label.isEmpty()) {
-                                String value = null;
-                                String column = columns[j];
-                                String[] column_parts = column.split("\\|");
-                                if (column_parts.length == 1) {
+                            String column = columns[j];
+                            String value = null;
+                            String title = null;
+                            String onclick = "";
+                            String[] column_parts = column.split("\\|");
+                            if (column_parts.length == 1) {
+                                if (column.indexOf("${") >= 0) {
+                                    // risoluzione espressione
+                                    value = solveVariableField(column, request, true);
+                                } else {
                                     Object oValue = utility.getEx(bean, column);
-                                    if(oValue instanceof Timestamp) {
-                                        value = new SimpleDateFormat(getDateTimeFormatString(), workspace.locale).format((Timestamp) oValue);
-                                    } else if(oValue instanceof Double || oValue instanceof Float) {
-                                        value = String.format("%.2f", oValue);
-                                    } else if(oValue instanceof Boolean) {
-                                        if("IT".equalsIgnoreCase(workspace.GLLang)) {
-                                            value = (boolean) oValue ? "V" : "F";
+                                    if (oValue instanceof Timestamp) {
+                                        title = value = new SimpleDateFormat(getDateTimeFormatString(), workspace.locale).format((Timestamp) oValue);
+                                    } else if (oValue instanceof Double || oValue instanceof Float) {
+                                        title = value = String.format("%.2f", oValue);
+                                    } else if (oValue instanceof Boolean) {
+                                        if ("IT".equalsIgnoreCase(workspace.GLLang)) {
+                                            title = value = (boolean) oValue ? "V" : "F";
                                         } else {
-                                            value = (boolean) oValue ? "T" : "F";
+                                            title = value = (boolean) oValue ? "T" : "F";
                                         }
                                     } else {
-                                        value = String.valueOf(oValue);
+                                        title = value = String.valueOf(oValue);
                                     }
-                                } else if (column_parts.length > 1) {
-                                    Object val1 = utility.getEx(bean, column_parts[0]);
-                                    value = val1 != null ? String.valueOf(val1) : String.valueOf(utility.getEx(bean, column_parts[1]));
                                 }
-                                if ("null".equalsIgnoreCase(value)) {
-                                    value = "";
+                            } else if (column_parts.length > 1) {
+                                String val1 = String.valueOf(utility.getEx(bean, column_parts[0]));
+                                if (val1 != null && !val1.isEmpty()) {
+                                    title = value = val1;
+                                    column = column_parts[0];
+                                } else {
+                                    title = value = String.valueOf(utility.getEx(bean, column_parts[1]));
+                                    column = column_parts[1];
                                 }
-                                if (utility.contains(Arrays.asList(keys), column)) {
+
+                            }
+                            if ("null".equalsIgnoreCase(value)) {
+                                title = value = "";
+                            }
+                            if (utility.contains(Arrays.asList(keys), column)) {
+                                if (rowCallback != null && !rowCallback.isEmpty()) {
                                     onclick += " " + rowCallback + "(" + value + ")";
                                 }
+                                dataIds.add(value);
+                            }
+
+
+                            if (label != null) {
                                 if (column != null && !column.isEmpty()) {
-                                    out += "<td title='"+value+"'" + (cellClass != null ? " class='" + cellClass + "'" : "") + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + ">";
-                                    out += value;
-                                    out += "</td>";
+                                    values.add(value);
+                                    titles.add(title);
+                                    onClicks.add(onclick);
                                 }
                             }
+                        }
+
+                        for (int j = 0; j < values.size(); j++) {
+                            String dataId = "data-id='"+utility.arrayToString(dataIds, null, null, ".")+"'";
+                            String title = titles.get(j);
+                            String onclick = onClicks.get(j);
+                            out += "<td title='" + (title != null ? title : "") + "'" + (cellClass != null ? " class='" + cellClass + "'" : "") + ">";
+                            out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + " " + dataId + ">";
+                            out += values.get(j);
+                            out += "</div>";
+                            out += "</td>";
                         }
                         out += "</tr>";
                     }

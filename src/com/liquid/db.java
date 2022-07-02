@@ -339,6 +339,7 @@ public class db {
             String column_list = "";
             String column_alias_list = "";
             String column_json_list = "";
+            ArrayList<Object> columns_alias_array = new ArrayList<Object>();
             String leftJoinList = "";
             String column_alias = null;
             ArrayList<ForeignKey> foreignKeys = null;
@@ -774,6 +775,7 @@ public class db {
                                     aliasIndex++;
                                     column_alias = /*table*/ "X_" + columnName;
                                     column_json_list += columnName;
+                                    columns_alias_array.add( new String [] { null, columnName, column_alias, asKeyword } );
                                     column_list += colMode + " ( "+ colQuery + " ) " + asKeyword + column_alias;
                                     
                                 } else {
@@ -899,7 +901,15 @@ public class db {
                                                             if(!columnSolved.equalsIgnoreCase(column)) {
                                                             }
                                                         } else {
-                                                            columnSolved = table + "." + (tableIdString + column + tableIdString);
+                                                            // colonna eserna ? .. cerca l'alias come risultato del join
+                                                            // Es : link di secondo livello
+                                                            //      tableA.columnaA dove ColumnA = tableB.colummB
+                                                            String [] columnParts = column.split("\\.");
+                                                            if(columnParts.length>1) {
+                                                                columnSolved = column = get_column_db_alias(columns_alias_array, columnParts[0], columnParts[1]);
+                                                            } else {
+                                                                columnSolved = table + "." + (tableIdString + column + tableIdString);
+                                                            }
                                                         }
 
                                                         if(foreignColumn.indexOf("{")>=0) {
@@ -939,17 +949,21 @@ public class db {
                                                 if (colParts.length > 1) {
                                                     String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength);
                                                     String column_translated = getColumnTranslated(tbl_wrk, recordset_params.session, col, colParts[1]);
+                                                    String db_alias = leftJoinAlias + "." + itemIdString + column_translated + itemIdString;
                                                     aliasIndex++;
                                                     column_alias = leftJoinAlias + "_" + columnName;
                                                     column_json_list += colParts[0] + "_" + columnName;
-                                                    column_list += colMode + leftJoinAlias + "." + itemIdString + column_translated + itemIdString + asKeyword + column_alias;
+                                                    columns_alias_array.add( new String [] { colParts[0], columnName, column_alias, db_alias } );
+                                                    column_list += colMode + db_alias + asKeyword + column_alias;
                                                 } else {
                                                     String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength);
                                                     String column_translated = getColumnTranslated(tbl_wrk, recordset_params.session, col);
+                                                    String db_alias = leftJoinAlias + "." + itemIdString + column_translated + itemIdString;
                                                     aliasIndex++;
                                                     column_alias = leftJoinAlias + "_" + columnName;
                                                     column_json_list += columnName;
-                                                    column_list += colMode + leftJoinAlias + "." + itemIdString + column_translated + itemIdString + asKeyword + column_alias;
+                                                    columns_alias_array.add( new String [] { table, columnName, column_alias, db_alias } );
+                                                    column_list += colMode + db_alias + asKeyword + column_alias;
                                                 }
                                             }
 
@@ -964,17 +978,21 @@ public class db {
                                                 if (colParts.length > 1) {
                                                     String columnName = getColumnAlias(colParts[1], aliasIndex, columnMaxLength);
                                                     String column_translated = getColumnTranslated(tbl_wrk, recordset_params.session, col);
+                                                    String db_alias = tableIdString + colParts[0] + tableIdString + "." + itemIdString + column_translated + itemIdString;
                                                     aliasIndex++;
                                                     column_alias = "A" + "_" + columnName;
                                                     column_json_list += colParts[0] + "_" + columnName;
-                                                    column_list += colMode + tableIdString + colParts[0] + tableIdString + "." + itemIdString + column_translated + itemIdString + asKeyword + column_alias;
+                                                    columns_alias_array.add( new String [] { colParts[0], columnName, column_alias, db_alias } );
+                                                    column_list += colMode + db_alias + asKeyword + column_alias;
                                                 } else {
                                                     String columnName = getColumnAlias(col.getString("name"), aliasIndex, columnMaxLength);
                                                     String column_translated = getColumnTranslated(tbl_wrk, recordset_params.session, col);
+                                                    String db_alias = itemIdString + table + itemIdString + "." + itemIdString + column_translated + itemIdString;
                                                     aliasIndex++;
                                                     column_alias = /*table*/ "A_" + columnName;
                                                     column_json_list += columnName;
-                                                    column_list += colMode + itemIdString + table + itemIdString + "." + itemIdString + column_translated + itemIdString + asKeyword + column_alias;
+                                                    columns_alias_array.add( new String [] { table, columnName, column_alias, db_alias } );
+                                                    column_list += colMode + db_alias + asKeyword + column_alias;
                                                 }
                                             }
 
@@ -3920,6 +3938,7 @@ public class db {
         int new_id = 0;
         Object keyValue = null;
 
+
         Connection conn = null;
         String sSTMTUpdate = null;
 
@@ -3973,10 +3992,11 @@ public class db {
                 if(primaryKey.startsWith("WHERE ")) {
                     sSTMTUpdate += " " + primaryKey;
                 } else {
-                    if(keyValue instanceof String) {
-                        keyValue = "" + keyValue + "";
+                    if(keyValue == null) {
+                        throw new Exception("Primary key not found");
+                    } else {
+                        sSTMTUpdate += " WHERE \"" + primaryKey + "\"=?";
                     }
-                    sSTMTUpdate += " WHERE \""+primaryKey+"\"=?";
                 }
 
                 PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
@@ -3987,38 +4007,8 @@ public class db {
                     } else {
                         if (i < Fields.length) {
                             Object val = Values[i];
-                            if (val instanceof Expression || val instanceof StringBuffer) {
-                                // Already processed
-                            } else {
-                                if (val instanceof Integer) {
-                                    sqlSTMTUpdate.setInt((ip), (int) val);
-                                } else if (val instanceof BigDecimal) {
-                                    sqlSTMTUpdate.setBigDecimal((ip), (BigDecimal) val);
-                                } else if (val instanceof Long) {
-                                    sqlSTMTUpdate.setLong((ip), (long) val);
-                                } else if (val instanceof Float) {
-                                    sqlSTMTUpdate.setFloat((ip), (float) val);
-                                } else if (val instanceof Double) {
-                                    sqlSTMTUpdate.setDouble((ip), (double) val);
-                                } else if (val instanceof Timestamp) {
-                                    sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
-                                } else if (val instanceof java.util.Date) {
-                                    sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())));
-                                } else if (val instanceof java.sql.Date) {
-                                    sqlSTMTUpdate.setDate((ip), (java.sql.Date) val);
-                                } else if (val instanceof java.util.Date) {
-                                    sqlSTMTUpdate.setDate((ip), new java.sql.Date(((java.util.Date) val).getTime()));
-                                } else if (val instanceof String) {
-                                    sqlSTMTUpdate.setString((ip), (String) val);
-                                } else if (val instanceof Boolean) {
-                                    sqlSTMTUpdate.setBoolean((ip), (boolean) val);
-                                } else if (val == null) {
-                                    sqlSTMTUpdate.setNull((ip), Types.NULL);
-                                } else {
-                                    System.err.println("update_row() invalid obejct type : " + val.getClass().getName());
-                                }
-                                ip++;
-                            }
+                            db.mapStatementParam(sqlSTMTUpdate, ip, val);
+                            ip++;
                         }
                     }
                 }
@@ -4026,31 +4016,7 @@ public class db {
                 // primary key
                 if(primaryKey.startsWith("WHERE ")) {
                 } else {
-                    Object val = keyValue;
-                    // ip++;
-                    if (val instanceof Integer) {
-                        sqlSTMTUpdate.setInt((ip), (int) val);
-                    } else if (val instanceof BigDecimal) {
-                        sqlSTMTUpdate.setBigDecimal((ip), (BigDecimal) val);
-                    } else if (val instanceof Long) {
-                        sqlSTMTUpdate.setLong((ip), (long) val);
-                    } else if (val instanceof Float) {
-                        sqlSTMTUpdate.setFloat((ip), (float) val);
-                    } else if (val instanceof Double) {
-                        sqlSTMTUpdate.setDouble((ip), (double) val);
-                    } else if (val instanceof Timestamp) {
-                        sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
-                    } else if (val instanceof java.sql.Date) {
-                        sqlSTMTUpdate.setDate((ip), (java.sql.Date) val);
-                    } else if (val instanceof java.util.Date) {
-                        sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())));
-                    } else if (val instanceof String) {
-                        sqlSTMTUpdate.setString((ip), (String) val);
-                    } else if (val instanceof Boolean) {
-                        sqlSTMTUpdate.setBoolean((ip), (boolean) val);
-                    } else {
-                        System.err.println("update_row() invalid obejct type : " + (val != null ? val.getClass().getName() : "null"));
-                    }
+                    db.mapStatementParam(sqlSTMTUpdate, ip, keyValue);
                 }
 
                 if(workspace.projectMode) {
@@ -4103,6 +4069,42 @@ public class db {
         }
 
         return new Object [] { retVal, new_id } ;
+    }
+
+    private static void mapStatementParam(PreparedStatement sqlSTMTUpdate, int ip, Object val) throws Exception {
+        if (val instanceof Expression || val instanceof StringBuffer) {
+            // Already processed
+        } else {
+            if (val instanceof Integer) {
+                sqlSTMTUpdate.setInt((ip), (int) val);
+            } else if (val instanceof BigDecimal) {
+                sqlSTMTUpdate.setBigDecimal((ip), (BigDecimal) val);
+            } else if (val instanceof Long) {
+                sqlSTMTUpdate.setLong((ip), (long) val);
+            } else if (val instanceof Float) {
+                sqlSTMTUpdate.setFloat((ip), (float) val);
+            } else if (val instanceof Double) {
+                sqlSTMTUpdate.setDouble((ip), (double) val);
+            } else if (val instanceof Timestamp) {
+                sqlSTMTUpdate.setTimestamp((ip), (Timestamp) val);
+            } else if (val instanceof java.util.Date) {
+                sqlSTMTUpdate.setDate((ip), (new java.sql.Date(((java.util.Date) val).getTime())));
+            } else if (val instanceof java.sql.Date) {
+                sqlSTMTUpdate.setDate((ip), (java.sql.Date) val);
+            } else if (val instanceof java.util.Date) {
+                sqlSTMTUpdate.setDate((ip), new java.sql.Date(((java.util.Date) val).getTime()));
+            } else if (val instanceof String) {
+                sqlSTMTUpdate.setString((ip), (String) val);
+            } else if (val instanceof Boolean) {
+                sqlSTMTUpdate.setBoolean((ip), (boolean) val);
+            } else if (val == null) {
+                sqlSTMTUpdate.setNull((ip), Types.NULL);
+            } else {
+                String err = "mapStatementParam() invalid obejct type : " + val.getClass().getName();
+                System.err.println(err);
+                throw new Exception(err);
+            }
+        }
     }
 
 
@@ -7524,6 +7526,7 @@ public class db {
     /**
      * Risolve l'espressione
      * N.B.: Per essere assegnata la variabile deve essere != da NULL
+     * N.B.: Per usare un testo costante : ${"text"}
      *
      * @param value
      * @param request
@@ -7548,13 +7551,27 @@ public class db {
                         }
                         String cVar = value.substring(s, i);
                         if (!cVar.isEmpty()) {
-                            Object oVar = request.getSession().getAttribute(cVar);
-                            String cVarValue = oVar != null ? (String) String.valueOf(oVar) : null;
-                            if (cVarValue != null) {
+                            if (cVar.charAt(0) == '"') {
+                                String cVarValue = cVar.substring(1);
+                                if (cVarValue.charAt(cVarValue.length()-1) == '"') {
+                                    cVarValue = cVarValue.substring(0, cVarValue.length()-2);
+                                }
+                                if (cVarValue.charAt(cVarValue.length()-1) == '\\') {
+                                    cVarValue = cVarValue.substring(0, cVarValue.length()-2);
+                                }
                                 if (currentValue == null)
                                     currentValue = "";
                                 currentValue += cVarValue;
                                 nReplaced++;
+                            } else {
+                                Object oVar = request.getSession().getAttribute(cVar);
+                                String cVarValue = oVar != null ? (String) String.valueOf(oVar) : null;
+                                if (cVarValue != null) {
+                                    if (currentValue == null)
+                                        currentValue = "";
+                                    currentValue += cVarValue;
+                                    nReplaced++;
+                                }
                             }
                         }
                     } else {
@@ -7696,4 +7713,16 @@ public class db {
         return parametersString;
     }
 
+
+    static String get_column_db_alias(ArrayList<Object> columns_alias_array, String table, String column) {
+        for(int i=0; i<columns_alias_array.size(); i++) {
+            String [] data = (String [])columns_alias_array.get(i);
+            if(table.equalsIgnoreCase(data[0])) {
+                if(column.equalsIgnoreCase(data[1])) {
+                    return data[3];
+                }
+            }
+        }
+        return null;
+    }
 }
