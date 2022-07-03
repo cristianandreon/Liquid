@@ -1,10 +1,5 @@
 package com.liquid;
 
-import static com.liquid.emailer.Auth;
-import static com.liquid.emailer.Host;
-import static com.liquid.emailer.Password;
-import static com.liquid.emailer.Port;
-import static com.liquid.emailer.Username;
 import static com.liquid.login.logout;
 import com.sun.mail.util.MailSSLSocketFactory;
 
@@ -279,12 +274,13 @@ public class emailer {
     
     /**
      * standard html message creator
-     * 
+     *
      * @param key
      * @param params
-     * @return 
+     * @param request
+     * @return
      */
-    public String get_standard_message(String key, String[] params) {
+    public String get_standard_message(String key, String[] params, HttpServletRequest request) {
 
         try {
 

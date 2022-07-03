@@ -1502,7 +1502,7 @@ public class login {
 
                                                     if(adminEmail != null && !adminEmail.isEmpty()) {
                                                         try {
-                                                            if (emailerInstance.send(adminEmail, null, application_id+" - User registration notify", emailerInstance.get_standard_message("RegisterUserNotify", params))) {
+                                                            if (emailerInstance.send(adminEmail, null, application_id+" - User registration notify", emailerInstance.get_standard_message("RegisterUserNotify", params, request))) {
                                                             } else {
                                                                 message += "[Notify err:" + emailerInstance.LastError + "]";
                                                             }
@@ -1512,7 +1512,7 @@ public class login {
                                                     }
 
                                                     try {                        
-                                                        if (emailerInstance.send(sEMail, null, application_id+" - User registration", emailerInstance.get_standard_message("RegisterUser", params))) {
+                                                        if (emailerInstance.send(sEMail, null, application_id+" - User registration", emailerInstance.get_standard_message("RegisterUser", params, request))) {
                                                             if (cLang.equalsIgnoreCase("IT")) {
                                                                 message = "Password inviata a <b>" + sEMail + "</b>";
                                                             } else {
@@ -1777,7 +1777,7 @@ public class login {
                             emailerInstance.AppImage = (String)request.getSession().getAttribute("GLLiquidLoginEmailAppImage");
                             emailerInstance.From = (String)request.getSession().getAttribute("GLLiquidLoginEmailFrom");
                             
-                            if (emailerInstance.send(sEMail, null, application_id+" - Recupero password", emailerInstance.get_standard_message("RecoveryPassword", params))) {
+                            if (emailerInstance.send(sEMail, null, application_id+" - Recupero password", emailerInstance.get_standard_message("RecoveryPassword", params, request))) {
                                 message = "Password inviata a <b>" + sEMail + "</b>";
                                 message += emailerInstance.DebugMessage;
                                 return "{ \"result\":1, \"message\":\""+utility.base64Encode(message)+"\"}";

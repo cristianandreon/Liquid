@@ -100,6 +100,7 @@
 
 
 <link rel="stylesheet" href="<%=jspath%>/liquid/liquid.css?version=<%=jssVersion%>" type='text/css' />
+<script type="text/javascript" src="<%=jspath%>/liquid/liquidUtility.js?version=<%=jssVersion%>"></script>
 <script type="text/javascript" src="<%=jspath%>/liquid/liquid.js?version=<%=jssVersion%>"></script>
 
 
