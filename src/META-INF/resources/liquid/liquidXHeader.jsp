@@ -99,7 +99,7 @@
 <!-- -->
 <script type="text/javascript" >console.log("LIQUID : Please NOTE : keeping as runtime liquid.css and liquid.js from developing Project LiquidX , not from your project path : <%=path%> ");</script>
 <link rel="stylesheet" href="/LiquidX/liquid.css?version=<%=jssVersion%>" type='text/css' />
-<script type="text/javascript" src="<%=jspath%>/liquid/liquidUtility.js?version=<%=jssVersion%>"></script>
+<script type="text/javascript" src="/LiquidX/liquid/liquidUtility.js?version=<%=jssVersion%>"></script>
 <script type="text/javascript" src="/LiquidX/liquid.js?version=<%=jssVersion%>"></script>
 <script type="text/javascript" src="/LiquidX/liquidEditing.js?version=<%=jssVersion%>"></script>
 <!-- -->
