@@ -43,10 +43,10 @@ public class Messagebox {
     static long checkerIntervelMsec = 10 * 1000;
 
     // TODO : DEBUG modalita di consegna dati
-    static int deliveryMode = 1;
+    static int deliveryMode = 0;
         // 0   ->   Do nothing
-        // 1   ->   close stream
-        // 2    ->  Fill buffer-size
+        // 1   ->   close stream,  NO chiudendo lo stream si erde la ripsosta:
+        // 2    ->  Fill buffer-size : NO, NON funziona
 
             
     /**

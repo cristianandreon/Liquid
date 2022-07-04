@@ -1500,8 +1500,10 @@ public class workspace {
                                             primaryKeyIndex1B = ic + 1;
                                         }
                                     } else {
-                                        if (colName.compareTo(primaryKey) == 0) {
-                                            primaryKeyIndex1B = ic + 1;
+                                        if(primaryKey != null) {
+                                            if (colName.compareTo(primaryKey) == 0) {
+                                                primaryKeyIndex1B = ic + 1;
+                                            }
                                         }
                                     }
                                 } catch (Exception ex) {
