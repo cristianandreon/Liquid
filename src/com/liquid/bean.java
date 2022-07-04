@@ -8,7 +8,6 @@ import com.google.gson.*;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
-import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -17,7 +16,6 @@ import javax.servlet.jsp.JspWriter;
 import java.beans.IntrospectionException;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,10 +24,9 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.liquid.db.get_query_info;
-import static com.liquid.db.get_recordset;
-import static com.liquid.utility.resetAllChanged;
-import static com.liquid.utility.searchProperty;
+import static com.liquid.db.*;
+import static com.liquid.utility.*;
+import static com.liquid.workspace.getDateTimeFormatString;
 
 
 // Note : for big resultset : use the pagination
@@ -140,8 +137,7 @@ public class bean {
      */
     static public Object get_bean(Object requestParam, String ids, String format, String fields, String foreignTables, long maxRows) throws Exception {
         HttpServletRequest request = (HttpServletRequest) requestParam;
-        Object result = null;
-        String controlId = null, tblWrk = null, errors = "";
+        String controlId = null, tblWrk = null;
         if (request != null) {
             try {
                 controlId = (String) request.getParameter("controlId");
@@ -690,7 +686,16 @@ public class bean {
                                 }
                                 if(fcolumnsKey != null) {
                                     JSONArray json_foreign_columns = null;
-                                    try { json_foreign_columns = foreignableJson.getJSONArray(fcolumnsKey); } catch (Exception e) { }
+                                    try {
+                                        Object oForeignTableJson = foreignableJson.get(fcolumnsKey);
+                                        if(oForeignTableJson instanceof JSONArray) {
+                                            json_foreign_columns = (JSONArray)oForeignTableJson;
+                                        } else if(oForeignTableJson instanceof JSONObject) {
+                                            json_foreign_columns = new JSONArray();
+                                            json_foreign_columns.put(oForeignTableJson);
+                                        }
+                                        // json_foreign_columns = foreignableJson.getJSONArray(fcolumnsKey);
+                                    } catch (Exception e) { }
                                     if (json_foreign_columns != null) {
                                         for (int ia = 0; ia < json_foreign_columns.length(); ia++) {
                                             foreignColumns.add(json_foreign_columns.getString(ia));
@@ -712,7 +717,17 @@ public class bean {
                                 }
                                 if(columnsKey != null) {
                                     JSONArray json_columns = null;
-                                    try { json_columns = foreignableJson.getJSONArray(columnsKey); } catch (Exception e) { }
+                                    try {
+                                        // json_columns = foreignableJson.getJSONArray(columnsKey);
+                                        Object o_columns_json = foreignableJson.get(columnsKey);
+                                        if(o_columns_json instanceof JSONArray) {
+                                            json_columns = (JSONArray)o_columns_json;
+                                        } else if(o_columns_json instanceof JSONObject) {
+                                            json_columns = new JSONArray();
+                                            json_columns.put(o_columns_json);
+                                        }
+
+                                    } catch (Exception e) { }
                                     if (json_columns != null) {
                                         for (int ia = 0; ia < json_columns.length(); ia++) {
                                             columns.add(json_columns.getString(ia));
@@ -754,6 +769,9 @@ public class bean {
                                     // Include questa classe nel bean
                                     //
                                     String ftControlId = "" + ft + "$" + foreignColumnDescriptor + "$" + columnDescriptor + "@" + tbl_wrk.controlId + "";
+                                    // N,B. il controlo non puo' avere lo stesso nome dei controlli caricati da json in quanto load_beans non definisce le colonne, pertanto il cotrollo andrebbe in conflitto
+                                    ftControlId += "$bean";
+
                                     JSONArray ftRowsJson = null;
                                     workspace ft_tbl_wrk = workspace.get_tbl_manager_workspace(ftControlId);
 
@@ -907,7 +925,11 @@ public class bean {
                                         String foreignTableForeignTables = "";
 
                                         JSONArray nestedForeignTablesJson = null;
-                                        try { nestedForeignTablesJson = foreignableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
+                                        try {
+                                            if(foreignableJson.has("foreignTables")) {
+                                                nestedForeignTablesJson = foreignableJson.getJSONArray("foreignTables");
+                                            }
+                                        } catch (Exception e) { }
 
 
                                         if (nestedForeignTablesJson != null) {
@@ -936,7 +958,20 @@ public class bean {
                                         //
                                         if (ft_tbl_wrk != null) {
                                             nestedForeignTablesJson = null;
-                                            try { nestedForeignTablesJson = ft_tbl_wrk.tableJson.getJSONArray("foreignTables"); } catch (Exception e) { }
+                                            try {
+                                                if(ft_tbl_wrk.tableJson.has("foreignTables")) {
+                                                    Object oNestedForeignTablesJson = ft_tbl_wrk.tableJson.get("foreignTables");
+                                                    if(oNestedForeignTablesJson instanceof JSONArray) {
+                                                        nestedForeignTablesJson = (JSONArray)oNestedForeignTablesJson;
+                                                    } else if(oNestedForeignTablesJson instanceof JSONArray) {
+                                                        nestedForeignTablesJson = new JSONArray();
+                                                        nestedForeignTablesJson.put( oNestedForeignTablesJson );
+                                                    } else if(oNestedForeignTablesJson instanceof String) {
+                                                        // NON risolta : controllo non processato
+                                                        System.err.println("ERROR : foreignTables metadata not read on control:"+ft_tbl_wrk.controlId);
+                                                    }
+                                                }
+                                            } catch (Exception e) { }
 
                                             if(nestedForeignTablesJson != null) {
                                                 for (int inft = 0; inft < nestedForeignTablesJson.length(); inft++) {
@@ -1322,15 +1357,19 @@ public class bean {
                         }
 
                         for (int ic = 0; ic < cols.length(); ic++) {
+                            JSONObject col = cols.getJSONObject(ic);
                             String colName = cols.getJSONObject(ic).has("runtimeName") ? cols.getJSONObject(ic).getString("runtimeName") : cols.getJSONObject(ic).getString("name");
                             boolean autoIncString = cols.getJSONObject(ic).has("autoIncString") ? cols.getJSONObject(ic).getBoolean("autoIncString") : false;
                             String field = null, name = null;
                             String defaultValue = null;
                             Object value = null;
 
+                            name = col.getString("name");
+
                             try {
-                                name = cols.getJSONObject(ic).getString("name");
-                                field = cols.getJSONObject(ic).getString("field");
+                                if(col.has("field")) {
+                                    field = col.getString("field");
+                                }
                             } catch (Exception e) { /* value = String.valueOf(ic+1); */ }
 
                             if(primaryKey == null) {
@@ -1346,15 +1385,13 @@ public class bean {
 
 
                             boolean hasValue = false;
-                            try {
-                                if(row.has(colName) && row.isNull(colName)) {
-                                    value = null;
-                                    hasValue = true;
-                                } else {
-                                    value = row.get(colName);
-                                    hasValue = true;
-                                }
-                            } catch (Exception e) {
+                            if (row.has(colName) && row.isNull(colName)) {
+                                value = null;
+                                hasValue = true;
+                            } else if (row.has(colName)) {
+                                value = row.get(colName);
+                                hasValue = true;
+                            } else {
                                 try {
                                     value = row.get(field);
                                     hasValue = true;
@@ -2206,6 +2243,8 @@ public class bean {
         return tbl_wrk;
     }
 
+
+
     /**
      *
      * @param request
@@ -2269,7 +2308,7 @@ public class bean {
         //
         workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, controlId);
         if (tbl_wrk == null) {
-            throw new Exception("load_beans() : ControlId not found");
+            throw new Exception("load_beans() : Control '"+controlId+"' not found");
         }
 
 
@@ -3204,6 +3243,118 @@ public class bean {
         }
     }
 
+    public static String toHTML(ArrayList<Object> beans,
+                                String[] columns, String[] labels, String[] keys,
+                                String rowCallback,
+                                String tableClass, String tableStyle,
+                                String cellClass, String cellStyle,
+                                HttpServletRequest request, String Mode) throws Exception {
+        String out = null;
+
+        if(beans != null) {
+            if(beans.size()>0) {
+                out = "<table class=\"" + (tableClass != null ? tableClass : "") + "\" style='" + (tableStyle != null ? tableStyle : "") + "'>";
+                out += "<thead>";
+                out += "<tr>";
+                for (int j = 0; j < labels.length; j++) {
+                    String label = labels[j];
+                    if (label != null && !label.isEmpty()) {
+                        out += "<th" + (cellClass != null ? " class='" + cellClass + "'" : "") + (cellStyle != null ? " style='" + cellStyle + "'" : "") + ">";
+                        out += label;
+                        out += "</th>";
+                    }
+                }
+                out += "</tr>";
+                out += "</thead>";
+                out += "<tbody>";
+                for (int i = 0; i < beans.size(); i++) {
+                    Object bean = beans.get(i);
+                    if (bean != null) {
+                        out += "<tr>";
+
+                        ArrayList<String> values = new ArrayList<String>();
+                        ArrayList<String> titles = new ArrayList<String>();
+                        ArrayList<String> dataIds = new ArrayList<String>();
+                        ArrayList<String> onClicks = new ArrayList<String>();
+
+                        for (int j = 0; j < columns.length; j++) {
+                            String label = labels[j];
+                            String column = columns[j];
+                            String value = null;
+                            String title = null;
+                            String onclick = "";
+                            String[] column_parts = column.split("\\|");
+                            if (column_parts.length == 1) {
+                                if (column.indexOf("${") >= 0) {
+                                    // risoluzione espressione
+                                    value = solveVariableField(column, request, true);
+                                } else {
+                                    Object oValue = utility.getEx(bean, column);
+                                    if (oValue instanceof Timestamp) {
+                                        title = value = new SimpleDateFormat(getDateTimeFormatString(), workspace.locale).format((Timestamp) oValue);
+                                    } else if (oValue instanceof Double || oValue instanceof Float) {
+                                        title = value = String.format("%.2f", oValue);
+                                    } else if (oValue instanceof Boolean) {
+                                        if ("IT".equalsIgnoreCase(workspace.GLLang)) {
+                                            title = value = (boolean) oValue ? "V" : "F";
+                                        } else {
+                                            title = value = (boolean) oValue ? "T" : "F";
+                                        }
+                                    } else {
+                                        title = value = String.valueOf(oValue);
+                                    }
+                                }
+                            } else if (column_parts.length > 1) {
+                                String val1 = String.valueOf(utility.getEx(bean, column_parts[0]));
+                                if (val1 != null && !val1.isEmpty()) {
+                                    title = value = val1;
+                                    column = column_parts[0];
+                                } else {
+                                    title = value = String.valueOf(utility.getEx(bean, column_parts[1]));
+                                    column = column_parts[1];
+                                }
+
+                            }
+                            if ("null".equalsIgnoreCase(value)) {
+                                title = value = "";
+                            }
+                            if (utility.contains(Arrays.asList(keys), column)) {
+                                if (rowCallback != null && !rowCallback.isEmpty()) {
+                                    onclick += " " + rowCallback + "(" + value + ")";
+                                }
+                                dataIds.add(value);
+                            }
+
+
+                            if (label != null) {
+                                if (column != null && !column.isEmpty()) {
+                                    values.add(value);
+                                    titles.add(title);
+                                    onClicks.add(onclick);
+                                }
+                            }
+                        }
+
+                        for (int j = 0; j < values.size(); j++) {
+                            String dataId = "data-id='"+utility.arrayToString(dataIds, null, null, ".")+"'";
+                            String title = titles.get(j);
+                            String onclick = onClicks.get(j);
+                            out += "<td title='" + (title != null ? title : "") + "'" + (cellClass != null ? " class='" + cellClass + "'" : "") + ">";
+                            out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + " " + dataId + ">";
+                            out += values.get(j);
+                            out += "</div>";
+                            out += "</td>";
+                        }
+                        out += "</tr>";
+                    }
+                }
+                out += "</tbody>";
+                out += "</table>";
+            }
+        }
+        return out;
+    }
+
 
     interface beansCondition {
 
@@ -3269,7 +3420,7 @@ public class bean {
     private static class myDateSerializer implements JsonSerializer<Date> {
         @Override
         public JsonElement serialize(Date date, Type type, JsonSerializationContext jsonSerializationContext) {
-            return new JsonPrimitive( new SimpleDateFormat(workspace.getDateTimeFormatString(), workspace.locale).format(date) );
+            return new JsonPrimitive( new SimpleDateFormat(getDateTimeFormatString(), workspace.locale).format(date) );
         }
     }
 

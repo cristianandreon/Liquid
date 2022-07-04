@@ -1,10 +1,5 @@
 package com.liquid;
 
-import static com.liquid.emailer.Auth;
-import static com.liquid.emailer.Host;
-import static com.liquid.emailer.Password;
-import static com.liquid.emailer.Port;
-import static com.liquid.emailer.Username;
 import static com.liquid.login.logout;
 import com.sun.mail.util.MailSSLSocketFactory;
 
@@ -279,12 +274,13 @@ public class emailer {
     
     /**
      * standard html message creator
-     * 
+     *
      * @param key
      * @param params
-     * @return 
+     * @param request
+     * @return
      */
-    public String get_standard_message(String key, String[] params) {
+    public String get_standard_message(String key, String[] params, HttpServletRequest request) {
 
         try {
 
@@ -424,14 +420,16 @@ public class emailer {
                         + "<b>" + params[0] + "</b>"
                         + "</td>"
                         + "</tr>"
-                        + "<tr>"
+                        + (params[1] != null ? (
+                         "<tr>"
                         + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
                         + "Commento/Richiesta"
                         + "</td>"
                         + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
                         + "<b>" + params[1] + "</b>"
                         + "</td>"
-                        + "</tr>"
+                        + "</tr>")
+                        :"")
                         + "<tr>"
                         + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
                         + "Email"

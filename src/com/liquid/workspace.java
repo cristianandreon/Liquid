@@ -37,7 +37,7 @@ import static com.liquid.utility.resetDatalistCache;
  */
 public class workspace {
 
-    public static String version_string = "2.18";
+    public static String version_string = "2.32";
     public static String getGLLang() {
         return GLLang;
     }
@@ -1479,6 +1479,13 @@ public class workspace {
 
                     if (sTableJson != null && !sTableJson.isEmpty()) {
                         // rename delle colonne table.column : il punto non e' supportato da ag grid
+
+                        // chiave primaria
+                        if (primaryKey == null || primaryKey.isEmpty()) {
+                            primaryKey = metadata.getPrimaryKeyData(database, schema, table, connToUse);
+                            tableJson.put("primaryKey", primaryKey);
+                        }
+
                         try {
                             cols = tableJson.getJSONArray("columns");
                         } catch (Exception e) {
@@ -1486,23 +1493,28 @@ public class workspace {
                         if (cols != null) {
                             for (int ic = 0; ic < cols.length(); ic++) {
                                 try {
-                                    JSONObject col = cols.getJSONObject(ic);
-                                    col.put("field", String.valueOf(ic + 1));
-                                    cols.put(ic, col);
-                                    String colName = "";
-                                    try {
-                                        colName = col.getString("name");
-                                    } catch (Exception e) {
-                                    }
-                                    String[] colParts = colName.split("\\.");
-                                    if (colParts.length > 1) {
-                                        if (table.equalsIgnoreCase(colParts[0]) && colParts[1].equals(primaryKey)) {
-                                            primaryKeyIndex1B = ic + 1;
+                                    Object oCol = cols.get(ic);
+                                    if(oCol instanceof JSONObject) {
+                                        JSONObject col = (JSONObject)oCol;
+                                        col.put("field", String.valueOf(ic + 1));
+                                        cols.put(ic, col);
+                                        String colName = "";
+                                        try {
+                                            colName = col.getString("name");
+                                        } catch (Exception e) {
                                         }
-                                    } else {
-                                        if(primaryKey != null) {
-                                            if (colName.compareTo(primaryKey) == 0) {
-                                                primaryKeyIndex1B = ic + 1;
+                                        String[] colParts = colName.split("\\.");
+                                        if (colParts.length > 1) {
+                                            if(primaryKey != null) {
+                                                if (table.equalsIgnoreCase(colParts[0]) && colParts[1].equals(primaryKey)) {
+                                                    primaryKeyIndex1B = ic + 1;
+                                                }
+                                            }
+                                        } else {
+                                            if(primaryKey != null) {
+                                                if (colName.compareTo(primaryKey) == 0) {
+                                                    primaryKeyIndex1B = ic + 1;
+                                                }
                                             }
                                         }
                                     }

@@ -427,7 +427,7 @@ public class utility {
                         }
                     } else if (value instanceof Boolean) {
                         if(curValue == null || !(Boolean)curValue != (Boolean)value) {
-                            field.set(bean, true);
+                            field.set(bean, value);
                             retVal = true;
                         }
                     } else if (value instanceof Integer) {
@@ -725,13 +725,37 @@ public class utility {
                     }
                 } else if (propType.equals(java.math.BigDecimal.class)) {
                     if (value instanceof String) {
-                        BigDecimal newValue = new BigDecimal((String)value);
+                        BigDecimal newValue = new BigDecimal((String)value != null && !((String) value).isEmpty() ? (String)value : (String) "0");
                         if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
                             field.set(bean, (BigDecimal) newValue);
                             retVal = true;
                         }
-                    } else if (value instanceof Object) {
-                        BigDecimal newValue = new BigDecimal(String.valueOf(value));
+                    } else if (value instanceof Double) {
+                        BigDecimal newValue = new BigDecimal((Double)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Float) {
+                        BigDecimal newValue = new BigDecimal((Float)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Long) {
+                        BigDecimal newValue = new BigDecimal((Long)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Integer) {
+                        BigDecimal newValue = new BigDecimal((Integer)value);
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Short) {
+                        BigDecimal newValue = new BigDecimal((Short)value);
                         if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
                             field.set(bean, (BigDecimal)newValue);
                             retVal = true;
@@ -745,6 +769,12 @@ public class utility {
                     } else if (value == null) {
                         if(curValue != null) {
                             field.set(bean, null);
+                            retVal = true;
+                        }
+                    } else if (value instanceof Object) {
+                        BigDecimal newValue = new BigDecimal(String.valueOf(value));
+                        if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
+                            field.set(bean, (BigDecimal)newValue);
                             retVal = true;
                         }
                     } else {
@@ -1412,7 +1442,7 @@ public class utility {
      */
     public static String mergeJsonObject(String ssource, String starget) throws Exception {
         JSONObject sourceJson = ssource != null && !ssource.isEmpty() ? new JSONObject(ssource) : null;
-        JSONObject targetJson = starget != null  && !starget.isEmpty() ? new JSONObject(starget) : null;
+        JSONObject targetJson = starget != null  && !starget.isEmpty() ? new JSONObject(starget) : new JSONObject();
         if(sourceJson != null && targetJson != null) {
             String[] names = JSONObject.getNames(sourceJson);
             if(names != null) {
@@ -1711,6 +1741,66 @@ public class utility {
         return null;
     }
 
+    /**
+     * Get the error/warning/... from a result json sring
+     * @param result
+     * @return
+     * @throws JSONException
+     */
+    static public JSONObject get_result_messages(String result) throws JSONException {
+        JSONObject messageJson = new JSONObject();
+        JSONObject resultJson = new JSONObject(result);
+        if (resultJson != null) {
+            if (resultJson.has("tables")) {
+            } else if (resultJson.has("details")) {
+                JSONArray details = (JSONArray) resultJson.getJSONArray("details");
+                if (details != null) {
+                    for (int id = 0; id < details.length(); id++) {
+                        Object detail = details.get(id);
+                        if (detail instanceof JSONObject) {
+                            JSONObject detailJson = (JSONObject) detail;
+                            if (detailJson.has("error")) {
+                                messageJson.put("error", detailJson.get("error"));
+                            }
+                            if (detailJson.has("warning")) {
+                                messageJson.put("warning", detailJson.get("warning"));
+                            }
+                            if (detailJson.has("info")) {
+                                messageJson.put("info", detailJson.get("info"));
+                            }
+                            if (detailJson.has("message")) {
+                                messageJson.put("message", detailJson.get("message"));
+                            }
+                            if (detailJson.has("tables")) {
+                                JSONArray table_details = (JSONArray) detailJson.getJSONArray("tables");
+                                if (table_details != null) {
+                                    for (int idt = 0; idt < table_details.length(); idt++) {
+                                        Object table_detail = table_details.get(idt);
+                                        if (table_detail instanceof JSONObject) {
+                                            JSONObject detailTableJson = (JSONObject) table_detail;
+                                            if (detailTableJson.has("error")) {
+                                                messageJson.put("error", detailTableJson.get("error"));
+                                            }
+                                            if (detailTableJson.has("warning")) {
+                                                messageJson.put("warning", detailTableJson.get("warning"));
+                                            }
+                                            if (detailTableJson.has("info")) {
+                                                messageJson.put("info", detailTableJson.get("info"));
+                                            }
+                                            if (detailTableJson.has("message")) {
+                                                messageJson.put("message", detailTableJson.get("message"));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return messageJson;
+    }
 
     /**
      * Transfer error to global result
@@ -2085,7 +2175,7 @@ public class utility {
 
     /**
      *
-     * @param datalistId
+     * @param controlId
      * @param databaseSchemaTable
      * @param codeColumn
      * @param descColumn
@@ -2094,32 +2184,34 @@ public class utility {
      * @param chacheIt
      * @return
      */
-    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) {
-        return get_datalist_from_table(datalistId, databaseSchemaTable, codeColumn, descColumn, null, where, chacheIt);
+    public static String get_datalist_from_table(String controlId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
+        return get_datalist_from_table(controlId, databaseSchemaTable, codeColumn, descColumn, null, where, null, emptyRow, null, chacheIt);
     }
 
 
     /**
-     *
-     * @param datalistId
+     * @param inputId               ID of the control (code)
      * @param databaseSchemaTable
-     * @param codeColumn
-     * @param descColumn
-     * @param tooltipColumn
+     * @param codeColumn            Code field in the database
+     * @param descColumn            Description field in the database
+     * @param tooltipColumn         Tooltip field in the database
      * @param where
      * @param order
-     * @param emptyRow
+     * @param emptyRow              Show empty row (emptyRow define the code of the option element)
+     * @param currentValue          current code value (as selected)
      * @param chacheIt
      * @return
      * @throws Throwable
      */
-    public static String get_datalist_from_table(String datalistId, String databaseSchemaTable,
+    public static String get_datalist_from_table(String inputId, String databaseSchemaTable,
                                                  String codeColumn, String descColumn, String tooltipColumn,
                                                  String where, String order,
                                                  String emptyRow,
+                                                 String currentValue,
                                                  boolean chacheIt) throws Throwable {
         String out = "";
-
+        String datalistId = inputId+".list";
+        String descId = inputId+".desc";
         ArrayList<Object> beans = null;
         DataListCache dataListCache = get_datalist_from_cahce(databaseSchemaTable, codeColumn, descColumn, where);
         if (dataListCache != null) {
@@ -2127,16 +2219,58 @@ public class utility {
         } else {
             beans = bean.load_beans(databaseSchemaTable, null, (where != null && !where.isEmpty() ? where : "*"), 0, order);
         }
-        out += "<datalist id=\"" + datalistId + "\">";
+        boolean codeHidden = false;
+        String [] codeColumnParts = null;
+        String idColumn = null;
+        if(codeColumn != null) {
+            /*codeColumnParts = codeColumn.split("\\|");
+            if (codeColumnParts.length > 1) {
+                codeColumn = codeColumnParts[0];
+                idColumn = codeColumnParts[1];
+                codeHidden = true;
+            }*/
+            codeHidden = true;
+        }
+
+        if(codeHidden) {
+            out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:'hidden'\"" + "value=\"" + "" + "\" />";
+        }
+        out += "<datalist " +
+                "id=\"" + datalistId + "\" " +
+                "class='liquidDatalist' "+
+                "data-inputid=\""+inputId+"\" " +
+                // (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
+                ">";
+        int iCurrent = 0;
+        if(currentValue != null) {
+            if (beans != null) {
+                for (int i = 0; i < beans.size(); i++) {
+                    String code = (codeColumn != null ? String.valueOf(utility.getEx(beans.get(i), codeColumn)) : null);
+                    if(currentValue.compareTo(code) == 0) {
+                        iCurrent = i + 1;
+                        break;
+                    }
+                }
+            }
+        }
         if (emptyRow != null) {
-            out += "<option title=\"" + ("") + "\" selected value=\"" + emptyRow + "\">" + " " + "</option>";
+            out += "<option title=\"" + ("") + "\" " +
+                    (iCurrent == 0 ? "selected " : "") +
+                    "value=\"" + emptyRow + "\">" + " " + "</option>";
         }
         if (beans != null) {
             for (int i = 0; i < beans.size(); i++) {
-                String code = (codeColumn != null ? (String) utility.getEx(beans.get(i), codeColumn) : null);
+                String code = (codeColumn != null ? String.valueOf(utility.getEx(beans.get(i), codeColumn)) : null);
                 String desc = (descColumn != null ? (String) utility.getEx(beans.get(i), descColumn) : null);
                 String tooltip = (tooltipColumn != null ? (String) (utility.has(beans.get(i), tooltipColumn) ? utility.getEx(beans.get(i), tooltipColumn) : null) : null);
-                out += "<option title=\"" + (tooltip != null ? tooltip.replace("\"", "'") : "") + "\" value=\"" + code + "\" > " + desc + " </option>";
+                out += "<option " +
+                        (iCurrent == i+1 ? "selected " : "") +
+                        "data-id=\""+code+"\" " +
+                        "data-code=\""+code+"\" " +
+                        "name=\""+desc+"\" " +
+                        "" + (tooltip != null ? "title=\"" + tooltip.replace("\"", "'") +"\"" : "") +
+                        (codeHidden ? "" : "value=\"" + code + "\" ") +
+                        ">" + desc + "</option>";
             }
         }
         out += "</datalist>";
@@ -2150,6 +2284,10 @@ public class utility {
                 dataListCache.beans = beans;
                 glDataListCache.add(dataListCache);
             }
+        }
+        if(codeHidden) {
+            // No attavato da document ready in liquid.js
+            // out += "<script>Liquid.setupDescDatalist('" + inputId + "','" + descId + "','" + datalistId + "')</script>";
         }
         return out;
     }
@@ -2186,21 +2324,31 @@ public class utility {
                 "placeholder=\"\"\n" +
                 "onchange=\""+onChange+"\"\n" +
                 "style=\""+style+"\"\n" +
-                "list=\""+(inputId+"_list")+"\"\n" +
                 "onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\"\n" +
                 "onblur=\"if(!this.value) { this.value=this.placeholder; onchange(this); }\"\n" +
                 ">\n";
 
         String datalist = com.liquid.utility.get_datalist_from_table(
-                inputId+"_list",
+                inputId,
                 databaseSchemaTable,
                 codeColumn,
                 descColumn,
                 tooltipColumn,
-                where, order, emptyRow, chacheIt
+                where, order, emptyRow, null, chacheIt
         );
 
-        String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
+        String descId = inputId+".desc";
+        String reset = "<button class=\"close-icon\" " +
+                "onclick=\"" +
+                "if(document.getElementById('"+inputId+"').value) { " +
+                "document.getElementById('"+inputId+"').value=''; " +
+                "document.getElementById('"+inputId+"').placeholder=''; " +
+                "document.getElementById('"+inputId+"').onchange(); " +
+                "document.getElementById('"+descId+"').value=''; " +
+                "document.getElementById('"+descId+"').placeholder=''; " +
+                "document.getElementById('"+descId+"').onchange(); " +
+                "} else {}\">" +
+                "</button>";
 
         return input + "\n" + datalist + "\n" + reset;
     }
