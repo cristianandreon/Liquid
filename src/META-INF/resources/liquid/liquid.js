@@ -8956,12 +8956,21 @@ var Liquid = {
                 if (callback) {
                     retVal = callback(callbackParams);
                 } else {
+                    if(!isDef(eventParams)) {
+                        eventParams = {};
+                    }
+                    if(isDef(event.params)) {
+                        Object.assign(eventParams, event.params);
+                    }
+                    if(isDef(eventData)) {
+                        Object.assign(eventParams, eventData);
+                    }
                     if (event.clientAfter !== true || event.clientBefore === true) {
                         retVal = Liquid.executeClientSide(
                             liquid,
                             "event:" + event.name,
                             event.client,
-                            (eventParams ? eventParams : (event.params ? event.params : eventData)),
+                            eventParams,
                             event.isNative);
                     }
                 }
@@ -13594,12 +13603,13 @@ var Liquid = {
                             layout.containerObj.style.display = "";
                             for (var is = 0; is < sources.length; is++) {
                                 var source = layout[sources[is].key];
+                                var key = sources[is].key;
                                 if (isDef(source)) {
-                                    var result = Liquid.solveExpressionField(layout, sources[is].key, liquid);
+                                    var result = Liquid.solveExpressionField(layout, key, liquid);
                                     if (result[0] === 'ready') {
                                         source = result[1] != null ? result[1] : "";
                                     }
-                                    if (source.startsWith("url(")) {
+                                    if (source.toLowerCase().startsWith("url(")) {
                                         var jsonURL = source.substring(4);
                                         if (jsonURL.endsWith(")"))
                                             jsonURL = jsonURL.substring(0, jsonURL.length - 1);
@@ -13610,31 +13620,10 @@ var Liquid = {
                                         if (xhr.status === 200) {
                                             try {
                                                 if (xhr.responseText) {
-                                                    layout.containerObj.innerHTML = xhr.responseText;
-                                                    var height = Liquid.getItemsMaxHeight(layout.containerObj);
-                                                    var rootObj = document.createElement("div");
-                                                    rootObj.className = "liquidLayoutRowContainerDiv";
-                                                    rootObj.id = liquid.controlId + "." + layout.name + ".source." + (is + 1);
-                                                    while (layout.containerObj.childNodes.length) {
-                                                        rootObj.appendChild(layout.containerObj.childNodes[0]);
-                                                    }
-                                                    var scripts = [];
-                                                    Liquid.searchForScripts(rootObj, scripts);
-                                                    if (!scripts.length) scripts = null;
-                                                    layout.pageLoaded = true;
-                                                    layout.templateRows.push({
-                                                        key: sources[is].key,
-                                                        templateRow: rootObj,
-                                                        isAutoInsert: isAutoInsert,
-                                                        isFormX: isFormX,
-                                                        mode: mode,
-                                                        source: source,
-                                                        height: height,
-                                                        scripts: scripts,
-                                                        scriptsToExec: (scripts ? true : false)
-                                                    });
-                                                    layout.containerObj.innerHTML = "";
-                                                } else console.error("ERROR: No response reading :" + jsonURL + " of controlId:" + liquid.controlId);
+                                                    Liquid.create_layout_from_url(liquid, layout, xhr.responseText, key, source, is, mode);
+                                                } else {
+                                                    console.error("ERROR: No response reading :" + jsonURL + " of controlId:" + liquid.controlId);
+                                                }
                                             } catch (e) {
                                                 console.error(e);
                                             }
@@ -13644,6 +13633,27 @@ var Liquid = {
                                             Liquid.showToast(Liquid.appTitle, err, "error");
                                         }
                                         if (Liquid.debug) console.log("INFO: reading source:" + layout.source + " of layout:" + layout.name + ":" + jsonURL);
+                                    } else if (source.toUpperCase().startsWith("DMS://")) {
+                                        let src = glLiquidServlet + '?operation=downloadDocument&link=' + source;
+                                        var xhr = new XMLHttpRequest();
+                                        xhr.open('GET', src, false);
+                                        xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
+                                        xhr.send();
+                                        if (xhr.status === 200) {
+                                            try {
+                                                if (xhr.responseText) {
+                                                    Liquid.create_layout_from_url(liquid, layout, xhr.responseText, key, source, is, mode);
+                                                } else {
+                                                    console.error("ERROR: No response reading :" + src + " of controlId:" + liquid.controlId);
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                            }
+                                        } else {
+                                            var err = "ERROR: source file :" + source + " failed to read (error:" + xhr.status + ") on layout \"" + layout.name + "\" of controlId \"" + liquid.controlId + "\"";
+                                            console.error(err);
+                                            Liquid.showToast(Liquid.appTitle, err, "error");
+                                        }
                                     } else {
                                         // direct html link
                                         var content = Liquid.getJSProperty(layout.source);
@@ -13740,6 +13750,32 @@ var Liquid = {
                 }
             }
         }
+    },
+    create_layout_from_url:function (liquid, layout, responseText, key, source, counter, mode) {
+        layout.containerObj.innerHTML = responseText;
+        var height = Liquid.getItemsMaxHeight(layout.containerObj);
+        var rootObj = document.createElement("div");
+        rootObj.className = "liquidLayoutRowContainerDiv";
+        rootObj.id = liquid.controlId + "." + layout.name + ".source." + (counter + 1);
+        while (layout.containerObj.childNodes.length) {
+            rootObj.appendChild(layout.containerObj.childNodes[0]);
+        }
+        var scripts = [];
+        Liquid.searchForScripts(rootObj, scripts);
+        if (!scripts.length) scripts = null;
+        layout.pageLoaded = true;
+        layout.templateRows.push({
+            key: key,
+            templateRow: rootObj,
+            isAutoInsert: Liquid.isAutoInsert(liquid),
+            isFormX: Liquid.isFormX(liquid),
+            mode: mode,
+            source: source,
+            height: height,
+            scripts: scripts,
+            scriptsToExec: (scripts ? true : false)
+        });
+        layout.containerObj.innerHTML = "";
     },
     resetLayoutsContent: function (liquid, bOnlyAddingRow, bAnimate) {
         if (liquid.tableJson.layouts) {

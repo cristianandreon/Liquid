@@ -4007,8 +4007,9 @@ public class db {
                     } else {
                         if (i < Fields.length) {
                             Object val = Values[i];
-                            db.mapStatementParam(sqlSTMTUpdate, ip, val);
-                            ip++;
+                            if(db.mapStatementParam(sqlSTMTUpdate, ip, val)) {
+                                ip++;
+                            }
                         }
                     }
                 }
@@ -4016,7 +4017,9 @@ public class db {
                 // primary key
                 if(primaryKey.startsWith("WHERE ")) {
                 } else {
-                    db.mapStatementParam(sqlSTMTUpdate, ip, keyValue);
+                    if(db.mapStatementParam(sqlSTMTUpdate, ip, keyValue)) {
+                        ip++;
+                    }
                 }
 
                 if(workspace.projectMode) {
@@ -4071,9 +4074,10 @@ public class db {
         return new Object [] { retVal, new_id } ;
     }
 
-    private static void mapStatementParam(PreparedStatement sqlSTMTUpdate, int ip, Object val) throws Exception {
+    private static boolean mapStatementParam(PreparedStatement sqlSTMTUpdate, int ip, Object val) throws Exception {
         if (val instanceof Expression || val instanceof StringBuffer) {
             // Already processed
+            return false;
         } else {
             if (val instanceof Integer) {
                 sqlSTMTUpdate.setInt((ip), (int) val);
@@ -4105,6 +4109,7 @@ public class db {
                 throw new Exception(err);
             }
         }
+        return true;
     }
 
 

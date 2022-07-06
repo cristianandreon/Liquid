@@ -2233,7 +2233,7 @@ public class utility {
         }
 
         if(codeHidden) {
-            out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:'hidden'\"" + "value=\"" + "" + "\" />";
+            out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + "value=\"" + "" + "\" />";
         }
         out += "<datalist " +
                 "id=\"" + datalistId + "\" " +

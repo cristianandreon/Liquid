@@ -2131,7 +2131,13 @@ public class event {
                             Path path = new File(file).toPath();
                             if (path != null) {
                                 // fileContent = Files.readAllBytes( path ) ;
-                                paramJson.put("mimeType", Files.probeContentType(path));
+                                String mimeType = Files.probeContentType(path);
+                                if(mimeType == null || mimeType.isEmpty()) {
+                                    if(file.toLowerCase().endsWith(".jsp")) {
+                                        mimeType = "application/jsp";
+                                    }
+                                }
+                                paramJson.put("mimeType", mimeType);
                             }
                         }
                     }
