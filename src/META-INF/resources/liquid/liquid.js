@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.32
+// Liquid ver.2.33
 //
-//  First update 06-01-2020 - Last update 01-07-2022
+//  First update 06-01-2020 - Last update 05-07-2022
 //
 //  TODO : see trello.com
 //
@@ -9531,12 +9531,6 @@ var Liquid = {
                                         }
                                     }
                                 }
-                                // refresh row on grid and layouts
-                                Liquid.refreshGrids(liquid, null, "rollback");
-                                Liquid.resetLayoutsContent(liquid, true);
-                                Liquid.refreshLayouts(liquid, true);
-                                Liquid.refreshDocuments(liquid);
-                                Liquid.refreshCharts(liquid);
                             } else {
                                 if (command.name === "insert") {
                                     // remove node if add rec ord failed
@@ -9573,6 +9567,12 @@ var Liquid = {
                                     refreshDone = true;
                                 }
                             }
+                            // refresh row on grid and layouts
+                            Liquid.refreshGrids(liquid, null, "rollback");
+                            Liquid.resetLayoutsContent(liquid, true);
+                            Liquid.refreshLayouts(liquid, true);
+                            Liquid.refreshDocuments(liquid);
+                            Liquid.refreshCharts(liquid);
                         } else {
                             // system control : recordset is at runtime
                         }
@@ -9606,10 +9606,10 @@ var Liquid = {
                 if (command.name === "insert") {
                     liquid.addingNode = null;
                     liquid.addingRow = null;
-                    Liquid.resetLayoutsRowState(liquid);
                 } else if (command.name === "delete") {
                     liquid.deletingNodes = null;
                 }
+                Liquid.resetLayoutsRowState(liquid);
             } else {
                 //
                 // Custom command
@@ -11303,14 +11303,6 @@ var Liquid = {
                             command.linkedLabelObj.innerHTML = (typeof command.text !== "undefined" ? command.text : "");
                         if (command.restoreView) Liquid.onGridTab(liquid.listGridTabObj);
 
-                        //
-                        // restoring the layout
-                        //
-                        /*
-                        Liquid.resetLayoutsRowState(liquid);
-                        Liquid.restoreGrids(liquid);
-                        Liquid.restoreLayouts(liquid);
-                        */
                         if (Liquid.isNativeCommand(command)) {
                             if (command.rollbackCommand)
                                 if (command.rollbackCommand.linkedObj)
@@ -11327,6 +11319,13 @@ var Liquid = {
                             if (command.name === "insert-rollback") {
                                 /* Duplicate with record change */
                             } else {
+                                //
+                                // restoring the layout
+                                //
+                                Liquid.resetLayoutsRowState(liquid);
+                                Liquid.restoreGrids(liquid);
+                                Liquid.restoreLayouts(liquid);
+
                                 Liquid.restoreGrids(liquid);
                                 Liquid.restoreLayouts(liquid);
                                 Liquid.refreshGrids(liquid, null, "rollback");
@@ -13596,6 +13595,10 @@ var Liquid = {
                             for (var is = 0; is < sources.length; is++) {
                                 var source = layout[sources[is].key];
                                 if (isDef(source)) {
+                                    var result = Liquid.solveExpressionField(layout, sources[is].key, liquid);
+                                    if (result[0] === 'ready') {
+                                        source = result[1] != null ? result[1] : "";
+                                    }
                                     if (source.startsWith("url(")) {
                                         var jsonURL = source.substring(4);
                                         if (jsonURL.endsWith(")"))

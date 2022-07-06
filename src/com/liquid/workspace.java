@@ -640,7 +640,7 @@ public class workspace {
             hostName = InetAddress.getLocalHost().getHostName();
             if(hostName.equalsIgnoreCase(onlyToHost)) {
                 System.out.println("LIQUID: Enabling project mode by working in host "+onlyToHost);
-                // return enableProjectMode(out, keepMetadata);
+                return enableProjectMode(out, keepMetadata);
             }
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -2953,6 +2953,20 @@ public class workspace {
                 String [] keys = new String [] { "server", "client" };
                 for(String key : Arrays.asList(keys)) {
                     solvedCount += solveClientSideVariableFieldsKey(command, key, request);
+                }
+            }
+        }
+        if(tableJsonForClient.has("layouts")) {
+            JSONArray layouts = tableJsonForClient.getJSONArray("layouts");
+            for(int ic=0; ic<layouts.length(); ic++) {
+                JSONObject layout = layouts.getJSONObject(ic);
+                String [] keys = new String []{
+                        "source", "sourceForInsert", "sourceForUpdate", "header", "footer",
+                        "headerForInsert", "footerForInsert", "headerForUpdate", "footerForUpdate",
+                        "sourceForEmpty", "headerForEmpty", "footerForEmpty"
+                };
+                for(String key : Arrays.asList(keys)) {
+                    solvedCount += solveClientSideVariableFieldsKey(layout, key, request);
                 }
             }
         }

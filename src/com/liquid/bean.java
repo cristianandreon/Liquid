@@ -2693,6 +2693,10 @@ public class bean {
                     + (order_by_condition != null ? order_by_condition : "")
                     ;
 
+            if(workspace.projectMode) {
+                Logger.getLogger(db.class.getName()).log(Level.INFO, executingQuery);
+            }
+
             if(transaction.isTransaction(request)) {
                 conn = transaction.getTransaction(request);
             } else {
