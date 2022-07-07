@@ -3248,9 +3248,11 @@ public class bean {
     }
 
     public static String toHTML(ArrayList<Object> beans,
-                                String[] columns, String[] labels, String[] keys,
+                                String[] columns, String[] labels, Object[] widths, String[] keys,
                                 String rowCallback,
                                 String tableClass, String tableStyle,
+                                String theadClass, String theadStyle,
+                                String tbodyClass, String tbodyStyle,
                                 String cellClass, String cellStyle,
                                 HttpServletRequest request, String Mode) throws Exception {
         String out = null;
@@ -3258,19 +3260,36 @@ public class bean {
         if(beans != null) {
             if(beans.size()>0) {
                 out = "<table class=\"" + (tableClass != null ? tableClass : "") + "\" style='" + (tableStyle != null ? tableStyle : "") + "'>";
-                out += "<thead>";
+                out += "<thead class=\"" + (theadClass != null ? theadClass : "") + "\" style='" + (theadStyle != null ? theadStyle : "") + "'>";
                 out += "<tr>";
                 for (int j = 0; j < labels.length; j++) {
                     String label = labels[j];
+                    Object width = widths != null ? widths[j] : null;
+                    String swh = null;
+                    if(width instanceof String) {
+                        try {
+                            swh = (String)width;
+                        } catch (Exception e) {}
+                    } else if(width instanceof Integer) {
+                        swh = String.valueOf(width);
+                    } else if(width  != null) {
+                        try {
+                            swh = String.valueOf(width);
+                        } catch (Exception e) {}
+                    }
                     if (label != null && !label.isEmpty()) {
-                        out += "<th" + (cellClass != null ? " class='" + cellClass + "'" : "") + (cellStyle != null ? " style='" + cellStyle + "'" : "") + ">";
+                        out += "<th"
+                                + (cellClass != null ? " class='" + cellClass + "'" : "")
+                                + (cellStyle != null ? " style='" + cellStyle + (swh != null ? "; width:"+swh+"px;" : "") + "'" : "")
+                                + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
+                                + ">";
                         out += label;
                         out += "</th>";
                     }
                 }
                 out += "</tr>";
                 out += "</thead>";
-                out += "<tbody>";
+                out += "<tbody class=\"" + (tbodyClass != null ? tbodyClass : "") + "\" style='" + (tbodyStyle != null ? tbodyStyle : "") + "'>";
                 for (int i = 0; i < beans.size(); i++) {
                     Object bean = beans.get(i);
                     if (bean != null) {
@@ -3278,11 +3297,13 @@ public class bean {
 
                         ArrayList<String> values = new ArrayList<String>();
                         ArrayList<String> titles = new ArrayList<String>();
+                        ArrayList<Object> cellwhs = new ArrayList<Object>();
                         ArrayList<String> dataIds = new ArrayList<String>();
                         ArrayList<String> onClicks = new ArrayList<String>();
 
                         for (int j = 0; j < columns.length; j++) {
                             String label = labels[j];
+                            Object width = widths != null ? widths[j] : null;
                             String column = columns[j];
                             String value = null;
                             String title = null;
@@ -3334,6 +3355,7 @@ public class bean {
                                 if (column != null && !column.isEmpty()) {
                                     values.add(value);
                                     titles.add(title);
+                                    cellwhs.add(width);
                                     onClicks.add(onclick);
                                 }
                             }
@@ -3343,7 +3365,29 @@ public class bean {
                             String dataId = "data-id='"+utility.arrayToString(dataIds, null, null, ".")+"'";
                             String title = titles.get(j);
                             String onclick = onClicks.get(j);
-                            out += "<td title='" + (title != null ? title : "") + "'" + (cellClass != null ? " class='" + cellClass + "'" : "") + ">";
+                            Object width = cellwhs != null ? cellwhs.get(j) : null;
+                            String swh = null;
+                            if(i==0) {
+                                if (width instanceof String) {
+                                    try {
+                                        swh = (String) width;
+                                    } catch (Exception e) {
+                                    }
+                                } else if (width instanceof Integer) {
+                                    swh = String.valueOf(width);
+                                } else if (width != null) {
+                                    try {
+                                        swh = String.valueOf(width);
+                                    } catch (Exception e) {
+                                    }
+                                }
+                            }
+                            out += "<td title='"
+                                    + (title != null ? title : "") + "'"
+                                    + (cellClass != null ? " class='" + cellClass + "'" : "")
+                                    + (cellStyle != null ? " style='" + cellStyle + (swh != null ? "; width:"+swh+"px;" : "") + "'" : "")
+                                    + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
+                                    + ">";
                             out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + " " + dataId + ">";
                             out += values.get(j);
                             out += "</div>";
