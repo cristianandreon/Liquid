@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.33
+// Liquid ver.2.34
 //
-//  First update 06-01-2020 - Last update 05-07-2022
+//  First update 06-01-2020 - Last update 08-07-2022
 //
 //  TODO : see trello.com
 //
@@ -22877,7 +22877,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
     try {
         let liquidCurrency = $('input.liquidCurrency');
         if(liquidCurrency) {
-            liquidCurrency.currencyInput();
+            try {
+                if (typeof liquidCurrency.currencyInput !== 'undefined')
+                    liquidCurrency.currencyInput();
+            } catch (e) {
+                console.error(e);
+            }
         }
         let liquidDeletable = jQ1124('input.liquidDeletable');
         if(liquidDeletable) {
