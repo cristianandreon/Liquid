@@ -7463,7 +7463,7 @@ var Liquid = {
         td.className = "liquidFilterButtonTd";
         td.innerHTML = "<center><button id=\"" + liquid.controlId
             + ".filter.execute\" type=\"button\" class=\"liquidFilterButton\" onClick=\"Liquid.onBtFilterExecute(this)\">"
-            + (Liquid.lang === 'eng' ? "Serach" : "Cerca")
+            + (Liquid.lang === 'eng' ? "Search" : "Cerca")
             + "</button></center>";
         tr.appendChild(td);
         if (filterCount == 0) {
