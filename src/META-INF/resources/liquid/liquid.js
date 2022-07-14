@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.34
+// Liquid ver.2.35
 //
 //  First update 06-01-2020 - Last update 08-07-2022
 //
@@ -8959,12 +8959,6 @@ var Liquid = {
                     if(!isDef(eventParams)) {
                         eventParams = {};
                     }
-                    if(isDef(event.params)) {
-                        Object.assign(eventParams, event.params);
-                    }
-                    if(isDef(eventData)) {
-                        Object.assign(eventParams, eventData);
-                    }
                     if (event.clientAfter !== true || event.clientBefore === true) {
                         retVal = Liquid.executeClientSide(
                             liquid,
@@ -8985,23 +8979,6 @@ var Liquid = {
                 var params = [];
 
                 //
-                // native parameters of the events ...
-                //
-                var eventBuiltInParams = (event.params ? JSON.parse(JSON.stringify(event.params)) : null);
-                if (eventBuiltInParams) {
-                    if (!Array.isArray(eventBuiltInParams)) {
-                        eventBuiltInParams = [eventBuiltInParams];
-                    }
-                    // Every row must be an object
-                    for (var ip = 0; ip < params.length; ip++) {
-                        // N.B.: it's already processed and putted inside eventData
-                        if (typeof params[ip] !== 'object') {
-                            // params[ip] = { name:params[ip], data:"" };
-                        } else {
-                        }
-                    }
-                }
-                //
                 // N.B.: EventData come from event.params, so is the parameters resolved at runtime
                 //
                 if (isDef(eventData)) params.push({data: eventData});
@@ -9010,13 +8987,6 @@ var Liquid = {
                         params.push(eventParams[ip]);
                     }
                 }
-
-                /*
-                if(event.sync === true) {
-                } else {
-                }
-                */
-
                 // Send the request
                 Liquid.sendRequest(
                     liquid
