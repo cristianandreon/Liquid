@@ -559,7 +559,11 @@ public class connection {
         jdbcSource.pooled = pooled;
         if(pooled) {
             Object [] res = getLiquidDBConnectionURL(jdbcSource, driver, host, port, database, user, password, service);
-            jdbcSource.cp = new connectionPool((String)res[0], user, password);
+            if(res[0] != null) {
+                jdbcSource.cp = new connectionPool((String) res[0], user, password);
+            } else {
+                throw new Exception("[LIQUID] Datasource failed : check connection data and missing libraries");
+            }
         }
         jdbcSources.add(jdbcSource);
         
