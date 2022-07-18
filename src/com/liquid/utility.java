@@ -2586,11 +2586,11 @@ public class utility {
     }
 
     public static String arrayToString(ArrayList<String> columns, String prefix, String postfix, String separator) {
-        return arrayToString(columns.toArray(), prefix, postfix, separator);
+        return arrayToString(columns != null ? columns.toArray() : null, prefix, postfix, separator);
     }
 
     public static String objArrayToString(ArrayList<Object> columns, String prefix, String postfix, String separator) {
-        return arrayToString(columns.toArray(), prefix, postfix, separator);
+        return arrayToString(columns != null ? columns.toArray() : null, prefix, postfix, separator);
     }
 
 

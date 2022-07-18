@@ -2181,6 +2181,7 @@ public class db {
                 String filterLogic = null;
                 String filterNextLogic = null;
                 boolean filterSensitiveCase = false;
+                boolean includeNullValues = false;
 
                 filterTable = filtersCol.has("table") ? filtersCol.getString("table") : filterTable;
 
@@ -2255,6 +2256,21 @@ public class db {
                 filterLogic = filtersCol.has("logic") ? filtersCol.getString("logic").trim() : filterLogic;
 
                 filterSensitiveCase = filtersCol.has("sensitiveCase") ? filtersCol.getBoolean("sensitiveCase") : filterSensitiveCase;
+
+
+                if(filterOp.startsWith("?")) {
+                    filterOp = filterOp.substring(1);
+                    includeNullValues = true;
+                }
+                // Per drefault include il NULL
+                if(filterOp.equalsIgnoreCase("!=")) {
+                    includeNullValues = true;
+                }
+                // Esclude il NULL
+                if(filterOp.equalsIgnoreCase("!==")) {
+                    filterOp = "!=";
+                    includeNullValues = false;
+                }
 
 
                 // is next operator a logic 'OR' ? .. start and opening parent
@@ -2579,7 +2595,7 @@ public class db {
                         }
                     }
 
-                    if ("".equalsIgnoreCase(filterOp) || "=".equalsIgnoreCase(filterOp) ||  "==".equalsIgnoreCase(filterOp)) {
+                    if ("".equalsIgnoreCase(filterOp) || "=".equalsIgnoreCase(filterOp) ||  "==".equalsIgnoreCase(filterOp) ||  "===".equalsIgnoreCase(filterOp)) {
                         if (filterValue != null && !filterValue.isEmpty()) {
                         } else {
                             //
@@ -2780,13 +2796,20 @@ public class db {
                                 }
                             }
                         }
-                        
+
+
+                        if(includeNullValues) {
+                            sWhere += "(";
+                        }
+
+                        String filteringFieldName = (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterNameAliased + itemIdString) : (filterNameAliased));
+
                         //
                         // add where clausole
                         //
                         sWhere += sensitiveCasePreOp
                                 + preFixCol
-                                + (filterTable != null && !filterTable.isEmpty() ? (filterTable + "." + itemIdString + filterNameAliased + itemIdString) : (filterNameAliased))
+                                + filteringFieldName
                                 + postFixCol
                                 + sensitiveCasePostOp
                                 + (filterOp != null && !filterOp.isEmpty() ? " " + filterOp + " " : "=");
@@ -2801,8 +2824,11 @@ public class db {
                                     + postFix
                                     ;
                         }
-                                
-                        
+
+
+                        if(includeNullValues) {
+                            sWhere += " OR " + filteringFieldName + " IS NULL)";
+                        }
 
                         
                         // is operator logic not 'OR' ? close the parent

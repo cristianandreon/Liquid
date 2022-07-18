@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.35
+// Liquid ver.2.36
 //
-//  First update 06-01-2020 - Last update 08-07-2022
+//  First update 06-01-2020 - Last update 15-07-2022
 //
 //  TODO : see trello.com
 //
@@ -5004,6 +5004,7 @@ var Liquid = {
                                     , idColumn: liquid.tableJson.columns[ic].editor.idColumn
                                     , targetColumn: liquid.tableJson.columns[ic].editor.targetColumn
                                     , cache: liquid.tableJson.columns[ic].editor.cache
+                                    , b64: liquid.tableJson.columns[ic].b64
                                 };
                             }
                         } else if (liquid.tableJson.columns[ic].editor === 'values' || liquid.tableJson.columns[ic].editor.type === 'values'
@@ -5036,6 +5037,7 @@ var Liquid = {
                                 , cache: liquid.tableJson.columns[ic].editor.cache
                                 , values: values
                                 , codes: codes
+                                , b64: liquid.tableJson.columns[ic].b64
                             };
                         } else if (Liquid.isSunEditor(liquid.tableJson.columns[ic])) {
                             cellEditor = SunEditor;
@@ -15384,6 +15386,7 @@ var Liquid = {
                         }
                         var type = liquid.tableJson.columns[Number(linkedField) - 1].type;
                         var format = liquid.tableJson.columns[Number(linkedField) - 1].format;
+                        var b64 = liquid.tableJson.columns[Number(linkedField) - 1].b64;
                         linkedRow1B = Number(linkedRow1B);
                         if (linkedRow1B === iRow + 1) {
                             var baseIndex1B = layout.baseIndex1B;
@@ -15520,6 +15523,14 @@ var Liquid = {
                                             } catch (e) {
                                                 console.error(e);
                                             }
+                                        }
+                                    }
+                                }
+                                if(isDef(b64)) {
+                                    if (b64) {
+                                        try {
+                                            value = atob(value);
+                                        } catch (e) {
                                         }
                                     }
                                 }
@@ -16002,6 +16013,8 @@ var Liquid = {
                             var asType = obj.getAttribute('astype');
                             var firstNodeId = lay_coord.layout.firstNodeId;
                             var baseIndex1B = Liquid.getNodeIndex(liquid, firstNodeId);
+                            var isddingNode;
+                            var cNode;
                             if (!obj.classList.contains("slideshow-prev") && !obj.classList.contains("slideshow-next")) {
                                 lay_coord.layout.currentRelativeRow1B = linkedRow1B;
                                 lay_coord.layout.currentAbsoluteRow1B = (baseIndex1B ? baseIndex1B - 1 : 0) + linkedRow1B;
@@ -16009,8 +16022,8 @@ var Liquid = {
                                 if (isDef(liquid.gridOptions)) {
                                     if (isDef(liquid.gridOptions.api)) {
                                         nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                                        var isddingNode = Liquid.isAddingNode(liquid, baseIndex1B - 1 + linkedRow1B - 1, nodes, true);
-                                        let cNode = baseIndex1B - 1 + linkedRow1B - 1;
+                                        isddingNode = Liquid.isAddingNode(liquid, baseIndex1B - 1 + linkedRow1B - 1, nodes, true);
+                                        cNode = baseIndex1B - 1 + linkedRow1B - 1;
                                         if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
                                             nodes[baseIndex1B - 1 + linkedRow1B - 1].setSelected(true);
                                         }
@@ -16043,6 +16056,17 @@ var Liquid = {
                                                 liquid.suneditorDiv.style.display = "none";
                                             }
                                         );
+                                        if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
+                                            let content = nodes[baseIndex1B - 1 + linkedRow1B - 1].data[col.field];
+                                            if(isDef(col.b64)) {
+                                                if(col.b64) {
+                                                    try {
+                                                        content = atob(content);
+                                                    } catch (e) {}
+                                                }
+                                            }
+                                            liquid.suneditor.setContents(content);
+                                        }
                                     }
                                 }
                             }
@@ -16179,8 +16203,13 @@ var Liquid = {
                                         if (validateResult[0] >= 0) {
                                             let rowId = liquid.tableJson.primaryKeyField ? liquid.addingRow[liquid.tableJson.primaryKeyField] : null;
                                             let nodeId = liquid.addingNode ? liquid.addingNode.id : null;
+                                            if(isDef(col.b64)) {
+                                                if(col.b64) {
+                                                    validateResult[1] = btoa(validateResult[1]);
+                                                }
+                                            }
                                             Liquid.addMirrorEvent(liquid, liquid.addingNode);
-                                            Liquid.registerFieldChange(liquid, nodeId, rowId, linkedField, null, newValue);
+                                            Liquid.registerFieldChange(liquid, nodeId, rowId, linkedField, null, validateResult[1]);
                                             Liquid.updateDependencies(liquid, col, null, event);
                                         }
                                     }
@@ -16195,6 +16224,11 @@ var Liquid = {
                                                 if (validateResult !== null) {
                                                     if (validateResult[0] >= 0) {
                                                         // newValue = validateResult[1];
+                                                        if(isDef(col.b64)) {
+                                                            if(col.b64) {
+                                                                validateResult[1] = btoa(validateResult[1]);
+                                                            }
+                                                        }
                                                         Liquid.addMirrorEvent(liquid, nodes[baseIndex1B - 1 + linkedRow1B - 1]);
                                                         nodes[baseIndex1B - 1 + linkedRow1B - 1].setDataValue(linkedField, validateResult[1]);
                                                         Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], linkedField, null, newValue);
@@ -16844,6 +16878,13 @@ var Liquid = {
                                         */
                                     } else {
                                         content = validateResult[1];
+                                    }
+                                    if(isDef(col.b64)) {
+                                        if(col.b64) {
+                                            try {
+                                                content = atob(content);
+                                            } catch (e) {}
+                                        }
                                     }
                                     liquid.suneditorNodes[iN].setDataValue(col.field, content);
                                     Liquid.registerFieldChange(liquid, null, liquid.suneditorNodes[iN].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, content);
