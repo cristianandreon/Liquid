@@ -2059,9 +2059,17 @@ public class event {
                 dmsParamsJson.put("file", fileName != null ? fileName : null);
                 dmsParamsJson.put("size", fileSize != null ? fileSize : null);
 
-                ServletContext context = ((HttpServletRequest)requestParam).getSession().getServletContext();
-                String mimeType = context.getMimeType(fileName);
-                dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
+                String mimeType = null;
+                if(mimeType == null) {
+                    ServletContext context = ((HttpServletRequest) requestParam).getSession().getServletContext();
+                    mimeType = context.getMimeType(fileName);
+                    if(mimeType == null) {
+                        if (requestParam != null) {
+                            mimeType = (String)((HttpServletRequest) requestParam).getAttribute("mimeType");
+                        }
+                    }
+                    dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
+                }
 
                 dmsParamsJson.put("content", b64FileContent != null ? b64FileContent : null);
                 dmsParamsJson.put("doc_type", docType != null ? docType : null);
@@ -2101,7 +2109,7 @@ public class event {
                 if (request != null) {
                     // data:*/*;base64,
                     if (tblWrk != null) {
-                        if (clientData != null) {
+                        if (clientData != null) { // calling from Liquid UI
                             String docName = (String) clientData;
                             if (docName != null) {
                                 if(tblWrk.tableJson.has("documents")) {
@@ -2111,7 +2119,7 @@ public class event {
                                         if (document != null) {
                                             if (docName.equalsIgnoreCase(document.getString("name"))) {
                                                 if (document.has("maxSize")) {
-
+                                                    // TODO : chack document size
                                                 }
                                             }
                                         }
@@ -2124,22 +2132,48 @@ public class event {
                     JSONObject paramsJson = new JSONObject((String) params);
                     JSONObject paramJson = paramsJson.getJSONObject("params");
 
+                    String mimeType = null;
+                    if(paramJson.has("mimeType")) {
+                        mimeType = paramJson.getString("mimeType");
+                    }
 
-                    if(paramJson.has("file")) {
-                        if(!paramJson.has("mimeType")) {
-                            String file = paramJson.getString("file");
-                            Path path = new File(file).toPath();
-                            if (path != null) {
-                                // fileContent = Files.readAllBytes( path ) ;
-                                String mimeType = Files.probeContentType(path);
-                                if(mimeType == null || mimeType.isEmpty()) {
-                                    if(file.toLowerCase().endsWith(".jsp")) {
-                                        mimeType = "application/jsp";
+                    if(mimeType == null) {
+                        if (requestParam != null) {
+                            mimeType = (String)((HttpServletRequest) requestParam).getAttribute("mimeType");
+                        }
+                    }
+                    if(mimeType == null) {
+                        if (paramJson.has("file")) {
+                            if (!paramJson.has("mimeType")) {
+                                String file = paramJson.getString("file");
+                                Path path = new File(file).toPath();
+                                if (path != null) {
+                                    // fileContent = Files.readAllBytes( path ) ;
+                                    mimeType = Files.probeContentType(path);
+                                    if (mimeType == null || mimeType.isEmpty()) {
+                                        if (file.toLowerCase().endsWith(".jsp")) {
+                                            mimeType = "application/jsp";
+                                        }
                                     }
+                                    paramJson.put("mimeType", mimeType);
                                 }
-                                paramJson.put("mimeType", mimeType);
                             }
                         }
+                    }
+                    if(mimeType == null) {
+                        if (paramJson.has("file")) {
+                            ServletContext context = ((HttpServletRequest) requestParam).getSession().getServletContext();
+                            mimeType = context.getMimeType(paramJson.getString("file"));
+                            if (mimeType == null) {
+                                if (requestParam != null) {
+                                    mimeType = (String) ((HttpServletRequest) requestParam).getAttribute("mimeType");
+                                    paramJson.put("mimeType", mimeType);
+                                }
+                            }
+                        }
+                    }
+                    if (!paramJson.has("mimeType")) {
+                        paramJson.put("mimeType", "");
                     }
 
                     // collecting keys for the link

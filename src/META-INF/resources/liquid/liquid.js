@@ -2698,7 +2698,8 @@ var Liquid = {
     pdfJsPath: "/PDF.js/build/",
     pdfJsDebug: false,
     translateLabels: true,
-    cacheControl: "reload",
+    firstTimeCacheControl: "reload",
+    cacheControl: "force-cache",
     ERROR_STRING: "ERROR",
     WARNING_STRING: "WARNING",
     QUESTION_STRING: "QUESTION",
@@ -14629,7 +14630,7 @@ var Liquid = {
                                 let value = curNodes[0].data[linkedCol.field];
                                 if(value.startsWith("DMS://")) {
                                     let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
-                                    const dmsRequest = fetch(src, {cache: Liquid.cacheControl}).then(response => response.blob());
+                                    const dmsRequest = fetch(src, {cache: "reload"}).then(response => response.blob());
                                     dmsRequest.then(blob => {
                                         var file = window.URL.createObjectURL(blob);
                                         window.open(file, "downloadDocument");
@@ -15529,7 +15530,7 @@ var Liquid = {
                                 if(isDef(b64)) {
                                     if (b64) {
                                         try {
-                                            value = atob(value);
+                                            value = decodeURIComponent(escape(window.atob(value)));
                                         } catch (e) {
                                         }
                                     }
@@ -18648,8 +18649,13 @@ var Liquid = {
                     load_image_to_canvas(targetObj, value, imageMode);
                 } else {
                     if(value.startsWith("DMS://")) {
+                        let cacheControl = targetObj.getAttribute("cache");
+                        if(!isDef(cacheControl)) {
+                            cacheControl = Liquid.firstTimeCacheControl;
+                            targetObj.getAttribute("cache", Liquid.cacheControl);
+                        }
                         let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
-                        const canvasRequest = fetch(src, {cache: Liquid.cacheControl}).then(response => response.blob());
+                        const canvasRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
                         canvasRequest.then(blob => {
                             if (blob.type.indexOf("video") >= 0) {
                                 targetObj.src = window.URL.createObjectURL(blob);
@@ -18671,8 +18677,13 @@ var Liquid = {
                     type: It is used to specify the MIME-type resource.
                  */
                 if(value.startsWith("DMS://")) {
+                    let cacheControl = targetObj.getAttribute("cache");
+                    if(!isDef(cacheControl)) {
+                        cacheControl = Liquid.firstTimeCacheControl;
+                        targetObj.getAttribute("cache", Liquid.cacheControl);
+                    }
                     let src = glLiquidServlet + '?operation=downloadDocument&link='+value;
-                    const videoRequest = fetch(src, {cache: Liquid.cacheControl}).then(response => response.blob());
+                    const videoRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
                     videoRequest.then(blob => {
                         if(targetObj.nodeName.toUpperCase() === 'VIDEO') {
                             if(blob.type.indexOf("video")>=0) {
@@ -18688,8 +18699,13 @@ var Liquid = {
                 }
             } else if(targetObj.nodeName.toUpperCase() === 'IMG') {
                 if(value.startsWith("DMS://")) {
+                    let cacheControl = targetObj.getAttribute("cache");
+                    if(!isDef(cacheControl)) {
+                        cacheControl = Liquid.firstTimeCacheControl;
+                        targetObj.getAttribute("cache", Liquid.cacheControl);
+                    }
                     let src = glLiquidServlet + '?operation=downloadDocument&link='+value;
-                    const videoRequest = fetch(src, {cache: Liquid.cacheControl}).then(response => response.blob());
+                    const videoRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
                     videoRequest.then(blob => {
                         if(targetObj.nodeName.toUpperCase() === 'IMG') {
                             targetObj.src = window.URL.createObjectURL(blob);

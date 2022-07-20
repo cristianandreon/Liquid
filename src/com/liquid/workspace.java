@@ -174,8 +174,11 @@ public class workspace {
             }
 
             String itemIdString = "\"", tableIdString = "\"";
-            if ((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql.")) || tbl_wrk.dbProductName.toLowerCase().contains("mysql")
-                    || (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mariadb.")) || tbl_wrk.dbProductName.toLowerCase().contains("mariadb")) {
+            if ((tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mysql."))
+                    || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("mysql"))
+                    || (tbl_wrk.driverClass != null && tbl_wrk.driverClass.toLowerCase().contains("mariadb."))
+                    || (tbl_wrk.dbProductName != null && tbl_wrk.dbProductName.toLowerCase().contains("mariadb"))
+            ) {
                 itemIdString = "`";
                 tableIdString = "";
             }
@@ -5135,4 +5138,14 @@ public class workspace {
         return false;
     }
 
+    public static workspace get_temp_worspace(String database, String schema, String table, String name) {
+        workspace tblWrk = new workspace();
+        tblWrk.tableJson = new JSONObject();
+        tblWrk.tableJson.put("database", database);
+        tblWrk.tableJson.put("schema", schema);
+        tblWrk.tableJson.put("table", table);
+        tblWrk.tableJson.put("name", name);
+        workspace.setDatabaseShemaTable(tblWrk);
+        return tblWrk;
+    }
 }

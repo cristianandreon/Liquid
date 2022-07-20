@@ -9,14 +9,15 @@
  */
 package com.liquid;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import sun.misc.IOUtils;
+
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -35,33 +36,78 @@ import javax.net.ssl.X509TrustManager;
  */
 public class net {
 
-    public static ArrayList<String> getURL(String baseURL, String postData) {
+    /**
+     * Read an URL and return Object [ content (byte[]), http status code (int) ]
+     * if postData in not null user "POST" method, elsewhere "GET"
+     *
+     * @param baseURL
+     * @param postData
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     * @throws KeyManagementException
+     */
+    public static Object [] getURL(String baseURL, String postData) throws IOException, NoSuchAlgorithmException, KeyManagementException {
         return new net().getURLEx(baseURL, postData, 0, null);
     }
 
-    public static ArrayList<String> getURL(String baseURL, String postData, Object headers) {
+    /**
+     * Read an URL and return Object [ content (byte[]), http status code (int) ]
+     * if postData in not null user "POST" method, elsewhere "GET"
+     *
+     * @param baseURL
+     * @param postData
+     * @param headers
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     * @throws KeyManagementException
+     */
+    public static Object [] getURL(String baseURL, String postData, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException {
         return new net().getURLEx(baseURL, postData, 0, headers);
     }
 
-    public static ArrayList<String> getURL(String baseURL, String postData, int timeout, Object headers) {
+    /**
+     * Read an URL and return Object [ content (byte[]), http status code (int) ]
+     * if postData in not null user "POST" method, elsewhere "GET"
+     *
+     * @param baseURL
+     * @param postData
+     * @param timeout
+     * @param headers
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     * @throws KeyManagementException
+     */
+    public static Object [] getURL(String baseURL, String postData, int timeout, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException {
         return new net().getURLEx(baseURL, postData, timeout, headers);
     }
 
-    public ArrayList<String> getURLEx(String baseURL, String postData, int timeout, Object headers) {
-        ArrayList<String> outString = new ArrayList<String>(2);
-        StringBuffer resultString = new StringBuffer("");
+    /**
+     * Internal function
+     * Read an URL and return Object [ content (byte[]), http status code (int) ]
+     * if postData in not null user "POST" method, elsewhere "GET"
+     *
+     * @param baseURL
+     * @param postData
+     * @param timeout
+     * @param headers
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     * @throws KeyManagementException
+     */
+    public Object [] getURLEx(String baseURL, String postData, int timeout, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+        Object [] outObject = new Object [3];
         HttpsURLConnection conns = null;
         HttpURLConnection connh = null;
-        URL myUrl;
+        URL myUrl = null;
 
         try {
 
             long lastTime = System.currentTimeMillis();
 
-            if (outString.size() == 0) {
-                outString.add("");
-                outString.add("");
-            }
             myUrl = new URL(baseURL);
             InputStream is = null;
             Map<String, List<String>> map = null;
@@ -74,35 +120,26 @@ public class net {
             if (baseURL.startsWith("https://")) {
                 // Https
                 HttpsURLConnection conn = (HttpsURLConnection) myUrl.openConnection();
-
                 SSLContext sc = SSLContext.getInstance("SSL");
                 sc.init(null, new TrustManager[]{new TrustAnyTrustManager()}, new java.security.SecureRandom());
                 conn.setSSLSocketFactory(sc.getSocketFactory());
-
                 process_header_params(headers, conn);
-
                 if (postData != null) {
                     conn.setRequestMethod("POST");
                     conn.setDoOutput(true);
                     wr = conn.getOutputStream();
                 }
-
-
                 conns = conn;
 
             } else {
                 // Http
                 HttpURLConnection conn = (HttpURLConnection) myUrl.openConnection();
-
                 process_header_params(headers, conn);
-
                 if (postData != null) {
                     conn.setRequestMethod("POST");
                     conn.setDoOutput(true);
                     wr = conn.getOutputStream();
                 }
-
-
                 connh = conn;
             }
 
@@ -115,13 +152,15 @@ public class net {
             if (conns != null) {
                 conns.connect();
                 responseCode = conns.getResponseCode();
-                outString.set(1, String.valueOf(responseCode));
+                outObject[1] = responseCode;
+                outObject[2] = conns.getContentType();
                 is = conns.getInputStream();
                 map = conns.getHeaderFields();
             } else if (connh != null) {
                 connh.connect();
                 responseCode = connh.getResponseCode();
-                outString.set(1, String.valueOf(responseCode));
+                outObject[1] = responseCode;
+                outObject[2] = connh.getContentType();
                 is = connh.getInputStream();
                 map = connh.getHeaderFields();
             }
@@ -138,29 +177,23 @@ public class net {
                     }
                 }
             }
-             */
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
+            */
 
-            String inputLine;
-            while ((inputLine = br.readLine()) != null) {
-                resultString.append(inputLine);
-            }
-            br.close();
+            outObject[0] = utility.getAllBytes(is);
 
-            outString.set(0, resultString.toString());
-
-            String sInfo = "Response Code : " + responseCode + " size: " + resultString.length() + " time:" + (float) (System.currentTimeMillis() - lastTime) / 1000.0f + " sec";
+            String sInfo = "Response Code : " + responseCode + " size: " + ((byte[])outObject[0]).length + " time:" + (float) (System.currentTimeMillis() - lastTime) / 1000.0f + " sec";
             Logger.getLogger(net.class.getName()).log(Level.INFO, sInfo);
             // System.out.println(sInfo);
 
 
         } catch (MalformedURLException ex) {
             Logger.getLogger(net.class.getName()).log(Level.SEVERE, null, ex);
-            outString.set(0, ex.getMessage());
+            outObject[1] = -1;
+            throw ex;
         } catch (Exception e) {
             Logger.getLogger(net.class.getName()).log(Level.SEVERE, null, e);
-            outString.set(0, e.getMessage());
+            outObject[1] = -1;
+            throw e;
         } finally {
             if (conns != null) {
                 conns.disconnect();
@@ -168,7 +201,7 @@ public class net {
                 connh.disconnect();
             }
         }
-        return outString;
+        return outObject;
     }
 
     void process_header_params(Object headers, Object conn) {

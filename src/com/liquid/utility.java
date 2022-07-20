@@ -4,6 +4,7 @@
 
 package com.liquid;
 
+import com.mysql.cj.jdbc.exceptions.OperationNotSupportedException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -916,6 +917,111 @@ public class utility {
         }
         return null;
     }
+
+
+    /**
+     * <h3>Get the String property of a bean</h3>
+     * <p>
+     * This method get a property from a bean
+     *
+     * @param bean
+     * @param property
+     * @return
+     * @throws Exception
+     */
+    static public String getString(Object bean, String property) throws Exception {
+        return (String)get(bean, property);
+    }
+
+    /**
+     * <h3>Get the String property of a bean</h3>
+     * <p>
+     * This method get a property from a bean
+     *
+     * @param bean
+     * @param property
+     * @return
+     * @throws Exception
+     */
+    static public Integer getInt(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof Integer) {
+            return (Integer)val;
+        } else {
+            return Integer.parseInt(String.valueOf(val));
+        }
+    }
+
+    static public Long getLong(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof Long) {
+            return (Long)val;
+        } else {
+            return Long.parseLong(String.valueOf(val));
+        }
+    }
+
+    static public Double getDouble(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof Double) {
+            return (Double)val;
+        } else {
+            return Double.parseDouble(String.valueOf(val));
+        }
+    }
+
+    static public Float getFloat(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof Float) {
+            return (Float)val;
+        } else {
+            return Float.parseFloat(String.valueOf(val));
+        }
+    }
+
+    static public Boolean getBoolean(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof Float) {
+            return (Boolean)val;
+        } else {
+            return Boolean.parseBoolean((String.valueOf(val)));
+        }
+    }
+
+    static public java.util.Date getDate(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof java.util.Date) {
+            return (java.util.Date) val;
+        } else if(val instanceof String) {
+            return DateUtil.getDate(val);
+        } else {
+            throw new ClassCastException("Invalid class");
+        }
+    }
+    static public java.util.Date getDateTime(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof java.util.Date) {
+            return (java.util.Date) val;
+        } else if(val instanceof String) {
+            return DateUtil.getDateTime(val);
+        } else {
+            throw new ClassCastException("Invalid class");
+        }
+    }
+    static public java.sql.Timestamp getTimestamp(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof java.sql.Timestamp) {
+            return (java.sql.Timestamp) val;
+        } else if(val instanceof java.util.Date) {
+            return new java.sql.Timestamp(((java.util.Date) val).getTime());
+        } else if(val instanceof String) {
+            return DateUtil.getTimestamp(val);
+        } else {
+            throw new ClassCastException("Invalid class");
+        }
+    }
+
+
 
     static public boolean has(Object bean, String property) {
         try {
@@ -2146,6 +2252,65 @@ public class utility {
         return parametersString;
     }
 
+    public static String[] arrayToArray(Object[] objectArr, Class<String> stringClass) throws OperationNotSupportedException {
+        String [] strArr = new String[objectArr.length];
+        for(int i = 0 ; i < objectArr.length ; i ++){
+            if("java.lang.String".equalsIgnoreCase(stringClass.getName())) {
+                strArr[i] = String.valueOf(objectArr[i]);
+            } else {
+                throw new OperationNotSupportedException("arrayToArray() : Invalid destination class:"+stringClass.getName());
+            }
+        }
+        return strArr;
+    }
+
+    /**
+     * check if value is null or empty or not defined or zero
+     *
+     * @param bean
+     * @param prop
+     * @return true id null, empty, not defined or zero
+     */
+    public static boolean isEmpty(Object bean, String prop) {
+        if(has(bean, prop)) {
+            Object val = getEx(bean, prop);
+            if( val != null ) {
+                if (val instanceof String) {
+                    if(((String)val).isEmpty()) {
+                        return true;
+                    }
+                } else if (val instanceof Boolean) {
+                    if(((Boolean)val) == false) {
+                        return true;
+                    }
+                } else if (val instanceof Short) {
+                    if(((Short)val) == 0) {
+                        return true;
+                    }
+                } else if (val instanceof Integer) {
+                    if(((Integer)val) == 0) {
+                        return true;
+                    }
+                } else if (val instanceof Long) {
+                    if(((Short)val) == 0) {
+                        return true;
+                    }
+                } else if (val instanceof Double) {
+                    if(Math.abs((Double)val) > 0.0000001) {
+                        return true;
+                    }
+                } else if (val instanceof Float) {
+                    if(Math.abs((Float)val) > 0.0000001) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
@@ -3232,4 +3397,14 @@ public class utility {
         return new Timestamp(date + offset);
     }
 
+    public static byte[] getAllBytes(InputStream is) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int maxSize = 8192, nRead = 0;
+        byte[] data = new byte[maxSize];
+        while ((nRead = is.read(data, 0, maxSize)) > 0) {
+            buffer.write(data, 0, nRead);
+        }
+        buffer.flush();
+        return buffer.toByteArray();
+    }
 }

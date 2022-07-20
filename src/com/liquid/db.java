@@ -2258,18 +2258,20 @@ public class db {
                 filterSensitiveCase = filtersCol.has("sensitiveCase") ? filtersCol.getBoolean("sensitiveCase") : filterSensitiveCase;
 
 
-                if(filterOp.startsWith("?")) {
-                    filterOp = filterOp.substring(1);
-                    includeNullValues = true;
-                }
-                // Per drefault include il NULL
-                if(filterOp.equalsIgnoreCase("!=")) {
-                    includeNullValues = true;
-                }
-                // Esclude il NULL
-                if(filterOp.equalsIgnoreCase("!==")) {
-                    filterOp = "!=";
-                    includeNullValues = false;
+                if(filterOp != null) {
+                    if (filterOp.startsWith("?")) {
+                        filterOp = filterOp.substring(1);
+                        includeNullValues = true;
+                    }
+                    // Per drefault include il NULL
+                    if (filterOp.equalsIgnoreCase("!=")) {
+                        includeNullValues = true;
+                    }
+                    // Esclude il NULL
+                    if (filterOp.equalsIgnoreCase("!==")) {
+                        filterOp = "!=";
+                        includeNullValues = false;
+                    }
                 }
 
 
@@ -3568,6 +3570,23 @@ public class db {
         return insert_row ( DatabaseSchemaTable, Fields, Values, null);
     }
 
+    /**
+     *
+     * Insert row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param FieldsAndValues
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] insert_row ( String DatabaseSchemaTable, HashMap<String, Object> FieldsAndValues ) throws Throwable {
+        String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
+        Object [] Values = FieldsAndValues.values().toArray();
+        return insert_row ( DatabaseSchemaTable, Fields, Values, null);
+    }
+
 
     /**
      * Insert row by Fields and Values
@@ -3747,6 +3766,180 @@ public class db {
 
 
     /**
+     * Delete row by keyFields and keyValues
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param keyFields
+     * @param keyValues
+     * @param request
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] delete_row ( String DatabaseSchemaTable, String [] keyFields, Object [] keyValues, HttpServletRequest request ) throws Throwable {
+        boolean retVal = false;
+        Object new_id = null;
+
+        Connection conn = null;
+        String sSTMTDelete = null;
+
+        if(DatabaseSchemaTable == null || keyFields == null || keyValues == null) {
+            return new Object [] { false, -1, "invalid params" };
+        }
+        if(keyFields.length > keyValues.length) {
+            return new Object [] { false, -1, "size fields/values mismath" };
+        }
+
+        try {
+
+            if(transaction.isTransaction(request)) {
+                conn = transaction.getTransaction(request);
+            } else {
+                Object[] connResult = connection.getDBConnection();
+                conn = (Connection) connResult[0];
+                String connError = (String) connResult[1];
+                if (conn == null) {
+                    String err = "delete_row() : connect failed \n\nError is : "+connError;
+                    System.out.println("// LIQUID ERROR : " + err);
+                    return new Object [] { false, -1, utility.base64Encode(err) };
+                }
+            }
+
+            if (conn != null) {
+                String [] dbParts = DatabaseSchemaTable.split("\\.");
+                if(dbParts.length >= 3) {
+                    DatabaseSchemaTable = dbParts[1]+"."+dbParts[2];
+                }
+
+                sSTMTDelete = "DELETE FROM "+DatabaseSchemaTable+" WHERE (";
+                for(int i=0; i<keyFields.length; i++) {
+                    sSTMTDelete += (i > 0 ? "," : "") + "\"" + keyFields[i].replace("\"", "") + "\"";
+                    sSTMTDelete += "=";
+                    Object val = keyValues[i];
+                    if (val instanceof Expression) {
+                        sSTMTDelete += (i > 0 ? "," : "") + ""+((Expression) val).getMethodName() +"";
+                    } else if (val instanceof StringBuffer) {
+                        sSTMTDelete += (i > 0 ? "," : "") + ((StringBuffer)val).toString();
+                    } else {
+                        sSTMTDelete += (i > 0 ? "," : "") + "?";
+                    }
+                }
+                sSTMTDelete += ")";
+
+                PreparedStatement sqlSTMTDelete = conn.prepareStatement(sSTMTDelete, Statement.RETURN_GENERATED_KEYS);
+
+                int ip = 1;
+                for(int i=0; i<keyValues.length; i++) {
+                    if(i < keyFields.length) {
+                        Object val = keyValues[i];
+                        if (val instanceof Integer) {
+                            sqlSTMTDelete.setInt(ip++, (int) val);
+                        } else if (val instanceof Long) {
+                            sqlSTMTDelete.setLong(ip++, (long) val);
+                        } else if (val instanceof Float) {
+                            sqlSTMTDelete.setFloat(ip++, (float) val);
+                        } else if (val instanceof Double) {
+                            sqlSTMTDelete.setDouble(ip++, (double) val);
+                        } else if (val instanceof Timestamp) {
+                            sqlSTMTDelete.setTimestamp(ip++, (Timestamp) val);
+                        } else if (val instanceof Date) {
+                            sqlSTMTDelete.setDate(ip++, (new java.sql.Date(((Date) val).getTime())) );
+                        } else if (val instanceof java.sql.Date) {
+                            sqlSTMTDelete.setDate(ip++, (java.sql.Date)val);
+                        } else if (val instanceof Date) {
+                            sqlSTMTDelete.setDate(ip++, new java.sql.Date(((Date)val).getTime()));
+                        } else if (val instanceof String) {
+                            sqlSTMTDelete.setString(ip++, (String) val);
+                        } else if (val instanceof Boolean) {
+                            sqlSTMTDelete.setBoolean(ip++, (boolean) val);
+                        } else if (val == null) {
+                            sqlSTMTDelete.setNull(ip++, Types.NULL);
+                        } else if (val instanceof Expression) {
+                            // non come parametro .. iniettato sopra
+                        } else if (val instanceof StringBuffer) {
+                            // non come parametro .. iniettato sopra
+                        } else {
+                            System.err.println("insert_row() invalid obejct type : "+ val.getClass().getName());
+                        }
+                    }
+                }
+
+                if(workspace.projectMode) {
+                    System.out.print("// LIQUID Query: ");
+                    System.out.println(sqlSTMTDelete);
+                }
+
+                int res = sqlSTMTDelete.executeUpdate();
+                if (res < 0) {
+                    System.err.println("Error updating db");
+                    retVal = false;
+                } else {
+                    ResultSet rs = sqlSTMTDelete.getGeneratedKeys();
+                    if (rs != null && rs.next()) {
+                        switch (rs.getMetaData().getColumnType(1)) {
+                            case Types.INTEGER:
+                                new_id = rs.getInt(1);
+                                break;
+                            case Types.NUMERIC:
+                                new_id = rs.getInt(1);
+                                break;
+                            case Types.NVARCHAR:
+                            case Types.VARCHAR:
+                                new_id = rs.getString(1);
+                                break;
+                            case Types.BIGINT:
+                            case Types.DECIMAL:
+                                new_id = rs.getBigDecimal(1);
+                                break;
+                            case Types.ROWID:
+                                new_id = rs.getRowId(1);
+                                break;
+                            default:
+                                throw new UnsupportedOperationException("ID type non implemented ... please update me");
+                        }
+
+                        retVal = true;
+                    }
+                    if (rs != null)
+                        rs.close();
+                }
+                sqlSTMTDelete.close();
+                sqlSTMTDelete = null;
+            }
+
+
+        } catch (Exception e) {
+            System.err.println("delete_row() error : "+e.getMessage());
+            retVal = false;
+
+            if(transaction.isTransaction(request)) {
+                throw e;
+            } else {
+                try {
+                    if (conn != null)
+                        conn.rollback();
+                } catch (Throwable e2) {
+                }
+            }
+
+        } finally {
+            if(transaction.isTransaction(request)) {
+            } else {
+                try {
+                    if (conn != null)
+                        conn.close();
+                } catch (Throwable e2) {
+                }
+            }
+            conn = null;
+        }
+
+        return new Object [] { retVal, new_id } ;
+    }
+
+
+    /**
      * Insert or update row by Fields and Values
      *
      * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
@@ -3760,6 +3953,24 @@ public class db {
     static public Object [] insert_update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, Object [] keys) throws Throwable {
         return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, null );
     }
+
+    /**
+     * Insert or update row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param FieldsAndValues
+     * @param keys
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, HashMap<String,Object>FieldsAndValues, Object [] keys) throws Throwable {
+        String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
+        Object [] Values = FieldsAndValues.values().toArray();
+        return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, null );
+    }
+
     /**
      * Insert or update row by Fields and Values
      *
@@ -3947,6 +4158,21 @@ public class db {
     static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String primaryKey ) throws Throwable {
         return update_row ( DatabaseSchemaTable, Fields, Values, primaryKey, null );
     }
+
+    /**
+     *
+     * @param DatabaseSchemaTable
+     * @param FieldsAndValues
+     * @param primaryKey
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] update_row ( String DatabaseSchemaTable, HashMap<String,Object> FieldsAndValues, String primaryKey ) throws Throwable {
+        String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
+        Object [] Values = FieldsAndValues.values().toArray();
+        return update_row ( DatabaseSchemaTable, Fields, Values, primaryKey, null );
+    }
+
 
     /**
      * TODO: addition where conditions
