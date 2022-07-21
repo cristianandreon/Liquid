@@ -15594,7 +15594,7 @@ var Liquid = {
                             var objs = layout.rowsContainer[irc].objs;
                             var objs_aux = layout.rowsContainer[irc].objs_aux;
                             // cols: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-                            // objs: (8) [input#NewAuction.layout.1.col.2.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.7.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.9.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.10.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.8.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.11.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.12.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewAuction.layout.1.col.13.row.1.checkclass.liquidgridcontrolrw]
+                            // objs: (8) [input#NewRFQ.layout.1.col.2.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.7.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.9.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.10.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.8.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.11.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.12.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.13.row.1.checkclass.liquidgridcontrolrw]
                             for (let ic = 0; ic < cols.length; ic++) {
                                 if(cols[ic]) {
                                     var col_name = cols[ic].name;
@@ -16722,6 +16722,7 @@ var Liquid = {
                         $input[0].setAttribute("dp", "1");
                         jQ1124(obj).css('z-index', 99900);
                         this.setOptions(opt);
+                        jQ1124.datetimepicker.setLocale(opt.lang);
                         if (Liquid.debug) console.info("DATETIMEPICKER:onShow()");
                     }, onClose: function (o, $input, event) {
                         if ($input) {

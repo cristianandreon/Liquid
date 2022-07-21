@@ -1071,7 +1071,7 @@ public class bean {
             //
             if (clazz == null) {
 
-                if("MyAuctionDetails".equalsIgnoreCase(className)) {
+                if("MyRFQDetails".equalsIgnoreCase(className)) {
                      // ftPropNameList = ["BID_DETAILS$AUCTION_DETAIL_ID$ID"]
                      Logger.getLogger(db.class.getName()).log(Level.INFO, "// className: " + className + "...");
                      if(ftPropNameList.size() > 0) {

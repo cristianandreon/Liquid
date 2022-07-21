@@ -932,7 +932,7 @@ public class utility {
      * @throws Exception
      */
     static public String getString(Object bean, String property) throws Exception {
-        return (String)get(bean, property);
+        return String.valueOf(get(bean, property));
     }
 
     /**
