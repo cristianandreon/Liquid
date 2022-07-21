@@ -57,6 +57,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class utility {
 
@@ -2309,6 +2311,24 @@ public class utility {
             }
         }
         return false;
+    }
+
+    /**
+     * Given an input, return a sanitized form of the input suitable for use as
+     * a file/directory name
+     *
+     * @param filename the filename to sanitize.
+     * @return a sanitized version of the input
+     */
+    public static String santizeFileName(String filename) {
+        final char INVALID_CHARS[] = { '\\', '/', ':', '*', '?', '"', '<', '>', '|', '[', ']', '\'', ';', '=', ',' };
+        final char SANITIZED_CHAR = '_';
+        for (int i = 0; i < INVALID_CHARS.length; i++) {
+            if (-1 != filename.indexOf(INVALID_CHARS[i])) {
+                filename = filename.replace(INVALID_CHARS[i], SANITIZED_CHAR);
+            }
+        }
+        return filename;
     }
 
 

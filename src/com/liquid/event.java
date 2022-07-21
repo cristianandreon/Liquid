@@ -2306,6 +2306,8 @@ public class event {
             String fileName = paramJson.getString("file");
             fileAbsolutePath += (added > 0 ? "." : "") + ".F." + fileName;
 
+            fileAbsolutePath = utility.santizeFileName(fileAbsolutePath);
+
 
             // Scrittura file
             if(paramJson.has("content")) {
@@ -2368,9 +2370,9 @@ public class event {
                         sQuery = "INSERT INTO \""+dmsSchema+"\".\""+dmsTable+"\" " +
                                 "(\"file\",\"size\",\"note\",\"type\",\"hash\",\"link\",\"doc_type_id\",\"user_data\")" +
                                 " VALUES " +
-                                "('"+fileAbsolutePath+"'"
+                                "("+"?"+""
                                 +",'"+paramJson.getInt("size")+"'"
-                                +",'"+paramJson.getString("note")+"'"
+                                +","+"?"+""
                                 +",'"+paramJson.getString("mimeType")+"'"
                                 +",'"+paramJson.getString("hash")+"'"
                                 +",'"+keyList.get(i)+"'"
@@ -2378,13 +2380,17 @@ public class event {
                                 +",?"
                                 +")";
                         psdo = conn.prepareStatement(sQuery, Statement.RETURN_GENERATED_KEYS);
+
+                        psdo.setString(1, (String)fileAbsolutePath);
+                        psdo.setString(2, (String)paramJson.getString("note"));
                         if(user_data instanceof String) {
-                            psdo.setString(1, (String)user_data);
+                            psdo.setString(3, (String)user_data);
                         } else if(user_data instanceof byte []) {
-                            psdo.setString(1, (String)utility.base64Encode((byte[]) user_data));
+                            psdo.setString(3, (String)utility.base64Encode((byte[]) user_data));
                         } else {
-                            psdo.setNull(1, Types.VARCHAR);
+                            psdo.setNull(3, Types.VARCHAR);
                         }
+
                         int res = psdo.executeUpdate();
                         if(res >= 0) {
                             if(bResolveDocTypeId) {
