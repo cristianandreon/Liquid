@@ -566,7 +566,7 @@ public class bean {
             ArrayList<String> ftForeignTableList = new ArrayList<String>();
             ArrayList<String> ftClassNameList = new ArrayList<String>();
             ArrayList<Object> ftBeansContentList = new ArrayList<Object>();
-            ArrayList<Object> rowsObject = new ArrayList<Object>();
+            ArrayList<Object> rowsObject = new ArrayList<Object>( rowsJson != null ? 1 : rowsJson.length() );
             Class<?> clazz = null;
 
             String className = "" + tbl_wrk.controlId.replace(".", "_") + "";
@@ -1092,7 +1092,12 @@ public class bean {
 
             if (clazz != null) {
 
+                long time = System.currentTimeMillis();
+
                 if (rowsJson != null && rowsJson.length() > 0) {
+
+                    Logger.getLogger(db.class.getName()).log(Level.INFO, "// Filling bean on className: " + className + "...");
+
                     for (int ir = 0; ir < rowsJson.length(); ir++) {
                         Object obj = clazz.newInstance();
                         JSONObject row = rowsJson.getJSONObject(ir);
@@ -1140,6 +1145,9 @@ public class bean {
                     }
 
                 } else {
+
+                    Logger.getLogger(db.class.getName()).log(Level.INFO, "// Preparing bean on className: " + className + "...");
+
                     //
                     // Empty Bean : instanziate and set to null
                     //
@@ -1161,6 +1169,10 @@ public class bean {
                     rowsObject.add(obj);
                 }
 
+
+                Logger.getLogger(db.class.getName()).log(Level.INFO, "// Setting beans on className: " + className + "...");
+
+                long time2 = System.currentTimeMillis();
 
 
                 //
@@ -1194,6 +1206,13 @@ public class bean {
                             }
                         }
                     }
+
+                    long time3 = System.currentTimeMillis();
+
+                    if(time3-time > 500) {
+                        Logger.getLogger(db.class.getName()).log(Level.INFO, "// set beans time : " + (double) (time2 - time) / 1000.0 + "sec ... parent bean time:" + (double) (time3 - time2) / 1000.0 + "sec");
+                    }
+
                 } else {
                     // set by the recursivity
                 }
@@ -2585,18 +2604,6 @@ public class bean {
                 }
             }
 
-            String[] columnsList = null;
-            if ("*".equalsIgnoreCase(columns) || "all".equalsIgnoreCase(columns) || columns == null) {
-            } else {
-                // TODO : not supported, should review get_recordset ()
-                // columnsList = columns.split(",");
-                String [] rawColumnsList = columns.split(",");
-                ArrayList<String> trimmedColumnsList = new ArrayList<String>(3);
-                for(int ic=0; ic<rawColumnsList.length; ic++) {
-                    trimmedColumnsList.add(rawColumnsList[ic].trim());
-                }
-                columnsList = trimmedColumnsList.toArray(new String[0]);
-            }
 
             // cerca o cerca il controllo
             workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, controlId);
@@ -2631,6 +2638,29 @@ public class bean {
                 tableIdString = "\"";
             }
 
+
+            JSONArray colsInWorkspace = null;
+            String[] dbColumnsList = null;
+            String[] columnsList = null;
+            if ("*".equalsIgnoreCase(columns) || "all".equalsIgnoreCase(columns) || columns == null) {
+                colsInWorkspace = tbl_wrk.tableJson.getJSONArray("columns");
+            } else {
+                // should review get_recordset ()
+                colsInWorkspace = new JSONArray();
+
+                // columnsList = columns.split(",");
+                String [] rawColumnsList = columns.split(",");
+                ArrayList<String> dbTrimmedColumnsList = new ArrayList<String>(rawColumnsList.length);
+                ArrayList<String> trimmedColumnsList = new ArrayList<String>(rawColumnsList.length);
+                for(int ic=0; ic<rawColumnsList.length; ic++) {
+                    dbTrimmedColumnsList.add(itemIdString+rawColumnsList[ic].trim()+itemIdString);
+                    trimmedColumnsList.add(rawColumnsList[ic].trim());
+                }
+                dbColumnsList = dbTrimmedColumnsList.toArray(new String[0]);
+                columnsList = trimmedColumnsList.toArray(new String[0]);
+            }
+
+
             cols = tbl_wrk.tableJson.getJSONArray("columns");
             for (int ic = 0; ic < cols.length(); ic++) {
                 JSONObject col = cols.getJSONObject(ic);
@@ -2646,6 +2676,7 @@ public class bean {
                     for (int icl = 0; icl < columnsList.length; icl++) {
                         if (columnsList[icl].equalsIgnoreCase(colName)) {
                             bAddColumn = true;
+                            colsInWorkspace.put(col);
                             break;
                         }
                     }
@@ -2687,7 +2718,7 @@ public class bean {
             boolean skipMissingColumn = true;
 
             String executingQuery = "SELECT "
-                    + (columnsList != null ? utility.arrayToString(columnsList, null, null, ",") : "*")
+                    + (dbColumnsList != null ? utility.arrayToString(dbColumnsList, null, null, ",") : "*")
                     + " FROM " + tbl_wrk.schemaTable
                     + (where_condition != null ? where_condition : "")
                     + (order_by_condition != null ? order_by_condition : "")
@@ -2736,7 +2767,7 @@ public class bean {
                 String[] columns_json = column_json_list != null ? column_json_list.split(",") : null;
                 boolean bColumnsResolved = false;
 
-                cols = tbl_wrk.tableJson.getJSONArray("columns");
+
                 int[] colTypes = null; // new int[cols.length()];
                 int[] colPrecs = null; // new int[cols.length()];
                 int[] colDigits = null; // new int[cols.length()];
@@ -2746,7 +2777,7 @@ public class bean {
                 Object[] recordset = get_recordset(tbl_wrk,
                         executingQuery,
                         rsdo,
-                        cols,
+                        colsInWorkspace,
                         colTypes,
                         colPrecs,
                         colDigits,
@@ -2818,6 +2849,7 @@ public class bean {
 
                     //  Ritorna [ int risultato, Object [] beans, int level, String error, String className };
                     if(rowsJson.length() > 0) {
+                        // TODO : PROFILAZIONE : molto lento con 800 elementi (tabella utenti)
                         Object[] beanResult = create_beans_multilevel_class(tbl_wrk, rowsJson, foreignTablesJson, "*", level, maxRows, request);
                         if ((int) beanResult[0] >= 0) {
                             // Updating the foreignTables (some info may be added)
