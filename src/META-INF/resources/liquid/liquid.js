@@ -125,16 +125,12 @@ class LiquidCtrl {
             this.outDivId = outDivObjOrId;
             this.outDivObj = document.getElementById(this.outDivId);
             if(!this.outDivObj) {
-                if(this.mode !== "popup") {
-                    if (this.outDivId.startsWith("liquid") || Liquid.debug) {
-                        console.warn("WARNING: creating control " + outDivObjOrId + ": html node not found ");
-                    }
-                }
                 this.outDivObj = document.createElement("div");
                 this.outDivObj.style.position = 'absolute';
                 this.outDivObj.id = this.outDivId;
                 document.body.insertBefore(this.outDivObj, document.body.firstChild);
                 this.outDivCreated = true;
+                console.warn("WARNING: creating control " + outDivObjOrId + ": html node not found ");
             }
         }
 

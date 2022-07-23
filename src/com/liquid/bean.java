@@ -566,7 +566,7 @@ public class bean {
             ArrayList<String> ftForeignTableList = new ArrayList<String>();
             ArrayList<String> ftClassNameList = new ArrayList<String>();
             ArrayList<Object> ftBeansContentList = new ArrayList<Object>();
-            ArrayList<Object> rowsObject = new ArrayList<Object>( rowsJson != null ? 1 : rowsJson.length() );
+            ArrayList<Object> rowsObject = new ArrayList<Object>( rowsJson == null ? 1 : rowsJson.length() );
             Class<?> clazz = null;
 
             String className = "" + tbl_wrk.controlId.replace(".", "_") + "";
@@ -3421,7 +3421,9 @@ public class bean {
                                     + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
                                     + ">";
                             out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + " " + dataId + ">";
+                            out += "<p>";
                             out += values.get(j);
+                            out += "</p>";
                             out += "</div>";
                             out += "</td>";
                         }
