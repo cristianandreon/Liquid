@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.36
+// Liquid ver.2.37
 //
-//  First update 06-01-2020 - Last update 15-07-2022
+//  First update 06-01-2020 - Last update 24-07-2022
 //
 //  TODO : see trello.com
 //
@@ -1967,8 +1967,8 @@ class LiquidCtrl {
                             + "<div style=\"\" class=\"liquidNavInfo\">"
                             + "<span class=\"liquidNavLabel\">"
                             + ( Liquid.lang === 'eng' ? "Row" : "Riga" )
-                            +":</span><span class=\"liquidValue\" id=\"" + controlId + ".cRow\">0</span>"
-                            + "<span class=\"liquidNavLabel\">/</span><span class=\"liquidValue\" id=\"" + controlId + ".nRows\">0</span>"
+                            +":</span><span class=\"liquidValue\" id=\"" + controlId + ".cRow\">-</span>"
+                            + "<span class=\"liquidNavLabel\">/</span><span class=\"liquidValue\" id=\"" + controlId + ".nRows\">-</span>"
                             + "<span class=\"liquidNavLabel\"> </span>";
                         if(this.pageSize>0) {
                             navHTML += "<span id=\"" + controlId + ".cPageContainer\" style=\"cursor:pointer\" onclick=\"Liquid.onGotoPage(this)\" class=\"liquidNavLabel\">Pag.:</span><input id=\"" + controlId + ".cPage\" type=\"mumber\" step=\"1\" min=\"1\" max=\"1\" class=\"liquidNavCurPage\" value=\"1\" onkeypress=\"return Liquid.onPageKeyPress(event, this)\" title=\""+Liquid.paginationTitleGoTo+"\" />"
@@ -1978,10 +1978,11 @@ class LiquidCtrl {
                             + "</td><td style=\"width:1%;white-space:nowrap;\">"
                             + "<div class=\"liquidNavPages\">";
                         if(this.pageSize>0) {
-                            navHTML += "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".first\" title=\""+Liquid.paginationTitleFirst+"\" onclick=\"Liquid.onBtFirst(this)\"> &#x21f1; </a>"
-                                + "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".prev\" title=\""+Liquid.paginationTitlePrevious+"\" onclick=\"Liquid.onBtPrevious(this)\"> &#x2191 </a>"
-                                + "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".next\" title=\""+Liquid.paginationTitleNext+"\" onclick=\"Liquid.onBtNext(this)\"> &#x2193; </a>"
-                                + "<a class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".last\" title=\""+Liquid.paginationTitleLast+"\" onclick=\"Liquid.onBtLast(this)\"> &#x21f2; </a>";
+                            navHTML
+                                +="<a disabled style=\"font-size:13px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".first\" title=\""+Liquid.paginationTitleFirst+"\" onclick=\"Liquid.onBtFirst(this)\"> &#x21f1; </a>"
+                                + "<a disabled style=\"font-size:20px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".prev\" title=\""+Liquid.paginationTitlePrevious+"\" onclick=\"Liquid.onBtPrevious(this)\"> &#x2191 </a>"
+                                + "<a disabled style=\"font-size:20px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".next\" title=\""+Liquid.paginationTitleNext+"\" onclick=\"Liquid.onBtNext(this)\"> &#x2193; </a>"
+                                + "<a disabled style=\"font-size:13px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".last\" title=\""+Liquid.paginationTitleLast+"\" onclick=\"Liquid.onBtLast(this)\"> &#x21f2; </a>";
                         }
                         navHTML += "</div>"
                             + "</td></tr></table>";

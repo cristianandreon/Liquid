@@ -83,6 +83,7 @@ public class workspace {
     static public String defaultDatabase = null;
     static public String defaultSchema = null;
 
+    public static String noItemsFoundMessage = null;
 
 
 
