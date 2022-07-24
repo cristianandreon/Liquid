@@ -1096,7 +1096,8 @@ public class bean {
 
                 if (rowsJson != null && rowsJson.length() > 0) {
 
-                    Logger.getLogger(db.class.getName()).log(Level.INFO, "// Filling bean on className: " + className + "...");
+                    if(workspace.projectMode)
+                        Logger.getLogger(db.class.getName()).log(Level.INFO, "// Filling bean on className: " + className + "...");
 
                     for (int ir = 0; ir < rowsJson.length(); ir++) {
                         Object obj = clazz.newInstance();
@@ -1170,7 +1171,8 @@ public class bean {
                 }
 
 
-                Logger.getLogger(db.class.getName()).log(Level.INFO, "// Setting beans on className: " + className + "...");
+                if(workspace.projectMode)
+                    Logger.getLogger(db.class.getName()).log(Level.INFO, "// Setting beans on className: " + className + "...");
 
                 long time2 = System.currentTimeMillis();
 
@@ -3289,151 +3291,167 @@ public class bean {
                                 HttpServletRequest request, String Mode) throws Exception {
         String out = null;
 
-        if(beans != null) {
-            if(beans.size()>0) {
-                out = "<table class=\"" + (tableClass != null ? tableClass : "") + "\" style='" + (tableStyle != null ? tableStyle : "") + "'>";
-                out += "<thead class=\"" + (theadClass != null ? theadClass : "") + "\" style='" + (theadStyle != null ? theadStyle : "") + "'>";
-                out += "<tr>";
-                for (int j = 0; j < labels.length; j++) {
-                    String label = labels[j];
-                    Object width = widths != null ? widths[j] : null;
-                    String swh = null;
-                    if(width instanceof String) {
-                        try {
-                            swh = (String)width;
-                        } catch (Exception e) {}
-                    } else if(width instanceof Integer) {
-                        swh = String.valueOf(width);
-                    } else if(width  != null) {
-                        try {
-                            swh = String.valueOf(width);
-                        } catch (Exception e) {}
-                    }
-                    if (label != null && !label.isEmpty()) {
-                        out += "<th"
-                                + (cellClass != null ? " class='" + cellClass + "'" : "")
-                                + (cellStyle != null ? " style='" + cellStyle + (swh != null ? "; width:"+swh+"px;" : "") + "'" : "")
-                                + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
-                                + ">";
-                        out += label;
-                        out += "</th>";
-                    }
-                }
-                out += "</tr>";
-                out += "</thead>";
-                out += "<tbody class=\"" + (tbodyClass != null ? tbodyClass : "") + "\" style='" + (tbodyStyle != null ? tbodyStyle : "") + "'>";
-                for (int i = 0; i < beans.size(); i++) {
-                    Object bean = beans.get(i);
-                    if (bean != null) {
-                        out += "<tr>";
-
-                        ArrayList<String> values = new ArrayList<String>();
-                        ArrayList<String> titles = new ArrayList<String>();
-                        ArrayList<Object> cellwhs = new ArrayList<Object>();
-                        ArrayList<String> dataIds = new ArrayList<String>();
-                        ArrayList<String> onClicks = new ArrayList<String>();
-
-                        for (int j = 0; j < columns.length; j++) {
-                            String label = labels[j];
-                            Object width = widths != null ? widths[j] : null;
-                            String column = columns[j];
-                            String value = null;
-                            String title = null;
-                            String onclick = "";
-                            String[] column_parts = column.split("\\|");
-                            if (column_parts.length == 1) {
-                                if (column.indexOf("${") >= 0) {
-                                    // risoluzione espressione
-                                    value = solveVariableField(column, request, true);
-                                } else {
-                                    Object oValue = utility.getEx(bean, column);
-                                    if (oValue instanceof Timestamp) {
-                                        title = value = new SimpleDateFormat(getDateTimeFormatString(), workspace.locale).format((Timestamp) oValue);
-                                    } else if (oValue instanceof Double || oValue instanceof Float) {
-                                        title = value = String.format("%.2f", oValue);
-                                    } else if (oValue instanceof Boolean) {
-                                        if ("IT".equalsIgnoreCase(workspace.GLLang)) {
-                                            title = value = (boolean) oValue ? "V" : "F";
-                                        } else {
-                                            title = value = (boolean) oValue ? "T" : "F";
-                                        }
-                                    } else {
-                                        title = value = String.valueOf(oValue);
-                                    }
-                                }
-                            } else if (column_parts.length > 1) {
-                                String val1 = String.valueOf(utility.getEx(bean, column_parts[0]));
-                                if (val1 != null && !val1.isEmpty()) {
-                                    title = value = val1;
-                                    column = column_parts[0];
-                                } else {
-                                    title = value = String.valueOf(utility.getEx(bean, column_parts[1]));
-                                    column = column_parts[1];
-                                }
-
-                            }
-                            if ("null".equalsIgnoreCase(value)) {
-                                title = value = "";
-                            }
-                            if (utility.contains(Arrays.asList(keys), column)) {
-                                if (rowCallback != null && !rowCallback.isEmpty()) {
-                                    onclick += " " + rowCallback + "(" + value + ")";
-                                }
-                                dataIds.add(value);
-                            }
-
-
-                            if (label != null) {
-                                if (column != null && !column.isEmpty()) {
-                                    values.add(value);
-                                    titles.add(title);
-                                    cellwhs.add(width);
-                                    onClicks.add(onclick);
-                                }
-                            }
-                        }
-
-                        for (int j = 0; j < values.size(); j++) {
-                            String dataId = "data-id='"+utility.arrayToString(dataIds, null, null, ".")+"'";
-                            String title = titles.get(j);
-                            String onclick = onClicks.get(j);
-                            Object width = cellwhs != null ? cellwhs.get(j) : null;
-                            String swh = null;
-                            if(i==0) {
-                                if (width instanceof String) {
-                                    try {
-                                        swh = (String) width;
-                                    } catch (Exception e) {
-                                    }
-                                } else if (width instanceof Integer) {
-                                    swh = String.valueOf(width);
-                                } else if (width != null) {
-                                    try {
-                                        swh = String.valueOf(width);
-                                    } catch (Exception e) {
-                                    }
-                                }
-                            }
-                            out += "<td title='"
-                                    + (title != null ? title : "") + "'"
-                                    + (cellClass != null ? " class='" + cellClass + "'" : "")
-                                    + (cellStyle != null ? " style='" + cellStyle + (swh != null ? "; width:"+swh+"px;" : "") + "'" : "")
-                                    + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
-                                    + ">";
-                            out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + " " + dataId + ">";
-                            out += "<p>";
-                            out += values.get(j);
-                            out += "</p>";
-                            out += "</div>";
-                            out += "</td>";
-                        }
-                        out += "</tr>";
-                    }
-                }
-                out += "</tbody>";
-                out += "</table>";
+        out = "<table class=\"" + (tableClass != null ? tableClass : "") + "\" style='" + (tableStyle != null ? tableStyle : "") + "'>";
+        out += "<thead class=\"" + (theadClass != null ? theadClass : "") + "\" style='" + (theadStyle != null ? theadStyle : "") + "'>";
+        out += "<tr>";
+        for (int j = 0; j < labels.length; j++) {
+            String label = labels[j];
+            Object width = widths != null ? widths[j] : null;
+            String swh = null;
+            if(width instanceof String) {
+                try {
+                    swh = (String)width;
+                } catch (Exception e) {}
+            } else if(width instanceof Integer) {
+                swh = String.valueOf(width);
+            } else if(width  != null) {
+                try {
+                    swh = String.valueOf(width);
+                } catch (Exception e) {}
+            }
+            if (label != null && !label.isEmpty()) {
+                out += "<th"
+                        + (cellClass != null ? " class='" + cellClass + "'" : "")
+                        + (cellStyle != null ? " style='" + cellStyle + (swh != null ? "; width:"+swh+"px;" : "") + "'" : "")
+                        + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
+                        + ">";
+                out += label;
+                out += "</th>";
             }
         }
+        out += "</tr>";
+        out += "</thead>";
+        out += "<tbody class=\"" + (tbodyClass != null ? tbodyClass : "") + "\" style='" + (tbodyStyle != null ? tbodyStyle : "") + "'>";
+        if(beans != null && beans.size() > 0) {
+            for (int i = 0; i < beans.size(); i++) {
+                Object bean = beans.get(i);
+                if (bean != null) {
+                    out += "<tr>";
+
+                    ArrayList<String> values = new ArrayList<String>();
+                    ArrayList<String> titles = new ArrayList<String>();
+                    ArrayList<Object> cellwhs = new ArrayList<Object>();
+                    ArrayList<String> dataIds = new ArrayList<String>();
+                    ArrayList<String> onClicks = new ArrayList<String>();
+
+                    for (int j = 0; j < columns.length; j++) {
+                        String label = labels[j];
+                        Object width = widths != null ? widths[j] : null;
+                        String column = columns[j];
+                        String value = null;
+                        String title = null;
+                        String onclick = "";
+                        String[] column_parts = column.split("\\|");
+                        if (column_parts.length == 1) {
+                            if (column.indexOf("${") >= 0) {
+                                // risoluzione espressione
+                                value = solveVariableField(column, request, true);
+                            } else {
+                                Object oValue = utility.getEx(bean, column);
+                                if (oValue instanceof Timestamp) {
+                                    title = value = new SimpleDateFormat(getDateTimeFormatString(), workspace.locale).format((Timestamp) oValue);
+                                } else if (oValue instanceof Double || oValue instanceof Float) {
+                                    title = value = String.format("%.2f", oValue);
+                                } else if (oValue instanceof Boolean) {
+                                    if ("IT".equalsIgnoreCase(workspace.GLLang)) {
+                                        title = value = (boolean) oValue ? "V" : "F";
+                                    } else {
+                                        title = value = (boolean) oValue ? "T" : "F";
+                                    }
+                                } else {
+                                    title = value = String.valueOf(oValue);
+                                }
+                            }
+                        } else if (column_parts.length > 1) {
+                            String val1 = String.valueOf(utility.getEx(bean, column_parts[0]));
+                            if (val1 != null && !val1.isEmpty()) {
+                                title = value = val1;
+                                column = column_parts[0];
+                            } else {
+                                title = value = String.valueOf(utility.getEx(bean, column_parts[1]));
+                                column = column_parts[1];
+                            }
+
+                        }
+                        if ("null".equalsIgnoreCase(value)) {
+                            title = value = "";
+                        }
+                        if (utility.contains(Arrays.asList(keys), column)) {
+                            if (rowCallback != null && !rowCallback.isEmpty()) {
+                                onclick += " " + rowCallback + "(" + value + ")";
+                            }
+                            dataIds.add(value);
+                        }
+
+
+                        if (label != null) {
+                            if (column != null && !column.isEmpty()) {
+                                values.add(value);
+                                titles.add(title);
+                                cellwhs.add(width);
+                                onClicks.add(onclick);
+                            }
+                        }
+                    }
+
+                    for (int j = 0; j < values.size(); j++) {
+                        String dataId = "data-id='" + utility.arrayToString(dataIds, null, null, ".") + "'";
+                        String title = titles.get(j);
+                        String onclick = onClicks.get(j);
+                        Object width = cellwhs != null ? cellwhs.get(j) : null;
+                        String swh = null;
+                        if (i == 0) {
+                            if (width instanceof String) {
+                                try {
+                                    swh = (String) width;
+                                } catch (Exception e) {
+                                }
+                            } else if (width instanceof Integer) {
+                                swh = String.valueOf(width);
+                            } else if (width != null) {
+                                try {
+                                    swh = String.valueOf(width);
+                                } catch (Exception e) {
+                                }
+                            }
+                        }
+                        out += "<td title='"
+                                + (title != null ? title : "") + "'"
+                                + (cellClass != null ? " class='" + cellClass + "'" : "")
+                                + (cellStyle != null ? " style='" + cellStyle + (swh != null ? "; width:" + swh + "px;" : "") + "'" : "")
+                                + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
+                                + ">";
+                        out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + " " + dataId + ">";
+                        out += "<p>";
+                        out += values.get(j);
+                        out += "</p>";
+                        out += "</div>";
+                        out += "</td>";
+                    }
+                    out += "</tr>";
+                }
+            }
+        } else {
+            out += "<tr style=\"background-color: transparent;\">";
+            out += "<td colspan='"+columns.length+"'>";
+            out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + ">";
+            out += "<p>";
+            if(workspace.noItemsFoundMessage != null) {
+                out += workspace.noItemsFoundMessage;
+            } else {
+                if ("IT".equalsIgnoreCase(workspace.GLLang)) {
+                    out += "Nessun elemento trovato";
+                } else {
+                    out += "No items found";
+                }
+            }
+            out += "</p>";
+            out += "</div>";
+            out += "</td>";
+        }
+        out += "</tbody>";
+        out += "</table>";
+
         return out;
     }
 
