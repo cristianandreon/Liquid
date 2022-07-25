@@ -4877,12 +4877,16 @@ public class db {
                                                                         //
                                                                         // compute the value by metadata
                                                                         //
-                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, dbDefault);
+                                                                        // N.B.: é una modifica non un inserimento, il campo default non ha rilevanza
+                                                                        // Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, dbDefault);
+                                                                        //
+
+                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, null);
                                                                         oValue = (Object) fres[0];
                                                                         valueType = (int) fres[1];
 
                                                                         if(valueType == -999) {
-                                                                            // data truncated
+                                                                            // Skip field
                                                                         } else {
                                                                             if (colParts.length > 1 || foreignTable != null && !foreignTable.isEmpty()) {
                                                                                 if (colParts.length > 1) {

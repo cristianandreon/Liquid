@@ -75,9 +75,10 @@ public class transaction {
         if(request != null) {
             Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
             if((boolean) request.getAttribute("Liquid.connection.commit") == false && (boolean) request.getAttribute("Liquid.connection.rollback") == false) {
-                if((boolean)request.getAttribute("Liquid.connection.commitAsDefault") == true) {
+                Boolean commitAsDefault = (Boolean)request.getAttribute("Liquid.connection.commitAsDefault");
+                if(commitAsDefault != null && commitAsDefault.booleanValue()) {
                     conn.commit();
-                } else if((boolean)request.getAttribute("Liquid.connection.commitAsDefault") == false) {
+                } else if(commitAsDefault != null && !commitAsDefault.booleanValue()) {
                     conn.rollback();
                 } else {
                     System.err.println("Please define commit or rollback as default");
