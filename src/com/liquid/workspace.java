@@ -2452,7 +2452,7 @@ public class workspace {
         } catch (Exception ex) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
             if ("json".equalsIgnoreCase(returnType)) {
-                result = "{\"error\":\"" + utility.base64Encode(ex.getMessage()) + "\"}";
+                result = "{\"error\":\"" + utility.base64Encode("Error in control:"+controlId+":"+ex.getMessage()) + "\"}";
             } else if ("js".equalsIgnoreCase(returnType)) {
                 result = get_js_console_error_report("controlId:" + controlId + " error:" + ex.getLocalizedMessage() );
             } else {

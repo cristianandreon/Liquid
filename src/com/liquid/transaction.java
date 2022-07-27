@@ -6,6 +6,7 @@ package com.liquid;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -131,12 +132,74 @@ public class transaction {
         }
     }
 
+
+
+    /**
+     *
+     * @param conn
+     * @param request
+     * @param commitAsDefault   (null, true, false) define commit or rollback when connection is closed and no commt/rollback is done
+     * @return
+     * @throws Throwable
+     */
+    public static boolean beginTransaction(Connection conn, HttpServletRequest request, Object commitAsDefault) throws Throwable {
+        if(request != null) {
+            conn.setAutoCommit(false);
+            request.setAttribute("Liquid.connection", true);
+            request.setAttribute("Liquid.connection.conn", conn);
+            request.setAttribute("Liquid.connection.commit", false);
+            request.setAttribute("Liquid.connection.rollback", false);
+            request.setAttribute("Liquid.connection.commitAsDefault", commitAsDefault);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    /**
+     *
+     * Esecute sql inside the transaction
+     *
+     * @param sql
+     * @param request
+     * @return
+     * @throws Exception
+     */
     public static boolean exec(String sql, HttpServletRequest request) throws Exception {
         if(request != null) {
             Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
             if (conn != null) {
                 Statement stmt = conn.createStatement();
                 return stmt.execute(sql);
+            } else {
+                throw new Exception("Invalid connection");
+            }
+        } else {
+            throw new Exception("Invalid request");
+        }
+    }
+
+
+    /**
+     * Esecute sql inside the transaction
+     *
+     * @param sql
+     * @param params
+     * @param request
+     * @return
+     * @throws Exception
+     */
+    public static boolean exec(String sql, Object [] params, HttpServletRequest request) throws Exception {
+        if(request != null) {
+            Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
+            if (conn != null) {
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                for(int i=0; i<params.length; i++) {
+                    if (db.mapStatementParam(stmt, i+1, params[i])) {
+                    }
+                }
+                return stmt.execute();
             } else {
                 throw new Exception("Invalid connection");
             }

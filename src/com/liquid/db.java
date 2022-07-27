@@ -4326,7 +4326,7 @@ public class db {
         return new Object [] { retVal, new_id } ;
     }
 
-    private static boolean mapStatementParam(PreparedStatement sqlSTMTUpdate, int ip, Object val) throws Exception {
+    public static boolean mapStatementParam(PreparedStatement sqlSTMTUpdate, int ip, Object val) throws Exception {
         if (val instanceof Expression || val instanceof StringBuffer) {
             // Already processed
             return false;
