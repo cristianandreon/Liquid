@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.37
+// Liquid ver.2.38
 //
-//  First update 06-01-2020 - Last update 24-07-2022
+//  First update 06-01-2020 - Last update 28-07-2022
 //
 //  TODO : see trello.com
 //
@@ -1400,12 +1400,13 @@ class LiquidCtrl {
                                     for(let ic=0; ic<this.foreignTables.length; ic++) {
                                         if(this.foreignTables[ic].contentObj) {
                                             this.rootObj.appendChild(this.foreignTables[ic].contentObj);
-                                            this.foreignTables[ic].contentObj.style.height = (
+                                            let ftHeight = (
                                                 (this.mode !== "lookup" ? this.outDivObj.offsetHeight : 1)
                                                 - (this.popupCaptionObj ? this.popupCaptionObj.offsetHeight : 0)
                                                 - (this.lookupObj ? this.lookupObj.offsetHeight : 0)
                                                 - (this.foreignTablesTabsObj ? this.foreignTablesTabsObj.offsetHeight : 0)
-                                            ) + "px";
+                                            );
+                                            this.foreignTables[ic].contentObj.style.height = ftHeight + "px";
                                             this.foreignTables[ic].contentObj.style.visibility = "";
                                             this.foreignTables[ic].contentObj.style.display = 'none';
                                         }
@@ -8360,14 +8361,24 @@ var Liquid = {
         if (liquid) {
             if (foreignTableContentObj) {
                 if (foreignTableContentObj.getAttribute('parented')) {
-                    // Fit control height parented
-                    var new_pos = Liquid.getRelativePositionTop(foreignTableContentObj);
-                    var style = window.getComputedStyle(foreignTableContentObj);
-                    var gap_top = style.marginTop ? style.marginTop.replace("px", "") : 0;
-                    var gap_bottom = style.marginBottom ? style.marginBottom.replace("px", "") : 0;
-                    var gap = (gap_top ? Number(gap_top) : 0) + (gap_bottom ? Number(gap_bottom) : 0);
-                    if (new_pos >= 0) {
-                        foreignTableContentObj.style.height = "calc(100% - " + (new_pos + gap) + "px)";
+                    // Fit control height by parent
+                    if(foreignTableContentObj.offsetHeight <= 0) {
+                        // not still rendered ... setting the height does't solve
+                        console.warn("Control '" + liquid.controlId + " '" + foreignTableContentObj.id + "' stil NOT READY for compute child content position");
+                        setTimeout( function() {
+                            Liquid.onForeignTableResize(liquid, foreignTableContentObj, foreignTableContainerHeight);
+                        }, 250);
+
+                    } else {
+                        var new_pos = Liquid.getRelativePositionTop(foreignTableContentObj, false);
+                        var style = window.getComputedStyle(foreignTableContentObj);
+                        var gap_top = style.marginTop ? style.marginTop.replace("px", "") : 0;
+                        var gap_bottom = style.marginBottom ? style.marginBottom.replace("px", "") : 0;
+                        var gap = (gap_top ? Number(gap_top) : 0) + (gap_bottom ? Number(gap_bottom) : 0);
+                        if (new_pos >= 0) {
+                            console.info("Control '" + liquid.controlId + " '" + foreignTableContentObj.id + "' height: 100% - " + (new_pos + gap));
+                            foreignTableContentObj.style.height = "calc(100% - " + (new_pos + gap) + "px)";
+                        }
                     }
                 } else {
                     if (isDef(foreignTableContainerHeight)) {
@@ -10516,13 +10527,15 @@ var Liquid = {
         }
         return "";
     },
-    getRelativePositionTop: function (obj) {
+    getRelativePositionTop: function (obj, bAbsolute) {
         var parentNode = obj;
         var top = parentNode.offsetTop;
-        while ((parentNode = parentNode.parentNode) && parentNode == document.body) {
-            if (parentNode) {
-                if (parentNode.offsetTop) {
-                    top += parentNode.offsetTop;
+        if(bAbsolute) {
+            while ((parentNode = parentNode.parentNode) && parentNode != document.body) {
+                if (parentNode) {
+                    if (parentNode.offsetTop) {
+                        top += parentNode.offsetTop;
+                    }
                 }
             }
         }
@@ -10676,12 +10689,17 @@ var Liquid = {
     restoreCommands: function (liquid) {
         liquid.gridOptions.suppressRowClickSelection = liquid.lastSuppressRowClickSelection;
         liquid.currentCommand = null;
+
+        let cmdBarObj = document.getElementById(liquid.controlId+".commands");
+        if(cmdBarObj) {
+            cmdBarObj.classList.remove("liquidCommandDisabled");
+        }
         if (liquid.tableJson.commands) {
             for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
                 var cmd = liquid.tableJson.commands[icmd];
                 cmd.disabledByCommand = null;
                 if (cmd.linkedObj) {
-                    cmd.linkedObj.classList.remove("liquidCommandDisabled");
+                    cmd.linkedObj.classList.remove("liquidCommandDisabledTemporary");
                 }
                 if (cmd.rollbackObj) {
                     cmd.rollbackObj.style.display = 'none';
@@ -11045,18 +11063,24 @@ var Liquid = {
                         command.step = Liquid.CMD_WAIT_FOR_ENABLE;
 
                         liquid.currentCommand = command;
-
+                        // disabling other commands
                         if (liquid.tableJson.commands) {
                             for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
                                 var cmd = liquid.tableJson.commands[icmd];
                                 if (cmd.name !== command.name && (!cmd.linkedCmd || (cmd.linkedCmd && cmd.name !== cmd.linkedCmd.name))) {
                                     if (cmd.linkedObj) {
-                                        cmd.linkedObj.classList.add("liquidCommandDisabled");
+                                        cmd.linkedObj.classList.add("liquidCommandDisabledTemporary");
                                         cmd.disabledByCommand = true;
                                     }
                                 }
                             }
                         }
+                        // disabling command bar
+                        let cmdBarObj = document.getElementById(liquid.controlId+".commands");
+                        if(cmdBarObj) {
+                            cmdBarObj.classList.remove("liquidCommandDisabled");
+                        }
+
                         let defaultValue = "noEventDef";
                         let bAlwaysCallback = true;
                         let bContinue = false;
@@ -12113,7 +12137,7 @@ var Liquid = {
                             liquid.aggridContainerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
                             if (liquid.referenceHeightObj) {
                                 if (liquid.AAA === "testGrid4 - mode:undefined - div:testGrid4") debugger;
-                                if (liquid.referenceHeightObj.offsetHeight !== referenceHeight) { // something escaped
+                                if (liquid.referenceHeightObj.offsetHeight > 0 && liquid.referenceHeightObj.offsetHeight !== referenceHeight) { // something escaped
                                     var gap = liquid.referenceHeightObj.offsetHeight - referenceHeight;
                                     if (gap <= 4) {
                                         aggridContainerHeight -= gap;
@@ -13722,6 +13746,9 @@ var Liquid = {
         }
     },
     create_layout_from_url:function (liquid, layout, responseText, key, source, counter, mode) {
+        // TODO : initially hidden
+        // layout.containerObj.style.visibility = 'hidden';
+        // layout.containerObj.style.display = "none";
         layout.containerObj.innerHTML = responseText;
         var height = Liquid.getItemsMaxHeight(layout.containerObj);
         var rootObj = document.createElement("div");
@@ -15607,6 +15634,10 @@ var Liquid = {
                                             }
                                         }
                                     }
+                                } else {
+                                    // unlinked column
+                                    // Liquid.validateHtmlObject(objs[ic]);
+                                    // Liquid.validateHtmlObject(objs_aux[ic]);
                                 }
                             }
                         }
@@ -15627,6 +15658,18 @@ var Liquid = {
             obj.style.borderStyle = Liquid.invalidInputBorderStyle;
             obj.style.outline = Liquid.invalidInputOutline;
             obj.style.boxShadow = Liquid.invalidInputBoxShadow + Liquid.invalidInputBorderColor;
+            if(obj.id) {
+                let descObj = document.getElementById(obj.id+".desc");
+                if(descObj) {
+                    Liquid.invalidateHtmlObject(descObj);
+                }
+            }
+            if(obj.getAttribute("previd")) {
+                let descObj = document.getElementById(obj.getAttribute("previd")+".desc");
+                if(descObj) {
+                    Liquid.invalidateHtmlObject(descObj);
+                }
+            }
         }
     },
     validateHtmlObject: function (obj) {
@@ -15646,6 +15689,18 @@ var Liquid = {
             if (typeof obj.dataset.boxShadow !== 'undefined')
                 obj.style.boxShadow = obj.dataset.boxShadow;
             obj.dataset.boxShadow = null;
+            if(obj.id) {
+                let descObj = document.getElementById(obj.id+".desc");
+                if(descObj) {
+                    Liquid.validateHtmlObject(descObj);
+                }
+            }
+            if(obj.getAttribute("previd")) {
+                let descObj = document.getElementById(obj.getAttribute("previd")+".desc");
+                if(descObj) {
+                    Liquid.validateHtmlObject(descObj);
+                }
+            }
         }
     },
     /**
@@ -16092,6 +16147,10 @@ var Liquid = {
                             if (lay_coord.layout.inlineMode === true) {
                                 lay_coord.layout.firstNodeId = null;
                             }
+
+                            // set as valid
+                            Liquid.validateHtmlObject(obj);
+
                             linkedRow1B = Number(linkedRow1B);
                             var col = liquid.tableJson.columns[Number(linkedField) - 1];
                             var firstNodeId = lay_coord.layout.firstNodeId;

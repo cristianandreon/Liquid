@@ -47,6 +47,7 @@ html, body { height: 100% }
 .liquidCommandBarImg { margin-top: 2px; margin-left:5px; margin-right:7px; }
 .liquidCommandBarText { display:inline-block; font-size: 10px; margin-right:25px; position: relative; top: -2px; }
 .liquidCommandDisabled { pointer-events: none; opacity: 0.4; }
+.liquidCommandDisabledTemporary { pointer-events: none; opacity: 0.4; }
 .liquidGridContainer { width:100%; display:inline-block; overflow: auto; }
 .liquidGridContainer::-webkit-scrollbar { width: 8px; height: 8px; }
 .liquidGridContainer::-webkit-scrollbar-track { border-radius: 8px; }

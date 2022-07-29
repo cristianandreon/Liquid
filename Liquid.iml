@@ -23,7 +23,7 @@
     <facet type="web" name="Web">
       <configuration>
         <descriptors>
-          <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/web/WEB-INF/web.xml" />
+          <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/src/META-INF/resources/web.xml" />
         </descriptors>
         <webroots>
           <root url="file://$MODULE_DIR$/src/META-INF/resources/liquid" relative="/liquid" />
