@@ -251,6 +251,9 @@ class LiquidCtrl {
                     return newLiquid;
                 } else {
                     this.tableJson = tableJsonString ? JSON.parse(tableJsonString) : null;
+                    if(typeof mode !== 'undefined' && mode !== null ? mode : null) {
+                        this.tableJson.mode = mode;
+                    }
                 }
             }
         } catch (e) {
@@ -296,6 +299,15 @@ class LiquidCtrl {
 
             if(typeof this.tableJson.mode === 'undefined') {
                 this.tableJson.mode = this.mode;
+            } else {
+                if(typeof this.mode !== 'undefined') {
+                    if(typeof this.tableJson.mode !== 'undefined') {
+                        if(this.tableJson.mode != this.mode) {
+                            console.info("LIQUID: on control '" + this.controlId + "' override mode from " + this.tableJson.mode + " to "+this.tableJson.mode);
+                        }
+                        this.tableJson.mode = this.mode;
+                    }
+                }
             }
             this.mode = this.tableJson.mode;
 
@@ -9672,9 +9684,17 @@ var Liquid = {
             if (liquid.currentCommand.name === command.name) {
             }
         }
-        if (liquid.tableJson.commandBarTemporaryVisible === true) {
-            Liquid.setProperty(obj, "commandBarVisible", false);
-            liquid.tableJson.commandBarTemporaryVisible = null;
+        if (liquid.tableJson) {
+            if (liquid.tableJson.commandBarTemporaryVisible === true) {
+                Liquid.setProperty(obj, "commandBarVisible", false);
+                liquid.tableJson.commandBarTemporaryVisible = null;
+            }
+        }
+        if (liquid.menuJson) {
+            if (liquid.menuJson.commandBarTemporaryVisible === true) {
+                Liquid.setProperty(obj, "commandBarVisible", false);
+                liquid.menuJson.commandBarTemporaryVisible = null;
+            }
         }
 
         liquid.currentCommand = null;
@@ -11344,6 +11364,12 @@ var Liquid = {
                         if (liquid.tableJson.commandBarTemporaryVisible === true) {
                             Liquid.setProperty(obj, "commandBarVisible", false);
                             liquid.tableJson.commandBarTemporaryVisible = false;
+                        }
+                        if (liquid.menuJson) {
+                            if (liquid.menuJson.commandBarTemporaryVisible === true) {
+                                Liquid.setProperty(obj, "commandBarVisible", false);
+                                liquid.menuJson.commandBarTemporaryVisible = null;
+                            }
                         }
 
                         Liquid.restoreCommands(liquid);
@@ -22959,7 +22985,7 @@ if(document.addEventListener) { document.addEventListener('contextmenu', functio
 
 document.addEventListener("DOMContentLoaded", function(event) {
     try {
-        let liquidCurrency = $('input.liquidCurrency');
+        let liquidCurrency = jQ1124('input.liquidCurrency');
         if(liquidCurrency) {
             try {
                 if (typeof liquidCurrency.currencyInput !== 'undefined')
