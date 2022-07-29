@@ -13,6 +13,8 @@ import java.sql.Statement;
 public class transaction {
 
 
+
+
     /**
      * START Transaction managment
      */
@@ -75,22 +77,24 @@ public class transaction {
     public static void closeTransaction(HttpServletRequest request) throws SQLException {
         if(request != null) {
             Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
-            if((boolean) request.getAttribute("Liquid.connection.commit") == false && (boolean) request.getAttribute("Liquid.connection.rollback") == false) {
-                Boolean commitAsDefault = (Boolean)request.getAttribute("Liquid.connection.commitAsDefault");
-                if(commitAsDefault != null && commitAsDefault.booleanValue()) {
-                    conn.commit();
-                } else if(commitAsDefault != null && !commitAsDefault.booleanValue()) {
-                    conn.rollback();
-                } else {
-                    System.err.println("Please define commit or rollback as default");
+            if(conn != null) {
+                if ((boolean) request.getAttribute("Liquid.connection.commit") == false && (boolean) request.getAttribute("Liquid.connection.rollback") == false) {
+                    Boolean commitAsDefault = (Boolean) request.getAttribute("Liquid.connection.commitAsDefault");
+                    if (commitAsDefault != null && commitAsDefault.booleanValue()) {
+                        conn.commit();
+                    } else if (commitAsDefault != null && !commitAsDefault.booleanValue()) {
+                        conn.rollback();
+                    } else {
+                        System.err.println("Please define commit or rollback as default");
+                    }
                 }
+                request.setAttribute("Liquid.connection", false);
+                request.setAttribute("Liquid.connection.conn", null);
+                request.setAttribute("Liquid.connection.commit", false);
+                request.setAttribute("Liquid.connection.rollback", false);
+                request.setAttribute("Liquid.connection.commitAsDefault", null);
+                conn.close();
             }
-            request.setAttribute("Liquid.connection", false);
-            request.setAttribute("Liquid.connection.conn", null);
-            request.setAttribute("Liquid.connection.commit", false);
-            request.setAttribute("Liquid.connection.rollback", false);
-            request.setAttribute("Liquid.connection.commitAsDefault", null);
-            conn.close();
         }
     }
 
@@ -155,6 +159,68 @@ public class transaction {
             return false;
         }
     }
+
+
+
+    /**
+     *
+     * @param conn
+     * @param commitAsDefault   (null, true, false) define commit or rollback when connection is closed and no commt/rollback is done
+     * @return
+     * @throws Throwable
+     */
+    public static HttpServletRequest newTransaction(Connection conn, Object commitAsDefault) throws Throwable {
+        HttpServletRequest request = new wsHttpServletRequest(null);
+        if(request != null) {
+            conn.setAutoCommit(false);
+            request.setAttribute("Liquid.connection", true);
+            request.setAttribute("Liquid.connection.conn", conn);
+            request.setAttribute("Liquid.connection.commit", false);
+            request.setAttribute("Liquid.connection.rollback", false);
+            request.setAttribute("Liquid.connection.commitAsDefault", commitAsDefault);
+            return (HttpServletRequest)request;
+        } else {
+            return (HttpServletRequest)null;
+        }
+    }
+
+
+    /**
+     * Create new transaction using given datasource
+     *
+     * @param driverClassName
+     * @param connectionURL
+     * @param commitAsDefault   (null, true, false) define commit or rollback when connection is closed and no commt/rollback is done
+     * @return
+     * @throws Throwable
+     */
+    public static HttpServletRequest newTransaction(String driverClassName, String connectionURL, Object commitAsDefault) throws Throwable {
+        HttpServletRequest request = new wsHttpServletRequest(null);
+        Object [] connRes = connection.getConnection(null, null, driverClassName, connectionURL, null);
+        if(connRes != null) {
+            if(connRes.length >= 1) {
+                Connection conn = (Connection) connRes[0];
+                String connError = (String) connRes[1];
+                if (request != null) {
+                    conn.setAutoCommit(false);
+                    request.setAttribute("Liquid.connection", true);
+                    request.setAttribute("Liquid.connection.conn", conn);
+                    request.setAttribute("Liquid.connection.commit", false);
+                    request.setAttribute("Liquid.connection.rollback", false);
+                    request.setAttribute("Liquid.connection.commitAsDefault", commitAsDefault);
+                    return (HttpServletRequest) request;
+                } else {
+                    throw new Exception("Connection failed : " + connError);
+                }
+            } else {
+                throw new Exception("Connection result invalid");
+            }
+        } else {
+            throw new Exception("Connection failed");
+        }
+    }
+
+
 
 
     /**
