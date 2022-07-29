@@ -1188,6 +1188,11 @@ public class workspace {
                     String fileContent = get_file_content(request, sourceURL, false, true);
                     if (fileContent != null && !fileContent.isEmpty()) {
                         JSONObject fileContentJSON = tableJson;
+                        try {
+                            fileContent = utility.base64Decode(fileContent);
+                        } catch (Exception e) {
+                            // maybe content not encoded...
+                        }
                         tableJson = new JSONObject(fileContent);
                         if (fileContentJSON != null) {
                             // Union overlaying part of

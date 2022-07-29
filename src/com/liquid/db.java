@@ -205,6 +205,10 @@ public class db {
         if(col != null) {
             String colName = col.getString("name");
             colName = (defaultColumnName != null ? defaultColumnName : colName);
+            String [] colNameParts = colName.split("\\.");
+            if(colNameParts.length > 1) {
+                colName = colNameParts[colNameParts.length-1];
+            }
             if(col.has("translate") || col.has("translated")) {
                 boolean translated = false;
                 if(col.has("translate")) {
