@@ -409,7 +409,14 @@ public class utility {
             Class<?> propType = field.getType();
             Object curValue = field.get(bean);
             try {
-                if (propType.equals(Boolean.class) || propType.equals(boolean.class)) {
+
+                if (value == null) {
+                    if (curValue != null) {
+                        field.set(bean, null);
+                        retVal = true;
+                    }
+
+                } else if (propType.equals(Boolean.class) || propType.equals(boolean.class)) {
                     if (value instanceof String) {
                         if (value != null && !((String) value).isEmpty() && (
                                 "on".equalsIgnoreCase((String) value) ||
@@ -678,11 +685,6 @@ public class utility {
                             field.set(bean, newValue);
                             retVal = true;
                         }
-                    } else {
-                        if(curValue != null) {
-                            field.set(bean, null);
-                            retVal = true;
-                        }
                     }
                 } else if (propType.equals(java.sql.Date.class)) {
                     java.sql.Date newDate = DateUtil.toDate(value);
@@ -690,11 +692,6 @@ public class utility {
                         java.sql.Date newValue = (value != null ? new java.sql.Date( newDate.getTime()) : null);
                         if(curValue == null || ((java.sql.Date)field.get(bean)).compareTo(newValue) != 0) {
                             field.set(bean, newValue);
-                            retVal = true;
-                        }
-                    } else {
-                        if(curValue != null) {
-                            field.set(bean, null);
                             retVal = true;
                         }
                     }
@@ -706,11 +703,6 @@ public class utility {
                             field.set(bean, newValue);
                             retVal = true;
                         }
-                    } else {
-                        if(curValue != null) {
-                            field.set(bean, null);
-                            retVal = true;
-                        }
                     }
                 } else if (propType.equals(java.sql.Time.class)) {
                     Timestamp newDate = DateUtil.toTimestamp(value);
@@ -718,11 +710,6 @@ public class utility {
                         java.sql.Time newValue = (value != null ? new java.sql.Time( newDate.getTime()) : null);
                         if(curValue == null || ((java.sql.Time)field.get(bean)).compareTo(newValue) != 0) {
                             field.set(bean, newValue);
-                            retVal = true;
-                        }
-                    } else {
-                        if(curValue != null) {
-                            field.set(bean, null);
                             retVal = true;
                         }
                     }
@@ -769,11 +756,6 @@ public class utility {
                             field.set(bean, (BigDecimal)newValue);
                             retVal = true;
                         }
-                    } else if (value == null) {
-                        if(curValue != null) {
-                            field.set(bean, null);
-                            retVal = true;
-                        }
                     } else if (value instanceof Object) {
                         BigDecimal newValue = new BigDecimal(String.valueOf(value));
                         if(curValue == null || ((BigDecimal)field.get(bean)).compareTo(newValue) != 0) {
@@ -789,11 +771,6 @@ public class utility {
                     if(value != null) {
                         if (curValue == null || !curValue.equals(value)) {
                             field.set(bean, value);
-                            retVal = true;
-                        }
-                    } else {
-                        if(curValue != null) {
-                            field.set(bean, null);
                             retVal = true;
                         }
                     }

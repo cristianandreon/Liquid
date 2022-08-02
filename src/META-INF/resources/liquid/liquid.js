@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.38
+// Liquid ver.2.40
 //
-//  First update 06-01-2020 - Last update 28-07-2022
+//  First update 06-01-2020 - Last update 01-08-2022
 //
 //  TODO : see trello.com
 //
@@ -423,8 +423,10 @@ class LiquidCtrl {
                                     if(xhr.status === 200) {
                                         liquid.isAsyncResolveDone = true;
                                         liquid.promise = new Promise((param) => {
-                                            retVal = Liquid.onProcessServerResult(liquid, xhr);
+                                            retVal = Liquid.onProcessRegisterOnServerResult(liquid, xhr);
                                         });
+                                    } else {
+                                        console.error("ERROR: on control '"+this.conrolId+"' http status:" + xhr.status);
                                     }
                                 }
                             }
@@ -450,7 +452,7 @@ class LiquidCtrl {
                             + "&parentControlId=" + Liquid.getRootSourceControlId(this)
                             , false
                             , tableJsonString
-                            , Liquid.onProcessServerResult
+                            , Liquid.onProcessRegisterOnServerResult
                             ,"register control "+this.controlId
                             , null
                             , null
@@ -470,7 +472,7 @@ class LiquidCtrl {
                             +'&token=' + (typeof this.tableJson.token !== "undefined" ? this.tableJson.token : "")
                             , false
                             , tableJsonString
-                            , Liquid.onProcessServerResult
+                            , Liquid.onProcessRegisterOnServerResult
                             ,"register control "+this.controlId
                             , null
                             , null
@@ -5305,11 +5307,13 @@ var Liquid = {
         console.error("WARNING: controlId:" + liquid.controlId + " cancelled..." + event);
         Liquid.showHideWaiters(liquid, true);
     },
-
-    //
-    // Server Register Conponent callback
-    //
-    onProcessServerResult: function (liquid, xhr) {
+    /**
+     * Register Component Server Side callback (internal)
+     * @param liquid
+     * @param xhr
+     * @returns {LiquidCtrl}
+     */
+    onProcessRegisterOnServerResult: function (liquid, xhr) {
         if (xhr.status === 200) {
             try {
                 if (xhr.responseText) {
@@ -5319,6 +5323,7 @@ var Liquid = {
                         Liquid.handleResponse(liquid, "Registering component", registeredTableJson, true, true, true, true);
                     } else {
                         resultTableJson.mode = liquid.tableJson.mode !== 'auto' && liquid.tableJson.mode !== 'Sync' ? liquid.tableJson.mode : "";
+                        let mode = resultTableJson.mode;
                         resultTableJson.database = registeredTableJson.database;
                         resultTableJson.schema = registeredTableJson.schema;
                         resultTableJson.columns = registeredTableJson.columns;
@@ -5358,7 +5363,8 @@ var Liquid = {
                         }
                         return new LiquidCtrl(liquid.controlId, liquid.outDivObjOrId, JSON.stringify(resultTableJson)
                             , liquid.sourceData
-                            , liquid.tableJson.mode, liquid.parentObjId);
+                            , mode
+                            , liquid.parentObjId);
                     }
                     if (registeredTableJson.warning)
                         console.warn(registeredTableJson.warning);
@@ -8979,15 +8985,19 @@ var Liquid = {
                 if (callback) {
                     retVal = callback(callbackParams);
                 } else {
+                    if(!isDef(eventData)) {
+                        eventData = {};
+                    }
                     if(!isDef(eventParams)) {
                         eventParams = {};
                     }
+                    eventData.params = eventParams;
                     if (event.clientAfter !== true || event.clientBefore === true) {
                         retVal = Liquid.executeClientSide(
                             liquid,
                             "event:" + event.name,
                             event.client,
-                            eventParams,
+                            eventData,
                             event.isNative);
                     }
                 }

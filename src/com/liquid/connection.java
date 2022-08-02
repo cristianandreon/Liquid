@@ -230,14 +230,38 @@ public class connection {
     }
     
 
-    //    
-    // Connectin to DB , defined by control's JSON, in the session (request) or by default source of the web app
-    //
-    // Test :   jdbc:mysql://localhost:3306/Liquid,liquid,liquid
-    //          jdbc:mysql://cnconline:3306/Liquid"
-    //          jdbc:postgresql://cnconline:5432/LiquidX?user=liquid&password=liquid
-    //
+
+    /**
+     // Connectin to DB , defined by control's JSON, in the session (request) or by default source of the web app
+     //
+     // Test :   jdbc:mysql://localhost:3306/Liquid,liquid,liquid
+     //          jdbc:mysql://cnconline:3306/Liquid"
+     //          jdbc:postgresql://cnconline:5432/LiquidX?user=liquid&password=liquid
+     *
+     * @param get_connection
+     * @param request
+     * @param driver
+     * @param connectionURL
+     * @param database
+     * @return
+     * @throws Throwable
+     */
     static public Object [] getConnection( Method get_connection, HttpServletRequest request, String driver, String connectionURL, String database ) throws Throwable  {
+        return getConnection( get_connection, request, driver, (Object)connectionURL, database );
+    }
+
+    /**
+     * Connectin to DB , defined by control's JSON, in the session (request) or by default source of the web app
+     *
+     * @param get_connection
+     * @param request
+     * @param driver
+     * @param connectionURL
+     * @param database
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] getConnection( Method get_connection, HttpServletRequest request, String driver, Object connectionURL, String database ) throws Throwable  {
         Connection conn = null;
         String errors = "";
         
@@ -245,15 +269,24 @@ public class connection {
 
             // Connessione specificata su JSON
             if(connectionURL != null) {
-                if(driver != null) { 
-                    Class driverClass = Class.forName(classNameFromDriver(driver)); 
-                }
-                if(connectionURL != null && !connectionURL.isEmpty() && !"[definedAtServerSide]".equalsIgnoreCase(connectionURL)) {
-                    try {
-                        conn = DriverManager.getConnection(connectionURL);
-                    } catch(Throwable th) {
-                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
-                        throw th;
+                if(connectionURL instanceof ArrayList<?>) {
+                    conn = DriverManager.getConnection( ((ArrayList<String>)connectionURL).get(0), ((ArrayList<String>)connectionURL).get(1), ((ArrayList<String>)connectionURL).get(2) );
+                } else if(connectionURL instanceof String []) {
+                    if(((String [])connectionURL).length == 1) {
+                        conn = DriverManager.getConnection( ((String [])connectionURL)[0]);
+                    } else if(((String [])connectionURL).length == 2) {
+                        conn = DriverManager.getConnection( ((String [])connectionURL)[0], ((String [])connectionURL)[1], null);
+                    } else if(((String [])connectionURL).length >= 3) {
+                        conn = DriverManager.getConnection( ((String [])connectionURL)[0], ((String [])connectionURL)[1], ((String [])connectionURL)[2]);
+                    }
+                } else {
+                    if ((String)connectionURL != null && !((String)connectionURL).isEmpty() && !"[definedAtServerSide]".equalsIgnoreCase((String)connectionURL)) {
+                        try {
+                            conn = DriverManager.getConnection((String)connectionURL);
+                        } catch (Throwable th) {
+                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
+                            throw th;
+                        }
                     }
                 }
             } else {
@@ -264,45 +297,6 @@ public class connection {
                         Object curConnectionURL = utility.base64Decode((String)request.getSession().getAttribute("GLLiquidConnectionURL"));
                         if(curDriver != null && !curDriver.isEmpty()) {
                             if(curConnectionURL != null) {
-                                Class driverClass = null;
-                                try {
-                                    driverClass = Class.forName(curDriver);
-                                } catch (Throwable th) {
-                                    if(curDriver.contains("mysql")) {
-                                        try {
-                                            driverClass = Class.forName("com.mysql.jdbc.Driver");
-                                        } catch (Throwable th1) {
-                                            try {
-                                                driverClass = Class.forName("com.mysql.cj.jdbc.Driver");
-                                            } catch (Throwable th2) {
-                                            }
-                                        }
-                                    } else if(curDriver.contains("mariadb")) {
-                                        try {
-                                            driverClass = Class.forName("org.mariadb.jdbc.Driver");
-                                        } catch (Throwable th1) {
-                                            try {
-                                                driverClass = Class.forName("org.mariadb.Driver");
-                                            } catch (Throwable th2) {
-                                            }
-                                        }
-                                    } else if(curDriver.contains("postgres")) {
-                                        try {
-                                            driverClass = Class.forName("org.postgresql.Driver");
-                                        } catch (Throwable th1) {
-                                        }
-                                    } else if(curDriver.contains("oracle")) {
-                                        try {
-                                            driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
-                                        } catch (Throwable th1) {
-                                        }
-                                    } else if(curDriver.contains("sqlserver")) {
-                                        try {
-                                            driverClass = Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-                                        } catch (Throwable th1) {
-                                        }
-                                    }
-                                }
                                 try {
                                     if(curConnectionURL instanceof ArrayList<?>) {
                                         conn = DriverManager.getConnection( ((ArrayList<String>)curConnectionURL).get(0), ((ArrayList<String>)curConnectionURL).get(1), ((ArrayList<String>)curConnectionURL).get(2) );

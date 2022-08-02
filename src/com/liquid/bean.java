@@ -1097,7 +1097,7 @@ public class bean {
                 if (rowsJson != null && rowsJson.length() > 0) {
 
                     if(workspace.projectMode)
-                        Logger.getLogger(db.class.getName()).log(Level.INFO, "// Filling bean on className: " + className + "...");
+                        Logger.getLogger(db.class.getName()).log(Level.INFO, "// Filling bean on " + className + "...");
 
                     for (int ir = 0; ir < rowsJson.length(); ir++) {
                         Object obj = clazz.newInstance();
@@ -1147,7 +1147,7 @@ public class bean {
 
                 } else {
 
-                    Logger.getLogger(db.class.getName()).log(Level.INFO, "// Preparing bean on className: " + className + "...");
+                    Logger.getLogger(db.class.getName()).log(Level.INFO, "// Preparing bean on " + className + "...");
 
                     //
                     // Empty Bean : instanziate and set to null
@@ -1172,7 +1172,7 @@ public class bean {
 
 
                 if(workspace.projectMode)
-                    Logger.getLogger(db.class.getName()).log(Level.INFO, "// Setting beans on className: " + className + "...");
+                    Logger.getLogger(db.class.getName()).log(Level.INFO, "// Setting beans on " + className + "...");
 
                 long time2 = System.currentTimeMillis();
 
@@ -1211,7 +1211,7 @@ public class bean {
 
                     long time3 = System.currentTimeMillis();
 
-                    if(time3-time > 500) {
+                    if(time3-time > 50) {
                         Logger.getLogger(db.class.getName()).log(Level.INFO, "// set beans time : " + (double) (time2 - time) / 1000.0 + "sec ... parent bean time:" + (double) (time3 - time2) / 1000.0 + "sec");
                     }
 
@@ -2356,7 +2356,7 @@ public class bean {
                         }
                         sWhere = " WHERE " + keyColumn + "='" + keyOrWhereCondition + "'";
                     } else {
-                        String skeyOrWhereCondition = String.valueOf(keyOrWhereCondition);
+                        String skeyOrWhereCondition = String.valueOf(keyOrWhereCondition).trim();
                         if (skeyOrWhereCondition.startsWith("WHERE ")) {
                             sWhere = " " + skeyOrWhereCondition + "";
                         } else {

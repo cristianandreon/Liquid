@@ -194,9 +194,9 @@ public class transaction {
      * @return
      * @throws Throwable
      */
-    public static HttpServletRequest newTransaction(String driverClassName, String connectionURL, Object commitAsDefault) throws Throwable {
+    public static HttpServletRequest newTransaction(Object connectionURL, Object commitAsDefault) throws Throwable {
         HttpServletRequest request = new wsHttpServletRequest(null);
-        Object [] connRes = connection.getConnection(null, null, driverClassName, connectionURL, null);
+        Object [] connRes = connection.getConnection(null, null, null, connectionURL, null);
         if(connRes != null) {
             if(connRes.length >= 1) {
                 Connection conn = (Connection) connRes[0];

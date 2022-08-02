@@ -3662,35 +3662,8 @@ public class db {
                 int ip = 1;
                 for(int i=0; i<Values.length; i++) {
                     if(i < Fields.length) {
-                        Object val = Values[i];
-                        if (val instanceof Integer) {
-                            sqlSTMTUpdate.setInt(ip++, (int) val);
-                        } else if (val instanceof Long) {
-                            sqlSTMTUpdate.setLong(ip++, (long) val);
-                        } else if (val instanceof Float) {
-                            sqlSTMTUpdate.setFloat(ip++, (float) val);
-                        } else if (val instanceof Double) {
-                            sqlSTMTUpdate.setDouble(ip++, (double) val);
-                        } else if (val instanceof Timestamp) {
-                            sqlSTMTUpdate.setTimestamp(ip++, (Timestamp) val);
-                        } else if (val instanceof java.util.Date) {
-                            sqlSTMTUpdate.setDate(ip++, (new java.sql.Date(((java.util.Date) val).getTime())) );
-                        } else if (val instanceof java.sql.Date) {
-                            sqlSTMTUpdate.setDate(ip++, (java.sql.Date)val);
-                        } else if (val instanceof java.util.Date) {
-                            sqlSTMTUpdate.setDate(ip++, new java.sql.Date(((java.util.Date)val).getTime()));
-                        } else if (val instanceof String) {
-                            sqlSTMTUpdate.setString(ip++, (String) val);
-                        } else if (val instanceof Boolean) {
-                            sqlSTMTUpdate.setBoolean(ip++, (boolean) val);
-                        } else if (val == null) {
-                            sqlSTMTUpdate.setNull(ip++, Types.NULL);
-                        } else if (val instanceof Expression) {
-                            // non come parametro .. iniettato sopra
-                        } else if (val instanceof StringBuffer) {
-                            // non come parametro .. iniettato sopra
-                        } else {
-                            System.err.println("insert_row() invalid obejct type : "+ val.getClass().getName());
+                        if(mapStatementParam(sqlSTMTUpdate, ip, Values[i])) {
+                            ip++;
                         }
                     }
                 }
@@ -3836,35 +3809,8 @@ public class db {
                 int ip = 1;
                 for(int i=0; i<keyValues.length; i++) {
                     if(i < keyFields.length) {
-                        Object val = keyValues[i];
-                        if (val instanceof Integer) {
-                            sqlSTMTDelete.setInt(ip++, (int) val);
-                        } else if (val instanceof Long) {
-                            sqlSTMTDelete.setLong(ip++, (long) val);
-                        } else if (val instanceof Float) {
-                            sqlSTMTDelete.setFloat(ip++, (float) val);
-                        } else if (val instanceof Double) {
-                            sqlSTMTDelete.setDouble(ip++, (double) val);
-                        } else if (val instanceof Timestamp) {
-                            sqlSTMTDelete.setTimestamp(ip++, (Timestamp) val);
-                        } else if (val instanceof Date) {
-                            sqlSTMTDelete.setDate(ip++, (new java.sql.Date(((Date) val).getTime())) );
-                        } else if (val instanceof java.sql.Date) {
-                            sqlSTMTDelete.setDate(ip++, (java.sql.Date)val);
-                        } else if (val instanceof Date) {
-                            sqlSTMTDelete.setDate(ip++, new java.sql.Date(((Date)val).getTime()));
-                        } else if (val instanceof String) {
-                            sqlSTMTDelete.setString(ip++, (String) val);
-                        } else if (val instanceof Boolean) {
-                            sqlSTMTDelete.setBoolean(ip++, (boolean) val);
-                        } else if (val == null) {
-                            sqlSTMTDelete.setNull(ip++, Types.NULL);
-                        } else if (val instanceof Expression) {
-                            // non come parametro .. iniettato sopra
-                        } else if (val instanceof StringBuffer) {
-                            // non come parametro .. iniettato sopra
-                        } else {
-                            System.err.println("insert_row() invalid obejct type : "+ val.getClass().getName());
+                        if(mapStatementParam(sqlSTMTDelete, ip, keyValues[i])) {
+                            ip++;
                         }
                     }
                 }
@@ -4466,28 +4412,10 @@ public class db {
 
                             PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
 
+                            int ip = 1;
                             for (int i=0; i<paramValues.size(); i++) {
-                                Object val = paramValues.get(i);
-                                if (val instanceof Integer) {
-                                    sqlSTMTUpdate.setInt((i + 1), (int) val);
-                                } else if (val instanceof Long) {
-                                    sqlSTMTUpdate.setLong((i + 1), (long) val);
-                                } else if (val instanceof Float) {
-                                    sqlSTMTUpdate.setFloat((i + 1), (float) val);
-                                } else if (val instanceof Double) {
-                                    sqlSTMTUpdate.setDouble((i + 1), (double) val);
-                                } else if (val instanceof Timestamp) {
-                                    sqlSTMTUpdate.setTimestamp((i + 1), (Timestamp) val);
-                                } else if (val instanceof java.sql.Date) {
-                                    sqlSTMTUpdate.setDate((i + 1), (java.sql.Date) val);
-                                } else if (val instanceof java.util.Date) {
-                                    sqlSTMTUpdate.setDate((i + 1), new java.sql.Date(((java.util.Date)val).getTime()));
-                                } else if (val instanceof String) {
-                                    sqlSTMTUpdate.setString((i + 1), (String) val);
-                                } else if (val instanceof BigDecimal) {
-                                    sqlSTMTUpdate.setBigDecimal((i + 1), (BigDecimal) val);
-                                } else {
-                                    throw new Exception("Unrecognized param type:"+val.getClass().getName());
+                                if(mapStatementParam(sqlSTMTUpdate, ip, paramValues.get(i))) {
+                                    ip++;
                                 }
                             }
 
@@ -4881,11 +4809,15 @@ public class db {
                                                                         //
                                                                         // compute the value by metadata
                                                                         //
-                                                                        // N.B.: é una modifica non un inserimento, il campo default non ha rilevanza
-                                                                        // Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, dbDefault);
-                                                                        //
+                                                                        String sDefault = null;
+                                                                        if("update".equalsIgnoreCase(sType)) {
+                                                                            // N.B.: é una modifica non un inserimento, il campo default non ha rilevanza
+                                                                            sDefault = null;
+                                                                        } else if("insert".equalsIgnoreCase(sType)) {
+                                                                            sDefault = dbDefault;
+                                                                        }
 
-                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, null);
+                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, sDefault);
                                                                         oValue = (Object) fres[0];
                                                                         valueType = (int) fres[1];
 

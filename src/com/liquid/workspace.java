@@ -4598,26 +4598,38 @@ public class workspace {
     static public String getSelection(Object tbl_wrk, String params) throws Exception {
         if(tbl_wrk instanceof String) {
             return getSelection((String)tbl_wrk, params);
-        } else {
+        } else if(tbl_wrk instanceof workspace) {
             return getSelection(((workspace) tbl_wrk).controlId, params);
+        } else {
+            return null;
         }
     }
 
     static public JSONArray getSelectionRows(Object tbl_wrk, String params) throws Exception {
         if(tbl_wrk instanceof String) {
             return getSelectionRows((String)tbl_wrk, params);
-        } else {
+        } else if(tbl_wrk instanceof workspace) {
             return getSelectionRows(((workspace) tbl_wrk).controlId, params);
+        } else {
+            return null;
         }
     }
 
 
     static public long getSelectionCount(Object tbl_wrk, String params) {
-        return getSelectionCount(((workspace) tbl_wrk).controlId, params);
+        if(tbl_wrk instanceof workspace) {
+            return getSelectionCount(((workspace) tbl_wrk).controlId, params);
+        } else {
+            return 0L;
+        }
     }
 
     static public String getData(Object tbl_wrk, String params, String column) {
-        return getData(((workspace) tbl_wrk).controlId, params, column);
+        if(tbl_wrk instanceof workspace) {
+            return getData(((workspace) tbl_wrk).controlId, params, column);
+        } else {
+            return null;
+        }
     }
 
 
