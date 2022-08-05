@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.40
+// Liquid ver.2.41
 //
-//  First update 06-01-2020 - Last update 01-08-2022
+//  First update 06-01-2020 - Last update 05-08-2022
 //
 //  TODO : see trello.com
 //
@@ -2712,6 +2712,7 @@ var Liquid = {
     translateLabels: true,
     firstTimeCacheControl: "reload",
     cacheControl: "force-cache",
+    disableOnReadOnly: false,
     ERROR_STRING: "ERROR",
     WARNING_STRING: "WARNING",
     QUESTION_STRING: "QUESTION",
@@ -11605,6 +11606,8 @@ var Liquid = {
     },
     getColumnTooltip: function (liquid, col) {
         if (liquid) {
+            let table = null;
+            let field = null;
             var tooltipField = "";
             var dbField = "";
             if (liquid.tableJson.database) dbField += "Database: " + liquid.tableJson.database + "\n";
@@ -11627,6 +11630,9 @@ var Liquid = {
                 dbField += field;
                 if (isDef(col.readonly)) {
                     field = "Readonly: " + col.readonly + "\n";
+                }
+                if (isDef(col.disabled)) {
+                    field = "Disabled: " + col.disabled + "\n";
                 }
                 tooltipField += "DB coords:\n\n" + dbField + "";
                 tooltipField += "\n\n";
@@ -15173,10 +15179,16 @@ var Liquid = {
                             var tooltip = linkedCol["name"];
                             var tooltipName = "tooltip" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
                             var labelName = (Liquid.translateLabels ? ("label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "label");
-                            if (isDef(linkedCol[labelName]))
-                                tooltip = linkedCol[labelName];
+
                             if (isDef(linkedCol[tooltipName]))
                                 tooltip = linkedCol[tooltipName];
+                            if(!isDef(tooltip)) {
+                                if (isDef(linkedCol[labelName])) {
+                                    if(Liquid.projectMode) {
+                                        tooltip = "[DEBUG] Linked to field:"+linkedCol[labelName] + "("+linkedCol["name"]+")";
+                                    }
+                                }
+                            }
 
                             obj.title = "" + tooltip + "";
 
@@ -18147,6 +18159,7 @@ var Liquid = {
                                         var processRow = true;
                                         var col = layout.rowsContainer[ir].cols[ic];
                                         let readonly = null;
+                                        let disabled = null;
                                         if (!isDef(currentRelativeRow) || currentRelativeRow < 0 || currentRelativeRow == ir) {
                                             if (currentRelativeRow != ir) {
                                                 // put readonly the adding row only by expliic call
@@ -18154,6 +18167,7 @@ var Liquid = {
                                             }
                                             if(col) {
                                                 readonly = col.readonly;
+                                                disabled = col.disabled;
                                             }
                                             if(layout.rowsContainer[ir].isAdding) {
                                                 mode = "write";
@@ -18174,6 +18188,7 @@ var Liquid = {
                                             processRow = false;
                                         }
                                         if(!isDef(readonly)) readonly = false;
+                                        if(!isDef(disabled)) disabled = false;
                                         if (processRow) {
                                             var itemObj = layout.rowsContainer[ir].objs[ic];
                                             var itemObjAux = layout.rowsContainer[ir].objs_aux[ic];
@@ -18184,7 +18199,7 @@ var Liquid = {
                                             var itemObj = itemInputObj ? itemInputObj : itemObj;
                                             if (itemObj) {
                                                 if (mode === "write") {
-                                                    if (readonly !== true) {
+                                                    if (readonly !== true && disabled !== true) {
                                                         if (isDef(col)) {
                                                             if (typeof col.foreignTable === 'undefined'
                                                                 || !col.foreignTable
@@ -18392,6 +18407,7 @@ var Liquid = {
     },
     handleGrigObjectMode:function(liquid, itemObjs, itemCommandObjs, mode) {
         if(itemObjs) {
+            var disableOnReadOnly = Liquid.disableOnReadOnly;
             var itemSourceObj = itemCommandObjs[0], itemResetObj = itemCommandObjs[1], itemReloadObj = itemCommandObjs[2];
             for(let io=0; io<itemObjs.length; io++) {
                 var itemObj = itemObjs[io];
@@ -18430,7 +18446,7 @@ var Liquid = {
                         itemObj.classList.remove('liquidGridControlDel');
                         itemObj.classList.add('liquidGridControlRO');
                         try { itemObj.readOnly = true; } catch (e) { }
-                        try { itemObj.disabled = true; } catch (e) { }
+                        try { itemObj.disabled = disableOnReadOnly; } catch (e) { }
                         try { itemObj.draggable = true; } catch (e) { }
                         try { itemObj.parentNode.draggable = true; } catch (e) { }
                         try { itemObj.parentNode.parentNode.draggable = true; } catch (e) { }
