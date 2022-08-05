@@ -2752,6 +2752,7 @@ var Liquid = {
                     Liquid.QUESTION_STRING = "DOMANDA";
                     Liquid.INFO_STRING = "INFORMAZIONE";
                     Liquid.defaultFilterName = 'predefinito';
+                    Liquid.filterBoxTitle = "Tipo ricerca";
                 } else if (lang === 'en' || lang === 'eng') {
                     Liquid.lang = langFound = 'eng';
                     Liquid.loadingMessage = "<div class=\"lds-ring-main\"><div></div><div></div><div></div><div></div></div><span class=\"ag-overlay-loading-center\">Loading data...</span>";
@@ -2776,6 +2777,7 @@ var Liquid = {
                     Liquid.QUESTION_STRING = "QUESTION";
                     Liquid.INFO_STRING = "INFO";
                     Liquid.defaultFilterName = 'default';
+                    Liquid.filterBoxTitle = "Search type";
                 }
                 if (langFound) {
                     if (serverSide === true) {
@@ -7417,9 +7419,11 @@ var Liquid = {
         let filterCount = 0;
 
         td.className = "liquidFiltersLabel";
-        if (liquid.filtersJson.length > 1) {
+        if (liquid.filtersJson.length >= 1) {
             var div = document.createElement("div");
-            div.innerHTML = Liquid.lang === 'eng' ? "Filter" : "Tipo ricerca";
+            div.style.textAlign = "right";
+            div.style.paddingRight = "45px";
+            div.innerHTML = Liquid.filterBoxTitle;
             td.appendChild(div);
         }
         tr.appendChild(td);

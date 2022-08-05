@@ -180,7 +180,7 @@ public class db {
     }
 
     static public String getColumnAlias(String colName, int aliasIndex, int columnMaxLength) {
-        String columnName = colName.replaceAll("\\.", "_").replaceAll("[( )]", "");
+        String columnName = colName.replaceAll("\\.", "_").replaceAll("[( )//]", "");
         if (columnMaxLength > 3) {
             if (columnName.length() >= columnMaxLength - 2) { // A_[XXXXXX]999
                 columnName = columnName.substring(0, columnMaxLength - 5);
@@ -3582,13 +3582,29 @@ public class db {
      *
      * @param DatabaseSchemaTable
      * @param FieldsAndValues
+     * @param request
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] insert_row ( String DatabaseSchemaTable, HashMap<String, Object> FieldsAndValues, HttpServletRequest request ) throws Throwable {
+        String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
+        Object [] Values = FieldsAndValues.values().toArray();
+        return insert_row ( DatabaseSchemaTable, Fields, Values, request);
+    }
+
+    /**
+     *
+     * Insert row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param FieldsAndValues
      * @return
      * @throws Throwable
      */
     static public Object [] insert_row ( String DatabaseSchemaTable, HashMap<String, Object> FieldsAndValues ) throws Throwable {
-        String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
-        Object [] Values = FieldsAndValues.values().toArray();
-        return insert_row ( DatabaseSchemaTable, Fields, Values, null);
+        return insert_row ( DatabaseSchemaTable, FieldsAndValues,null);
     }
 
 

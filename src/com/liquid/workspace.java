@@ -1301,15 +1301,24 @@ public class workspace {
             }
 
 
+
             if(sourceData != null) {
 
             } else {
                 // Connessione al DB
+                String connError = null;
+
                 try {
-                    Object[] connResult = connection.getConnection(null, request, connectionDriver, connectionURL, database);
-                    conn = (Connection) connResult[0];
+
+                    if(transaction.isTransaction(request)) {
+                        conn = transaction.getTransaction(request);
+                    } else {
+                        Object[] connResult = connection.getConnection(null, request, connectionDriver, connectionURL, database);
+                        conn = (Connection) connResult[0];
+                        connError = (String) connResult[1];
+                    }
                     if (conn == null) {
-                        String error = "[error is : " + connResult[1] + "]";
+                        String error = "[error is : " + connError + "]";
                         return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + utility.base64Encode(controlId + " : no DB connection.." + error) + "\"}" : get_js_console_error_report(controlId + " not created .. no DB connection .." + error) );
                     }
                 } catch (Throwable th) {

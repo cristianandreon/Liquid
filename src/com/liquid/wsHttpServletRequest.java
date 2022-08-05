@@ -148,7 +148,7 @@ public class wsHttpServletRequest implements HttpServletRequest {
 
     @Override
     public String getRequestedSessionId() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return sessionId;
     }
 
     @Override

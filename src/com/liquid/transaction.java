@@ -40,7 +40,12 @@ public class transaction {
      */
     public static Connection getTransaction(HttpServletRequest request) throws SQLException {
         if(request != null) {
-            return (Connection)request.getAttribute("Liquid.connection.conn");
+            Connection conn = (Connection)request.getAttribute("Liquid.connection.conn");
+            if(!conn.isClosed() && conn.isValid(30)) {
+                return conn;
+            } else {
+                throw new SQLException("Unexpected connection status");
+            }
         } else {
             return null;
         }
@@ -53,8 +58,12 @@ public class transaction {
     public static void commit(HttpServletRequest request) throws SQLException {
         if(request != null) {
             Connection conn = (Connection)request.getAttribute("Liquid.connection.conn");
-            conn.commit();
-            request.setAttribute("Liquid.connection.commit", true);
+            if(!conn.isClosed() && conn.isValid(30)) {
+                conn.commit();
+                request.setAttribute("Liquid.connection.commit", true);
+            } else {
+                throw new SQLException("Unexpected connection status");
+            }
         }
     }
 
@@ -65,8 +74,12 @@ public class transaction {
     public static void rollback(HttpServletRequest request) throws SQLException {
         if(request != null) {
             Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
-            conn.rollback();
-            request.setAttribute("Liquid.connection.rollback", true);
+            if(!conn.isClosed() && conn.isValid(30)) {
+                conn.rollback();
+                request.setAttribute("Liquid.connection.rollback", true);
+            } else {
+                throw new SQLException("Unexpected connection status");
+            }
         }
     }
 
@@ -188,7 +201,6 @@ public class transaction {
     /**
      * Create new transaction using given datasource
      *
-     * @param driverClassName
      * @param connectionURL
      * @param commitAsDefault   (null, true, false) define commit or rollback when connection is closed and no commt/rollback is done
      * @return

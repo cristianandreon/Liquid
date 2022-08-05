@@ -2531,6 +2531,15 @@ public class bean {
         }
         return null;
     }
+    static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String controlId, String columns, String where_condition) throws Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest) request, controlId, databaseSchemaTable, columns, where_condition, 1, null);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
 
 
     static public ArrayList<Object> load_beans(HttpServletRequest request, String databaseSchemaTable, String columns, String where_condition, long maxRows) throws Throwable {
