@@ -1504,10 +1504,10 @@ public class login {
                                                         try {
                                                             if (emailerInstance.send(adminEmail, null, application_id+" - User registration notify", emailerInstance.get_standard_message("RegisterUserNotify", params, request))) {
                                                             } else {
-                                                                message += "[Notify err:" + emailerInstance.LastError + "]";
+                                                                message += "[Internal error:" + emailerInstance.LastError + "]";
                                                             }
                                                         } catch (Exception e) {
-                                                            message += "[Notify err:" + e.getMessage() + "]";
+                                                            message += "[Internal error:" + e.getMessage() + "]";
                                                         }
                                                     }
 
@@ -1534,7 +1534,7 @@ public class login {
                                                         }
 
                                                     } catch (Exception e) {
-                                                        message += "[Notify err:" + e.getMessage() + "]";
+                                                        message += "[Internal error:" + e.getMessage() + "]";
                                                         return "{ \"result\":-8, \"error\":\""+utility.base64Encode(message)+"\"}";
                                                     }
                                                 }

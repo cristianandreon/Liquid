@@ -286,6 +286,16 @@ public class transaction {
         }
     }
 
+    public static boolean setSchema(HttpServletRequest request, String schema) throws SQLException {
+        if(request != null) {
+            Connection conn = (Connection) request.getAttribute("Liquid.connection.conn");
+            if (conn != null) {
+                return db.setSchema( conn, db.getDriver(conn), schema);
+            }
+        }
+        return false;
+    }
+
 
     /**
      * END Transaction managment
