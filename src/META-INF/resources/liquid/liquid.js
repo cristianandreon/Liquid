@@ -3147,65 +3147,16 @@ var Liquid = {
                         if (!liquidCommandParams.liquid.controlId)
                             liquidCommandParams.liquid.controlId = liquid.controlId;
                     } else {
-                        // No liquid object : is form ?
-                        if (paramObj) {
-                            if (paramObj.nodeName) {
-                                if (paramObj.nodeName.toUpperCase() === 'FORM' || paramObj.nodeName.toUpperCase() === 'DIV' || paramObj.nodeName.toUpperCase() === 'INPUT') {
-                                    var frm_elements = [];
-                                    if (paramObj.nodeName.toUpperCase() === 'FORM') {
-                                        frm_elements = paramObj.elements;
-                                    } else if (paramObj.nodeName.toUpperCase() === 'DIV') {
-                                        frm_elements = [paramObj];
-                                    } else if (paramObj.nodeName.toUpperCase() === 'INPUT') {
-                                        frm_elements = [paramObj];
-                                    }
-                                    var dataList = "";
-                                    if (frm_elements && frm_elements.length) {
-                                        for (var i = 0; i < frm_elements.length; i++) {
-                                            var field_type = frm_elements[i].type.toLowerCase();
-                                            var field_name = frm_elements[i].id ? frm_elements[i].id : frm_elements[i].name;
-                                            var field_value = "";
-                                            switch (field_type) {
-                                                case "text":
-                                                case "password":
-                                                case "textarea":
-                                                case "email":
-                                                case "hidden":
-                                                    field_value = Liquid.handleFormText(frm_elements[i]);
-                                                    break;
-                                                case "radio":
-                                                case "checkbox":
-                                                    field_value = frm_elements[i].checked;
-                                                    break;
-                                                case "select-one":
-                                                case "select-multi":
-                                                    field_value = frm_elements[i].selectedIndex;
-                                                    break;
-                                                case "file":
-                                                    field_value = frm_elements[i].files;
-                                                    break;
-                                                default:
-                                                    break;
-                                            }
-                                            if (field_name) {
-                                                dataList += (dataList.length ? "," : "") + "\"" + field_name + "\":\"" + field_value + "\"";
-                                            }
-                                        }
-                                    }
-                                    jQ1124(document).on('submit', '#' + paramObj.id, function () { // avoid page reload
-                                        return false;
-                                    });
-                                    if (paramObj.nodeName.toUpperCase() === 'FORM') {
-                                        // form collection
-                                        liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":{" + dataList + "}" + "}"));
-                                    } else {
-                                        // single item
-                                        liquidCommandParams.params.push(JSON.parse("{\"name\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":\"" + field_value + "\"" + "}"));
-                                    }
-                                } else {
-                                }
+                        // No liquid object : is a form or HTML ?
+                        Liquid.htmlNodesToJson(paramObj, true, true).then( (resolve) => {
+                            if (paramObj.nodeName.toUpperCase() === 'FORM') {
+                                // form collection
+                                liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":{" + resolve + "}" + "}"));
+                            } else {
+                                // single item
+                                liquidCommandParams.params.push(JSON.parse("{\"name\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":\"" + resolve + "\"" + "}"));
                             }
-                        }
+                        });
                     }
                 }
             }
@@ -3303,9 +3254,144 @@ var Liquid = {
                         Liquid.addForeignTableCommandParam(liquid, liquidCommandParams.params);
                     }
                 }
+                //
+                // add files inside layouts
+                //
+                if(isDef(liquid.tableJson.layouts)) {
+                    for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                        var layout = liquid.tableJson.layouts[il];
+                        if(layout) {
+                            if(layout.containerObj) {
+                                let command_params = Liquid.layoutNodesToJson(layout.containerObj, false, true);
+                                if (command_params) {
+                                    // single item
+                                    liquidCommandParams.params.push(JSON.parse("{\"name\":\"" + (layout.name ? layout.name : layout.name) + "\"" + ",\"data\":\"" + command_params + "\"" + "}"));
+                                }
+                            }
+                        }
+                    }
+                }
             }
             return liquidCommandParams;
         }
+    },
+    layoutNodesToJson:function(rootObj, processAll, processFiles) {
+        let params_json = null;
+        if (rootObj && rootObj.childNodes.length) {
+            for (var i = 0; i < rootObj.childNodes.length; i++) {
+                if (rootObj.childNodes[i].nodeName.toUpperCase() === 'INPUT') {
+                    Liquid.htmlNodesToJson(rootObj.childNodes[i], processAll, processFiles).then( (resolve) => {
+                        if (resolve) {
+                            if (!params_json) params_json = [];
+                            params_json.push(resolve);
+                        }
+                    });
+                } else {
+                    let param_json = Liquid.layoutNodesToJson(rootObj.childNodes[i], processAll, processFiles);
+                    if(param_json) {
+                        if(!params_json) params_json = [];
+                        params_json.push(param_json);
+                    }
+                }
+            }
+        }
+        return params_json;
+    },
+    htmlNodesToJson:async function (paramObj, processAll, processFiles) {
+        return new Promise((resolve, reject) => {
+            if (paramObj) {
+                if (paramObj.nodeName) {
+                    if (paramObj.nodeName.toUpperCase() === 'FORM' || paramObj.nodeName.toUpperCase() === 'DIV' || paramObj.nodeName.toUpperCase() === 'INPUT') {
+                        var frm_elements = [];
+                        if (paramObj.nodeName.toUpperCase() === 'FORM') {
+                            frm_elements = paramObj.elements;
+                        } else if (paramObj.nodeName.toUpperCase() === 'DIV') {
+                            frm_elements = [paramObj];
+                        } else if (paramObj.nodeName.toUpperCase() === 'INPUT') {
+                            frm_elements = [paramObj];
+                        }
+                        var dataList = "";
+                        if (frm_elements && frm_elements.length) {
+                            for (var i = 0; i < frm_elements.length; i++) {
+                                var field_type = frm_elements[i].type ? frm_elements[i].type.toLowerCase() : null;
+                                var field_name = frm_elements[i].id ? frm_elements[i].id : frm_elements[i].name;
+                                var field_value = "";
+                                switch (field_type) {
+                                    case "text":
+                                    case "password":
+                                    case "textarea":
+                                    case "email":
+                                    case "hidden":
+                                        if (processAll)
+                                            field_value = Liquid.handleFormText(frm_elements[i]);
+                                        else
+                                            field_name = null;
+                                        break;
+                                    case "radio":
+                                    case "checkbox":
+                                        if (processAll)
+                                            field_value = frm_elements[i].checked;
+                                        else
+                                            field_name = null;
+                                        break;
+                                    case "select-one":
+                                    case "select-multi":
+                                        if (processAll)
+                                            field_value = frm_elements[i].selectedIndex;
+                                        else
+                                            field_name = null;
+                                        break;
+                                    case "file":
+                                        if (processFiles) {
+                                            if (frm_elements[i].files.length) {
+                                                var queue = {
+                                                    liquid: null,
+                                                    obj: frm_elements[i],
+                                                    targetObj: null,
+                                                    targetRow: null,
+                                                    targetCol: null,
+                                                    files: frm_elements[i].files,
+                                                    iFile: 0,
+                                                    propName: null,
+                                                    propValue: null,
+                                                    linkToFile: null,
+                                                    callback: null
+                                                };
+                                                let result_queue = await Liquid.formFilesToObjectExchange(queue);
+                                                if (result_queue) {
+                                                    field_value = JSON.stringify(result_queue.propValue);
+                                                } else {
+                                                    console.error("LIQUID: Internal error reading file");
+                                                    field_name = null;
+                                                }
+                                            }
+                                        } else
+                                            field_name = null;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                if (field_name) {
+                                    dataList += (dataList.length ? "," : "") + "\"" + field_name + "\":\"" + field_value + "\"";
+                                }
+                            }
+                        }
+                        jQ1124(document).on('submit', '#' + paramObj.id, function () { // avoid page reload
+                            return false;
+                        });
+
+                        if (paramObj.nodeName.toUpperCase() === 'FORM') {
+                            // form collection
+                            resolve(dataList);
+                        } else {
+                            // single item
+                            resolve(field_value);
+                        }
+                    }
+                }
+            }
+            resolve(null);
+        });
     },
     onFormFileChange: function (obj, column) {
         if (obj && column) {
@@ -8633,7 +8719,8 @@ var Liquid = {
                                 iFile: 0,
                                 propName: propName,
                                 propValue: null,
-                                linkToFile: null
+                                linkToFile: null,
+                                callback:null
                             };
                             Liquid.formFilesToObjectExchange(queue);
                         } else if (obj.childNodes[j].type === 'number') {
@@ -8679,80 +8766,93 @@ var Liquid = {
         }
         return 0;
     },
-    formFilesToObjectExchange: function (queue) {
-        if (queue) {
-            if (queue.iFile < queue.files.length) {
-                var file = queue.files[queue.iFile];
-                if (file) {
-                    var reader = new FileReader();
-                    // reader.readAsDataURL(file);
-                    reader.readAsBinaryString(file);
-                    reader.onload = function (evt) {
-                        try {
-                            if (queue.linkToFile === true) {
-                                // For security reason canno get file path... only update file content
-                            }
-                            if (queue.files.length === 1) {
-                                // var comp = LZW.compress();
-                                // var my_lzma = new LZMA("./lzma_worker.js");
-                                // queue.propValue = JSONC.pack( evt.target.result, true );
-
-                                /*
-                                 var s1 = evt.target.result.length;
-                            	var t1 = performance.now();
-                            	var zipped = gzip.zip(evt.target.result);
-                            	var s2 = zipped.length;
-                                */
-
-                                // queue.propValue = "base64,"+Base64.encode(zipped);
-                                // queue.propValue = "binaryData,"+zipped.length+":"+zipped;
-                                // queue.propValue = "base64,"+btoa(zipped);
-                                queue.propValue = "base64," + btoa(evt.target.result);
-                                var t2 = performance.now();
-                                var s3 = queue.propValue.length;
-                                // console.log("ZIP time:"+(t2-t1)/1000.0 + " sec, size:"+s1 / 1024 +" / "+s2/1024+" / "+s3/1024 + " Kb, ratio:"+(s3/s1 * 100.0)+"%")
-                            } else {
-                                if (!queue.propValue) queue.propValue = [];
-                                queue.propValue.push(evt.target.result);
-                            }
-                        } catch (e) {
-                            console.error(e);
-                        }
-                        queue.iFile++;
-                        Liquid.formFilesToObjectExchange(queue);
-                    };
-                    reader.onerror = function (evt) {
-                        console.error("ERROR: file read error");
-                        queue.propValue.push("");
-                        queue.iFile++;
-                        Liquid.formFilesToObjectExchange(queue);
-                    };
-                }
-            } else {
-                if (queue.targetObj && queue.propName)
-                    queue.targetObj[queue.propName] !== queue.propValue;
-                if (queue.targetRow && queue.targetCol) {
-                    var validateResult = Liquid.validateField(queue.liquid, queue.liquid.tableJson.columns[queue.targetCol.field], queue.propValue);
-                    if (validateResult !== null) {
-                        if (validateResult[0] >= 0) {
-                            queue.propValue = validateResult[1];
-                            // NO : huge file can be problematic here
-                            // Liquid.registerFieldChange(queue.liquid, null, queue.targetRow[ queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null ], queue.targetCol.field, null, queue.propValue);
-                            var rowId = queue.targetRow[queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null];
-                            if (rowId === '' || rowId === null || typeof rowId === 'undefined') {
-                                if (queue.liquid.addingNode) {
-                                    queue.liquid.addingNode.data[queue.targetCol.field] = queue.propValue;
+    formFilesToObjectExchange: async function (queue) {
+        return new Promise((resolve, reject) => {
+            if (queue) {
+                if (queue.iFile < queue.files.length) {
+                    var file = queue.files[queue.iFile];
+                    if (file) {
+                        var reader = new FileReader();
+                        // reader.readAsDataURL(file);
+                        reader.readAsBinaryString(file);
+                        reader.onload = function (evt) {
+                            try {
+                                if (queue.linkToFile === true) {
+                                    // For security reason cannot get file path... only update file content
                                 }
-                                if (queue.liquid.addingRow) {
-                                    queue.liquid.addingRow[queue.targetCol.field] = queue.propValue;
+                                if (queue.files.length === 1) {
+                                    // var comp = LZW.compress();
+                                    // var my_lzma = new LZMA("./lzma_worker.js");
+                                    // queue.propValue = JSONC.pack( evt.target.result, true );
+
+                                    /*
+                                     var s1 = evt.target.result.length;
+                                    var t1 = performance.now();
+                                    var zipped = gzip.zip(evt.target.result);
+                                    var s2 = zipped.length;
+                                    */
+
+                                    // queue.propValue = "base64,"+Base64.encode(zipped);
+                                    // queue.propValue = "binaryData,"+zipped.length+":"+zipped;
+                                    // queue.propValue = "base64,"+btoa(zipped);
+                                    queue.propValue = "base64," + btoa(evt.target.result);
+                                    var t2 = performance.now();
+                                    var s3 = queue.propValue.length;
+                                    // console.log("ZIP time:"+(t2-t1)/1000.0 + " sec, size:"+s1 / 1024 +" / "+s2/1024+" / "+s3/1024 + " Kb, ratio:"+(s3/s1 * 100.0)+"%")
+                                } else {
+                                    if (!queue.propValue) queue.propValue = [];
+                                    queue.propValue.push(evt.target.result);
                                 }
+                            } catch (e) {
+                                console.error(e);
                             }
-                            Liquid.updateDependencies(queue.liquid, queue.targetCol, null, null);
+                            queue.iFile++;
+                            Liquid.formFilesToObjectExchange(queue);
+                        };
+                        reader.onerror = function (evt) {
+                            console.error("ERROR: file read error");
+                            queue.propValue.push("");
+                            queue.iFile++;
+                            Liquid.formFilesToObjectExchange(queue);
+                        };
+                    }
+                } else {
+                    if (queue.targetObj && queue.propName) {
+                        if (queue.targetObj[queue.propName] !== queue.propValue) {
+                            queue.targetObj[queue.propName] = queue.propValue;
                         }
                     }
+                    if (queue.targetRow && queue.targetCol) {
+                        var validateResult = Liquid.validateField(queue.liquid, queue.liquid.tableJson.columns[queue.targetCol.field], queue.propValue);
+                        if (validateResult !== null) {
+                            if (validateResult[0] >= 0) {
+                                queue.propValue = validateResult[1];
+                                // NO : huge file can be problematic here
+                                // Liquid.registerFieldChange(queue.liquid, null, queue.targetRow[ queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null ], queue.targetCol.field, null, queue.propValue);
+                                var rowId = queue.targetRow[queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null];
+                                if (rowId === '' || rowId === null || typeof rowId === 'undefined') {
+                                    if (queue.liquid.addingNode) {
+                                        queue.liquid.addingNode.data[queue.targetCol.field] = queue.propValue;
+                                    }
+                                    if (queue.liquid.addingRow) {
+                                        queue.liquid.addingRow[queue.targetCol.field] = queue.propValue;
+                                    }
+                                }
+                                Liquid.updateDependencies(queue.liquid, queue.targetCol, null, null);
+                            }
+                        }
+                    }
+                    if (idDef(queue.callback)) {
+                        try {
+                            queue.callback(queue);
+                        } catch(e) {
+                            console.error(e);
+                        }
+                    }
+                    resolve(queue);
                 }
             }
-        }
+        });
     },
     getEventsByName: function (liquid, eventName) {
         var events = [];
@@ -11032,6 +11132,7 @@ var Liquid = {
                         if (liquid.mode === 'lookup') liquid.dontCloseLookup = true;
                         var selNodes = liquid.gridOptions.api.getSelectedNodes();
                         var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                        var cRow = liquid.cRow;
                         if (selNodes && selNodes.length > 0) {
                             if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
                                 if (liquid.gridOptions.rowSelection === "multiple")
@@ -11043,14 +11144,15 @@ var Liquid = {
                                     for (var i = 0; i < selNodes.length; i++) selNodes[i].setSelected(false);
                                 }
                             }
-                        }
-                        if (nodes) {
-                            var cRow = liquid.cRow; //selNodes[0].rowIndex
                             if (command.name === "previous") {
                                 if (cRow > 0) cRow--; else cRow = nodes.length - 1;
                             } else if (command.name === "next") {
                                 if (cRow + 1 < nodes.length) cRow++; else cRow = 0;
                             }
+                        } else {
+                            cRow = 0;
+                        }
+                        if (nodes) {
                             if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
                                 nodes[cRow].setSelected(true);
                             } else {
@@ -16289,7 +16391,8 @@ var Liquid = {
                                                 iFile: 0,
                                                 propName: null,
                                                 propValue: null,
-                                                linkToFile: linkToFile
+                                                linkToFile: linkToFile,
+                                                callback:null
                                             };
                                             // update by file content asyncromously
                                             var filesName = "", filesSize = "";

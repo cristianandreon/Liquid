@@ -2524,7 +2524,7 @@ public class event {
                     Object classInstance = (Object) cls.newInstance();
                     result = (Object[]) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
                 } catch (Throwable th) {
-                    // default implementatio
+                    // default implementation
                     result = downloadDocumentDefault(tbl_wrk, params, clientData, requestParam);
                 }
                 if ("getLink".equalsIgnoreCase((String) clientData)) {
@@ -2547,6 +2547,7 @@ public class event {
                 } else {
                     // download as file : NO file is not in public area
                     // response.setHeader("Content-Disposition", "attachment; filename=" + (String) result[0]);
+                    response.setHeader("Filename", (String) result[0]);
                     if (result[2] != null) {
                         // download as content
                         byte[] data = (byte[]) result[2];
@@ -2664,7 +2665,11 @@ public class event {
                                 } else {
                                     Path path = new File(file).toPath();
                                     if (path != null) {
-                                        fileName = file;
+                                        String short_file = Paths.get(file).getFileName().toString();
+                                        if(short_file.indexOf(".F.") >= 0) {
+                                            short_file = short_file.substring(short_file.indexOf(".F.")+3);
+                                        }
+                                        fileName = short_file;
                                         fileMimeType = Files.probeContentType(path);
                                         fileContent = Files.readAllBytes(path);
                                     } else {
@@ -2744,10 +2749,12 @@ public class event {
         StringBuilder resultSet = new StringBuilder("{\"resultSet\":[");
         Connection conn = null;
         PreparedStatement psdo = null;
+        ResultSet rsdo = null;
         String sQuery = null, sQuerySel = null;
         String sWhere = "";
         String dmsSchema = null, dmsTable = null;
         int nRecs = 0;
+        String delete_file_error = "";
 
         try {
 
@@ -2774,44 +2781,63 @@ public class event {
                     if(paramJson.has("id")) {
                         String id = paramJson.getString("id");
                         sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (id='" + id + "')";
-                        sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + id + "')";
+                        sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (id='" + id + "')";
                     } else if(paramJson.has("link")) {
                         String link = paramJson.getString("link");
                         if(link.startsWith("DMS://")) link = link.substring(6);
                         sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
                         sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
                     }
-                    if(sQuery != null) {
-                        psdo = conn.prepareStatement(sQuerySel);
-                        ResultSet rsdo = psdo.executeQuery();
-                        if(rsdo != null) {
-                            if(rsdo.next()) {
-                                String file = rsdo.getString("file");
-                                if(file != null && !file.isEmpty()) {
-                                    boolean resDel = new File(file).delete();
-                                    if(!resDel) {
-
+                    if(sQuerySel != null) {
+                        try {
+                            psdo = conn.prepareStatement(sQuerySel);
+                            rsdo = psdo.executeQuery();
+                            if (rsdo != null) {
+                                if (rsdo.next()) {
+                                    String file = rsdo.getString("file");
+                                    if (file != null && !file.isEmpty()) {
+                                        boolean resDel = new File(file).delete();
+                                        if (!resDel) {
+                                            if (delete_file_error.length() == 0) {
+                                                delete_file_error += "{";
+                                            } else {
+                                                delete_file_error += ",";
+                                            }
+                                            delete_file_error += "[\"Failed to delete " + file + "\"]";
+                                        }
                                     }
                                 }
                             }
-                            rsdo.close();;
+                        } finally {
+                            if(rsdo != null)
+                                rsdo.close();
+                            rsdo = null;
+
+                            if(psdo != null)
+                                psdo.close();
+                            psdo = null;
                         }
-                        psdo.close();
 
+                        if(delete_file_error.length() > 0) {
+                            delete_file_error += "}";
+                        }
 
-                        psdo = conn.prepareStatement(sQuery);
-                        int res = psdo.executeUpdate();
-                        if (res >= 0) {
-                            String fieldSet;
-                            if(paramJson.has("id")) {
-                                fieldSet = "{" + "\"id\":\"" + (paramJson.getString("id")) + ",\"res\":" + res + " }";
-                            } else {
-                                fieldSet = "{" + "\"link\":\"" + (paramJson.getString("link")) + ",\"res\":" + res + "}";
+                        try {
+                            psdo = conn.prepareStatement(sQuery);
+                            int res = psdo.executeUpdate();
+                            if (res >= 0) {
+                                String fieldSet;
+                                if (paramJson.has("id")) {
+                                    fieldSet = "{" + "\"id\":\"" + (paramJson.getString("id")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
+                                } else {
+                                    fieldSet = "{" + "\"link\":\"" + (paramJson.getString("link")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
+                                }
+                                resultSet.append((nRecs > 0 ? "," : "") + fieldSet);
+                                nRecs++;
                             }
-                            resultSet.append((nRecs > 0 ? "," : "") + fieldSet);
-                            nRecs++;
+                        } finally {
+                            if (psdo != null) psdo.close();
                         }
-                        if (psdo != null) psdo.close();
                     }
                 }
             }
