@@ -35,6 +35,8 @@ import java.util.logging.Logger;
 
 public class event {
 
+    public static final int MAX_DOWNLOAD_SIZE = 16 * 1024 * 1024;
+
     public interface eventCallback<T extends Object> {
 
         /**
@@ -1940,14 +1942,14 @@ public class event {
      */
     public static String getDocumentsDefault( Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
         StringBuilder resultSet = new StringBuilder("{\"resultSet\":[");
-        String dmsSchema = null;
-        String dmsTable = null;
         Connection conn = null;
         PreparedStatement psdo = null;
         ResultSet rsdo = null;
         String sQuery = null;
         String sWhere = "";
+        String dmsSchema = null, dmsTable = null, dmsDocType = null, dmsRootFolder = null;
         int nRecs = 0;
+
 
         try {
 
@@ -1963,6 +1965,11 @@ public class event {
                 ft.setAccessible(true);
                 dmsTable = (String) ft.get(null);
             }
+            Field fdt = cls.getDeclaredField("dmsDocType");
+            if(fdt != null) {
+                fdt.setAccessible(true);
+                dmsDocType = (String) fdt.get(null);
+            }
 
             //  params :
             // { database:... , schema:... , table:... , name:... , ids:nodeKeys };
@@ -1971,11 +1978,21 @@ public class event {
                 Object [] connRes = connection.getDBConnection();
                 conn = (Connection)connRes[0];
                 if(conn != null) {
+                    String cols = "D.file, D.size, D.date, D.note, D.type, D.link, D.hash, D.id, D.doc_type_id, DT.type as doc_type";
+                    if("IT".equalsIgnoreCase(workspace.getGLLang())) {
+                        cols += ", DT.type_desc_it as doc_type_desc";
+                    } else {
+                        cols += ", DT.type_desc as doc_type_desc";
+                    }
+
                     ArrayList<String> keyList = (ArrayList<String>)freeParam;
                     for(int ik=0; ik<keyList.size(); ik++) {
                         sWhere += sWhere.length()>0?" OR ":"" + "link='"+keyList.get(ik)+"'";
                     }
-                    sQuery = "SELECT * from \""+dmsSchema+"\".\""+dmsTable+"\" WHERE ("+sWhere+") + ORDER BY date DESC";
+                    sQuery = "SELECT "+cols+" from \""+dmsSchema+"\".\""+dmsTable+"\" D"
+                            + " LEFT JOIN \""+ dmsSchema + "\".\"" + dmsDocType +"\" DT ON DT.id=doc_type_id"
+                            + " WHERE ("+sWhere+") "
+                            + "ORDER BY date DESC";
                     psdo = conn.prepareStatement(sQuery);
                     rsdo = psdo.executeQuery();
                     if(rsdo != null) {
@@ -1986,10 +2003,27 @@ public class event {
                             int size = rsdo.getInt("size");
                             String date = rsdo.getString("date");
                             String note = rsdo.getString("note");
+                            String hash = rsdo.getString("hash");
+                            String doc_type = rsdo.getString("doc_type_desc");
+                            String doc_type_id = rsdo.getString("doc_type_id");
                             String type = rsdo.getString("type");
                             String id = rsdo.getString("id");
-                            String options = "";
-                            String fieldSet = "{" + "\"file\":\""+(file!=null?file:"")+"\", \"size\":"+size+",\"note\":\""+note+"\""+",\"type\":\""+type+"\""+",\"id\":\""+id+"\"" + "}";
+                            String short_file = Paths.get(file).getFileName().toString();
+                            if(short_file.indexOf(".F.") >= 0) {
+                                short_file = short_file.substring(short_file.indexOf(".F.")+3);
+                            }
+                            String fieldSet = "{"
+                                    + "\"fullFile\":\""+(file!=null?file:"")+"\""
+                                    + ",\"file\":\""+(short_file!=null?short_file:"")+"\""
+                                    + ",\"size\":"+size
+                                    + ",\"note\":\""+note+"\""
+                                    + ",\"type\":\""+type+"\""
+                                    + ",\"date\":\""+date+"\""
+                                    + ",\"hash\":\""+hash+"\""
+                                    + ",\"doc_type\":"+(doc_type != null ? "\""+doc_type+"\"" : "null")
+                                    + ",\"doc_type_id\":"+(doc_type_id != null ? "\""+doc_type_id+"\"" : "null")
+                                    + ",\"id\":\""+id+"\""
+                                    + "}";
                             resultSet.append( (nRecs>0?",":"") + fieldSet);
                             nRecs++;
                         }
@@ -2000,6 +2034,8 @@ public class event {
             }
         } catch (Throwable e) {
             System.err.println("Query Error:" + e.getLocalizedMessage() + sQuery);
+            resultSet.append("], \"error\":\""+utility.base64Encode(e.getMessage())+"\"}");
+            return resultSet.toString();
         } finally {
             try {
                 conn.close();
@@ -2304,9 +2340,10 @@ public class event {
 
             // File name
             String fileName = paramJson.getString("file");
+            fileName = utility.santizeFileName(fileName);
+
             fileAbsolutePath += (added > 0 ? "." : "") + ".F." + fileName;
 
-            fileAbsolutePath = utility.santizeFileName(fileAbsolutePath);
 
 
             // Scrittura file
@@ -2336,9 +2373,14 @@ public class event {
             boolean bResolveDocTypeId = false;
             if(paramJson.has("doc_type_id")) {
                 doc_type_id = paramJson.get("doc_type_id");
+            } else if(paramJson.has("docTypeId")) {
+                doc_type_id = paramJson.get("docTypeId");
             } else {
                 if (paramJson.has("doc_type")) {
-                    doc_type_id = "(SELECT id FROM \"cnconline\".\""+dmsDocType+"\" WHERE \"type\"='"+paramJson.get("doc_type")+"')";
+                    doc_type_id = "(SELECT id FROM \"cnconline\".\"" + dmsDocType + "\" WHERE \"type\"='" + paramJson.get("doc_type") + "')";
+                    bResolveDocTypeId = true;
+                } else if (paramJson.has("docType")) {
+                    doc_type_id = "(SELECT id FROM \"cnconline\".\""+dmsDocType+"\" WHERE \"type\"='"+paramJson.get("docType")+"')";
                     bResolveDocTypeId = true;
                 }
             }
@@ -2487,31 +2529,31 @@ public class event {
                 }
                 if ("getLink".equalsIgnoreCase((String) clientData)) {
                     String outData = "{"
-                            + "\"fileName\":\"\""
-                            + ",\"fileMimeType\":\"\""
-                            + ",\"file\":\"\""
-                            + ",\"size\":\"\""
-                            + ",\"date\":\"\""
-                            + ",\"note\":\"\""
-                            + ",\"type\":\"\""
-                            + ",\"link\":\"\""
-                            + ",\"hash\":\"\""
-                            + ",\"id\":\"\""
-                            + "\"doc_type\":\"\""
-                            + ",\"doc_type_desc\":\"\""
-                            + ",\"user_data\":\"\""
+                            + "\"fileName\":\""+(result[0])+"\""
+                            + ",\"fileMimeType\":\""+(result[1])+"\""
+                            + ",\"file\":\""+(result[3])+"\""
+                            + ",\"size\":\""+(result[4])+"\""
+                            + ",\"date\":\""+(result[5])+"\""
+                            + ",\"note\":\""+(result[6])+"\""
+                            + ",\"type\":\""+(result[7])+"\""
+                            + ",\"link\":\""+(result[8])+"\""
+                            + ",\"hash\":\""+(result[9])+"\""
+                            + ",\"id\":\""+(result[10])+"\""
+                            + "\"doc_type\":\""+(result[11])+"\""
+                            + ",\"doc_type_desc\":\""+(result[12])+"\""
+                            + ",\"user_data\":\""+(result[13])+"\""
                             + "}";
                     response.getOutputStream().write(outData.getBytes());
                 } else {
+                    // download as file : NO file is not in public area
+                    // response.setHeader("Content-Disposition", "attachment; filename=" + (String) result[0]);
                     if (result[2] != null) {
+                        // download as content
+                        byte[] data = (byte[]) result[2];
                         response.setContentType((String) result[1]);
-                        if ("content".equalsIgnoreCase((String) clientData)) {
-                            // download as content
-                        } else {
-                            // download as file
-                            response.setHeader("Content-Disposition", "attachment; filename=" + (String) result[0]);
-                        }
-                        out_stream.write((byte[]) result[2]);
+                        response.setContentLength(data.length);
+                        out_stream.write(data);
+                        out_stream.close();;
                     } else {
                         String err = (String) result[15];
                         response.setContentType((String) result[1]);
@@ -2586,11 +2628,11 @@ public class event {
                             + " LEFT JOIN \""+ dmsSchema + "\".\"" + dmsDocType +"\" DT ON DT.id=doc_type_id";
 
                     if(sid != null && !sid.isEmpty()) {
-                        sQuery += " WHERE (id='" + sid + "')";
+                        sQuery += " WHERE (D.id='" + sid + "')";
                     } else if(slink != null && !slink.isEmpty()) {
                         if(slink.startsWith("DMS://"))
                             slink = slink.substring(6);
-                        sQuery += " WHERE (link='" + slink + "')";
+                        sQuery += " WHERE (D.link='" + slink + "')";
                     } else {
                         throw new Exception("Cannot download document : missing search key");
                     }
@@ -2612,18 +2654,24 @@ public class event {
                             hash = rsdo.getString("hash");
                             id = rsdo.getString("id");
 
-                            if("getLink".equalsIgnoreCase((String)clientData)) {
+                            if(clientData != null && ((String)clientData).contains("getLink")) {
                                 // Non necessario leggere il contenuto
                             } else {
-                                Path path = new File(file).toPath();
-                                if (path != null) {
-                                    fileName = file;
-                                    fileMimeType = Files.probeContentType(path);
-                                    fileContent = Files.readAllBytes(path);
-                                } else {
-                                    String err = "ERROR : File \"" + file + "\" not found";
+                                if(size > MAX_DOWNLOAD_SIZE) {
+                                    String err = "ERROR : File exceed max download size .. " + size/1024 + "/" + MAX_DOWNLOAD_SIZE / 1024 + " Kb";
                                     System.err.println(err);
                                     throw new Exception(err);
+                                } else {
+                                    Path path = new File(file).toPath();
+                                    if (path != null) {
+                                        fileName = file;
+                                        fileMimeType = Files.probeContentType(path);
+                                        fileContent = Files.readAllBytes(path);
+                                    } else {
+                                        String err = "ERROR : File \"" + file + "\" not found";
+                                        System.err.println(err);
+                                        throw new Exception(err);
+                                    }
                                 }
                             }
                             nRecs++;
@@ -2847,18 +2895,18 @@ public class event {
                     Object [] connRes = connection.getDBConnection();
                     conn = (Connection)connRes[0];
                     if(conn != null) {
-                        ArrayList<String> keyList;
-                        if(auxParams != null) {
-                            keyList = (ArrayList<String>)auxParams;
+                        JSONArray keyList;
+                        if(paramJson.has("ids")) {
+                            keyList =paramJson.getJSONArray("ids");
                         } else {
                             throw new Exception("No keys defined");
                         }
-                        for(int ik=0; ik<keyList.size(); ik++) {
-                            sQuery = "UPDATE \""+dmsSchema+"\".\""+dmsTable+"\" SET " +"note='"+paramJson.getString("note")+"'"+ " WHERE (id='"+paramJson.getString("id")+"')";
+                        for(int ik=0; ik<keyList.length(); ik++) {
+                            sQuery = "UPDATE \""+dmsSchema+"\".\""+dmsTable+"\" SET " +"note='"+paramJson.getString("note")+"'"+ " WHERE (id='"+keyList.get(ik)+"')";
                             psdo = conn.prepareStatement(sQuery);
                             int res = psdo.executeUpdate();
                             if(res >= 0) {
-                                String fieldSet = "{" + "\"id\":\""+(paramJson.getString("id")) + "}";
+                                String fieldSet = "{" + "\"id\":\""+(paramJson.getString("id")) + "\"}";
                                 resultSet.append( (nRecs>0?",":"") + fieldSet);
                                 nRecs++;
                             }

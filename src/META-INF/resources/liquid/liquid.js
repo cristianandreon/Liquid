@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.41
+// Liquid ver.2.42
 //
-//  First update 06-01-2020 - Last update 05-08-2022
+//  First update 06-01-2020 - Last update 09-08-2022
 //
 //  TODO : see trello.com
 //
@@ -1715,7 +1715,10 @@ class LiquidCtrl {
 
                         if(this.tableJson.listTabVisible === false) listTabStyle = "style=\"display:none\"";
                         var gIdLast = controlId + ".grid_tab.0";
-                        var gtName = isDef(this.tableJson.listTabTitle) ? this.tableJson.listTabTitle : "List";
+                        var propName = (Liquid.translateLabels ? ("listTabTitle" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "listTabTitle");
+                        var gtName = isDef(this.tableJson[propName]) ? this.tableJson[propName] : this.tableJson.listTabTitle;
+                        if(!isDef(gtName))
+                            gtName = (Liquid.lang === 'ita' ? "Elenco" : "List");
                         listTabHTML = "<li class=\"liquidTabSel\" "+listTabStyle+"><a href=\"javascript:void(0)\" id=\"" + gIdLast + "\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"Liquid.onGridTab(this)\">" + gtName + "</a></li>";
                         this.gridsFirstId = null;
                         this.tabList.push( { name:gtName, caption:gtName, id:this.gIdLast });
@@ -1850,7 +1853,12 @@ class LiquidCtrl {
                                     this.dockerRoot.appendChild(doc.containerObj);
                                     if(this.tableJson.documentsTabVisible === false || doc.tabVisible === false) documentsTabStyle = "style=\"display:none\"";
                                     var docId = controlId + ".document_tab." + (id + 1);
-                                    var docName = doc.title ? doc.title : doc.name ? doc.name : "Documents";
+                                    var titleName = (Liquid.translateLabels ? ("title" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "title");
+                                    var docTitle = doc[titleName] ? doc[titleName] : (doc.title ? doc.title : null);
+                                    var docName = isDef(docTitle) ? docTitle : doc.name;
+                                    if(!isDef(docName)) {
+                                        docName = (Liquid.lang === 'ita' ? "Documenti" : "Documents");
+                                    }
                                     documentTabHTML += "<li"+documentsTabStyle+"><a href=\"javascript:void(0)\" id=\"" + docId + "\" class=\"liquidTab liquidDocuemntTab liquidForeignTableEnabled\" onClick=\"Liquid.onDocumentTab(this)\">" + docName + "</a></li>";
                                     this.tabList.push( { name:docName, id:docId });
                                 }
@@ -5577,20 +5585,19 @@ var Liquid = {
                                 Liquid.refreshCharts(liquid, false);
                                 if (liquid.linkedLiquids)
                                     Liquid.refreshLinkedLiquids(liquid);
-                                Liquid.showHideChildWaiters(liquid, false);
                             } else {
                                 // Inline layputs nedd to be refreshed
-                                for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
-                                    var layout = liquid.tableJson.layouts[il];
-                                    if (layout.rowStyle == 'inline') {
-                                        Liquid.refreshLayout(liquid, layout, false);
+                                if(liquid.tableJson.layouts) {
+                                    for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                                        var layout = liquid.tableJson.layouts[il];
+                                        if (layout.rowStyle == 'inline') {
+                                            Liquid.refreshLayout(liquid, layout, false);
+                                        }
                                     }
                                 }
-                                Liquid.showHideChildWaiters(liquid, false);
                             }
-                        } else {
-                            Liquid.showHideChildWaiters(liquid, false);
                         }
+                        Liquid.showHideChildWaiters(liquid, false);
 
                         // set selection multipaged
                         Liquid.resumeNodeSelected(liquid);
@@ -11348,28 +11355,40 @@ var Liquid = {
                         }
                     }
 
+                    if (command.step === Liquid.CMD_EXECUTE) {
+                        let restoreControls = false;
+                        if (Liquid.isRollbackCommand(command)) {
+                            if (command.name === "insert-rollback") {
+                                /* Duplicate with record change */
+                            } else {
+                                restoreControls = true;
+                            }
+                        } else if (command.name === "update") {
+                            restoreControls = true;
+                        }
+                        //
+                        // restoring the layout/grids...
+                        //
+                        if (restoreControls) {
+                            Liquid.resetLayoutsRowState(liquid);
+                            Liquid.restoreLayouts(liquid);
+                            Liquid.restoreGrids(liquid);
+                            Liquid.refreshGrids(liquid, null, "rollback/update");
+                            Liquid.refreshDocuments(liquid);
+                            Liquid.refreshCharts(liquid);
+                        }
+                    }
+
                     if (Liquid.isRollbackCommand(command)) {
                         command.step = 0;
                         if (command.linkedCmd) {
                             command.linkedCmd.step = 0;
                             if (command.linkedCmd.linkedLabelObj)
                                 command.linkedCmd.linkedLabelObj.innerHTML = (isDef(command.linkedCmd.text) ? command.linkedCmd.text : "");
+
                             if (command.name === "insert-rollback") {
                                 /* Duplicate with record change */
                             } else {
-                                //
-                                // restoring the layout
-                                //
-                                Liquid.resetLayoutsRowState(liquid);
-                                Liquid.restoreGrids(liquid);
-                                Liquid.restoreLayouts(liquid);
-
-                                Liquid.restoreGrids(liquid);
-                                Liquid.restoreLayouts(liquid);
-                                Liquid.refreshGrids(liquid, null, "rollback");
-                                Liquid.refreshLayouts(liquid);
-                                Liquid.refreshDocuments(liquid);
-                                Liquid.refreshCharts(liquid);
                             }
                             if (command.name === "delete-rollback" || command.name === "update-rollback") {
                             }
@@ -13085,6 +13104,8 @@ var Liquid = {
             if (col) {
                 if (isDef(col[labelName])) {
                     fieldLabel = col[labelName];
+                } else if (isDef(col.label)) {
+                    fieldLabel = col.label;
                 } else {
                     fieldLabel = col.name;
                 }
@@ -16386,7 +16407,7 @@ var Liquid = {
             var nameItems = obj instanceof HTMLElement ? obj.id.split(".") : obj.split(".");
             if (nameItems && nameItems.length > 2) {
                 var index = nameItems[2] - 1;
-                if (index < liquid.tableJson.charts.length)
+                if (index < liquid.tableJson.documents.length)
                     return liquid.tableJson.documents[index];
             }
         }
@@ -18691,12 +18712,6 @@ var Liquid = {
             }
         }
         for(let i=0; i<liquidsToRefresh.length; i++) {
-            /*
-            if(liquidsToRefresh[i].tableJson.autoSelect !== true) {
-            } else {
-                Liquid.resetLayoutsContent(liquidsToRefresh[i], false, false);
-            }
-            */
             var curNodes = Liquid.getCurNodes(liquidsToRefresh[i]);
             Liquid.updateSelectionData(liquidsToRefresh[i]);
             Liquid.refreshGrids(liquidsToRefresh[i], curNodes && curNodes.length ? curNodes[0].data : null, "refreshLinked");
@@ -20203,7 +20218,7 @@ var Liquid = {
         if(typeof toastr === 'undefined') {
             console.error("ERROR: missing toastr.js");
         } else {
-            toastr.options = {
+            window.toastr.options = {
                 "closeButton": true,
                 "debug": false,
                 "newestOnTop": true,
@@ -20220,7 +20235,7 @@ var Liquid = {
                 "showMethod": "fadeIn",
                 "hideMethod": "fadeOut"
             };
-            toastr[(type ? type : 'info')](message, title);
+            window.toastr[(type ? type.toLowerCase() : 'info')](message, title);
         }
     },
     showDesktopNofity:function( msg ) {
@@ -22915,25 +22930,38 @@ columns:[
         }
     },
     /**
-     * Inizialize control for custo datalist manage
+     * Inizialize control for custom datalist manage
      *
      * @param inputId
      * @param descId
      * @param datalistId
      */
     setupDescDatalist:function(inputId, descId, datalistId) {
-        let inputObj = document.getElementById(inputId);
-        let descObj = document.getElementById(descId);
-        let rootNode = descObj.parentNode;
-        if(!inputObj) {
-            // renamed by layout
-            for (let i = 0; i < rootNode.childNodes.length; i++) {
-                var node = rootNode.childNodes[i];
-                if (node.dataset) {
-                    var prevId = node.getAttribute('previd');
-                    if (prevId == inputId) {
-                        inputObj = rootNode.childNodes[i];
-                        break;
+        return Liquid.setupDescDatalistEx(window, inputId, descId, datalistId);
+    },
+    /**
+     * Inizialize control for custom datalist manage
+     *
+     * @param win       the window object
+     * @param inputId
+     * @param descId
+     * @param datalistId
+     */
+    setupDescDatalistEx:function(win, inputId, descId, datalistId) {
+        let inputObj = win.document.getElementById(inputId);
+        let descObj = win.document.getElementById(descId);
+        if(descObj) {
+            let rootNode = descObj.parentNode;
+            if (!inputObj) {
+                // renamed by layout
+                for (let i = 0; i < rootNode.childNodes.length; i++) {
+                    var node = rootNode.childNodes[i];
+                    if (node.dataset) {
+                        var prevId = node.getAttribute('previd');
+                        if (prevId == inputId) {
+                            inputObj = rootNode.childNodes[i];
+                            break;
+                        }
                     }
                 }
             }
@@ -22941,7 +22969,6 @@ columns:[
         if(descObj && inputObj) {
             inputObj.type = "hidden";
             inputObj.setAttribute('list', null);
-
             descObj.setAttribute('list', datalistId);
             descObj.style.width = inputObj.style.width;
             descObj.style.height = inputObj.style.height;
@@ -22962,7 +22989,10 @@ columns:[
 
             descObj.onmousedown = function() { this.setAttribute('rel',this.value); this.placeholder=this.value; this.value ='' };
             descObj.onblur = function() { this.value=this.getAttribute('rel') }
-            descObj.onchange = function() { this.setAttribute('rel',this.value); Liquid.onChangedDescDatalist(this) };
+            descObj.onchange = function() {
+                this.setAttribute('rel',this.value);
+                Liquid.onChangedDescDatalist(this)
+            };
 
             descObj.setAttribute('inputid', inputObj.id);
 
@@ -22980,6 +23010,10 @@ columns:[
             console.info("SETUP datalist "+inputId+" done.")
         }
     },
+    getWindowFromElement(element) {
+        let doc = element.ownerDocument;
+        return doc.defaultView || doc.parentWindow;
+    },
     /**
      * Default callback for custom datalist manage
      * @param obj
@@ -22988,7 +23022,7 @@ columns:[
         var selectedOption = obj.list.options.namedItem(obj.value);
         if (selectedOption) {
             let code_id = obj.getAttribute('inputid');
-            let code_obj = document.getElementById(code_id);
+            let code_obj = Liquid.getWindowFromElement(obj).document.getElementById(code_id);
             if(code_obj) {
                 code_obj.value = selectedOption.getAttribute('data-code');
                 var event = new Event('change');

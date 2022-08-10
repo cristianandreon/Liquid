@@ -239,6 +239,9 @@ tr.liquidDocumentsXRows td { height:30px; background-color: transparent; padding
 .liquidDocumentsXCmdIcon { padding:5px; }
 .liquidDocumentsXDocIcon { width:20px; height:20px; }
 .liquidDocumentsXTable { font-family:verdana; font-size: 12px; width:100%; table-layout: auto; }
+.liquidDocumentsXCmdIcon:hover { transition: 0.6s ease; filter:grayscale(0.00) !important; }
+.liquidDocumentsXDocIcon:hover { transition: 0.6s ease; filter:grayscale(0.00) !important; }
+
 
 .liquidFoundTable { table-layout:auto; width:100%; z-index:99999; position:relative; background:rgb(234, 234, 234); }
 .liquidFoundTable tr:nth-child(even) { background-color: #e2dfdf; }
