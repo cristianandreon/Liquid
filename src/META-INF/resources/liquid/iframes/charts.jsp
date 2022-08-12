@@ -57,11 +57,11 @@
             }
 
 
-            function addDocuemnts( docItems ) {
+            function addDocuments( docItems ) {
                 var table = document.getElementById("liquidChartX.table");
             }
 
-            function addDocuemnt( docItem ) {
+            function addDocument( docItem ) {
                 if(docItem) {
                     var container = document.getElementById("liquidChartX.container");
                     if(container) {
@@ -70,9 +70,9 @@
             }
 
             function loadChart( liquid, chart, nodes, mode ) {
-                var owner = liquid.tableJson.owner + ".getDocuemnts";
+                var owner = liquid.tableJson.owner + ".getCharts";
                 if(chart.owner) owner = chart.owner;
-                if(!owner) owner = 'com.liquid.event.getDocuemnts';
+                if(!owner) owner = 'com.liquid.event.getCharts';
                 if(owner) { }
 
                 var groupingColumn = chart.groupingColumn;

@@ -203,14 +203,25 @@ public class utility {
      * @param params
      * @return
      */
-    static public ArrayList<String> get_dms_keys(workspace tblWrk, String params) {
+    static public ArrayList<String> get_dms_keys(workspace tblWrk, Object oParams) {
         ArrayList<String> keyList = null;
         try {
             if (tblWrk != null) {
-                JSONObject paramsJson = new JSONObject((String) params);
-                JSONObject paramJson = paramsJson.getJSONObject("params");
+                JSONArray ids = null;
+                JSONObject paramJson = null;
+                if(oParams instanceof ArrayList) {
+                    // TODO: ...
+                } else if(oParams instanceof String) {
+                    JSONObject paramsJson = new JSONObject((String) oParams);
+                    paramJson = paramsJson.getJSONObject("params");
+                    ids = paramJson.getJSONArray("ids");
+                } else if(oParams instanceof JSONObject) {
+                    JSONObject paramsJson = (JSONObject) oParams;
+                    paramJson = paramsJson.getJSONObject("params");
+                    ids = paramJson.getJSONArray("ids");
+                }
+
                 if (paramJson != null) {
-                    JSONArray ids = paramJson.getJSONArray("ids");
                     String database = null, schema = null, table = null, name = null;
                     try {
                         database = paramJson.getString("database");

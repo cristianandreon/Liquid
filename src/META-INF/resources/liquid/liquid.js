@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.42
+// Liquid ver.2.43
 //
-//  First update 06-01-2020 - Last update 09-08-2022
+//  First update 06-01-2020 - Last update 11-08-2022
 //
 //  TODO : see trello.com
 //
@@ -1842,25 +1842,27 @@ class LiquidCtrl {
                             for(let id = 0; id < this.tableJson.documents.length; id++) {
                                 var doc = this.tableJson.documents[id];
                                 if(doc) {
-                                    doc.resizeCounter = 0;
-                                    doc.pageLoaded = false;
-                                    doc.useIframe = true;
-                                    if(doc.useIframe) doc.containerObj = document.createElement("iframe");
-                                    else doc.containerObj = document.createElement("div");
-                                    doc.containerObj.className = "liquidDocumentContainer";
-                                    doc.containerObj.id = controlId + ".document_tab." + (id+1) + ".content";
-                                    doc.containerObj.style.display = "none";
-                                    this.dockerRoot.appendChild(doc.containerObj);
-                                    if(this.tableJson.documentsTabVisible === false || doc.tabVisible === false) documentsTabStyle = "style=\"display:none\"";
-                                    var docId = controlId + ".document_tab." + (id + 1);
-                                    var titleName = (Liquid.translateLabels ? ("title" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "title");
-                                    var docTitle = doc[titleName] ? doc[titleName] : (doc.title ? doc.title : null);
-                                    var docName = isDef(docTitle) ? docTitle : doc.name;
-                                    if(!isDef(docName)) {
-                                        docName = (Liquid.lang === 'ita' ? "Documenti" : "Documents");
+                                    if(doc.visible !== false && doc.hidden !== true) {
+                                        doc.resizeCounter = 0;
+                                        doc.pageLoaded = false;
+                                        doc.useIframe = true;
+                                        if (doc.useIframe) doc.containerObj = document.createElement("iframe");
+                                        else doc.containerObj = document.createElement("div");
+                                        doc.containerObj.className = "liquidDocumentContainer";
+                                        doc.containerObj.id = controlId + ".document_tab." + (id + 1) + ".content";
+                                        doc.containerObj.style.display = "none";
+                                        this.dockerRoot.appendChild(doc.containerObj);
+                                        if (this.tableJson.documentsTabVisible === false || doc.tabVisible === false) documentsTabStyle = "style=\"display:none\"";
+                                        var docId = controlId + ".document_tab." + (id + 1);
+                                        var titleName = (Liquid.translateLabels ? ("title" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "title");
+                                        var docTitle = doc[titleName] ? doc[titleName] : (doc.title ? doc.title : null);
+                                        var docName = isDef(docTitle) ? docTitle : doc.name;
+                                        if (!isDef(docName)) {
+                                            docName = (Liquid.lang === 'ita' ? "Documenti" : "Documents");
+                                        }
+                                        documentTabHTML += "<li" + documentsTabStyle + "><a href=\"javascript:void(0)\" id=\"" + docId + "\" class=\"liquidTab liquidDocumentTab liquidForeignTableEnabled\" onClick=\"Liquid.onDocumentTab(this)\">" + docName + "</a></li>";
+                                        this.tabList.push({name: docName, id: docId});
                                     }
-                                    documentTabHTML += "<li"+documentsTabStyle+"><a href=\"javascript:void(0)\" id=\"" + docId + "\" class=\"liquidTab liquidDocuemntTab liquidForeignTableEnabled\" onClick=\"Liquid.onDocumentTab(this)\">" + docName + "</a></li>";
-                                    this.tabList.push( { name:docName, id:docId });
                                 }
                             }
                         }
@@ -1870,20 +1872,22 @@ class LiquidCtrl {
                             for(let ic=0; ic<this.tableJson.charts.length; ic++) {
                                 var chart = this.tableJson.charts[ic];
                                 if(chart) {
-                                    chart.resizeCounter = 0;
-                                    chart.pageLoaded = false;
-                                    chart.useIframe = true;
-                                    if(chart.useIframe) chart.containerObj = document.createElement("iframe");
-                                    else chart.containerObj = document.createElement("div");
-                                    chart.containerObj.className = "liquidChartContainer";
-                                    chart.containerObj.id = controlId + ".chart_tab." + (ic+1) + ".content";
-                                    chart.containerObj.style.display = "none";
-                                    this.dockerRoot.appendChild(chart.containerObj);
-                                    if(this.tableJson.chartsTabVisible === false || chart.tabVisible === false) chartsTabStyle = "style=\"display:none\"";
-                                    var chartId = controlId + ".chart_tab." + (ic + 1);
-                                    var chartName = chart.title ? chart.title : chart.name ? chart.name : "Layout";
-                                    chartTabHTML += "<li "+chartsTabStyle+"><a href=\"javascript:void(0)\" id=\"" + chartId + "\" class=\"liquidTab liquidChartTab liquidForeignTableEnabled\" onClick=\"Liquid.onChartTab(this)\">" + chartName + "</a></li>";
-                                    this.tabList.push( { name:chartName, id:chartId });
+                                    if(chart.visible !== false && chart.hidden !== true) {
+                                        chart.resizeCounter = 0;
+                                        chart.pageLoaded = false;
+                                        chart.useIframe = true;
+                                        if (chart.useIframe) chart.containerObj = document.createElement("iframe");
+                                        else chart.containerObj = document.createElement("div");
+                                        chart.containerObj.className = "liquidChartContainer";
+                                        chart.containerObj.id = controlId + ".chart_tab." + (ic + 1) + ".content";
+                                        chart.containerObj.style.display = "none";
+                                        this.dockerRoot.appendChild(chart.containerObj);
+                                        if (this.tableJson.chartsTabVisible === false || chart.tabVisible === false) chartsTabStyle = "style=\"display:none\"";
+                                        var chartId = controlId + ".chart_tab." + (ic + 1);
+                                        var chartName = chart.title ? chart.title : chart.name ? chart.name : "Layout";
+                                        chartTabHTML += "<li " + chartsTabStyle + "><a href=\"javascript:void(0)\" id=\"" + chartId + "\" class=\"liquidTab liquidChartTab liquidForeignTableEnabled\" onClick=\"Liquid.onChartTab(this)\">" + chartName + "</a></li>";
+                                        this.tabList.push({name: chartName, id: chartId});
+                                    }
                                 }
                             }
                         }
@@ -3148,15 +3152,10 @@ var Liquid = {
                             liquidCommandParams.liquid.controlId = liquid.controlId;
                     } else {
                         // No liquid object : is a form or HTML ?
-                        Liquid.htmlNodesToJson(paramObj, true, true).then( (resolve) => {
-                            if (paramObj.nodeName.toUpperCase() === 'FORM') {
-                                // form collection
-                                liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":{" + resolve + "}" + "}"));
-                            } else {
-                                // single item
-                                liquidCommandParams.params.push(JSON.parse("{\"name\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":\"" + resolve + "\"" + "}"));
-                            }
-                        });
+                        let nodes_data = Liquid.htmlNodesToJson(paramObj, true, true);
+                        if (nodes_data) {
+                            liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":" + JSON.stringify(nodes_data) + "" + "}"));
+                        }
                     }
                 }
             }
@@ -3254,68 +3253,98 @@ var Liquid = {
                         Liquid.addForeignTableCommandParam(liquid, liquidCommandParams.params);
                     }
                 }
-                //
-                // add files inside layouts
-                //
-                if(isDef(liquid.tableJson.layouts)) {
-                    for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
-                        var layout = liquid.tableJson.layouts[il];
-                        if(layout) {
-                            if(layout.containerObj) {
-                                let command_params = Liquid.layoutNodesToJson(layout.containerObj, false, true);
-                                if (command_params) {
-                                    // single item
-                                    liquidCommandParams.params.push(JSON.parse("{\"name\":\"" + (layout.name ? layout.name : layout.name) + "\"" + ",\"data\":\"" + command_params + "\"" + "}"));
-                                }
+            }
+            return liquidCommandParams;
+        }
+    },
+    /**
+     * add files inside layouts to result
+     *
+     * @param liquid
+     * @param processAll
+     * @param processFiles
+     */
+    layoutsNodesToJson: async function (liquidOrControlId, processAll, processFiles, excludingNames) {
+        let result_params = null;
+        var liquid = Liquid.getLiquid(liquidOrControlId);
+        if (liquid) {
+            if (isDef(liquid.tableJson.layouts)) {
+                for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                    var layout = liquid.tableJson.layouts[il];
+                    if (layout) {
+                        if (layout.containerObj) {
+                            let command_params = await Liquid.layoutNodesToJson(layout.containerObj, processAll, processFiles, excludingNames);
+                            if (command_params) {
+                                if(!result_params) result_params = [];
+                                result_params.push({
+                                        "layoutName": (layout.name ? layout.name : layout.name),
+                                        "data": command_params
+                                        });
                             }
                         }
                     }
                 }
             }
-            return liquidCommandParams;
         }
+        return result_params;
     },
-    layoutNodesToJson:function(rootObj, processAll, processFiles) {
-        let params_json = null;
-        if (rootObj && rootObj.childNodes.length) {
-            for (var i = 0; i < rootObj.childNodes.length; i++) {
-                if (rootObj.childNodes[i].nodeName.toUpperCase() === 'INPUT') {
-                    Liquid.htmlNodesToJson(rootObj.childNodes[i], processAll, processFiles).then( (resolve) => {
-                        if (resolve) {
-                            if (!params_json) params_json = [];
-                            params_json.push(resolve);
+    layoutNodesToJson: async function (rootObj, processAll, processFiles, excludingNames) {
+        return new Promise(async (resolve, reject) => {
+            let result_params_json = null;
+            if (rootObj && rootObj.childNodes.length) {
+                for (var i = 0; i < rootObj.childNodes.length; i++) {
+                    if (rootObj.childNodes[i].nodeName.toUpperCase() === 'INPUT') {
+                        let nodes_data = await Liquid.htmlNodesToJson(rootObj.childNodes[i], processAll, processFiles, excludingNames);
+                        if (nodes_data) {
+                            if (!result_params_json) result_params_json = [];
+                            for (let j = 0; j < nodes_data.length; j++) {
+                                result_params_json.push(nodes_data[j]);
+                            }
                         }
-                    });
-                } else {
-                    let param_json = Liquid.layoutNodesToJson(rootObj.childNodes[i], processAll, processFiles);
-                    if(param_json) {
-                        if(!params_json) params_json = [];
-                        params_json.push(param_json);
+                    } else {
+                        let nodes_data = await Liquid.layoutNodesToJson(rootObj.childNodes[i], processAll, processFiles, excludingNames);
+                        if (nodes_data) {
+                            if (!result_params_json) result_params_json = [];
+                            for (let j = 0; j < nodes_data.length; j++) {
+                                result_params_json.push(nodes_data[j]);
+                            }
+                        }
                     }
                 }
             }
-        }
-        return params_json;
+            resolve(result_params_json);
+        });
     },
-    htmlNodesToJson:async function (paramObj, processAll, processFiles) {
-        return new Promise((resolve, reject) => {
-            if (paramObj) {
-                if (paramObj.nodeName) {
-                    if (paramObj.nodeName.toUpperCase() === 'FORM' || paramObj.nodeName.toUpperCase() === 'DIV' || paramObj.nodeName.toUpperCase() === 'INPUT') {
-                        var frm_elements = [];
-                        if (paramObj.nodeName.toUpperCase() === 'FORM') {
-                            frm_elements = paramObj.elements;
-                        } else if (paramObj.nodeName.toUpperCase() === 'DIV') {
-                            frm_elements = [paramObj];
-                        } else if (paramObj.nodeName.toUpperCase() === 'INPUT') {
-                            frm_elements = [paramObj];
-                        }
-                        var dataList = "";
-                        if (frm_elements && frm_elements.length) {
-                            for (var i = 0; i < frm_elements.length; i++) {
-                                var field_type = frm_elements[i].type ? frm_elements[i].type.toLowerCase() : null;
-                                var field_name = frm_elements[i].id ? frm_elements[i].id : frm_elements[i].name;
-                                var field_value = "";
+    htmlNodesToJson: async function (paramObj, processAll, processFiles, excludingNames) {
+        let nodes_data = null;
+        if (paramObj) {
+            if (paramObj.nodeName) {
+                if (paramObj.nodeName.toUpperCase() === 'FORM' || paramObj.nodeName.toUpperCase() === 'DIV' || paramObj.nodeName.toUpperCase() === 'INPUT') {
+                    var frm_elements = [];
+                    if (paramObj.nodeName.toUpperCase() === 'FORM') {
+                        frm_elements = paramObj.elements;
+                    } else if (paramObj.nodeName.toUpperCase() === 'DIV') {
+                        frm_elements = [paramObj];
+                    } else if (paramObj.nodeName.toUpperCase() === 'INPUT') {
+                        frm_elements = [paramObj];
+                    }
+                    var dataList = "";
+                    if (frm_elements && frm_elements.length) {
+                        for (var i = 0; i < frm_elements.length; i++) {
+                            var field_type = frm_elements[i].type ? frm_elements[i].type.toLowerCase() : null;
+                            var field_name = frm_elements[i].name ? frm_elements[i].name : frm_elements[i].id;
+                            var field_value = "";
+                            let bProcessField = false;
+
+                            if (!isDef(excludingNames)) {
+                                bProcessField = true;
+                            } else {
+                                if (!Array.isArray(excludingNames)) excludingNames = [excludingNames];
+                                if (!excludingNames.contains(field_name)) {
+                                    bProcessField = true;
+                                }
+                            }
+                            if (bProcessField) {
                                 switch (field_type) {
                                     case "text":
                                     case "password":
@@ -3347,19 +3376,12 @@ var Liquid = {
                                                 var queue = {
                                                     liquid: null,
                                                     obj: frm_elements[i],
-                                                    targetObj: null,
-                                                    targetRow: null,
-                                                    targetCol: null,
                                                     files: frm_elements[i].files,
                                                     iFile: 0,
-                                                    propName: null,
-                                                    propValue: null,
-                                                    linkToFile: null,
                                                     callback: null
                                                 };
-                                                let result_queue = await Liquid.formFilesToObjectExchange(queue);
-                                                if (result_queue) {
-                                                    field_value = JSON.stringify(result_queue.propValue);
+                                                if (await Liquid.formFilesToObjectExchange(queue)) {
+                                                    field_value = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
                                                 } else {
                                                     console.error("LIQUID: Internal error reading file");
                                                     field_name = null;
@@ -3372,26 +3394,38 @@ var Liquid = {
                                         break;
                                 }
                                 if (field_name) {
-                                    dataList += (dataList.length ? "," : "") + "\"" + field_name + "\":\"" + field_value + "\"";
+                                    if(!nodes_data) nodes_data = [];
+                                    nodes_data.push( {
+                                            "fieldName": field_name,
+                                            "fieldValue": field_value
+                                        });
                                 }
                             }
                         }
-                        jQ1124(document).on('submit', '#' + paramObj.id, function () { // avoid page reload
-                            return false;
-                        });
-
+                    }
+                    if(paramObj) {
                         if (paramObj.nodeName.toUpperCase() === 'FORM') {
-                            // form collection
-                            resolve(dataList);
-                        } else {
-                            // single item
-                            resolve(field_value);
+                            // avoid page reload
+                            jQ1124(document).on('submit', '#' + paramObj.id, function () {
+                                return false;
+                            });
                         }
                     }
                 }
             }
-            resolve(null);
-        });
+        }
+        return nodes_data;
+    },
+    arraysToDict: function(propList, keyList) {
+        let result = [];
+        for (let j = 0; j < propList[0].length; j++) {
+            let obj = {};
+            for(let ip=0; ip<keyList.length; ip++) {
+                obj[keyList[ip]] = propList[ip][j];
+            }
+            result.push(obj);
+        }
+        return result;
     },
     onFormFileChange: function (obj, column) {
         if (obj && column) {
@@ -5089,7 +5123,7 @@ var Liquid = {
                     } else if (Liquid.isDate(liquid.tableJson.columns[ic].type)) { // datetime, date, timestamp
                         cellEditor = DateEditor;
                         cellEditorParams = {liquid: liquid};
-                    } else if (Liquid.isBoolean(liquid.tableJson.columns[ic].type)) { // datetime, date, timestamp
+                    } else if (Liquid.isBoolean(liquid.tableJson.columns[ic].type)) { // booelan
                         cellRenderer = function (params) {
                             var checked = null;
                             if (typeof params.value == 'boolean') {
@@ -8075,11 +8109,12 @@ var Liquid = {
     getForeignTableControl: function (obj, foreignTableNameOrTable) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
+            foreignTableNameOrTable = foreignTableNameOrTable.toLowerCase();
             if (isDef(liquid.foreignTables)) {
                 if (liquid.foreignTables instanceof Array) {
                     for (var ift = 0; ift < liquid.foreignTables.length; ift++) {
-                        var table = liquid.foreignTables[ift].foreignTable;
-                        var name = liquid.foreignTables[ift].name;
+                        var table = (liquid.foreignTables[ift].foreignTable ? liquid.foreignTables[ift].foreignTable : "" ).toLowerCase();
+                        var name = (liquid.foreignTables[ift].name ? liquid.foreignTables[ift].name : "").toLowerCase();
                         if (foreignTableNameOrTable == table || foreignTableNameOrTable == name) {
                             return liquid.foreignTables[ift].controlId;
                         }
@@ -8712,17 +8747,20 @@ var Liquid = {
                         } else if (obj.childNodes[j].type === 'checkbox') {
                             propValue = obj.childNodes[j].checked ? true : false;
                         } else if (obj.childNodes[j].type === 'file') {
-                            var queue = {
-                                obj: obj,
-                                targetObj: targetObj,
-                                files: obj.childNodes[j].files,
-                                iFile: 0,
-                                propName: propName,
-                                propValue: null,
-                                linkToFile: null,
-                                callback:null
-                            };
-                            Liquid.formFilesToObjectExchange(queue);
+                            if(obj.childNodes[j].files.length >= 1) {
+                                var queue = {
+                                    obj: obj,
+                                    targetObj: targetObj,
+                                    files: obj.childNodes[j].files,
+                                    iFile: 0,
+                                    propName: propName,
+                                    propValue: null,
+                                    callback: null
+                                };
+                                if (Liquid.formFilesToObjectExchange(queue)) {
+                                    propValue = JSON.stringify(queue.propValues);
+                                }
+                            }
                         } else if (obj.childNodes[j].type === 'number') {
                             propValue = Number(obj.childNodes[j].value);
                         } else if (obj.childNodes[j].type) {
@@ -8767,90 +8805,72 @@ var Liquid = {
         return 0;
     },
     formFilesToObjectExchange: async function (queue) {
-        return new Promise((resolve, reject) => {
-            if (queue) {
-                if (queue.iFile < queue.files.length) {
-                    var file = queue.files[queue.iFile];
-                    if (file) {
-                        var reader = new FileReader();
-                        // reader.readAsDataURL(file);
-                        reader.readAsBinaryString(file);
-                        reader.onload = function (evt) {
-                            try {
-                                if (queue.linkToFile === true) {
-                                    // For security reason cannot get file path... only update file content
-                                }
-                                if (queue.files.length === 1) {
-                                    // var comp = LZW.compress();
-                                    // var my_lzma = new LZMA("./lzma_worker.js");
-                                    // queue.propValue = JSONC.pack( evt.target.result, true );
-
-                                    /*
-                                     var s1 = evt.target.result.length;
-                                    var t1 = performance.now();
-                                    var zipped = gzip.zip(evt.target.result);
-                                    var s2 = zipped.length;
-                                    */
-
-                                    // queue.propValue = "base64,"+Base64.encode(zipped);
-                                    // queue.propValue = "binaryData,"+zipped.length+":"+zipped;
-                                    // queue.propValue = "base64,"+btoa(zipped);
-                                    queue.propValue = "base64," + btoa(evt.target.result);
-                                    var t2 = performance.now();
-                                    var s3 = queue.propValue.length;
-                                    // console.log("ZIP time:"+(t2-t1)/1000.0 + " sec, size:"+s1 / 1024 +" / "+s2/1024+" / "+s3/1024 + " Kb, ratio:"+(s3/s1 * 100.0)+"%")
-                                } else {
-                                    if (!queue.propValue) queue.propValue = [];
-                                    queue.propValue.push(evt.target.result);
-                                }
-                            } catch (e) {
-                                console.error(e);
-                            }
-                            queue.iFile++;
-                            Liquid.formFilesToObjectExchange(queue);
-                        };
-                        reader.onerror = function (evt) {
-                            console.error("ERROR: file read error");
-                            queue.propValue.push("");
-                            queue.iFile++;
-                            Liquid.formFilesToObjectExchange(queue);
-                        };
-                    }
-                } else {
-                    if (queue.targetObj && queue.propName) {
-                        if (queue.targetObj[queue.propName] !== queue.propValue) {
-                            queue.targetObj[queue.propName] = queue.propValue;
+        if (queue) {
+            queue.isPending = true;
+            queue.isDone = false;
+            queue.iFile = 0;
+            for(; queue.iFile < queue.files.length; queue.iFile++) {
+                var file = queue.files[queue.iFile];
+                if (file) {
+                    let retVal = null;
+                        await Liquid.formFileToObjectExchange(queue, file,function(queue){}).then(
+                        (resolved) => {
+                            retVal = resolved;
+                        }
+                    );
+                    if(!retVal) {
+                        console.error("ERROR : internal error procesing file queue");
+                        return null;
+                    } else {
+                        if(!isDef(retVal.propValues)) {
+                            console.error("ERROR : internal error procesing file queue sync");
+                            return null;
                         }
                     }
-                    if (queue.targetRow && queue.targetCol) {
-                        var validateResult = Liquid.validateField(queue.liquid, queue.liquid.tableJson.columns[queue.targetCol.field], queue.propValue);
-                        if (validateResult !== null) {
-                            if (validateResult[0] >= 0) {
-                                queue.propValue = validateResult[1];
-                                // NO : huge file can be problematic here
-                                // Liquid.registerFieldChange(queue.liquid, null, queue.targetRow[ queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null ], queue.targetCol.field, null, queue.propValue);
-                                var rowId = queue.targetRow[queue.liquid.tableJson.primaryKeyField ? queue.liquid.tableJson.primaryKeyField : null];
-                                if (rowId === '' || rowId === null || typeof rowId === 'undefined') {
-                                    if (queue.liquid.addingNode) {
-                                        queue.liquid.addingNode.data[queue.targetCol.field] = queue.propValue;
-                                    }
-                                    if (queue.liquid.addingRow) {
-                                        queue.liquid.addingRow[queue.targetCol.field] = queue.propValue;
-                                    }
-                                }
-                                Liquid.updateDependencies(queue.liquid, queue.targetCol, null, null);
-                            }
+                }
+            }
+            // All work done
+            if (isDef(queue.callback)) {
+                try {
+                    queue.callback(queue);
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+            queue.isPending = false;
+            queue.isDone = true;
+            return queue;
+        }
+        return null;
+    },
+    formFileToObjectExchange: async function (queue, file, callback) {
+        return new Promise(async (resolve, reject) => {
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (evt) {
+                    try {
+                        if(queue) {
+                            if(!isDef(queue.propNames)) queue.propNames = [];
+                            if(!isDef(queue.propValues)) queue.propValues = [];
+                            if(!isDef(queue.propSizes)) queue.propSizes = [];
+                            queue.propValues.push("base64," + btoa(evt.target.result));
+                            queue.propNames.push(file.name);
+                            queue.propSizes.push(file.size);
                         }
+                    } catch (e) {
+                        console.error(e);
                     }
-                    if (idDef(queue.callback)) {
-                        try {
-                            queue.callback(queue);
-                        } catch(e) {
-                            console.error(e);
-                        }
+                    if (callback) {
+                        callback(queue);
                     }
                     resolve(queue);
-                }
+                };
+                reader.onerror = function (evt) {
+                    console.error("ERROR: file read error");
+                    reject(null);
+                };
+                reader.readAsBinaryString(file);
+                // reader.readAsDataURL(file);
             }
         });
     },
@@ -8877,7 +8897,6 @@ var Liquid = {
         var systemEventCounter = 0;
         var eventCounter = 0;
         var systemResult = typeof defaultRetval !== 'undefined' ? defaultRetval : null;
-        ;
         if (liquid) {
             if (liquid.tableJson) {
                 if (liquid.tableJson.events) {
@@ -9176,10 +9195,10 @@ var Liquid = {
      * @param {commandName} the name of the command to execute
      * @return {} n/d
      */
-    command: function (obj, commandName, commandPostFunc) { // aux entry
+    command: async function (obj, commandName, commandPostFunc) { // aux entry
         return Liquid.onCommand(obj, commandName, commandPostFunc);
     },
-    onCommand: function (obj, commandName, commandPostFunc) { // aux entry
+    onCommand: async function (obj, commandName, commandPostFunc) { // aux entry
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             if (isDef(liquid.tableJson)) {
@@ -9216,10 +9235,7 @@ var Liquid = {
                                 if (liquid.currentCommand.name === command.name) {
                                     liquid.currentCommand.postFunc = commandPostFunc;
                                     liquid.currentCommand.fromToolbar = false;
-                                    return Liquid.onButton(liquid, liquid.currentCommand)
-                                        .then(function (response) {
-                                            return response;
-                                        });
+                                    return await Liquid.onButton(liquid, liquid.currentCommand);
                                 } else {
                                     console.error("LIQUID: Command '" + command.name + "' not accepted");
                                     return;
@@ -9228,10 +9244,7 @@ var Liquid = {
                             if (command.isNative) {
                                 // native step command .. continue or start
                                 command.fromToolbar = false;
-                                return Liquid.onButton(liquid, command)
-                                    .then(function (response) {
-                                        return response;
-                                    });
+                                return await Liquid.onButton(liquid, command);
                             } else {
                                 // Single step command
                                 isCommandFound = true;
@@ -9340,17 +9353,11 @@ var Liquid = {
                                 Liquid.closeAllPopupMenuCommand(liquid, event);
                             }
                             command.fromToolbar = false;
-                            return Liquid.onButton(liquid, command)
-                                .then(function (response) {
-                                    return response;
-                                });
+                            return await Liquid.onButton(liquid, command);
                         } else if (liquid.menuCommands[i].name + "-rollback" === commandName) {
                             var command = liquid.menuCommands[i].rollbackCommand;
                             command.fromToolbar = false;
-                            return Liquid.onButton(liquid, command)
-                                .then(function (response) {
-                                    return response;
-                                });
+                            return await Liquid.onButton(liquid, command);
                         }
                     }
                 }
@@ -9585,11 +9592,17 @@ var Liquid = {
             if (Liquid.isNativeCommand(command)) {
                 if (liquid) {
                     var needFullUpdate = false;
+                    var fails = 0;
                     if (liquid.modifications) { // reload rows
                         if (command.response) {
                             if (command.response.data) {
                                 if (command.response.data.details) {
                                     for (var id = 0; id < command.response.data.details.length; id++) {
+                                        if (command.response.data.details[id].fails) {
+                                            if(command.response.data.details[id].fails.length > 0) {
+                                                fails += command.response.data.details[id].fails.length;
+                                            }
+                                        }
                                         if (command.response.data.details[id].foreignTables) {
                                             if (command.response.data.details[id].foreignTables.length > 0) {
                                                 needFullUpdate = true;
@@ -9659,11 +9672,17 @@ var Liquid = {
                                 if (command.name === "insert") {
                                     // remove node if add rec ord failed
                                     if (ids === null || ids.length === 0) {
+                                        // Ids not returned : error or manual insert?
                                         if(Liquid.isFormX(liquid) || Liquid.isDialogX(liquid)) {
-                                            // Keep inserting row fo retry
+                                            // Keep inserting row to retry
                                         } else {
                                             var res = liquid.gridOptions.api.updateRowData({remove: [liquid.addingRow]});
                                             console.warn(res);
+                                        }
+                                        if(fails == 0) {
+                                            console.error("ERROR: missing ids .. pleaae check return data ");
+                                            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                                            liquid.nRows = nodes.length;
                                         }
                                     } else {
                                         // Increase nRows manually
@@ -13834,7 +13853,7 @@ var Liquid = {
                                         Liquid.searchForScripts(rootObj, scripts);
                                         if (!scripts.length) scripts = null;
 
-                                        if (idDef(layout.height)) {
+                                        if (isDef(layout.height)) {
                                             if (isNumber(layout.height)) {
                                                 layout.height = Number(layout.height);
                                             } else {
@@ -14518,7 +14537,11 @@ var Liquid = {
                     // Rendering rows...
                     //
                     for (var ir = 0; ir < nRowsToRender; ir++) {
+                        //
+                        // Set field valud
+                        //
                         Liquid.setLayoutField(liquid, layout, layout.rowsContainer[ir].containerObj, ir, layout.rowsContainer[ir].bSetup);
+
                         layout.rowsContainer[ir].bSetup = false;
                         var isAddingNode = Liquid.isAddingNode(liquid, layout.baseIndex1B - 1 + ir, nodes, true);
                         if (layout.baseIndex1B > 0 && (layout.baseIndex1B - 1 + ir < liquid.nRows || isAddingNode) || isFormX || isDialogX) {
@@ -15155,7 +15178,44 @@ var Liquid = {
             } else if (obj.nodeName.toUpperCase() === 'CANVAS') {
                 objLinkers = [obj.innerHTML, obj.id, obj.name, obj.classList];
                 objLinkersTarget = [null, null, "className"];
+            } else if (obj.nodeName.toUpperCase() === 'IFRAME') {
+                // Link to document of a control
+                if(!obj.getAttribute('linkedToControl')) {
+                    obj.setAttribute('linkedToControl', true);
+                    let urlParams = (new URL(obj.src)).searchParams;
+                    if (urlParams) {
+                        let oDocName = urlParams.get('docName');
+                        let oControlId = urlParams.get('controlId');
+                        if (oDocName && oControlId) {
+                            let linkedLiquid = Liquid.getLiquid(oControlId);
+                            if (linkedLiquid) {
+                                if (isDef(linkedLiquid.tableJson)) {
+                                    if (isDef(linkedLiquid.tableJson.documents)) {
+                                        for (let id = 0; id < linkedLiquid.tableJson.documents.length; id++) {
+                                            let doc = linkedLiquid.tableJson.documents[id];
+                                            if (doc.name == oDocName) {
+                                                doc.pageLoaded = true;
+                                                doc.containerObj = obj;
+                                                doc.customized = true;
+                                                doc.containerObj.onload = function (event) {
+                                                    Liquid.onDocumentFolderLoaded(event.target);
+                                                };
+                                                /*
+                                                setTimeout( function() {
+                                                    Liquid.refreshDocument(linkedLiquid, doc, true);
+                                                }, 100);
+                                                */
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
+
 
             // search for aux linked obj
             var obj_aux = null;
@@ -15299,8 +15359,8 @@ var Liquid = {
                                 }
                             }
 
-                            var tooltip = linkedCol["name"];
-                            var tooltipName = "tooltip" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
+                            var tooltip = null;
+                            var tooltipName = "title" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "");
                             var labelName = (Liquid.translateLabels ? ("label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "label");
 
                             if (isDef(linkedCol[tooltipName]))
@@ -15309,6 +15369,8 @@ var Liquid = {
                                 if (isDef(linkedCol[labelName])) {
                                     if(Liquid.projectMode) {
                                         tooltip = "[DEBUG] Linked to field:"+linkedCol[labelName] + "("+linkedCol["name"]+")";
+                                    } else {
+                                        tooltip = linkedCol[labelName];
                                     }
                                 }
                             }
@@ -15655,76 +15717,7 @@ var Liquid = {
                                             console.error(e)
                                         }
                                     }
-                                    if (value == "NULL") {
-                                        value = "";
-                                    } else {
-                                        if (value.lastIndexOf(".") > 0) {
-                                            value = value.substring(0, value.lastIndexOf(".") - 1);
-                                        }
-                                        var d = value ? new Date(Date.parse(value)) : null;
-                                        if (type === "6" || type === "91") {
-                                            // date
-                                            if (Liquid.dateFormat) {
-                                            }
-                                        } else if (type === "93") {
-                                            // timestamp
-                                            value = Liquid.getLocalDate(value, type);
-                                            try {
-                                                if (targetObj.readOnly || targetObj.disabled) {
-                                                    default_format = Liquid.timestampFormat;
-                                                } else {
-                                                    // default_format = null;
-                                                    // formato personalizzato
-                                                    default_format = Liquid.timestampFormat;
-                                                }
-                                                format = Liquid.getTimestampFormat(format, default_format);
-                                                if (format) {
-                                                    if (value) {
-                                                        value = d.toString(format);
-                                                    } else {
-                                                        value = "";
-                                                    }
-                                                } else {
-                                                    if (Liquid.timestampFormat === 'auto') {
-                                                        value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
-                                                    } else if (Liquid.timestampFormat === 'iso') {
-                                                        value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
-                                                    } else if (Liquid.timestampFormat === 'gmt') {
-                                                        value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
-                                                    } else if (Liquid.timestampFormat === 'date') {
-                                                        value = d.toLocaleDateString(); // '2/18/2012'
-                                                    } else if (Liquid.timestampFormat === 'short') {
-                                                        // use of date.js
-                                                        d = Date.parse(value);
-                                                        if (d) {
-                                                            value = d.toShortateString(); // '2/18/2012'
-                                                        } else {
-                                                            value = "";
-                                                        }
-                                                    } else if (Liquid.timestampFormat === 'long') {
-                                                        // use of date.js
-                                                        d = Date.parse(value);
-                                                        if (d) {
-                                                            // value = d.toString(format);
-                                                            value = d.toString('dddd dd MMMM yyyy, HH:mm');
-                                                        } else {
-                                                            value = "";
-                                                        }
-                                                    } else {
-                                                        // use of date.js
-                                                        d = Date.parse(value);
-                                                        if (d) {
-                                                            value = value;
-                                                        } else {
-                                                            value = "";
-                                                        }
-                                                    }
-                                                }
-                                            } catch (e) {
-                                                console.error(e);
-                                            }
-                                        }
-                                    }
+                                    value = Liquid.formatDate(value, type, format, targetObj.readOnly, targetObj.disabled);
                                 }
                                 if(isDef(b64)) {
                                     if (b64) {
@@ -16366,14 +16359,11 @@ var Liquid = {
                                         }
                                     } else if (obj.type === 'file') {
                                         // look to column definition of control
-                                        var linkToFile = false;
                                         if (isDef(lay_coord.col)) {
                                             if (liquid.tableJson.columns) {
                                                 if (lay_coord.col < liquid.tableJson.columns.length) {
                                                     var col = liquid.tableJson.columns[lay_coord.col];
                                                     if (col) {
-                                                        if (isDef(col.link)) linkToFile = col.link;
-                                                        if (isDef(col.fileLink)) linkToFile = col.fileLink;
                                                         Liquid.onFormFileChange(obj, col);
                                                     }
                                                 }
@@ -16381,33 +16371,32 @@ var Liquid = {
                                         }
                                         var isFormX = Liquid.isFormX(liquid);
                                         if (isFormX) {
-                                            var queue = {
-                                                liquid: liquid,
-                                                obj: obj,
-                                                targetObj: null,
-                                                targetRow: liquid.addingRow,
-                                                targetCol: col,
-                                                files: obj.files,
-                                                iFile: 0,
-                                                propName: null,
-                                                propValue: null,
-                                                linkToFile: linkToFile,
-                                                callback:null
-                                            };
-                                            // update by file content asyncromously
-                                            var filesName = "", filesSize = "";
-                                            for (var iF = 0; iF < obj.files.length; iF++) {
-                                                filesName += (filesName.length ? "," : "") + obj.files[iF].name;
-                                                filesSize += (filesSize.length ? "," : "") + obj.files[iF].size;
+                                            if(obj.files.length >= 1) {
+                                                var queue = {
+                                                    liquid: liquid,
+                                                    obj: obj,
+                                                    files: obj.files,
+                                                    iFile: 0,
+                                                    propName: null,
+                                                    propValue: null,
+                                                    callback: null
+                                                };
+                                                // update by file content asyncromously
+                                                var filesName = "", filesSize = "";
+                                                for (var iF = 0; iF < obj.files.length; iF++) {
+                                                    filesName += (filesName.length ? "," : "") + obj.files[iF].name;
+                                                    filesSize += (filesSize.length ? "," : "") + obj.files[iF].size;
+                                                }
+                                                obj.dataset.filesName = filesName;
+                                                obj.dataset.filesSize = filesSize;
+                                                var additionFileInfo = col.name + ".filesName";
+                                                if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesName;
+                                                additionFileInfo = col.name + ".filesSize";
+                                                if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesSize;
+                                                if (Liquid.formFilesToObjectExchange(queue)) {
+                                                    doUpdate = true;
+                                                }
                                             }
-                                            obj.dataset.filesName = filesName;
-                                            obj.dataset.filesSize = filesSize;
-                                            var additionFileInfo = col.name + ".filesName";
-                                            if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesName;
-                                            additionFileInfo = col.name + ".filesSize";
-                                            if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesSize;
-                                            Liquid.formFilesToObjectExchange(queue);
-                                            doUpdate = false;
                                         } else {
                                             console.error("ERROR:unsupported");
                                         }
@@ -16427,7 +16416,6 @@ var Liquid = {
                                     newValue = obj.innerHTML;
                                 }
                             }
-
                             if (doUpdate) {
                                 var isFormX = Liquid.isFormX(liquid);
                                 if (isFormX) {
@@ -16483,15 +16471,18 @@ var Liquid = {
         if (isDef(liquid.tableJson.documents)) {
             for (var id = 0; id < liquid.tableJson.documents.length; id++) {
                 var doc = liquid.tableJson.documents[id];
-                if (doc) {
-                    if (doc.useIframe) {
-                        doc.containerObj.onload = function (event) {
-                            Liquid.onDocumentFolderLoaded(event.target);
-                        };
-                        var path = glLiquidServlet.substr(0, glLiquidServlet.lastIndexOf("/"));
-                        doc.containerObj.src = path + "/iframes/documents.jsp?docName=" + doc.name + "&controlId=" + liquid.controlId;
-                    }
-                }
+                Liquid.loadDocumentContent(liquid, doc);
+            }
+        }
+    },
+    loadDocumentContent: function (liquid, doc) {
+        if (doc) {
+            if (doc.useIframe) {
+                doc.containerObj.onload = function (event) {
+                    Liquid.onDocumentFolderLoaded(event.target);
+                };
+                var path = glLiquidServlet.substr(0, glLiquidServlet.lastIndexOf("/"));
+                doc.containerObj.src = path + "/iframes/documents.jsp?docName=" + doc.name + "&controlId=" + liquid.controlId + "&mode=" + "";
             }
         }
     },
@@ -16501,7 +16492,7 @@ var Liquid = {
             var doc = Liquid.getDocument(liquid, obj);
             if (doc) {
                 doc.pageLoaded = true;
-                Liquid.refreshDocuemnt(liquid, doc, true);
+                Liquid.refreshDocument(liquid, doc, true);
             }
         }
     },
@@ -16528,19 +16519,19 @@ var Liquid = {
         }
         return null;
     },
-    refreshDocuments: function (liquid, param) {
+    refreshDocuments: function (liquid, bSetup) {
         if (liquid) {
             if (isDef(liquid.tableJson.documents)) {
                 for (var id = 0; id < liquid.tableJson.documents.length; id++) {
                     var doc = liquid.tableJson.documents[id];
                     if (doc) {
-                        Liquid.refreshDocuemnt(liquid, doc, param);
+                        Liquid.refreshDocument(liquid, doc, bSetup);
                     }
                 }
             }
         }
     },
-    refreshDocuemnt: function (liquid, doc, param) {
+    refreshDocument: function (liquid, doc, bSetup) {
         if (liquid) {
             if (doc) {
                 if (doc.pageLoaded === true) {
@@ -16550,7 +16541,7 @@ var Liquid = {
                         try {
                             targetWindow = doc.containerObj.contentWindow;
                         } catch (e) {
-                            console.error("ERROR: unable to access to contentWindow at docuemnt folder:" + doc.name + ", error:" + e);
+                            console.error("ERROR: unable to access to contentWindow at document folder:" + doc.name + ", error:" + e);
                         }
                         if (targetWindow) {
                             try {
@@ -16559,8 +16550,18 @@ var Liquid = {
                             } catch (e) {
                                 console.error("ERROR: unable to access global var at :" + doc.name + ", error:" + e);
                             }
-                            if (typeof targetWindow.loadDocuments === 'function')
+                            if (typeof targetWindow.loadDocuments === 'function') {
                                 targetWindow.loadDocuments(liquid, doc, curNodes, null);
+                            } else {
+                                // FF work fine, chrome sucks ...
+                                if(!isDef(doc.onloadReminder)) doc.onloadReminder = 0;
+                                if(doc.onloadReminder<10) {
+                                    setTimeout(
+                                        function () {
+                                            Liquid.refreshDocument(liquid, doc, bSetup);
+                                        }, 500);
+                                }
+                            }
                         }
                     }
                 }
@@ -16642,7 +16643,7 @@ var Liquid = {
                         try {
                             targetWindow = chart.containerObj.contentWindow;
                         } catch (e) {
-                            console.error("ERROR: unable to access to contentWindow at docuemnt folder:" + chart.name + ", error:" + e);
+                            console.error("ERROR: unable to access to contentWindow at document folder:" + chart.name + ", error:" + e);
                         }
                         if (targetWindow) {
                             try {
@@ -17085,6 +17086,79 @@ var Liquid = {
             }
         }
         return true;
+    },
+    formatDate : function(value, type, format, readOnly, disabled) {
+        if (value == "NULL") {
+            value = "";
+        } else {
+            if (value.lastIndexOf(".") > 0) {
+                value = value.substring(0, value.lastIndexOf(".") - 1);
+            }
+            var d = value ? new Date(Date.parse(value)) : null;
+            if (type === "6" || type === "91") {
+                // date
+                if (Liquid.dateFormat) {
+                }
+            } else if (type === "93") {
+                // timestamp
+                value = Liquid.getLocalDate(value, type);
+                try {
+                    if (readOnly || disabled) {
+                        default_format = Liquid.timestampFormat;
+                    } else {
+                        // default_format = null;
+                        // formato personalizzato
+                        default_format = Liquid.timestampFormat;
+                    }
+                    format = Liquid.getTimestampFormat(format, default_format);
+                    if (format) {
+                        if (value) {
+                            value = d.toString(format);
+                        } else {
+                            value = "";
+                        }
+                    } else {
+                        if (Liquid.timestampFormat === 'auto') {
+                            value = d.toLocaleString(); // '2/18/2012, 2:28:32 PM'
+                        } else if (Liquid.timestampFormat === 'iso') {
+                            value = d.toISOString(); // '2012-02-18T13:28:32.000Z'
+                        } else if (Liquid.timestampFormat === 'gmt') {
+                            value = d.toGMTString();// 'Sat, 18 Feb 2012 13:28:32 GMT'
+                        } else if (Liquid.timestampFormat === 'date') {
+                            value = d.toLocaleDateString(); // '2/18/2012'
+                        } else if (Liquid.timestampFormat === 'short') {
+                            // use of date.js
+                            d = Date.parse(value);
+                            if (d) {
+                                value = d.toShortateString(); // '2/18/2012'
+                            } else {
+                                value = "";
+                            }
+                        } else if (Liquid.timestampFormat === 'long') {
+                            // use of date.js
+                            d = Date.parse(value);
+                            if (d) {
+                                // value = d.toString(format);
+                                value = d.toString('dddd dd MMMM yyyy, HH:mm');
+                            } else {
+                                value = "";
+                            }
+                        } else {
+                            // use of date.js
+                            d = Date.parse(value);
+                            if (d) {
+                                value = value;
+                            } else {
+                                value = "";
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+        return value;
     },
     onSaveRichField: function (obj, content) {
         var liquid = Liquid.getLiquid(obj);
@@ -17634,9 +17708,9 @@ var Liquid = {
             }
         }
     },
-    setUserProp: function (liquid, propName, propValue) {
+    setUserProp: function (liquidOrControlId, propName, propValue) {
         if (propName) {
-            var liquid = Liquid.getLiquid(liquid);
+            var liquid = Liquid.getLiquid(liquidOrControlId);
             if (liquid) {
                 if (!liquid.userProps)
                     liquid.userProps = [];
@@ -17807,11 +17881,13 @@ var Liquid = {
     onDocumentResize: function (liquid, document) {
         if (liquid) {
             if (document) {
-                var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
-                if (aggridContainerHeight > 0) {
-                    document.containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
-                    if (!isDef(document.resizeCounter)) document.resizeCounter = 0;
-                    document.resizeCounter++;
+                if(document.customized !== true) {
+                    var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
+                    if (aggridContainerHeight > 0) {
+                        document.containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                        if (!isDef(document.resizeCounter)) document.resizeCounter = 0;
+                        document.resizeCounter++;
+                    }
                 }
             }
         }
@@ -17819,11 +17895,13 @@ var Liquid = {
     onChartResize: function (liquid, chart) {
         if (liquid) {
             if (chart) {
-                var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
-                if (aggridContainerHeight > 0) {
-                    chart.containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
-                    if (!isDef(chart.resizeCounter)) chart.resizeCounter = 0;
-                    chart.resizeCounter++;
+                if(chart.customized !== true) {
+                    var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
+                    if (aggridContainerHeight > 0) {
+                        chart.containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                        if (!isDef(chart.resizeCounter)) chart.resizeCounter = 0;
+                        chart.resizeCounter++;
+                    }
                 }
             }
         }
@@ -17987,8 +18065,10 @@ var Liquid = {
                 document.getElementById(liquid.lastGridTabObj.id + ".content").style.display = 'none';
             }
             liquid.lastGridTabObj = obj;
-            liquid.lastGridTabObj.parentNode.className = "liquidTabSel";
-            document.getElementById(liquid.lastGridTabObj.id + ".content").style.display = '';
+            if(liquid.lastGridTabObj.parentNode)
+                liquid.lastGridTabObj.parentNode.className = "liquidTabSel";
+            let obj_content = document.getElementById(liquid.lastGridTabObj.id + ".content");
+            if(obj_content) obj_content.style.display = '';
         }
     },
     onGridTab: function (obj) {
@@ -18550,6 +18630,7 @@ var Liquid = {
                                 if(itemObj.onclick) {
                                     itemObj.onclick = null;
                                 }
+                                itemObj.style.cursor = 'pointer';
                             }
                         } catch (e) { }
                         if(itemResetObj) { itemResetObj.disabled = false; itemResetObj.style.filter = ''; itemResetObj.style.width = '16px'; }
@@ -18579,6 +18660,7 @@ var Liquid = {
                             if(itemObj.type == "checkbox") {
                                 itemObj.disabled = false;
                                 itemObj.onclick = function() { return false };
+                                itemObj.style.cursor = '';
                             }
                         } catch (e) { }
                         if(itemResetObj) { itemResetObj.disabled = true; itemResetObj.style.filter = ''; itemResetObj.style.width = '0px'; }
@@ -18851,6 +18933,8 @@ var Liquid = {
                 if(isDef(disabled)) {
                     if(targetObj.type !== "checkbox") {
                         targetObj.disabled = disabled;
+                        if(disabled)
+                            targetObj.style.cursor = '';
                     }
                 }
                 return 1;
@@ -18869,6 +18953,8 @@ var Liquid = {
                 if (isDef(disabled)) {
                     if (targetObj.type !== "checkbox") {
                         targetObj.disabled = disabled;
+                        if(disabled)
+                            targetObj.style.cursor = '';
                     }
                 }
                 return 0;

@@ -5,6 +5,7 @@
 package com.liquid;
 
 import com.liquid.python.python;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,6 +30,7 @@ import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,6 +38,7 @@ import java.util.logging.Logger;
 public class event {
 
     public static final int MAX_DOWNLOAD_SIZE = 16 * 1024 * 1024;
+
 
     public interface eventCallback<T extends Object> {
 
@@ -1330,9 +1333,11 @@ public class event {
      * @param requetParam
      * @return
      */
-    static public String onInserting(Object tbl_wrk, Object params, Object clientData, Object requetParam) {
+    static public String onInserting(Object tbl_wrk, Object params, Object clientData, Object requetParam) throws Throwable {
+        HttpServletRequest request = (HttpServletRequest) requetParam;
         String retVal = "", out_string = "", error = "";
         Connection conn = null;
+        String connError = null;
         try {
             if (tbl_wrk != null) {
                 // System.out.println(" onInserting() Raised");
@@ -1340,7 +1345,6 @@ public class event {
                 JSONArray paramsJSON = null;
                 JSONObject rowData = null;
                 workspace liquid = (workspace) tbl_wrk;
-                HttpServletRequest request = (HttpServletRequest) requetParam;
                 String schema = null;
                 String table = null;
                 try {
@@ -1369,9 +1373,14 @@ public class event {
                     }
                 }
 
-                Object [] connResult = connection.getConnection(null, request, ((workspace) tbl_wrk).tableJson);
-                conn = (Connection)connResult[0];
-                String connError = (String)connResult[1];
+                if(transaction.isTransaction(request)) {
+                    conn = transaction.getTransaction(request);
+                } else {
+                    Object[] connResult = connection.getConnection(null, request, ((workspace) tbl_wrk).tableJson);
+                    conn = (Connection) connResult[0];
+                    connError = (String)connResult[1];
+                }
+
                 if (conn != null) {
                     String reqDateSep = (String)request.getAttribute("dateSep");
                     String reqTimeSep = (String)request.getAttribute("timeSep");
@@ -1513,14 +1522,18 @@ public class event {
         } catch (Throwable th) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
             retVal = "{\"error\":\"" + utility.base64Encode("Fatal error:" + th.getLocalizedMessage()) + "\"}";
+            throw th;
 
         } finally {
-            try {
-                if (conn != null) {
-                    conn.close();
+            if(transaction.isTransaction(request)) {
+            } else {
+                try {
+                    if (conn != null) {
+                        conn.close();
+                    }
+                } catch (SQLException ex) {
+                    Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (SQLException ex) {
-                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         return retVal;
@@ -1569,13 +1582,14 @@ public class event {
 
     // Evento di SISTEMA Risoluzione dei campi rimasti al default e inserimento del record nel DB
     // Per Test con "owner":"com.liquid.event"
-    static public String onPastedRow(Object tbl_wrk, Object params, Object clientData, Object requestParam) {
+    static public String onPastedRow(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Throwable {
+        HttpServletRequest request = (HttpServletRequest) requestParam;
         String retVal = "", out_string = "", error = "";
         Connection conn = null;
+        String connError = null;
         try {
             if (tbl_wrk != null) {
                 // System.out.println(" onPasted() Raised");
-                HttpServletRequest request = (HttpServletRequest) requestParam;
                 workspace liquid = (workspace) tbl_wrk;
                 String schema = null;
                 String table = null;
@@ -1588,9 +1602,14 @@ public class event {
                 } catch (Exception e) {
                 }
 
-                Object [] connResult = connection.getConnection(null, request, ((workspace) tbl_wrk).tableJson);
-                conn = (Connection)connResult[0];
-                String connError = (String)connResult[1];
+                if(transaction.isTransaction(request)) {
+                    conn = transaction.getTransaction(request);
+                } else {
+                    Object[] connResult = connection.getConnection(null, request, ((workspace) tbl_wrk).tableJson);
+                    conn = (Connection) connResult[0];
+                    connError = (String)connResult[1];
+                }
+
                 if (conn != null) {
                     long cRow = 0;
                     long lStartTime = 0;
@@ -1683,14 +1702,18 @@ public class event {
         } catch (Throwable th) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
             retVal = "{\"error\":\"" + utility.base64Encode("Fatal error:" + th.getLocalizedMessage()) + "\"}";
+            throw  th;
 
         } finally {
-            try {
-                if (conn != null) {
-                    conn.close();
+            if(transaction.isTransaction(request)) {
+            } else {
+                try {
+                    if (conn != null) {
+                        conn.close();
+                    }
+                } catch (SQLException ex) {
+                    Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (SQLException ex) {
-                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         return retVal;
@@ -1883,6 +1906,45 @@ public class event {
         return null;
     }
 
+    /**
+     * System event : called internally to clean up
+     * @param liquid
+     * @param ids
+     */
+    public static void onCleanupRows(workspace liquid, String ids, HttpServletRequest request) {
+        //  cancellazione dal DMS
+        if(liquid != null) {
+            if(liquid.tableJson.has("documents")) {
+                if(ids != null) {
+                    JSONArray documents = liquid.tableJson.getJSONArray("documents");
+                    for(int id=0; id<documents.length(); id++) {
+                        String dmsName = documents.getJSONObject(id).getString("name");
+
+                        // collecting keys for the link
+                        ArrayList<String> keyList = utility.get_dms_keys(
+                                liquid,
+                                "{ \"params\": {\"name\":\"" + dmsName + "\", \"ids\":[" + ids + "]}}"
+                        );
+
+                        // do delete in DMS
+                        String resDMSdelete = event.deleteDocument(
+                                liquid,
+                                "{\"params\":{\"links\":[" + utility.arrayToString(keyList, "'", "'", ",") + "]}}",
+                                null,
+                                request
+                        );
+                        // TODO : error handling
+                        JSONObject resDMSJson = new JSONObject(resDMSdelete);
+                        if (resDMSJson != null) {
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+
     // Per Test con "events":[ ... "com.liquid.event.onRetrieveRows" ...]
     static public String onRetrieveRows(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
         // System.out.println(" onRetrieveRows() Raised");
@@ -1901,26 +1963,26 @@ public class event {
      * @param tbl_wrk
      * @param params
      * @param clientData
-     * @param freeParam
+     * @param requestParam
      * @return
      */
-    static public String getDocuments(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
+    static public String getDocuments(Object tbl_wrk, Object params, Object clientData, Object requestParam) {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
             if (tbl_wrk != null) {
                 workspace tblWrk = (workspace) tbl_wrk;
                 Class cls = null;
                 // collecting keys for the link
-                ArrayList<String> keyList = utility.get_dms_keys(tblWrk, (String) params);
+                ArrayList<String> keyList = utility.get_dms_keys(tblWrk, (Object) params);
                 try {
                     // Custom implementation
                     cls = Class.forName("app.liquid.dms.connection");
-                    Method method = cls.getMethod("getDocuments", Object.class, Object.class, Object.class, Object.class);
+                    Method method = cls.getMethod("getDocuments", Object.class, Object.class, Object.class, Object.class, Object.class);
                     Object classInstance = (Object) cls.newInstance();
-                    return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) keyList);
+                    return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object)requestParam, (Object) keyList);
                 } catch (Throwable th) {
                     // default implementation
-                    return getDocumentsDefault(tbl_wrk, params, clientData, keyList);
+                    return getDocumentsDefault(tbl_wrk, params, clientData, requestParam, keyList);
                 }
             }
         } catch (Throwable e) {
@@ -1937,10 +1999,11 @@ public class event {
      * @param tbl_wrk
      * @param params
      * @param clientData
-     * @param freeParam
+     * @param requestParam
      * @return
      */
-    public static String getDocumentsDefault( Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
+    public static String getDocumentsDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam, Object keyListParam ) throws Throwable {
+        HttpServletRequest request = (HttpServletRequest) requestParam;
         StringBuilder resultSet = new StringBuilder("{\"resultSet\":[");
         Connection conn = null;
         PreparedStatement psdo = null;
@@ -1974,9 +2037,13 @@ public class event {
             //  params :
             // { database:... , schema:... , table:... , name:... , ids:nodeKeys };
 
-            if(freeParam != null) {
-                Object [] connRes = connection.getDBConnection();
-                conn = (Connection)connRes[0];
+            if(requestParam != null) {
+                if(transaction.isTransaction(request)) {
+                    conn = transaction.getTransaction(request);
+                } else {
+                    Object [] connRes = connection.getDBConnection();
+                    conn = (Connection) connRes[0];
+                }
                 if(conn != null) {
                     String cols = "D.file, D.size, D.date, D.note, D.type, D.link, D.hash, D.id, D.doc_type_id, DT.type as doc_type";
                     if("IT".equalsIgnoreCase(workspace.getGLLang())) {
@@ -1985,7 +2052,7 @@ public class event {
                         cols += ", DT.type_desc as doc_type_desc";
                     }
 
-                    ArrayList<String> keyList = (ArrayList<String>)freeParam;
+                    ArrayList<String> keyList = (ArrayList<String>)keyListParam;
                     for(int ik=0; ik<keyList.size(); ik++) {
                         sWhere += sWhere.length()>0?" OR ":"" + "link='"+keyList.get(ik)+"'";
                     }
@@ -2034,13 +2101,16 @@ public class event {
             }
         } catch (Throwable e) {
             System.err.println("Query Error:" + e.getLocalizedMessage() + sQuery);
-            resultSet.append("], \"error\":\""+utility.base64Encode(e.getMessage())+"\"}");
-            return resultSet.toString();
+            throw e;
+
         } finally {
-            try {
-                conn.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+            if(transaction.isTransaction(request)) {
+            } else {
+                try {
+                    conn.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
         resultSet.append("]}");
@@ -2087,34 +2157,37 @@ public class event {
                 JSONObject paramsJson = new JSONObject("{\"params\":null}");
                 JSONObject dmsParamsJson = new JSONObject();
 
-                dmsParamsJson.put("database", database != null ? database : tblWrk.tableJson.has("database") ? tblWrk.tableJson.getString("database") : null);
-                dmsParamsJson.put("schema", schema != null ? schema : tblWrk.tableJson.has("schema") ? tblWrk.tableJson.getString("schema") : null);
-                dmsParamsJson.put("table", table != null ? table : tblWrk.tableJson.has("table") ? tblWrk.tableJson.getString("table") : null);
-                dmsParamsJson.put("name", name != null ? name : tblWrk.tableJson.has("name") ? tblWrk.tableJson.getString("name") : null);
-                dmsParamsJson.put("row", rowId != null ? String.valueOf(rowId) : null);
-                dmsParamsJson.put("file", fileName != null ? fileName : null);
-                dmsParamsJson.put("size", fileSize != null ? fileSize : null);
+                if(!workspace.is_dms_readonly((workspace)tbl_wrk, name)){
 
-                String mimeType = null;
-                if(mimeType == null) {
-                    ServletContext context = ((HttpServletRequest) requestParam).getSession().getServletContext();
-                    mimeType = context.getMimeType(fileName);
-                    if(mimeType == null) {
-                        if (requestParam != null) {
-                            mimeType = (String)((HttpServletRequest) requestParam).getAttribute("mimeType");
+                    dmsParamsJson.put("database", database != null ? database : tblWrk.tableJson.has("database") ? tblWrk.tableJson.getString("database") : null);
+                    dmsParamsJson.put("schema", schema != null ? schema : tblWrk.tableJson.has("schema") ? tblWrk.tableJson.getString("schema") : null);
+                    dmsParamsJson.put("table", table != null ? table : tblWrk.tableJson.has("table") ? tblWrk.tableJson.getString("table") : null);
+                    dmsParamsJson.put("name", name != null ? name : tblWrk.tableJson.has("name") ? tblWrk.tableJson.getString("name") : null);
+                    dmsParamsJson.put("row", rowId != null ? String.valueOf(rowId) : null);
+                    dmsParamsJson.put("file", fileName != null ? fileName : null);
+                    dmsParamsJson.put("size", fileSize != null ? fileSize : null);
+
+                    String mimeType = null;
+                    if (mimeType == null) {
+                        ServletContext context = ((HttpServletRequest) requestParam).getSession().getServletContext();
+                        mimeType = context.getMimeType(fileName);
+                        if (mimeType == null) {
+                            if (requestParam != null) {
+                                mimeType = (String) ((HttpServletRequest) requestParam).getAttribute("mimeType");
+                            }
                         }
+                        dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
                     }
-                    dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
-                }
 
-                dmsParamsJson.put("content", b64FileContent != null ? b64FileContent : null);
-                dmsParamsJson.put("doc_type", docType != null ? docType : null);
-                dmsParamsJson.put("user_data", userData != null ? userData : null);
-                JSONArray ids = new JSONArray();
-                ids.put(rowId);
-                dmsParamsJson.put("ids", ids);
-                paramsJson.put("params", dmsParamsJson);
-                return uploadDocument(tbl_wrk, paramsJson.toString(), clientData, requestParam);
+                    dmsParamsJson.put("content", b64FileContent != null ? b64FileContent : null);
+                    dmsParamsJson.put("doc_type", docType != null ? docType : null);
+                    dmsParamsJson.put("user_data", userData != null ? userData : null);
+                    JSONArray ids = new JSONArray();
+                    ids.put(rowId);
+                    dmsParamsJson.put("ids", ids);
+                    paramsJson.put("params", dmsParamsJson);
+                    return uploadDocument(tbl_wrk, paramsJson.toString(), clientData, requestParam);
+                }
             }
         } catch(Throwable th){
             error = " uploadDocuments() error:" + th.getLocalizedMessage();
@@ -2139,26 +2212,19 @@ public class event {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
             if (tbl_wrk != null) {
+                HttpServletRequest request = (HttpServletRequest) requestParam;
                 workspace tblWrk = (workspace) tbl_wrk;
                 Class cls = null;
-                HttpServletRequest request = (HttpServletRequest) requestParam;
                 if (request != null) {
                     // data:*/*;base64,
                     if (tblWrk != null) {
                         if (clientData != null) { // calling from Liquid UI
                             String docName = (String) clientData;
                             if (docName != null) {
-                                if(tblWrk.tableJson.has("documents")) {
-                                    JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
-                                    for (int i = 0; i < documents.length(); i++) {
-                                        JSONObject document = (JSONObject) documents.get(i);
-                                        if (document != null) {
-                                            if (docName.equalsIgnoreCase(document.getString("name"))) {
-                                                if (document.has("maxSize")) {
-                                                    // TODO : chack document size
-                                                }
-                                            }
-                                        }
+                                JSONObject document = workspace.get_dms_by_name(tblWrk, docName);
+                                if(document != null) {
+                                    if (document.has("maxSize")) {
+                                        // TODO : chack document size
                                     }
                                 }
                             }
@@ -2213,18 +2279,20 @@ public class event {
                     }
 
                     // collecting keys for the link
-                    ArrayList<String> keyList = utility.get_dms_keys(tblWrk, (String) params);
+                    ArrayList<String> keyList = utility.get_dms_keys(tblWrk, (Object) params);
                     if(keyList != null) {
-                        try {
-                            cls = Class.forName("app.liquid.dms.connection");
-                            Object classInstance = (Object) cls.newInstance();
-                            Method method = cls.getMethod("uploadDocument", Object.class, Object.class, Object.class, Object.class);
-                            return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) keyList);
-                        } catch (Throwable th){
-                            //
-                            // default implementation
-                            //
-                            return uploadDocumentDefault( tbl_wrk, paramsJson.toString(), clientData, keyList );
+                        if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+                            try {
+                                cls = Class.forName("app.liquid.dms.connection");
+                                Object classInstance = (Object) cls.newInstance();
+                                Method method = cls.getMethod("uploadDocument", Object.class, Object.class, Object.class, Object.class, Object.class);
+                                return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam, (Object) keyList);
+                            } catch (Throwable th) {
+                                //
+                                // default implementation
+                                //
+                                return uploadDocumentDefault(tbl_wrk, paramsJson.toString(), clientData, requestParam, keyList);
+                            }
                         }
                     } else {
                         throw new InvalidParameterException("Unable to build DMS keys");
@@ -2249,7 +2317,8 @@ public class event {
      * @param requestParam  (Campo link nel DB; elenco identificatori ArrayList<String> per identificare i records ai quali il doc è collegato)
      * @return
      */
-    static public String uploadDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam ) throws Throwable {
+    static public String uploadDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam, Object keyListParam ) throws Throwable {
+        HttpServletRequest request = (HttpServletRequest) requestParam;
         StringBuilder resultSet = new StringBuilder("{\"resultSet\":[");
         Connection conn = null;
         PreparedStatement psdo = null;
@@ -2302,6 +2371,7 @@ public class event {
 
             JSONObject paramsJson = new JSONObject((String)params);
             JSONObject paramJson = paramsJson.getJSONObject("params");
+            // paramJson : { database: ... , schema: ..., table: ..., name: ..., ids:nodesKey, file:"", size:"", note:"", fileContent:"" mimeType:""};
 
 
             if(!dmsRootFolder.endsWith(File.separator))
@@ -2355,11 +2425,16 @@ public class event {
                 } else {
                     fileContent = utility.base64DecodeBytes(b64FileContent);
                 }
-                if(fileContent.length > dmsMaxFileSize && dmsMaxFileSize > 0) {
-                    throw new Exception("File too large .. max:"+(dmsMaxFileSize/1024)+"Kb");
+                if(fileContent != null) {
+                    if(fileContent.length > dmsMaxFileSize && dmsMaxFileSize > 0) {
+                        throw new Exception("File too large .. max:"+(dmsMaxFileSize/1024)+"Kb");
+                    }
+                    Files.write(Paths.get(fileAbsolutePath), fileContent);
+                    paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
+                } else {
+                    // paramJson.put("hash", null);
+                    throw new Exception("File content not valid! Please check it's base 64 encoded");
                 }
-                Files.write(Paths.get(fileAbsolutePath), fileContent);
-                paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
             } else {
                 // paramJson.put("hash", null);
                 throw new Exception("File content not defined");
@@ -2390,101 +2465,120 @@ public class event {
             }
 
 
+            if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
 
-            // paramJson : { database: ... , schema: ..., table: ..., name: ..., ids:nodesKey, file:"", size:"", note:"", fileContent:"" mimeType:""};
-            if(requestParam != null) {
-                Object [] connRes = connection.getDBConnection();
-                conn = (Connection)connRes[0];
-                if(conn != null) {
-                    // N.B.: one document can refers to multiple rows in table, if rowSelect is "multiple"
-                    // JSONArray ids = paramJson.getJSONArray("ids");
-                    ArrayList<String> keyList = null;
-                    if(requestParam != null) {
-                        keyList = (ArrayList<String>)requestParam;
+                if (requestParam != null) {
+                    if (transaction.isTransaction(request)) {
+                        conn = transaction.getTransaction(request);
                     } else {
-                        throw new Exception("No keys defined");
+                        Object[] connRes = connection.getDBConnection();
+                        conn = (Connection) connRes[0];
+                        if (conn != null) {
+                            conn.setAutoCommit(false);
+                        }
                     }
 
-                    conn.setAutoCommit(false);
-
-                    for (int i=0; i<keyList.size(); i++) {
-
-                        sQuery = "INSERT INTO \""+dmsSchema+"\".\""+dmsTable+"\" " +
-                                "(\"file\",\"size\",\"note\",\"type\",\"hash\",\"link\",\"doc_type_id\",\"user_data\")" +
-                                " VALUES " +
-                                "("+"?"+""
-                                +",'"+paramJson.getInt("size")+"'"
-                                +","+"?"+""
-                                +",'"+paramJson.getString("mimeType")+"'"
-                                +",'"+paramJson.getString("hash")+"'"
-                                +",'"+keyList.get(i)+"'"
-                                +","+doc_type_id
-                                +",?"
-                                +")";
-                        psdo = conn.prepareStatement(sQuery, Statement.RETURN_GENERATED_KEYS);
-
-                        psdo.setString(1, (String)fileAbsolutePath);
-                        psdo.setString(2, (String)paramJson.getString("note"));
-                        if(user_data instanceof String) {
-                            psdo.setString(3, (String)user_data);
-                        } else if(user_data instanceof byte []) {
-                            psdo.setString(3, (String)utility.base64Encode((byte[]) user_data));
+                    if (conn != null) {
+                        // N.B.: one document can refers to multiple rows in table, if rowSelect is "multiple"
+                        // JSONArray ids = paramJson.getJSONArray("ids");
+                        ArrayList<String> keyList = null;
+                        if (keyListParam != null) {
+                            keyList = (ArrayList<String>) keyListParam;
                         } else {
-                            psdo.setNull(3, Types.VARCHAR);
+                            throw new Exception("No keys defined");
                         }
 
-                        int res = psdo.executeUpdate();
-                        if(res >= 0) {
-                            if(bResolveDocTypeId) {
-                                ResultSet rs = psdo.getGeneratedKeys();
-                                PreparedStatement psdoRead = null;
-                                ResultSet rsdoRead = null;
-                                doc_type_id = null;
-                                try {
-                                    if (rs != null && rs.next()) {
-                                        sQuery = "SELECT doc_type_id FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" " +
-                                                "WHERE id=" + rs.getString(1);
-                                        psdoRead = conn.prepareStatement(sQuery);
-                                        rsdoRead = psdoRead.executeQuery();
-                                        if (rsdoRead != null) {
-                                            if (rsdoRead.next()) {
-                                                doc_type_id = rsdoRead.getString(1);
+                        for (int i = 0; i < keyList.size(); i++) {
+
+                            sQuery = "INSERT INTO \"" + dmsSchema + "\".\"" + dmsTable + "\" " +
+                                    "(\"file\",\"size\",\"note\",\"type\",\"hash\",\"link\",\"doc_type_id\",\"user_data\")" +
+                                    " VALUES " +
+                                    "(" + "?" + ""
+                                    + ",'" + paramJson.getInt("size") + "'"
+                                    + "," + "?" + ""
+                                    + ",'" + paramJson.getString("mimeType") + "'"
+                                    + ",'" + paramJson.getString("hash") + "'"
+                                    + ",'" + keyList.get(i) + "'"
+                                    + "," + doc_type_id
+                                    + ",?"
+                                    + ")";
+                            psdo = conn.prepareStatement(sQuery, Statement.RETURN_GENERATED_KEYS);
+
+                            psdo.setString(1, (String) fileAbsolutePath);
+                            psdo.setString(2, (String) paramJson.getString("note"));
+                            if (user_data instanceof String) {
+                                psdo.setString(3, (String) user_data);
+                            } else if (user_data instanceof byte[]) {
+                                psdo.setString(3, (String) utility.base64Encode((byte[]) user_data));
+                            } else {
+                                psdo.setNull(3, Types.VARCHAR);
+                            }
+
+                            int res = psdo.executeUpdate();
+                            if (res >= 0) {
+                                if (bResolveDocTypeId) {
+                                    ResultSet rs = psdo.getGeneratedKeys();
+                                    PreparedStatement psdoRead = null;
+                                    ResultSet rsdoRead = null;
+                                    doc_type_id = null;
+                                    try {
+                                        if (rs != null && rs.next()) {
+                                            sQuery = "SELECT doc_type_id FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" " +
+                                                    "WHERE id=" + rs.getString(1);
+                                            psdoRead = conn.prepareStatement(sQuery);
+                                            rsdoRead = psdoRead.executeQuery();
+                                            if (rsdoRead != null) {
+                                                if (rsdoRead.next()) {
+                                                    doc_type_id = rsdoRead.getString(1);
+                                                }
                                             }
                                         }
+                                    } finally {
+                                        if (rs != null) rs.close();
+                                        if (psdoRead != null) psdoRead.close();
+                                        if (rsdoRead != null) rsdoRead.close();
                                     }
-                                } finally {
-                                    if(rs != null) rs.close();
-                                    if(psdoRead != null) psdoRead.close();
-                                    if(rsdoRead != null) rsdoRead.close();
                                 }
+                                String fieldSet = "{"
+                                        + "\"file\":\"" + (paramJson.getString("file")) + "\""
+                                        + ",\"size\":" + paramJson.getInt("size")
+                                        + ",\"note\":\"" + paramJson.getString("note") + "\""
+                                        + ",\"type\":\"" + paramJson.getString("mimeType") + "\""
+                                        + ",\"hash\":\"" + paramJson.getString("hash") + "\""
+                                        + ",\"link\":\"" + keyList.get(i) + "\""
+                                        + ",\"doc_type_id\":\"" + doc_type_id + "\""
+                                        + "}";
+                                resultSet.append(nRecs > 0 ? "," : "" + fieldSet);
+                                nRecs++;
                             }
-                            String fieldSet = "{"
-                                    + "\"file\":\"" + (paramJson.getString("file")) + "\""
-                                    + ",\"size\":" + paramJson.getInt("size")
-                                    + ",\"note\":\"" + paramJson.getString("note") + "\""
-                                    + ",\"type\":\"" + paramJson.getString("mimeType") + "\""
-                                    + ",\"hash\":\"" + paramJson.getString("hash") + "\""
-                                    + ",\"link\":\"" + keyList.get(i) + "\""
-                                    + ",\"doc_type_id\":\"" + doc_type_id + "\""
-                                    + "}";
-                            resultSet.append(nRecs > 0 ? "," : "" + fieldSet);
-                            nRecs++;
+                        }
+
+                        if (transaction.isTransaction(request)) {
+                        } else {
+                            conn.commit();
                         }
                     }
-                    conn.commit();
                 }
+
             }
+
         } catch (Throwable e) {
-            conn.rollback();
+
+            if(transaction.isTransaction(request)) {
+            } else {
+                if (conn != null) conn.rollback();
+            }
             System.err.println("Query Error:" + e.getLocalizedMessage() + sQuery);
             throw e;
 
         } finally {
             try {
-                if(psdo != null)
-                    psdo.close();
-                if(conn != null)
-                    conn.close();
+                if(psdo != null) psdo.close();
+                if(transaction.isTransaction(request)) {
+                } else {
+                    if (conn != null)
+                        conn.close();
+                }
             } catch (SQLException ex) {
                 Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -2571,6 +2665,7 @@ public class event {
     }
 
     static public Object [] downloadDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam ) {
+        HttpServletRequest request = (HttpServletRequest) requestParam;
         byte [] fileContent = null;
         String fileName = "";
         String fileMimeType = "";
@@ -2615,8 +2710,12 @@ public class event {
                 String sid = paramJson.has("id") ? paramJson.getString("id") : null;
                 String slink = paramJson.has("link") ? paramJson.getString("link") : null;
 
-                Object [] connRes = connection.getDBConnection();
-                conn = (Connection)connRes[0];
+                if(transaction.isTransaction(request)) {
+                    conn = transaction.getTransaction(request);
+                } else {
+                    Object[] connRes = connection.getDBConnection();
+                    conn = (Connection) connRes[0];
+                }
                 if(conn != null) {
                     String cols = "D.file, D.size, D.date, D.note, D.type, D.link, D.hash, D.id, DT.type as doc_type";
                     if("IT".equalsIgnoreCase(workspace.getGLLang())) {
@@ -2691,7 +2790,10 @@ public class event {
             try {
                 if(rsdo != null) rsdo.close();
                 if(psdo != null) psdo.close();
-                if(conn != null) conn.close();
+                if(transaction.isTransaction(request)) {
+                } else {
+                    if (conn != null) conn.close();
+                }
             } catch (SQLException ex) {
                 Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -2719,15 +2821,21 @@ public class event {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
             workspace tblWrk = (workspace) tbl_wrk;
-            Class cls = null;
-            try {
-                cls = Class.forName("app.liquid.dms.connection");
-                Method method = cls.getMethod("deleteDocument", Object.class, Object.class, Object.class, Object.class);
-                Object classInstance = (Object) cls.newInstance();
-                return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
-            } catch (Throwable th) {
-                // Default implementation
-                return deleteDocumentDefault( tbl_wrk, params, clientData, requestParam );
+            JSONObject paramsJson = new JSONObject((String)params);
+            JSONObject paramJson = paramsJson.getJSONObject("params");
+            // { paramJson:..., schema:..., table:..., ids:..., id: ... };
+
+            if(!workspace.is_dms_readonly(tblWrk, paramJson.getString("name"))) {
+                Class cls = null;
+                try {
+                    cls = Class.forName("app.liquid.dms.connection");
+                    Method method = cls.getMethod("deleteDocument", Object.class, Object.class, Object.class, Object.class);
+                    Object classInstance = (Object) cls.newInstance();
+                    return (String) method.invoke(classInstance, (Object) tblWrk, (Object) params, (Object) clientData, (Object) requestParam);
+                } catch (Throwable th) {
+                    // Default implementation
+                    return deleteDocumentDefault(tbl_wrk, params, clientData, requestParam);
+                }
             }
         } catch (Throwable e) {
             error += "Error:" + e.getLocalizedMessage();
@@ -2745,7 +2853,8 @@ public class event {
      * @param requestParam
      * @return
      */
-    static public String deleteDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam ) {
+    static public String deleteDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam ) throws Throwable {
+        HttpServletRequest request = (HttpServletRequest) requestParam;
         StringBuilder resultSet = new StringBuilder("{\"resultSet\":[");
         Connection conn = null;
         PreparedStatement psdo = null;
@@ -2774,80 +2883,108 @@ public class event {
             JSONObject paramsJson = new JSONObject((String)params);
             JSONObject paramJson = paramsJson.getJSONObject("params");
             // { paramJson:..., schema:..., table:..., ids:..., id: ... };
+
             if(paramJson != null) {
-                Object [] connRes = connection.getDBConnection();
-                conn = (Connection)connRes[0];
-                if(conn != null) {
-                    if(paramJson.has("id")) {
-                        String id = paramJson.getString("id");
-                        sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (id='" + id + "')";
-                        sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (id='" + id + "')";
-                    } else if(paramJson.has("link")) {
-                        String link = paramJson.getString("link");
-                        if(link.startsWith("DMS://")) link = link.substring(6);
-                        sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
-                        sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
+
+                if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+
+                    if(transaction.isTransaction(request)) {
+                        conn = transaction.getTransaction(request);
+                    } else {
+                        Object[] connRes = connection.getDBConnection();
+                        conn = (Connection) connRes[0];
                     }
-                    if(sQuerySel != null) {
-                        try {
-                            psdo = conn.prepareStatement(sQuerySel);
-                            rsdo = psdo.executeQuery();
-                            if (rsdo != null) {
-                                if (rsdo.next()) {
-                                    String file = rsdo.getString("file");
-                                    if (file != null && !file.isEmpty()) {
-                                        boolean resDel = new File(file).delete();
-                                        if (!resDel) {
-                                            if (delete_file_error.length() == 0) {
-                                                delete_file_error += "{";
-                                            } else {
-                                                delete_file_error += ",";
+
+                    if(conn != null) {
+                        if (paramJson.has("id")) {
+                            String id = paramJson.getString("id");
+                            sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (id='" + id + "')";
+                            sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (id='" + id + "')";
+                        } else if (paramJson.has("link")) {
+                            String link = paramJson.getString("link");
+                            if (link.startsWith("DMS://")) link = link.substring(6);
+                            sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
+                            sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
+                        } else if (paramJson.has("links")) {
+                            JSONArray links = paramJson.getJSONArray("links");
+                            String all_links = "(";
+                            int n_links = 0;
+                            for (int il = 0; il < links.length(); il++) {
+                                String link = links.getString(il);
+                                if (link.startsWith("DMS://")) link = link.substring(6);
+                                all_links += (n_links > 0 ? "," : "") + "'" + link + "'";
+                                n_links++;
+                            }
+                            all_links += ")";
+                            sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link IN " + all_links + ")";
+                            sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link IN " + all_links + ")";
+                        }
+                        if (sQuerySel != null) {
+                            try {
+                                psdo = conn.prepareStatement(sQuerySel);
+                                rsdo = psdo.executeQuery();
+                                if (rsdo != null) {
+                                    if (rsdo.next()) {
+                                        String file = rsdo.getString("file");
+                                        if (file != null && !file.isEmpty()) {
+                                            boolean resDel = new File(file).delete();
+                                            if (!resDel) {
+                                                if (delete_file_error.length() == 0) {
+                                                    delete_file_error += "{";
+                                                } else {
+                                                    delete_file_error += ",";
+                                                }
+                                                delete_file_error += "[\"Failed to delete " + file + "\"]";
                                             }
-                                            delete_file_error += "[\"Failed to delete " + file + "\"]";
                                         }
                                     }
                                 }
+                            } finally {
+                                if (rsdo != null)
+                                    rsdo.close();
+                                rsdo = null;
+
+                                if (psdo != null)
+                                    psdo.close();
+                                psdo = null;
                             }
-                        } finally {
-                            if(rsdo != null)
-                                rsdo.close();
-                            rsdo = null;
 
-                            if(psdo != null)
-                                psdo.close();
-                            psdo = null;
-                        }
+                            if (delete_file_error.length() > 0) {
+                                delete_file_error += "}";
+                            }
 
-                        if(delete_file_error.length() > 0) {
-                            delete_file_error += "}";
-                        }
-
-                        try {
-                            psdo = conn.prepareStatement(sQuery);
-                            int res = psdo.executeUpdate();
-                            if (res >= 0) {
-                                String fieldSet;
-                                if (paramJson.has("id")) {
-                                    fieldSet = "{" + "\"id\":\"" + (paramJson.getString("id")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
-                                } else {
-                                    fieldSet = "{" + "\"link\":\"" + (paramJson.getString("link")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
+                            try {
+                                psdo = conn.prepareStatement(sQuery);
+                                int res = psdo.executeUpdate();
+                                if (res >= 0) {
+                                    String fieldSet;
+                                    if (paramJson.has("id")) {
+                                        fieldSet = "{" + "\"id\":\"" + (paramJson.getString("id")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
+                                    } else {
+                                        fieldSet = "{" + "\"link\":\"" + (paramJson.getString("link")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
+                                    }
+                                    resultSet.append((nRecs > 0 ? "," : "") + fieldSet);
+                                    nRecs++;
                                 }
-                                resultSet.append((nRecs > 0 ? "," : "") + fieldSet);
-                                nRecs++;
+                            } finally {
+                                if (psdo != null) psdo.close();
                             }
-                        } finally {
-                            if (psdo != null) psdo.close();
                         }
                     }
                 }
             }
         } catch (Throwable e) {
             System.err.println("Query Error:" + e.getLocalizedMessage() + sQuery);
+            throw e;
+
         } finally {
-            try {
-                conn.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+            if(transaction.isTransaction(request)) {
+            } else {
+                try {
+                    conn.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
         resultSet.append("]}");
@@ -2869,16 +3006,20 @@ public class event {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
             if (tbl_wrk != null) {
-                workspace tblWrk = (workspace) tbl_wrk;
-                Class cls = null;
-                try {
-                    cls = Class.forName("app.liquid.dms.connection");
-                    Method method = cls.getMethod("updateDocument", Object.class, Object.class, Object.class, Object.class);
-                    Object classInstance = (Object) cls.newInstance();
-                    return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
-                } catch (Throwable th) {
-                    // Default implementation
-                    return updateDocumentDefault( tbl_wrk, params, clientData, requestParam );
+                JSONObject paramsJson = new JSONObject((String)params);
+                JSONObject paramJson = paramsJson.getJSONObject("params");
+                // { paramJson:..., schema:..., table:..., ids:..., id: ... };
+                if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+                    Class cls = null;
+                    try {
+                        cls = Class.forName("app.liquid.dms.connection");
+                        Method method = cls.getMethod("updateDocument", Object.class, Object.class, Object.class, Object.class);
+                        Object classInstance = (Object) cls.newInstance();
+                        return (String) method.invoke(classInstance, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) requestParam);
+                    } catch (Throwable th) {
+                        // Default implementation
+                        return updateDocumentDefault(tbl_wrk, params, clientData, requestParam);
+                    }
                 }
             }
         } catch (Throwable e) {
@@ -2889,8 +3030,9 @@ public class event {
     }
 
 
-    static public String updateDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object auxParams ) {
+    static public String updateDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam ) {
         try {
+            HttpServletRequest request = (HttpServletRequest) requestParam;
             StringBuilder resultSet = new StringBuilder("{\"resultSet\":[");
             Connection conn = null;
             PreparedStatement psdo = null;
@@ -2918,35 +3060,47 @@ public class event {
                 JSONObject paramJson = paramsJson.getJSONObject("params");
                 // { paramJson:..., schema:..., table:..., ids:..., id: ... };
                 if(paramJson != null) {
-                    Object [] connRes = connection.getDBConnection();
-                    conn = (Connection)connRes[0];
+                    if(transaction.isTransaction(request)) {
+                        conn = transaction.getTransaction(request);
+                    } else {
+                        Object[] connRes = connection.getDBConnection();
+                        conn = (Connection) connRes[0];
+                    }
                     if(conn != null) {
                         JSONArray keyList;
                         if(paramJson.has("ids")) {
-                            keyList =paramJson.getJSONArray("ids");
+                            keyList = paramJson.getJSONArray("ids");
                         } else {
                             throw new Exception("No keys defined");
                         }
-                        for(int ik=0; ik<keyList.length(); ik++) {
-                            sQuery = "UPDATE \""+dmsSchema+"\".\""+dmsTable+"\" SET " +"note='"+paramJson.getString("note")+"'"+ " WHERE (id='"+keyList.get(ik)+"')";
-                            psdo = conn.prepareStatement(sQuery);
-                            int res = psdo.executeUpdate();
-                            if(res >= 0) {
-                                String fieldSet = "{" + "\"id\":\""+(paramJson.getString("id")) + "\"}";
-                                resultSet.append( (nRecs>0?",":"") + fieldSet);
-                                nRecs++;
+
+                        if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+                            for (int ik = 0; ik < keyList.length(); ik++) {
+                                sQuery = "UPDATE \"" + dmsSchema + "\".\"" + dmsTable + "\" SET " + "note='" + paramJson.getString("note") + "'" + " WHERE (id='" + keyList.get(ik) + "')";
+                                psdo = conn.prepareStatement(sQuery);
+                                int res = psdo.executeUpdate();
+                                if (res >= 0) {
+                                    String fieldSet = "{" + "\"id\":\"" + (paramJson.getString("id")) + "\"}";
+                                    resultSet.append((nRecs > 0 ? "," : "") + fieldSet);
+                                    nRecs++;
+                                }
+                                if (psdo != null) psdo.close();
                             }
-                            if(psdo != null) psdo.close();
                         }
                     }
                 }
-            } catch (Throwable e) {
-                System.err.println("Query Error:" + e.getLocalizedMessage() + sQuery);
+            } catch (Throwable th) {
+                System.err.println("Query Error:" + th.getLocalizedMessage() + sQuery);
+                throw th;
+
             } finally {
-                try {
-                    conn.close();
-                } catch (SQLException ex) {
-                    Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+                if(transaction.isTransaction(request)) {
+                } else {
+                    try {
+                        conn.close();
+                    } catch (SQLException ex) {
+                        Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
             resultSet.append("]}");

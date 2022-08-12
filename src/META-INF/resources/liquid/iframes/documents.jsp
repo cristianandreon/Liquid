@@ -46,127 +46,204 @@
             var glLiquid = null;
             var glDocName = null;
             var glDoc = null;
+            var glMode = null;
             var glNodes = null;
+
 
             function onLoad() {
                 // init ... 
                 const urlParams = new URLSearchParams(window.location.search);
+                glMode = urlParams.get('mode');
                 glDocName = urlParams.get('docName');
                 glControlId = urlParams.get('controlId');
+                glAlign = urlParams.get('align');
+                glSize = urlParams.get('size');
                 glLiquid = window.parent.Liquid.getLiquid(glControlId);
                 glDoc = parent.window.Liquid.getDocumentByName(glLiquid, glDocName);
-                if(glNodes) {
-                    addNewDocuemntRow(glDoc);
+                if(glDoc) {
+                    addDocumentsHeader();
+                    if (glNodes) {
+                        addNewDocumentRow(glDoc);
+                    }
                 }
             }
             
             function addDocuments( docItems ) {
                 if(glNodes) {
                     var table = document.getElementById("liquidDocumentsX.table");
-                    while(table.rows.length > 1)
-                        table.deleteRow(1);
+                    var last_rows = glMode=='compact' || glMode=='iconized' ? 0 : 1;
+                    while(table.rows.length > last_rows)
+                        table.deleteRow(last_rows);
                     for(var i=0; i<docItems.length; i++) {
-                        addDocuemnt( docItems[i], i+1 );
+                        addDocument( docItems[i], i+1 );
                     }
-                    addNewDocuemntRow(glDoc);
+                    addNewDocumentRow(glDoc);
                 }
             }
-            
-            function addDocuemnt( docItem, id ) {
-                if(docItem) {
-                    var table = document.getElementById("liquidDocumentsX.table");
-                    if(table) {
-                        table.className = "liquidDocumentsXTable";
-                        var row = table.insertRow(1);
-                        row.className = "liquidDocumentsXRows";
+
+            function addDocumentsHeader( ) {
+                var table = document.getElementById("liquidDocumentsX.table");
+                if (table) {
+                    table.className = "liquidDocumentsXTable";
+                    if (glMode == 'compact' || glMode == 'iconized') {
+                    } else {
+                        var row = table.insertRow(0);
+                        row.className = "liquidDocumentsXHeader";
                         var cell1 = row.insertCell(0);
                         var cell2 = row.insertCell(1);
                         var cell3 = row.insertCell(2);
                         var cell4 = row.insertCell(3);
                         var cell5 = row.insertCell(4);
+                        if (window.parent.Liquid.lang === 'ita') {
+                            cell1.innerHTML = "Tipo"
+                            cell2.innerHTML = "Nome";
+                            cell3.innerHTML = "Dim.(Kb)";
+                            cell4.innerHTML = "Note";
+                            cell5.innerHTML = " ";
+                        } else {
+                            cell1.innerHTML = "Type"
+                            cell2.innerHTML = "Name";
+                            cell3.innerHTML = "Size(Kb)";
+                            cell4.innerHTML = "Note";
+                            cell5.innerHTML = " ";
+                        }
+                    }
+                }
+            }
+
+            function addDocument(docItem, id) {
+                if (docItem) {
+                    var table = document.getElementById("liquidDocumentsX.table");
+                    if (table) {
+                        table.className = "liquidDocumentsXTable";
+
                         docItem.type = docItem.file.split('.').pop();
-                        docItem.name = docItem.file.substring(docItem.file.lastIndexOf('/')+1);
-                        docItem.name = docItem.name.substring(docItem.name.lastIndexOf('\\')+1);
-                        let doc_type_title = (docItem.doc_type_id ? "Document type id:"+docItem.doc_type_id+"" : "");
-                        cell1.innerHTML = "<img style='float:left;' " +
-                            "title='"+(docItem.doc_type ? docItem.doc_type : "")+"' " +
-                            "src=\""+getDocuemntTypeHTML(docItem)+"\" " +
-                            "class=\"liquidDocumentsXDocIcon\" />" +
-                            "<div title='"+doc_type_title+"' style='width:90px; float:left; font-size:90%'>"+(docItem.doc_type ? docItem.doc_type : "")+"</div>";
-                        cell2.innerHTML = docItem.name;
-                        cell3.innerHTML = (docItem.size / 1024).toFixed(1);
-                        cell4.innerHTML = docItem.note;
-                        cell4.id = (glControlId !== null ? glControlId+".liquidDocumentsX.note."+docItem.id : "");
-                        
-                        var itemId = (glControlId !== null ? glControlId+".liquidDocumentsX.table" : "");
-                        var title = (window.parent.Liquid.lang === 'ita' ? "Scarica documento" : "Download document");
-                        var cmdDownload = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/download.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".download\" title=\""+title+"\" onClick=\"window.parent.Liquid.onDownloadDocument('"+itemId+"',event); downloadDocument("+docItem.id+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
+                        docItem.name = docItem.file.substring(docItem.file.lastIndexOf('/') + 1);
+                        docItem.name = docItem.name.substring(docItem.name.lastIndexOf('\\') + 1);
+                        let doc_type_title = (docItem.doc_type_id ? "Document type id:" + docItem.doc_type_id + "" : "");
+
                         title = (window.parent.Liquid.lang === 'ita' ? "Cancella documento" : "Delete document");
-                        var cmdDelete = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/delete.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".delete\" title=\""+title+"\" onClick=\"window.parent.Liquid.onDeleteDocument('"+itemId+"',event); deleteDocument("+docItem.id+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
+                        var cmdDelete = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/delete.png\" class=\"liquidDocumentsXCmdIcon\" id=\"" + itemId + ".delete\" title=\"" + title + "\" onClick=\"window.parent.Liquid.onDeleteDocument('" + itemId + "',event); deleteDocument(" + docItem.id + ");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
+
                         title = (window.parent.Liquid.lang === 'ita' ? "Aggiorna note" : "Update note");
-                        var cmdUpdate = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/update.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".upload\" title=\""+title+"\" onClick=\"window.parent.Liquid.onUpdateDocument('"+itemId+"',event); updateDocument("+docItem.id+");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
+                        var cmdUpdate = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/update.png\" class=\"liquidDocumentsXCmdIcon\" id=\"" + itemId + ".upload\" title=\"" + title + "\" onClick=\"window.parent.Liquid.onUpdateDocument('" + itemId + "',event); updateDocument(" + docItem.id + ");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
+
+                        var itemId = (glControlId !== null ? glControlId + ".liquidDocumentsX.table" : "");
+                        var title = (window.parent.Liquid.lang === 'ita' ? "Scarica documento" : "Download document");
+                        title = (window.parent.Liquid.lang === 'ita' ? "Scarica documento" : "Download document");
+                        var cmdDownload = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/download.png\" class=\"liquidDocumentsXCmdIcon\" id=\"" + itemId + ".download\" title=\"" + title + "\" onClick=\"window.parent.Liquid.onDownloadDocument('" + itemId + "',event); downloadDocument(" + docItem.id + ");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
+                        var onclickDownload = "window.parent.Liquid.onDownloadDocument('" + itemId + "',event); downloadDocument(" + docItem.id + ");";
+
                         var cmdsHTML = "" + cmdDownload + "" + cmdDelete + "" + cmdUpdate;
-                        
-                        cell5.innerHTML = cmdsHTML;
+
+                        var row = table.insertRow( (glMode=='compact' || glMode=='iconized') ? 0 : 1 );
+                        row.className = "liquidDocumentsXRows";
+
+                        if(glAlign) {
+                            table.style.float = glAlign;
+                            table.style.testAlign = glAlign;
+                            row.style.float = glAlign;
+                            row.style.testAlign = glAlign;
+                        }
+
+                        if(glMode=='compact' || glMode=='iconized') {
+                            var cell1 = row.insertCell(0);
+                            cell1.style.margin='0px';
+                            cell1.style.padding='0px';
+                            document.body.style.margin='0px';
+                            document.body.style.padding='0px';
+                        } else {
+                            var cell1 = row.insertCell(0);
+                            var cell2 = row.insertCell(1);
+                            var cell3 = row.insertCell(2);
+                            var cell4 = row.insertCell(3);
+                            var cell5 = row.insertCell(4);
+                        }
+                        if(glMode=='compact' || glMode=='iconized') {
+                            let title = (docItem.name ? docItem.name : "[n/d]");
+                            title += (docItem.doc_type ? " \n"+docItem.doc_type+" " : "");
+                            title += (docItem.note ? " \n"+docItem.note+" " : "");
+                            cell1.innerHTML += "<img" +
+                                " style='float:left; cursor:pointer; padding-righ:5px; " +(glSize ? "width:"+glSize + "px; height:"+glSize+"px;" : "") + "'" +
+                                " title='" + title + "'" +
+                                " src=\"" + getDocumentTypeHTML(docItem) + "\"" +
+                                " class=\"liquidDocumentsXDocIcon liquidDialogXTheme\"" +
+                                " onclick=\""+onclickDownload+"\"" +
+                                " />";
+                        } else {
+                            cell1.innerHTML = "<img style='float:left;' " +
+                                "title='" + (docItem.doc_type ? docItem.doc_type : "") + "' " +
+                                "src=\"" + getDocumentTypeHTML(docItem) + "\" " +
+                                "class=\"liquidDocumentsXDocIcon\" />" +
+                                "<div title='" + doc_type_title + "' style='width:90px; float:left; font-size:90%'>" + (docItem.doc_type ? docItem.doc_type : "") + "</div>";
+                            cell2.innerHTML = docItem.name;
+                            cell3.innerHTML = (docItem.size / 1024).toFixed(1);
+                            cell4.innerHTML = docItem.note;
+                            cell4.id = (glControlId !== null ? glControlId + ".liquidDocumentsX.note." + docItem.id : "");
+                            cell5.innerHTML = cmdsHTML;
+                        }
                     } else console.error("ERROR: target table not found");
                 }
             }
-            function addNewDocuemntRow( doc ) {
-                var table = document.getElementById("liquidDocumentsX.table");
-                if(table) {
-                    var row = table.insertRow(-1);
-                    row.className = "liquidDocumentsXRows";
+            function addNewDocumentRow( doc ) {
+                if(glMode=='compact' || glMode=='iconized') {
+                } else {
+                    var table = document.getElementById("liquidDocumentsX.table");
+                    if (table) {
+                        var row = table.insertRow(-1);
+                        row.className = "liquidDocumentsXRows";
 
-                    var cell0 = row.insertCell(0);
-                    var typeItemId = (glControlId !== null ? glControlId+".liquidDocumentsX.uploadFileType" : "");
-                    var html = "<input class=\"cfgEditboxClass\" style=\"text-align:left;\""
-                                              +"name=\""+typeItemId+"\" id=\""+typeItemId+"\""+
-                                              +"type=\"text\" value=\"\""
-                                              +"autocomplete=\"off\""
-                                              +"onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\""
-                                              +"onblur=\"if(!this.value) this.value=this.placeholder\""
-                                              +"onchange=''"
-                    +"/>";
-                    var html_dl = "<%= com.liquid.utility.get_datalist_from_table(
-                            "@@@DatalistID@@@",
-                            "cnconline.DMS_DOC_TYPE",
-                            "id",
-                            ("ENG".equalsIgnoreCase((String) session.getAttribute("GLLang")) ? "type_desc" : "type_desc_"+((String) session.getAttribute("GLLang")).toLowerCase()+"" ),
-                            null,
-                            null,
-                            "order by \"order\"",
-                            ("ENG".equalsIgnoreCase((String)session.getAttribute("GLLang")) ? "":""),
-                            null,
-                            true
-                            ).replace("\"", "\\\"")%>";
-                    html_dl = html_dl.replaceAll("@@@DatalistID@@@", typeItemId);
-                    cell0.innerHTML = html + html_dl;
-                    cell0.style.width = "90px";
-                    var cell1 = row.insertCell(1);
-                    cell1.colSpan = 2;
-                    var itemId = (glControlId !== null ? glControlId+".liquidDocumentsX.uploadFile" : "");
-                    cell1.innerHTML = "<input type=\"file\" accept=\"*\" autofocus=\"true\" id=\""+itemId+"\" value=\"\" style=\"width:100%; height:27px\" />";
-                    var cell4 = row.insertCell(2);
-                    cell4.innerHTML = "<input id=\""+(glControlId !== null ? glControlId+".liquidDocumentsX.table.insert.note" : "")+"\" style=\"width:100%\" />";
-                    var cell5 = row.insertCell(3);
-                    cell5.id = (glControlId !== null ? glControlId+".liquidDocumentsX.table.insert" : "");
-                    var itemId = (glControlId !== null ? glControlId+".liquidDocumentsX.table" : "");
-                    let maxSize = getMaxUploadSize(doc);
-                    var title = (window.parent.Liquid.lang === 'ita' ? "Carica documento" : "Upload document");
-                    if(maxSize > 0) {
-                        title += (window.parent.Liquid.lang === 'ita' ? "\n\nDimensione massima:" : "\n\nMax file size:");
-                        title += maxSize / 1024 + " Kb";
-                    }
-                    var cmdUpload = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/upload.png\" class=\"liquidDocumentsXCmdIcon\" id=\""+itemId+".upload\" title=\""+title+"\" onClick=\"window.parent.Liquid.onUploadDocument('"+itemId+"',event); uploadDocument();\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
-                    cell5.innerHTML = cmdUpload;
+                        var cell0 = row.insertCell(0);
+                        var typeItemId = (glControlId !== null ? glControlId + ".liquidDocumentsX.uploadFileType" : "");
+                        var html = "<input class=\"cfgEditboxClass\" style=\"text-align:left;\""
+                            + "name=\"" + typeItemId + "\" id=\"" + typeItemId + "\"" +
+                            +"type=\"text\" value=\"\""
+                            + "autocomplete=\"off\""
+                            + "onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\""
+                            + "onblur=\"if(!this.value) this.value=this.placeholder\""
+                            + "onchange=''"
+                            + "/>";
+                        var html_dl = "<%= com.liquid.utility.get_datalist_from_table(
+                                "@@@DatalistID@@@",
+                                "cnconline.DMS_DOC_TYPE",
+                                "id",
+                                ("ENG".equalsIgnoreCase((String) session.getAttribute("GLLang")) ? "type_desc" : "type_desc_"+((String) session.getAttribute("GLLang")).toLowerCase()+"" ),
+                                null,
+                                null,
+                                "order by \"order\"",
+                                ("ENG".equalsIgnoreCase((String)session.getAttribute("GLLang")) ? "":""),
+                                null,
+                                true
+                                ).replace("\"", "\\\"")%>";
+                        html_dl = html_dl.replaceAll("@@@DatalistID@@@", typeItemId);
+                        cell0.innerHTML = html + html_dl;
+                        cell0.style.width = "90px";
+                        var cell1 = row.insertCell(1);
+                        cell1.colSpan = 2;
+                        var itemId = (glControlId !== null ? glControlId + ".liquidDocumentsX.uploadFile" : "");
+                        cell1.innerHTML = "<input type=\"file\" accept=\"*\" autofocus=\"true\" id=\"" + itemId + "\" value=\"\" style=\"width:100%; height:27px\" />";
+                        var cell4 = row.insertCell(2);
+                        cell4.innerHTML = "<input id=\"" + (glControlId !== null ? glControlId + ".liquidDocumentsX.table.insert.note" : "") + "\" style=\"width:100%\" />";
+                        var cell5 = row.insertCell(3);
+                        cell5.id = (glControlId !== null ? glControlId + ".liquidDocumentsX.table.insert" : "");
+                        var itemId = (glControlId !== null ? glControlId + ".liquidDocumentsX.table" : "");
+                        let maxSize = getMaxUploadSize(doc);
+                        var title = (window.parent.Liquid.lang === 'ita' ? "Carica documento" : "Upload document");
+                        if (maxSize > 0) {
+                            title += (window.parent.Liquid.lang === 'ita' ? "\n\nDimensione massima:" : "\n\nMax file size:");
+                            title += maxSize / 1024 + " Kb";
+                        }
+                        var cmdUpload = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/upload.png\" class=\"liquidDocumentsXCmdIcon\" id=\"" + itemId + ".upload\" title=\"" + title + "\" onClick=\"window.parent.Liquid.onUploadDocument('" + itemId + "',event); uploadDocument();\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
+                        cell5.innerHTML = cmdUpload;
 
-                    // setup datalist
-                    window.parent.Liquid.setupDescDatalistEx(window, typeItemId, typeItemId + ".desc", typeItemId + ".list");
+                        // setup datalist
+                        window.parent.Liquid.setupDescDatalistEx(window, typeItemId, typeItemId + ".desc", typeItemId + ".list");
 
-                    // set datalist content by dms def
-                    fit_datalist_content(typeItemId, doc.docTypeId);
+                        // set datalist content by dms def
+                        fit_datalist_content(typeItemId, doc.docTypeId);
 
-                } else console.error("ERROR: target table not found");
+                    } else console.error("ERROR: target table not found");
+                }
             }
 
             function fit_datalist_content(inputId, docTypeIds) {
@@ -210,7 +287,7 @@
                 }
             }
 
-            function getDocuemntTypeHTML( docItem ) {
+            function getDocumentTypeHTML( docItem ) {
                 switch(docItem.type) {
                     case 'step':
                     case 'stp':
@@ -223,26 +300,34 @@
                     case 'pdf':
                         return "<%=com.liquid.workspace.path%>/liquid/images/pdf.png";
                         break
+                    case 'xlsx':
                     case 'xls':
                         return "<%=com.liquid.workspace.path%>/liquid/images/xls.png";
                         break
                     case 'ods':
                         return "<%=com.liquid.workspace.path%>/liquid/images/ods.png";
                         break
+                    case 'docx':
                     case 'doc':
                         return "<%=com.liquid.workspace.path%>/liquid/images/world.png";
                         break
                     case 'txt':
                         return "<%=com.liquid.workspace.path%>/liquid/images/txt.png";
                         break
-                    case 'dwg':
-                        return "<%=com.liquid.workspace.path%>/liquid/images/dwg.png";
-                        break
                     case 'dxf':
+                    case 'dwt':
+                    case 'dwg':
                         return "<%=com.liquid.workspace.path%>/liquid/images/dwg.png";
                         break
                     case 'xml':
                         return "<%=com.liquid.workspace.path%>/liquid/images/toXML.png";
+                        break
+                    case 'jpeg':
+                    case 'jpg':
+                        return "<%=com.liquid.workspace.path%>/liquid/images/jpeg.jeg";
+                        break
+                    case 'png':
+                        return "<%=com.liquid.workspace.path%>/liquid/images/png.png";
                         break
                     default:
                         return "<%=com.liquid.workspace.path%>/liquid/images/compute_cycle.png";
@@ -265,10 +350,10 @@
                                 nodeKeys.push(nodes[iN].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
                             }
                             var params = {
-                                database: liquid.tableJson.database,
-                                schema: liquid.tableJson.schema,
-                                table: liquid.tableJson.table,
-                                name: (typeof doc.name !== 'undefined' ? doc.name : ""),
+                                database: isDef(doc.database) ? doc.database : liquid.tableJson.database,
+                                schema: isDef(doc.schema) ? doc.schema : liquid.tableJson.schema,
+                                table: isDef(doc.table) ? doc.table : liquid.tableJson.table,
+                                name: (isDef(doc.name) ? doc.name : ""),
                                 ids: nodeKeys
                             };
                             var xhr = new XMLHttpRequest();
@@ -329,10 +414,10 @@
                             var file = fileObj.files[0];
                             var fileName = fileObj.files[0].name;
                             var fileSize = fileObj.files[0].size;
-                            var defDocTypeId = typeof doc.docTypeId !== 'undefined' ? doc.docTypeId : null;
+                            var defDocTypeId = isDef(doc.docTypeId) ? doc.docTypeId : null;
                             var typeItemId = (glControlId !== null ? glControlId+".liquidDocumentsX.uploadFileType" : "");
                             var docTypeId = document.getElementById(typeItemId).value;
-                            if(typeof doc.maxSize !=='undefined') {
+                            if(isDef(doc.maxSize)) {
                                 if(Number(doc.maxSize) > 0) {
                                     if(fileSize >doc.maxSize) {
                                         alert(parent.window.Liquid.FileTooBigMessage+"... max : "+(doc.maxSize / 1024)+"Kb");
@@ -356,10 +441,10 @@
                                     nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                                 }
                                 var params = {
-                                    database:liquid.tableJson.database,
-                                    schema:liquid.tableJson.schema,
-                                    table:liquid.tableJson.table,
-                                    name:(typeof doc.name!=='undefined'?doc.name:""),
+                                    database:(isDef(doc.database)?doc.table:liquid.tableJson.database),
+                                    schema:(isDef(doc.schema)?doc.table:liquid.tableJson.schema),
+                                    table:(isDef(doc.table)?doc.table:liquid.tableJson.table),
+                                    name:(isDef(doc.name)?doc.name:""),
                                     ids:nodeKeys,
                                     file:fileName,
                                     size:fileSize,
@@ -381,7 +466,7 @@
                                                 var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b"); // .replace(/(?:[\r\\])/g, "\\\\");
                                                 responseText = responseText.substring(0, responseText.lastIndexOf("}") + 1);
                                                 if(responseText) {
-                                                    window.parent.Liquid.refreshDocuemnt(liquid, doc, false);
+                                                    window.parent.Liquid.refreshDocument(liquid, doc, false);
                                                     var httpResultJson = JSON.parse(responseText);                                            
                                                     // if(httpResultJson.resultSet) { addDocuments(httpResultJson.resultSet); }
                                                     if(httpResultJson.error) {
@@ -425,7 +510,7 @@
                         for (var iN=0; iN<nodes.length; iN++) {
                             nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                         }
-                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, id:String(id) };
+                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(isDef(doc.name)?doc.name:""), ids:nodeKeys, id:String(id) };
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', glLiquidServlet + '?operation=exec'
                                 + '&className=' + encodeURI(owner)
@@ -492,7 +577,7 @@
                         for (var iN=0; iN<nodes.length; iN++) {
                             nodeKeys.push( nodes[iN].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ] );
                         }
-                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, id:String(id) };
+                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, name:(isDef(doc.name)?doc.name:""), ids:nodeKeys, id:String(id) };
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', glLiquidServlet + '?operation=exec'
                                 + '&className=' + encodeURI(owner)
@@ -507,7 +592,7 @@
                                         var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b"); // .replace(/(?:[\r\\])/g, "\\\\");
                                         responseText = responseText.substring(0, responseText.lastIndexOf("}") + 1);
                                         if(responseText) {
-                                            window.parent.Liquid.refreshDocuemnt(liquid, doc, false);
+                                            window.parent.Liquid.refreshDocument(liquid, doc, false);
                                             var httpResultJson = JSON.parse(responseText);
                                             if(httpResultJson.error) {
                                                 let err = atob(httpResultJson.error);
@@ -551,7 +636,7 @@
                         var nodeKeys = [ id ];
                         let curNote = document.getElementById(glControlId+".liquidDocumentsX.note."+id).innerText;
                         var note = prompt("Note", curNote);
-                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, note:note, name:(typeof doc.name!=='undefined'?doc.name:""), ids:nodeKeys, id:String(id) };
+                        var params = { database:liquid.tableJson.database, schema:liquid.tableJson.schema, table:liquid.tableJson.table, note:note, name:(isDef(doc.name)?doc.name:""), ids:nodeKeys, id:String(id) };
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', glLiquidServlet + '?operation=exec'
                                 + '&className=' + encodeURI(owner)
@@ -566,7 +651,7 @@
                                         var responseText = xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b"); // .replace(/(?:[\r\\])/g, "\\\\");
                                         responseText = responseText.substring(0, responseText.lastIndexOf("}") + 1);
                                         if(responseText) {
-                                            window.parent.Liquid.refreshDocuemnt(liquid, doc, false);
+                                            window.parent.Liquid.refreshDocument(liquid, doc, false);
                                             var httpResultJson = JSON.parse(responseText);
                                             if(httpResultJson.error) {
                                                 let err = atob(httpResultJson.error);
@@ -592,7 +677,7 @@
 
             function getMaxUploadSize(doc) {
                 let maxSize = 0;
-                if (typeof doc.maxSize !=='undefined') {
+                if (isDef(doc.maxSize)) {
                     if (Number(doc.maxSize) > 0) {
                         maxSize = Number(doc.maxSize);
                     }
@@ -605,26 +690,17 @@
                 }
                 return maxSize;
             }
+            function isDef(__var) {
+                return (typeof __var === 'undefined' || __var === null) ? false : true;
+            }
+
+            function isDefOrNull(__var) {
+                return (typeof __var !== 'undefined') ? true : false;
+            }
 
         </script>
     </head>
     <body onload="onLoad();">
-        <table id="liquidDocumentsX.table" class="liquidDocumentsX liquidDialogXTheme" border=0 cellspacing=0 cellpadding=10 style="">
-             <tr class="liquidDocumentsXHeader">
-                 <% if("IT".equalsIgnoreCase((String) session.getAttribute("GLLang"))) { %>
-                 <td>Tipo</td>
-                 <td>Nome</td>
-                 <td>Dim.(Kb)</td>
-                 <td>Note</td>
-                 <td> </td>
-                 <% } else { %>
-                 <td>Type</td>
-                 <td>Name</td>
-                 <td>size(Kb)</td>
-                 <td>Note</td>
-                 <td> </td>
-                 <% } %>
-             </tr>
-        </table>
+        <table id="liquidDocumentsX.table" class="liquidDocumentsX liquidDialogXTheme" border=0 cellspacing=0 cellpadding=10 style=""></table>
     </body>
 </html>

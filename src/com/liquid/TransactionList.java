@@ -36,7 +36,7 @@ public class TransactionList {
 
     public ArrayList<TransactionList> transactionList = null;
 
-    public TransactionList(String table, String column, Object value, int valueType, String sourceColumn, String where, String type) {
+    public TransactionList(String table, String column, Object value, int valueType, String sourceColumn, String where, String type, String rowId) {
         this.table = table;
         this.where = where;
         this.columns = new ArrayList<>();
@@ -47,6 +47,7 @@ public class TransactionList {
         this.valueTypes.add(valueType);
         this.sourceColumn = sourceColumn;
         this.type = type;
+        this.rowId = rowId;
     }
 
     public TransactionList() {
@@ -72,7 +73,7 @@ public class TransactionList {
                 return;
             }
         }
-        transactionList.add(new TransactionList(_table, _column, _value, _valueType, _sourceColumn, _where, _type));
+        transactionList.add(new TransactionList(_table, _column, _value, _valueType, _sourceColumn, _where, _type, rowId));
     }
 
     public String getSQL(workspace tbl_wrk, int i) {

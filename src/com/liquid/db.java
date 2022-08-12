@@ -3733,7 +3733,6 @@ public class db {
             retVal = false;
 
             if(transaction.isTransaction(request)) {
-                throw e;
             } else {
                 try {
                     if (conn != null)
@@ -3741,6 +3740,7 @@ public class db {
                 } catch (Throwable e2) {
                 }
             }
+            throw e;
 
         } finally {
             if(transaction.isTransaction(request)) {
@@ -3748,10 +3748,10 @@ public class db {
                 try {
                     if (conn != null)
                         conn.close();
+                    conn = null;
                 } catch (Throwable e2) {
                 }
             }
-            conn = null;
         }
 
         return new Object [] { retVal, new_id } ;
@@ -3880,7 +3880,6 @@ public class db {
             retVal = false;
 
             if(transaction.isTransaction(request)) {
-                throw e;
             } else {
                 try {
                     if (conn != null)
@@ -3888,6 +3887,7 @@ public class db {
                 } catch (Throwable e2) {
                 }
             }
+            throw e;
 
         } finally {
             if(transaction.isTransaction(request)) {
@@ -4066,7 +4066,6 @@ public class db {
             retVal = false;
 
             if(transaction.isTransaction(request)) {
-                throw e;
             } else {
                 try {
                     if (conn != null)
@@ -4074,6 +4073,7 @@ public class db {
                 } catch (Throwable e2) {
                 }
             }
+            throw e;
 
         } finally {
             if(transaction.isTransaction(request)) {
@@ -4268,7 +4268,6 @@ public class db {
             retVal = false;
 
             if(transaction.isTransaction(request)) {
-                throw e;
             } else {
                 try {
                     if (conn != null)
@@ -4276,6 +4275,7 @@ public class db {
                 } catch (Throwable e2) {
                 }
             }
+            throw e;
 
         } finally {
             if(transaction.isTransaction(request)) {
@@ -4471,7 +4471,6 @@ public class db {
                 retVal = false;
 
                 if(transaction.isTransaction(request)) {
-                    throw e;
                 } else {
                     try {
                         if (conn != null)
@@ -4479,6 +4478,7 @@ public class db {
                     } catch (Throwable e2) {
                     }
                 }
+                throw e;
 
             } finally {
                 if(transaction.isTransaction(request)) {
@@ -4486,10 +4486,10 @@ public class db {
                     try {
                         if (conn != null)
                             conn.close();
+                        conn = null;
                     } catch (Throwable e2) {
                     }
                 }
-                conn = null;
             }
 
             return new Object [] { retVal, new_id, infoFields } ;
@@ -4573,7 +4573,6 @@ public class db {
         ArrayList<String> modificationsFaild = new ArrayList<>();
         TransactionList foreignTableTransactList = new TransactionList();
         TransactionList tableTransactList = new TransactionList();
-        boolean bUseAutoCommit = false;
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         HttpServletRequest request = (HttpServletRequest) p4;
 
@@ -4644,10 +4643,6 @@ public class db {
                     for (int ip = 0; ip < paramsJSON.length(); ip++) {
                         JSONObject paramJSON = (JSONObject) paramsJSON.get(ip);
 
-                        if (paramJSON.has("autoCommit")) {
-                            bUseAutoCommit = paramJSON.getBoolean("autoCommit");
-                        }
-
                         if (paramJSON.has("modifications")) {
                             JSONArray modificationsJSON = paramJSON.getJSONArray("modifications");
 
@@ -4712,11 +4707,13 @@ public class db {
                                                 fieldsJSON = modificationJSON.getJSONArray("fields");
                                             }
                                             if (p5 != null) {
-                                                try {
-                                                    String resCbk = ((event.eventCallback)p5).callback(p1, p2, p3, p4, (Object) modificationJSON);
-                                                    retValCbk += (resCbk != null ? resCbk : "");
-                                                } catch (Throwable th) {
-                                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
+                                                if(p5 instanceof event.eventCallback) {
+                                                    try {
+                                                        String resCbk = ((event.eventCallback) p5).callback(p1, p2, p3, p4, (Object) modificationJSON);
+                                                        retValCbk += (resCbk != null ? resCbk : "");
+                                                    } catch (Throwable th) {
+                                                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, th);
+                                                    }
                                                 }
                                             }
 
@@ -4863,7 +4860,6 @@ public class db {
                                                                                                 // TODO : Inserimento in tabella esterna : legame con la tabella principale e ignezione degli ID
                                                                                                 //          Ma in transazione non sono disponibili : disabilitazione delle transazione e uso dell'autocommit
                                                                                                 // foreignTableTransactList.add( col.getString("foreignTable"), tName, value, sourceColumn, null, "insert" );
-                                                                                                // bUseAutoCommit = true;
                                                                                             } else if ("delete".equalsIgnoreCase(sType)) {
                                                                                                 foreignTableTransactList.add(col.getString("foreignTable"), tName, oValue, valueType, sourceColumn, null, "delete", rowId, nodeId);
                                                                                             } else if ("update".equalsIgnoreCase(sType)) {
@@ -4988,10 +4984,6 @@ public class db {
                             }
                         }
 
-                        if (!bUseAutoCommit) {
-                            connToUse.setAutoCommit(false);
-                        }
-
                         try {
                             if (foreignTableTransactList != null || tableTransactList != null) {
                                 if (foreignTableTransactList.transactionList != null) {
@@ -5044,6 +5036,8 @@ public class db {
                                                         }
                                                         rs.close();
                                                     }
+                                                } else {
+                                                    event.onCleanupRows(liquid, foreignTableTransactList.transactionList.get(i).rowId, request);
                                                 }
                                             }
                                         } catch (Throwable th) {
@@ -5093,6 +5087,7 @@ public class db {
                                                     }
                                                 } else {
                                                     tableUpdates.add("{\"table\":\"" + liquid.schemaTable.replace(tableIdString, "") + "\",\"ids\":[" + tableTransactList.transactionList.get(i).ids + "]}");
+                                                    event.onCleanupRows(liquid, tableTransactList.transactionList.get(i).rowId, request);
                                                 }
                                             }
                                         } catch (Throwable th) {
@@ -5122,10 +5117,6 @@ public class db {
                                         }
                                     }
                                 }
-
-                                if (!bUseAutoCommit) {
-                                    connToUse.commit();
-                                }
                             }
 
                             retVal = "{"
@@ -5143,9 +5134,6 @@ public class db {
                                     + "}";
 
                         } catch (Throwable th) {
-                            if (!bUseAutoCommit) {
-                                connToUse.rollback();
-                            }
                             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
                             Logger.getLogger(db.class.getName()).log(Level.SEVERE, executingQuery);
                             retVal = "{\"error\":\"" + utility.base64Encode("Fatal error:" + th.getLocalizedMessage()) + "\"}";
@@ -6115,7 +6103,7 @@ public class db {
                     //
                     // do insert
                     //
-                    result = db.insertFields(tbl_wrk, insertingParams, null, (Object)requestParam, null);
+                    result = db.insertFields(tbl_wrk, insertingParams, null, (Object)requestParam, requestParam);
                     
                     if(foreignTables != null && !foreignTables.isEmpty()) {
                         //

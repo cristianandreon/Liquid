@@ -98,6 +98,7 @@ public class workspace {
     }
 
 
+
     public Locale getLocale() {
         return locale;
     }
@@ -4570,9 +4571,15 @@ public class workspace {
      * @param column
      * @return
      */
-    static public String getData(String controlId, String params, String column) {
+    static public String getData(String controlId, Object oParams, String column) {
         try {
-            JSONArray paramsJson = (JSONArray) (new JSONObject(params)).getJSONArray("params");
+            JSONObject params_json = null;
+            if(oParams instanceof JSONObject) {
+                params_json = (JSONObject)oParams;
+            } else {
+                params_json = new JSONObject(oParams);
+            }
+            JSONArray paramsJson = params_json.getJSONArray("params");
             for (int i = 0; i < paramsJson.length(); i++) {
                 JSONObject obj = (JSONObject) paramsJson.get(i);
                 if (obj != null) {
@@ -4603,7 +4610,18 @@ public class workspace {
         return null;
     }
 
+
+
+
     // Wrappers
+
+    /**
+     *
+     * @param tbl_wrk
+     * @param params
+     * @return
+     * @throws Exception
+     */
     static public String getSelection(Object tbl_wrk, String params) throws Exception {
         if(tbl_wrk instanceof String) {
             return getSelection((String)tbl_wrk, params);
@@ -4633,9 +4651,9 @@ public class workspace {
         }
     }
 
-    static public String getData(Object tbl_wrk, String params, String column) {
+    static public String getData(Object tbl_wrk, Object oParams, String column) {
         if(tbl_wrk instanceof workspace) {
-            return getData(((workspace) tbl_wrk).controlId, params, column);
+            return getData(((workspace) tbl_wrk).controlId, oParams, column);
         } else {
             return null;
         }
@@ -4685,6 +4703,84 @@ public class workspace {
         }
         return null;
     }
+
+
+
+    /**
+     * search for field data in the user properties of a liquid control (from parameters given from the client)
+     *
+     * @param oParams
+     * @param layoutName
+     * @param fieldName
+     * @return
+     */
+    static public JSONArray getUserProp(Object oParams, String userPropName, String layoutName, String fieldName) throws Exception {
+        try {
+            JSONObject params_json = null;
+            if(oParams instanceof JSONObject) {
+                params_json = (JSONObject)oParams;
+            } else {
+                params_json = new JSONObject(oParams);
+            }
+            JSONArray paramsJson = params_json.getJSONArray("params");
+            for (int i = 0; i < paramsJson.length(); i++) {
+                JSONObject paramJson = (JSONObject) paramsJson.get(i);
+                if (paramJson != null) {
+                    if (paramJson.has("userProps")) {
+                        JSONArray userProps = paramJson.getJSONArray("userProps");
+                        for (int iup = 0; iup < userProps.length(); iup++) {
+                            JSONObject userProp = userProps.getJSONObject(iup);
+                            if (userProp != null) {
+                                if (userProp.has("name")) {
+                                    if (userPropName.equalsIgnoreCase(userProp.getString("name"))) {
+                                        Object oUuserPropValue = userProp.getJSONArray("value");
+                                        if (oUuserPropValue instanceof JSONArray) {
+                                            JSONArray userPropValues = (JSONArray)oUuserPropValue;
+                                            if (userPropValues != null) {
+                                                for (int iv = 0; iv < userPropValues.length(); iv++) {
+                                                    JSONObject userPropValue = userPropValues.getJSONObject(iv);
+                                                    if (layoutName.equalsIgnoreCase(userPropValue.getString("layoutName"))) {
+                                                        JSONArray datas = userPropValue.getJSONArray("data");
+                                                        if (datas != null) {
+                                                            for (int id = 0; id < datas.length(); id++) {
+                                                                JSONObject data = datas.getJSONObject(id);
+                                                                if (data != null) {
+                                                                    if (data.has("fieldName")) {
+                                                                        if (fieldName.equalsIgnoreCase(data.getString("fieldName"))) {
+                                                                            Object ofieldValue = data.get("fieldValue");
+                                                                            if (ofieldValue instanceof JSONArray) {
+                                                                                return (JSONArray) ofieldValue;
+                                                                            } else {
+                                                                                return null;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            String err = "Unexpected Object type in user properties";
+                                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, err);
+                                            throw new Exception(err);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+            throw ex;
+        }
+        return null;
+    }
+
+
 
     static public JSONArray getRows(Object tbl_wrk, Object params) {
         JSONObject paramsJson = null;
@@ -5175,4 +5271,55 @@ public class workspace {
         workspace.setDatabaseShemaTable(tblWrk);
         return tblWrk;
     }
+
+    /**
+     * return true if DMS is read only
+     *
+     * @param tbl_wrk
+     * @param dmsNname
+     * @return
+     * @throws Exception
+     */
+    public static boolean is_dms_readonly( workspace tbl_wrk, String dmsNname ) throws Exception {
+        if(tbl_wrk != null) {
+            JSONObject document = get_dms_by_name(tbl_wrk, dmsNname);
+            if(document != null) {
+                if(document.has("readonly")) {
+                    return document.getBoolean("readonly");
+                } else if(document.has("readOnly")) {
+                    return document.getBoolean("readonly");
+                } else {
+                    return false;
+                }
+            }
+        }
+        throw new Exception("is_dms_readonly() : unexpected path");
+    }
+
+
+
+    /**
+     * Search for DMS by name
+     *
+     * @param tblWrk
+     * @param dmsNname
+     * @return
+     */
+    public static JSONObject get_dms_by_name(workspace tblWrk, String dmsNname) {
+        if(dmsNname != null) {
+            if (tblWrk.tableJson.has("documents")) {
+                JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
+                for (int i = 0; i < documents.length(); i++) {
+                    JSONObject document = (JSONObject) documents.get(i);
+                    if (document != null) {
+                        if (dmsNname.equalsIgnoreCase(document.getString("name"))) {
+                            return document;
+                        }
+                    }
+                }
+            }
+        }
+        return  null;
+    }
+
 }
