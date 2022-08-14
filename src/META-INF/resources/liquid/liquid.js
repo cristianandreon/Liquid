@@ -23220,6 +23220,60 @@ columns:[
                 console.error("ERROR : Missing code_id control");
             }
         }
+    },
+    /**
+     * Generate table descriptor from multiple files input html control
+     *
+     * @param fileNode
+     * @param controlId
+     * @param table_class
+     * @param padding
+     * @param spacing
+     * @param button_class
+     * @returns {string}
+     */
+    filesInputToTable:function(fileNode, controlId, table_class, table_style, padding, spacing, button_class) {
+        let html = "";
+        if(fileNode) {
+            html += "<table id='"+controlId+"' cellpadding='"+padding+"' cellspacing='"+spacing+"' class='"+table_class+"' style='"+table_style+"'>";
+            for(let i=0; i<fileNode.files.length; i++) {
+                html += "<tr>";
+                html += "<td>";
+                html += fileNode.files[i].name;
+                html += "<td>";
+                html += "<td>";
+                html += fileNode.files[i].size;
+                html += "<td>";
+                html += "<td>";
+                html += "<a "
+                    + " class=\""+button_class+"\""
+                    + " title=\""+(Liquid.lang === 'ita'?"Rimuovi file":"Remove file")+"\" "
+                    + " href=\"javascript:void(0)\" onClick=\"Liquid.deletefileFromTable('"+controlId+"','"+fileNode.id+"','"+fileNode.files[i].name+"','"+table_class+"','"+table_style+"','"+padding+"','"+spacing+"','"+button_class+"','"+mode+"');\">"
+                    + "<img src=\"/images/delete.png\" width=\"16\"/>"
+                    + "</a>";
+                html += "";
+                html += "<td>";
+                html += "</tr>";
+            }
+            html += "</table>";
+        }
+        return html;
+    },
+    deletefileFromTable:function(controlId, filesNodeId, fileName, table_class, table_style, padding, spacing, button_class, mode) {
+        let filesNode = document.getElementById(filesNodeId);
+        if(filesNode) {
+            if(filesNode.files) {
+                let files_list = [];
+                for (let i = 0; i < filesNode.files.length; i++) {
+                    if (filesNode.files[i].name == fileName) {
+                    } else {
+                        files_list.push(filesNode.files[i]);
+                    }
+                }
+                filesNode.files = files_list;
+                Liquid.filesInputToTable(filesNode, controlId, table_class, table_style, padding, spacing, button_class, mode);
+            }
+        }
     }
 };
 

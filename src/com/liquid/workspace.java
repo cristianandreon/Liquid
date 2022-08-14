@@ -2353,7 +2353,7 @@ public class workspace {
                         tblWorkspace.defaultSchema = defaultSchema;
                         tblWorkspace.dbProductName = dbProductName;
                         workspace.setDatabaseShemaTable(tblWorkspace);
-                        System.out.println("/* LIQUID INFO : control : " + controlId + " driverClass:" + tblWorkspace.driverClass + " dbProductName:" + dbProductName + "*/");
+                        System.out.println("/* LIQUID INFO : control : " + controlId + " dbProductName:" + dbProductName + "*/");
                         bFoundWorkspace = true;
                         break;
                     }
@@ -2384,7 +2384,7 @@ public class workspace {
 
                     workspace.setDatabaseShemaTable(tblWorkspace);
                     // tblWorkspace.get_connection assegnato a default_connection
-                    System.out.println("/* LIQUID INFO : new control : " + controlId + " driverClass:" + tblWorkspace.driverClass + " dbProductName:" + dbProductName + "*/");
+                    System.out.println("/* LIQUID INFO : new control : " + controlId + " dbProductName:" + dbProductName + "*/");
 
                     boolean bFound = false;
                     for(int ifree=0; ifree<glTblWorkspaces.size(); ifree++) {
