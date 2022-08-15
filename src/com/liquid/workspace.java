@@ -37,7 +37,7 @@ import static com.liquid.utility.resetDatalistCache;
  */
 public class workspace {
 
-    public static String version_string = "2.37";
+    public static String version_string = "2.44";
     public static String getGLLang() {
         return GLLang;
     }
@@ -5307,13 +5307,17 @@ public class workspace {
      */
     public static JSONObject get_dms_by_name(workspace tblWrk, String dmsNname) {
         if(dmsNname != null) {
-            if (tblWrk.tableJson.has("documents")) {
-                JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
-                for (int i = 0; i < documents.length(); i++) {
-                    JSONObject document = (JSONObject) documents.get(i);
-                    if (document != null) {
-                        if (dmsNname.equalsIgnoreCase(document.getString("name"))) {
-                            return document;
+            if(tblWrk != null) {
+                if (tblWrk.tableJson.has("documents")) {
+                    JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
+                    if(documents != null) {
+                        for (int i = 0; i < documents.length(); i++) {
+                            JSONObject document = (JSONObject) documents.get(i);
+                            if (document != null) {
+                                if (dmsNname.equalsIgnoreCase(document.getString("name"))) {
+                                    return document;
+                                }
+                            }
                         }
                     }
                 }
@@ -5321,5 +5325,15 @@ public class workspace {
         }
         return  null;
     }
-
+    public static boolean has_documents(workspace tblWrk) {
+        if(tblWrk != null) {
+            if (tblWrk.tableJson.has("documents")) {
+                JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
+                if(documents != null) {
+                    return documents.length() > 0;
+                }
+            }
+        }
+        return false;
+    }
 }

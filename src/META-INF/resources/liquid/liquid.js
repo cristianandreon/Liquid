@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.43
+// Liquid ver.2.44
 //
-//  First update 06-01-2020 - Last update 11-08-2022
+//  First update 06-01-2020 - Last update 15-08-2022
 //
 //  TODO : see trello.com
 //
@@ -8925,7 +8925,7 @@ var Liquid = {
         }
         return events;
     },
-    onEvent: function (obj, eventName, eventData, callback, callbackParams, defaultRetval, bAlwaysCallback) {
+    onEvent: function (obj, eventName, eventData, callback, callbackParams, defaultRetval, bCallbackNow) {
         var liquid = Liquid.getLiquid(obj);
         var result = typeof defaultRetval !== 'undefined' ? defaultRetval : null;
         var systemEventCounter = 0;
@@ -8966,7 +8966,7 @@ var Liquid = {
                 }
             }
         }
-        if (bAlwaysCallback) {
+        if (bCallbackNow) {
             if (callback) {
                 result = callback(callbackParams);
             }
@@ -9288,10 +9288,10 @@ var Liquid = {
                                 var eventName = "before" + commandName;
                                 var eventData = null;
                                 var defaultRetval = null;
-                                var bAlwaysCallback = true;
+                                var bCallbackNow = true;
                                 var liquidCommandParams = Liquid.buildCommandParams(liquid, command, obj);
                                 eventName = eventName.toCamelCase();
-                                Liquid.onEvent(obj, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bAlwaysCallback);
+                                Liquid.onEvent(obj, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bCallbackNow);
                                 command.step = 0;
                             }
                         }
@@ -9319,10 +9319,10 @@ var Liquid = {
                         var eventName = "before" + commandName;
                         var eventData = null;
                         var defaultRetval = null;
-                        var bAlwaysCallback = true;
+                        var bCallbackNow = true;
                         var liquidCommandParams = Liquid.buildCommandParams(liquid, command, obj);
                         eventName = eventName.toCamelCase();
-                        Liquid.onEvent(obj, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bAlwaysCallback);
+                        Liquid.onEvent(obj, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bCallbackNow);
                         command.step = 0;
                     } else {
                         // Search in current foreign tables
@@ -9351,10 +9351,10 @@ var Liquid = {
                                             var eventName = "before" + commandName;
                                             var eventData = null;
                                             var defaultRetval = null;
-                                            var bAlwaysCallback = true;
+                                            var bCallbackNow = true;
                                             var liquidCommandParams = Liquid.buildCommandParams(curLiquid, command, obj);
                                             eventName = eventName.toCamelCase();
-                                            Liquid.onEvent(curLiquid, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bAlwaysCallback);
+                                            Liquid.onEvent(curLiquid, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bCallbackNow);
                                             command.step = 0;
                                             return;
                                         }
@@ -9611,14 +9611,27 @@ var Liquid = {
                 obj.style.pointerEvents = '';
             }
         }
-
         var refreshAllDone = false;
         var refreshDone = false;
         var isSystem = false;
+        var doAutoInsert = false;
         if (isDef(liquid)) {
             if (isDef(liquid.tableJson)) {
                 if (isDef(liquid.tableJson.isSystem)) {
                     isSystem = liquid.tableJson.isSystem;
+                }
+            }
+        }
+        if (command) {
+            if (command.name) {
+                if(!isDef(command.response.error)) {
+                    var isFormX = Liquid.isFormX(liquid);
+                    var isAutoInsert = Liquid.isAutoInsert(liquid);
+                    if (isFormX || isAutoInsert) {
+                        if (!isSystem) {
+                            doAutoInsert = true;
+                        }
+                    }
                 }
             }
         }
@@ -9744,12 +9757,15 @@ var Liquid = {
                                     refreshDone = true;
                                 }
                             }
-                            // refresh row on grid and layouts
-                            Liquid.refreshGrids(liquid, null, "rollback");
-                            Liquid.resetLayoutsContent(liquid, true);
-                            Liquid.refreshLayouts(liquid, true);
-                            Liquid.refreshDocuments(liquid);
-                            Liquid.refreshCharts(liquid);
+                            // refresh row (if needed) on grid and layouts
+                            if(!doAutoInsert) {
+                                Liquid.refreshGrids(liquid, null, "command done");
+                                Liquid.resetLayoutsContent(liquid, true);
+                                Liquid.refreshLayouts(liquid, true);
+                                Liquid.refreshDocuments(liquid);
+                                Liquid.refreshCharts(liquid);
+                                refreshAllDone = true;
+                            }
                         } else {
                             // system control : recordset is at runtime
                         }
@@ -9813,16 +9829,16 @@ var Liquid = {
                 var callback = null;
                 var callbackParams = null;
                 var defaultRetval = true;
-                var bAlwaysCallback = true;
-                Liquid.onEvent(liquid, "onInsertedRow", eventData, callback, callbackParams, defaultRetval, bAlwaysCallback);
+                var bCallbackNow = true;
+                Liquid.onEvent(liquid, "onInsertedRow", eventData, callback, callbackParams, defaultRetval, bCallbackNow);
             } else if (command.name === "delete") {
                 // firing deleted record event
                 var eventData = {};
                 var callback = null;
                 var callbackParams = null;
                 var defaultRetval = true;
-                var bAlwaysCallback = true;
-                Liquid.onEvent(liquid, "onDeletedRow", eventData, callback, callbackParams, defaultRetval, bAlwaysCallback);
+                var bCallbackNow = true;
+                Liquid.onEvent(liquid, "onDeletedRow", eventData, callback, callbackParams, defaultRetval, bCallbackNow);
             }
 
         } else {
@@ -9874,13 +9890,15 @@ var Liquid = {
 
         liquid.currentCommand = null;
         if (!refreshAllDone) {
-            // force refresh
-            if (liquid instanceof LiquidCtrl) {
-                Liquid.refreshAll(liquid, null, "onCommandDone");
-                // validazione dei layouts
-                if (liquid.tableJson.layouts) {
-                    for (let il = 0; il < liquid.tableJson.layouts.length; il++) {
-                        Liquid.invalidateLayoutField(liquid, liquid.tableJson.layouts[il], "*", true);
+            // force refresh .. if needed
+            if(!doAutoInsert) {
+                if (liquid instanceof LiquidCtrl) {
+                    Liquid.refreshAll(liquid, null, "onCommandDone");
+                    // validazione dei layouts
+                    if (liquid.tableJson.layouts) {
+                        for (let il = 0; il < liquid.tableJson.layouts.length; il++) {
+                            Liquid.invalidateLayoutField(liquid, liquid.tableJson.layouts[il], "*", true);
+                        }
                     }
                 }
             }
@@ -9907,18 +9925,8 @@ var Liquid = {
             }
             command.postFunc = null;
         }
-        if (command) {
-            if (command.name) {
-                if(!isDef(command.response.error)) {
-                    var isFormX = Liquid.isFormX(liquid);
-                    var isAutoInsert = Liquid.isAutoInsert(liquid);
-                    if (isFormX || isAutoInsert) {
-                        if (!isSystem) {
-                            Liquid.autoInsert(liquid);
-                        }
-                    }
-                }
-            }
+        if (doAutoInsert) {
+            Liquid.autoInsert(liquid);
         }
         if (liquid) {
             if (liquid.commandEndCallback) {
@@ -11279,7 +11287,7 @@ var Liquid = {
                         }
 
                         let defaultValue = "noEventDef";
-                        let bAlwaysCallback = true;
+                        let bCallbackNow = false;
                         let bContinue = false;
                         if (command.name === "insert") {
                             Liquid.addRow(obj, command);
@@ -11298,17 +11306,20 @@ var Liquid = {
                                     Liquid.onPreparedRow(liquid, true, false);
                                     // set layout rows state by command
                                     Liquid.setLayoutsRowStateByCommand(liquid, command);
-                                    Liquid.refreshGrids(liquid, null, "new row");
-                                    Liquid.refreshLayouts(liquid);
-                                    Liquid.refreshDocuments(liquid);
-                                    Liquid.refreshCharts(liquid);
-                                    // validazione dei layouts
+                                    // N.B.: onPreparedRow fire row selection and refresh acrion
+                                    // validating layouts
                                     if (liquid.tableJson.layouts) {
                                         for (let il = 0; il < liquid.tableJson.layouts.length; il++) {
                                             Liquid.invalidateLayoutField(liquid, liquid.tableJson.layouts[il], "*", true);
                                         }
                                     }
-                                }, liquid, defaultValue, bAlwaysCallback);
+                                    /*
+                                    Liquid.refreshGrids(liquid, null, "new row");
+                                    Liquid.refreshLayouts(liquid);
+                                    Liquid.refreshDocuments(liquid);
+                                    Liquid.refreshCharts(liquid);
+                                    */
+                                }, liquid, defaultValue, bCallbackNow);
 
                             if (result.systemResult === defaultValue) {
                                 liquid.currentCommand.step = Liquid.CMD_ENABLED;
@@ -11323,7 +11334,7 @@ var Liquid = {
                                     liquid.tableJson.commandBarTemporaryVisible = true;
                                 }
                             }
-                            var result = Liquid.onEvent(obj, "onUpdating", null, null, null, defaultValue, bAlwaysCallback);
+                            var result = Liquid.onEvent(obj, "onUpdating", null, null, null, defaultValue, bCallbackNow);
                             if (result.result === defaultValue || result.systemResult === true) {
                                 liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 bContinue = true;
@@ -11348,7 +11359,7 @@ var Liquid = {
                                             liquid.tableJson.commandBarTemporaryVisible = true;
                                         }
                                     }
-                                    var result = Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bAlwaysCallback);
+                                    var result = Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bCallbackNow);
                                     if (result.systemResult === defaultValue) {
                                         liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                         bContinue = true;
@@ -11434,7 +11445,7 @@ var Liquid = {
                             if (command.fromToolbar !== true && (missingNodes != null && missingNodes.length > 0)) {
                                 // Selection was changed : update
                                 let defaultValue = "noEventDef";
-                                let bAlwaysCallback = false;
+                                let bCallbackNow = false;
                                 let bContinue = false;
                                 for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
                                     var layout = liquid.tableJson.layouts[il];
@@ -11447,7 +11458,7 @@ var Liquid = {
                                     liquid.deletingNodes.push(missingNodes[ir]);
                                     dataList.push(missingNodes[ir].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
                                 }
-                                var result = Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bAlwaysCallback);
+                                var result = Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bCallbackNow);
                                 if (result.systemResult === defaultValue) {
                                 }
                                 Liquid.refreshGrids(liquid, null);

@@ -1929,7 +1929,7 @@ public class event {
                         // do delete in DMS
                         String resDMSdelete = event.deleteDocument(
                                 liquid,
-                                "{\"params\":{\"links\":[" + utility.arrayToString(keyList, "'", "'", ",") + "]}}",
+                                "{\"params\":{\"name\":\"" + dmsName + "\",\"links\":[" + utility.arrayToString(keyList, "'", "'", ",") + "]}}",
                                 null,
                                 request
                         );
@@ -2928,6 +2928,8 @@ public class event {
                             all_links += ")";
                             sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link IN " + all_links + ")";
                             sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link IN " + all_links + ")";
+                        } else {
+                            throw new Exception("Unknown record handler in deleteDocumentDefault()");
                         }
                         if (sQuerySel != null) {
                             try {
@@ -2967,11 +2969,13 @@ public class event {
                                 psdo = conn.prepareStatement(sQuery);
                                 int res = psdo.executeUpdate();
                                 if (res >= 0) {
-                                    String fieldSet;
+                                    String fieldSet = "";
                                     if (paramJson.has("id")) {
                                         fieldSet = "{" + "\"id\":\"" + (paramJson.getString("id")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
-                                    } else {
+                                    } else if (paramJson.has("link")) {
                                         fieldSet = "{" + "\"link\":\"" + (paramJson.getString("link")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
+                                    } else if (paramJson.has("links")) {
+                                        fieldSet = "{" + "\"links\":\"" + (paramJson.getString("links")) + "\",\"res\":" + res + ",\"delete_file_error\":\"" + delete_file_error + "\" }";
                                     }
                                     resultSet.append((nRecs > 0 ? "," : "") + fieldSet);
                                     nRecs++;
