@@ -2224,7 +2224,7 @@ public class event {
                                 JSONObject document = workspace.get_dms_by_name(tblWrk, docName);
                                 if(document != null) {
                                     if (document.has("maxSize")) {
-                                        // TODO : chack document size
+                                        // TODO : check document size
                                     }
                                 }
                             }
@@ -2324,7 +2324,7 @@ public class event {
         PreparedStatement psdo = null;
         String sQuery = null;
         String sWhere = "";
-        String dmsSchema = null, dmsTable = null, dmsDocType = null, dmsRootFolder = null;
+        String dmsSchema = null, dmsTable = null, dmsDocType = null, dmsRootFolder = null, dmsName = null;
         long dmsMaxFileSize = 0;
         int nRecs = 0;
 
@@ -2400,10 +2400,20 @@ public class event {
                 fileAbsolutePath += (added > 0 ? "." : "") + ".R." + comp;
             }
             // DMS folder name
-            comp = paramJson.has("name") ? paramJson.getString("name") : null;
-            if(comp != null && !comp.isEmpty()) {
-                fileAbsolutePath += (added > 0 ? "." : "") + ".N." + comp;
+            dmsName = paramJson.has("name") ? paramJson.getString("name") : null;
+            if(dmsName != null && !dmsName.isEmpty()) {
+                fileAbsolutePath += (added > 0 ? "." : "") + ".N." + dmsName;
+                JSONObject doc = workspace.get_dms_by_name((workspace) tbl_wrk, dmsName);
+                if(doc.has("maxSize")) {
+                    int maxSize = doc.getInt("maxSize");
+                    if(maxSize > 0 && (maxSize < dmsMaxFileSize || dmsMaxFileSize == 0)) {
+                        dmsMaxFileSize = maxSize;
+                    }
+                }
             }
+
+
+
             // Time tick
             long tick = System.currentTimeMillis();
             fileAbsolutePath += (added > 0 ? "." : "") + ".TK." + tick;

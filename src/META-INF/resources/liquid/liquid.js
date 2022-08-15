@@ -2259,22 +2259,30 @@ class LiquidCtrl {
 
                     if(listTabVisible === false) {
                         if(this.tableJson.grids && this.tableJson.grids.length > 0 && gridsTabVisible !== false) {
-                            Liquid.onGridTab(this.tableJson.grids[0].gridTabObj);
+                            if(this.tableJson.grids[0].gridTabObj)
+                                Liquid.onGridTab(this.tableJson.grids[0].gridTabObj);
                         } else if(this.tableJson.layouts && this.tableJson.layouts.length > 0 && layoutsTabVisible != false) {
-                            Liquid.onLayoutTab(this.tableJson.layouts[0].layoutTabObj);
+                            if(this.tableJson.layouts[0].layoutTabObj)
+                                Liquid.onLayoutTab(this.tableJson.layouts[0].layoutTabObj);
                         } else if(this.tableJson.documents && this.tableJson.documents.length > 0 && documentsTabVisible !== false) {
-                            Liquid.onDocumentTab(this.tableJson.documents[0].containerObj.id);
+                            if(this.tableJson.documents[0].containerObj)
+                                Liquid.onDocumentTab(this.tableJson.documents[0].containerObj.id);
                         } else if(this.tableJson.charts && this.tableJson.charts.length > 0 && chartsTabVisible !== false) {
-                            Liquid.onChartTab(this.tableJson.charts[0].containerObj.id);
+                            if(this.tableJson.charts[0].containerObj)
+                                Liquid.onChartTab(this.tableJson.charts[0].containerObj.id);
                         } else {
                             if(this.tableJson.layouts && this.tableJson.layouts.length > 0) {
-                                Liquid.onLayoutTab(this.tableJson.layouts[0].layoutTabObj);
+                                if(this.tableJson.layouts[0].layoutTabObj)
+                                    Liquid.onLayoutTab(this.tableJson.layouts[0].layoutTabObj);
                             } else if(this.tableJson.grids && this.tableJson.grids.length > 0) {
-                                Liquid.onGridTab(this.tableJson.grids[0].gridTabObj);
+                                if(this.tableJson.grids[0].gridTabObj)
+                                    Liquid.onGridTab(this.tableJson.grids[0].gridTabObj);
                             } else if(this.tableJson.documents && this.tableJson.documents.length > 0) {
-                                Liquid.onDocumentTab(this.tableJson.documents[0].containerObj.id);
+                                if(this.tableJson.documents[0].containerObj)
+                                    Liquid.onDocumentTab(this.tableJson.documents[0].containerObj.id);
                             } else if(this.tableJson.charts && this.tableJson.charts.length > 0) {
-                                Liquid.onChartTab(this.tableJson.charts[0].containerObj.id);
+                                if(this.tableJson.charts[0].containerObj)
+                                    Liquid.onChartTab(this.tableJson.charts[0].containerObj.id);
                             }
                         }
                     }
@@ -3152,7 +3160,7 @@ var Liquid = {
                             liquidCommandParams.liquid.controlId = liquid.controlId;
                     } else {
                         // No liquid object : is a form or HTML ?
-                        let nodes_data = Liquid.htmlNodesToJson(paramObj, true, true);
+                        let nodes_data = Liquid.htmlNodesToJson(paramObj, true, true, "loadAttachmentsTable", 0);
                         if (nodes_data) {
                             liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":" + JSON.stringify(nodes_data) + "" + "}"));
                         }
@@ -3264,7 +3272,7 @@ var Liquid = {
      * @param processAll
      * @param processFiles
      */
-    layoutsNodesToJson: async function (liquidOrControlId, processAll, processFiles, excludingNames) {
+    layoutsNodesToJson: async function (liquidOrControlId, processAll, processFiles, excludingNames, filtering_table, filtering_table_cell_index) {
         let result_params = null;
         var liquid = Liquid.getLiquid(liquidOrControlId);
         if (liquid) {
@@ -3273,7 +3281,7 @@ var Liquid = {
                     var layout = liquid.tableJson.layouts[il];
                     if (layout) {
                         if (layout.containerObj) {
-                            let command_params = await Liquid.layoutNodesToJson(layout.containerObj, processAll, processFiles, excludingNames);
+                            let command_params = await Liquid.layoutNodesToJson(layout.containerObj, processAll, processFiles, excludingNames, filtering_table, filtering_table_cell_index);
                             if (command_params) {
                                 if(!result_params) result_params = [];
                                 result_params.push({
@@ -3288,13 +3296,13 @@ var Liquid = {
         }
         return result_params;
     },
-    layoutNodesToJson: async function (rootObj, processAll, processFiles, excludingNames) {
+    layoutNodesToJson: async function (rootObj, processAll, processFiles, excludingNames, filteringTableId, filteringCellIndex) {
         return new Promise(async (resolve, reject) => {
             let result_params_json = null;
             if (rootObj && rootObj.childNodes.length) {
                 for (var i = 0; i < rootObj.childNodes.length; i++) {
                     if (rootObj.childNodes[i].nodeName.toUpperCase() === 'INPUT') {
-                        let nodes_data = await Liquid.htmlNodesToJson(rootObj.childNodes[i], processAll, processFiles, excludingNames);
+                        let nodes_data = await Liquid.htmlNodesToJson(rootObj.childNodes[i], processAll, processFiles, excludingNames, filteringTableId, filteringCellIndex);
                         if (nodes_data) {
                             if (!result_params_json) result_params_json = [];
                             for (let j = 0; j < nodes_data.length; j++) {
@@ -3302,7 +3310,7 @@ var Liquid = {
                             }
                         }
                     } else {
-                        let nodes_data = await Liquid.layoutNodesToJson(rootObj.childNodes[i], processAll, processFiles, excludingNames);
+                        let nodes_data = await Liquid.layoutNodesToJson(rootObj.childNodes[i], processAll, processFiles, excludingNames, filteringTableId, filteringCellIndex);
                         if (nodes_data) {
                             if (!result_params_json) result_params_json = [];
                             for (let j = 0; j < nodes_data.length; j++) {
@@ -3315,7 +3323,25 @@ var Liquid = {
             resolve(result_params_json);
         });
     },
-    htmlNodesToJson: async function (paramObj, processAll, processFiles, excludingNames) {
+    is_file_in_table:function(tableId, cellIndex, fileName) {
+        if(isDef(tableId) && isDef(cellIndex)) {
+            let tblNode = document.getElementById(tableId);
+            if (tblNode) {
+                if (tblNode.tBodies) {
+                    for (let i = 0; i < tblNode.tBodies[0].rows.length; i++) {
+                        let fName = tblNode.tBodies[0].rows[i].cells[cellIndex].innerText;
+                        if (fName == fileName) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        } else {
+            return true;
+        }
+    },
+    htmlNodesToJson: async function (paramObj, processAll, processFiles, excludingNames, filteringTableId, filteringCellIndex) {
         let nodes_data = null;
         if (paramObj) {
             if (paramObj.nodeName) {
@@ -3373,18 +3399,26 @@ var Liquid = {
                                     case "file":
                                         if (processFiles) {
                                             if (frm_elements[i].files.length) {
-                                                var queue = {
-                                                    liquid: null,
-                                                    obj: frm_elements[i],
-                                                    files: frm_elements[i].files,
-                                                    iFile: 0,
-                                                    callback: null
-                                                };
-                                                if (await Liquid.formFilesToObjectExchange(queue)) {
-                                                    field_value = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
-                                                } else {
-                                                    console.error("LIQUID: Internal error reading file");
-                                                    field_name = null;
+                                                let result_files = [];
+                                                for(let iFile=0; iFile<frm_elements[i].files.length; iFile++) {
+                                                    if (Liquid.is_file_in_table(filteringTableId, filteringCellIndex, frm_elements[i].files[iFile].name)) {
+                                                        result_files.push(frm_elements[i].files[iFile]);
+                                                    }
+                                                }
+                                                if(result_files.length>0) {
+                                                    var queue = {
+                                                        liquid: null,
+                                                        obj: frm_elements[i],
+                                                        files: result_files,
+                                                        iFile: 0,
+                                                        callback: null
+                                                    };
+                                                    if (await Liquid.formFilesToObjectExchange(queue)) {
+                                                        field_value = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
+                                                    } else {
+                                                        console.error("LIQUID: Internal error reading file");
+                                                        field_name = null;
+                                                    }
                                                 }
                                             }
                                         } else
@@ -16496,7 +16530,8 @@ var Liquid = {
             }
         }
     },
-    getDocument: function (liquid, obj) {
+    getDocument: function (controlId, obj) {
+        var liquid = Liquid.getLiquid(controlId);
         if (liquid && obj) {
             var nameItems = obj instanceof HTMLElement ? obj.id.split(".") : obj.split(".");
             if (nameItems && nameItems.length > 2) {
@@ -16507,7 +16542,8 @@ var Liquid = {
         }
         return null;
     },
-    getDocumentByName: function (liquid, docName) {
+    getDocumentByName: function (controlId, docName) {
+        var liquid = Liquid.getLiquid(controlId);
         if (liquid && docName) {
             if (isDef(liquid.tableJson.documents)) {
                 for (var id = 0; id < liquid.tableJson.documents.length; id++) {
@@ -16519,7 +16555,8 @@ var Liquid = {
         }
         return null;
     },
-    refreshDocuments: function (liquid, bSetup) {
+    refreshDocuments: function (controlId, bSetup) {
+        var liquid = Liquid.getLiquid(controlId);
         if (liquid) {
             if (isDef(liquid.tableJson.documents)) {
                 for (var id = 0; id < liquid.tableJson.documents.length; id++) {
@@ -23230,48 +23267,45 @@ columns:[
      * @param padding
      * @param spacing
      * @param button_class
+     * @param mode
+     * @param on_update_callback
      * @returns {string}
      */
-    filesInputToTable:function(fileNode, controlId, table_class, table_style, padding, spacing, button_class) {
+    filesInputToTable:function(fileNode, controlId, table_class, table_style, padding, spacing, button_class, mode, on_update_callback) {
         let html = "";
         if(fileNode) {
-            html += "<table id='"+controlId+"' cellpadding='"+padding+"' cellspacing='"+spacing+"' class='"+table_class+"' style='"+table_style+"'>";
+            html += mode == 'html' ? "<table id='"+controlId+"' cellpadding='"+padding+"' cellspacing='"+spacing+"' class='"+table_class+"' style='"+table_style+"'>" : "";
             for(let i=0; i<fileNode.files.length; i++) {
-                html += "<tr>";
-                html += "<td>";
+                html += mode == 'html' ? "<tr><td style='width:240px'>" : "";
                 html += fileNode.files[i].name;
-                html += "<td>";
-                html += "<td>";
-                html += fileNode.files[i].size;
-                html += "<td>";
-                html += "<td>";
-                html += "<a "
+                html += mode == 'html' ? "</td><td style='width:55px'>" : " - ";
+                html += (fileNode.files[i].size/1024).toFixed(1) + " Kb";
+                html += mode == 'html' ? "</td><td>" : "";
+                html += mode == 'html' ? "<a "
                     + " class=\""+button_class+"\""
                     + " title=\""+(Liquid.lang === 'ita'?"Rimuovi file":"Remove file")+"\" "
-                    + " href=\"javascript:void(0)\" onClick=\"Liquid.deletefileFromTable('"+controlId+"','"+fileNode.id+"','"+fileNode.files[i].name+"','"+table_class+"','"+table_style+"','"+padding+"','"+spacing+"','"+button_class+"','"+mode+"');\">"
-                    + "<img src=\"/images/delete.png\" width=\"16\"/>"
-                    + "</a>";
-                html += "";
-                html += "<td>";
-                html += "</tr>";
+                    + " href=\"javascript:void(0)\" onClick=\"Liquid.deletefileFromTable('"+controlId+"','"+fileNode.files[i].name+"','"+on_update_callback+"');\">"
+                    + "<img src=\"/images/delete.png\" width=\"16\" height=\"16\"/>"
+                    + "</a>" : "";
+                html += mode == 'html' ? "</td></tr>" : "";
             }
-            html += "</table>";
+            html += mode == 'html' ? "</table>" : "";
         }
         return html;
     },
-    deletefileFromTable:function(controlId, filesNodeId, fileName, table_class, table_style, padding, spacing, button_class, mode) {
-        let filesNode = document.getElementById(filesNodeId);
-        if(filesNode) {
-            if(filesNode.files) {
-                let files_list = [];
-                for (let i = 0; i < filesNode.files.length; i++) {
-                    if (filesNode.files[i].name == fileName) {
-                    } else {
-                        files_list.push(filesNode.files[i]);
+    deletefileFromTable:function(controlId, fileName, on_delete_callback) {
+        let tblNode = document.getElementById(controlId);
+        if(tblNode) {
+            if(tblNode.tBodies) {
+                for (let i = 0; i < tblNode.tBodies[0].rows.length; i++) {
+                    let fName = tblNode.tBodies[0].rows[i].cells[0].innerText;
+                    if (fName == fileName) {
+                        tblNode.deleteRow(i);
+                        if(on_delete_callback) {
+                            eval(on_delete_callback);
+                        }
                     }
                 }
-                filesNode.files = files_list;
-                Liquid.filesInputToTable(filesNode, controlId, table_class, table_style, padding, spacing, button_class, mode);
             }
         }
     }
