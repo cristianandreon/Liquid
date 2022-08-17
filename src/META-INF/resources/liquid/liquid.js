@@ -2878,13 +2878,16 @@ var Liquid = {
         for (let i = 0; i < obj.childNodes.length; i++) {
             var node = obj.childNodes[i];
             if (node.dataset) {
-                if (node.dataset.value == dataSetValue || node.dataset.previd == dataSetValue) {
-                    return node;
-                } else if (node.dataset.linkedfield == dataSetValue || node.dataset.linkedname == dataSetValue) {
-                    return node;
-                } else if (node.getAttribute("linkedfield") == dataSetValue || node.getAttribute("linkedname") == dataSetValue) {
-                    return node;
-                } else if (node.id == dataSetValue) {
+                if(Liquid.compareLayoutField(dataSetValue,
+                    new Array(
+                        node.dataset.value,
+                        node.dataset.previd,
+                        node.dataset.linkedfield,
+                        node.dataset.linkedname,
+                        node.getAttribute("linkedfield"),
+                        node.getAttribute("linkedname"),
+                        node.id
+                    ))) {
                     return node;
                 }
             }
@@ -2896,6 +2899,22 @@ var Liquid = {
             }
         }
         return null;
+    },
+    compareLayoutField: function (fieldName, list) {
+        if(list) {
+            fieldName = fieldName.toLowerCase();
+            for (let i = 0; i < list.length; i++) {
+                if (isDef(list[i])) {
+                    let searchingNames = list[i].split(".");
+                    if(searchingNames) {
+                        if (searchingNames[searchingNames.length-1].toLowerCase() == fieldName) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     },
     getParentNodeByClass: function (obj, className) {
         while (obj) {
