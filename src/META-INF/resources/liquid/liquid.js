@@ -8155,6 +8155,9 @@ var Liquid = {
                     }
                 }
             }
+            console.error("ERROR: foreign table '"+foreignTableNameOrTable+"' not found in control:"+liquid.controlId);
+        } else {
+            throw "Liquid control not defined";
         }
         return null;
     },
@@ -15411,16 +15414,26 @@ var Liquid = {
                             if (isDef(linkedCol[tooltipName]))
                                 tooltip = linkedCol[tooltipName];
                             if(!isDef(tooltip)) {
-                                if (isDef(linkedCol[labelName])) {
-                                    if(Liquid.projectMode) {
-                                        tooltip = "[DEBUG] Linked to field:"+linkedCol[labelName] + "("+linkedCol["name"]+")";
-                                    } else {
+                                if(isDef(linkedCol[labelName])) {
+                                    tooltip = linkedCol[labelName];
+                                }
+                            }
+                            if(!tooltip) {
+                                if(isDef(linkedCol["tooltip"]))
+                                    tooltip = linkedCol["tooltip"];
+                                if(!isDef(tooltip)) {
+                                    if (isDef(linkedCol["label"])) {
                                         tooltip = linkedCol[labelName];
                                     }
                                 }
                             }
+                            if(!tooltip) {
+                                if (Liquid.projectMode) {
+                                    tooltip = "[DEBUG] Linked to field:" + linkedCol.label + " (" + linkedCol.name + ")";
+                                }
+                            }
 
-                            obj.title = "" + tooltip + "";
+                            obj.title = "" + (tooltip ? tooltip : "") + "";
 
 
                             // max size
@@ -18755,14 +18768,20 @@ var Liquid = {
         if (liquid) {
             liquid.onceRefreshAll = true;
             Liquid.loadData(liquid, null, reason, callback, callbackParam);
+        } else {
+            throw "Liquid control not defined";
         }
     },
     refreshAll:function(obj, event, reason) {
         var liquid = Liquid.getLiquid(obj);
-        Liquid.refreshGrids(liquid, event ? event.data : null, reason);
-        Liquid.refreshLayouts(liquid, false);
-        Liquid.refreshDocuments(liquid, false);
-        Liquid.refreshCharts(liquid, false);
+        if (liquid) {
+            Liquid.refreshGrids(liquid, event ? event.data : null, reason);
+            Liquid.refreshLayouts(liquid, false);
+            Liquid.refreshDocuments(liquid, false);
+            Liquid.refreshCharts(liquid, false);
+        } else {
+            throw "Liquid control not defined";
+        }
     },
     refreshGrids:function(obj, data, reason) {
         var liquid = Liquid.getLiquid(obj);
@@ -18774,6 +18793,8 @@ var Liquid = {
                     }
                 }
             }
+        } else {
+            throw "Liquid control not defined";
         }
     },
     onGridRefresh:function(liquid, grid, data, reason) {
@@ -18847,6 +18868,8 @@ var Liquid = {
                     }
                 }
             } catch(e) { console.error("ERROR: onGridRefreshField() : "+e); }
+        } else {
+            throw "Liquid control not defined";
         }
     },
     onGridContainerSizeChanged:function(obj, params) {
@@ -19686,32 +19709,36 @@ var Liquid = {
     },
     selectRow:function(liquidControlOrId, primaryKeyValue, bSenstivaCase) {
         var liquid = Liquid.getLiquid(liquidControlOrId);
-        var foundRow1B = Liquid.searchRow(liquid, primaryKeyValue, bSenstivaCase);
-        if(foundRow1B) {
-            if(liquid) {
-                var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                if(foundRow1B <= nodes.length) {
-                    var node = nodes[foundRow1B-1];
-                    if(node) {
-                        if(node.isSelected()) {
-                            if(liquid.tableJson.autoSelect) {
-                                // trigger selection anaway if row was autoselected
-                                node.setSelected(false);
-                                liquid.lastSelectedId = null;
+        if(liquid) {
+            var foundRow1B = Liquid.searchRow(liquid, primaryKeyValue, bSenstivaCase);
+            if(foundRow1B) {
+                if(liquid) {
+                    var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                    if(foundRow1B <= nodes.length) {
+                        var node = nodes[foundRow1B-1];
+                        if(node) {
+                            if(node.isSelected()) {
+                                if(liquid.tableJson.autoSelect) {
+                                    // trigger selection anaway if row was autoselected
+                                    node.setSelected(false);
+                                    liquid.lastSelectedId = null;
+                                }
                             }
+                            node.setSelected(true);
+                            Liquid.processNodeSelected(liquid, node, node.isSelected());
+                            return true;
                         }
-                        node.setSelected(true);
-                        Liquid.processNodeSelected(liquid, node, node.isSelected());
-                        return true;
                     }
                 }
+            } else {
+                var err = "ERROR: row not found on '"+liquid.controlId+"' by key '" + primaryKeyValue + "'";
+                console.error(err);
+                Liquid.showToast(Liquid.appTitle, err, "error");
             }
+            return false;
         } else {
-            var err = "ERROR: row not found on '"+liquid.controlId+"' by key '" + primaryKeyValue + "'";
-            console.error(err);
-            Liquid.showToast(Liquid.appTitle, err, "error");
+            throw "Liquid control not defined";
         }
-        return false;
     },
     searchRow:function(liquidControlOrId, primaryKeyValue, bSenstivaCase) {
         if(liquidControlOrId) {
@@ -19748,6 +19775,8 @@ var Liquid = {
                     }
                 }
             }
+        } else {
+            throw "Liquid control not defined";
         }
     },
     /**
@@ -19759,6 +19788,8 @@ var Liquid = {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
             Liquid.pasteFromClipBoradExec(liquid, liquid.controlId, btoa(JSON.stringify(liquid.tableJson.columns)), btoa(Liquid.getSerializedNodeData(liquid, [ nodeData ] )));
+        } else {
+            throw "Liquid control not defined";
         }
     },
     /**
@@ -19793,6 +19824,8 @@ var Liquid = {
                     console.error("*** ERROR: control "+liquid.controlId+" has no selected nodes");
                 }
             }
+        } else {
+            throw "Liquid control not defined";
         }
     },
     createNewRowData:function(obj) {
@@ -19835,6 +19868,8 @@ var Liquid = {
                 }
             }
             return newData;
+        } else {
+            throw "Liquid control not defined";
         }
     },
     addRow:function(obj) {
@@ -19843,6 +19878,8 @@ var Liquid = {
             liquid.cRowBeforeAdding = liquid.cRow;
             liquid.nodesBeforeAdding = Liquid.getCurNodes(liquid);
             liquid.addingRow = Liquid.createNewRowData(liquid);
+        } else {
+            throw "Liquid control not defined";
         }
     },
     getAddingRowAsString:function(obj, data) {
@@ -19853,6 +19890,8 @@ var Liquid = {
                     return data.join(",");
                 else if(typeof data === 'object')
                     return JSON.stringify(data);
+        } else {
+            throw "Liquid control not defined";
         }
         return "";
     },
@@ -19910,6 +19949,8 @@ var Liquid = {
                     }
                 }
             }
+        } else {
+            throw "Liquid control not defined";
         }
         return retVal;
     },
@@ -19920,6 +19961,8 @@ var Liquid = {
                 var node = liquid.deletingNodes[ir];
                 Liquid.registerFieldChange(liquid, node.id, node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ], null, null, null);
             }
+        } else {
+            throw "Liquid control not defined";
         }
     },
     onDeletedRow:function(obj) {
@@ -19952,6 +19995,8 @@ var Liquid = {
                 liquid.nRows = nodes.length;
                 return true;
             }
+        } else {
+            throw "Liquid control not defined";
         }
         return false;
     },
@@ -19964,6 +20009,8 @@ var Liquid = {
                     selNodes = liquid.gridOptions.api.getSelectedNodes();
                 }
             }
+        } else {
+            throw "Liquid control not defined";
         }
         return selNodes;
     },
@@ -19992,6 +20039,8 @@ var Liquid = {
                     }
                 }
             }
+        } else {
+            throw "Liquid control not defined";
         }
         return selNodes;
     },
@@ -20021,6 +20070,8 @@ var Liquid = {
             liquid.selection.include = [];
             liquid.selection.excludeObjectId = [];
             liquid.selection.includeObjectId = [];
+        } else {
+            throw "Liquid control not defined";
         }
     },
     isNodesInNodes:function(nodes, baseNodes, primaryKeyField) {
@@ -20129,6 +20180,8 @@ var Liquid = {
                     // console.debug( " SELECTION : ALL:"+liquid.selection.all+" - INCLUDE:"+liquid.selection.include + " - EXCLUDE:"+liquid.selection.exclude );
                 }
             }
+        } else {
+            throw "Liquid control not defined";
         }
     },
     resumeNodeSelected:function(liquid) {
@@ -20151,6 +20204,8 @@ var Liquid = {
                 }
             }
             // console.debug( " SELECTION : ALL:"+liquid.selection.all+" - INCLUDE:"+liquid.selection.include + " - EXCLUDE:"+liquid.selection.exclude );
+        } else {
+            throw "Liquid control not defined";
         }
     },
     startNavigatorsBar:function( obj_id ) { // Entry adding navigation bar to obj_id html element

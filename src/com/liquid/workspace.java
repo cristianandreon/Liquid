@@ -677,8 +677,9 @@ public class workspace {
             if (out != null) {
                 String path = workspace.path != null ? workspace.path : "";
                 out.print("\n<!-- LIQUID : Enabling Project Mode -->\n");
-                out.print("<script>");
-                out.print("glLiquidGenesisToken = '" + genesisToken + "';");
+                out.print("<script>\n");
+                out.print("glLiquidGenesisToken = '" + genesisToken + "';\n");
+                out.print("Liquid.projectMode = true;\n");
                 out.print("</script>\n");
                 out.print("\n<!-- LIQUID : Editing support -->\n");
                 out.print("<script type=\"text/javascript\" src=\""+path+"/liquid/liquidEditing.js?version="+workspace.version_string+"\"></script>");
