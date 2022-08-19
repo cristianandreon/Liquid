@@ -3553,13 +3553,25 @@ public class bean {
                         }
 
 
-                        if (label != null) {
-                            if (column != null && !column.isEmpty()) {
-                                values.add(value);
-                                titles.add(title);
-                                cellwhs.add(width);
-                                onClicks.add(onclick);
+                        values.add(value);
+                        titles.add(title);
+                        cellwhs.add(width);
+                        onClicks.add(onclick);
+                    }
+
+                    // Risoluzione espressioni nidificate
+                    for (int j = 0; j < values.size(); j++) {
+                        String value = values.get(j);
+                        if (value.indexOf("${") >= 0) {
+                            // risoluzione espressione campo
+                            for (int l = 0; l < columns.length; l++) {
+                                if(l != j) {
+                                    if(columns[l] != null) {
+                                        value = value.replace("${" + columns[l] + "}", values.get(l));
+                                    }
+                                }
                             }
+                            values.set(j, value);
                         }
                     }
 
@@ -3584,18 +3596,24 @@ public class bean {
                                 }
                             }
                         }
-                        out += "<td title='"
-                                + (title != null ? title : "") + "'"
-                                + (cellClass != null ? " class='" + cellClass + "'" : "")
-                                + (cellStyle != null ? " style='" + cellStyle + (swh != null ? "; width:" + swh + "px;" : "") + "'" : "")
-                                + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
-                                + ">";
-                        out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + " " + dataId + ">";
-                        out += "<p>";
-                        out += values.get(j);
-                        out += "</p>";
-                        out += "</div>";
-                        out += "</td>";
+                        String label = labels[j];
+                        String column = columns[j];
+                        if (label != null) {
+                            if (column != null && !column.isEmpty()) {
+                                out += "<td title='"
+                                        + (title != null ? title : "") + "'"
+                                        + (cellClass != null ? " class='" + cellClass + "'" : "")
+                                        + (cellStyle != null ? " style='" + cellStyle + (swh != null ? "; width:" + swh + "px;" : "") + "'" : "")
+                                        + (cellStyle == null && swh != null ? " style='width:" + swh + "px'" : "")
+                                        + ">";
+                                out += "<div " + (cellStyle != null ? " style='" + cellStyle + "'" : "") + onclick + " " + dataId + ">";
+                                out += "<p>";
+                                out += values.get(j);
+                                out += "</p>";
+                                out += "</div>";
+                                out += "</td>";
+                            }
+                        }
                     }
                     out += "</tr>";
                 }

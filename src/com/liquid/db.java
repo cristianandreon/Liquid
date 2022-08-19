@@ -7747,8 +7747,17 @@ public class db {
                     if (i<value.length() && (value.charAt(i) == '$' || value.charAt(i) == '%') && (i+1<value.length() && value.charAt(i + 1) == '{') ) {
                         i += 2;
                         int s = i;
-                        while (i < value.length() && value.charAt(i) != '}') {
-                            i++;
+                        int parentCounter=1;
+                        while (i < value.length()) {
+                            if(value.charAt(i) == '}') {
+                                parentCounter--;
+                            } else if(value.charAt(i) == '{') {
+                                parentCounter++;
+                            }
+                            if(parentCounter == 0)
+                                break;
+                            else
+                                i++;
                         }
                         String cVar = value.substring(s, i);
                         if (!cVar.isEmpty()) {
