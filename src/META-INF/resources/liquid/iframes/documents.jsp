@@ -94,7 +94,7 @@
                         var cell3 = row.insertCell(2);
                         var cell4 = row.insertCell(3);
                         var cell5 = row.insertCell(4);
-                        if (window.parent.Liquid.lang === 'ita') {
+                        if (window.parent.Liquid.lang === 'it') {
                             cell1.innerHTML = "Tipo"
                             cell2.innerHTML = "Nome";
                             cell3.innerHTML = "Dim.(Kb)";
@@ -122,15 +122,15 @@
                         docItem.name = docItem.name.substring(docItem.name.lastIndexOf('\\') + 1);
                         let doc_type_title = (docItem.doc_type_id ? "Document type id:" + docItem.doc_type_id + "" : "");
 
-                        title = (window.parent.Liquid.lang === 'ita' ? "Cancella documento" : "Delete document");
+                        title = (window.parent.Liquid.lang === 'it' ? "Cancella documento" : "Delete document");
                         var cmdDelete = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/delete.png\" class=\"liquidDocumentsXCmdIcon\" id=\"" + itemId + ".delete\" title=\"" + title + "\" onClick=\"window.parent.Liquid.onDeleteDocument('" + itemId + "',event); deleteDocument(" + docItem.id + ");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
 
-                        title = (window.parent.Liquid.lang === 'ita' ? "Aggiorna note" : "Update note");
+                        title = (window.parent.Liquid.lang === 'it' ? "Aggiorna note" : "Update note");
                         var cmdUpdate = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/update.png\" class=\"liquidDocumentsXCmdIcon\" id=\"" + itemId + ".upload\" title=\"" + title + "\" onClick=\"window.parent.Liquid.onUpdateDocument('" + itemId + "',event); updateDocument(" + docItem.id + ");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
 
                         var itemId = (glControlId !== null ? glControlId + ".liquidDocumentsX.table" : "");
-                        var title = (window.parent.Liquid.lang === 'ita' ? "Scarica documento" : "Download document");
-                        title = (window.parent.Liquid.lang === 'ita' ? "Scarica documento" : "Download document");
+                        var title = (window.parent.Liquid.lang === 'it' ? "Scarica documento" : "Download document");
+                        title = (window.parent.Liquid.lang === 'it' ? "Scarica documento" : "Download document");
                         var cmdDownload = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/download.png\" class=\"liquidDocumentsXCmdIcon\" id=\"" + itemId + ".download\" title=\"" + title + "\" onClick=\"window.parent.Liquid.onDownloadDocument('" + itemId + "',event); downloadDocument(" + docItem.id + ");\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
                         var onclickDownload = "window.parent.Liquid.onDownloadDocument('" + itemId + "',event); downloadDocument(" + docItem.id + ");";
 
@@ -228,9 +228,9 @@
                         cell5.id = (glControlId !== null ? glControlId + ".liquidDocumentsX.table.insert" : "");
                         var itemId = (glControlId !== null ? glControlId + ".liquidDocumentsX.table" : "");
                         let maxSize = getMaxUploadSize(doc);
-                        var title = (window.parent.Liquid.lang === 'ita' ? "Carica documento" : "Upload document");
+                        var title = (window.parent.Liquid.lang === 'it' ? "Carica documento" : "Upload document");
                         if (maxSize > 0) {
-                            title += (window.parent.Liquid.lang === 'ita' ? "\n\nDimensione massima:" : "\n\nMax file size:");
+                            title += (window.parent.Liquid.lang === 'it' ? "\n\nDimensione massima:" : "\n\nMax file size:");
                             title += maxSize / 1024 + " Kb";
                         }
                         var cmdUpload = "<img src=\"<%=com.liquid.workspace.path%>/liquid/images/upload.png\" class=\"liquidDocumentsXCmdIcon\" id=\"" + itemId + ".upload\" title=\"" + title + "\" onClick=\"window.parent.Liquid.onUploadDocument('" + itemId + "',event); uploadDocument();\" style=\"width:20px; height:20px; padding-left:0px; filter:grayscale(0.7); cursor:pointer\" />";
@@ -311,9 +311,6 @@
                     case 'doc':
                         return "<%=com.liquid.workspace.path%>/liquid/images/world.png";
                         break
-                    case 'txt':
-                        return "<%=com.liquid.workspace.path%>/liquid/images/txt.png";
-                        break
                     case 'dxf':
                     case 'dwt':
                     case 'dwg':
@@ -328,6 +325,15 @@
                         break
                     case 'png':
                         return "<%=com.liquid.workspace.path%>/liquid/images/png.png";
+                        break
+                    case 'txt':
+                        return "<%=com.liquid.workspace.path%>/liquid/images/txt.png";
+                        break
+                    case 'csv':
+                        return "<%=com.liquid.workspace.path%>/liquid/images/csv.png";
+                        break
+                    case 'nc':
+                        return "<%=com.liquid.workspace.path%>/liquid/images/nc.png";
                         break
                     default:
                         return "<%=com.liquid.workspace.path%>/liquid/images/compute_cycle.png";
@@ -522,7 +528,7 @@
                             if(xhr.readyState === 4) {
                                 if(xhr.status === 200) {
                                     try {
-                                        var filename = (window.parent.Liquid.lang === 'ita' ? "Allegato " : "Attachment ")+id;
+                                        var filename = (window.parent.Liquid.lang === 'it' ? "Allegato " : "Attachment ")+id;
                                         var contentType = xhr.getResponseHeader('content-type');
                                         var disposition = xhr.getResponseHeader('content-disposition');
                                         if (disposition && disposition.indexOf('attachment') !== -1) {
@@ -554,8 +560,8 @@
 
             function deleteDocument( id ) {
                 let row_id = id;
-                let title = (window.parent.Liquid.lang === 'ita' ? "CONFERMA CANCELLAZIONE" : "DELETE CONFIRM");
-                let msg = (window.parent.Liquid.lang === 'ita' ? "Cancellare il documento ?" : "Delete the document ?");
+                let title = (window.parent.Liquid.lang === 'it' ? "CONFERMA CANCELLAZIONE" : "DELETE CONFIRM");
+                let msg = (window.parent.Liquid.lang === 'it' ? "Cancellare il documento ?" : "Delete the document ?");
                 parent.window.Liquid.messageBox(null, parent.window.Liquid.QUESTION_STRING, msg,
                     function () { doDdeleteDocument( row_id ); },
                     function () {}

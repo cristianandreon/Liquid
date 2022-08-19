@@ -1207,9 +1207,9 @@ class LiquidCtrl {
                                     Liquid.captionIconSize = 12;
                                 }
                                 this.tableJson.captionButtons = [
-                                    { width:Liquid.captionIconSize, height:Liquid.captionIconSize, background:"", title:(Liquid.lang === 'ita'?"riduci ad icona":"iconize"), image:"minimized.png", client:"Liquid.setWinXStatus(this, 'iconic/restore')", filter:filter, padding:"3px" }
-                                    ,{ width:Liquid.captionIconSize, height:Liquid.captionIconSize, background:"", title:(Liquid.lang === 'ita'?"ripristina/massimizza":"restore/maximize"), image:"restored.png", client:"Liquid.setWinXStatus(this, 'maximized/minimized')", filter:filter, padding:"3px" }
-                                    ,{ width:Liquid.captionIconSize, height:Liquid.captionIconSize, background:"", title:(Liquid.lang === 'ita'?"chiudi":"close"), image:"multiply.png", client:"Liquid.close(this)", filter:filter, padding:"3px" }
+                                    { width:Liquid.captionIconSize, height:Liquid.captionIconSize, background:"", title:(Liquid.lang === 'it'?"riduci ad icona":"iconize"), image:"minimized.png", client:"Liquid.setWinXStatus(this, 'iconic/restore')", filter:filter, padding:"3px" }
+                                    ,{ width:Liquid.captionIconSize, height:Liquid.captionIconSize, background:"", title:(Liquid.lang === 'it'?"ripristina/massimizza":"restore/maximize"), image:"restored.png", client:"Liquid.setWinXStatus(this, 'maximized/minimized')", filter:filter, padding:"3px" }
+                                    ,{ width:Liquid.captionIconSize, height:Liquid.captionIconSize, background:"", title:(Liquid.lang === 'it'?"chiudi":"close"), image:"multiply.png", client:"Liquid.close(this)", filter:filter, padding:"3px" }
                                 ];
                             }
                         }
@@ -1718,7 +1718,7 @@ class LiquidCtrl {
                         var propName = (Liquid.translateLabels ? ("listTabTitle" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "listTabTitle");
                         var gtName = isDef(this.tableJson[propName]) ? this.tableJson[propName] : this.tableJson.listTabTitle;
                         if(!isDef(gtName))
-                            gtName = (Liquid.lang === 'ita' ? "Elenco" : "List");
+                            gtName = (Liquid.lang === 'it' ? "Elenco" : "List");
                         listTabHTML = "<li class=\"liquidTabSel\" "+listTabStyle+"><a href=\"javascript:void(0)\" id=\"" + gIdLast + "\" class=\"liquidTab liquidForeignTableEnabled\" onClick=\"Liquid.onGridTab(this)\">" + gtName + "</a></li>";
                         this.gridsFirstId = null;
                         this.tabList.push( { name:gtName, caption:gtName, id:this.gIdLast });
@@ -1858,7 +1858,7 @@ class LiquidCtrl {
                                         var docTitle = doc[titleName] ? doc[titleName] : (doc.title ? doc.title : null);
                                         var docName = isDef(docTitle) ? docTitle : doc.name;
                                         if (!isDef(docName)) {
-                                            docName = (Liquid.lang === 'ita' ? "Documenti" : "Documents");
+                                            docName = (Liquid.lang === 'it' ? "Documenti" : "Documents");
                                         }
                                         documentTabHTML += "<li" + documentsTabStyle + "><a href=\"javascript:void(0)\" id=\"" + docId + "\" class=\"liquidTab liquidDocumentTab liquidForeignTableEnabled\" onClick=\"Liquid.onDocumentTab(this)\">" + docName + "</a></li>";
                                         this.tabList.push({name: docName, id: docId});
@@ -15920,19 +15920,19 @@ var Liquid = {
     validateHtmlObject: function (obj) {
         if (obj) {
             if (typeof obj.dataset.borderColor !== 'undefined')
-                obj.style.borderColor = obj.dataset.borderColor;
+                obj.style.borderColor = isDef(obj.dataset.borderColor) ? obj.dataset.borderColor : null;
             obj.dataset.borderColor = null;
             if (typeof obj.dataset.borderWidth !== 'undefined')
-                obj.style.borderWidth = obj.dataset.borderWidth;
+                obj.style.borderWidth = isDef(obj.dataset.borderWidth) ? obj.dataset.borderWidth : null;
             obj.dataset.borderWidth = null;
             if (typeof obj.dataset.borderStyle !== 'undefined')
-                obj.style.borderStyle = obj.dataset.borderStyle;
+                obj.style.borderStyle = isDef(obj.dataset.borderStyle) ? obj.dataset.borderStyle : null;
             obj.dataset.borderStyle = null;
             if (typeof obj.dataset.outline !== 'undefined')
-                obj.style.outline = obj.dataset.outline;
+                obj.style.outline = isDef(obj.dataset.outline) ? obj.dataset.outline : null;
             obj.dataset.outline = null;
             if (typeof obj.dataset.boxShadow !== 'undefined')
-                obj.style.boxShadow = obj.dataset.boxShadow;
+                obj.style.boxShadow = isDef(obj.dataset.boxShadow) ? obj.dataset.boxShadow : null;
             obj.dataset.boxShadow = null;
             if(obj.id) {
                 let descObj = document.getElementById(obj.id+".desc");
@@ -23204,10 +23204,10 @@ columns:[
         var seconds = Math.floor((distance % _minute) / _second);
 
         var remainDesc = '';
-        var days_title = (days > 1 ? (Liquid.lang === 'ita' ? 'giorni' : 'days') : (Liquid.lang === 'ita' ? 'giorno' : 'day')) + ' ';
-        var hours_title = (hours > 1 ? (Liquid.lang === 'ita' ? 'ore' : 'hours') : (Liquid.lang === 'ita' ? 'ora' : 'hour')) + ' ';
-        var minutes_title = (minutes > 1 ? (Liquid.lang === 'ita' ? 'minuti' : 'minutes') : (Liquid.lang === 'ita' ? 'minuto' : 'minute')) + ' ';
-        var seconds_title = (seconds > 1 ? (Liquid.lang === 'ita' ? 'secondi' : 'seconds') : (Liquid.lang === 'ita' ? 'secondo' : 'second')) + ' ';
+        var days_title = (days > 1 ? (Liquid.lang === 'it' ? 'giorni' : 'days') : (Liquid.lang === 'it' ? 'giorno' : 'day')) + ' ';
+        var hours_title = (hours > 1 ? (Liquid.lang === 'it' ? 'ore' : 'hours') : (Liquid.lang === 'it' ? 'ora' : 'hour')) + ' ';
+        var minutes_title = (minutes > 1 ? (Liquid.lang === 'it' ? 'minuti' : 'minutes') : (Liquid.lang === 'it' ? 'minuto' : 'minute')) + ' ';
+        var seconds_title = (seconds > 1 ? (Liquid.lang === 'it' ? 'secondi' : 'seconds') : (Liquid.lang === 'it' ? 'secondo' : 'second')) + ' ';
         remainDesc += days > 0 ? "<b>" + days + "</b>" + days_title : '';
         remainDesc += hours > 0 ? "<b>" + hours + "</b>" + hours_title : '';
         remainDesc += minutes > 0 ? "<b>" + minutes + "</b>" + minutes_title : '';
@@ -23368,7 +23368,7 @@ columns:[
                 html += mode == 'html' ? "</td><td>" : "";
                 html += mode == 'html' ? "<a "
                     + " class=\""+button_class+"\""
-                    + " title=\""+(Liquid.lang === 'ita'?"Rimuovi file":"Remove file")+"\" "
+                    + " title=\""+(Liquid.lang === 'it'?"Rimuovi file":"Remove file")+"\" "
                     + " href=\"javascript:void(0)\" onClick=\"Liquid.deletefileFromTable('"+controlId+"','"+fileNode.files[i].name+"','"+on_update_callback+"');\">"
                     + "<img src=\"/images/delete.png\" width=\"16\" height=\"16\"/>"
                     + "</a>" : "";

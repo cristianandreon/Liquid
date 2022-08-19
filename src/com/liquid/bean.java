@@ -2176,6 +2176,156 @@ public class bean {
     }
 
 
+    /**
+     *
+     * @param request
+     * @param sql
+     * @param params
+     * @return
+     * @throws Exception
+     * @throws Throwable
+     */
+    static public JSONObject exec(HttpServletRequest request, String sql, ArrayList<Object> params) throws Exception, Throwable {
+        ArrayList<Object> beans = null;
+        String controlId = null;
+        String errors = "", connError = null;
+        workspace tbl_wrk = null;
+        Connection conn = null;
+        JSONArray cols = new JSONArray();
+        JSONArray rows = new JSONArray();
+        long lQueryTime = 0, lStartTime = 0, lRetrieveTime = 0;
+        int res = 0;
+
+        if(sql != null) {
+
+            try {
+
+                if(transaction.isTransaction(request)) {
+                    conn = transaction.getTransaction(request);
+                } else {
+                    Object[] connResult = connection.getDBConnection(null);
+                    conn = (Connection) connResult[0];
+                    connError = (String) connResult[1];
+                }
+
+
+                lStartTime = System.currentTimeMillis();
+                PreparedStatement psdo = null;
+                ResultSet rsdo = null;
+                try {
+                    // TODO: Migliramento sicurezza nel caso di stringa malformata
+                    // N.B.: Gestione degli apici a carico della chiamante (SQL Ignection)
+                    if (conn != null) {
+                        psdo = conn.prepareStatement(sql);
+                        if(params != null) {
+                            for (int iParam = 0; iParam < params.size(); iParam++) {
+                                db.set_statement_param( psdo, iParam+1, params.get(iParam) );
+                            }
+                        }
+
+                        if(sql.trim().toUpperCase().startsWith("SELECT")) {
+                            rsdo = psdo.executeQuery();
+                        } else {
+                            res = psdo.executeUpdate();
+                        }
+
+                    } else {
+                        String error = " [" + (controlId) + "] Connection Error:" + connError + "]";
+                        errors += error;
+                        System.err.println(error);
+                    }
+                } catch (Exception e) {
+                    errors += " [" + (controlId) + "] Query Error:" + e.getLocalizedMessage() + " executingQuery:" + sql + "]" + "[Driver:" + tbl_wrk.driverClass + "]";
+                    System.err.println(sql);
+                    System.err.println("// Error:" + e.getLocalizedMessage());
+                    throw e;
+                }
+
+                lQueryTime = System.currentTimeMillis();
+
+                if (rsdo != null) {
+                    String fieldValue = null;
+                    String column_alias_list = null;
+
+                    if(cols.length() == 0) {
+                        ResultSetMetaData rsmd = rsdo.getMetaData();
+                        if (rsmd != null) {
+                            if(cols.length() == 0) {
+                                for (int ic = 1; ic < rsmd.getColumnCount() + 1; ic++) {
+                                    JSONObject col = new JSONObject();
+                                    String name = rsmd.getColumnLabel(ic);
+                                    // column_alias_list += (ic > 0 ? "," : "") + name;
+                                    col.put("name", name);
+                                    col.put("type", rsmd.getColumnType(ic));
+                                    col.put("size", rsmd.getColumnDisplaySize(ic));
+                                    col.put("precision", rsmd.getPrecision(ic));
+                                    col.put("scale", rsmd.getScale(ic));
+                                    cols.put(col);
+                                }
+                            }
+
+                            JSONObject row = new JSONObject();
+                            for (int ic = 1; ic < rsmd.getColumnCount() + 1; ic++) {
+                                JSONObject col = new JSONObject();
+                                row.put(String.valueOf(ic+1), rsdo.getObject(ic));
+                            }
+                            rows.put(row);
+                        }
+                    } else {
+                        column_alias_list = null;
+                    }
+
+
+                    // Freee connection as soon as possible
+                    if (rsdo != null) {
+                        rsdo.close();
+                    }
+                    if (psdo != null) {
+                        psdo.close();
+                    }
+                } else {
+                }
+
+                if(transaction.isTransaction(request)) {
+                } else {
+                    if (conn != null) {
+                        if (!conn.getAutoCommit()) {
+                            conn.commit();
+                        }
+                    }
+                }
+
+                lRetrieveTime = System.currentTimeMillis();
+
+            } catch (Throwable e) {
+                errors += "Error:" + e.getLocalizedMessage();
+                System.err.println("// get_beans() [" + controlId + "] Error:" + e.getLocalizedMessage());
+                if(transaction.isTransaction(request)) {
+                    throw e;
+                } else {
+                    throw e;
+                }
+
+            } finally {
+                // closing the connections (with callbacks)
+                if(transaction.isTransaction(request)) {
+                } else {
+                    connection.closeConnection(conn);
+                }
+            }
+        }
+
+        JSONObject result = new JSONObject();
+        if(cols != null) result.put("cols", cols);
+        if(rows != null) result.put("rows", rows);
+        result.put("result", res);
+        result.put("queryTime", (lQueryTime - lStartTime));
+        result.put("retrieveTime", (lRetrieveTime - lQueryTime));
+
+        return result;
+    }
+
+
     private static String get_query_hash(String sql) {
         int hash = 7;
         for (int i = 0; i < sql.length(); i++) {

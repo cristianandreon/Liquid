@@ -633,7 +633,7 @@ LiquidGridHeader.prototype.destroy = function () {
 };
 
 function isDef(__var) {
-    return (typeof __var === 'undefined' || __var === null) ? false : true;
+    return (typeof __var === 'undefined' || __var === null || __var === 'null') ? false : true;
 }
 
 function isDefOrNull(__var) {
