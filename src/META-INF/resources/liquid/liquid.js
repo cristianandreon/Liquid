@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.44
+// Liquid ver.2.45
 //
 //  First update 06-01-2020 - Last update 15-08-2022
 //
@@ -23298,10 +23298,20 @@ columns:[
             descObj.placeholder = inputObj.placeholder;
             descObj.autocomplete = 'off';
 
-            descObj.onmousedown = function() { this.setAttribute('rel',this.value); this.placeholder=this.value; this.value ='' };
-            descObj.onblur = function() { this.value=this.getAttribute('rel') }
+            descObj.onmousedown = function() {
+                if (this.readOnly !== true && this.disabled !== true) {
+                    this.setAttribute('rel', this.value);
+                    this.placeholder = this.value;
+                    this.value = '';
+                }
+            };
+            descObj.onblur = function() {
+                if(this.readOnly !== true && this.disabled !== true) {
+                    this.value = this.getAttribute('rel');
+                }
+            }
             descObj.onchange = function() {
-                this.setAttribute('rel',this.value);
+                this.setAttribute('rel', this.value);
                 Liquid.onChangedDescDatalist(this)
             };
 

@@ -37,7 +37,7 @@ import static com.liquid.utility.resetDatalistCache;
  */
 public class workspace {
 
-    public static String version_string = "2.44";
+    public static String version_string = "2.45";
     public static String getGLLang() {
         return GLLang;
     }
