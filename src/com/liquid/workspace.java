@@ -14,7 +14,6 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspWriter;
 import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,14 +29,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.liquid.liquidize.liquidizeJSONContent;
-import static com.liquid.utility.resetDatalistCache;
 
 /**
  * N.B.: LIMIT 1 : cannot create same controlId on different database.schhema.table
  */
 public class workspace {
 
-    public static String version_string = "2.45";
+    public static String version_string = "2.46";
     public static String getGLLang() {
         return GLLang;
     }
@@ -4568,7 +4566,7 @@ public class workspace {
     /**
      * get Data fields in the control (es from FormX control)
      * @param controlId
-     * @param params
+     * @param oParams
      * @param column
      * @return
      */
@@ -5292,6 +5290,9 @@ public class workspace {
                 } else {
                     return false;
                 }
+            } else {
+                // Il controllo tbl_wrk non ha definizione di DMS, dunque non ha restrizione ... accesso in lettura/scrittura
+                return false;
             }
         }
         throw new Exception("is_dms_readonly() : unexpected path");
@@ -5300,24 +5301,26 @@ public class workspace {
 
 
     /**
-     * Search for DMS by name
+     * Search for DMS by name (if dmsNname is null return first DMS found in the control)
      *
      * @param tblWrk
      * @param dmsNname
      * @return
      */
     public static JSONObject get_dms_by_name(workspace tblWrk, String dmsNname) {
-        if(dmsNname != null) {
-            if(tblWrk != null) {
-                if (tblWrk.tableJson.has("documents")) {
-                    JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
-                    if(documents != null) {
-                        for (int i = 0; i < documents.length(); i++) {
-                            JSONObject document = (JSONObject) documents.get(i);
-                            if (document != null) {
+        if(tblWrk != null) {
+            if (tblWrk.tableJson.has("documents")) {
+                JSONArray documents = tblWrk.tableJson.getJSONArray("documents");
+                if(documents != null) {
+                    for (int i = 0; i < documents.length(); i++) {
+                        JSONObject document = (JSONObject) documents.get(i);
+                        if (document != null) {
+                            if(dmsNname != null) {
                                 if (dmsNname.equalsIgnoreCase(document.getString("name"))) {
                                     return document;
                                 }
+                            } else {
+                                return document;
                             }
                         }
                     }

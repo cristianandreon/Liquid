@@ -2221,9 +2221,9 @@ public class event {
                         if (clientData != null) { // calling from Liquid UI
                             String docName = (String) clientData;
                             if (docName != null) {
-                                JSONObject document = workspace.get_dms_by_name(tblWrk, docName);
-                                if(document != null) {
-                                    if (document.has("maxSize")) {
+                                JSONObject doc = workspace.get_dms_by_name(tblWrk, docName);
+                                if(doc != null) {
+                                    if (doc.has("maxSize")) {
                                         // TODO : check document size
                                     }
                                 }
@@ -2404,10 +2404,12 @@ public class event {
             if(dmsName != null && !dmsName.isEmpty()) {
                 fileAbsolutePath += (added > 0 ? "." : "") + ".N." + dmsName;
                 JSONObject doc = workspace.get_dms_by_name((workspace) tbl_wrk, dmsName);
-                if(doc.has("maxSize")) {
-                    int maxSize = doc.getInt("maxSize");
-                    if(maxSize > 0 && (maxSize < dmsMaxFileSize || dmsMaxFileSize == 0)) {
-                        dmsMaxFileSize = maxSize;
+                if(doc != null) {
+                    if (doc.has("maxSize")) {
+                        int maxSize = doc.getInt("maxSize");
+                        if (maxSize > 0 && (maxSize < dmsMaxFileSize || dmsMaxFileSize == 0)) {
+                            dmsMaxFileSize = maxSize;
+                        }
                     }
                 }
             }

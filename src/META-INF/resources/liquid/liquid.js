@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.45
+// Liquid ver.2.46
 //
 //  First update 06-01-2020 - Last update 15-08-2022
 //
@@ -2878,7 +2878,7 @@ var Liquid = {
         for (let i = 0; i < obj.childNodes.length; i++) {
             var node = obj.childNodes[i];
             if (node.dataset) {
-                if(Liquid.compareLayoutField(dataSetValue,
+                if (Liquid.compareLayoutField(dataSetValue,
                     new Array(
                         node.dataset.value,
                         node.dataset.previd,
@@ -2901,13 +2901,13 @@ var Liquid = {
         return null;
     },
     compareLayoutField: function (fieldName, list) {
-        if(list) {
+        if (list) {
             fieldName = fieldName.toLowerCase();
             for (let i = 0; i < list.length; i++) {
                 if (isDef(list[i])) {
                     let searchingNames = list[i].split(".");
-                    if(searchingNames) {
-                        if (searchingNames[searchingNames.length-1].toLowerCase() == fieldName) {
+                    if (searchingNames) {
+                        if (searchingNames[searchingNames.length - 1].toLowerCase() == fieldName) {
                             return true;
                         }
                     }
@@ -3302,11 +3302,11 @@ var Liquid = {
                         if (layout.containerObj) {
                             let command_params = await Liquid.layoutNodesToJson(layout.containerObj, processAll, processFiles, excludingNames, filtering_table, filtering_table_cell_index);
                             if (command_params) {
-                                if(!result_params) result_params = [];
+                                if (!result_params) result_params = [];
                                 result_params.push({
-                                        "layoutName": (layout.name ? layout.name : layout.name),
-                                        "data": command_params
-                                        });
+                                    "layoutName": (layout.name ? layout.name : layout.name),
+                                    "data": command_params
+                                });
                             }
                         }
                     }
@@ -3342,8 +3342,8 @@ var Liquid = {
             resolve(result_params_json);
         });
     },
-    is_file_in_table:function(tableId, cellIndex, fileName) {
-        if(isDef(tableId) && isDef(cellIndex)) {
+    is_file_in_table: function (tableId, cellIndex, fileName) {
+        if (isDef(tableId) && isDef(cellIndex)) {
             let tblNode = document.getElementById(tableId);
             if (tblNode) {
                 if (tblNode.tBodies) {
@@ -3419,12 +3419,12 @@ var Liquid = {
                                         if (processFiles) {
                                             if (frm_elements[i].files.length) {
                                                 let result_files = [];
-                                                for(let iFile=0; iFile<frm_elements[i].files.length; iFile++) {
+                                                for (let iFile = 0; iFile < frm_elements[i].files.length; iFile++) {
                                                     if (Liquid.is_file_in_table(filteringTableId, filteringCellIndex, frm_elements[i].files[iFile].name)) {
                                                         result_files.push(frm_elements[i].files[iFile]);
                                                     }
                                                 }
-                                                if(result_files.length>0) {
+                                                if (result_files.length > 0) {
                                                     var queue = {
                                                         liquid: null,
                                                         obj: frm_elements[i],
@@ -3447,16 +3447,16 @@ var Liquid = {
                                         break;
                                 }
                                 if (field_name) {
-                                    if(!nodes_data) nodes_data = [];
-                                    nodes_data.push( {
-                                            "fieldName": field_name,
-                                            "fieldValue": field_value
-                                        });
+                                    if (!nodes_data) nodes_data = [];
+                                    nodes_data.push({
+                                        "fieldName": field_name,
+                                        "fieldValue": field_value
+                                    });
                                 }
                             }
                         }
                     }
-                    if(paramObj) {
+                    if (paramObj) {
                         if (paramObj.nodeName.toUpperCase() === 'FORM') {
                             // avoid page reload
                             jQ1124(document).on('submit', '#' + paramObj.id, function () {
@@ -3469,11 +3469,11 @@ var Liquid = {
         }
         return nodes_data;
     },
-    arraysToDict: function(propList, keyList) {
+    arraysToDict: function (propList, keyList) {
         let result = [];
         for (let j = 0; j < propList[0].length; j++) {
             let obj = {};
-            for(let ip=0; ip<keyList.length; ip++) {
+            for (let ip = 0; ip < keyList.length; ip++) {
                 obj[keyList[ip]] = propList[ip][j];
             }
             result.push(obj);
@@ -3483,6 +3483,8 @@ var Liquid = {
     onFormFileChange: function (obj, column) {
         if (obj && column) {
             let approvedHTML = "";
+            let approvedFiles = [];
+            let msg = '';
             let count = 1;
             let files = obj.files; // puts all files into an array
             let maxSize = isDef(column.maxSize) ? column.maxSize : 0;
@@ -3496,14 +3498,28 @@ var Liquid = {
                         } else {
                             approvedHTML += files[x].name;
                         }
+                        approvedFiles.push(files[x]);
                         count++;
+                    } else {
+                        if (Liquid.lang.toLowerCase() == 'it') {
+                            msg += "File '" + files[x].name + "' connot be added\n"
+                        } else {
+                            msg += "il file '" + files[x].name + "' con può esse aggiunto\n"
+                        }
                     }
                 }
             }
             try {
-                $(obj).val(approvedHTML);
+                obj.title = approvedHTML;
+                // cannot set subset ... only clear
+                // obj.files = approvedFiles;
             } catch (e) {
                 console.error(e);
+            }
+            if (msg) {
+                Liquid.messageBox(null, Liquid.ERROR_STRING, msg, function () {
+                }, function () {
+                });
             }
         }
     },
@@ -5653,7 +5669,7 @@ var Liquid = {
                                     }
                                 } else {
                                     // No nodes ..
-                                    if(Liquid.isFormX(liquid) || Liquid.isDialogX(liquid)) {
+                                    if (Liquid.isFormX(liquid) || Liquid.isDialogX(liquid)) {
                                         var res = liquid.gridOptions.api.updateRowData({add: [httpResultJson.resultSet[ir]]});
                                         if (!res) {
                                             console.error("ERROR : cannot insert row")
@@ -5760,7 +5776,7 @@ var Liquid = {
                                     Liquid.refreshLinkedLiquids(liquid);
                             } else {
                                 // Inline layputs nedd to be refreshed
-                                if(liquid.tableJson.layouts) {
+                                if (liquid.tableJson.layouts) {
                                     for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
                                         var layout = liquid.tableJson.layouts[il];
                                         if (layout.rowStyle == 'inline') {
@@ -7631,7 +7647,7 @@ var Liquid = {
                             if (isDef(liquid.filtersJson[i][tooltipName])) {
                                 filtersTitle = liquid.filtersJson[i][labelName];
                             }
-                            if(isDef(filtersName)) {
+                            if (isDef(filtersName)) {
                                 filterHTML += "<option id=\"" + liquid.controlId + ".filter." + (i + 1) + ".selector\" title='" + filtersTitle + "' value=''>" + (filtersName) + "</option>";
                                 filterCount++;
                                 // Init current filter
@@ -8166,7 +8182,7 @@ var Liquid = {
             if (isDef(liquid.foreignTables)) {
                 if (liquid.foreignTables instanceof Array) {
                     for (var ift = 0; ift < liquid.foreignTables.length; ift++) {
-                        var table = (liquid.foreignTables[ift].foreignTable ? liquid.foreignTables[ift].foreignTable : "" ).toLowerCase();
+                        var table = (liquid.foreignTables[ift].foreignTable ? liquid.foreignTables[ift].foreignTable : "").toLowerCase();
                         var name = (liquid.foreignTables[ift].name ? liquid.foreignTables[ift].name : "").toLowerCase();
                         if (foreignTableNameOrTable == table || foreignTableNameOrTable == name) {
                             return liquid.foreignTables[ift].controlId;
@@ -8174,7 +8190,7 @@ var Liquid = {
                     }
                 }
             }
-            console.error("ERROR: foreign table '"+foreignTableNameOrTable+"' not found in control:"+liquid.controlId);
+            console.error("ERROR: foreign table '" + foreignTableNameOrTable + "' not found in control:" + liquid.controlId);
         } else {
             throw "Liquid control not defined";
         }
@@ -8569,10 +8585,10 @@ var Liquid = {
             if (foreignTableContentObj) {
                 if (foreignTableContentObj.getAttribute('parented')) {
                     // Fit control height by parent
-                    if(foreignTableContentObj.offsetHeight <= 0) {
+                    if (foreignTableContentObj.offsetHeight <= 0) {
                         // not still rendered ... setting the height does't solve
                         console.warn("Control '" + liquid.controlId + " '" + foreignTableContentObj.id + "' stil NOT READY for compute child content position");
-                        setTimeout( function() {
+                        setTimeout(function () {
                             Liquid.onForeignTableResize(liquid, foreignTableContentObj, foreignTableContainerHeight);
                         }, 250);
 
@@ -8803,7 +8819,7 @@ var Liquid = {
                         } else if (obj.childNodes[j].type === 'checkbox') {
                             propValue = obj.childNodes[j].checked ? true : false;
                         } else if (obj.childNodes[j].type === 'file') {
-                            if(obj.childNodes[j].files.length >= 1) {
+                            if (obj.childNodes[j].files.length >= 1) {
                                 var queue = {
                                     obj: obj,
                                     targetObj: targetObj,
@@ -8865,20 +8881,21 @@ var Liquid = {
             queue.isPending = true;
             queue.isDone = false;
             queue.iFile = 0;
-            for(; queue.iFile < queue.files.length; queue.iFile++) {
+            for (; queue.iFile < queue.files.length; queue.iFile++) {
                 var file = queue.files[queue.iFile];
                 if (file) {
                     let retVal = null;
-                        await Liquid.formFileToObjectExchange(queue, file,function(queue){}).then(
+                    await Liquid.formFileToObjectExchange(queue, file, function (queue) {
+                    }).then(
                         (resolved) => {
                             retVal = resolved;
                         }
                     );
-                    if(!retVal) {
+                    if (!retVal) {
                         console.error("ERROR : internal error procesing file queue");
                         return null;
                     } else {
-                        if(!isDef(retVal.propValues)) {
+                        if (!isDef(retVal.propValues)) {
                             console.error("ERROR : internal error procesing file queue sync");
                             return null;
                         }
@@ -8889,7 +8906,7 @@ var Liquid = {
             if (isDef(queue.callback)) {
                 try {
                     queue.callback(queue);
-                } catch(e) {
+                } catch (e) {
                     console.error(e);
                 }
             }
@@ -8905,10 +8922,10 @@ var Liquid = {
                 var reader = new FileReader();
                 reader.onload = function (evt) {
                     try {
-                        if(queue) {
-                            if(!isDef(queue.propNames)) queue.propNames = [];
-                            if(!isDef(queue.propValues)) queue.propValues = [];
-                            if(!isDef(queue.propSizes)) queue.propSizes = [];
+                        if (queue) {
+                            if (!isDef(queue.propNames)) queue.propNames = [];
+                            if (!isDef(queue.propValues)) queue.propValues = [];
+                            if (!isDef(queue.propSizes)) queue.propSizes = [];
                             queue.propValues.push("base64," + btoa(evt.target.result));
                             queue.propNames.push(file.name);
                             queue.propSizes.push(file.size);
@@ -9172,10 +9189,10 @@ var Liquid = {
                 if (callback) {
                     retVal = callback(callbackParams);
                 } else {
-                    if(!isDef(eventData)) {
+                    if (!isDef(eventData)) {
                         eventData = {};
                     }
-                    if(!isDef(eventParams)) {
+                    if (!isDef(eventParams)) {
                         eventParams = {};
                     }
                     eventData.params = eventParams;
@@ -9501,7 +9518,7 @@ var Liquid = {
             }
             Liquid.stopWaiting(liquid);
 
-            if(!isDef(command.response.error)) {
+            if (!isDef(command.response.error)) {
                 retVal = Liquid.onCommandDone(liquidCommandParams);
             } else {
                 if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update") {
@@ -9646,7 +9663,7 @@ var Liquid = {
         }
         if (command) {
             if (command.name) {
-                if(!isDef(command.response.error)) {
+                if (!isDef(command.response.error)) {
                     var isFormX = Liquid.isFormX(liquid);
                     var isAutoInsert = Liquid.isAutoInsert(liquid);
                     if (isFormX || isAutoInsert) {
@@ -9668,7 +9685,7 @@ var Liquid = {
                                 if (command.response.data.details) {
                                     for (var id = 0; id < command.response.data.details.length; id++) {
                                         if (command.response.data.details[id].fails) {
-                                            if(command.response.data.details[id].fails.length > 0) {
+                                            if (command.response.data.details[id].fails.length > 0) {
                                                 fails += command.response.data.details[id].fails.length;
                                             }
                                         }
@@ -9742,13 +9759,13 @@ var Liquid = {
                                     // remove node if add rec ord failed
                                     if (ids === null || ids.length === 0) {
                                         // Ids not returned : error or manual insert?
-                                        if(Liquid.isFormX(liquid) || Liquid.isDialogX(liquid)) {
+                                        if (Liquid.isFormX(liquid) || Liquid.isDialogX(liquid)) {
                                             // Keep inserting row to retry
                                         } else {
                                             var res = liquid.gridOptions.api.updateRowData({remove: [liquid.addingRow]});
                                             console.warn(res);
                                         }
-                                        if(fails == 0) {
+                                        if (fails == 0) {
                                             console.error("ERROR: missing ids .. pleaae check return data ");
                                             var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                                             liquid.nRows = nodes.length;
@@ -9780,7 +9797,7 @@ var Liquid = {
                                 }
                             }
                             // refresh row (if needed) on grid and layouts
-                            if(!doAutoInsert) {
+                            if (!doAutoInsert) {
                                 Liquid.refreshGrids(liquid, null, "command done");
                                 Liquid.resetLayoutsContent(liquid, true);
                                 Liquid.refreshLayouts(liquid, true);
@@ -9875,7 +9892,7 @@ var Liquid = {
                 if (command.name === "insert") {
                     if (ids === null || ids.length === 0) {
                         if (!isSystem) { // not system control
-                            if(Liquid.isFormX(liquid) || Liquid.isDialogX(liquid)) {
+                            if (Liquid.isFormX(liquid) || Liquid.isDialogX(liquid)) {
                                 // Keep inserting row fo retry
                             } else {
                                 var res = liquid.gridOptions.api.updateRowData({remove: [liquid.addingRow]});
@@ -9913,7 +9930,7 @@ var Liquid = {
         liquid.currentCommand = null;
         if (!refreshAllDone) {
             // force refresh .. if needed
-            if(!doAutoInsert) {
+            if (!doAutoInsert) {
                 if (liquid instanceof LiquidCtrl) {
                     Liquid.refreshAll(liquid, null, "onCommandDone");
                     // validazione dei layouts
@@ -10160,7 +10177,7 @@ var Liquid = {
                         var selNodes = Liquid.getCurNodes(liquid);
                         if (!selNodes || selNodes.length === 0) {
                             retVal = false;
-                            Liquid.messageBox(null, "ERROR", "unable to get current row", function () {
+                            Liquid.messageBox(null, Liquid.ERROR_STRING, "unable to get current row", function () {
                             }, null);
                         } else {
                             curRow = selNodes[0].data;
@@ -10236,7 +10253,7 @@ var Liquid = {
                     }
                     if (msg) {
                         retVal = false;
-                        Liquid.messageBox(null, "WARNING", msg, function () {
+                        Liquid.messageBox(null, LIQUID.WARNING_STRING, msg, function () {
                         }, null);
                     }
                 }
@@ -10755,7 +10772,7 @@ var Liquid = {
     getRelativePositionTop: function (obj, bAbsolute) {
         var parentNode = obj;
         var top = parentNode.offsetTop;
-        if(bAbsolute) {
+        if (bAbsolute) {
             while ((parentNode = parentNode.parentNode) && parentNode != document.body) {
                 if (parentNode) {
                     if (parentNode.offsetTop) {
@@ -10915,8 +10932,8 @@ var Liquid = {
         liquid.gridOptions.suppressRowClickSelection = liquid.lastSuppressRowClickSelection;
         liquid.currentCommand = null;
 
-        let cmdBarObj = document.getElementById(liquid.controlId+".commands");
-        if(cmdBarObj) {
+        let cmdBarObj = document.getElementById(liquid.controlId + ".commands");
+        if (cmdBarObj) {
             cmdBarObj.classList.remove("liquidCommandDisabled");
         }
         if (liquid.tableJson.commands) {
@@ -11303,8 +11320,8 @@ var Liquid = {
                             }
                         }
                         // disabling command bar
-                        let cmdBarObj = document.getElementById(liquid.controlId+".commands");
-                        if(cmdBarObj) {
+                        let cmdBarObj = document.getElementById(liquid.controlId + ".commands");
+                        if (cmdBarObj) {
                             cmdBarObj.classList.remove("liquidCommandDisabled");
                         }
 
@@ -14000,7 +14017,7 @@ var Liquid = {
             }
         }
     },
-    create_layout_from_url:function (liquid, layout, responseText, key, source, counter, mode) {
+    create_layout_from_url: function (liquid, layout, responseText, key, source, counter, mode) {
         // TODO : initially hidden
         // layout.containerObj.style.visibility = 'hidden';
         // layout.containerObj.style.display = "none";
@@ -14905,13 +14922,13 @@ var Liquid = {
             var lay_coord = Liquid.getLayoutCoords(liquid, obj.id);
             if (lay_coord.layout) {
                 if (isDef(lay_coord.layout.download) || isDef(lay_coord.layout.downloadByField)) {
-                    var linkedCol = Liquid.getColumn(liquid, (isDef(lay_coord.layout.download) ? lay_coord.layout.download : lay_coord.layout.downloadByField ));
+                    var linkedCol = Liquid.getColumn(liquid, (isDef(lay_coord.layout.download) ? lay_coord.layout.download : lay_coord.layout.downloadByField));
                     if (linkedCol) {
                         if (liquid.cRow >= 0 && liquid.cRow < liquid.nRows) {
                             var curNodes = Liquid.getCurNodes(liquid);
-                            if(curNodes && curNodes.length > 0) {
+                            if (curNodes && curNodes.length > 0) {
                                 let value = curNodes[0].data[linkedCol.field];
-                                if(value.startsWith("DMS://")) {
+                                if (value.startsWith("DMS://")) {
                                     let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
                                     const dmsRequest = fetch(src, {cache: "reload"}).then(response => response.blob());
                                     dmsRequest.then(blob => {
@@ -15247,7 +15264,7 @@ var Liquid = {
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'IFRAME') {
                 // Link to document of a control
-                if(!obj.getAttribute('linkedToControl')) {
+                if (!obj.getAttribute('linkedToControl')) {
                     obj.setAttribute('linkedToControl', true);
                     let urlParams = (new URL(obj.src)).searchParams;
                     if (urlParams) {
@@ -15432,21 +15449,21 @@ var Liquid = {
 
                             if (isDef(linkedCol[tooltipName]))
                                 tooltip = linkedCol[tooltipName];
-                            if(!isDef(tooltip)) {
-                                if(isDef(linkedCol[labelName])) {
+                            if (!isDef(tooltip)) {
+                                if (isDef(linkedCol[labelName])) {
                                     tooltip = linkedCol[labelName];
                                 }
                             }
-                            if(!tooltip) {
-                                if(isDef(linkedCol["tooltip"]))
+                            if (!tooltip) {
+                                if (isDef(linkedCol["tooltip"]))
                                     tooltip = linkedCol["tooltip"];
-                                if(!isDef(tooltip)) {
+                                if (!isDef(tooltip)) {
                                     if (isDef(linkedCol["label"])) {
                                         tooltip = linkedCol[labelName];
                                     }
                                 }
                             }
-                            if(!tooltip) {
+                            if (!tooltip) {
                                 if (Liquid.projectMode) {
                                     tooltip = "[DEBUG] Linked to field:" + linkedCol.label + " (" + linkedCol.name + ")";
                                 }
@@ -15629,7 +15646,7 @@ var Liquid = {
                             }
                             let inputId = obj.getAttribute("inputid");
                             let dl = obj.getAttribute("list")
-                            if(inputId && dl) {
+                            if (inputId && dl) {
                                 // campo desc del datalist : registrazione fra i campi del layout
                                 layout.rowsContainer[iRow].objs.push(obj);
                             } else {
@@ -15665,7 +15682,7 @@ var Liquid = {
 
                                 let inputId = obj.getAttribute("inputid");
                                 let dl = obj.getAttribute("list")
-                                if(inputId && dl) {
+                                if (inputId && dl) {
                                     // campo desc del datalist : registrazione fra i campi del layout
                                     layout.rowsContainer[iRow].objs.push(obj);
                                     layout.rowsContainer[iRow].objs_aux.push(null);
@@ -15796,7 +15813,7 @@ var Liquid = {
                                     }
                                     value = Liquid.formatDate(value, type, format, targetObj.readOnly, targetObj.disabled);
                                 }
-                                if(isDef(b64)) {
+                                if (isDef(b64)) {
                                     if (b64) {
                                         try {
                                             value = decodeURIComponent(escape(window.atob(value)));
@@ -15865,7 +15882,7 @@ var Liquid = {
                             // cols: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
                             // objs: (8) [input#NewRFQ.layout.1.col.2.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.7.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.9.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.10.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.8.row.1.dateclass.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.11.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.12.row.1.auctioneditboxclass.liquidgridcontrolrw, input#NewRFQ.layout.1.col.13.row.1.checkclass.liquidgridcontrolrw]
                             for (let ic = 0; ic < cols.length; ic++) {
-                                if(cols[ic]) {
+                                if (cols[ic]) {
                                     var col_name = cols[ic].name;
                                     var col_field = cols[ic].field;
                                     if (feildName == col_name || feildName == col_field || feildName === '*') {
@@ -15903,15 +15920,15 @@ var Liquid = {
             obj.style.borderStyle = Liquid.invalidInputBorderStyle;
             obj.style.outline = Liquid.invalidInputOutline;
             obj.style.boxShadow = Liquid.invalidInputBoxShadow + Liquid.invalidInputBorderColor;
-            if(obj.id) {
-                let descObj = document.getElementById(obj.id+".desc");
-                if(descObj) {
+            if (obj.id) {
+                let descObj = document.getElementById(obj.id + ".desc");
+                if (descObj) {
                     Liquid.invalidateHtmlObject(descObj);
                 }
             }
-            if(obj.getAttribute("previd")) {
-                let descObj = document.getElementById(obj.getAttribute("previd")+".desc");
-                if(descObj) {
+            if (obj.getAttribute("previd")) {
+                let descObj = document.getElementById(obj.getAttribute("previd") + ".desc");
+                if (descObj) {
                     Liquid.invalidateHtmlObject(descObj);
                 }
             }
@@ -15934,15 +15951,15 @@ var Liquid = {
             if (typeof obj.dataset.boxShadow !== 'undefined')
                 obj.style.boxShadow = isDef(obj.dataset.boxShadow) ? obj.dataset.boxShadow : null;
             obj.dataset.boxShadow = null;
-            if(obj.id) {
-                let descObj = document.getElementById(obj.id+".desc");
-                if(descObj) {
+            if (obj.id) {
+                let descObj = document.getElementById(obj.id + ".desc");
+                if (descObj) {
                     Liquid.validateHtmlObject(descObj);
                 }
             }
-            if(obj.getAttribute("previd")) {
-                let descObj = document.getElementById(obj.getAttribute("previd")+".desc");
-                if(descObj) {
+            if (obj.getAttribute("previd")) {
+                let descObj = document.getElementById(obj.getAttribute("previd") + ".desc");
+                if (descObj) {
                     Liquid.validateHtmlObject(descObj);
                 }
             }
@@ -16307,7 +16324,7 @@ var Liquid = {
                         var linkedField = obj.getAttribute('linkedfield');
                         var linkedName = obj.getAttribute('linkedname');
                         var linkedRow1B = Number(obj.getAttribute('linkedrow1b'));
-                        if(linkedRow1B>0) {
+                        if (linkedRow1B > 0) {
                             var asType = obj.getAttribute('astype');
                             var firstNodeId = lay_coord.layout.firstNodeId;
                             var baseIndex1B = Liquid.getNodeIndex(liquid, firstNodeId);
@@ -16343,24 +16360,41 @@ var Liquid = {
                                         Liquid.startSunEditor(
                                             liquid,
                                             function (content) {
-                                                Liquid.setHTMLElementValue(obj, content);
-                                                var event = new Event('change');
-                                                obj.dispatchEvent(event);
+                                                Liquid.saveAndCloseSunEditor(liquid, obj, content)
                                             },
                                             function (event) {
-                                                if (liquid.suneditor)
-                                                    liquid.suneditor.destroy();
-                                                liquid.suneditor = null;
-                                                liquid.suneditorDiv.style.display = "none";
-                                            }
+                                                if (obj.innerHTML != liquid.suneditor.getContents()) {
+                                                    let msg = '';
+                                                    if (Liquid.lang.toLowerCase() == 'it') {
+                                                        msg += "Il contenuto &egrave; stato modificato, salvarlo ?"
+                                                    } else {
+                                                        msg += "Content was changed, save it ?"
+                                                    }
+                                                    Liquid.dialogBox3(null, Liquid.WARNING_STRING, msg,
+                                                        function () {
+                                                            Liquid.saveAndCloseSunEditor(liquid, obj, liquid.suneditor.getContents());
+                                                        }, function () {
+                                                            // stop here
+                                                        },
+                                                        function () {
+                                                            // discharge changes
+                                                            Liquid.closeSunEditor(liquid);
+                                                        }
+                                                    );
+                                                } else {
+                                                    Liquid.closeSunEditor(liquid);
+                                                }
+                                            },
+                                            obj
                                         );
                                         if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
                                             let content = nodes[baseIndex1B - 1 + linkedRow1B - 1].data[col.field];
-                                            if(isDef(col.b64)) {
-                                                if(col.b64) {
+                                            if (isDef(col.b64)) {
+                                                if (col.b64) {
                                                     try {
                                                         content = atob(content);
-                                                    } catch (e) {}
+                                                    } catch (e) {
+                                                    }
                                                 }
                                             }
                                             liquid.suneditor.setContents(content);
@@ -16374,7 +16408,7 @@ var Liquid = {
             }
         }
     },
-    onLayoutFieldChange: function (event) {
+    onLayoutFieldChange: async function (event) {
         if (event) {
             // var objId = event.target.getAttribute('newid');
             var objId = event.target.id;
@@ -16448,7 +16482,7 @@ var Liquid = {
                                         }
                                         var isFormX = Liquid.isFormX(liquid);
                                         if (isFormX) {
-                                            if(obj.files.length >= 1) {
+                                            if (obj.files.length >= 1) {
                                                 var queue = {
                                                     liquid: liquid,
                                                     obj: obj,
@@ -16470,7 +16504,9 @@ var Liquid = {
                                                 if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesName;
                                                 additionFileInfo = col.name + ".filesSize";
                                                 if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesSize;
-                                                if (Liquid.formFilesToObjectExchange(queue)) {
+                                                let result = await Liquid.formFilesToObjectExchange(queue);
+                                                if (result) {
+                                                    newValue = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
                                                     doUpdate = true;
                                                 }
                                             }
@@ -16501,8 +16537,8 @@ var Liquid = {
                                         if (validateResult[0] >= 0) {
                                             let rowId = liquid.tableJson.primaryKeyField ? liquid.addingRow[liquid.tableJson.primaryKeyField] : null;
                                             let nodeId = liquid.addingNode ? liquid.addingNode.id : null;
-                                            if(isDef(col.b64)) {
-                                                if(col.b64) {
+                                            if (isDef(col.b64)) {
+                                                if (col.b64) {
                                                     validateResult[1] = btoa(validateResult[1]);
                                                 }
                                             }
@@ -16522,8 +16558,8 @@ var Liquid = {
                                                 if (validateResult !== null) {
                                                     if (validateResult[0] >= 0) {
                                                         // newValue = validateResult[1];
-                                                        if(isDef(col.b64)) {
-                                                            if(col.b64) {
+                                                        if (isDef(col.b64)) {
+                                                            if (col.b64) {
                                                                 validateResult[1] = btoa(validateResult[1]);
                                                             }
                                                         }
@@ -16634,8 +16670,8 @@ var Liquid = {
                                 targetWindow.loadDocuments(liquid, doc, curNodes, null);
                             } else {
                                 // FF work fine, chrome sucks ...
-                                if(!isDef(doc.onloadReminder)) doc.onloadReminder = 0;
-                                if(doc.onloadReminder<10) {
+                                if (!isDef(doc.onloadReminder)) doc.onloadReminder = 0;
+                                if (doc.onloadReminder < 10) {
                                     setTimeout(
                                         function () {
                                             Liquid.refreshDocument(liquid, doc, bSetup);
@@ -17055,7 +17091,29 @@ var Liquid = {
             }
         }
     },
-    startSunEditor:function(liquid, saveCallback, closeCallback) {
+    saveAndCloseSunEditor:function(liquid, obj, content) {
+        if(obj) {
+            Liquid.setHTMLElementValue(obj, content);
+            var event = new Event('change');
+            obj.dispatchEvent(event);
+            Liquid.closeSunEditor(liquid);
+        }
+    },
+    closeSunEditor:function(liquid) {
+        if (liquid) {
+            setTimeout(
+                function() {
+                    if (liquid.suneditor)
+                        liquid.suneditor.destroy();
+                    liquid.suneditor = null;
+                    if (liquid.suneditorDiv)
+                        liquid.suneditorDiv.style.display = "none";
+                },
+                200
+            );
+        }
+    },
+    startSunEditor:function(liquid, saveCallback, closeCallback, obj) {
         if(!liquid.suneditorTextArea) {
             liquid.suneditorDiv = document.createElement('div');
             liquid.suneditorDiv.id = liquid.controlId + ".sunEditorGlobalContainer";
@@ -17108,6 +17166,9 @@ var Liquid = {
             classStyle.addEventListener('click', e => e.stopPropagation());
             classStyle.style.boxShadow = "rgb(167, 167, 167) 5px 5px 7px 1px";
         } else {
+            if(obj) {
+                liquid.suneditor.setContents(obj.innerHTML);
+            }
             jQ1124( liquid.suneditorDiv ).slideDown( "fast" );
             liquid.suneditor.show();
         }
@@ -17128,7 +17189,8 @@ var Liquid = {
                             if(Liquid.onCloseRichField(obj)) {
                                 liquid.suneditorDiv.style.display = "none";
                             }
-                        }
+                        },
+                        obj
                     );
                     liquid.suneditorNodes = Liquid.getCurNodes(liquid);
                     liquid.suneditorGridControl = gridControl;
@@ -20369,7 +20431,15 @@ var Liquid = {
     dialogBox:async function (parentObj, title, message, onOk, onCancel) {
         return Liquid.dialogBoxInternal(parentObj, title, message, onOk, onCancel);
     },
-    dialogBoxInternal:async function(parentObj, title, message, onOk, onCancel) {
+    dialogBox3:async function (parentObj, title, message, onYES, onCancel, onNO) {
+        return Liquid.dialogBoxInternal(
+            parentObj, title, message,
+            { func:onYES, text:(Liquid.lang === 'it' ? 'Si' : 'Yes')},
+            { func:onCancel, text:(Liquid.lang === 'it' ? 'Annulla' : 'Cancel')},
+            { func:onNO, text:(Liquid.lang === 'it' ? 'No' : 'No')}
+        );
+    },
+    dialogBoxInternal:async function(parentObj, title, message, onOk, onCancel, onKO) {
         return new Promise((resolve, reject) => {
             var buttons = [];
             if (onOk) buttons.push({
@@ -20394,6 +20464,18 @@ var Liquid = {
                     }
                     jQ1124(this).dialog("close");
                     resolve(-1);
+                }
+            });
+            if (onKO) buttons.push({
+                text: (isDef(onKO.text) ? onKO.text : "No"),
+                click: function () {
+                    try {
+                        (isDef(onKO) ? (isDef(onKO.func) ? onKO.func() : (typeof onKO === 'function' ? onKO() : "")) : "");
+                    } catch (e) {
+                        console.error("ERROR:" + e);
+                    }
+                    jQ1124(this).dialog("close");
+                    resolve(0);
                 }
             });
             var icon = "";
