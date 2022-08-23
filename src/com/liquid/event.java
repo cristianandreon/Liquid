@@ -3466,10 +3466,15 @@ public class event {
                                 return paramJSON.getJSONObject(paramName);
                             } else if (value instanceof JSONArray) {
                                 JSONArray values = (JSONArray)value;
-                                if(values.length()==1) {
-                                    return new JSONObject().put(values.getJSONObject(0).getString("fieldName"), values.getJSONObject(0).getString("fieldValue"));
-                                } else {
-                                    throw new Exception("unexpected array in data");
+                                for(int iv=0; iv<values.length(); iv++) {
+                                    JSONObject pv = values.getJSONObject(0);
+                                    if(controlId.equalsIgnoreCase(pv.getString("fieldName"))) {
+                                        Object val = values.getJSONObject(0).get("fieldValue");
+                                        JSONObject result = new JSONObject().put(pv.getString("fieldName"), val);
+                                        // For back compatibility
+                                        result.put("data", String.valueOf(val));
+                                        return result;
+                                    }
                                 }
                             } else {
                                 JSONObject result = new JSONObject();
