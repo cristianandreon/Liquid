@@ -794,7 +794,7 @@ class LiquidCtrl {
                         var liquid = Liquid.getLiquid(this.liquidLink.controlId);
                         Liquid.onSelectAll(this.liquidLink, event);
                     },
-                    isRowSelectable:function(event) {
+                    isRowSelectable:async function(event) {
                         var liquid = this ? this.liquidLink : Liquid.getLiquid(event.context.contextParams.seed.eGridDiv);
                         if(liquid) {
                             // return Liquid.onEvent(row.api.context.contextParams.seed.eGridDiv, "isRowSelectable", row, null, null, true).result;
@@ -810,7 +810,7 @@ class LiquidCtrl {
                                 isAddingNode: false,
                                 rowsContainer: null
                             };
-                            return Liquid.onEvent(liquid, "isRowSelectable", eventData, null, null, true).result;
+                            return await Liquid.onEvent(liquid, "isRowSelectable", eventData, null, null, true).result;
                         }
                         return true;
                     },
@@ -822,7 +822,7 @@ class LiquidCtrl {
                             return !(params.rowIndex % 2 ? 1 : 0);
                         }
                     },
-                    onCellValueChanged:async function (event) {
+                    onCellValueChanged:function(event) {
                         var liquid = Liquid.getLiquid(this.liquidLink.controlId);
                         if (event.oldValue !== event.newValue) {
                             var eventData = {
@@ -846,7 +846,7 @@ class LiquidCtrl {
                                 if (liquid.tableJson.columns[iCol].isReflected === true)
                                     return;
                                 if (!Liquid.isMirrorEvent(liquid, event.node)) {
-                                    var validateResult = await Liquid.validateField(liquid, liquid.tableJson.columns[iCol], event.newValue);
+                                    var validateResult = /*await*/ Liquid.validateField(liquid, liquid.tableJson.columns[iCol], event.newValue);
                                     if (validateResult !== null) {
                                         if (validateResult[0] >= 0) {
                                             event.newValue = validateResult[1];
@@ -947,7 +947,7 @@ class LiquidCtrl {
                                         isAddingNode: false,
                                         rowsContainer: null
                                     };
-                                    var eventResult = Liquid.onEvent(liquid, "onRowRendering", eventData, null).result;
+                                    var eventResult = /*await*/ Liquid.onEvent(liquid, "onRowRendering", eventData, null);
                                     if(typeof eventResult === 'object') {
                                         var rowStyle = eventResult.result;
                                         if(typeof rowStyle === 'object') {
@@ -977,9 +977,9 @@ class LiquidCtrl {
                     }
                     ,onGridReady:function(event) {
                     }
-                    ,postSort:function(rowNodes) {
+                    ,postSort:async function(rowNodes) {
                         try {
-                            Liquid.onEvent(this.gridOptionsWrapper.gridOptions.api.context.contextParams.seed.eGridDiv, "onSorted", rowNodes, null, null, true).result;
+                            return await Liquid.onEvent(this.gridOptionsWrapper.gridOptions.api.context.contextParams.seed.eGridDiv, "onSorted", rowNodes, null, null, true);
                         } catch(e) { console.error(e); }
                     },
                     onGridSizeChanged:function(params) {
@@ -3117,6 +3117,10 @@ var Liquid = {
             }
         }
         return retVal;
+    },
+    sleep:function(ms) {
+        var start = new Date().getTime();
+        while (new Date().getTime() < start + ms);
     },
     buildCommandParams: async function (liquid, command, obj) {
         if (liquid || command) {
@@ -8965,7 +8969,7 @@ var Liquid = {
         }
         return events;
     },
-    onEvent: async function (obj, eventName, eventData, callback, callbackParams, defaultRetval, bCallbackNow) {
+    onEvent:async function (obj, eventName, eventData, callback, callbackParams, defaultRetval, bCallbackNow) {
         var liquid = Liquid.getLiquid(obj);
         var result = typeof defaultRetval !== 'undefined' ? defaultRetval : null;
         var systemEventCounter = 0;
@@ -8983,7 +8987,7 @@ var Liquid = {
                         var event = events[ievt];
                         if (event) {
                             if (Liquid.isSystemEvent(event)) { // system event take care of the syncronous chain
-                                var eventParams = await Liquid.buildCommandParams(liquid, event, null);
+                                var eventParams = await Liquid.buildCommandParams(liquid, event, null).result;
                                 var res = systemResult = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, callback, callbackParams, defaultRetval);
                                 systemEventCounter++;
                                 eventCounter++;
