@@ -3464,6 +3464,13 @@ public class event {
                             Object value = paramJSON.get(paramName);
                             if (value instanceof JSONObject) {
                                 return paramJSON.getJSONObject(paramName);
+                            } else if (value instanceof JSONArray) {
+                                JSONArray values = (JSONArray)value;
+                                if(values.length()==1) {
+                                    return new JSONObject().put(values.getJSONObject(0).getString("fieldName"), values.getJSONObject(0).getString("fieldValue"));
+                                } else {
+                                    throw new Exception("unexpected array in data");
+                                }
                             } else {
                                 JSONObject result = new JSONObject();
                                 result.put(paramName, value);

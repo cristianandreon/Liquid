@@ -308,30 +308,30 @@ SelectEditor.prototype.init = function(params) {
 };
 SelectEditor.prototype.getGui = function() { return this.eInput; };
 SelectEditor.prototype.afterGuiAttached = function() { this.eInput.focus(); };
-SelectEditor.prototype.getValue = function() {
-    if(this.cellEditorParams.idColumn && this.cellEditorParams.targetColumn) {
+SelectEditor.prototype.getValue = async function () {
+    if (this.cellEditorParams.idColumn && this.cellEditorParams.targetColumn) {
         var fullTargetColumn = this.liquid.tableJson.table + "." + this.cellEditorParams.targetColumn;
-        for(let i=0; i<this.liquid.tableJson.columns.length; i++) {
-            if(this.liquid.tableJson.columns[i].name === this.cellEditorParams.targetColumn || this.liquid.tableJson.columns[i].name === fullTargetColumn) {
+        for (let i = 0; i < this.liquid.tableJson.columns.length; i++) {
+            if (this.liquid.tableJson.columns[i].name === this.cellEditorParams.targetColumn || this.liquid.tableJson.columns[i].name === fullTargetColumn) {
                 this.targetColumnIndex = this.liquid.tableJson.columns[i].field;
                 break;
             }
         }
-        if(this.targetColumnIndex) {
-            if(isDef(this.iCol)) {
+        if (this.targetColumnIndex) {
+            if (isDef(this.iCol)) {
                 this.liquid.tableJson.columns[this.iCol].isReflected = true;
             }
-            var selNodes = [ this.node ];
-            if(selNodes && selNodes.length > 0) {
-                for(let node=0; node<selNodes.length; node++) {
-                    if(selNodes[node].data[this.targetColumnIndex] !== this.eInput.value) {
-                        var validateResult = Liquid.validateField(this.liquid, this.liquid.tableJson.columns[this.iCol], this.eInput.value);
-                        if(validateResult !== null) {
-                            if(validateResult[0] >= 0) {
+            var selNodes = [this.node];
+            if (selNodes && selNodes.length > 0) {
+                for (let node = 0; node < selNodes.length; node++) {
+                    if (selNodes[node].data[this.targetColumnIndex] !== this.eInput.value) {
+                        var validateResult = await Liquid.validateField(this.liquid, this.liquid.tableJson.columns[this.iCol], this.eInput.value);
+                        if (validateResult !== null) {
+                            if (validateResult[0] >= 0) {
                                 this.eInput.value = validateResult[1];
                                 // selNodes[node].data[this.targetColumnIndex] = this.eInput.value;
                                 selNodes[node].setDataValue(String(this.iCol + 1), this.eInput.value);
-                                Liquid.registerFieldChange(this.liquid, null, selNodes[node].data[ this.liquid.tableJson.primaryKeyField ? this.liquid.tableJson.primaryKeyField : null ], String(this.iCol + 1), null, this.eInput.value);
+                                Liquid.registerFieldChange(this.liquid, null, selNodes[node].data[this.liquid.tableJson.primaryKeyField ? this.liquid.tableJson.primaryKeyField : null], String(this.iCol + 1), null, this.eInput.value);
                                 Liquid.updateDependencies(this.liquid, this.liquid.tableJson.columns[this.iCol], null, null);
                             }
                         }
@@ -343,7 +343,8 @@ SelectEditor.prototype.getValue = function() {
     var retVal = "";
     try {
         retVal = typeof this.eInput.selectedIndex !== 'undefined' ? this.eInput.options[this.eInput.selectedIndex].text : null;
-    } catch (e) {}
+    } catch (e) {
+    }
     return retVal;
 };
 SelectEditor.prototype.destroy = function() {

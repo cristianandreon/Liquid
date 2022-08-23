@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.46
+// Liquid ver.2.47
 //
 //  First update 06-01-2020 - Last update 15-08-2022
 //
@@ -822,9 +822,9 @@ class LiquidCtrl {
                             return !(params.rowIndex % 2 ? 1 : 0);
                         }
                     },
-                    onCellValueChanged:function(event) {
+                    onCellValueChanged:async function (event) {
                         var liquid = Liquid.getLiquid(this.liquidLink.controlId);
-                        if(event.oldValue !== event.newValue) {
+                        if (event.oldValue !== event.newValue) {
                             var eventData = {
                                 layout: null,
                                 layoutRow: null,
@@ -840,17 +840,17 @@ class LiquidCtrl {
                             Liquid.onEvent(liquid, "onCellValueChanged", eventData);
                             // update internal data
                             event.node.setData(event.node.data);
-                            liquid.gridOptions.api.redrawRows({rowNodes:[event.node]});
+                            liquid.gridOptions.api.redrawRows({rowNodes: [event.node]});
                             var iCol = Liquid.getColumnIndexByField(liquid, event.column.field ? event.column.field : event.colDef.field);
-                            if(iCol !== null && iCol >= 0) {
-                                if(liquid.tableJson.columns[iCol].isReflected === true)
+                            if (iCol !== null && iCol >= 0) {
+                                if (liquid.tableJson.columns[iCol].isReflected === true)
                                     return;
-                                if(!Liquid.isMirrorEvent(liquid, event.node) ) {
-                                    var validateResult = Liquid.validateField(liquid, liquid.tableJson.columns[iCol], event.newValue);
-                                    if(validateResult !== null) {
-                                        if(validateResult[0] >= 0) {
+                                if (!Liquid.isMirrorEvent(liquid, event.node)) {
+                                    var validateResult = await Liquid.validateField(liquid, liquid.tableJson.columns[iCol], event.newValue);
+                                    if (validateResult !== null) {
+                                        if (validateResult[0] >= 0) {
                                             event.newValue = validateResult[1];
-                                            Liquid.registerFieldChange(liquid, event.node.id, event.node.data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ], event.column.colId, event.oldValue, event.newValue);
+                                            Liquid.registerFieldChange(liquid, event.node.id, event.node.data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], event.column.colId, event.oldValue, event.newValue);
                                             Liquid.updateDependencies(liquid, liquid.tableJson.columns[iCol], null, event);
                                             console.debug("onCellValueChanged(): NOT mirror event")
                                         } else {
@@ -860,11 +860,11 @@ class LiquidCtrl {
                                 }
                             }
                         }
-                        if(typeof liquid.pendingCommand !== 'undefined' && liquid.pendingCommand) {
+                        if (typeof liquid.pendingCommand !== 'undefined' && liquid.pendingCommand) {
                             Liquid.onCommandBarClick.call(liquid.pendingCommand.obj);
                             liquid.pendingCommand = null;
                         }
-                        if(event.node.isSelected()) {
+                        if (event.node.isSelected()) {
                             Liquid.updateSelectionData(liquid);
                         }
                     },
@@ -947,7 +947,7 @@ class LiquidCtrl {
                                         isAddingNode: false,
                                         rowsContainer: null
                                     };
-                                    var eventResult = Liquid.onEvent(liquid, "onRowRendering", eventData, null);
+                                    var eventResult = Liquid.onEvent(liquid, "onRowRendering", eventData, null).result;
                                     if(typeof eventResult === 'object') {
                                         var rowStyle = eventResult.result;
                                         if(typeof rowStyle === 'object') {
@@ -979,7 +979,7 @@ class LiquidCtrl {
                     }
                     ,postSort:function(rowNodes) {
                         try {
-                            return Liquid.onEvent(this.gridOptionsWrapper.gridOptions.api.context.contextParams.seed.eGridDiv, "onSorted", rowNodes, null, null, true).result;
+                            Liquid.onEvent(this.gridOptionsWrapper.gridOptions.api.context.contextParams.seed.eGridDiv, "onSorted", rowNodes, null, null, true).result;
                         } catch(e) { console.error(e); }
                     },
                     onGridSizeChanged:function(params) {
@@ -3118,7 +3118,7 @@ var Liquid = {
         }
         return retVal;
     },
-    buildCommandParams: function (liquid, command, obj) {
+    buildCommandParams: async function (liquid, command, obj) {
         if (liquid || command) {
             // command.name, command.params, command.server, command.client, command.isNative
             var controlIdList = command.params;
@@ -3179,7 +3179,7 @@ var Liquid = {
                             liquidCommandParams.liquid.controlId = liquid.controlId;
                     } else {
                         // No liquid object : is a form or HTML ?
-                        let nodes_data = Liquid.htmlNodesToJson(paramObj, true, true, "loadAttachmentsTable", 0);
+                        let nodes_data = await Liquid.htmlNodesToJson(paramObj, true, true, "loadAttachmentsTable", 0);
                         if (nodes_data) {
                             liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":" + JSON.stringify(nodes_data) + "" + "}"));
                         }
@@ -4103,7 +4103,7 @@ var Liquid = {
         }
         return node;
     },
-    registerFieldChange: function (liquid, nodeId, rowId, field, oldValue, newValue) {
+    registerFieldChange: async function (liquid, nodeId, rowId, field, oldValue, newValue) {
         if (liquid) {
             var isFormX = Liquid.isFormX(liquid);
             if (typeof rowId !== 'undefined' && typeof newValue !== 'undefined') {
@@ -4183,7 +4183,7 @@ var Liquid = {
                             client: col.onCellChanged.client,
                             server: col.onCellChanged.server
                         };
-                        eventParams = Liquid.buildCommandParams(liquid, event, null);
+                        var eventParams = await Liquid.buildCommandParams(liquid, event, null);
                         Liquid.onEventProcess(liquid, event, null, "onCellChanged", eventParams.params, eventData, null, null, null);
                         Liquid.addMirrorEvent(liquid, {id: nodeId});
                     }
@@ -4646,7 +4646,7 @@ var Liquid = {
      * @param value
      * @returns {(number|*)[]|null}
      */
-    validateField: function (liquid, col, value) {
+    validateField: async function (liquid, col, value) {
         var validateResult = [1, value];
         if (liquid) {
             if (col) {
@@ -4657,7 +4657,7 @@ var Liquid = {
                 }
                 if (isDef(col.validate)) {
                     var command = col.validate;
-                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command, null);
+                    var liquidCommandParams = await Liquid.buildCommandParams(liquid, command, null);
                     liquidCommandParams.params.push({data: {col: col, value: value}});
                     if (command.client) {
                         if (command.clientAfter !== true || command.clientBefore === true) {
@@ -7218,7 +7218,8 @@ var Liquid = {
                                         if (selNodes) {
                                             Liquid.addMirrorEvent(liquid, selNodes[0]);
                                         }
-                                        if (Liquid.onPreparedRow(liquid, false, false) > 0) {
+                                        let res_p = Liquid.onPreparedRow(liquid, false, false);
+                                        if (res_p > 0) {
                                             // N.B.: onPastedRow is system event
                                             Liquid.onEvent(liquid, "onPastedRow", liquid.addingRow, null, null, false);
                                         } else {
@@ -7736,7 +7737,7 @@ var Liquid = {
             }
         }
     },
-    onSetLookup: function (obj, event) {
+    onSetLookup: async function (obj, event) {
         if (obj) {
             var objs = Liquid.getComboLookup(obj);
             var comboObj = objs[0];
@@ -7876,7 +7877,7 @@ var Liquid = {
                                                 selNodes = [targetLiquid.addingNode ? targetLiquid.addingNode : targetLiquid.addingNode];
                                             }
                                             for (var node = 0; node < selNodes.length; node++) {
-                                                var validateResult = Liquid.validateField(targetLiquid, col, newValueId);
+                                                var validateResult = await Liquid.validateField(targetLiquid, col, newValueId);
                                                 if (validateResult !== null) {
                                                     if (validateResult[0] >= 0) {
                                                         newValueId = validateResult[1];
@@ -8964,7 +8965,7 @@ var Liquid = {
         }
         return events;
     },
-    onEvent: function (obj, eventName, eventData, callback, callbackParams, defaultRetval, bCallbackNow) {
+    onEvent: async function (obj, eventName, eventData, callback, callbackParams, defaultRetval, bCallbackNow) {
         var liquid = Liquid.getLiquid(obj);
         var result = typeof defaultRetval !== 'undefined' ? defaultRetval : null;
         var systemEventCounter = 0;
@@ -8982,7 +8983,7 @@ var Liquid = {
                         var event = events[ievt];
                         if (event) {
                             if (Liquid.isSystemEvent(event)) { // system event take care of the syncronous chain
-                                var eventParams = Liquid.buildCommandParams(liquid, event, null);
+                                var eventParams = await Liquid.buildCommandParams(liquid, event, null);
                                 var res = systemResult = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, callback, callbackParams, defaultRetval);
                                 systemEventCounter++;
                                 eventCounter++;
@@ -8994,7 +8995,7 @@ var Liquid = {
                             var event = events[ievt];
                             if (event) {
                                 if (!Liquid.isSystemEvent(event)) {
-                                    var eventParams = Liquid.buildCommandParams(liquid, event, null);
+                                    var eventParams = await Liquid.buildCommandParams(liquid, event, null);
                                     res = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, null, null, defaultRetval);
                                     result = res;
                                     eventCounter++;
@@ -9328,7 +9329,7 @@ var Liquid = {
                                 var eventData = null;
                                 var defaultRetval = null;
                                 var bCallbackNow = true;
-                                var liquidCommandParams = Liquid.buildCommandParams(liquid, command, obj);
+                                var liquidCommandParams = await Liquid.buildCommandParams(liquid, command, obj);
                                 eventName = eventName.toCamelCase();
                                 Liquid.onEvent(obj, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bCallbackNow);
                                 command.step = 0;
@@ -9359,7 +9360,7 @@ var Liquid = {
                         var eventData = null;
                         var defaultRetval = null;
                         var bCallbackNow = true;
-                        var liquidCommandParams = Liquid.buildCommandParams(liquid, command, obj);
+                        var liquidCommandParams = await Liquid.buildCommandParams(liquid, command, obj);
                         eventName = eventName.toCamelCase();
                         Liquid.onEvent(obj, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bCallbackNow);
                         command.step = 0;
@@ -9391,7 +9392,7 @@ var Liquid = {
                                             var eventData = null;
                                             var defaultRetval = null;
                                             var bCallbackNow = true;
-                                            var liquidCommandParams = Liquid.buildCommandParams(curLiquid, command, obj);
+                                            var liquidCommandParams = await Liquid.buildCommandParams(curLiquid, command, obj);
                                             eventName = eventName.toCamelCase();
                                             Liquid.onEvent(curLiquid, eventName, eventData, Liquid.onCommandStart, liquidCommandParams, defaultRetval, bCallbackNow);
                                             command.step = 0;
@@ -10127,7 +10128,7 @@ var Liquid = {
             console.error("process_ids_to_reload() error :" + e);
         }
     },
-    onValidateFields: function (obj, command) { // validate fields for insert
+    onValidateFields: async function (obj, command) { // validate fields for insert
         var liquid = Liquid.getLiquid(obj);
         var retVal = true;
         if (liquid) {
@@ -10223,7 +10224,7 @@ var Liquid = {
                         if (liquid.tableJson.columns[ic].isValidated == true) {
                             if (curRow) {
                                 var currentValue = curRow[Number(liquid.tableJson.columns[ic].field)];
-                                var validateResult = Liquid.validateField(liquid, liquid.tableJson.columns[ic], currentValue);
+                                var validateResult = await Liquid.validateField(liquid, liquid.tableJson.columns[ic], currentValue);
                                 if (validateResult !== null) {
                                     if (validateResult[0] >= 0) {
                                         // ok
@@ -11338,7 +11339,7 @@ var Liquid = {
                                     liquid.tableJson.commandBarTemporaryVisible = true;
                                 }
                             }
-                            var result = Liquid.onEvent(obj,
+                            var result = await Liquid.onEvent(obj,
                                 "onInserting",
                                 liquid.addingRow,
                                 function (liquid, result) {
@@ -11373,7 +11374,7 @@ var Liquid = {
                                     liquid.tableJson.commandBarTemporaryVisible = true;
                                 }
                             }
-                            var result = Liquid.onEvent(obj, "onUpdating", null, null, null, defaultValue, bCallbackNow);
+                            var result = await Liquid.onEvent(obj, "onUpdating", null, null, null, defaultValue, bCallbackNow);
                             if (result.result === defaultValue || result.systemResult === true) {
                                 liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 bContinue = true;
@@ -11398,7 +11399,7 @@ var Liquid = {
                                             liquid.tableJson.commandBarTemporaryVisible = true;
                                         }
                                     }
-                                    var result = Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bCallbackNow);
+                                    var result = await Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bCallbackNow);
                                     if (result.systemResult === defaultValue) {
                                         liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                         bContinue = true;
@@ -11497,7 +11498,7 @@ var Liquid = {
                                     liquid.deletingNodes.push(missingNodes[ir]);
                                     dataList.push(missingNodes[ir].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null]);
                                 }
-                                var result = Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bCallbackNow);
+                                var result = await Liquid.onEvent(obj, "onDeleting", dataList, Liquid.onPreparedDelete, liquid, defaultValue, bCallbackNow);
                                 if (result.systemResult === defaultValue) {
                                 }
                                 Liquid.refreshGrids(liquid, null);
@@ -11624,7 +11625,7 @@ var Liquid = {
                     command.step = Liquid.CMD_EXECUTE;
                 }
                 if (command.step === Liquid.CMD_EXECUTE) {
-                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command, obj);
+                    var liquidCommandParams = await Liquid.buildCommandParams(liquid, command, obj);
                     retVal = Liquid.onCommandStart(liquidCommandParams);
                     command.step = 0;
                     return retVal;
@@ -13749,7 +13750,7 @@ var Liquid = {
         }
         return 0;
     },
-    onGridFieldModify: function (e, obj) {
+    onGridFieldModify: async function (e, obj) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             var grid_coords = Liquid.getGridCoords(liquid, obj);
@@ -13768,7 +13769,7 @@ var Liquid = {
                                     if (obj.nodeName === 'INPUT') newValue = obj.value;
                                     else newValue = obj.innerHTML;
                                     if (newValue !== curValue) {
-                                        var validateResult = Liquid.validateField(liquid, col, newValue);
+                                        var validateResult = await Liquid.validateField(liquid, col, newValue);
                                         if (validateResult !== null) {
                                             if (validateResult[0] >= 0) {
                                                 // newValue = validateResult[1];
@@ -16532,7 +16533,7 @@ var Liquid = {
                             if (doUpdate) {
                                 var isFormX = Liquid.isFormX(liquid);
                                 if (isFormX) {
-                                    var validateResult = Liquid.validateField(liquid, col, newValue);
+                                    var validateResult = await Liquid.validateField(liquid, col, newValue);
                                     if (validateResult !== null) {
                                         if (validateResult[0] >= 0) {
                                             let rowId = liquid.tableJson.primaryKeyField ? liquid.addingRow[liquid.tableJson.primaryKeyField] : null;
@@ -16554,7 +16555,7 @@ var Liquid = {
                                         if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
                                             var data = nodes[baseIndex1B - 1 + linkedRow1B - 1].data;
                                             if (baseIndex1B) {
-                                                var validateResult = Liquid.validateField(liquid, col, newValue);
+                                                var validateResult = await Liquid.validateField(liquid, col, newValue);
                                                 if (validateResult !== null) {
                                                     if (validateResult[0] >= 0) {
                                                         // newValue = validateResult[1];
@@ -17302,7 +17303,7 @@ var Liquid = {
         }
         return value;
     },
-    onSaveRichField: function (obj, content) {
+    onSaveRichField: async function (obj, content) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             liquid.suneditorDiv.style.display = "none";
@@ -17315,7 +17316,7 @@ var Liquid = {
                     // register modifications
                     if (typeof col.isReflected === 'undefined' || col.isReflected !== true) {
                         for (let iN = 0; iN < liquid.suneditorNodes.length; iN++) {
-                            var validateResult = Liquid.validateField(liquid, col, content);
+                            var validateResult = await Liquid.validateField(liquid, col, content);
                             if (validateResult !== null) {
                                 if (validateResult[0] >= 0) {
                                     if (Liquid.isCodeEditor(col)) {
@@ -17329,11 +17330,12 @@ var Liquid = {
                                     } else {
                                         content = validateResult[1];
                                     }
-                                    if(isDef(col.b64)) {
-                                        if(col.b64) {
+                                    if (isDef(col.b64)) {
+                                        if (col.b64) {
                                             try {
                                                 content = atob(content);
-                                            } catch (e) {}
+                                            } catch (e) {
+                                            }
                                         }
                                     }
                                     liquid.suneditorNodes[iN].setDataValue(col.field, content);
@@ -19976,11 +19978,11 @@ var Liquid = {
         }
         return "";
     },
-    onPreparedRow:function(obj, bRegisterModify, bValidate) {
+    onPreparedRow:async function (obj, bRegisterModify, bValidate) {
         var retVal = true;
         var liquid = Liquid.getLiquid(obj);
-        if(liquid) {
-            if(liquid.addingNode === null || typeof liquid.addingNode === 'undefined') {
+        if (liquid) {
+            if (liquid.addingNode === null || typeof liquid.addingNode === 'undefined') {
                 // if not already done
                 // if(!liquid.currentCommand) console.error("ERROR: onPreparedRow event outside command");
                 {
@@ -20005,7 +20007,7 @@ var Liquid = {
                                 for (var ic = 0; ic < liquid.tableJson.columns.length; ic++) {
                                     var col = liquid.tableJson.columns[ic];
                                     if (col.isReflected !== true || isDef(col.default)) {
-                                        var validateResult = bValidate ? (Liquid.validateField(liquid, col, liquid.addingRow[col.field])) : ([1, liquid.addingRow[col.field]]);
+                                        var validateResult = bValidate ? (await Liquid.validateField(liquid, col, liquid.addingRow[col.field])) : ([1, liquid.addingRow[col.field]]);
                                         if (validateResult !== null) {
                                             if (validateResult[0] >= 0) {
                                                 liquid.addingRow[col.field] = validateResult[1];
@@ -21791,47 +21793,57 @@ columns:[
      * @param {async} true if you wanto to wait for server to finish (or need to stay connected to get message from server)
      * @return {} n/d
      */
-    startWorker:function(liquid, command, userId, sync) {
-        if(command) {
-            if(!liquid) liquid = {};
-            if(command.server) {
-                if(userId) {
+    startWorker:async function (liquid, command, userId, sync) {
+        if (command) {
+            if (!liquid) liquid = {};
+            if (command.server) {
+                if (userId) {
                     var syncParam = (typeof sync !== 'undefined' ? sync : true);
-                    var liquidCommandParams = Liquid.buildCommandParams(liquid, command, null);
+                    var liquidCommandParams = await Liquid.buildCommandParams(liquid, command, null);
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', glLiquidServlet + '?operation=startWorker'
-                        +'&userId=' + userId
-                        +'&className=' + command.server
-                        +'&async=' + syncParam
+                        + '&userId=' + userId
+                        + '&className=' + command.server
+                        + '&async=' + syncParam
                     );
                     xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());
-                    xhr.upload.addEventListener("progress", function(e) { Liquid.onTransferUploading(liquid, command, "startWorker", e, command.onUploading, command.onUploadingParam); }, false);
-                    xhr.addEventListener("progress", function(e) { Liquid.onTransferDownloading(liquid, command, "startWorker", e, command.onDownloading, command.onDownloadingParam); }, false);
-                    xhr.addEventListener("load", function(e) { Liquid.onTransferLoaded(liquid, command, "startWorker", e, command.onLoad, command.onLoadParam); }, false);
-                    xhr.addEventListener("error", function(e) { Liquid.onTransferFailed(liquid, command, "startWorker", e, command.onError, command.onErrorParam); }, false);
-                    xhr.addEventListener("abort", function(e) { Liquid.onTransferAbort(liquid, command, "startWorker", e, command.onAbort, command.onAbortParam); }, false);
+                    xhr.upload.addEventListener("progress", function (e) {
+                        Liquid.onTransferUploading(liquid, command, "startWorker", e, command.onUploading, command.onUploadingParam);
+                    }, false);
+                    xhr.addEventListener("progress", function (e) {
+                        Liquid.onTransferDownloading(liquid, command, "startWorker", e, command.onDownloading, command.onDownloadingParam);
+                    }, false);
+                    xhr.addEventListener("load", function (e) {
+                        Liquid.onTransferLoaded(liquid, command, "startWorker", e, command.onLoad, command.onLoadParam);
+                    }, false);
+                    xhr.addEventListener("error", function (e) {
+                        Liquid.onTransferFailed(liquid, command, "startWorker", e, command.onError, command.onErrorParam);
+                    }, false);
+                    xhr.addEventListener("abort", function (e) {
+                        Liquid.onTransferAbort(liquid, command, "startWorker", e, command.onAbort, command.onAbortParam);
+                    }, false);
 
                     xhr.send(JSON.stringify(liquidCommandParams));
-                    xhr.onreadystatechange = function() {
-                        if(xhr.readyState === 4) {
-                            if(xhr.status === 200) {
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status === 200) {
                                 try {
                                     var status = "0";
                                     var responseText = Liquid.getXHRResponse(xhr.responseText);
-                                    if(responseText) {
+                                    if (responseText) {
                                         try {
                                             var resultJson = JSON.parse(responseText);
-                                            if(resultJson) {
-                                                if(resultJson.userId) {
-                                                    if(syncParam !== true) {
+                                            if (resultJson) {
+                                                if (resultJson.userId) {
+                                                    if (syncParam !== true) {
                                                         // register worker by userId
                                                         Liquid.addWorker(liquid, command, resultJson.userId, resultJson.status);
                                                     }
                                                 }
                                                 Liquid.handleResponse(liquid, "startWorker", resultJson, true, true, true, true);
                                             }
-                                        } catch(e) {
-                                            console.error("ERROR:"+e+" on:"+responseText);
+                                        } catch (e) {
+                                            console.error("ERROR:" + e + " on:" + responseText);
                                         }
                                     }
                                 } catch (e) {
@@ -22145,54 +22157,55 @@ columns:[
             }
         }
     },
-    pasteFromClipBoradExec:function(liquid, controlId, columnsB64, rowsB64) {
-        if(liquid) {
-            if(controlId) {
+    pasteFromClipBoradExec:async function (liquid, controlId, columnsB64, rowsB64) {
+        if (liquid) {
+            if (controlId) {
                 var sourceLiquid = Liquid.getLiquid(controlId);
                 var columns = atob(columnsB64);
                 var rows = atob(rowsB64);
-                if(columns) {
+                if (columns) {
                     var columnsJson = JSON.parse(columns);
-                    if(columnsJson) {
+                    if (columnsJson) {
                         var columnsMap1B = new Array(columnsJson.length);
-                        for(let ic=0; ic<columnsJson.length; ic++) {
-                            for(let ict=0; ict<liquid.tableJson.columns.length; ict++) {
-                                if(liquid.tableJson.columns[ict].name === columnsJson[ic].name) {
-                                    columnsMap1B[ic] = (ict+1);
+                        for (let ic = 0; ic < columnsJson.length; ic++) {
+                            for (let ict = 0; ict < liquid.tableJson.columns.length; ict++) {
+                                if (liquid.tableJson.columns[ict].name === columnsJson[ic].name) {
+                                    columnsMap1B[ic] = (ict + 1);
                                     break;
                                 }
                             }
                         }
                         var rowsJson = JSON.parse(rows);
-                        if(rowsJson) {
+                        if (rowsJson) {
                             var defaultRow = new Array(liquid.tableJson.columns.length);
-                            for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
+                            for (let ic = 0; ic < liquid.tableJson.columns.length; ic++) {
                                 defaultRow[ic] = liquid.tableJson.columns[ic].default;
                             }
-                            for(let ir=0; ir<rowsJson.length; ir++) {
+                            for (let ir = 0; ir < rowsJson.length; ir++) {
                                 var newRow = Object.values(defaultRow);
-                                for(let ic=0; ic<columnsJson.length; ic++) {
+                                for (let ic = 0; ic < columnsJson.length; ic++) {
                                     var targetCol1B = columnsMap1B[ic];
-                                    if(targetCol1B) {
-                                        newRow[targetCol1B-1] = rowsJson[ir][ic+1];
+                                    if (targetCol1B) {
+                                        newRow[targetCol1B - 1] = rowsJson[ir][ic + 1];
                                     }
                                 }
                                 Liquid.addRow(liquid);
-                                for(let ic=0; ic<liquid.tableJson.columns.length; ic++) {
-                                    if(liquid.tableJson.primaryKey !== liquid.tableJson.columns[ic].name) {
-                                        if(liquid.addingRow) {
-                                            if(newRow[ic]) {
-                                                liquid.addingRow[ic+1] = newRow[ic];
+                                for (let ic = 0; ic < liquid.tableJson.columns.length; ic++) {
+                                    if (liquid.tableJson.primaryKey !== liquid.tableJson.columns[ic].name) {
+                                        if (liquid.addingRow) {
+                                            if (newRow[ic]) {
+                                                liquid.addingRow[ic + 1] = newRow[ic];
                                             }
                                         }
                                     }
                                 }
-                                if(Liquid.onPreparedRow(liquid, false, true) > 0) {
+                                let res_p = await Liquid.onPreparedRow(liquid, false, true);
+                                if (res_p > 0) {
                                     // N.B.: onPastedRow is system event
                                     Liquid.onEvent(liquid, "onPastedRow", liquid.addingRow, null, null, false);
                                 } else {
                                     // failed
-                                    if(liquid.addingRow) {
+                                    if (liquid.addingRow) {
                                         liquid.gridOptions.api.updateRowData({remove: [liquid.addingRow]});
                                     }
                                     liquid.addingRow = null;
@@ -22205,14 +22218,14 @@ columns:[
                                 }
                             }
                         } else {
-                            console.error("ERROR: pasteFromClipBorad(): controlId "+controlId+" has no rows to paste");
+                            console.error("ERROR: pasteFromClipBorad(): controlId " + controlId + " has no rows to paste");
                         }
                     }
                 } else {
-                    console.error("ERROR: pasteFromClipBorad(): controlId "+controlId+" has no columns definition");
+                    console.error("ERROR: pasteFromClipBorad(): controlId " + controlId + " has no columns definition");
                 }
             } else {
-                console.error("ERROR: pasteFromClipBorad(): controlId "+controlId+" not found");
+                console.error("ERROR: pasteFromClipBorad(): controlId " + controlId + " not found");
             }
         }
     },
