@@ -584,7 +584,7 @@ LiquidGridHeader.prototype.getGui = function () { return this.eGui; };
 LiquidGridHeader.prototype.onMenuClick = function () { this.agParams.showColumnMenu(this.eMenuButton); };
 LiquidGridHeader.prototype.onSortRequested = function (order, event) {
     try {
-        var retVal = Liquid.onEvent(this.agParams.liquidLink, "onSorting", null, null, null, true).result;
+        Liquid.onEvent(this.agParams.liquidLink, "onSorting", null, null, null, true);
     } catch(e) { console.error(e); }
     var sortSide = '';
     if(this.agParams.liquidLink)

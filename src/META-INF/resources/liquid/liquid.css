@@ -43,11 +43,13 @@ html, body { height: 100% }
 .liquidLookupIconContainer { display:inline-block; float:right; position:absolute; z-index:100; top:0px; right:5px; zoom:0.6; filter:grayscale(0.6); }
 .liquidLookupOpen { position: fixed; z-index: 99000; }
 .liquidCommandBar { width:100%; height:32px; display: inline-flex; overflow: hidden; background-color: whitesmoke; z-index: 111; position: relative; font-size: 12px; color: rgba(90, 30, 30, 1.0); border-top:1px solid lightGray; border-bottom:1px solid lightGray; }
-.liquidCommandBarButton  { border:1px solid transparent; }
+.liquidCommandBarButton { border:1px solid transparent; }
 .liquidCommandBarImg { margin-top: 2px; margin-left:5px; margin-right:7px; }
 .liquidCommandBarText { display:inline-block; font-size: 10px; margin-right:25px; position: relative; top: -2px; }
 .liquidCommandDisabled { pointer-events: none; opacity: 0.4; }
 .liquidCommandDisabledTemporary { pointer-events: none; opacity: 0.4; }
+.liquidCommandBarButton:hover{ background-color:rgba(3, 169, 244, 0.20) !important; border:1px solid rgba(3, 169, 244, 0.75) !important; transition: all 1s ease-Out; box-shadow: 5px 6px 6px
+rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
 .liquidGridContainer { width:100%; display:inline-block; overflow: auto; }
 .liquidGridContainer::-webkit-scrollbar { width: 8px; height: 8px; }
 .liquidGridContainer::-webkit-scrollbar-track { border-radius: 8px; }

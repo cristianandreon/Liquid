@@ -969,6 +969,26 @@ public class utility {
         }
     }
 
+    public static BigDecimal getBigDecimal(Object bean, String property) throws Exception {
+        Object val = get(bean, property);
+        if(val instanceof BigDecimal) {
+            return (BigDecimal) val;
+        } else if(val instanceof Short) {
+            return new BigDecimal((Short)val);
+        } else if(val instanceof Integer) {
+            return new BigDecimal((Integer)val);
+        } else if(val instanceof Long) {
+            return new BigDecimal((Long)val);
+        } else if(val instanceof Float) {
+            return new BigDecimal((Float)val);
+        } else if(val instanceof Double) {
+            return new BigDecimal((Double) val);
+        } else {
+            return new BigDecimal(String.valueOf(val));
+        }
+    }
+
+
     static public Boolean getBoolean(Object bean, String property) throws Exception {
         Object val = get(bean, property);
         if(val instanceof Float) {
@@ -2710,6 +2730,23 @@ public class utility {
 
     public static String get_file_content(String fileName) throws Exception {
         return workspace.get_file_content((HttpServletRequest) null, fileName, false, false);
+    }
+
+
+    /**
+     * Get file content in byte []
+     *
+     * @param fileName
+     * @return
+     * @throws Exception
+     */
+    static public byte [] get_binary_file_content( String fileName ) throws Exception {
+        try {
+            return Files.readAllBytes(new File(fileName).toPath());
+        } catch (Throwable ex) {
+            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+            throw ex;
+        }
     }
 
     public static String getArchiveFile(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {

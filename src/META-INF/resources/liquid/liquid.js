@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.47
+// Liquid ver.2.48
 //
 //  First update 06-01-2020 - Last update 15-08-2022
 //
@@ -810,7 +810,7 @@ class LiquidCtrl {
                                 isAddingNode: false,
                                 rowsContainer: null
                             };
-                            return await Liquid.onEvent(liquid, "isRowSelectable", eventData, null, null, true).result;
+                            return await Liquid.onEvent(liquid, "isRowSelectable", eventData, null, null, true);
                         }
                         return true;
                     },
@@ -2411,7 +2411,6 @@ class LiquidCtrl {
             if(doOnFirstLoad) {
                 Liquid.onEvent(this, "onFirstLoad", null, null);
             }
-            Liquid.onEvent(this, "onLoad", null, null);
 
             // Esecuzione evento onLoad
             Liquid.onEvent(this, "onLoad", null, null);
@@ -3288,6 +3287,172 @@ var Liquid = {
             return liquidCommandParams;
         }
     },
+    buildCommandParamsSync:function (liquid, command, obj) {
+        if (liquid || command) {
+            // command.name, command.params, command.server, command.client, command.isNative
+            var controlIdList = command.params;
+            var liquidProcessed = false;
+            var liquidCommandParams = {
+                liquid: (liquid ? liquid : {xhr: null, controlId: null, command: command, outDivObj: obj}),
+                obj: obj,
+                command: command,
+                params: []
+            };
+            if (controlIdList) {
+                for (var io = 0; io < controlIdList.length; io++) {
+                    var paramObj = null;
+                    if (controlIdList[io]) {
+                        if (controlIdList[io].toLowerCase() === 'this' || controlIdList[io].toLowerCase() === 'self') {
+                            paramObj = liquid;
+                        } else {
+                            paramObj = document.getElementById(controlIdList[io]);
+                        }
+                    }
+                    var pLiquid = paramObj ? Liquid.getLiquid(paramObj) : null;
+                    if (pLiquid) {
+                        if (pLiquid === liquid) liquidProcessed = true;
+                        var selectionData = Liquid.getSelectedPrimaryKeys(pLiquid);
+                        var idsSelected = selectionData[0];
+                        var idsUnselected = selectionData[1];
+                        try {
+                            // additional fields to pass as parameters
+                            let rowsData = null;
+                            let cols = [];
+                            for (let ic = 0; ic < pLiquid.tableJson.columns.length; ic++) {
+                                let col = pLiquid.tableJson.columns[ic];
+                                if (col.parameter === true) {
+                                    cols.push(col);
+                                }
+                            }
+                            if (cols.length) {
+                                let purgedMode = true;
+                                rowsData = Liquid.getFullSelectedRecordsData(pLiquid, purgedMode, cols);
+                            }
+                            liquidCommandParams.params.push(
+                                JSON.parse(
+                                    "{\"name\":\"" + pLiquid.controlId + "\""
+                                    + (pLiquid.tableJson.table ? ",\"table\":\"" + pLiquid.tableJson.table + "\"" : "")
+                                    + (pLiquid.tableJson.schema ? ",\"schema\":\"" + pLiquid.tableJson.schema + "\"" : "")
+                                    + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "")
+                                    + (idsUnselected ? ",\"unsel\":[" + idsUnselected + "]" : "")
+                                    + (rowsData ? ",\"rows\":" + JSON.stringify(rowsData) + "" : "")
+                                    + (pLiquid.userProps ? ",\"userProps\":" + JSON.stringify(pLiquid.userProps) + "" : "")
+                                    + "}"
+                                )
+                            );
+                        } catch (e) {
+                            console.error(e);
+                        }
+                        Liquid.addForeignTableCommandParam(pLiquid, liquidCommandParams.params);
+                        if (!liquidCommandParams.liquid.controlId)
+                            liquidCommandParams.liquid.controlId = liquid.controlId;
+                    } else {
+                        // No liquid object : is a form or HTML ?
+                        let nodes_data = Liquid.htmlNodesToJsonSync(paramObj, true, true, "loadAttachmentsTable", 0);
+                        if (nodes_data) {
+                            liquidCommandParams.params.push(JSON.parse("{\"form\":\"" + (paramObj.id ? paramObj.id : paramObj.name) + "\"" + ",\"data\":" + JSON.stringify(nodes_data) + "" + "}"));
+                        }
+                    }
+                }
+            }
+            if (liquid) {
+                var isFormX = Liquid.isFormX(liquid);
+                if (isFormX) {
+                    // var formX = isFormX ? Liquid.getAddingRowAsString(liquid, liquid.addingRow) : "";
+                    var formXObj = isFormX ? Liquid.getNamedRowData(liquid, liquid.addingRow) : "";
+                    var formX = JSON.stringify(formXObj);
+                    liquidCommandParams.params.push(JSON.parse("{\"formX\":[" + formX + "] }"));
+                }
+                if (liquid.modifications) {
+                    liquidCommandParams.params.push({modifications: liquid.modifications});
+                }
+                if (!liquidProcessed) {
+                    // add selection of this liquid
+                    if (liquid instanceof LiquidCtrl) {
+                        let selectionData = Liquid.getSelectedPrimaryKeys(liquid);
+                        let idsSelected = selectionData[0];
+                        let idsUnselected = selectionData[1];
+                        try {
+                            // additional fields to pass as parameters
+                            let rowsData = null;
+                            let cols = [];
+                            for (let ic = 0; ic < liquid.tableJson.columns.length; ic++) {
+                                let col = liquid.tableJson.columns[ic];
+                                if (col.parameter === true) {
+                                    cols.push(col);
+                                }
+                            }
+                            if (cols.length) {
+                                let purgedMode = true;
+                                rowsData = Liquid.getFullSelectedRecordsData(liquid, purgedMode, cols);
+                            }
+                            liquidCommandParams.params.push(
+                                JSON.parse(
+                                    "{\"name\":\"" + liquid.controlId + "\""
+                                    + (liquid.tableJson.table ? ",\"table\":\"" + liquid.tableJson.table + "\"" : "")
+                                    + (liquid.tableJson.schema ? ",\"schema\":\"" + liquid.tableJson.schema + "\"" : "")
+                                    + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "")
+                                    + (idsUnselected ? ",\"unsel\":[" + idsUnselected + "]" : "")
+                                    + (rowsData ? ",\"rows\":" + JSON.stringify(rowsData) + "" : "")
+                                    + (liquid.userProps ? ",\"userProps\":" + JSON.stringify(liquid.userProps) + "" : "")
+                                    + "}"
+                                )
+                            );
+                        } catch (e) {
+                            console.error(e);
+                        }
+                        // Add selection of all parents control
+                        if (liquid.srcLiquidControlId) {
+                            var curLiquid = liquid;
+                            while (curLiquid) {
+                                if (typeof curLiquid.srcLiquidControlId !== 'undefined' && curLiquid.srcLiquidControlId) {
+                                    try {
+                                        curLiquid = Liquid.getLiquid(curLiquid.srcLiquidControlId);
+                                        if (curLiquid instanceof LiquidCtrl) {
+                                            let selectionData = Liquid.getSelectedPrimaryKeys(curLiquid);
+                                            let idsSelected = selectionData[0];
+                                            let idsUnselected = selectionData[1];
+                                            // additional fields to pass as parameters
+                                            let rowsData = null;
+                                            let cols = [];
+                                            for (let ic = 0; ic < curLiquid.tableJson.columns.length; ic++) {
+                                                let col = curLiquid.tableJson.columns[ic];
+                                                if (col.parameter === true) {
+                                                    cols.push(col);
+                                                }
+                                            }
+                                            if (cols.length) {
+                                                let purgedMode = true;
+                                                rowsData = Liquid.getFullSelectedRecordsData(curLiquid, purgedMode, cols);
+                                            }
+                                            liquidCommandParams.params.push(
+                                                JSON.parse(
+                                                    "{\"name\":\"" + curLiquid.controlId + "\""
+                                                    + (curLiquid.tableJson.table ? ",\"table\":\"" + curLiquid.tableJson.table + "\"" : "")
+                                                    + (curLiquid.tableJson.schema ? ",\"schema\":\"" + curLiquid.tableJson.schema + "\"" : "")
+                                                    + (idsSelected ? ",\"sel\":[" + idsSelected + "]" : "")
+                                                    + (idsUnselected ? ",\"unsel\":[" + idsUnselected + "]" : "")
+                                                    + (rowsData ? ",\"rows\":" + JSON.stringify(rowsData) + "" : "")
+                                                    + (curLiquid.userProps ? ",\"userProps\":" + JSON.stringify(curLiquid.userProps) + "" : "")
+                                                    + "}"
+                                                )
+                                            );
+                                        }
+                                    } catch (e) {
+                                        console.error(e);
+                                    }
+                                } else {
+                                    curLiquid = null;
+                                }
+                            }
+                        }
+                        Liquid.addForeignTableCommandParam(liquid, liquidCommandParams.params);
+                    }
+                }
+            }
+            return liquidCommandParams;
+        }
+    },
     /**
      * add files inside layouts to result
      *
@@ -3442,6 +3607,118 @@ var Liquid = {
                                                         console.error("LIQUID: Internal error reading file");
                                                         field_name = null;
                                                     }
+                                                }
+                                            }
+                                        } else
+                                            field_name = null;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                if (field_name) {
+                                    if (!nodes_data) nodes_data = [];
+                                    nodes_data.push({
+                                        "fieldName": field_name,
+                                        "fieldValue": field_value
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    if (paramObj) {
+                        if (paramObj.nodeName.toUpperCase() === 'FORM') {
+                            // avoid page reload
+                            jQ1124(document).on('submit', '#' + paramObj.id, function () {
+                                return false;
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        return nodes_data;
+    },
+    htmlNodesToJsonSync: function (paramObj, processAll, processFiles, excludingNames, filteringTableId, filteringCellIndex) {
+        let nodes_data = null;
+        if (paramObj) {
+            if (paramObj.nodeName) {
+                if (paramObj.nodeName.toUpperCase() === 'FORM' || paramObj.nodeName.toUpperCase() === 'DIV' || paramObj.nodeName.toUpperCase() === 'INPUT') {
+                    var frm_elements = [];
+                    if (paramObj.nodeName.toUpperCase() === 'FORM') {
+                        frm_elements = paramObj.elements;
+                    } else if (paramObj.nodeName.toUpperCase() === 'DIV') {
+                        frm_elements = [paramObj];
+                    } else if (paramObj.nodeName.toUpperCase() === 'INPUT') {
+                        frm_elements = [paramObj];
+                    }
+                    var dataList = "";
+                    if (frm_elements && frm_elements.length) {
+                        for (var i = 0; i < frm_elements.length; i++) {
+                            var field_type = frm_elements[i].type ? frm_elements[i].type.toLowerCase() : null;
+                            var field_name = frm_elements[i].name ? frm_elements[i].name : frm_elements[i].id;
+                            var field_value = "";
+                            let bProcessField = false;
+
+                            if (!isDef(excludingNames)) {
+                                bProcessField = true;
+                            } else {
+                                if (!Array.isArray(excludingNames)) excludingNames = [excludingNames];
+                                if (!excludingNames.contains(field_name)) {
+                                    bProcessField = true;
+                                }
+                            }
+                            if (bProcessField) {
+                                switch (field_type) {
+                                    case "text":
+                                    case "password":
+                                    case "textarea":
+                                    case "email":
+                                    case "hidden":
+                                        if (processAll)
+                                            field_value = Liquid.handleFormText(frm_elements[i]);
+                                        else
+                                            field_name = null;
+                                        break;
+                                    case "radio":
+                                    case "checkbox":
+                                        if (processAll)
+                                            field_value = frm_elements[i].checked;
+                                        else
+                                            field_name = null;
+                                        break;
+                                    case "select-one":
+                                    case "select-multi":
+                                        if (processAll)
+                                            field_value = frm_elements[i].selectedIndex;
+                                        else
+                                            field_name = null;
+                                        break;
+                                    case "file":
+                                        if (processFiles) {
+                                            if (frm_elements[i].files.length) {
+                                                let result_files = [];
+                                                for (let iFile = 0; iFile < frm_elements[i].files.length; iFile++) {
+                                                    if (Liquid.is_file_in_table(filteringTableId, filteringCellIndex, frm_elements[i].files[iFile].name)) {
+                                                        result_files.push(frm_elements[i].files[iFile]);
+                                                    }
+                                                }
+                                                if (result_files.length > 0) {
+                                                    var queue = {
+                                                        liquid: null,
+                                                        obj: frm_elements[i],
+                                                        files: result_files,
+                                                        iFile: 0,
+                                                        callback: null
+                                                    };
+                                                    console.error("LIQUID: Internal error reading file ... sync mode unavailable!");
+                                                    /*
+                                                    if (await Liquid.formFilesToObjectExchange(queue)) {
+                                                        field_value = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
+                                                    } else {
+                                                        console.error("LIQUID: Internal error reading file");
+                                                        field_name = null;
+                                                    }
+                                                    */
                                                 }
                                             }
                                         } else
@@ -5360,14 +5637,10 @@ var Liquid = {
                     var labelValue = isDef(liquid.tableJson.columns[ic][labelName]) ? liquid.tableJson.columns[ic][labelName] : liquid.tableJson.columns[ic].name;
 
                     var colData = {
-                        headerName: labelValue
-                        ,
-                        field: (liquid.tableJson.columns[ic].field ? liquid.tableJson.columns[ic].field : liquid.tableJson.columns[ic].name.replace(/\./g, "_"))
-                        ,
-                        type: typeColumn
-                        ,
-                        width: Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0)
-                        ,
+                        headerName: labelValue,
+                        field: (liquid.tableJson.columns[ic].field ? liquid.tableJson.columns[ic].field : liquid.tableJson.columns[ic].name.replace(/\./g, "_")),
+                        type: typeColumn,
+                        width: Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0),
                         checkboxSelection: (ic === 0 && liquid.tableJson.checkboxSelection ? true : (function (row) {
                             var liquid = Liquid.getLiquid(row.api.context.contextParams.seed.eGridDiv);
                             var eventData = {
@@ -5384,51 +5657,33 @@ var Liquid = {
                                 rowsContainer: null
                             };
                             try {
-                                if (liquid)
-                                    return Liquid.onEvent(liquid, "hasCheckboxSelection", eventData, null, null, false).result;
+                                if (liquid) {
+                                    return !Liquid.onEventSync(liquid, "hasCheckboxSelection", eventData, null, null, false);
+                                }
                             } catch (e) {
                                 console.error(e);
                             }
-                            return true;
-                        }))
-                        ,
-                        headerCheckboxSelection: (ic === 0 ? isDef(liquid.tableJson.rowSelection) && liquid.tableJson.rowSelection === "multiple" ? (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : true) : (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : false) : false)
-                        ,
-                        tooltipField: tooltipField
-                        ,
-                        headerTooltip: headerTooltip
-                        ,
-                        hide: (liquid.tableJson.columns[ic].visible === false ? true : false)
-                        ,
-                        pinned: (typeof liquid.tableJson.columns[ic].pinned === 'string' ? liquid.tableJson.columns[ic].pinned : (liquid.tableJson.columns[ic].pinned === true ? "left" : false))
-                        ,
-                        lockPinned: (liquid.tableJson.columns[ic].lockPinned === true ? true : false)
-                        ,
-                        cellStyle: cellStyle
-                        ,
-                        filter: (typeof liquid.tableJson.columns[ic].filter !== "undefined" ? liquid.tableJson.columns[ic].filter : (typeof liquid.tableJson.clientFilters !== "undefined" ? liquid.tableJson.clientFilters : true))
-                        ,
-                        editable: editable
-                        ,
-                        cellEditor: cellEditor
-                        ,
-                        cellEditorParams: cellEditorParams
-                        ,
-                        cellRenderer: cellRenderer
-                        ,
-                        sortable: (typeof liquid.tableJson.columns[ic].sortable !== "undefined" ? liquid.tableJson.columns[ic].sortable : true)
-                        ,
-                        comparator: sortComparator
-                        ,
+                            return false;
+                        })),
+                        headerCheckboxSelection: (ic === 0 ? isDef(liquid.tableJson.rowSelection) && liquid.tableJson.rowSelection === "multiple" ? (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : true) : (isDef(liquid.tableJson.headerCheckboxSelection) ? liquid.tableJson.headerCheckboxSelection : false) : false),
+                        tooltipField: tooltipField,
+                        headerTooltip: headerTooltip,
+                        hide: (liquid.tableJson.columns[ic].visible === false ? true : false),
+                        pinned: (typeof liquid.tableJson.columns[ic].pinned === 'string' ? liquid.tableJson.columns[ic].pinned : (liquid.tableJson.columns[ic].pinned === true ? "left" : false)),
+                        lockPinned: (liquid.tableJson.columns[ic].lockPinned === true ? true : false),
+                        cellStyle: cellStyle,
+                        filter: (typeof liquid.tableJson.columns[ic].filter !== "undefined" ? liquid.tableJson.columns[ic].filter : (typeof liquid.tableJson.clientFilters !== "undefined" ? liquid.tableJson.clientFilters : true)),
+                        editable: editable,
+                        cellEditor: cellEditor,
+                        cellEditorParams: cellEditorParams,
+                        cellRenderer: cellRenderer,
+                        sortable: (typeof liquid.tableJson.columns[ic].sortable !== "undefined" ? liquid.tableJson.columns[ic].sortable : true),
+                        comparator: sortComparator,
                         headerComponentParams: {
-                            menuIcon: (typeof liquid.tableJson.columns[ic].menuIcon !== 'undefined' ? liquid.tableJson.columns[ic].menuIcon : "&#9776;")
-                            ,
-                            menuIconSize: (typeof liquid.tableJson.columns[ic].menuIconSize !== 'undefined' ? liquid.tableJson.columns[ic].menuIconSize : "")
-                            ,
-                            liquidLink: liquid
-                            ,
-                            column: (typeof liquid.tableJson.columns[ic] !== "undefined" ? liquid.tableJson.columns[ic] : null)
-                            ,
+                            menuIcon: (typeof liquid.tableJson.columns[ic].menuIcon !== 'undefined' ? liquid.tableJson.columns[ic].menuIcon : "&#9776;"),
+                            menuIconSize: (typeof liquid.tableJson.columns[ic].menuIconSize !== 'undefined' ? liquid.tableJson.columns[ic].menuIconSize : ""),
+                            liquidLink: liquid,
+                            column: (typeof liquid.tableJson.columns[ic] !== "undefined" ? liquid.tableJson.columns[ic] : null),
                             enableMenu: (typeof liquid.tableJson.headerMenu !== "undefined" ? liquid.tableJson.headerMenu : true)
                         }
                     };
@@ -8987,7 +9242,7 @@ var Liquid = {
                         var event = events[ievt];
                         if (event) {
                             if (Liquid.isSystemEvent(event)) { // system event take care of the syncronous chain
-                                var eventParams = await Liquid.buildCommandParams(liquid, event, null).result;
+                                var eventParams = await Liquid.buildCommandParams(liquid, event, null);
                                 var res = systemResult = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, callback, callbackParams, defaultRetval);
                                 systemEventCounter++;
                                 eventCounter++;
@@ -9000,6 +9255,70 @@ var Liquid = {
                             if (event) {
                                 if (!Liquid.isSystemEvent(event)) {
                                     var eventParams = await Liquid.buildCommandParams(liquid, event, null);
+                                    res = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, null, null, defaultRetval);
+                                    result = res;
+                                    eventCounter++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (bCallbackNow) {
+            if (callback) {
+                result = callback(callbackParams);
+            }
+        } else {
+            // Execute the callback if this is a system control
+            if (isDef(liquid)) {
+                if (isDef(liquid.tableJson)) {
+                    if (isDef(liquid.tableJson.isSystem)) {
+                        if (callback) {
+                            result = callback(callbackParams);
+                        }
+                    }
+                }
+            }
+        }
+        return {
+            result: typeof result !== 'undefined' ? result : defaultRetval,
+            systemResult: systemResult,
+            nEvents: eventCounter,
+            nSystemEvents: systemEventCounter
+        };
+    },
+    onEventSync:function (obj, eventName, eventData, callback, callbackParams, defaultRetval, bCallbackNow) {
+        var liquid = Liquid.getLiquid(obj);
+        var result = typeof defaultRetval !== 'undefined' ? defaultRetval : null;
+        var systemEventCounter = 0;
+        var eventCounter = 0;
+        var systemResult = typeof defaultRetval !== 'undefined' ? defaultRetval : null;
+        if (liquid) {
+            if (liquid.tableJson) {
+                if (liquid.tableJson.events) {
+                    //
+                    //  N.B. : Needs to execute user event and system event syncronously (system event onInserting need to pass data to user event onInserting)
+                    //         Execute first the system event, than if no system event execute user event
+                    //
+                    var events = Liquid.getEventsByName(liquid, eventName);
+                    for (var ievt = 0; ievt < events.length; ievt++) {
+                        var event = events[ievt];
+                        if (event) {
+                            if (Liquid.isSystemEvent(event)) { // system event take care of the syncronous chain
+                                var eventParams = Liquid.buildCommandParamsSync(liquid, event, null);
+                                var res = systemResult = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, callback, callbackParams, defaultRetval);
+                                systemEventCounter++;
+                                eventCounter++;
+                            }
+                        }
+                    }
+                    if (!systemEventCounter) { // no starting system event : execute now
+                        for (var ievt = 0; ievt < events.length; ievt++) {
+                            var event = events[ievt];
+                            if (event) {
+                                if (!Liquid.isSystemEvent(event)) {
+                                    var eventParams = Liquid.buildCommandParamsSync(liquid, event, null);
                                     res = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, null, null, defaultRetval);
                                     result = res;
                                     eventCounter++;
@@ -10258,7 +10577,7 @@ var Liquid = {
                     }
                     if (msg) {
                         retVal = false;
-                        Liquid.messageBox(null, LIQUID.WARNING_STRING, msg, function () {
+                        Liquid.messageBox(null, Liquid.WARNING_STRING, msg, function () {
                         }, null);
                     }
                 }
@@ -11521,7 +11840,8 @@ var Liquid = {
                             }
                         }
                         if (command.name === "insert" || command.name === "update") {
-                            if (!Liquid.onValidateFields(liquid, command)) {
+                            let resValidate = await Liquid.onValidateFields(liquid, command);
+                            if (!resValidate) {
                                 return false;
                             }
                         }
