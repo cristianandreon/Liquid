@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.48
+// Liquid ver.2.49
 //
 //  First update 06-01-2020 - Last update 15-08-2022
 //
@@ -125,12 +125,18 @@ class LiquidCtrl {
             this.outDivId = outDivObjOrId;
             this.outDivObj = document.getElementById(this.outDivId);
             if(!this.outDivObj) {
-                this.outDivObj = document.createElement("div");
-                this.outDivObj.style.position = 'absolute';
-                this.outDivObj.id = this.outDivId;
-                document.body.insertBefore(this.outDivObj, document.body.firstChild);
-                this.outDivCreated = true;
-                console.warn("WARNING: creating control " + outDivObjOrId + ": html node not found ");
+                if(Liquid.debug) {
+                    this.outDivObj = document.createElement("div");
+                    this.outDivObj.style.position = 'absolute';
+                    this.outDivObj.id = this.outDivId;
+                    document.body.insertBefore(this.outDivObj, document.body.firstChild);
+                    this.outDivCreated = true;
+                    console.error("ERROR: creating control " + outDivObjOrId + ": html node not found ... control is automatically added to the DOM only in DEBUG mode");
+                } else {
+                    // Div non trovato in produzione ...
+                    console.error("ERROR: missing control node:" + outDivObjOrId);
+                    return null;
+                }
             }
         }
 
@@ -17123,189 +17129,191 @@ var Liquid = {
         Liquid.createDateTimePicker(col, obj, false, liquid, null);
     },
     createDateTimePicker: function (col, obj, bShow, liquid, params) {
-        var controlName = "";
-        var type = 'datetimepicker';
-        var value = obj ? obj.value : "";
-        var pure_value = obj.getAttribute("pure_value");
-        var formatDate = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy';
-        var timeFormat = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-        var format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy' + ' ' + timeFormat;
-        var timePicker = true;
-        var closeOnDateSelect = false;
-        if (col) {
-            if (isDef(col.asType)) {
-                try {
-                    if (col.asType.toLowerCase() === 'date') {
-                        type = 'datetimepicker';
-                        timePicker = false;
-                        format = formatDate;
-                        closeOnDateSelect = true;
-                    } else if (col.asType.toLowerCase() === 'datetime' || col.asType.toLowerCase() === 'timestamp') {
-                        type = 'datetimepicker';
-                        timePicker = true;
-                        format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-                        closeOnDateSelect = true;
-                    }
-                } catch (e) {
-                }
-            } else {
-                if (col.type === "6") { // date picker
-                    type = 'datetimepicker';
-                    timePicker = false;
-                    closeOnDateSelect = true;
-                    format = formatDate;
-                } else if (col.type === "91") {  // date picker
-                    type = 'datetimepicker';
-                    timePicker = false;
-                    closeOnDateSelect = true;
-                    format = formatDate;
-                } else if (col.type === "93") { // date time picker
-                    type = 'datetimepicker';
-                    timePicker = true;
-                    format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-                    closeOnDateSelect = true;
-                } else {
-                    if (params) {
-                        if (params.type === 'date') {
-                            // type = 'datepicker';
+        if(obj) {
+            var controlName = "";
+            var type = 'datetimepicker';
+            var value = obj ? obj.value : "";
+            var pure_value = obj.getAttribute("pure_value");
+            var formatDate = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy';
+            var timeFormat = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+            var format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy' + ' ' + timeFormat;
+            var timePicker = true;
+            var closeOnDateSelect = false;
+            if (col) {
+                if (isDef(col.asType)) {
+                    try {
+                        if (col.asType.toLowerCase() === 'date') {
                             type = 'datetimepicker';
                             timePicker = false;
-                            format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y';
+                            format = formatDate;
                             closeOnDateSelect = true;
-                        } else if (params.type === 'datetime' || params.type === 'timestamp') {
+                        } else if (col.asType.toLowerCase() === 'datetime' || col.asType.toLowerCase() === 'timestamp') {
                             type = 'datetimepicker';
                             timePicker = true;
                             format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
                             closeOnDateSelect = true;
-                        } else {
-                            return;
+                        }
+                    } catch (e) {
+                    }
+                } else {
+                    if (col.type === "6") { // date picker
+                        type = 'datetimepicker';
+                        timePicker = false;
+                        closeOnDateSelect = true;
+                        format = formatDate;
+                    } else if (col.type === "91") {  // date picker
+                        type = 'datetimepicker';
+                        timePicker = false;
+                        closeOnDateSelect = true;
+                        format = formatDate;
+                    } else if (col.type === "93") { // date time picker
+                        type = 'datetimepicker';
+                        timePicker = true;
+                        format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+                        closeOnDateSelect = true;
+                    } else {
+                        if (params) {
+                            if (params.type === 'date') {
+                                // type = 'datepicker';
+                                type = 'datetimepicker';
+                                timePicker = false;
+                                format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y';
+                                closeOnDateSelect = true;
+                            } else if (params.type === 'datetime' || params.type === 'timestamp') {
+                                type = 'datetimepicker';
+                                timePicker = true;
+                                format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+                                closeOnDateSelect = true;
+                            } else {
+                                return;
+                            }
                         }
                     }
                 }
             }
-        }
-        if (type === 'datetimepicker') {
-            controlName = '.xdsoft_datetimepicker';
-            var dp = jQ1124(controlName);
-            try {
-                jQ1124(obj).datetimepicker({
-                    showAnim: "slideDown"
-                    , step: 60
-                    , format: format
-                    , formatDate: formatDate
-                    , formatTime: timeFormat
-                    , showSecond: Liquid.showSeconds
-                    , showMillisec: Liquid.showMilliSeconds
-                    , stepHour: 1
-                    , stepMinute: 1
-                    , stepSecond: 15
-                    // , defaultDate:true
-                    // , defaultTime:'00:00'
-                    , closeOnDateSelect: closeOnDateSelect
-                    , showTimePicker: timePicker
-                    , timepicker: timePicker
-                    , timePickerSeconds: false
-                    , dayOfWeekStart: 1
-                    , changeMonth: true,
-                    changeYear: true
-                    , beforeShowDay: function (o, $input, event) {
-                        if ($input) {
-                            var pure_value = $input[0].getAttribute("pure_value");
-                            if (pure_value) $input[0].value = pure_value;
+            if (type === 'datetimepicker') {
+                controlName = '.xdsoft_datetimepicker';
+                var dp = jQ1124(controlName);
+                try {
+                    jQ1124(obj).datetimepicker({
+                        showAnim: "slideDown"
+                        , step: 60
+                        , format: format
+                        , formatDate: formatDate
+                        , formatTime: timeFormat
+                        , showSecond: Liquid.showSeconds
+                        , showMillisec: Liquid.showMilliSeconds
+                        , stepHour: 1
+                        , stepMinute: 1
+                        , stepSecond: 15
+                        // , defaultDate:true
+                        // , defaultTime:'00:00'
+                        , closeOnDateSelect: closeOnDateSelect
+                        , showTimePicker: timePicker
+                        , timepicker: timePicker
+                        , timePickerSeconds: false
+                        , dayOfWeekStart: 1
+                        , changeMonth: true,
+                        changeYear: true
+                        , beforeShowDay: function (o, $input, event) {
+                            if ($input) {
+                                var pure_value = $input[0].getAttribute("pure_value");
+                                if (pure_value) $input[0].value = pure_value;
+                            }
                         }
-                    }
-                    , beforeShow: function (o, $input, event) {
+                        , beforeShow: function (o, $input, event) {
+                            if ($input) {
+                                var pure_value = $input[0].getAttribute("pure_value");
+                                if (pure_value) $input[0].value = pure_value;
+                            }
+                        }, onShow: function (o, $input, event) {
+                            if ($input) {
+                                var opt = {};
+                                var pure_value = $input[0].getAttribute("pure_value");
+                                if (pure_value) $input[0].value = pure_value;
+                                $input[0].setAttribute("dp", "1");
+                                if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
+                                jQ1124(controlName).datetimepicker("option", opt);
+                                jQ1124(controlName).css('z-index', 90000);
+                                jQ1124().datetimepicker("value", pure_value ? pure_value : value);
+                                this.setOptions(opt);
+                                jQ1124.datetimepicker.setLocale(opt.lang);
+                                if (Liquid.debug) console.info("DATETIMEPICKER:onClose()");
+                            }
+                        },
+                        onClose: function (o, $input, event) {
+                            if ($input) {
+                                if ($input[0].getAttribute("dp")) {
+                                    $input[0].setAttribute("dp", "");
+                                    $input[0].setAttribute("pure_value", $input[0].value);
+                                    if (liquid) liquid.gridOptions.api.stopEditing();
+                                }
+                            }
+                            if (Liquid.debug) console.info("DATETIMEPICKER:onClose()");
+                        },
+                        onSelectDate: function (ct, $i) {
+                            // $i.datetimepicker('destroy');
+                        }
+                    });
+                    if (bShow)
+                        jQ1124(obj).datetimepicker("show");
+                } catch (e) {
+                    console.error("LIQUID: xdsoft_datetimepicker not found..error:" + e + " ... may be missing file jquery.datepicker.js,jquery.datetimepicker.js");
+                }
+            } else {
+                controlName = '.ui-datepicker';
+                var dp = jQ1124(controlName);
+                jQ1124(controlName).css('z-index', 90000);
+                jQ1124(obj).datepicker("option", {
+                    showAnim: "slideDown",
+                    inline: true,
+                    date: pure_value ? pure_value : value,
+                    dateFormat: (typeof format !== "undefined" && format ? format : 'dd' + Liquid.dateSep + 'mm' + Liquid.dateSep + 'yy'),
+                    changeMonth: true,
+                    changeYear: true,
+                    beforeShowDay: function (o, $input, event) {
+                    }, onGenerate: function (o, $input, event) {
+                        var opt = {};
+                        if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
+                        jQ1124(obj).datepicker("option", opt);
+                        setTimeout(function () {
+                            jQ1124(controlName).css('z-index', 90000);
+                        }, 10);
                         if ($input) {
                             var pure_value = $input[0].getAttribute("pure_value");
                             if (pure_value) $input[0].value = pure_value;
                         }
                     }, onShow: function (o, $input, event) {
                         if ($input) {
-                            var opt = {};
-                            var pure_value = $input[0].getAttribute("pure_value");
                             if (pure_value) $input[0].value = pure_value;
                             $input[0].setAttribute("dp", "1");
-                            if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
-                            jQ1124(controlName).datetimepicker("option", opt);
-                            jQ1124(controlName).css('z-index', 90000);
-                            jQ1124().datetimepicker("value", pure_value ? pure_value : value);
-                            this.setOptions(opt);
-                            jQ1124.datetimepicker.setLocale(opt.lang);
-                            if (Liquid.debug) console.info("DATETIMEPICKER:onClose()");
+                            if (Liquid.debug) console.info("DATEPICKER:onShow()");
                         }
-                    },
-                    onClose: function (o, $input, event) {
+                    }, onClose: function (o, $input, event) {
                         if ($input) {
                             if ($input[0].getAttribute("dp")) {
                                 $input[0].setAttribute("dp", "");
                                 $input[0].setAttribute("pure_value", $input[0].value);
-                                if (liquid) liquid.gridOptions.api.stopEditing();
+                                if (liquid) {
+                                    liquid.gridOptions.api.stopEditing();
+                                    if (obj) obj.onchange();
+                                }
+                                if (Liquid.debug) console.info("DATEPICKER:onClose()");
                             }
                         }
-                        if (Liquid.debug) console.info("DATETIMEPICKER:onClose()");
                     },
                     onSelectDate: function (ct, $i) {
+                        // $i.datetimepicker('destroy');
+                    },
+                    onSelect: function (date, inst) {
                         // $i.datetimepicker('destroy');
                     }
                 });
                 if (bShow)
-                    jQ1124(obj).datetimepicker("show");
-            } catch (e) {
-                console.error("LIQUID: xdsoft_datetimepicker not found..error:" + e + " ... may be missing file jquery.datepicker.js,jquery.datetimepicker.js");
+                    jQ1124(obj).datepicker("show");
             }
-        } else {
-            controlName = '.ui-datepicker';
-            var dp = jQ1124(controlName);
-            jQ1124(controlName).css('z-index', 90000);
-            jQ1124(obj).datepicker("option", {
-                showAnim: "slideDown",
-                inline: true,
-                date: pure_value ? pure_value : value,
-                dateFormat: (typeof format !== "undefined" && format ? format : 'dd' + Liquid.dateSep + 'mm' + Liquid.dateSep + 'yy'),
-                changeMonth: true,
-                changeYear: true,
-                beforeShowDay: function (o, $input, event) {
-                }, onGenerate: function (o, $input, event) {
-                    var opt = {};
-                    if (col !== null) opt = Liquid.setDatePickerOptions(this, col);
-                    jQ1124(obj).datepicker("option", opt);
-                    setTimeout(function () {
-                        jQ1124(controlName).css('z-index', 90000);
-                    }, 10);
-                    if ($input) {
-                        var pure_value = $input[0].getAttribute("pure_value");
-                        if (pure_value) $input[0].value = pure_value;
-                    }
-                }, onShow: function (o, $input, event) {
-                    if ($input) {
-                        if (pure_value) $input[0].value = pure_value;
-                        $input[0].setAttribute("dp", "1");
-                        if (Liquid.debug) console.info("DATEPICKER:onShow()");
-                    }
-                }, onClose: function (o, $input, event) {
-                    if ($input) {
-                        if ($input[0].getAttribute("dp")) {
-                            $input[0].setAttribute("dp", "");
-                            $input[0].setAttribute("pure_value", $input[0].value);
-                            if (liquid) {
-                                liquid.gridOptions.api.stopEditing();
-                                if (obj) obj.onchange();
-                            }
-                            if (Liquid.debug) console.info("DATEPICKER:onClose()");
-                        }
-                    }
-                },
-                onSelectDate: function (ct, $i) {
-                    // $i.datetimepicker('destroy');
-                },
-                onSelect: function (date, inst) {
-                    // $i.datetimepicker('destroy');
-                }
-            });
-            if (bShow)
-                jQ1124(obj).datepicker("show");
+            return controlName;
         }
-        return controlName;
     },
     /**
      * Apply column format to the picker
@@ -17341,78 +17349,79 @@ var Liquid = {
         return opt;
     },
     setDateTimePickerNode: function (obj, type, obj_format) {
-        var timePicker = true;
-        var datePicker = false;
-        var closeOnDateSelect = true;
-        // var format = format ? format : ('d' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's');
-        var format = ('d' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's');
-        var formatDate = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y';
-        var formatTime = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-        if (type === 'date') {
-            obj.type = "text";
-            timePicker = false;
-            datePicker = true;
-            format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy';
-        } else if (type === 'datetime') {
-            obj.type = "text";
-            timePicker = true;
-            datePicker = true;
-        } else if (type === 'datetime-local') {
-            obj.type = "text";
-            datePicker = true;
-        }
-
-        if (datePicker) {
-            var dpControlName = '.xdsoft_datetimepicker';
-            var timeFormat = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
-            try {
-                jQ1124(obj).datetimepicker({
-                    showAnim: "slideDown"
-                    , step: 1
-                    , format: format
-                    , formatTime: formatTime
-                    , formatDate: formatDate
-                    , showSecond: Liquid.showSeconds
-                    , showMillisec: Liquid.showMilliSeconds
-                    , stepHour: 1, stepMinute: 1, stepSecond: 1
-                    , closeOnDateSelect: closeOnDateSelect
-                    , showTimePicker: timePicker
-                    , timepicker: timePicker
-                    , timePickerSeconds: false
-                    , timePickerIncrement: 1
-                    , dayOfWeekStart: 1
-                    , changeMonth: true, changeYear: true
-                    , onShow: function (o, $input, event) {
-                        if ($input) {
-                            var field = $input ? $input[0].getAttribute("linkedfield") : null;
-                            var liquid = Liquid.getLiquid($input[0]);
-                            var opt = Liquid.setDatePickerOptions(this, field ? liquid.tableJson.columns[Number(field) - 1] : null);
-                            // jQ1124(obj).datetimepicker("option", opt);
-                            var pure_value = $input ? $input[0].getAttribute("pure_value") : null;
-                            if (pure_value) $($input).val(pure_value);
-                            opt.value = pure_value;
-                            this.val(pure_value);
-                        }
-                        $input[0].setAttribute("dp", "1");
-                        jQ1124(obj).css('z-index', 99900);
-                        this.setOptions(opt);
-                        jQ1124.datetimepicker.setLocale(opt.lang);
-                        if (Liquid.debug) console.info("DATETIMEPICKER:onShow()");
-                    }, onClose: function (o, $input, event) {
-                        if ($input) {
-                            if ($input[0].getAttribute("dp")) {
-                                $input[0].setAttribute("dp", "");
-                                $input[0].setAttribute("pure_value", $input[0].value);
-                                if (Liquid.debug) console.info("DATETIMEPICKER:onClose()");
+        if(obj) {
+            var timePicker = true;
+            var datePicker = false;
+            var closeOnDateSelect = true;
+            // var format = format ? format : ('d' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's');
+            var format = ('d' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y' + ' ' + 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's');
+            var formatDate = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y';
+            var formatTime = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+            if (type === 'date') {
+                obj.type = "text";
+                timePicker = false;
+                datePicker = true;
+                format = 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'yy';
+            } else if (type === 'datetime') {
+                obj.type = "text";
+                timePicker = true;
+                datePicker = true;
+            } else if (type === 'datetime-local') {
+                obj.type = "text";
+                datePicker = true;
+            }
+            if (datePicker) {
+                var dpControlName = '.xdsoft_datetimepicker';
+                var timeFormat = 'H' + Liquid.timeSep + 'i' + Liquid.timeSep + 's';
+                try {
+                    jQ1124(obj).datetimepicker({
+                        showAnim: "slideDown"
+                        , step: 1
+                        , format: format
+                        , formatTime: formatTime
+                        , formatDate: formatDate
+                        , showSecond: Liquid.showSeconds
+                        , showMillisec: Liquid.showMilliSeconds
+                        , stepHour: 1, stepMinute: 1, stepSecond: 1
+                        , closeOnDateSelect: closeOnDateSelect
+                        , showTimePicker: timePicker
+                        , timepicker: timePicker
+                        , timePickerSeconds: false
+                        , timePickerIncrement: 1
+                        , dayOfWeekStart: 1
+                        , changeMonth: true, changeYear: true
+                        , onShow: function (o, $input, event) {
+                            if ($input) {
+                                var field = $input ? $input[0].getAttribute("linkedfield") : null;
+                                var liquid = Liquid.getLiquid($input[0]);
+                                var opt = Liquid.setDatePickerOptions(this, field ? liquid.tableJson.columns[Number(field) - 1] : null);
+                                // jQ1124(obj).datetimepicker("option", opt);
+                                var pure_value = $input ? $input[0].getAttribute("pure_value") : null;
+                                if (pure_value) $($input).val(pure_value);
+                                opt.value = pure_value;
+                                this.val(pure_value);
                             }
+                            $input[0].setAttribute("dp", "1");
+                            jQ1124(obj).css('z-index', 99900);
+                            this.setOptions(opt);
+                            jQ1124.datetimepicker.setLocale(opt.lang);
+                            if (Liquid.debug) console.info("DATETIMEPICKER:onShow()");
+                        }, onClose: function (o, $input, event) {
+                            if ($input) {
+                                if ($input[0].getAttribute("dp")) {
+                                    $input[0].setAttribute("dp", "");
+                                    $input[0].setAttribute("pure_value", $input[0].value);
+                                    if (Liquid.debug) console.info("DATETIMEPICKER:onClose()");
+                                }
+                            }
+                        },
+                        onSelectDate: function (ct, $i) {
+                            // $i.datetimepicker('destroy');
                         }
-                    },
-                    onSelectDate: function (ct, $i) {
-                        // $i.datetimepicker('destroy');
-                    }
-                });
-            } catch (e) {
-                console.error(e);
+                    });
+                } catch (e) {
+                    console.error(e);
+                }
             }
         }
     },
