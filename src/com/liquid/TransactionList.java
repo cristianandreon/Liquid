@@ -5,6 +5,9 @@
  */
 package com.liquid;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.math.BigDecimal;
 import java.sql.*;
 import java.text.ParseException;
@@ -246,6 +249,11 @@ public class TransactionList {
                             stmt.setString(ip, (String) params.get(ic));
                         } else if(oParam == null) {
                             stmt.setNull(ip, Types.VARCHAR);
+                        } else if(oParam instanceof JSONObject) {
+                            JSONObject jParam = (JSONObject)oParam;
+                            if(jParam.has("file") && jParam.has("content")) {
+                                stmt.setString(ip, String.valueOf(jParam.get("content")));
+                            }
                         } else {
                             stmt.setString(ip, (String) params.get(ic));
                         }

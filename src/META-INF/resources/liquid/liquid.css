@@ -25,7 +25,7 @@ html, body { height: 100% }
 .liquidPopupCaption tr td:last-child { width:2%; }
 .liquidCaptionBt { float:right; z-index: 110; position: relative; cursor: pointer; }
 .liquidPopupTitle { float: left; color: black; font-size: 15px; padding-left: 5px }
-.liquidPopupTheme { box-shadow: rgb(99 99 99) -2px -2px 20px 0px; }
+.liquidPopupTheme {  background-color: whitesmoke; box-shadow: rgb(99 99 99) -2px -2px 20px 0px; }
 .liquidCaptionSearch { height:100%; width:125px; color: black; font-size: 11px; background-color:transparent; border: 1px solid lightgray; }
 .liquidPopupBt { width:16px; height: 16px; float:right; z-index: 110; position: relative; }
 .liquidNav { height:29px; overflow: hidden; position: relative; font-size: 11px; background-color: whitesmoke; border-bottom: 1px solid lightgrey; }

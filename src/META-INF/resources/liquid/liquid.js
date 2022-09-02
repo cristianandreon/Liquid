@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.49
+// Liquid ver.2.50
 //
 //  First update 06-01-2020 - Last update 15-08-2022
 //
@@ -116,6 +116,10 @@ class LiquidCtrl {
             Liquid.cleanNodes(this);
         }
 
+        if(typeof mode !== 'undefined' && mode !== null ? mode : null) {
+            this.mode = mode;
+        }
+
         // Container
         this.outDivObjOrId = outDivObjOrId;
         if(outDivObjOrId && typeof outDivObjOrId === "object" && outDivObjOrId.nodeType === 1) {
@@ -125,13 +129,19 @@ class LiquidCtrl {
             this.outDivId = outDivObjOrId;
             this.outDivObj = document.getElementById(this.outDivId);
             if(!this.outDivObj) {
-                if(Liquid.debug) {
+                let bCreateNode = false;
+                if(Liquid.isDialogX(this) || Liquid.isFormX(this)) {
+                    bCreateNode = true;
+                } else if(Liquid.debug) {
+                    console.error("ERROR: creating control " + outDivObjOrId + ": html node not found ... control is automatically added to the DOM only in DEBUG mode");
+                    bCreateNode = true;
+                }
+                if(bCreateNode) {
                     this.outDivObj = document.createElement("div");
                     this.outDivObj.style.position = 'absolute';
                     this.outDivObj.id = this.outDivId;
                     document.body.insertBefore(this.outDivObj, document.body.firstChild);
                     this.outDivCreated = true;
-                    console.error("ERROR: creating control " + outDivObjOrId + ": html node not found ... control is automatically added to the DOM only in DEBUG mode");
                 } else {
                     // Div non trovato in produzione ...
                     console.error("ERROR: missing control node:" + outDivObjOrId);
@@ -146,9 +156,6 @@ class LiquidCtrl {
         this.controlId = controlId;
         // this.parentObjId = (typeof parentObjId !== 'undefined' ? parentObjId : null);
 
-        if(typeof mode !== 'undefined' && mode !== null ? mode : null) {
-            this.mode = mode;
-        }
 
         this.parentObj = null;
         this.isIconic = false;
@@ -15023,14 +15030,17 @@ var Liquid = {
 
 
         // esecuzione scripts header / body / footer
-        Liquid.executeTemplateRowScript(liquid, layout, 'header');
-        for (var ir = 0; ir < nRows; ir++) {
-            Liquid.executeTemplateRowScript(liquid, layout, layout.baseIndex1B - 1 + ir);
+        if(!isDef(layout.scriptEexecuted)) {
+            Liquid.executeTemplateRowScript(liquid, layout, 'header');
+            for (var ir = 0; ir < nRows; ir++) {
+                Liquid.executeTemplateRowScript(liquid, layout, layout.baseIndex1B - 1 + ir);
+            }
+            Liquid.executeTemplateRowScript(liquid, layout, 'footer');
+            Liquid.setupAllDescDatalist();
+            Liquid.check_for_layout_loaded_event(liquid, layout);
+            Liquid.check_for_layouts_loaded_event(liquid);
+            layout.scriptEexecuted = true;
         }
-        Liquid.executeTemplateRowScript(liquid, layout, 'footer');
-        Liquid.setupAllDescDatalist();
-        Liquid.check_for_layout_loaded_event(liquid, layout);
-        Liquid.check_for_layouts_loaded_event(liquid);
 
         // startup currencies fields
         $('input.liquidCurrency').currencyInput();
@@ -15312,7 +15322,7 @@ var Liquid = {
     isFormX: function (liquid) {
         return (liquid.mode ? liquid.mode.toLowerCase() == 'formx' : false);
     }, isDialogX: function (liquid) {
-        return (liquid.mode ? liquid.mode.toLowerCase() == 'dialogx' : false);
+        return (liquid.mode ? (liquid.mode.toLowerCase() == 'dialogx' || liquid.mode.toLowerCase() == 'popup') : false);
     },
     isAutoInsert: function (liquid, layout) {
         var autoInsert = false;
@@ -16811,38 +16821,33 @@ var Liquid = {
                                                 }
                                             }
                                         }
-                                        var isFormX = Liquid.isFormX(liquid);
-                                        if (isFormX) {
-                                            if (obj.files.length >= 1) {
-                                                var queue = {
-                                                    liquid: liquid,
-                                                    obj: obj,
-                                                    files: obj.files,
-                                                    iFile: 0,
-                                                    propName: null,
-                                                    propValue: null,
-                                                    callback: null
-                                                };
-                                                // update by file content asyncromously
-                                                var filesName = "", filesSize = "";
-                                                for (var iF = 0; iF < obj.files.length; iF++) {
-                                                    filesName += (filesName.length ? "," : "") + obj.files[iF].name;
-                                                    filesSize += (filesSize.length ? "," : "") + obj.files[iF].size;
-                                                }
-                                                obj.dataset.filesName = filesName;
-                                                obj.dataset.filesSize = filesSize;
-                                                var additionFileInfo = col.name + ".filesName";
-                                                if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesName;
-                                                additionFileInfo = col.name + ".filesSize";
-                                                if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesSize;
-                                                let result = await Liquid.formFilesToObjectExchange(queue);
-                                                if (result) {
-                                                    newValue = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
-                                                    doUpdate = true;
-                                                }
+                                        if (obj.files.length >= 1) {
+                                            var queue = {
+                                                liquid: liquid,
+                                                obj: obj,
+                                                files: obj.files,
+                                                iFile: 0,
+                                                propName: null,
+                                                propValue: null,
+                                                callback: null
+                                            };
+                                            // update by file content asyncromously
+                                            var filesName = "", filesSize = "";
+                                            for (var iF = 0; iF < obj.files.length; iF++) {
+                                                filesName += (filesName.length ? "," : "") + obj.files[iF].name;
+                                                filesSize += (filesSize.length ? "," : "") + obj.files[iF].size;
                                             }
-                                        } else {
-                                            console.error("ERROR:unsupported");
+                                            obj.dataset.filesName = filesName;
+                                            obj.dataset.filesSize = filesSize;
+                                            var additionFileInfo = col.name + ".filesName";
+                                            if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesName;
+                                            additionFileInfo = col.name + ".filesSize";
+                                            if (liquid.addingRow) liquid.addingRow[additionFileInfo] = filesSize;
+                                            let result = await Liquid.formFilesToObjectExchange(queue);
+                                            if (result) {
+                                                newValue = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
+                                                doUpdate = true;
+                                            }
                                         }
                                     } else {
                                         if (obj.getAttribute("pure_value")) {
@@ -21181,7 +21186,7 @@ var Liquid = {
             Liquid.startWinX(glLiquidStartupWinX[i].controlId, glLiquidStartupWinX[i].jsonString, glLiquidStartupWinX[i].parentObjId, glLiquidStartupWinX[i].status, glLiquidStartupWinX[i].options);
         }
         for(let i=0; i<glLiquidStartupPopup.length; i++) {
-            Liquid.startPopup(glLiquidStartupPopup[i].controlId, glLiquidStartupPopup[i].jsonString);
+            Liquid.startPopup(glLiquidStartupPopup[i].controlId, glLiquidStartupPopup[i].jsonString, glLiquidStartupPopup[i].mode);
         }
         for(let i=0; i<glLiquidStartupMenuX.length; i++) {
             Liquid.startMenuX(glLiquidStartupMenuX[i].outDivObjOrId, glLiquidStartupMenuX[i].menuJson, glLiquidStartupMenuX[i].options);
@@ -21216,7 +21221,7 @@ var Liquid = {
      * @return {} n/d
      */
     startDialogX:function(controlId, jsonStringOrB64Enc) {
-        return Liquid.startPopup(controlId, jsonStringOrB64Enc);
+        return Liquid.startPopup(controlId, jsonStringOrB64Enc, "DialogX");
     },
     /**
      * Start a control as formX (alais popup)
@@ -21225,7 +21230,7 @@ var Liquid = {
      * @return {} n/d
      */
     startFormX:function(controlId, jsonStringOrB64Enc) {
-        return Liquid.startPopup(controlId, jsonStringOrB64Enc);
+        return Liquid.startPopup(controlId, jsonStringOrB64Enc, "FormX");
     },
     /**
      * Start a control as popup
@@ -21233,9 +21238,9 @@ var Liquid = {
      * @param {jsonStringOrB64Enc} the control definition json (clean string or base64 encoded)
      * @return {} n/d
      */
-    startPopup:function(controlId, jsonStringOrB64Enc) {
+    startPopup:function(controlId, jsonStringOrB64Enc, mode) {
         if(!document.body) {
-            glLiquidStartupPopup.push( { controlId:controlId, jsonString:jsonStringOrB64Enc } );
+            glLiquidStartupPopup.push( { controlId:controlId, jsonString:jsonStringOrB64Enc, mode:mode?mode:"popup" } );
             return;
         }
 
@@ -21256,7 +21261,7 @@ var Liquid = {
                         jsonString = jsonString.json;
                     }
                 }
-                retVal = new LiquidCtrl(refControlId, controlId, jsonString);
+                retVal = new LiquidCtrl(refControlId, controlId, jsonString, null, mode?mode:"popup", null);
             }
         } else {
             retVal = liquid;
@@ -21299,7 +21304,7 @@ var Liquid = {
         }
         if(parentId instanceof HTMLElement) parentId = parentId.id; // in the name of flexibility
         if(!document.body) {
-            glLiquidStartupWinX.push( { controlId:controlId, jsonString:jsonString, parentId:parentId, status:status, options:options } );
+            glLiquidStartupWinX.push( { controlId:controlId, jsonString:jsonString, parentId:parentId, status:status, options:options, mode:"winX" } );
             return;
         }
         // check parentid (container)

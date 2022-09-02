@@ -830,54 +830,56 @@ function drawImageProp(ctx, img, x, y, w, h, offsetX, offsetY) {
 function load_pdf_to_canvas(canvas, url) {
     // Loaded via <script> tag, create shortcut to access PDF.js exports.
     // var pdfjsLib = window['/PDF.js/build/pdf'];
-    var pdfjsLib = window.pdfjsLib;
-    if(pdfjsLib) {
+    if(url) {
+        var pdfjsLib = window.pdfjsLib;
+        if (pdfjsLib) {
 
-        // The workerSrc property shall be specified.
-        pdfjsLib.GlobalWorkerOptions.workerSrc = Liquid.pdfJsPath + '/pdf.worker.js';
+            // The workerSrc property shall be specified.
+            pdfjsLib.GlobalWorkerOptions.workerSrc = Liquid.pdfJsPath + '/pdf.worker.js';
 
-        // Asynchronous download of PDF
-        var loadingTask = pdfjsLib.getDocument(url);
+            // Asynchronous download of PDF
+            var loadingTask = pdfjsLib.getDocument(url);
 
-        loadingTask.promise.then(function (pdf) {
-            if(Liquid.pdfJsDebug)
-                console.log('PDF loaded');
+            loadingTask.promise.then(function (pdf) {
+                if (Liquid.pdfJsDebug)
+                    console.log('PDF loaded');
 
-            // Fetch the first page
-            var pageNumber = 1;
-            pdf.getPage(pageNumber).then(function (page) {
-                if(Liquid.pdfJsDebug)
-                    console.log('Page loaded');
+                // Fetch the first page
+                var pageNumber = 1;
+                pdf.getPage(pageNumber).then(function (page) {
+                    if (Liquid.pdfJsDebug)
+                        console.log('Page loaded');
 
-                var scale = 1.0;
-                var viewport = page.getViewport({scale: scale});
+                    var scale = 1.0;
+                    var viewport = page.getViewport({scale: scale});
 
-                // Prepare canvas using PDF page dimensions
-                var context = canvas.getContext('2d');
+                    // Prepare canvas using PDF page dimensions
+                    var context = canvas.getContext('2d');
 
-                var new_scale = canvas.width / viewport.width;
-                viewport = page.getViewport({scale: new_scale});
+                    var new_scale = canvas.width / viewport.width;
+                    viewport = page.getViewport({scale: new_scale});
 
-                // canvas.height = viewport.height;
-                // canvas.width = viewport.width;
+                    // canvas.height = viewport.height;
+                    // canvas.width = viewport.width;
 
-                // Render PDF page into canvas context
-                var renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                };
-                var renderTask = page.render(renderContext);
-                renderTask.promise.then(function () {
-                    if(Liquid.pdfJsDebug)
-                        console.log('Page rendered');
+                    // Render PDF page into canvas context
+                    var renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    var renderTask = page.render(renderContext);
+                    renderTask.promise.then(function () {
+                        if (Liquid.pdfJsDebug)
+                            console.log('Page rendered');
+                    });
                 });
+            }, function (reason) {
+                // PDF loading error
+                console.error(reason);
             });
-        }, function (reason) {
-            // PDF loading error
-            console.error(reason);
-        });
-    } else {
-        alert("Missing lib : pdfjsLib .. please add \"pdf.js\" (defauly path is '/PDF.js/build') to the project");
+        } else {
+            alert("Missing lib : pdfjsLib .. please add \"pdf.js\" (defauly path is '/PDF.js/build') to the project");
+        }
     }
 }
 

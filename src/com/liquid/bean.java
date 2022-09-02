@@ -1383,7 +1383,7 @@ public class bean {
                             boolean autoIncString = cols.getJSONObject(ic).has("autoIncString") ? cols.getJSONObject(ic).getBoolean("autoIncString") : false;
                             String field = null, name = null;
                             String defaultValue = null;
-                            Object value = null;
+                            Object oValue = null;
 
                             name = col.getString("name");
 
@@ -1407,14 +1407,14 @@ public class bean {
 
                             boolean hasValue = false;
                             if (row.has(colName) && row.isNull(colName)) {
-                                value = null;
+                                oValue = null;
                                 hasValue = true;
                             } else if (row.has(colName)) {
-                                value = row.get(colName);
+                                oValue = row.get(colName);
                                 hasValue = true;
                             } else {
                                 try {
-                                    value = row.get(field);
+                                    oValue = row.get(field);
                                     hasValue = true;
                                 } catch (Exception e2) {
                                     // take from modifications
@@ -1425,7 +1425,11 @@ public class bean {
                                                 JSONObject rowField = rowFields.getJSONObject(iF);
                                                 if(rowField.has(("field"))) {
                                                     if(field.equalsIgnoreCase( rowField.getString("field") )) {
-                                                        value = rowField.getString("value");
+                                                        if(rowField.isNull("value")) {
+                                                            oValue = null;
+                                                        } else {
+                                                            oValue = rowField.get("value");
+                                                        }
                                                         hasValue = true;
                                                         break;
                                                     }
@@ -1465,15 +1469,15 @@ public class bean {
                                 if (!autoIncString) {
                                 } else {
                                     try {
-                                        if (Long.parseLong(String.valueOf(value)) > 0) {
+                                        if (Long.parseLong(String.valueOf(oValue)) > 0) {
                                         }
                                     } catch (Exception e) {
                                         // Formula su auto incrementante ...
-                                        value = null;
+                                        oValue = null;
                                     }
                                 }
                                 try {
-                                    utility.set(obj, colName, value);
+                                    utility.set(obj, colName, oValue);
                                 } catch (Throwable th) {
                                     error = "[ ERROR setting " + colName + " : " + th.getLocalizedMessage() + "]";
                                     Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
@@ -1481,7 +1485,7 @@ public class bean {
                                 }
 
                                 if(field != null && field.equalsIgnoreCase(primaryKeyField)) {
-                                    primaryKeyValue = value;
+                                    primaryKeyValue = oValue;
                                 }
                             }
                         }

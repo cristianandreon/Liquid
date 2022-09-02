@@ -4748,8 +4748,8 @@ public class db {
                                                                 String tPrimaryKey = col.has("primaryKey") ? col.getString("primaryKey") : null;
 
                                                                 String[] colParts = tName.split("\\.");
-                                                                boolean autoIncString = col.has("autoIncString") ? col.getBoolean("autoIncString") : null;
-                                                                boolean nullable = col.has("nullable") ? col.getBoolean("nullable") : null;
+                                                                boolean autoIncString = col.has("autoIncString") ? col.getBoolean("autoIncString") : false;
+                                                                boolean nullable = col.has("nullable") ? col.getBoolean("nullable") : false;
 
                                                                 dbDefault = col.has("dbDefault") ? col.getString("dbDefault") : null;
                                                                 srcDefault = col.has("default_src") ? col.getString("default_src") : null;

@@ -7,6 +7,7 @@ package com.liquid;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONPointer;
 import org.jsoup.Jsoup;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -57,8 +58,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class utility {
 
@@ -2378,26 +2377,27 @@ public class utility {
      * @return
      */
     public static String get_datalist_from_table(String controlId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
-        return get_datalist_from_table(controlId, databaseSchemaTable, codeColumn, descColumn, null, where, null, emptyRow, null, chacheIt);
+        return get_datalist_from_table(controlId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, null, chacheIt);
     }
 
 
     /**
-     * @param inputId               ID of the control (code)
+     * @param inputId             ID of the control (code)
      * @param databaseSchemaTable
-     * @param codeColumn            Code field in the database
-     * @param descColumn            Description field in the database
-     * @param tooltipColumn         Tooltip field in the database
+     * @param codeColumn          Code field in the database
+     * @param descColumn          Description field in the database
+     * @param tooltipColumn       Tooltip field in the database
+     * @param svgColumn
      * @param where
      * @param order
-     * @param emptyRow              Show empty row (emptyRow define the code of the option element)
-     * @param currentValue          current code value (as selected)
+     * @param emptyRow            Show empty row (emptyRow define the code of the option element)
+     * @param currentValue        current code value (as selected)
      * @param chacheIt
      * @return
      * @throws Throwable
      */
     public static String get_datalist_from_table(String inputId, String databaseSchemaTable,
-                                                 String codeColumn, String descColumn, String tooltipColumn,
+                                                 String codeColumn, String descColumn, String tooltipColumn, String svgColumn,
                                                  String where, String order,
                                                  String emptyRow,
                                                  String currentValue,
@@ -2527,7 +2527,7 @@ public class utility {
                 codeColumn,
                 descColumn,
                 tooltipColumn,
-                where, order, emptyRow, null, chacheIt
+                null, where, order, emptyRow, null, chacheIt
         );
 
         String descId = inputId+".desc";
