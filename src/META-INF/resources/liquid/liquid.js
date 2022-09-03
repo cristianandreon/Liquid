@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.50
+// Liquid ver.2.51
 //
-//  First update 06-01-2020 - Last update 15-08-2022
+//  First update 06-01-2020 - Last update 02-09-2022
 //
 //  TODO : see trello.com
 //
@@ -8103,7 +8103,7 @@ var Liquid = {
                                                         // event fitting
                                                         if (event) {
                                                             event.target = linkedItemObj;
-                                                            Liquid.onLayoutFieldChange(event);
+                                                            Liquid.onLayoutFieldChange(event, true);
                                                         }
                                                     }
                                                 }
@@ -13773,7 +13773,8 @@ var Liquid = {
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " autocomplete=\"off\""
                         // + " onclick=\"Liquid.onPickDate(event,this)\""
-                        + " onchange=\"Liquid.onGridFieldModify(event,this)\""
+                        + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
+                        + " onblur=\"Liquid.onGridFieldModify(event,this,true)\""
                         + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                         + " title=\"" + toolTip + "\""
                         + "/>";
@@ -13787,7 +13788,8 @@ var Liquid = {
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " autocomplete=\"off\""
                         + " onclick=\"Liquid.onPickDate(event,this)\""
-                        + " onchange=\"Liquid.onGridFieldModify(event,this)\""
+                        + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
+                        + " onblur=\"Liquid.onGridFieldModify(event,this,true)\""
                         + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                         + " title=\"" + toolTip + "\""
                         + " />";
@@ -13798,7 +13800,8 @@ var Liquid = {
                         + " step=\"" + "1" + "\" "
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
-                        + " onchange=\"Liquid.onGridFieldModify(event,this)\""
+                        + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
+                        + " onblur=\"Liquid.onGridFieldModify(event,this,true)\""
                         + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                         + " title=\"" + toolTip + "\""
                         + " />";
@@ -13810,7 +13813,8 @@ var Liquid = {
                         + " pattern=\"" + "\d*" + "\" "
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
-                        + " onchange=\"Liquid.onGridFieldModify(event,this)\""
+                        + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
+                        + " onblur=\"Liquid.onGridFieldModify(event,this,true)\""
                         + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                         + " title=\"" + toolTip + "\""
                         + " />";
@@ -13820,7 +13824,8 @@ var Liquid = {
                         + " type=\"" + inputType + "\" "
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
-                        + " onchange=\"Liquid.onGridFieldModify(event,this)\""
+                        + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
+                        + " onblur=\"Liquid.onGridFieldModify(event,this,true)\""
                         + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                         + " title=\"" + toolTip + "\""
                         + "/>";
@@ -14087,7 +14092,7 @@ var Liquid = {
         }
         return 0;
     },
-    onGridFieldModify: async function (e, obj) {
+    onGridFieldModify: async function (e, obj, bValidate) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             var grid_coords = Liquid.getGridCoords(liquid, obj);
@@ -14101,23 +14106,37 @@ var Liquid = {
                             var selNodes = Liquid.getCurNodes(liquid);
                             for (var node = 0; node < selNodes.length; node++) {
                                 if (obj.classList.contains("liquidGridControlRW")) {
-                                    var newValue = null;
-                                    var curValue = selNodes[node].data[col.field];
+                                    let newValue = null;
+                                    let curValue = selNodes[node].data[col.field];
+                                    let doUpdateField = false;
                                     if (obj.nodeName === 'INPUT') newValue = obj.value;
                                     else newValue = obj.innerHTML;
-                                    if (newValue !== curValue) {
-                                        var validateResult = await Liquid.validateField(liquid, col, newValue);
-                                        if (validateResult !== null) {
-                                            if (validateResult[0] >= 0) {
-                                                // newValue = validateResult[1];
-                                                // selNodes[node].data[col.field] = newValue;
-                                                selNodes[node].setDataValue(col.field, validateResult[1]);
-                                                Liquid.setGridFieldAsChanged(liquid, gridControl, true);
-                                                Liquid.registerFieldChange(liquid, null, selNodes[node].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, newValue);
-                                                Liquid.updateDependencies(liquid, col, null);
-                                                // TODO: multirecord modify
+                                    if(bValidate) {
+                                        if (newValue !== curValue) {
+                                            var validateResult = await Liquid.validateField(liquid, col, newValue);
+                                            if (validateResult !== null) {
+                                                if (validateResult[0] >= 0) {
+                                                    newValue = validateResult[1];
+                                                    doUpdateField = true;
+                                                    if (isDef(col.b64)) {
+                                                        if (col.b64) {
+                                                            newValue = btoa(validateResult[1]);
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
+                                    } else {
+                                        if (newValue !== curValue) {
+                                            doUpdateField = true;
+                                        }
+                                    }
+                                    if(doUpdateField) {
+                                        selNodes[node].setDataValue(col.field, newValue);
+                                        Liquid.setGridFieldAsChanged(liquid, gridControl, true);
+                                        Liquid.registerFieldChange(liquid, null, selNodes[node].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], col.field, null, newValue);
+                                        Liquid.updateDependencies(liquid, col, null);
+                                        // TODO: multirecord modify
                                     }
                                 }
                             }
@@ -15757,11 +15776,15 @@ var Liquid = {
                             obj.id = newId;
 
                             if (!prevId) {
-                                // obj.addEventListener('change', Liquid.onLayoutFieldChange);
                                 var prevOnchangeFunc = (obj.onchange ? obj.onchange : null);
                                 obj.onchange = function (event) {
-                                    Liquid.onLayoutFieldChange(event);
+                                    Liquid.onLayoutFieldChange(event, false);
                                     if (prevOnchangeFunc) prevOnchangeFunc(event);
+                                };
+                                var prevOnblurFunc = (obj.onblur ? obj.onblur : null);
+                                obj.onblur = function (event) {
+                                    Liquid.onLayoutFieldChange(event, true);
+                                    if (prevOnblurFunc) prevOnblurFunc(event);
                                 };
                                 if (!obj.getAttribute('ponclick')) {
                                     obj.addEventListener('click', Liquid.onLayoutFieldClick, true);
@@ -16749,7 +16772,7 @@ var Liquid = {
             }
         }
     },
-    onLayoutFieldChange: async function (event) {
+    onLayoutFieldChange: async function (event, bValidate) {
         if (event) {
             // var objId = event.target.getAttribute('newid');
             var objId = event.target.id;
@@ -16868,20 +16891,31 @@ var Liquid = {
                             if (doUpdate) {
                                 var isFormX = Liquid.isFormX(liquid);
                                 if (isFormX) {
-                                    var validateResult = await Liquid.validateField(liquid, col, newValue);
-                                    if (validateResult !== null) {
-                                        if (validateResult[0] >= 0) {
-                                            let rowId = liquid.tableJson.primaryKeyField ? liquid.addingRow[liquid.tableJson.primaryKeyField] : null;
-                                            let nodeId = liquid.addingNode ? liquid.addingNode.id : null;
-                                            if (isDef(col.b64)) {
-                                                if (col.b64) {
-                                                    validateResult[1] = btoa(validateResult[1]);
+                                    let doUpdateField = false;
+                                    let rowId = liquid.tableJson.primaryKeyField ? liquid.addingRow[liquid.tableJson.primaryKeyField] : null;
+                                    let nodeId = liquid.addingNode ? liquid.addingNode.id : null;
+                                    if(bValidate) {
+                                        var validateResult = await Liquid.validateField(liquid, col, newValue);
+                                        if (validateResult !== null) {
+                                            if (validateResult[0] >= 0) {
+                                                let rowId = liquid.tableJson.primaryKeyField ? liquid.addingRow[liquid.tableJson.primaryKeyField] : null;
+                                                let nodeId = liquid.addingNode ? liquid.addingNode.id : null;
+                                                newValue = validateResult[1];
+                                                doUpdateField = true;
+                                                if (isDef(col.b64)) {
+                                                    if (col.b64) {
+                                                        newValue = btoa(validateResult[1]);
+                                                    }
                                                 }
                                             }
-                                            Liquid.addMirrorEvent(liquid, liquid.addingNode);
-                                            Liquid.registerFieldChange(liquid, nodeId, rowId, linkedField, null, validateResult[1]);
-                                            Liquid.updateDependencies(liquid, col, null, event);
                                         }
+                                    } else {
+                                        doUpdateField = true;
+                                    }
+                                    if(doUpdateField) {
+                                        Liquid.addMirrorEvent(liquid, liquid.addingNode);
+                                        Liquid.registerFieldChange(liquid, nodeId, rowId, linkedField, null, newValue);
+                                        Liquid.updateDependencies(liquid, col, null, event);
                                     }
                                 } else {
                                     if (baseIndex1B > 0) {
@@ -16890,20 +16924,30 @@ var Liquid = {
                                         if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
                                             var data = nodes[baseIndex1B - 1 + linkedRow1B - 1].data;
                                             if (baseIndex1B) {
-                                                var validateResult = await Liquid.validateField(liquid, col, newValue);
-                                                if (validateResult !== null) {
-                                                    if (validateResult[0] >= 0) {
-                                                        // newValue = validateResult[1];
-                                                        if (isDef(col.b64)) {
-                                                            if (col.b64) {
-                                                                validateResult[1] = btoa(validateResult[1]);
+                                                let doUpdateField = false;
+                                                if(bValidate) {
+                                                    var validateResult = await Liquid.validateField(liquid, col, newValue);
+                                                    if (validateResult !== null) {
+                                                        if (validateResult[0] >= 0) {
+                                                            newValue = validateResult[1];
+                                                            doUpdateField = true;
+                                                            if (isDef(col.b64)) {
+                                                                if (col.b64) {
+                                                                    newValue = btoa(validateResult[1]);
+                                                                }
                                                             }
                                                         }
-                                                        Liquid.addMirrorEvent(liquid, nodes[baseIndex1B - 1 + linkedRow1B - 1]);
-                                                        nodes[baseIndex1B - 1 + linkedRow1B - 1].setDataValue(linkedField, validateResult[1]);
-                                                        Liquid.registerFieldChange(liquid, liquid.addingNode ? liquid.addingNode.id : null, data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], linkedField, null, newValue);
-                                                        Liquid.updateDependencies(liquid, col, null, event);
                                                     }
+                                                } else {
+                                                    doUpdateField = true;
+                                                }
+                                                if(doUpdateField) {
+                                                    let nodeId = liquid.addingNode ? liquid.addingNode.id : null;
+                                                    let rowId = data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
+                                                    Liquid.addMirrorEvent(liquid, nodes[baseIndex1B - 1 + linkedRow1B - 1]);
+                                                    nodes[baseIndex1B - 1 + linkedRow1B - 1].setDataValue(linkedField, newValue);
+                                                    Liquid.registerFieldChange(liquid, nodeId, rowId, linkedField, null, newValue);
+                                                    Liquid.updateDependencies(liquid, col, null, event);
                                                 }
                                             }
                                         }

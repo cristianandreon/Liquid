@@ -35,7 +35,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.50";
+    public static String version_string = "2.51";
     public static String getGLLang() {
         return GLLang;
     }
@@ -4580,7 +4580,7 @@ public class workspace {
             if(oParams instanceof JSONObject) {
                 params_json = (JSONObject)oParams;
             } else {
-                params_json = new JSONObject(oParams);
+                params_json = new JSONObject((String)oParams);
             }
             JSONArray paramsJson = params_json.getJSONArray("params");
             for (int i = 0; i < paramsJson.length(); i++) {
