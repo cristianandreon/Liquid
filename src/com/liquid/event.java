@@ -1726,10 +1726,10 @@ public class event {
      * @param tbl_wrk
      * @param params
      * @param clientData
-     * @param freeParam
+     * @param request
      * @return
      */
-    static public String updateRow(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
+    static public String updateRow(Object tbl_wrk, Object params, Object clientData, Object request) {
         String result = "{ \"result\":1", error = "";
         try {
 
@@ -1738,7 +1738,7 @@ public class event {
                     workspace tblWrk = (workspace) tbl_wrk;
                     Object owner = tblWrk.getOwner();
                     if (owner != null) {
-                        Object retVal = forwardEvent("onUpdatingRow", tbl_wrk, params, clientData, freeParam);
+                        Object retVal = forwardEvent("onUpdatingRow", tbl_wrk, params, clientData, request);
                         if (retVal != null) {
                             if (retVal.getClass() == boolean.class) {
                                 if ((boolean) retVal == false) {
@@ -1758,14 +1758,14 @@ public class event {
                 System.err.println(" updateRow() Error:" + e.getLocalizedMessage());
             }
 
-            String resUpd = db.updateFields(tbl_wrk, params, clientData, freeParam, (event.eventCallback) null);
+            String resUpd = db.updateFields(tbl_wrk, params, clientData, request, (event.eventCallback) null);
 
             try {
                 if (tbl_wrk != null) {
                     workspace tblWrk = (workspace) tbl_wrk;
                     Object owner = tblWrk.getOwner();
                     if (owner != null) {
-                        Object retVal = forwardEvent("onUpdatedRow", tbl_wrk, params, clientData, freeParam);
+                        Object retVal = forwardEvent("onUpdatedRow", tbl_wrk, params, clientData, request);
                     }
                 }
             } catch (Throwable e) {

@@ -9858,9 +9858,11 @@ var Liquid = {
             if (!isDef(command.response.error)) {
                 retVal = Liquid.onCommandDone(liquidCommandParams);
             } else {
-                if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update") {
-                    for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
-                        Liquid.onLayoutMode(liquid.tableJson.layouts[il].layoutTabObj, 0, "write");
+                if (isDef(liquid.currentCommand)) {
+                    if (liquid.currentCommand.name === "insert" || liquid.currentCommand.name === "update") {
+                        for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                            Liquid.onLayoutMode(liquid.tableJson.layouts[il].layoutTabObj, 0, "write");
+                        }
                     }
                 }
                 liquid.currentCommand.step = Liquid.CMD_VALIDATE;

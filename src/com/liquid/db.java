@@ -6331,7 +6331,7 @@ public class db {
 
                         String updatingParams = "{ \"params\":[{\"modifications\":[" + sModifications + "] } ] }";
 
-                        return db.updateFields(tbl_wrk, updatingParams, null, null, null);
+                        return db.updateFields(tbl_wrk, updatingParams, null, request, null);
                     }
                 }
             }
