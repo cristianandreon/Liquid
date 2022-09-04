@@ -157,6 +157,17 @@ public class db {
             }
             return false;
         }
+        static public LeftJoinMap getByForeignTable(ArrayList<LeftJoinMap> list, String foreignTable) {
+            if (list != null) {
+                for (LeftJoinMap item : list) {
+                    if (item.foreignTable.equalsIgnoreCase(foreignTable)) {
+                        return item;
+                    }
+                }
+            }
+            return null;
+        }
+
 
         static public String getAlias(ArrayList<LeftJoinMap> list, String foreignTable) throws Exception {
             if (list != null) {
@@ -911,6 +922,13 @@ public class db {
                                                             String [] columnParts = column.split("\\.");
                                                             if(columnParts.length>1) {
                                                                 columnSolved = column = get_column_db_alias(columns_alias_array, columnParts[0], columnParts[1]);
+                                                                if(columnSolved == null) {
+                                                                    // "v_auctions"."user_id" -- B5."user_id"
+                                                                    LeftJoinMap resJoin = LeftJoinMap.getByForeignTable(leftJoinsMap, columnParts[0]);
+                                                                    if(resJoin != null) {
+                                                                        columnSolved = column = resJoin.alias + "." + (tableIdString + columnParts[1] + tableIdString);
+                                                                    }
+                                                                }
                                                             } else {
                                                                 columnSolved = table + "." + (tableIdString + column + tableIdString);
                                                             }
