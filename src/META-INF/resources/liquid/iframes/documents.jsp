@@ -197,7 +197,7 @@
                         var typeItemId = (glControlId !== null ? glControlId + ".liquidDocumentsX.uploadFileType" : "");
                         var html = "<input class=\"cfgEditboxClass\" style=\"text-align:left;\""
                             + "name=\"" + typeItemId + "\" id=\"" + typeItemId + "\"" +
-                            +"type=\"text\" value=\"\""
+                            + "type=\"text\" value=\"\""
                             + "autocomplete=\"off\""
                             + "onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\""
                             + "onblur=\"if(!this.value) this.value=this.placeholder\""
@@ -208,7 +208,7 @@
                                 "cnconline.DMS_DOC_TYPE",
                                 "id",
                                 ("ENG".equalsIgnoreCase((String) session.getAttribute("GLLang")) ? "type_desc" : "type_desc_"+((String) session.getAttribute("GLLang")).toLowerCase()+"" ),
-                                null,
+                                ("ENG".equalsIgnoreCase((String) session.getAttribute("GLLang")) ? "type_desc" : "type_desc_"+((String) session.getAttribute("GLLang")).toLowerCase()+"" ),
                                 null, null,
                                 "order by \"order\"",
                                 ("ENG".equalsIgnoreCase((String)session.getAttribute("GLLang")) ? "":""),

@@ -2739,7 +2739,8 @@ public class workspace {
                                 bDeleteActive = true;
                             } else if ("previous" .equalsIgnoreCase(cmdName)) {
                                 if (img == null) {
-                                    cmd.put("img", "prev.png");
+                                    // cmd.put("img", "prev.png");
+                                    cmd.put("img", "backword.png");
                                 }
                                 if (size == 0) {
                                     cmd.put("size", 16);
@@ -2748,7 +2749,8 @@ public class workspace {
                                 cmd.put("isNative", true);
                             } else if ("next" .equalsIgnoreCase(cmdName)) {
                                 if (img == null) {
-                                    cmd.put("img", "next.png");
+                                    // cmd.put("img", "next.png");
+                                    cmd.put("img", "forward.png");
                                 }
                                 if (size == 0) {
                                     cmd.put("size", 16);

@@ -484,7 +484,7 @@ public class bean {
      */
     static public Object[] create_beans_multilevel_class(workspace tbl_wrk, JSONArray rowsJson, JSONArray foreignTablesJson, String filteringForeignTables, int level, long maxRows, HttpServletRequest request) {
         ArrayList<String> runtimeForeignTables = new ArrayList<String>();
-        return create_beans_multilevel_class_internal( tbl_wrk, rowsJson, foreignTablesJson, filteringForeignTables, level, maxRows, runtimeForeignTables, request );
+        return create_beans_multilevel_class_internal( tbl_wrk, rowsJson, foreignTablesJson, filteringForeignTables, level, maxRows, runtimeForeignTables, null, request );
     }
 
     /**
@@ -531,7 +531,6 @@ public class bean {
     }
 
     /**
-     *
      * used internally
      *
      * @param tbl_wrk
@@ -541,6 +540,7 @@ public class bean {
      * @param level
      * @param maxRows
      * @param runtimeForeignTables
+     * @param mode
      * @return
      */
     static public Object[] create_beans_multilevel_class_internal(
@@ -548,7 +548,7 @@ public class bean {
             JSONArray foreignTablesJson, String filteringForeignTables,
             int level, long maxRows,
             ArrayList<String> runtimeForeignTables,
-            HttpServletRequest request
+            String mode, HttpServletRequest request
     ) {
 
         Object[] beanResult = new Object[]{0, null, 0, null, null};
@@ -1000,7 +1000,7 @@ public class bean {
                                         //
                                         if(ftRowsJson == null || (ftRowsJson != null && ftRowsJson.length() >= 0)) {
                                             // TODO: verificare il bean vuoto
-                                            Object[] ftBeanResult = create_beans_multilevel_class_internal(ft_tbl_wrk, ftRowsJson, foreignTableForeignTablesJson, foreignTableForeignTables, level + 1, maxRows, runtimeForeignTables, request);
+                                            Object[] ftBeanResult = create_beans_multilevel_class_internal(ft_tbl_wrk, ftRowsJson, foreignTableForeignTablesJson, foreignTableForeignTables, level + 1, maxRows, runtimeForeignTables, null, request);
                                             if (ftBeanResult != null) {
                                                 int ftResult = (int) ftBeanResult[0];
                                                 ArrayList<Object> ftBeansContent = (ArrayList<Object>) ftBeanResult[1];
@@ -1105,7 +1105,7 @@ public class bean {
 
                         // Valorizza le proprietà corrispondenti ai campi
                         // @return Object [] { bResult, primaryKey, error, primaryKeyValue }
-                        Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, request);
+                        Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, mode, request);
                         if (resSet != null) {
                             if (!(boolean) resSet[0]) {
                                 errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[2]) + "]";
@@ -1346,13 +1346,13 @@ public class bean {
     }
 
     /**
-     *
      * @param obj
      * @param tbl_wrk
      * @param row
+     * @param mode
      * @return Object [] { bResult, primaryKey, error, primaryKeyValue }
      */
-    static public Object[] set_bean_by_json_row_data(Object obj, workspace tbl_wrk, JSONObject row, HttpServletRequest request) {
+    static public Object[] set_bean_by_json_row_data(Object obj, workspace tbl_wrk, JSONObject row, String mode, HttpServletRequest request) {
         boolean bResult = false;
         String primaryKeyField = null;
         Object primaryKeyValue = null;
@@ -1483,14 +1483,40 @@ public class bean {
                                     Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
                                     bResult = false;
                                 }
-
                                 if(field != null && field.equalsIgnoreCase(primaryKeyField)) {
                                     primaryKeyValue = oValue;
                                 }
                             }
                         }
+                        // Primary key from modifications
+                        if (row.has("rowId")) {
+                            Object oKey = row.get("rowId");
+                            if(oKey != null) {
+                                if(tbl_wrk.tableJson.has("primaryKey")) {
+                                    String primaryKeyColumn = tbl_wrk.tableJson.getString("primaryKey");
+                                    for (int ic = 0; ic < cols.length(); ic++) {
+                                        JSONObject col = cols.getJSONObject(ic);
+                                        String colName = col.has("runtimeName") ? col.getString("runtimeName") : col.getString("name");
+                                        if(primaryKeyColumn.equalsIgnoreCase(colName)) {
+                                            try {
+                                                utility.set(obj, colName, oKey);
+                                            } catch (Throwable th) {
+                                                error = "[ ERROR setting " + colName + " : " + th.getLocalizedMessage() + "]";
+                                                Logger.getLogger(db.class.getName()).log(Level.SEVERE, "ERROR : set_bean_by_json_resultset() : propery " + colName + " not found", th);
+                                                bResult = false;
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         // Set all changed marker to false
-                        resetAllChanged(obj);
+                        if("setFieldsChanged".equalsIgnoreCase(mode)) {
+                            // leave changed flag setted
+                        } else {
+                            resetAllChanged(obj);
+                        }
                     }
                 } catch (Exception ex) {
                     Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
@@ -1542,7 +1568,7 @@ public class bean {
                 Object[] result = create_beans_multilevel_class_internal( tbl_wrk, (JSONArray)null, (JSONArray)null, null,
                         1, 1,
                         null,
-                        request
+                        null, request
                 );
                 if(result != null) {
                     int iResult = (int) result[0];
@@ -1574,16 +1600,15 @@ public class bean {
             JSONArray rowsData = new JSONArray();
             if(rowData.has("params")) {
                 JSONObject rowDataMod = event.getJSONObject(rowData.toString(), "formX");
-                if(rowDataMod != null) {
+                if(rowDataMod != null && !rowDataMod.isEmpty()) {
                     // Da modification a rowData .. a carico della ricevente
                     rowsData.put(rowDataMod);
-                } else {
-                    rowDataMod = event.getJSONObject(rowData.toString(), "modifications");
-                    if(rowDataMod != null) {
-                        // Da modification a rowData .. a carico della ricevente
-                        if(rowDataMod.has("fields")) {
-                            rowsData.put(rowDataMod);
-                        }
+                }
+                rowDataMod = event.getJSONObject(rowData.toString(), "modifications");
+                if(rowDataMod != null && !rowDataMod.isEmpty()) {
+                    // Da modification a rowData .. a carico della ricevente
+                    if(rowDataMod.has("fields")) {
+                        rowsData.put(rowDataMod);
                     }
                 }
             } else {
@@ -1595,7 +1620,7 @@ public class bean {
             Object[] result = create_beans_multilevel_class_internal( tblWrk, (JSONArray)rowsData, (JSONArray)foreignTablesJson, filteringForeignTables,
                     -1, 0,
                     runtimeForeignTables,
-                    request
+                    "setFieldsChanged", request
             );
             if(result != null) {
                 int iResult = (int) result[0];
@@ -3316,7 +3341,7 @@ public class bean {
                                                             tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
 
                                                             // @return Object [] { bResult, primaryKey, error, primaryKeyValue }
-                                                            Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, request);
+                                                            Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, null, request);
                                                             if (resSet != null) {
                                                                 if (!(boolean) resSet[0]) {
                                                                     errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[1]) + "]";
