@@ -919,7 +919,8 @@ public class utility {
      * @throws Exception
      */
     static public String getString(Object bean, String property) throws Exception {
-        return String.valueOf(get(bean, property));
+        Object oValue = get(bean, property);
+        return oValue != null ? String.valueOf(oValue) : null;
     }
 
     /**
@@ -935,7 +936,9 @@ public class utility {
     static public Integer getInt(Object bean, String property) throws Exception {
         Object val = get(bean, property);
         if(val instanceof Integer) {
-            return (Integer)val;
+            return (Integer) val;
+        } else if(val == null) {
+            return (Integer) null;
         } else {
             return Integer.parseInt(String.valueOf(val));
         }
@@ -945,6 +948,8 @@ public class utility {
         Object val = get(bean, property);
         if(val instanceof Long) {
             return (Long)val;
+        } else if(val == null) {
+            return (Long) null;
         } else {
             return Long.parseLong(String.valueOf(val));
         }
@@ -963,6 +968,8 @@ public class utility {
         Object val = get(bean, property);
         if(val instanceof Float) {
             return (Float)val;
+        } else if(val == null) {
+            return (Float) null;
         } else {
             return Float.parseFloat(String.valueOf(val));
         }
@@ -982,6 +989,8 @@ public class utility {
             return new BigDecimal((Float)val);
         } else if(val instanceof Double) {
             return new BigDecimal((Double) val);
+        } else if(val == null) {
+            return (BigDecimal) null;
         } else {
             return new BigDecimal(String.valueOf(val));
         }
@@ -992,6 +1001,8 @@ public class utility {
         Object val = get(bean, property);
         if(val instanceof Float) {
             return (Boolean)val;
+        } else if(val == null) {
+            return (Boolean) null;
         } else {
             return Boolean.parseBoolean((String.valueOf(val)));
         }
@@ -1001,6 +1012,8 @@ public class utility {
         Object val = get(bean, property);
         if(val instanceof java.util.Date) {
             return (java.util.Date) val;
+        } else if(val == null) {
+            return (java.util.Date) null;
         } else if(val instanceof String) {
             return DateUtil.getDate(val);
         } else {
@@ -1013,6 +1026,8 @@ public class utility {
             return (java.util.Date) val;
         } else if(val instanceof String) {
             return DateUtil.getDateTime(val);
+        } else if(val == null) {
+            return (java.util.Date) null;
         } else {
             throw new ClassCastException("Invalid class");
         }
@@ -1025,6 +1040,8 @@ public class utility {
             return new java.sql.Timestamp(((java.util.Date) val).getTime());
         } else if(val instanceof String) {
             return DateUtil.getTimestamp(val);
+        } else if(val == null) {
+            return (java.sql.Timestamp) null;
         } else {
             throw new ClassCastException("Invalid class");
         }
