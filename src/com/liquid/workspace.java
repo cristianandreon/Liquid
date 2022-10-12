@@ -498,7 +498,7 @@ public class workspace {
         if(glTblWorkspaces == null) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
             glTblWorkspaces = new ArrayList<workspace>();
-            throw new Exception("Application server fault");
+            throw new Exception("Application server fault! (global data corrupted) ... Please reload it");
         }
 
         for (int i = 0; i < glTblWorkspaces.size(); i++) {
@@ -1462,7 +1462,11 @@ public class workspace {
                         } else {
                             String err = "database:" + database + " schema:" + schema + " table " + table + " not exist";
                             System.out.println(err);
-                            return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
+                            if("json".equalsIgnoreCase(returnType)) {
+                                return "{\"error\":\"" + err + "\"}";
+                            }
+                            // get_js_console_error_report(err);
+                            throw new Exception(err);
                         }
                     }
                 }
