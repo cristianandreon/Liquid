@@ -393,9 +393,9 @@ class LiquidCtrl {
             // No table defined ? Runtime mode (no db) ?
             if(!isDef(this.tableJson.query) && !isDef(this.tableJson.sourceData)) {
                 if(typeof this.tableJson.table === 'undefined' || !this.tableJson.table) {
-                    if (controlId == 'liquidSelectTableColumns' && controlId == 'liquidSelectTables'
-                        && controlId == 'liquidSelectSchemas' && controlId == 'liquidSelectDatabases'
-                        && controlId == 'liquidSelectForeignKeys' && controlId == 'liquidSelectForeignTablesAndLookups') {
+                    if (controlId == 'liquidSelectTableColumns' || controlId == 'liquidSelectTables'
+                        || controlId == 'liquidSelectSchemas' || controlId == 'liquidSelectDatabases'
+                        || controlId == 'liquidSelectForeignKeys' || controlId == 'liquidSelectForeignTablesAndLookups') {
                         // System control ... OK
                     } else {
                         if (isFormX || isDialogX) {
