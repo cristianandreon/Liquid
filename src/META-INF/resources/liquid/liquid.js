@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.52
+// Liquid ver.2.53
 //
-//  First update 06-01-2020 - Last update 02-09-2022
+//  First update 06-01-2020 - Last update 12-10-2022
 //
 //  TODO : see trello.com
 //
@@ -390,17 +390,21 @@ class LiquidCtrl {
                     if(tableJsonString.charAt(0) != "{")
                         this.tableJsonVariableName = Liquid.getGlobalVarByContent(tableJsonString);
 
-            // Runtime mode (no db) ?
+            // No table defined ? Runtime mode (no db) ?
             if(!isDef(this.tableJson.query) && !isDef(this.tableJson.sourceData)) {
                 if(typeof this.tableJson.table === 'undefined' || !this.tableJson.table) {
-                    if(isFormX || isDialogX) { // Runtime mode allowed
-                        for (let ic = 0; ic < this.tableJson.columns.length; ic++) {
-                            if(typeof this.tableJson.columns[ic].field === 'undefined')
-                                this.tableJson.columns[ic].field = String(ic + 1);
-                        }
-                        this.tableJson.columnsResolved = true;
-                    } else { // Runtime mode not allowed
-                        if(controlId !== 'liquidSelectTables' && controlId !== 'liquidSelectSchemas' && controlId !== 'liquidSelectDatabases') {
+                    if (controlId !== 'liquidSelectTables' && controlId !== 'liquidSelectSchemas' && controlId !== 'liquidSelectDatabases') {
+                        // System control ... OK
+                    } else {
+                        if (isFormX || isDialogX) {
+                            // Runtime mode allowed
+                            for (let ic = 0; ic < this.tableJson.columns.length; ic++) {
+                                if (typeof this.tableJson.columns[ic].field === 'undefined')
+                                    this.tableJson.columns[ic].field = String(ic + 1);
+                            }
+                            this.tableJson.columnsResolved = true;
+                        } else {
+                            // Runtime mode not allowed
                             console.error("ERROR: table not defined on controlId:" + controlId);
                         }
                     }
