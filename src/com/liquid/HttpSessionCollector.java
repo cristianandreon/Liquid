@@ -34,7 +34,7 @@ public class HttpSessionCollector implements HttpSessionListener {
 
     public static HttpSession find(String sessionId) {
         if(sessions == null || (sessions != null && sessions.isEmpty())) {
-            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "[LIQUID] : no HttpSession collected ... may listner is not active");
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "[LIQUID] : no HttpSession collected ... httpSession listner is not active");
             return null;
         } else {
             return sessions.get(sessionId);
