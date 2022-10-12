@@ -3361,7 +3361,14 @@ public class event {
                 for (int ip = 0; ip < paramsJSON.length(); ip++) {
                     JSONObject paramJSON = paramsJSON.getJSONObject(ip);
                     if (paramJSON.has(paramName)) {
-                        return paramJSON.getJSONArray(paramName);
+                        Object oParamName = paramJSON.get(paramName);
+                        if(oParamName instanceof JSONArray) {
+                            return (JSONArray)oParamName;
+                        } else if(oParamName instanceof JSONObject) {
+                            JSONArray jarr = new JSONArray();
+                            jarr.put(oParamName);
+                            return jarr;
+                        }
                     }
                 }
             } catch (JSONException ex) {
@@ -3462,24 +3469,29 @@ public class event {
                     if (paramJSON.has(paramName)) {
                         if (!paramJSON.has("name")) {
                             Object value = paramJSON.get(paramName);
-                            if (value instanceof JSONObject) {
-                                return paramJSON.getJSONObject(paramName);
-                            } else if (value instanceof JSONArray) {
-                                JSONArray values = (JSONArray)value;
-                                for(int iv=0; iv<values.length(); iv++) {
-                                    JSONObject pv = values.getJSONObject(0);
-                                    if(controlId.equalsIgnoreCase(pv.getString("fieldName"))) {
-                                        Object val = values.getJSONObject(0).get("fieldValue");
-                                        JSONObject result = new JSONObject().put(pv.getString("fieldName"), val);
-                                        // For back compatibility
-                                        result.put("data", String.valueOf(val));
-                                        return result;
-                                    }
+                            if(controlId.equals(String.valueOf(value))) {
+                                if (paramJSON.has("data")) {
+                                    value = paramJSON.get("data");
                                 }
-                            } else {
-                                JSONObject result = new JSONObject();
-                                result.put(paramName, value);
-                                return result;
+                                if (value instanceof JSONObject) {
+                                    return paramJSON.getJSONObject(paramName);
+                                } else if (value instanceof JSONArray) {
+                                    JSONArray values = (JSONArray) value;
+                                    for (int iv = 0; iv < values.length(); iv++) {
+                                        JSONObject pv = values.getJSONObject(0);
+                                        if (controlId.equalsIgnoreCase(pv.getString("fieldName"))) {
+                                            Object val = values.getJSONObject(0).get("fieldValue");
+                                            JSONObject result = new JSONObject().put(pv.getString("fieldName"), val);
+                                            // For back compatibility
+                                            result.put("data", String.valueOf(val));
+                                            return result;
+                                        }
+                                    }
+                                } else {
+                                    JSONObject result = new JSONObject();
+                                    result.put(paramName, value);
+                                    return result;
+                                }
                             }
                         }
                     }
