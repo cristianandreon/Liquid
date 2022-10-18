@@ -130,7 +130,7 @@ class LiquidCtrl {
             this.outDivObj = document.getElementById(this.outDivId);
             if(!this.outDivObj) {
                 let bCreateNode = false;
-                if(Liquid.isDialogX(this) || Liquid.isFormX(this)) {
+                if(Liquid.isDialogX(this) || Liquid.isFormX(this) || Liquid.isWinX(this)) {
                     bCreateNode = true;
                 } else if(Liquid.debug) {
                     console.error("ERROR: creating control " + outDivObjOrId + ": html node not found ... control is automatically added to the DOM only in DEBUG mode");

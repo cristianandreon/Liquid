@@ -2277,6 +2277,13 @@ public class utility {
         }
         return parametersString;
     }
+    public static  Map<String, String> hash_map_object_to_string(Map<String, Object> params) {
+        Map<String, String> parametersString = new HashMap<String, String>();
+        for (String k : params.keySet() ) {
+            parametersString.put(k, String.valueOf(params.get(k)));
+        }
+        return parametersString;
+    }
 
     public static String[] arrayToArray(Object[] objectArr, Class<String> stringClass) throws OperationNotSupportedException {
         String [] strArr = new String[objectArr.length];

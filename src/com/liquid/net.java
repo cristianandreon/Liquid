@@ -20,9 +20,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.HttpsURLConnection;
@@ -221,6 +219,14 @@ public class net {
                     }
                 } else if (headers instanceof ArrayList) {
                     params = (ArrayList<Object>) headers;
+                } else if (headers instanceof HashMap) {
+                    HashMap hmparams = (HashMap) headers;
+                    Iterator it = hmparams.entrySet().iterator();
+                    Map.Entry pair = null;
+                    while (it.hasNext()) {
+                        pair = (Map.Entry) it.next();
+                        params.add(pair.getKey()+":"+(String) pair.getValue());
+                    }
                 }
 
                 for (int ip = 0; ip < params.size(); ip++) {
