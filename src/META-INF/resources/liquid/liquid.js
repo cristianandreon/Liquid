@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.53
+// Liquid ver.2.54
 //
-//  First update 06-01-2020 - Last update 12-10-2022
+//  First update 06-01-2020 - Last update 20-10-2022
 //
 //  TODO : see trello.com
 //
@@ -2257,7 +2257,8 @@ class LiquidCtrl {
                                 // no data to load ? no load data from recordset ... but fire onLoadedData
                                 Liquid.onEvent(this, "onLoadData", null, null);
                             } else {
-                                Liquid.loadData(this, null, "start");
+                                // Liquid.loadData(this, null, "start");
+                                Liquid.onExecuteFilter(this, true);
                                 hasLoadedData = true;
                             }
                         } else if(Liquid.cleanData) { this.gridOptions.api.setRowData(null); this.gridOptions.api.clearFocusedCell(); this.lastSelectedId = null; }
