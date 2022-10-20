@@ -2186,7 +2186,7 @@ public class utility {
                                 row += "null";
                             } else {
                                 if (obj instanceof String) {
-                                    row += "\"" + String.valueOf(obj) + "\"";
+                                    row += "\"" + String.valueOf(obj).replace("\"", "\\\"") + "\"";
                                 } else if (obj instanceof Integer || obj instanceof Long || obj instanceof BigDecimal || obj instanceof Float || obj instanceof Double) {
                                     row += "" + String.valueOf(obj) + "";
                                 } else if (obj instanceof Boolean) {

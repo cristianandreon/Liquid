@@ -159,6 +159,9 @@ public class liquid {
                     }
                 }
             }
+            if(filters.size() > 0) {
+                scriptToExec += "Liquid.onExecuteFilter('" + controlId + "',true);";
+            }
         }
         // Proprieta' del controllo
         if (userProps != null) {

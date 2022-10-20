@@ -2252,7 +2252,7 @@ class LiquidCtrl {
                             this.autoInsertIfMissing = true;
                         }
 
-                        if(this.tableJson.autoLoad !== false || isRebuilding === true) {
+                        if(this.tableJson.autoLoad === true || isRebuilding === true) {
                             if(isFormX) {
                                 // no data to load ? no load data from recordset ... but fire onLoadedData
                                 Liquid.onEvent(this, "onLoadData", null, null);
@@ -7086,15 +7086,26 @@ var Liquid = {
                             delete liquid.needReload;
                             forceReload = true;
                         }
+                        if (isDef(bReloadAlways) && bReloadAlways === true) {
+                            forceReload = true;
+                        }
                         if (forceReload) {
                             Liquid.loadData(liquid, null, "executeFilter");
                         }
                         for (var i = 0; i < filtersJson.columns.length; i++) {
                             var col = Liquid.getColumn(liquid, filtersJson.columns[i].name);
                             if (col) {
-                                var filterComponent = liquid.gridOptions.api.getFilterInstance(col.field);
-                                filterComponent.eValue1.value = filtersJson.columns[i].value && filtersJson.columns[i].value.toLowerCase() === "null" ? "" : filtersJson.columns[i].value;
-                                filterComponent.onBtApply();
+                                if(isDef(filtersJson.columns[i].server) && filtersJson.columns[i].server === true) {
+                                    // Ignore this filter
+                                } else {
+                                    var filterComponent = liquid.gridOptions.api.getFilterInstance(col.field);
+                                    if(isDef(filtersJson.columns[i].value)) {
+                                        filterComponent.eValue1.value = filtersJson.columns[i].value;
+                                    } else {
+                                        filterComponent.eValue1.value = null;
+                                    }
+                                    filterComponent.onBtApply();
+                                }
                             } else {
                                 console.error("column \"" + (filtersJson.columns[i].name) + "\" not found in filter:" + (filtersJson.name ? filtersJson.name : filtersJson.label));
                             }
@@ -7104,7 +7115,7 @@ var Liquid = {
                         Liquid.loadData(liquid, null, "executeFilter");
                     }
                 } else {
-                    if (isDef(bReloadAlways)) {
+                    if (isDef(bReloadAlways) && bReloadAlways === true) {
                         Liquid.loadData(liquid, null, "executeFilter/reload");
                     }
                 }
@@ -9874,7 +9885,7 @@ var Liquid = {
             }
             Liquid.stopWaiting(liquid);
 
-            if (!isDef(command.response.error)) {
+            if (isDef(command.response) && !isDef(command.response.error)) {
                 retVal = Liquid.onCommandDone(liquidCommandParams);
             } else {
                 if (isDef(liquid.currentCommand)) {
