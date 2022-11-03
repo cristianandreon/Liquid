@@ -1771,35 +1771,35 @@ public class bean {
                                     prop = new Long(String.valueOf(prop));
                                 }
                             }
-                        }
 
-                        if (prop instanceof JSONObject) {
-                            // TODO : ricerca della classe dell'oggetto json ... oppure uso ObjectMapper objectMapper libreria jackson
-                            // throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
-                            //
+                            if (prop instanceof JSONObject) {
+                                // TODO : ricerca della classe dell'oggetto json ... oppure uso ObjectMapper objectMapper libreria jackson
+                                // throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
+                                //
 
-                        } else if (prop instanceof JSONArray) {
-                            // TODO : TEST
-                            JSONArray propsJson = (JSONArray) prop;
-                            ArrayList<Object> values = new ArrayList<Object>();
-                            for (int i = 0; i < propsJson.length(); i++) {
-                                values.add(propsJson.get(i));
+                            } else if (prop instanceof JSONArray) {
+                                // TODO : TEST
+                                JSONArray propsJson = (JSONArray) prop;
+                                ArrayList<Object> values = new ArrayList<Object>();
+                                for (int i = 0; i < propsJson.length(); i++) {
+                                    values.add(propsJson.get(i));
+                                }
+                                setBeanProp(templateClass, inst, beanProp, values, true, exceptMessage);
+
+                            } else if (prop instanceof String
+                                    || prop instanceof Date
+                                    || prop instanceof Timestamp
+                                    || prop instanceof Boolean
+                                    || prop instanceof Integer
+                                    || prop instanceof Long
+                                    || prop instanceof Float
+                                    || prop instanceof Double
+                                    || prop instanceof BigDecimal) {
+
+                                setBeanProp(templateClass, inst, beanProp, prop, bThrowExceptIfMissing, exceptMessage);
+                            } else {
+                                throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
                             }
-                            setBeanProp(templateClass, inst, beanProp, values, true, exceptMessage);
-
-                        } else if (prop instanceof String
-                                || prop instanceof Date
-                                || prop instanceof Timestamp
-                                || prop instanceof Boolean
-                                || prop instanceof Integer
-                                || prop instanceof Long
-                                || prop instanceof Float
-                                || prop instanceof Double
-                                || prop instanceof BigDecimal) {
-
-                            setBeanProp(templateClass, inst, beanProp, prop, bThrowExceptIfMissing, exceptMessage);
-                        } else {
-                            throw new Exception("LIQUID: new_bean() error: object type not supported : " + prop.getClass().getName());
                         }
                     }
                 }

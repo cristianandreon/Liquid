@@ -2162,8 +2162,8 @@ public class utility {
                     JSONArray names = ((JSONObject) rowJson).names();
                     for (int iname = 0; iname < names.length(); iname++) {
                         int field1B = 0;
-                        if (colMapped) {
-                            field1B = colMap.get(iname);
+                        if (colMapped && names.length() <= colMap.size()) {
+                             field1B = colMap.get(iname);
                         } else {
                             String colName = names.getString(iname);
                             JSONObject col = workspace.getColumnByName(tbl_wrk, colName);
@@ -2171,7 +2171,8 @@ public class utility {
                                 String sfield1B = col.getString("field");
                                 try {
                                     field1B = Integer.parseInt(sfield1B);
-                                    colMap.add(field1B);
+                                    if(!colMapped)
+                                        colMap.add(field1B);
                                 } catch (Exception e) {
                                     colMap.add(0);
                                 }
@@ -2182,19 +2183,7 @@ public class utility {
                         if (field1B > 0) {
                             Object obj = rowJson.get(names.getString(iname));
                             row += (colCounter > 0 ? "," : "") + "\"" + field1B + "\"" + ":";
-                            if (obj == null) {
-                                row += "null";
-                            } else {
-                                if (obj instanceof String) {
-                                    row += "\"" + String.valueOf(obj).replace("\"", "\\\"") + "\"";
-                                } else if (obj instanceof Integer || obj instanceof Long || obj instanceof BigDecimal || obj instanceof Float || obj instanceof Double) {
-                                    row += "" + String.valueOf(obj) + "";
-                                } else if (obj instanceof Boolean) {
-                                    row += "" + ((boolean) obj ? "true" : "false") + "";
-                                } else {
-                                    row += "\"" + String.valueOf(obj) + "\"";
-                                }
-                            }
+                            row += add_object_to_row(obj);
                             colCounter++;
                         }
                     }
@@ -2205,6 +2194,22 @@ public class utility {
             result += "]";
         }
         return result;
+    }
+
+    public static String add_object_to_row(Object obj) {
+        if (obj == null) {
+            return "null";
+        } else {
+            if (obj instanceof String) {
+                return "\"" + String.valueOf(obj).replace("\"", "\\\"") + "\"";
+            } else if (obj instanceof Integer || obj instanceof Long || obj instanceof BigDecimal || obj instanceof Float || obj instanceof Double) {
+                return "" + String.valueOf(obj) + "";
+            } else if (obj instanceof Boolean) {
+                return "" + ((boolean) obj ? "true" : "false") + "";
+            } else {
+                return "\"" + String.valueOf(obj) + "\"";
+            }
+        }
     }
 
     public static String append_to_folder(String folder, String file) {

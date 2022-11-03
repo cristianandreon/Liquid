@@ -7899,11 +7899,13 @@ public class db {
                         JSONObject filterCol = filterCols.getJSONObject(iF);
                         String filterName = filterCol.getString("name");
                         if(filterCol.has("value")) {
-                            String filterValue = filterCol.getString("value");
+                            String filterValue = String.valueOf(filterCol.get("value"));
                             if (filterValue != null && !filterValue.isEmpty() || addIfNull == true) {
                                 parametersString.put(filterName, (Object)filterValue);
                             }
-                        } else {
+                        }
+                        // Sovrascittura con il parametri che del client
+                        {
                             if(oRequest != null) {
                                 if(oRequest instanceof HttpServletRequest) {
                                     // dalla request
@@ -7923,7 +7925,7 @@ public class db {
                                             String name = filterJson.getString("name");
                                             if (name.equalsIgnoreCase(filterName)) {
                                                 if (filterJson.has("value")) {
-                                                    String value = filtersJson.getJSONObject(iFv).getString("value");
+                                                    String value = String.valueOf(filtersJson.getJSONObject(iFv).get("value"));
                                                     if (value != null && !value.isEmpty() || addIfNull == true) {
                                                         parametersString.put(filterName, value);
                                                     }

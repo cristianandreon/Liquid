@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.54
+// Liquid ver.2.56
 //
-//  First update 06-01-2020 - Last update 20-10-2022
+//  First update 06-01-2020 - Last update 03-11-2022
 //
 //  TODO : see trello.com
 //
@@ -813,7 +813,7 @@ class LiquidCtrl {
                         var liquid = Liquid.getLiquid(this.liquidLink.controlId);
                         Liquid.onSelectAll(this.liquidLink, event);
                     },
-                    isRowSelectable:async function(event) {
+                    isRowSelectable:function(event) {
                         var liquid = this ? this.liquidLink : Liquid.getLiquid(event.context.contextParams.seed.eGridDiv);
                         if(liquid) {
                             // return Liquid.onEvent(row.api.context.contextParams.seed.eGridDiv, "isRowSelectable", row, null, null, true).result;
@@ -829,7 +829,8 @@ class LiquidCtrl {
                                 isAddingNode: false,
                                 rowsContainer: null
                             };
-                            return await Liquid.onEvent(liquid, "isRowSelectable", eventData, null, null, true);
+                            let eventResult = Liquid.onEventSync(liquid, "isRowSelectable", eventData, null, null, true);
+                            return eventResult.result;
                         }
                         return true;
                     },
@@ -966,7 +967,7 @@ class LiquidCtrl {
                                         isAddingNode: false,
                                         rowsContainer: null
                                     };
-                                    var eventResult = /*await*/ Liquid.onEvent(liquid, "onRowRendering", eventData, null);
+                                    var eventResult = /*await*/ Liquid.onEventSync(liquid, "onRowRendering", eventData, null);
                                     if(typeof eventResult === 'object') {
                                         var rowStyle = eventResult.result;
                                         if(typeof rowStyle === 'object') {
@@ -5661,6 +5662,7 @@ var Liquid = {
                         field: (liquid.tableJson.columns[ic].field ? liquid.tableJson.columns[ic].field : liquid.tableJson.columns[ic].name.replace(/\./g, "_")),
                         type: typeColumn,
                         width: Number(liquid.tableJson.columns[ic].width && !isNaN(liquid.tableJson.columns[ic].width) ? liquid.tableJson.columns[ic].width : 0),
+                        showDisabledCheckboxes: true,
                         checkboxSelection: (ic === 0 && liquid.tableJson.checkboxSelection ? true : (function (row) {
                             var liquid = Liquid.getLiquid(row.api.context.contextParams.seed.eGridDiv);
                             var eventData = {
@@ -6304,7 +6306,7 @@ var Liquid = {
                                     // Espressione originale
                                     filterColumn.value = filterColumn.sourcevalue;
                                 }
-                                if (isDef(filterColumn.value)) {
+                                if (isDef(filterColumn.value) && typeof filterColumn.value === 'string') {
                                     if (filterColumn.value.indexOf("${") >= 0 || filterColumn.value.indexOf("@{") >= 0) {
                                         // solve variable filters
                                         var result = Liquid.solveExpressionField(filterColumn, "value", liquid);
@@ -6312,6 +6314,8 @@ var Liquid = {
                                             filterColumn.value = result[1] != null ? result[1] : "";
                                         }
                                     }
+                                    filterColumns.push(filterColumn);
+                                } else if (isDef(filterColumn.value) && typeof filterColumn.value === 'boolean') {
                                     filterColumns.push(filterColumn);
                                 }
                             }
@@ -7024,11 +7028,15 @@ var Liquid = {
                                                 if (element.nodeName === "SELECT") {
                                                     elementValue = element.options[element.selectedIndex].getAttribute("value");
                                                 } else {
-                                                    elementValue = element.value;
+                                                    if (element.type.toUpperCase() === "CHECKBOX") {
+                                                        elementValue = element.checked ? true : false;
+                                                    } else {
+                                                        elementValue = element.value;
+                                                    }
                                                 }
                                                 if (filtersJson.columns[i].value !== elementValue) {
                                                     filtersJson.columns[i].value = (elementValue === '' ? null : (elementValue === '""' ? "" : elementValue));
-                                                    if (filtersJson.columns[i].value) {
+                                                    if (typeof filtersJson.columns[i].value === 'string' && filtersJson.columns[i].value) {
                                                         var ic = 0;
                                                         while (filtersJson.columns[i].value.charAt(ic) === ' ')
                                                             ic++;
@@ -7912,6 +7920,7 @@ var Liquid = {
         td.className = "liquidFiltersLabel";
         if (liquid.filtersJson.length >= 1) {
             var div = document.createElement("div");
+            div.style.fontSize = "12px;";
             div.style.textAlign = "right";
             div.style.paddingRight = "45px";
             div.innerHTML = Liquid.filterBoxTitle;
@@ -13260,7 +13269,7 @@ var Liquid = {
     createFilterObject: function (liquid, parentNode, filterGroupIndex, filterObj) {
         if (filterObj) {
             var filtersDefinition = (liquid.filtersJson ? (liquid.filtersJson.length > filterGroupIndex ? liquid.filtersJson[filterGroupIndex] : null) : null);
-            var inputType = (filterObj.type ? filterObj.type : "text");
+            var inputType = (filterObj.type ? filterObj.type.toLowerCase() : "text");
             var inputMax = (filterObj.max ? "max=\"" + filterObj.max + "\"" : "");
             var inputMin = (filterObj.min ? "max=\"" + filterObj.min + "\"" : "");
             var inputStep = (filterObj.step ? "step=\"" + filterObj.step + "\"" : "");
@@ -13273,12 +13282,20 @@ var Liquid = {
             var inputPlaceholder = (filterObj.placeholder ? "placeholder=\"" + filterObj.placeholder + "\"" : "");
             var inputRequired = (filterObj.required ? "required=\"" + filterObj.required + "\"" : "");
             var inputAutocomplete = (filterObj.autocomplete ? "autocomplete=\"" + filterObj.autocomplete + "\"" : "");
-
+            var inputValue = (typeof filterObj.value !== 'undefined' ? String(filterObj.value) : "");
+            var inputValueLC = typeof inputValue == 'string' ? inputValue.toLowerCase() : "";
+            var inputReadonly = (filterObj.readonly ? " readonly=\"readonly\" " : "");
+            var inputDisabled = (filterObj.disabled ? " disabled=\"disabled\" " : "");
+            var inputChecked = (inputType.toLowerCase() == 'checkbox' && (inputValueLC == 'true' || inputValueLC == '1' || inputValueLC == 'on') ? " checked " : "");
+            var inputStyleFloat = (filterObj.type === 'checkbox' ? "width:20px;" : "");
+            var addDistinct = (filterObj.type === 'checkbox' ? false : true);
+            var addReset = (filterObj.readonly || filterObj.disabled ? false : (inputType != 'checkbox' ? true : false));
             var innerHTML = "";
 
             // var filterId = liquid.controlId + ".filters." +filterGroupIndex+"."+ filterObj.runtimeName + ".filter";
             var onkeyupCode = "";
             var onChangeCode = " onchange=\"";
+
             onChangeCode += "this.setAttribute('rel',this.value);";
 
             if (liquid.tableJson.filterMode == 'client' || liquid.tableJson.filterMode == "dynamic") {
@@ -13290,7 +13307,7 @@ var Liquid = {
             var baseId = liquid.controlId + ".filters." + filterGroupIndex + "." + (filterObj.runtimeName ? filterObj.runtimeName : filterObj.name);
 
             if (isDef(parentNode)) {
-                innerHTML = "<table style=\"width:100%; table-layout:fixed\"><tr>"
+                innerHTML = "<table style=\"width:100%; table-layout:fixed;\"><tr>"
                     + "<td class=\"liquidFilterLabel\" id=\"" + (baseId + ".label") + "\">" + Liquid.getFilterLabel(liquid, filterObj) + "</td>"
                     + "<td class=\"liquidFilterInputTd\" id=\"" + (baseId + ".td") + "\">";
             }
@@ -13347,28 +13364,36 @@ var Liquid = {
                     }
 
                     var tooltip = Liquid.lang === 'eng' ? "Reset filter field" : "Reimposta il filtro";
-                    innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
-                        + " value=\"\""
+                    innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " "
+                        + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " "
+                        + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
+                        + " value=\""+inputValue+"\""
                         + " id=\"" + filterObj.linkedContainerId + "\""
                         + " type=\"" + inputType + "\""
                         + " class=\"liquidFilterInput\""
                         + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                         + " data-rel=\"\""
+                        + " style='"+inputStyleFloat+"'"
                         + onkeyupCode + onChangeCode
                         + onMouseDownCode
                         + onBlurCode
+                        + inputReadonly
+                        + inputDisabled
+                        + inputChecked
                         + "/>"
                         + "<div style=\"display:inline-block; margin-left:-22px;\">"
-                        + "<img src=\"" + Liquid.getImagePath("delete.png") + "\" "
-                        + "id=\"" + baseId + ".filter.reset\""
-                        + "class=\"liquidFilterBt\" "
-                        + "title=\"" + tooltip + "\" "
-                        + "onClick=\"Liquid.onResetFilter('" + filterObj.linkedContainerId + "')\" "
-                        + "style=\"top:4px; right:7px; position:relative; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\">"
+                        + (addReset ?
+                                ("<img src=\"" + Liquid.getImagePath("delete.png") + "\" "
+                                + "id=\"" + baseId + ".filter.reset\""
+                                + "class=\"liquidFilterBt\" "
+                                + "title=\"" + tooltip + "\" "
+                                + "onClick=\"Liquid.onResetFilter('" + filterObj.linkedContainerId + "')\" "
+                                + "style=\"top:4px; right:7px; position:relative; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\">"
+                                ) : "" )
                         + "</div>"
                         + "</td>"
                         + "<td class=\"liquidFilterImg\">"
-                        + (liquid.tableJson.filtersSearch !== false ? searchCode : "")
+                        + ( addDistinct ? (liquid.tableJson.filtersSearch !== false ? searchCode : "") : "" )
                         + "</td>"
                         + "</tr>";
 
@@ -18338,23 +18363,25 @@ var Liquid = {
                     shortColumnName = nameItems[1];
                 }
                 var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-                var col = Liquid.getColumn(liquid, shortColumnName)
-                var values = [];
-                for (var i = 0; i < nodes.length; i++) {
-                    var val = nodes[i].data[col.field];
-                    if (val) {
-                        if (!values.contains(val)) {
-                            values.push(val);
+                var col = Liquid.getColumn(liquid, shortColumnName);
+                if(isDef(col)) {
+                    var values = [];
+                    for (var i = 0; i < nodes.length; i++) {
+                        var val = nodes[i].data[col.field];
+                        if (val) {
+                            if (!values.contains(val)) {
+                                values.push(val);
+                            }
                         }
                     }
-                }
-                if (values) {
-                    if (datalist.childNodes.length < values.length) {
-                        datalist.innerHTML = '';
-                        for (let i = 0; i < values.length; i++) {
-                            var opt = document.createElement('option');
-                            opt.text = values[i];
-                            datalist.appendChild(opt);
+                    if (values) {
+                        if (datalist.childNodes.length < values.length) {
+                            datalist.innerHTML = '';
+                            for (let i = 0; i < values.length; i++) {
+                                var opt = document.createElement('option');
+                                opt.text = values[i];
+                                datalist.appendChild(opt);
+                            }
                         }
                     }
                 }
