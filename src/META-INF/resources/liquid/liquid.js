@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.56
+// Liquid ver.2.57
 //
-//  First update 06-01-2020 - Last update 03-11-2022
+//  First update 06-01-2020 - Last update 04-11-2022
 //
 //  TODO : see trello.com
 //
@@ -9836,7 +9836,13 @@ var Liquid = {
                         command.response = liquidCommandParams.response = httpResultJson;
                         if (httpResultJson) {
                             if (httpResultJson.client) {
-                                Liquid.executeClientSide(liquid, "command response:" + command.name, httpResultJson.client, liquidCommandParams, command.isNative);
+                                let clientCode = null;
+                                try {
+                                    clientCode = atob(httpResultJson.client);
+                                } catch(e) {
+                                    clientCode = httpResultJson.client;
+                                }
+                                Liquid.executeClientSide(liquid, "command response:" + command.name, clientCode, liquidCommandParams, command.isNative);
                             }
                             Liquid.processXHRMessagesFromServer(liquid, httpResultJson, command, true, false, false, false);
 
@@ -10808,7 +10814,7 @@ var Liquid = {
                                 } else if (typeof clients[i] === "string" && clients[i]) {
                                     var clientCode = null;
                                     try {
-                                        clientCode = clients[i].endsWith("==") ? atob(clients[i]) : clients[i];
+                                        clientCode = atob(clients[i]);
                                     } catch (e) {
                                         clientCode = clients[i];
                                     }
@@ -13318,10 +13324,28 @@ var Liquid = {
                 for (var i = 0; i < values.length; i++) {
                     var valueObj = values[i];
                     if (valueObj) {
-                        var selected = "";
-                        if (valueObj.value === filterObj.value || (valueObj.selected === true))
-                            selected = "selected";
-                        innerHTML += "<option " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " value=\"" + (isDef(valueObj.value) ? valueObj.value : valueObj.label) + "\" " + selected + ">" + (valueObj.label ? valueObj.label : valueObj.value) + "</option>";
+                        var label = null, value = null, selected = "";
+                        if(typeof valueObj === 'object') {
+                            label = valueObj.label;
+                            value = valueObj.value;
+                            if(valueObj.selected === true) selected = "selected";
+                        } else if(typeof valueObj === 'string') {
+                            let vals = valueObj.split("=");
+                            if(vals.length >= 2) {
+                                value = vals[0];
+                                label = vals[1];
+                            } else {
+                                value = valueObj;
+                                label = valueObj;
+                            }
+                        } else {
+                            value = "";
+                            label = "";
+                        }
+                        if (value === filterObj.value) selected = "selected";
+                        innerHTML += "<option " + inputAutofocus + " " + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " value=\""
+                            + (isDef(value) ? value : label) + "\" " + selected + ">"
+                            + (label ? label : value) + "</option>";
                     }
                 }
                 innerHTML += "</select>" + "</td>"
