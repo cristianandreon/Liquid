@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.57
+// Liquid ver.2.58
 //
-//  First update 06-01-2020 - Last update 04-11-2022
+//  First update 06-01-2020 - Last update 10-11-2022
 //
 //  TODO : see trello.com
 //
@@ -12525,12 +12525,26 @@ var Liquid = {
         }
         return 0;
     },
-    getPrecomputedHeight: function (obj) {
+    getPrecomputedHeight: function (obj, defautHeight) {
         if (obj) {
             if (obj.offsetHeight > 0) return obj.offsetHeight;
-            if (obj.scrollHeight > 0) return obj.scrollHeight + 1;
-            if (getComputedStyle(obj, null).display === 'none') return 0;
-            return getComputedStyle(obj).height.replace(/[^0-9]/g, '');
+            if (obj.scrollHeight > 0) return obj.scrollHeight;
+            let cs = getComputedStyle(obj, null);
+            if (cs.display === 'none') return 0;
+            if (cs.visibility === 'hidden') return 0;
+            var ht = getComputedStyle(obj).height.replace(/[^0-9]/g, '');
+            try {
+                ht = Number(ht);
+                if(ht > 0) {
+                    return ht;
+                } else {
+                    if(typeof defautHeight !== 'undefined') {
+                        return Number(defautHeight)
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+            }
         }
         return 0;
     },
@@ -12771,7 +12785,7 @@ var Liquid = {
 
                 liquid.commandsObjHeight = Liquid.getPrecomputedHeight(liquid.commandsObj);
                 liquid.filtersObjHeight = Liquid.getPrecomputedHeight(liquid.filtersObj);
-                liquid.gridTabsObjHeight = Liquid.getPrecomputedHeight(liquid.gridTabsObj);
+                liquid.gridTabsObjHeight = Liquid.getPrecomputedHeight(liquid.gridTabsObj, 31);
                 liquid.navObjHeight = Liquid.getPrecomputedHeight(liquid.navObj);
                 liquid.actionsObjHeight = Liquid.getPrecomputedHeight(liquid.actionsObj);
 
