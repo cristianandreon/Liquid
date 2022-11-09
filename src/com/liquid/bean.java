@@ -2508,7 +2508,7 @@ public class bean {
         //
         workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, controlId);
         if (tbl_wrk == null) {
-            throw new Exception("load_beans() : Control '"+controlId+"' not found");
+            throw new Exception("load_beans() : Control '"+databaseSchemaTable+"' not found");
         }
 
 
