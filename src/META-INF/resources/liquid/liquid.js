@@ -2026,10 +2026,10 @@ class LiquidCtrl {
                             + "<div class=\"liquidNavPages\">";
                         if(this.pageSize>0) {
                             navHTML
-                                +="<a disabled style=\"font-size:13px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".first\" title=\""+Liquid.paginationTitleFirst+"\" onclick=\"Liquid.onBtFirst(this)\"> &#x21f1; </a>"
-                                + "<a disabled style=\"font-size:20px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".prev\" title=\""+Liquid.paginationTitlePrevious+"\" onclick=\"Liquid.onBtPrevious(this)\"> &#x2191 </a>"
-                                + "<a disabled style=\"font-size:20px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".next\" title=\""+Liquid.paginationTitleNext+"\" onclick=\"Liquid.onBtNext(this)\"> &#x2193; </a>"
-                                + "<a disabled style=\"font-size:13px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".last\" title=\""+Liquid.paginationTitleLast+"\" onclick=\"Liquid.onBtLast(this)\"> &#x21f2; </a>";
+                                +="<a disabled style=\"font-size:15px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".first\" title=\""+Liquid.paginationTitleFirst+"\" onclick=\"Liquid.onBtFirst(this)\"> &#x21f1; </a>"
+                                + "<a disabled style=\"font-size:15px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".prev\" title=\""+Liquid.paginationTitlePrevious+"\" onclick=\"Liquid.onBtPrevious(this)\"> &#x2191 </a>"
+                                + "<a disabled style=\"font-size:15px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".next\" title=\""+Liquid.paginationTitleNext+"\" onclick=\"Liquid.onBtNext(this)\"> &#x2193; </a>"
+                                + "<a disabled style=\"font-size:15px; color:darkGray; cursor:not-allowed;\" class=\"liquidNavPage\" href=\"javascript:void(0)\" id=\"" + controlId + ".last\" title=\""+Liquid.paginationTitleLast+"\" onclick=\"Liquid.onBtLast(this)\"> &#x21f2; </a>";
                         }
                         navHTML += "</div>"
                             + "</td></tr></table>";

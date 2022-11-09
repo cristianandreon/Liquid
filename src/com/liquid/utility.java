@@ -199,7 +199,7 @@ public class utility {
      * create lisy of key for DMS from [database][schema][table][dms folder name][list of is in ids]
      *
      * @param tblWrk
-     * @param params
+     * @param oParams
      * @return
      */
     static public ArrayList<String> get_dms_keys(workspace tblWrk, Object oParams) {
@@ -2150,6 +2150,7 @@ public class utility {
 
     public static String jsonToRowset(workspace tbl_wrk, JSONArray rowsetJson) throws JSONException {
         String result = null;
+        boolean mapEveryRow = true; // Json not sorted
         if (rowsetJson != null) {
             ArrayList<Integer> colMap = new ArrayList<Integer>();
             boolean colMapped = false;
@@ -2187,7 +2188,8 @@ public class utility {
                             colCounter++;
                         }
                     }
-                    colMapped = true;
+                    if(!mapEveryRow)
+                        colMapped = true;
                 }
                 result += (ir > 0 ? "," : "") + "{" + row + "}";
             }
@@ -2203,7 +2205,7 @@ public class utility {
             if (obj instanceof String) {
                 return "\"" + String.valueOf(obj).replace("\"", "\\\"") + "\"";
             } else if (obj instanceof Integer || obj instanceof Long || obj instanceof BigDecimal || obj instanceof Float || obj instanceof Double) {
-                return "" + String.valueOf(obj) + "";
+                return "\"" + String.valueOf(obj) + "\"";
             } else if (obj instanceof Boolean) {
                 return "" + ((boolean) obj ? "true" : "false") + "";
             } else {
