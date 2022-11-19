@@ -3483,4 +3483,15 @@ public class utility {
         buffer.flush();
         return buffer.toByteArray();
     }
+
+
+    /**
+     * Ritorna il body della request
+     * @param request
+     * @return
+     */
+    public static String get_request_content( HttpServletRequest request) {
+        return workspace.get_request_content(request);
+    }
+
 }

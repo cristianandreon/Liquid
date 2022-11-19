@@ -556,7 +556,15 @@ public class connection {
             if(res[0] != null) {
                 jdbcSource.cp = new connectionPool((String) res[0], user, password);
             } else {
-                throw new Exception("[LIQUID] Datasource failed : check connection data and missing libraries");
+                throw new Exception("[LIQUID] Datasource failed : check connection data and missing libraries"
+                        +"\ndriver:"+driver
+                        +"\nhost:"+host
+                        +"\nport:"+port
+                        +"\ndatabase:"+database
+                        +"\nuser:"+user
+                        +"\nservice:"+service
+                        +"\nerror:"+res[1]
+                );
             }
         }
         jdbcSources.add(jdbcSource);
@@ -666,7 +674,7 @@ public class connection {
                 errors = "drive not recognized";
             }
         } catch (Throwable th) {
-            errors = th.getMessage();
+            errors = th.getMessage() + " - "+th.toString();
         }
         return new Object [] { url, errors };
     }

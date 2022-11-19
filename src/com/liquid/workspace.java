@@ -4822,6 +4822,11 @@ public class workspace {
     }
 
 
+    /**
+     * Ritorna il body della request
+     * @param request
+     * @return
+     */
     static public String get_request_content(HttpServletRequest request) {
         return get_request_content(request, String.valueOf(StandardCharsets.UTF_8));
     }
