@@ -447,19 +447,19 @@ public class connection {
     //
     //
     public static class JDBCSource {
-        String driver = null; // "mariadb", "mysql", "mariadb", "oracle", "sqlserver"
-        String host = null;
-        String port = null;
-        String database = null;
-        String user = null;
+        public String driver = null; // "mariadb", "mysql", "mariadb", "oracle", "sqlserver"
+        public String host = null;
+        public String port = null;
+        public String database = null;
+        public String user = null;
         String password = null;
-        String service = null;
+        public String service = null;
         Class driverClass = null;
         boolean pooled;
         connectionPool cp = null;
     }
     
-    static ArrayList<JDBCSource> jdbcSources = new ArrayList<JDBCSource> ();
+    public static ArrayList<JDBCSource> jdbcSources = new ArrayList<JDBCSource> ();
     
     static public void resetLiquidDBConnection( ) {
         jdbcSources.clear();
