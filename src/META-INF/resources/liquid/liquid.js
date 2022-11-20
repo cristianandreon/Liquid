@@ -21548,7 +21548,7 @@ var Liquid = {
      */
     startPopup:function(controlId, jsonStringOrB64Enc, mode) {
         if(!document.body) {
-            glLiquidStartupPopup.push( { controlId:controlId, jsonString:jsonStringOrB64Enc, mode:mode?mode:"popup" } );
+            glLiquidStartupPopup.push( { controlId:controlId, jsonString:jsonStringOrB64Enc, mode:(isDef(mode)?mode:"popup") } );
             return;
         }
 
@@ -21569,7 +21569,7 @@ var Liquid = {
                         jsonString = jsonString.json;
                     }
                 }
-                retVal = new LiquidCtrl(refControlId, controlId, jsonString, null, mode?mode:"popup", null);
+                retVal = new LiquidCtrl(refControlId, controlId, jsonString, null, mode);
             }
         } else {
             retVal = liquid;
