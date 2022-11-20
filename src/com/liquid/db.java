@@ -2387,7 +2387,13 @@ public class db {
                                 if (filterFullName.equalsIgnoreCase(colName)) {
                                     bFoundCol = true;
                                     // mette l'alias
-                                    String colAlias = (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : tableIdString + table + tableIdString) + "." + itemIdString + colParts[1] + itemIdString;
+                                    String colAlias = null;
+                                    if (colTable != null && !colTable.equalsIgnoreCase(table)) {
+                                        colAlias = LeftJoinMap.getAlias(leftJoinsMap, colTable);
+                                    } else {
+                                        colAlias = colParts[1];
+                                    }
+
                                     filterNameAliased = colAlias != null ? colAlias : filterName;
                                     break;
                                 }
