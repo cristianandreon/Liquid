@@ -28,7 +28,7 @@
 ,"zIndex": 40000
 ,"resize":"both"
 ,"autoSizeColumns":true
-,"autoLoad":false
+,"autoLoad":true
 ,"pageSize":0
 ,"width":"600"
 ,"height":"500"

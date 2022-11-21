@@ -25,7 +25,7 @@
 ,"top":"center"
 ,"resize":"both"
 ,"autoSizeColumns":true
-,"autoLoad":false
+,"autoLoad":true
 ,"pageSize":0
 ,"width":"355"
 ,"height":"500"
