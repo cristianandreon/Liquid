@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.58
+// Liquid ver.2.59
 //
-//  First update 06-01-2020 - Last update 10-11-2022
+//  First update 06-01-2020 - Last update 20-11-2022
 //
 //  TODO : see trello.com
 //
@@ -3200,7 +3200,7 @@ var Liquid = {
                         }
                         Liquid.addForeignTableCommandParam(pLiquid, liquidCommandParams.params);
                         if (!liquidCommandParams.liquid.controlId)
-                            liquidCommandParams.liquid.controlId = liquid.controlId;
+                            liquidCommandParams.liquid.controlId = liquid ? liquid.controlId : null;
                     } else {
                         // No liquid object : is a form or HTML ?
                         let nodes_data = await Liquid.htmlNodesToJson(paramObj, true, true, "loadAttachmentsTable", 0);
@@ -13534,7 +13534,7 @@ var Liquid = {
                     if (isDef(filterJson.columns[ic].lookup)) {
                         if (filterJson.columns[ic].lookup) {
                             // var sourceCol = null; 26/06/2022
-                            var sourceCol = getColumn(liquid, filterJson.columns[ic].name);
+                            var sourceCol = Liquid.getColumn(liquid, filterJson.columns[ic].name);
                             var lookupControlId = liquid.controlId + ("filters_" + (i + 1) + "_" + filterJson.columns[ic].name).replace(/\./g, "_");
                             if (!Liquid.startLookup(liquid.controlId, sourceCol, lookupControlId, filterJson.columns[ic].linkedContainerId, filterJson.columns[ic].lookup, filterJson.columns[ic].lookupField, filterJson.columns[ic].options, 'filter', "filter field", null)) {
                                 // TODO: normal filter?
@@ -21569,7 +21569,7 @@ var Liquid = {
                         jsonString = jsonString.json;
                     }
                 }
-                retVal = new LiquidCtrl(refControlId, controlId, jsonString, null, mode);
+                retVal = new LiquidCtrl(refControlId, controlId, jsonString, null, (isDef(mode)?mode:"popup"));
             }
         } else {
             retVal = liquid;
@@ -21899,7 +21899,13 @@ columns:[
                     var lookupJson = null;
                     var registerControlId = null;
                     if(typeof json === 'string' && json.trim().startsWith("{")) { // by json content
-                        lookupJson = JSON.parse(json);
+                        if(lookupObj && typeof lookupObj === 'string') {
+                            let lookupObjDecoded;
+                            try { lookupObjDecoded = atob(lookupObj); } catch(e) { lookupObjDecoded = lookupObj; }
+                            lookupJson = JSON.parse(lookupObjDecoded);
+                        } else {
+                            lookupJson = lookupObj;
+                        }
                         registerControlId = lookupControlId;
                     } else {
                         for(let i=0; i<glLiquids.length; i++) { // by json in other control
@@ -21980,7 +21986,13 @@ columns:[
                                         lookupObj = lookupObj;
                                     }
                                 }
-                                lookupJson = lookupObj && typeof lookupObj === 'string' ? JSON.parse(lookupObj) : lookupObj;
+                                if(lookupObj && typeof lookupObj === 'string') {
+                                    let lookupObjDecoded;
+                                    try { lookupObjDecoded = atob(lookupObj); } catch(e) { lookupObjDecoded = lookupObj; }
+                                    lookupJson = JSON.parse(lookupObjDecoded);
+                                } else {
+                                    lookupJson = lookupObj;
+                                }
                                 registerControlId = lookupControlId;
                                 lookupSourceGlobalVar = json;
 
