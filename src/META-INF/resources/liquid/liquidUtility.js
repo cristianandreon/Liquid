@@ -285,8 +285,10 @@ SelectEditor.prototype.init = function(params) {
             }
         }
     } else {
-        params.colDef.cellEditorParams.values = params.values;
-        params.colDef.cellEditorParams.codes = params.codes;
+        if(isDef(params.values) || isDef(params.codes)) {
+            params.colDef.cellEditorParams.values = params.values;
+            params.colDef.cellEditorParams.codes = params.codes;
+        }
     }
     if(typeof params.headless === 'undefined' || !params.headless) {
         var values = (params.colDef.cellEditorParams ? params.colDef.cellEditorParams.values : null);
@@ -308,7 +310,7 @@ SelectEditor.prototype.init = function(params) {
 };
 SelectEditor.prototype.getGui = function() { return this.eInput; };
 SelectEditor.prototype.afterGuiAttached = function() { this.eInput.focus(); };
-SelectEditor.prototype.getValue = async function () {
+SelectEditor.prototype.getValue = function () {
     if (this.cellEditorParams.idColumn && this.cellEditorParams.targetColumn) {
         var fullTargetColumn = this.liquid.tableJson.table + "." + this.cellEditorParams.targetColumn;
         for (let i = 0; i < this.liquid.tableJson.columns.length; i++) {
@@ -325,7 +327,7 @@ SelectEditor.prototype.getValue = async function () {
             if (selNodes && selNodes.length > 0) {
                 for (let node = 0; node < selNodes.length; node++) {
                     if (selNodes[node].data[this.targetColumnIndex] !== this.eInput.value) {
-                        var validateResult = await Liquid.validateField(this.liquid, this.liquid.tableJson.columns[this.iCol], this.eInput.value);
+                        var validateResult = Liquid.validateFieldSync(this.liquid, this.liquid.tableJson.columns[this.iCol], this.eInput.value);
                         if (validateResult !== null) {
                             if (validateResult[0] >= 0) {
                                 this.eInput.value = validateResult[1];
