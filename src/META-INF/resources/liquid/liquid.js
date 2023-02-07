@@ -24090,7 +24090,7 @@ columns:[
     },
     Recordset2LocalDate:function(liquid, rowData) {
         if(liquid && rowData) {
-            if(liquid.tableJson.toLocalTimezone) {
+            if(liquid.tableJson.toLocalTimezone === true) {
                 if (liquid.tableJson) {
                     for (let ic = 0; ic < liquid.tableJson.columns.length; ic++) {
                         if (liquid.tableJson.columns[ic].type == 93) {

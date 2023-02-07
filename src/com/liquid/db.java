@@ -1773,7 +1773,7 @@ public class db {
                     }
                 } catch (Throwable e) {
                     error += "Error:" + e.getLocalizedMessage();
-                    System.err.println("// updateRow() Error:" + e.getLocalizedMessage());
+                    System.err.println("// get_table_recordset() Error:" + e.getLocalizedMessage());
                 }
             }
 
@@ -4800,11 +4800,16 @@ public class db {
                                                                                         }
                                                                                     }
                                                                                     if(parseString) {
-                                                                                        Date gtmDate = utility.get_local2server_time(request, oValue);
-                                                                                        if (gtmDate != null) {
-                                                                                            oValue = gtmDate;
-                                                                                        } else {
-                                                                                            throw new Exception("Failed to get local time");
+                                                                                        if(liquid.tableJson.has("toLocalTimezone")) {
+                                                                                            Object oToLocalTimezone = liquid.tableJson.get("toLocalTimezone");
+                                                                                            if (oToLocalTimezone instanceof Boolean && (Boolean) oToLocalTimezone == true) {
+                                                                                                Date gmtDate = utility.get_local2server_time(request, oValue);
+                                                                                                if (gmtDate != null) {
+                                                                                                    oValue = gmtDate;
+                                                                                                } else {
+                                                                                                    throw new Exception("Failed to get local time");
+                                                                                                }
+                                                                                            }
                                                                                         }
                                                                                     }
                                                                                 }
