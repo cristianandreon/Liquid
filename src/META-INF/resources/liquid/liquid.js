@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.60
+// Liquid ver.2.61
 //
 //  First update 06-01-2020 - Last update 03-02-2023
 //
@@ -9557,8 +9557,8 @@ var Liquid = {
                                                 if (tables[it].error || tables[it].fails) {
                                                     // paste faild so create modification
                                                     if (tables[it].error) {
-                                                        Liquid.setErrorDiv(liquid, httpResultJson.error, "error");
-                                                        Liquid.showToast(Liquid.appTitle, httpResultJson.error, "error");
+                                                        Liquid.setErrorDiv(liquid, tables[it].error, "error");
+                                                        Liquid.showToast(Liquid.appTitle, tables[it].error, "error");
                                                     }
 
                                                     if (liquid.addingRow) {
