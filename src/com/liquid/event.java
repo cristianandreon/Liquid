@@ -3427,6 +3427,28 @@ public class event {
                                         return result;
                                     }
                                 }
+                            } else {
+                                Object param = paramJSON.get(paramName);
+                                if(param instanceof JSONObject) {
+
+                                } else if(param instanceof JSONArray) {
+                                    // TDOD: TEST
+                                    JSONArray ps = (JSONArray)param;
+                                    for(Object po : ps) {
+                                        if(po instanceof JSONObject) {
+                                            JSONObject jpo = (JSONObject)po;
+                                            if (jpo.has(controlId)) {
+                                                return jpo.getJSONObject(controlId);
+                                            } else {
+                                                if(jpo.has("fieldName")) {
+                                                    if (jpo.getString("fieldName").equals(controlId)) {
+                                                        return jpo;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         } else if (controlId != null && controlId.isEmpty()) {
                             if (!paramJSON.has("name")) { // exclude the "name" field, get the "name" content

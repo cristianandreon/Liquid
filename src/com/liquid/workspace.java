@@ -4652,19 +4652,19 @@ public class workspace {
     }
 
 
-    static public long getSelectionCount(Object tbl_wrk, String params) {
+    static public long getSelectionCount(Object tbl_wrk, String params) throws Exception {
         if(tbl_wrk instanceof workspace) {
             return getSelectionCount(((workspace) tbl_wrk).controlId, params);
         } else {
-            return 0L;
+            throw new Exception("Invalid workspace");
         }
     }
 
-    static public String getData(Object tbl_wrk, Object oParams, String column) {
+    static public String getData(Object tbl_wrk, Object oParams, String column) throws Exception {
         if(tbl_wrk instanceof workspace) {
             return getData(((workspace) tbl_wrk).controlId, oParams, column);
         } else {
-            return null;
+            throw new Exception("Invalid workspace");
         }
     }
 

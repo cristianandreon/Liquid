@@ -6553,7 +6553,7 @@ public class db {
         return workspace.getSelection(tbl_wrk, (String) params);
     }
 
-    static public long getSelectionCount(Object tbl_wrk, Object params) {
+    static public long getSelectionCount(Object tbl_wrk, Object params) throws Exception {
         return workspace.getSelectionCount(tbl_wrk, (String) params);
     }
 
@@ -6562,7 +6562,7 @@ public class db {
     }
 
 
-    static public String getData(Object tbl_wrk, Object params, String column) {
+    static public String getData(Object tbl_wrk, Object params, String column) throws Exception {
         return workspace.getData(tbl_wrk, (String) params, (String) column);
     }
 
