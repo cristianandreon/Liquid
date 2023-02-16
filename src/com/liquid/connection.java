@@ -695,7 +695,7 @@ public class connection {
     static public Object [] getLiquidDBConnection(JDBCSource jdbcSource, String driver, String host, String port, String database, String user, String password, String service) throws Throwable {
         Connection conn = null;
         String errors = null;
-        if(jdbcSource.pooled) {
+        if(jdbcSource != null && jdbcSource.pooled) {
             // User connection pool
             try {
                 conn = jdbcSource.cp.getConnection();

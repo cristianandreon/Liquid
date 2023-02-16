@@ -257,14 +257,18 @@ public class bean {
                                     } else {
                                         where += " AND ";
                                     }
-                                    where += schemaTable + "." + delimiter + primaryKey + delimiter + " NOT IN (" + (ids.substring(1)).replaceAll("\"", "'") + ")";
+                                    where += schemaTable + "." + delimiter + primaryKey + delimiter + " NOT IN ("
+                                            + utility.arrayToString((ids).replaceAll("\"", "").split(","), "'", "'", ",")
+                                            + ")";
                                 } else if (ids != null && !ids.isEmpty()) {
                                     if (where == null || where.isEmpty()) {
                                         where = "\nWHERE ";
                                     } else {
                                         where += " AND ";
                                     }
-                                    where += schemaTable + "." + delimiter + primaryKey + delimiter + " IN (" + (ids).replaceAll("\"", "'") + ")";
+                                    where += schemaTable + "." + delimiter + primaryKey + delimiter + " IN ("
+                                            + utility.arrayToString((ids).replaceAll("\"", "").split(","), "'", "'", ",")
+                                            + ")";
                                 } else {
                                     // No record selected
                                     if (where == null || where.isEmpty()) {

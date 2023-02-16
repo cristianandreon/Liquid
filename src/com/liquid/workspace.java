@@ -4550,7 +4550,12 @@ public class workspace {
                                     // All o lista inclusione
                                     ids = obj.getString("ids");
                                 } else if (obj.has("sel")) {
-                                    ids = obj.getString("sel");
+                                    if(obj.get("sel") instanceof String) {
+                                        ids = obj.getString("sel");
+                                    } else if(obj.get("sel") instanceof JSONArray) {
+                                        JSONArray sels = (JSONArray)obj.get("sel");
+                                        ids = utility.jsonArrayToString(sels, null, null, ",");
+                                    }
                                 }
                                 if (ids != null && !ids.isEmpty()) {
                                     if (obj.has("unsel")) {
