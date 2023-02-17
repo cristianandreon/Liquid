@@ -113,9 +113,9 @@ public class metadata {
     public static void resetTableMetadata(String database, String schema, String table) {
         for (int i = 0; i < metaDataTable.size(); i++) {
             MetaDataTable mdTable = metaDataTable.get(i);
-            if (mdTable.database.equalsIgnoreCase(database) || database == null || database.isEmpty()) {
-                if (mdTable.schema.equalsIgnoreCase(schema) || schema == null || schema.isEmpty()) {
-                    if (mdTable.table.equalsIgnoreCase(table) || table == null || table.isEmpty()) {
+            if ((mdTable.database != null && mdTable.database.equalsIgnoreCase(database)) || database == null || database.isEmpty()) {
+                if((mdTable.schema != null && mdTable.schema.equalsIgnoreCase(schema)) || schema == null || schema.isEmpty()) {
+                    if ((mdTable.table != null && mdTable.table.equalsIgnoreCase(table)) || table == null || table.isEmpty()) {
                         mdTable.metaDataCols = null;
                         mdTable.table = null;
                         mdTable.schema = null;
@@ -578,9 +578,9 @@ public class metadata {
         try {
             for (int i = 0; i < metaDataTable.size(); i++) {
                 mdTable = metaDataTable.get(i);
-                if (mdTable.table.equalsIgnoreCase(table)) {
-                    if (mdTable.schema.equalsIgnoreCase(schema) || schema == null) {
-                        if (mdTable.database.equalsIgnoreCase(database) || database == null) {
+                if (mdTable.table != null && mdTable.table.equalsIgnoreCase(table)) {
+                    if ( (mdTable.schema != null && mdTable.schema.equalsIgnoreCase(schema)) || schema == null) {
+                        if ( (mdTable.database != null && mdTable.database.equalsIgnoreCase(database)) || database == null) {
                             if (mdTable.metaDataCols != null) {
                                 if(columnName != null && !"*".equalsIgnoreCase(columnName) && !columnName.isEmpty()) {
                                     for (int istep = 0; istep < 2; istep++) {
