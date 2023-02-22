@@ -7144,13 +7144,13 @@ public class db {
             
             
             if (sconn != null) {
-                
+
                 driver = getDriver(sconn);
-                
+
                 if (tconn != null) {
                     targetDriver = getDriver(tconn);
                 }
-                
+
 
                 String itemIdString = "\"", tableIdString = "\"", asKeyword = " AS ";
                 if (driver != null && driver.toLowerCase().contains("postgres")) {
@@ -7170,9 +7170,7 @@ public class db {
                 }
 
 
-
-
-                //        
+                //
                 // Eliminazione righe non corrispondenti
                 //
                 ArrayList<String> addingColumnsLabel = new ArrayList<String>();
@@ -7180,157 +7178,162 @@ public class db {
 
 
                 if (mode.contains("callback"))
-                    Callback.send("Reading source fields " + schema + "."+ table + "...");                
+                    Callback.send("Reading source fields " + schema + "." + table + "...");
                 ArrayList<String> sourceColumns = metadata.getAllColumnsAsArray(database, schema, table, sconn);
-                
-                
-                if(targetDatabase != null && !targetDatabase.isEmpty()) {                    
+
+
+                if (targetDatabase != null && !targetDatabase.isEmpty()) {
                 } else targetDatabase = database;
-                if(targetSchema != null && !targetSchema.isEmpty()) {                    
+                if (targetSchema != null && !targetSchema.isEmpty()) {
                 } else targetSchema = schema;
-                if(targetTable != null && !targetTable.isEmpty()) {                    
+                if (targetTable != null && !targetTable.isEmpty()) {
                 } else targetTable = table;
-                
+
                 if (mode.contains("callback"))
-                    Callback.send("Reading target fields " + targetSchema + "."+ targetTable + "...");                
+                    Callback.send("Reading target fields " + targetSchema + "." + targetTable + "...");
                 ArrayList<String> targetColumns = metadata.getAllColumnsAsArray(targetDatabase, targetSchema, targetTable, tconn);
 
-                
-                
-                for(int iCol=0; iCol<sourceColumns.size(); iCol++) {
-                    String field = sourceColumns.get(iCol);
-                    
-                    if (mode.contains("callback"))
-                        Callback.send("Comparing fields " + (iCol+1) + "/"+ sourceColumns.size() + "...");
-                    
-                    if (utility.contains(targetColumns, (String) field)) {
-                        // "deepMode" (compare filed's size, default, remarks, nullable, precision, scale)
-                        if (mode.contains("deepMode")) {
-                            boolean isFieldChanged = false;
-                            String sTypeName = null;
-                            String sNullable = null;
-                            String sColumnDef = null;
-                            String sSize = null;
-                            String sRemarks = null;
-                            String sDigits = null;
 
-                            if (mode.contains("callback"))
-                                Callback.send("Reading metadata on "+schema+"."+table+" ...");
+                if (targetColumns.size() > 0) {
+                    for (int iCol = 0; iCol < sourceColumns.size(); iCol++) {
+                        String field = sourceColumns.get(iCol);
 
-                            metadata.MetaDataCol mdColS = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, true, true);
-                            metadata.MetaDataCol mdColT = (metadata.MetaDataCol) metadata.readTableMetadata(tconn, targetDatabase, targetSchema, targetTable, field, true, true);
-                            if(mdColS.size != mdColT.size) {
-                                isFieldChanged = true;
-                                sSize = String.valueOf(mdColS.size);
-                            }
-                            if(mdColS.isNullable != mdColT.isNullable) {
-                                isFieldChanged = true;
-                                sNullable = String.valueOf(mdColS.isNullable);
-                            }
-                            if(!mdColS.datatype.equalsIgnoreCase(mdColT.datatype)) {
-                                isFieldChanged = true;
-                                sTypeName = String.valueOf(mdColS.datatype);
-                            }
-                            if(mdColS.digits != mdColT.digits) {
-                                isFieldChanged = true;
-                                sDigits = String.valueOf(mdColS.digits);
-                            }
-                            if(mdColS.columnDef != null) {
-                                if(!mdColS.columnDef.equalsIgnoreCase(mdColT.columnDef)) {
+                        if (mode.contains("callback"))
+                            Callback.send("Comparing fields " + (iCol + 1) + "/" + sourceColumns.size() + "...");
+
+                        if (utility.contains(targetColumns, (String) field)) {
+                            // "deepMode" (compare filed's size, default, remarks, nullable, precision, scale)
+                            if (mode.contains("deepMode")) {
+                                boolean isFieldChanged = false;
+                                String sTypeName = null;
+                                String sNullable = null;
+                                String sColumnDef = null;
+                                String sSize = null;
+                                String sRemarks = null;
+                                String sDigits = null;
+
+                                if (mode.contains("callback"))
+                                    Callback.send("Reading metadata on " + schema + "." + table + " ...");
+
+                                metadata.MetaDataCol mdColS = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, true, true);
+                                metadata.MetaDataCol mdColT = (metadata.MetaDataCol) metadata.readTableMetadata(tconn, targetDatabase, targetSchema, targetTable, field, true, true);
+                                if (mdColS.size != mdColT.size) {
+                                    isFieldChanged = true;
+                                    sSize = String.valueOf(mdColS.size);
+                                }
+                                if (mdColS.isNullable != mdColT.isNullable) {
+                                    isFieldChanged = true;
+                                    sNullable = String.valueOf(mdColS.isNullable);
+                                }
+                                if (!mdColS.datatype.equalsIgnoreCase(mdColT.datatype)) {
+                                    isFieldChanged = true;
+                                    sTypeName = String.valueOf(mdColS.datatype);
+                                }
+                                if (mdColS.digits != mdColT.digits) {
+                                    isFieldChanged = true;
+                                    sDigits = String.valueOf(mdColS.digits);
+                                }
+                                if (mdColS.columnDef != null) {
+                                    if (!mdColS.columnDef.equalsIgnoreCase(mdColT.columnDef)) {
+                                        isFieldChanged = true;
+                                        sColumnDef = mdColS.columnDef;
+                                    }
+                                } else if (mdColT.columnDef != null && !mdColT.columnDef.isEmpty()) {
                                     isFieldChanged = true;
                                     sColumnDef = mdColS.columnDef;
                                 }
-                            } else if(mdColT.columnDef != null && !mdColT.columnDef.isEmpty()) {
-                                isFieldChanged = true;
-                                sColumnDef = mdColS.columnDef;
-                            }
-                            if(mdColS.remarks != null) {
-                                if(mdColS.remarks.equalsIgnoreCase(mdColT.remarks)) {
+                                if (mdColS.remarks != null) {
+                                    if (mdColS.remarks.equalsIgnoreCase(mdColT.remarks)) {
+                                        isFieldChanged = true;
+                                        sRemarks = mdColS.remarks;
+                                    }
+                                } else if (mdColT.remarks != null && !mdColT.remarks.isEmpty()) {
                                     isFieldChanged = true;
                                     sRemarks = mdColS.remarks;
                                 }
-                            } else if(mdColT.remarks != null && !mdColT.remarks.isEmpty()) {
-                                isFieldChanged = true;
-                                sRemarks = mdColS.remarks;
+                                if (isFieldChanged) {
+                                    if (mode.contains("callback"))
+                                        Callback.send("Preparing sql on " + targetTable + "...");
+                                    String sqlCode = metadata.getUpdateColumnSQL(targetDriver, targetDatabase, targetSchema, targetTable, field, sTypeName, sSize, sDigits, sNullable, sColumnDef, sRemarks);
+                                    if (sqlCode != null) {
+                                        String fSqlCode = sqlCode.replace("\n", " ");
+                                        fSqlCode = fSqlCode.trim();
+                                        if (fSqlCode.endsWith(";"))
+                                            fSqlCode = fSqlCode.substring(0, fSqlCode.length() - 1);
+                                        if (mode.contains("preview")) {
+                                            preview += fSqlCode + "\n\n";
+                                        } else {
+                                            try {
+                                                if (mode.contains("callback"))
+                                                    Callback.send("Updating " + targetTable + "...");
+                                                Statement stmt = tconn.createStatement();
+                                                boolean res = stmt.execute(fSqlCode);
+                                                if (!res) {
+                                                    ResultSet rs = stmt.getResultSet();
+                                                    if (rs != null) {
+                                                        if (rs.next()) {
+                                                            String sql_result = rs.getString(1);
+                                                            if (sql_result != null) {
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            } catch (Exception ex) {
+                                                error += "[ SQL:" + fSqlCode + "<br/>Error:" + ex.getMessage() + "]";
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                            if(isFieldChanged) {
-                                if (mode.contains("callback"))
-                                    Callback.send("Preparing sql on "+targetTable+"...");
-                                String sqlCode = metadata.getUpdateColumnSQL( targetDriver, targetDatabase, targetSchema, targetTable, field, sTypeName, sSize, sDigits, sNullable, sColumnDef, sRemarks );
-                                if(sqlCode != null) {
+                        } else {
+                            addingColumnsLabel.add((String) sourceColumns.get(iCol));
+                            String type = null;
+                            String size = null;
+                            String nullable = null;
+                            String autoincrement = null;
+                            String sDefault = null;
+                            String sRemarks = null;
+
+                            // TODO: isOracle var for target table
+                            metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, true, true);
+
+                            if (mdCol != null) {
+                                String sqlCode = metadata.getAddColumnSQL(targetDriver, targetDatabase, targetSchema, targetTable, field, mdCol.typeName, String.valueOf(mdCol.size), mdCol.isNullable ? "y" : "n", mdCol.autoIncString ? "y" : "n", mdCol.columnDef, mdCol.remarks);
+                                if (sqlCode != null) {
                                     String fSqlCode = sqlCode.replace("\n", " ");
                                     fSqlCode = fSqlCode.trim();
-                                    if(fSqlCode.endsWith(";")) fSqlCode = fSqlCode.substring(0, fSqlCode.length()-1);
+                                    if (fSqlCode.endsWith(";")) fSqlCode = fSqlCode.substring(0, fSqlCode.length() - 1);
                                     if (mode.contains("preview")) {
-                                        preview += fSqlCode + "\n\n";
+                                        preview += fSqlCode + ";\n\n";
                                     } else {
                                         try {
-                                            if (mode.contains("callback"))
-                                                Callback.send("Updating "+targetTable+"...");
                                             Statement stmt = tconn.createStatement();
                                             boolean res = stmt.execute(fSqlCode);
-                                            if(!res) {
+                                            if (!res) {
                                                 ResultSet rs = stmt.getResultSet();
-                                                if(rs != null) {
-                                                    if(rs.next()) {
+                                                if (rs != null) {
+                                                    if (rs.next()) {
                                                         String sql_result = rs.getString(1);
-                                                        if(sql_result != null) {
+                                                        if (sql_result != null) {
                                                         }
                                                     }
                                                 }
                                             }
                                         } catch (Exception ex) {
-                                            error += "[ SQL:"+fSqlCode+"<br/>Error:"+ex.getMessage()+"]";
+                                            error += "[ SQL:" + fSqlCode + "<br/>Error:" + ex.getMessage() + "]";
                                         }
                                     }
-                                }
-                            }
-                        }
-                    } else {
-                        addingColumnsLabel.add((String) sourceColumns.get(iCol));
-                        String type = null;
-                        String size = null;
-                        String nullable = null;
-                        String autoincrement = null;
-                        String sDefault = null;
-                        String sRemarks = null;
-
-                        // TODO: isOracle var for target table
-                        metadata.MetaDataCol mdCol = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, true, true);
-
-                        if(mdCol != null) {
-                            String sqlCode = metadata.getAddColumnSQL( targetDriver, targetDatabase, targetSchema, targetTable, field, mdCol.typeName, String.valueOf(mdCol.size), mdCol.isNullable ? "y":"n", mdCol.autoIncString ? "y" : "n", mdCol.columnDef, mdCol.remarks );
-                            if(sqlCode != null) {
-                                String fSqlCode = sqlCode.replace("\n", " ");
-                                fSqlCode = fSqlCode.trim();
-                                if(fSqlCode.endsWith(";")) fSqlCode = fSqlCode.substring(0, fSqlCode.length()-1);
-                                if (mode.contains("preview")) {
-                                    preview += fSqlCode + ";\n\n";
                                 } else {
-                                    try {
-                                        Statement stmt = tconn.createStatement();
-                                        boolean res = stmt.execute(fSqlCode);
-                                        if(!res) {
-                                            ResultSet rs = stmt.getResultSet();
-                                            if(rs != null) {
-                                                if(rs.next()) {
-                                                    String sql_result = rs.getString(1);
-                                                    if(sql_result != null) {
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    } catch (Exception ex) {
-                                        error += "[ SQL:"+fSqlCode+"<br/>Error:"+ex.getMessage()+"]";
-                                    }
+                                    error += "[ Failed to read metadata ]";
                                 }
-                            } else {
-                                error += "[ Failed to read metadata ]";
                             }
                         }
                     }
                 }
 
+                if (targetColumns.size() == 0) {
+                    error += "[ Failed to read target table ]";
+                }
                 if(sourceColumns.size() == 0) {
                     error += "[ Failed to read source table ]";
                 }

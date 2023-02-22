@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.sql.*;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
@@ -1093,17 +1094,36 @@ public class metadata {
                 schema = null; // connToUse.getMetaData().getSchemaTerm();
 
             if (tableName != null && !tableName.isEmpty()) {
+                try {
+                    ((oracle.jdbc.driver.OracleConnection) connToUse).setIncludeSynonyms(true);
+                } catch (Exception e) {
+                }
                 DatabaseMetaData dm = connToUse.getMetaData();
                 ResultSet rs = dm.getColumns(database, schema, tableName, null);
                 if (rs != null) {
-                    while (rs.next()) {
-                        String resultShcema = rs.getString("TABLE_SCHEM");
-                        if ((schema == null && !"information_schema" .equalsIgnoreCase(resultShcema))
-                                || (schema != null && resultShcema == null)
-                                || (schema != null && schema.equalsIgnoreCase(resultShcema))
-                        ) {
-                            result.add(rs.getString("COLUMN_NAME"));
+                    if (!rs.next() ) {
+                        PreparedStatement stmt;
+                        try {
+                            stmt = connToUse.prepareStatement("select COLUMN_NAME from all_tab_cols where TABLE_NAME=?");
+                            // stmt = connToUse.prepareStatement("select * from ALL_TAB_COLUMNS where TABLE_NAME=? and OWNER=?");
+                            stmt.setString(1, tableName.toUpperCase());
+                            // stmt.setString(2, schema.toUpperCase());
+                            rs = stmt.executeQuery();
+                        }catch (Exception e) {
+                            System.err.println(e.getMessage());
                         }
+                    }
+                    if (rs.next()) {
+                        do {
+                            String resultShcema = rs.getString("TABLE_SCHEM");
+                            if (
+                                    (schema == null && !"information_schema".equalsIgnoreCase(resultShcema))
+                                    || (schema != null && resultShcema == null)
+                                    || (schema != null && schema.equalsIgnoreCase(resultShcema))
+                            ) {
+                                result.add(rs.getString("COLUMN_NAME"));
+                            }
+                        } while (rs.next());
                     }
                     rs.close();
                 }

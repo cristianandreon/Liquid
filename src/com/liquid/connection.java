@@ -636,10 +636,14 @@ public class connection {
                 if(driverClass == null) driverClass = Class.forName("oracle.jdbc.driver.OracleDriver");
                 if(jdbcSource != null) jdbcSource.driverClass = driverClass;
 
-                String serviceName = (service != null && !service.isEmpty() ? service : "xe");
+                String serviceName = (service != null && !service.isEmpty() ? service : "");
                 String serviceSeparator = ":";
                 if(service.startsWith("/") || service.startsWith(":")) serviceSeparator = "";
-                url = "jdbc:oracle:thin:@"+host+":"+port+serviceSeparator+serviceName;
+                if(host.startsWith("(")) {
+                    url = "jdbc:oracle:thin:"+user+"/"+password+"@"+host;
+                } else {
+                    url = "jdbc:oracle:thin:@"+host+":"+port+((serviceName != null && !serviceName.isEmpty()) ? (serviceSeparator+serviceName) : "");
+                }
             } else if("postgres".equalsIgnoreCase(driver)) {
                 if(port == null || port.isEmpty()) port = "5432";
                 if(driverClass == null) driverClass = Class.forName("org.postgresql.Driver");
