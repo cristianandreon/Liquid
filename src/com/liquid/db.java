@@ -2389,7 +2389,7 @@ public class db {
                                     // mette l'alias
                                     String colAlias = null;
                                     if (colTable != null && !colTable.equalsIgnoreCase(table)) {
-                                        colAlias = LeftJoinMap.getAlias(leftJoinsMap, colTable);
+                                        colAlias = LeftJoinMap.getAlias(leftJoinsMap, colTable)  + "." + itemIdString + colParts[1] + itemIdString;
                                     } else {
                                         colAlias = colParts[1];
                                     }
