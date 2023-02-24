@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.61
+// Liquid ver.2.63
 //
-//  First update 06-01-2020 - Last update 03-02-2023
+//  First update 06-01-2020 - Last update 24-02-2023
 //
 //  TODO : see trello.com
 //
@@ -736,6 +736,7 @@ class LiquidCtrl {
                                         // not adding row ...
                                         Liquid.setForeignTablesModeCascade(liquid);
                                     }
+                                    Liquid.reset_runtime_as_row_change(liquid);
                                     Liquid.refreshAll(liquid, event, "selectionChange");
                                 }
                                 if(event.node.id !== liquid.lastSelectedId) {
@@ -11626,6 +11627,12 @@ var Liquid = {
                         liquid.addingNode = null;
                         Liquid.resetLayoutsRowState(liquid);
 
+                        // Grids readonly
+                        if(liquid.tableJson.grids && liquid.tableJson.grids.length > 0) {
+                            for(let ig=0; ig<liquid.tableJson.grids.length; ig++) {
+                                Liquid.onGridMode(liquid.tableJson.grids[ig].gridObj, "readonly");
+                            }
+                        }
                         // refresh row on grid and layouts
                         Liquid.refreshGrids(liquid, null, "rollback");
                         Liquid.resetLayoutsContent(liquid, true);
@@ -11725,12 +11732,15 @@ var Liquid = {
                         }
                         if (nodes) {
                             if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
-                                nodes[cRow].setSelected(true);
+                                if(nodes != null && nodes.length>cRow+1)
+                                    nodes[cRow].setSelected(true);
                             } else {
                                 if (liquid.gridOptions.rowSelection === 'single') {
-                                    nodes[cRow].setSelected(true);
+                                    if(nodes != null && nodes.length>cRow+1)
+                                        nodes[cRow].setSelected(true);
                                 } else if (typeof liquid.tableJson.rowMultiSelectWithClick !== true) {
-                                    nodes[cRow].setSelected(true);
+                                    if(nodes != null && nodes.length>cRow+1)
+                                        nodes[cRow].setSelected(true);
                                 } else {
                                     // no selection
                                 }
@@ -13912,6 +13922,10 @@ var Liquid = {
             var inputHeight = (gridObj.height ? "height:" + Liquid.getCSSDim(gridObj.height) + ";" : "");
             var inputPlaceholder = (gridObj.placeholder ? "placeholder=\"" + gridObj.placeholder + "\"" : "");
             var inputRequired = (gridObj.required ? "required=\"" + gridObj.required + "\"" : "");
+            var readonly = isDef(gridObj.readonly) ? gridObj.readonly : false;
+            var disabled = isDef(gridObj.disabled) ? gridObj.disabled : false;
+            var inputReadonly = (readonly ? " readonly=\"readonly\" " : "");
+            var inputDisabled = (disabled ? " disabled=\"disabled\" " : "");
 
             var col = gridObj.colLink1B > 0 ? liquid.tableJson.columns[gridObj.colLink1B - 1] : null;
             var itemId = grid.id + "." + (gridObj.index1B) + ".value";
@@ -13938,6 +13952,12 @@ var Liquid = {
                         inputRequired = "required=\"true\"";
                     }
                 }
+            }
+            if(col) {
+                readonly = isDef(col.readonly) ? col.readonly : readonly;
+                disabled = isDef(col.disabled) ? col.disabled : disabled;
+                inputReadonly = (readonly ? " readonly=\"readonly\" " : inputReadonly);
+                inputDisabled = (disabled ? " disabled=\"disabled\" " : inputDisabled);
             }
 
             var position = "";
@@ -13999,6 +14019,8 @@ var Liquid = {
                         + " value=\"\" id=\"" + itemId + "\""
                         + " type=\"" + inputType + "\" "
                         // + " data-date-format=\"DD-MM-YYYY HH:mm:ss\""
+                        + inputReadonly
+                        + inputDisabled
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " autocomplete=\"off\""
@@ -14014,6 +14036,8 @@ var Liquid = {
                         + " value=\"\" id=\"" + itemId + "\""
                         + " type=\"" + inputType + "\" "
                         // + " data-date-format=\"DD-MM-YYYY HH:mm:ss\""
+                        + inputReadonly
+                        + inputDisabled
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " autocomplete=\"off\""
@@ -14027,6 +14051,8 @@ var Liquid = {
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
                         + " value=\"\" id=\"" + itemId + "\""
                         + " type=\"" + "number" + "\" "
+                        + inputReadonly
+                        + inputDisabled
                         + " step=\"" + "1" + "\" "
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
@@ -14039,6 +14065,8 @@ var Liquid = {
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
                         + " value=\"\" id=\"" + itemId + "\""
                         + " type=\"" + "number" + "\" "
+                        + inputReadonly
+                        + inputDisabled
                         + " step=\"" + "0.01" + "\" "
                         + " pattern=\"" + "\d*" + "\" "
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
@@ -14052,6 +14080,8 @@ var Liquid = {
                     innerHTML += "<select " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
                         + " value=\"\" id=\"" + itemId + "\""
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
+                        + inputReadonly
+                        + inputDisabled
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
                         + " onblur=\"Liquid.onGridFieldModify(event,this,true)\""
@@ -14095,6 +14125,8 @@ var Liquid = {
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
                         + " value=\"\" id=\"" + itemId + "\""
                         + " type=\"" + inputType + "\" "
+                        + inputReadonly
+                        + inputDisabled
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
@@ -14384,6 +14416,8 @@ var Liquid = {
                                     let doUpdateField = false;
                                     if (obj.nodeName === 'INPUT' || obj.nodeName === 'SELECT') newValue = obj.value;
                                     else newValue = obj.innerHTML;
+                                    let pure_value = obj.getAttribute('pure_value');
+                                    curValue = pure_value != null ? pure_value : curValue;
                                     if (bValidate) {
                                         if (newValue !== curValue) {
                                             var validateResult = await Liquid.validateField(liquid, col, newValue);
@@ -15620,12 +15654,15 @@ var Liquid = {
                     lay_coord.layout.lastCRow = liquid.cRow;
                     var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                     if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
-                        nodes[cRow].setSelected(true);
+                        if(nodes != null && nodes.length>cRow+1)
+                            nodes[cRow].setSelected(true);
                     } else {
                         if (liquid.gridOptions.rowSelection === 'single') {
-                            nodes[cRow].setSelected(true);
+                            if(nodes != null && nodes.length>cRow+1)
+                                nodes[cRow].setSelected(true);
                         } else if (typeof liquid.tableJson.rowMultiSelectWithClick !== true) {
-                            nodes[cRow].setSelected(true);
+                            if(nodes != null && nodes.length>cRow+1)
+                                nodes[cRow].setSelected(true);
                         } else {
                             // no selection
                         }
@@ -16558,7 +16595,7 @@ var Liquid = {
                                     if (targetObj.format) {
                                         try {
                                             let pure_value = targetObj.getAttribute("pure_value");
-                                            if (!targetObj.getAttribute("pure_value") || (pure_value != null && pure_value.toUpperCase() == 'CURRENT_TIMESTAMP')) {
+                                            if (!pure_value || (pure_value != null && pure_value.toUpperCase() == 'CURRENT_TIMESTAMP')) {
                                                 targetObj.setAttribute("pure_value", value);
                                             }
                                         } catch (e) {
@@ -19630,6 +19667,56 @@ var Liquid = {
             }
         }
     },
+    reset_runtime_as_row_change:function(liquid) {
+        if(liquid) {
+            if (liquid.tableJson.grids) {
+                if (liquid.tableJson.grids.length > 0) {
+                    for (let ig = 0; ig < liquid.tableJson.grids.length; ig++) {
+                        let grid = liquid.tableJson.grids[ig];
+                        if (isDef(grid.columns)) {
+                            for (let ic = 0; ic < grid.columns.length; ic++) {
+                                if (grid.columns[ic].linkedObj) {
+                                    let gridObj = grid.columns[ic];
+                                    let obj = Liquid.getItemObj(gridObj);
+                                    if(obj) {
+                                        obj.removeAttribute("pure_value");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (liquid.tableJson.layouts) {
+                if (liquid.tableJson.layouts.length > 0) {
+                    for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                        var layout = liquid.tableJson.layouts[il];
+                        if (layout) {
+                            if (layout.pageLoaded === true) {
+                                for (let ir = 0; ir < layout.rowsContainer.length; ir++) {
+                                    if (isDef(layout.rowsContainer[ir])) {
+                                        if (isDef(layout.rowsContainer[ir].objs)) {
+                                            Liquid.reset_pure_value(layout.rowsContainer[ir]);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    reset_pure_value:function(obj) {
+        if(obj) {
+            obj.removeAttribute("pure_value");
+            if (obj.childNodes) {
+                for (var i = 0; i < obj.childNodes.length; i++) {
+                    Liquid.reset_pure_value(obj.childNodes[i]);
+                }
+            }
+        }
+    },
     reloadAll:function(obj, event, reason, callback, callbackParam) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
@@ -20600,6 +20687,7 @@ var Liquid = {
                     var node = nodes[foundRow1B-1];
                     if(node) {
                         if(node.isSelected()) {
+                            Liquid.reset_runtime_as_row_change(liquid);
                             Liquid.refreshAll(liquid, event, "selectionChange");
                         } else {
                             node.setSelected(true);
@@ -20898,6 +20986,7 @@ var Liquid = {
                     if(!bFound) nodes[nodes.length-1].setSelected(true);
                 } else {
                     // force refresh
+                    Liquid.reset_runtime_as_row_change(liquid);
                     Liquid.refreshAll(liquid, null, "selectionChange");
                 }
                 liquid.nRows = nodes.length;

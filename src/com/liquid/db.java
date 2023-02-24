@@ -930,7 +930,7 @@ public class db {
                                                                     }
                                                                 }
                                                             } else {
-                                                                columnSolved = table + "." + (tableIdString + column + tableIdString);
+                                                                columnSolved = (tableIdString + table + tableIdString) + "." + (tableIdString + column + tableIdString);
                                                             }
                                                         }
 

@@ -35,7 +35,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.58";
+    public static String version_string = "2.63";
     public static String getGLLang() {
         return GLLang;
     }
@@ -1944,6 +1944,10 @@ public class workspace {
                                 } catch (Exception ex) {
                                 }
 
+                                if(col.has("readOnly") && !col.has("readonly")) {
+                                    col.put("readonly", col.get("readOnly"));
+                                }
+
                                 if (colName != null && !colName.isEmpty()) {
                                     if (colQuery != null && !colQuery.isEmpty()) {
                                         // nested query : no metadata to read
@@ -1961,6 +1965,14 @@ public class workspace {
                                                 boolean bReadComments = false; // N.B.: Molto lenta
                                                 if (tableJson.has("readOnly")) {
                                                     Object oReadOnly = tableJson.get("readOnly");
+                                                    String sReadOnly = String.valueOf(oReadOnly);
+                                                    if ("true".equalsIgnoreCase(sReadOnly) || "yes".equalsIgnoreCase(sReadOnly)) {
+                                                        // deccrease read metatata time
+                                                        bReadDefault = false;
+                                                    }
+                                                }
+                                                if (tableJson.has("readonly")) {
+                                                    Object oReadOnly = tableJson.get("readonly");
                                                     String sReadOnly = String.valueOf(oReadOnly);
                                                     if ("true".equalsIgnoreCase(sReadOnly) || "yes".equalsIgnoreCase(sReadOnly)) {
                                                         // deccrease read metatata time
