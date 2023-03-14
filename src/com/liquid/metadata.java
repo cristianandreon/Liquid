@@ -2174,7 +2174,7 @@ public class metadata {
             } else if ("postgres" .equalsIgnoreCase(driver)) {
             } else if ("oracle" .equalsIgnoreCase(driver)) {
                 sql += "COMMENT ON COLUMN " + schemaTable + "." + field
-                        + " IS " + sRemarks;
+                        + " IS '" + sRemarks + "';";
             } else if ("sqlserver" .equalsIgnoreCase(driver)) {
             }
         }
@@ -2232,7 +2232,7 @@ public class metadata {
             } else if ("postgres" .equalsIgnoreCase(driver)) {
             } else if ("oracle" .equalsIgnoreCase(driver)) {
                 sql += "COMMENT ON COLUMN " + schemaTable + "." + field
-                        + " IS " + sRemarks;
+                        + " IS '" + sRemarks + "';";
             } else if ("sqlserver" .equalsIgnoreCase(driver)) {
             }
         }

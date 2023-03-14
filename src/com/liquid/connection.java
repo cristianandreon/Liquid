@@ -637,7 +637,7 @@ public class connection {
                 if(jdbcSource != null) jdbcSource.driverClass = driverClass;
 
                 String serviceName = (service != null && !service.isEmpty() ? service : "");
-                String serviceSeparator = ":";
+                String serviceSeparator = "/";
                 if(service.startsWith("/") || service.startsWith(":")) serviceSeparator = "";
                 if(host.startsWith("(")) {
                     url = "jdbc:oracle:thin:"+user+"/"+password+"@"+host;
