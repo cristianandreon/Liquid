@@ -1893,7 +1893,8 @@ public class workspace {
                     if (primaryKey != null) {
                         if (table != null && !table.isEmpty()) {
                             if (cols != null) {
-                                JSONObject colJson = new JSONObject("{\"name\":\"" + table + "." + primaryKey + "\",\"field\":\"" + String.valueOf(cols.length() + 1) + "\",\"visible\":false}");
+                                // JSONObject colJson = new JSONObject("{\"name\":\"" + table + "." + primaryKey + "\",\"field\":\"" + String.valueOf(cols.length() + 1) + "\",\"visible\":false}");
+                                JSONObject colJson = new JSONObject("{\"name\":\"" + primaryKey + "\",\"field\":\"" + String.valueOf(cols.length() + 1) + "\",\"visible\":false}");
                                 cols.put(colJson);
                                 tableJson.put("columns", cols);
                             }
@@ -1931,10 +1932,6 @@ public class workspace {
                             for (int ic = 0; ic < cols.length(); ic++) {
                                 JSONObject col = cols.getJSONObject(ic);
                                 String colName = null, colTable = null, colForeignTable = null, colQuery = null;
-                                try {
-                                    colName = col.getString("name");
-                                } catch (Exception ex) {
-                                }
                                 try {
                                     colName = col.getString("name");
                                 } catch (Exception ex) {

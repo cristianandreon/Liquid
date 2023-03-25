@@ -2369,6 +2369,18 @@ public class utility {
         return filename;
     }
 
+    public static String get_db_column(String table, String colName) {
+        String[] colParts = colName.split("\\.");
+        if (colParts.length > 1) {
+            if (table.equalsIgnoreCase(colParts[0])) {
+                return colParts[1];
+            } else {
+                return colName.replaceAll("\\.", "\\$");
+            }
+        }
+        return colName;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;

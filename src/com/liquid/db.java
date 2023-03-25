@@ -6326,10 +6326,18 @@ public class db {
                                     if (colName.equals(primaryKey)) {
                                         primaryKeyValue = fieldData;
                                     } else {
-                                        boolean isChanged = utility.isChanged(bean, beanColName);
-                                        if (isChanged) {
-                                            sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + (fieldData != null ? fieldData : "") + "\"}";
+                                        String[] colParts = colName.split("\\.");
+                                        if (colParts.length > 1) {
+                                            if (tblWrk.tableJson.getString("table").equalsIgnoreCase(colParts[0])) {
+                                                if (colParts[1].equals(primaryKey)) {
+                                                    primaryKeyValue = fieldData;
+                                                }
+                                            }
                                         }
+                                    }
+                                    boolean isChanged = utility.isChanged(bean, beanColName);
+                                    if (isChanged) {
+                                        sFields += (sFields.length() > 0 ? "," : "") + "{\"field\":\"" + cols.getJSONObject(ic).getString("field") + "\",\"value\":\"" + (fieldData != null ? fieldData : "") + "\"}";
                                     }
                                 }
                             } catch (Exception ex) {

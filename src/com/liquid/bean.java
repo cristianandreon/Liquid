@@ -621,7 +621,7 @@ public class bean {
                         Object oType = col.get("type");
                         props.put(colName, metadata.getJavaClass(oType));
                     } else {
-                        int lb = 1;
+                        throw new Exception("Type not defined in control"+tbl_wrk.controlId);
                     }
                     if(!bReadOnly) {
                         props.put(colName + "$Changed", boolean.class);
@@ -1462,14 +1462,7 @@ public class bean {
                             */
 
                             if(hasValue) {
-                                String[] colParts = colName.split("\\.");
-                                if (colParts.length > 1) {
-                                    if (table.equalsIgnoreCase(colParts[0])) {
-                                        colName = colParts[1];
-                                    } else {
-                                        colName = colName.replaceAll("\\.", "\\$");
-                                    }
-                                }
+                                colName = utility.get_db_column(table, colName);
                                 if (!autoIncString) {
                                 } else {
                                     try {
@@ -2400,6 +2393,9 @@ public class bean {
                 tbl_wrk = workspace.get_tbl_manager_workspace(runtimeControlId);
                 if (tbl_wrk == null) {
                     tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, runtimeControlId);
+                    if (tbl_wrk == null) {
+                        tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, null);
+                    }
                 }
             }
         } else {
@@ -2863,6 +2859,7 @@ public class bean {
                 columnsList = trimmedColumnsList.toArray(new String[0]);
             }
 
+            primaryKeyColumn = tbl_wrk.tableJson.getString("primaryKey");
 
             cols = tbl_wrk.tableJson.getJSONArray("columns");
             for (int ic = 0; ic < cols.length(); ic++) {
@@ -2891,7 +2888,7 @@ public class bean {
                     if (column_alias_list.length() > 0) {
                         column_alias_list += ",";
                     }
-                    column_alias_list += colName;
+                    column_alias_list += utility.get_db_column(table, colName);
                 }
             }
 
