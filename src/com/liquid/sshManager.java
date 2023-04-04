@@ -250,15 +250,19 @@ public class sshManager {
                             command += "\n";
                         }
 
-                        while (stdout.available() > 0) {
-                            String residual = br.readLine();
-                            System.out.print(residual);
-                            java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, residual);
+                        if(stdout != null) {
+                            while (stdout.available() > 0) {
+                                String residual = br.readLine();
+                                System.out.print(residual);
+                                java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, residual);
+                            }
                         }
-                        while (stderr.available() > 0) {
-                            String residualErr = brErr.readLine();
-                            System.err.print(residualErr);
-                            java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, residualErr);
+                        if(stderr != null) {
+                            while (stderr.available() > 0) {
+                                String residualErr = brErr.readLine();
+                                System.err.print(residualErr);
+                                java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, residualErr);
+                            }
                         }
 
 
@@ -539,7 +543,7 @@ public class sshManager {
                 BasicFileAttributes latt = attributes.readAttributes();
                 FileTime ctf = latt.lastModifiedTime();                                            
                 long ct = ctf.toMillis() / 1000;
-                long rt = date_arr[1].getTime() / 1000;
+                long rt = date_arr[1] != null ? date_arr[1].getTime() / 1000 : 0;
                 if (ct > (long) rt) {
                     // file changed
                 } else {
