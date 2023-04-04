@@ -267,14 +267,16 @@ public class sshManager {
 
 
 
-                        writer.write(command);
-                        writer.flush();
+                        if(writer != null) {
+                            writer.write(command);
+                            writer.flush();
+                        }
 
-                          if (stderr.available() > 0) {
-                                String err = brErr.readLine();
-                                System.err.println(err);
-                                java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, err);
-                            }
+                        if (stderr.available() > 0) {
+                            String err = brErr.readLine();
+                            System.err.println(err);
+                            java.util.logging.Logger.getLogger(sshManager.class.getName()).log(Level.SEVERE, err);
+                        }
 
                         Thread.sleep(delayTimeMs);
 
