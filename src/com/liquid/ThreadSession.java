@@ -56,10 +56,50 @@ public class ThreadSession {
     static ArrayList<ThreadSession> threadSessionList = new ArrayList<ThreadSession>();
     
     static private boolean bDebug = false;
-            
-            
+    public String mode;
 
+    /**
+     * Registra la sessione per l'interattività,  da jsp
+     * @param browser
+     * @param request
+     * @param response
+     * @param out
+     * @throws InterruptedException
+     */
     static synchronized public void saveThreadSessionInfo ( String browser, HttpServletRequest request, HttpServletResponse response, JspWriter out ) throws InterruptedException {
+        saveThreadSessionInfoEx ( browser, request, response, out, null, null, null );
+    }
+
+
+    /**
+     * Registra la sessione per l'interattività, da web socket
+     *
+     * @param browser
+     * @param sessionId
+     * @param outputStream
+     * @param token
+     * @throws InterruptedException
+     */
+    static synchronized void saveThreadSessionInfo(String browser, String sessionId, OutputStream outputStream, String token) throws InterruptedException {
+        saveThreadSessionInfoEx ( browser, null, null, null, outputStream, token, null );
+    }
+
+
+
+
+    /**
+     * Registra la sessione per l'interattività, da jsp o websocket
+     *
+     * @param browser
+     * @param request
+     * @param response
+     * @param out
+     * @param outputStream
+     * @param token
+     * @param Mode
+     * @throws InterruptedException
+     */
+    static synchronized public void saveThreadSessionInfoEx ( String browser, HttpServletRequest request, HttpServletResponse response, JspWriter out, OutputStream outputStream, String token, String mode ) throws InterruptedException {
         try {
             if(semaphore == null || threadSessionList == null) {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
@@ -73,14 +113,15 @@ public class ThreadSession {
             threadSessionInfo.request = request;
             threadSessionInfo.response = response;
             threadSessionInfo.out = out;
-            threadSessionInfo.outputStream = null;
-            threadSessionInfo.token = null;
+            threadSessionInfo.outputStream = outputStream;
+            threadSessionInfo.token = token;
             threadSessionInfo.timeTick = System.currentTimeMillis();
             threadSessionInfo.thread = Thread.currentThread();
             threadSessionInfo.threadName = threadSessionInfo.thread.getName();
             threadSessionInfo.threadId = threadSessionInfo.thread.getId();
             threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
             threadSessionInfo.sessionId = request != null ? request.getRequestedSessionId() : null;
+            threadSessionInfo.mode = mode;
             threadSessionList.add(threadSessionInfo);
 
 
@@ -100,42 +141,10 @@ public class ThreadSession {
             semaphore.release();
         }
     }
-    
-    static synchronized void saveThreadSessionInfo(String browser, String sessionId, OutputStream outputStream, String token) throws InterruptedException {
-        try {
-            if(semaphore == null || threadSessionList == null) {
-                Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
-                semaphore = new Semaphore(MAX_AVAILABLE, true);
-                threadSessionList = new ArrayList<ThreadSession>();
-                throw new Exception("Application server fault");
-            }
-            semaphore.acquire();
-            ThreadSession threadSessionInfo = new ThreadSession();
-            threadSessionInfo.browser = browser;
-            threadSessionInfo.request = null;
-            threadSessionInfo.response = null;
-            threadSessionInfo.out = null;
-            threadSessionInfo.outputStream = outputStream;
-            threadSessionInfo.token = token;
-            threadSessionInfo.timeTick = System.currentTimeMillis();        
-            threadSessionInfo.thread = Thread.currentThread();
-            threadSessionInfo.threadName = threadSessionInfo.thread.getName();
-            threadSessionInfo.threadId = threadSessionInfo.thread.getId();
-            threadSessionInfo.cypher = login.getSaltString(16) + "-" + String.valueOf(threadSessionInfo.timeTick);
-            threadSessionInfo.sessionId = sessionId;
-            if(threadSessionList != null) {
-                threadSessionList.add(threadSessionInfo);
-            }
-            if(bDebug) 
-                Logger.getLogger(workspace.class.getName()).log(Level.INFO, " WS ThreadID:"+Thread.currentThread().getId()+" regsitered");
-        } catch (Exception e) {
-            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, e.getMessage());
-        } finally {
-            semaphore.release();
-        }
-    }
-    
-    
+
+
+
+
     /**
      * set a specific owner for this session (ex.: workspace store multiple owner, each for his thread, or none for main, like in a static class)
      * 

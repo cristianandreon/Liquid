@@ -126,7 +126,27 @@ public class Messagebox {
         int retVal = 0;
         ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
         if(threadSession != null) {
-            if(threadSession.out != null || threadSession.outputStream != null) {
+            if("DIRECT".equalsIgnoreCase(threadSession.mode)) {
+                // Stampa direttamente : assenga di un recettore
+                if(threadSession.response != null) {
+                    PrintWriter writer = null;
+                    try {
+                        writer = threadSession.response.getWriter();
+                        writer.print(title + " : " + message);
+                        writer.flush();
+                    } catch (IOException ex) {
+                        Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                if(threadSession.outputStream != null) {
+                    try {
+                        wsStreamerClient.send(threadSession.outputStream, title + " : " + message, threadSession.token, "P");
+                    } catch (IOException ex) {
+                        Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+
+            } else if(threadSession.out != null || threadSession.outputStream != null) {
                 try {
                     String messageJson = "<Liquid>serverMessage:{"
                             + "\"title\":\""+utility.base64Encode(title)+"\""

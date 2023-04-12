@@ -621,8 +621,8 @@ public class metadata {
                     System.err.println("Field not in cache : " + schema + "." + table + "." + columnName + " .. dumping table's columns cache");
                     for (int i = 0; i < metaDataTable.size(); i++) {
                         mdTable = metaDataTable.get(i);
-                        if (mdTable.database.equalsIgnoreCase(database) || database == null || database.isEmpty()) {
-                            if (mdTable.schema.equalsIgnoreCase(schema)) {
+                        if ( (database != null && mdTable.database.equalsIgnoreCase(database)) || database == null || database.isEmpty()) {
+                            if (mdTable.schema != null && mdTable.schema.equalsIgnoreCase(schema)) {
                                 if (mdTable.table.equalsIgnoreCase(table)) {
                                     String sAllColumns = "";
                                     for (int ic = 0; ic < mdTable.metaDataCols.size(); ic++) {

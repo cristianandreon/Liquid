@@ -7225,6 +7225,12 @@ public class db {
 
                                 metadata.MetaDataCol mdColS = (metadata.MetaDataCol) metadata.readTableMetadata(sconn, database, schema, table, field, true, true);
                                 metadata.MetaDataCol mdColT = (metadata.MetaDataCol) metadata.readTableMetadata(tconn, targetDatabase, targetSchema, targetTable, field, true, true);
+
+                                if(mdColS==null)
+                                    throw new Exception("unable to read metadata on "+database+"."+schema+"."+table+"."+field);
+                                if(mdColT==null)
+                                    throw new Exception("unable to read metadata on "+targetDatabase+"."+targetSchema+"."+targetTable+"."+field);
+
                                 if (mdColS.size != mdColT.size) {
                                     isFieldChanged = true;
                                     sSize = String.valueOf(mdColS.size);
@@ -7399,6 +7405,7 @@ public class db {
         } catch (Throwable th) {
             Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, th);
             error += "[ Fatal error :"+th.getMessage()+"]";
+            resultJSON.put("error", utility.base64Encode(error));
         }
 
         return resultJSON.toString();

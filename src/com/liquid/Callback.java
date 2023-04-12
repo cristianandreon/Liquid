@@ -6,6 +6,7 @@
 package com.liquid;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.JSONException;
@@ -47,17 +48,44 @@ public class Callback {
     private static int send( String data, String mode ) {
         int retVal = 0;
         ThreadSession threadSession = ThreadSession.getThreadSessionInfo ( );
-        if(threadSession != null && threadSession.out != null) {
-            try {
-                String messageJson = "<Liquid>serverCallback:{"
-                        + "\"data\":\""+utility.base64Encode(data)+"\""
-                        + ",\"cypher\":\""+utility.base64Encode(threadSession.cypher)+"\""
-                        + "}</Liquid><LiquidStartResponde/>";
-                threadSession.out.print(messageJson);
-                threadSession.out.flush();
-                retVal = 1;
-            } catch (IOException ex) {
-                Logger.getLogger(Callback.class.getName()).log(Level.SEVERE, null, ex);
+        if(threadSession != null) {
+            if("DIRECT".equalsIgnoreCase(threadSession.mode)) {
+                // Stampa direttamente : assenga di un recettore
+                if (threadSession.response != null) {
+                    PrintWriter writer = null;
+                    try {
+                        writer = threadSession.response.getWriter();
+                        writer.print(data);
+                        writer.flush();
+                    } catch (IOException ex) {
+                        Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                if (threadSession.outputStream != null) {
+                    try {
+                        wsStreamerClient.send(threadSession.outputStream, data, threadSession.token, "P");
+                    } catch (IOException ex) {
+                        Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            } else {
+                try {
+                    String messageJson = "<Liquid>serverCallback:{"
+                            + "\"data\":\"" + utility.base64Encode(data) + "\""
+                            + ",\"cypher\":\"" + utility.base64Encode(threadSession.cypher) + "\""
+                            + "}</Liquid><LiquidStartResponde/>";
+                    if(threadSession.out != null) {
+                        threadSession.out.print(messageJson);
+                        threadSession.out.flush();
+                        retVal = 1;
+                    }
+                    // web socket
+                    if(threadSession.outputStream != null) {
+                        wsStreamerClient.send(threadSession.outputStream, messageJson, threadSession.token, "P");
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(Callback.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         } else {
             // Fatal error

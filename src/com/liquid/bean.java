@@ -1968,7 +1968,7 @@ public class bean {
      * @throws Throwable
      */
     static public Object load_bean(HttpServletRequest request, String sql, ArrayList<Object> params) throws Exception, Throwable {
-        ArrayList<Object> beans = load_beans((HttpServletRequest)null, sql, params,1);
+        ArrayList<Object> beans = load_beans((HttpServletRequest)request, sql, params,1);
         if (beans != null) {
             if (beans.size() > 0) {
                 return beans.get(0);
@@ -1977,6 +1977,44 @@ public class bean {
         return null;
     }
 
+    /**
+     *
+     * @param request
+     * @param sql
+     * @param params
+     * @return
+     * @throws Exception
+     * @throws Throwable
+     */
+    static public Object load_bean(HttpServletRequest request, String sql, Object [] params) throws Exception, Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest)request, sql,new ArrayList<Object> (Arrays.asList(params)),1);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
+
+    /**
+     *
+     * @param request
+     * @param sql
+     * @param params
+     * @param maxRows
+     * @return
+     * @throws Exception
+     * @throws Throwable
+     */
+    static public Object load_bean(HttpServletRequest request, String sql, Object [] params, long maxRows) throws Exception, Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest)request, sql, (ArrayList<Object>) Arrays.asList(params),maxRows);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
 
     /**
      * Loan beans from SQL

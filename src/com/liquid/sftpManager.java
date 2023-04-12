@@ -327,7 +327,7 @@ public class sftpManager implements SftpProgressMonitor {
             this.uploadingLastCurrent = bytes;
             float dt = (System.currentTimeMillis() - lastCurrentTimeMillis) / 1000;
             this.lastCurrentTimeMillis = System.currentTimeMillis();
-            String pec = String.format("%1.2f", (float) ((float) this.uploadingCurrent / (float) glFileSize * 100.0f));
+            String pec = String.format("%1.1f", (float) ((float) this.uploadingCurrent / (float) glFileSize * 100.0f));
             float fSpeed = dt > 0.0f ? (ds / dt / 1024.0f) : 0.0f;
             if (fSpeed > 0.0f) {
                 if (fSpeed > maxSpeed) {
@@ -339,10 +339,14 @@ public class sftpManager implements SftpProgressMonitor {
                 mediaSpeed = (mediaSpeed * count + fSpeed) / (count + 1);
                 count++;
             }
-            timeLeft = mediaSpeed > 0.0f ? (glFileSize - uploadingCurrent) / (mediaSpeed * 1024.0f) : 0.0f;
+            timeLeft = mediaSpeed > 0.0f ? ((glFileSize - uploadingCurrent) / (mediaSpeed * 1024.0f)) : 0.0f;
             String speed = String.format("%1.2f", mediaSpeed);
-            String sTimeLeft = utility.getTimeString(timeLeft);
-            Callback.send("Uploading " + glSourceFile + " to " + glTtargetFile + "<br/>" + String.format("%1.2f", (float) bytes / 1024.0f / 1024.0f) + " / " + String.format("%1.2f", (float) glFileSize / 1024.0f / 1024.0f) + " MB .. " + pec + "% done, Transfer rate:" + speed + " KB/sec .. " + sTimeLeft);
+            String sTimeLeft = timeLeft > 0.0 ? " time left: "+utility.getTimeString(timeLeft) : "";
+            Callback.send("Uploading " + glSourceFile + " to " + glTtargetFile + "<br/>"
+                    + String.format("%1.2f", (float) bytes / 1024.0f / 1024.0f) + " / "
+                    + String.format("%1.2f",(float) glFileSize / 1024.0f / 1024.0f) + " MB .. "
+                    + pec + "% done"
+                    + ", Transfer rate:" + speed + " KB/sec .. " + sTimeLeft);
         }
         this.uploadingCurrent = bytes;
         return (true);
