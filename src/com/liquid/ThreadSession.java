@@ -96,7 +96,7 @@ public class ThreadSession {
      * @param out
      * @param outputStream
      * @param token
-     * @param Mode
+     * @param mode
      * @throws InterruptedException
      */
     static synchronized public void saveThreadSessionInfoEx ( String browser, HttpServletRequest request, HttpServletResponse response, JspWriter out, OutputStream outputStream, String token, String mode ) throws InterruptedException {
