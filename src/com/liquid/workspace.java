@@ -1512,45 +1512,49 @@ public class workspace {
                             cols = tableJson.getJSONArray("columns");
                         } catch (Exception e) {
                         }
-                        if (cols != null) {
-                            for (int ic = 0; ic < cols.length(); ic++) {
-                                try {
-                                    Object oCol = cols.get(ic);
-                                    if(oCol instanceof JSONObject) {
-                                        JSONObject col = (JSONObject)oCol;
-                                        col.put("field", String.valueOf(ic + 1));
-                                        cols.put(ic, col);
-                                        String colName = "";
-                                        try {
-                                            colName = col.getString("name");
-                                        } catch (Exception e) {
-                                        }
-                                        String[] colParts = colName.split("\\.");
-                                        if (colParts.length > 1) {
-                                            if(primaryKey != null) {
-                                                if (table.equalsIgnoreCase(colParts[0]) && colParts[1].equals(primaryKey)) {
-                                                    primaryKeyIndex1B = ic + 1;
-                                                }
-                                            }
-                                        } else {
-                                            if(primaryKey != null) {
-                                                if (colName.compareTo(primaryKey) == 0) {
-                                                    primaryKeyIndex1B = ic + 1;
-                                                }
-                                            }
-                                        }
-                                    }
-                                } catch (Exception ex) {
-                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Error in col :"+cols.get(ic)+"");
-                                    throw new Exception(ex);
-                                }
-                            }
-                            tableJson.put("columns", cols);
-                            tableJson.put("columnsResolved", true);
-                            tableJson.put("columnsResolvedBy", controlId);
-                        }
                     }
                 }
+
+
+                if (cols != null) {
+                    for (int ic = 0; ic < cols.length(); ic++) {
+                        try {
+                            Object oCol = cols.get(ic);
+                            if(oCol instanceof JSONObject) {
+                                JSONObject col = (JSONObject)oCol;
+                                col.put("field", String.valueOf(ic + 1));
+                                cols.put(ic, col);
+                                String colName = "";
+                                try {
+                                    colName = col.getString("name");
+                                } catch (Exception e) {
+                                }
+                                String[] colParts = colName.split("\\.");
+                                if (colParts.length > 1) {
+                                    if(primaryKey != null) {
+                                        if (table.equalsIgnoreCase(colParts[0]) && colParts[1].equals(primaryKey)) {
+                                            primaryKeyIndex1B = ic + 1;
+                                        }
+                                    }
+                                } else {
+                                    if(primaryKey != null) {
+                                        if (colName.compareTo(primaryKey) == 0) {
+                                            primaryKeyIndex1B = ic + 1;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception ex) {
+                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "Error in col :"+cols.get(ic)+"");
+                            throw new Exception(ex);
+                        }
+                    }
+                    tableJson.put("columns", cols);
+                    tableJson.put("columnsResolved", true);
+                    tableJson.put("columnsResolvedBy", controlId);
+                }
+
+
 
                 //
                 // Adding additional columns

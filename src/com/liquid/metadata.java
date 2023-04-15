@@ -298,7 +298,7 @@ public class metadata {
                 if (columnName != null) {
                     Object foundMcol = getTableMetadata(conn, null, schema, table, columnName, true);
                     if (foundMcol == null) {
-                        System.err.println("readTableMetadata() error: on table:" + schema + "." + table + " Column just added not found...maybe you are adding not exiasting column");
+                        System.err.println("readTableMetadata() error: on table:" + schema + "." + table + " Column just added '"+columnName+"' not found!");
                         // Add dummy data to avoid adding loop
                         MetaDataCol metaDataCol = new MetaDataCol(columnName, "", "", "", "", "", "", "", "", "", "", "", "", "");
                         metaDataCols.add(metaDataCol);
@@ -1096,34 +1096,28 @@ public class metadata {
             if (tableName != null && !tableName.isEmpty()) {
                 try {
                     ((oracle.jdbc.driver.OracleConnection) connToUse).setIncludeSynonyms(true);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                 }
                 DatabaseMetaData dm = connToUse.getMetaData();
                 ResultSet rs = dm.getColumns(database, schema, tableName, null);
                 if (rs != null) {
-                    if (!rs.next() ) {
+                    rs.getMetaData().getColumnCount();
+                    if (rs.next()) {
+                        fill_columns(schema, rs, result);
+                    } else {
                         PreparedStatement stmt;
                         try {
                             stmt = connToUse.prepareStatement("select COLUMN_NAME from all_tab_cols where TABLE_NAME=?");
-                            // stmt = connToUse.prepareStatement("select * from ALL_TAB_COLUMNS where TABLE_NAME=? and OWNER=?");
                             stmt.setString(1, tableName.toUpperCase());
-                            // stmt.setString(2, schema.toUpperCase());
                             rs = stmt.executeQuery();
+                            if (rs != null) {
+                                if (rs.next()) {
+                                    fill_columns(schema, rs, result);
+                                }
+                            }
                         }catch (Exception e) {
                             System.err.println(e.getMessage());
                         }
-                    }
-                    if (rs.next()) {
-                        do {
-                            String resultShcema = rs.getString("TABLE_SCHEM");
-                            if (
-                                    (schema == null && !"information_schema".equalsIgnoreCase(resultShcema))
-                                    || (schema != null && resultShcema == null)
-                                    || (schema != null && schema.equalsIgnoreCase(resultShcema))
-                            ) {
-                                result.add(rs.getString("COLUMN_NAME"));
-                            }
-                        } while (rs.next());
                     }
                     rs.close();
                 }
@@ -1132,21 +1126,30 @@ public class metadata {
         } catch (SQLException ex) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            if (connToDB != null)
+            if (connToDB != null) {
                 try {
                     connToDB.close();
                 } catch (SQLException ex) {
                     Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
                 }
+            }
         }
-
         time1 = System.currentTimeMillis();
-
         if (time1 - time0 > TIME_MSEC_LIMIT_FOR_WARNING) {
             Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, "*** WARNING : getAllColumnsAsArray() database:" + database + " schema:" + schema + " table:" + tableName + " time:" + (time1 - time0));
         }
-
         return result;
+    }
+
+    private static void fill_columns(String schema, ResultSet rs, ArrayList<String> result) throws SQLException {
+        do {
+            String resultShcema = rs.getString("TABLE_SCHEM");
+            if ((schema == null && !"information_schema".equalsIgnoreCase(resultShcema))
+                    || (schema != null && resultShcema == null)
+                    || (schema != null && schema.equalsIgnoreCase(resultShcema)) ) {
+                result.add(rs.getString("COLUMN_NAME"));
+            }
+        } while (rs.next());
     }
 
 

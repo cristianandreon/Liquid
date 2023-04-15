@@ -2897,7 +2897,9 @@ public class bean {
                 columnsList = trimmedColumnsList.toArray(new String[0]);
             }
 
-            primaryKeyColumn = tbl_wrk.tableJson.getString("primaryKey");
+            if(tbl_wrk.tableJson.has("primaryKey")) {
+                primaryKeyColumn = tbl_wrk.tableJson.getString("primaryKey");
+            }
 
             cols = tbl_wrk.tableJson.getJSONArray("columns");
             for (int ic = 0; ic < cols.length(); ic++) {
