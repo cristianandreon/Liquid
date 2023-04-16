@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.63
+// Liquid ver.2.64
 //
-//  First update 06-01-2020 - Last update 24-02-2023
+//  First update 06-01-2020 - Last update 16-04-2023
 //
 //  TODO : see trello.com
 //
@@ -22331,6 +22331,7 @@ columns:[
                             table: (sourceCol ? sourceCol.foreignTable : null),
                             columns:columns,
                             autoFitColumns:true,
+                            autoLoad:true,
                             width:"auto"
                         };
                     }
