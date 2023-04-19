@@ -3205,7 +3205,7 @@ var LiquidEditing = {
 
 
             if (!Liquid.customerName)
-                Liquid.customerName = zkParams.customerName ? zkParams.customerName : "geisoft";
+                Liquid.customerName = zkParams ? (zkParams.customerName ? zkParams.customerName : "geisoft") : "geisoft";
 
 
             Liquid.orderByField = "";
@@ -3275,13 +3275,13 @@ var LiquidEditing = {
                 Liquid.process_lookup_code = 'S';
 
             if(!Liquid.projectFolder)
-                Liquid.projectFolder = zkParams.projectFolder ? zkParams.projectFolder : "";
+                Liquid.projectFolder = zkParams ? (zkParams.projectFolder ? zkParams.projectFolder : "") : "";
             if(!Liquid.eventsFunctionsFile)
-                Liquid.eventsFunctionsFile = zkParams.eventsFunctionsFile ? zkParams.eventsFunctionsFile : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/controller/FunzioniEventi.java";
+                Liquid.eventsFunctionsFile = zkParams ? (zkParams.eventsFunctionsFile ? zkParams.eventsFunctionsFile : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/controller/FunzioniEventi.java") : "";
             if(!Liquid.lookupDefinitionFile)
-                Liquid.lookupDefinitionFile = zkParams.lookupDefinitionFile ? zkParams.lookupDefinitionFile : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/controller/Reference.xml";
+                Liquid.lookupDefinitionFile = zkParams ? (zkParams.lookupDefinitionFile ? zkParams.lookupDefinitionFile : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/controller/Reference.xml") : "";
             if(!Liquid.hibFolder)
-                Liquid.hibFolder = zkParams.hibFolder ? zkParams.hibFolder : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/hibernate/bean";
+                Liquid.hibFolder = zkParams ? (zkParams.hibFolder ? zkParams.hibFolder : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/hibernate/bean") : "";
 
 
 

@@ -2675,6 +2675,7 @@ var Liquid = {
     version: 2.65,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
+    undefinedCurrency: "--.--",
     debug: false,
     debugWorker: false,
     curDriver: "",
@@ -5565,7 +5566,8 @@ var Liquid = {
                         var locale = astypeArr.length > 1 ? astypeArr[1] : 'it-IT';
                         var currency = astypeArr.length > 2 ? astypeArr[2] : 'EUR';
                         cellRenderer = function (params) {
-                            let value = Number.parseFloat(params.value.replace(",",".")).toLocaleString(locale, {style: 'currency', currency: currency});
+                            let num = Number.parseFloat(params.value.replace(",","."));
+                            let value = isNaN(num) ? Liquid.undefinedCurrency : num.toLocaleString(locale, {style: 'currency', currency: currency});
                             return '<input type="text" disabled style="display:inline-table; width:100%; text-align:right; border:0px; position: relative; " value="' + value + '" />';
                         };
                     }
@@ -23293,7 +23295,7 @@ columns:[
                                 for (var i = 0; i < results.rows.length; i++) {
                                     Liquid.readUserDataExec(results.rows.item(i).id, results.rows.item(i).field, results.rows.item(i).value, results.rows.item(i).note, results.rows.item(i).date, callback);
                                 }
-                            } else{
+                            } else {
                                 if(callback) {
                                     callback(btoa(field), null, null, null);
                                 }
@@ -23318,6 +23320,10 @@ columns:[
                     if(callback) {
                         callback(null, null, null, null);
                     }
+                }
+            } else {
+                if(callback) {
+                    callback(null, null, null, null, "not available");
                 }
             }
         }
