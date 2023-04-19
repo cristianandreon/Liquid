@@ -55,7 +55,7 @@ public class Callback {
                     PrintWriter writer = null;
                     try {
                         writer = threadSession.response.getWriter();
-                        writer.print(data);
+                        writer.print(data+"<br/>");
                         writer.flush();
                     } catch (IOException ex) {
                         Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);

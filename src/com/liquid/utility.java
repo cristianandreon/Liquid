@@ -2684,6 +2684,11 @@ public class utility {
         return true;
     }
 
+    public static boolean create_file(String fileName, String fileContent) {
+        return set_file_content(fileName, fileContent);
+    }
+
+
     /**
      *
      * @param cDate

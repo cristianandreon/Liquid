@@ -132,7 +132,7 @@ public class Messagebox {
                     PrintWriter writer = null;
                     try {
                         writer = threadSession.response.getWriter();
-                        writer.print(title + " : " + message);
+                        writer.print(title + " : " + message+"<br/>");
                         writer.flush();
                     } catch (IOException ex) {
                         Logger.getLogger(Messagebox.class.getName()).log(Level.SEVERE, null, ex);

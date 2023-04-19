@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.64
+// Liquid ver.2.65
 //
 //  First update 06-01-2020 - Last update 16-04-2023
 //
@@ -642,6 +642,9 @@ class LiquidCtrl {
                         'stringColumn': {
                             // filter: 'agDateColumnFilter',
                             // filterParams: { comparator: myDateComparator },
+                            suppressMenu: false
+                        },
+                        'currencyColumn': {
                             suppressMenu: false
                         }
                     },
@@ -2669,7 +2672,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.60,
+    version: 2.65,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     debug: false,
@@ -5555,6 +5558,17 @@ var Liquid = {
                             return '<input type="checkbox" disabled style="display: inline-table; position: relative; " ' + checked + ' />';
                         };
                     }
+                    var astype = liquid.tableJson.columns[ic].astype;
+                    if(astype == 'color') {
+                    } else if(isDef(astype) && astype.toLowerCase().startsWith('currency')) {
+                        var astypeArr = astype.replace(",", ".").split(".");
+                        var locale = astypeArr.length > 1 ? astypeArr[1] : 'it-IT';
+                        var currency = astypeArr.length > 2 ? astypeArr[2] : 'EUR';
+                        cellRenderer = function (params) {
+                            let value = Number.parseFloat(params.value.replace(",",".")).toLocaleString(locale, {style: 'currency', currency: currency});
+                            return '<input type="text" disabled style="display:inline-table; width:100%; text-align:right; border:0px; position: relative; " value="' + value + '" />';
+                        };
+                    }
                     if (isDef(liquid.tableJson.columns[ic].editor)
                         || isDef(liquid.tableJson.columns[ic].value)
                         || isDef(liquid.tableJson.columns[ic].values)
@@ -5722,10 +5736,23 @@ var Liquid = {
                         };
                         typeColumn = "dateColumn";
                     } else {
-                        sortComparator = function (a, b) {
-                            return (a === 'string' ? a.localeCompare(b) : (a > b ? 1 : (a < b ? -1 : 0)));
-                        };
-                        typeColumn = "stringColumn";
+                        var astype = col.astype;
+                        if(astype == 'color') {
+                            typeColumn = "stringColumn";
+                            sortComparator = function (a, b) {
+                                return (Number(a) > Number(b) ? 1 : (Number(a) < Number(b) ? -1 : 0));
+                            };
+                        } else if(isDef(astype) && astype.toLowerCase().startsWith('currency')) {
+                            sortComparator = function (a, b) {
+                                return (Number(a) > Number(b) ? 1 : (Number(a) < Number(b) ? -1 : 0));
+                            };
+                            typeColumn = "currencyColumn";
+                        } else {
+                            sortComparator = function (a, b) {
+                                return (a === 'string' ? a.localeCompare(b) : (a > b ? 1 : (a < b ? -1 : 0)));
+                            };
+                            typeColumn = "stringColumn";
+                        }
                     }
 
 
@@ -19953,13 +19980,22 @@ var Liquid = {
                             console.error("LIQUID: cannot set numeric field with value:'"+value+"' .. please check layout:"+(isDef(layoutOrGrid) ? layoutOrGrid.name : ""));
                         }
                     }
-                    targetObj.value = value;
-                    try {
-                        let list = targetObj.getAttribute("linked-list");
-                        if(list) {
-                            Liquid.setDescDatalistFromCode(window, targetObj);
+                    var astype = targetObj.getAttribute('astype');
+                    if(astype == 'color') {
+                    } else if(isDef(astype) && astype.toLowerCase().startsWith('currency')) {
+                        let astypeArr = astype.replace(",", ".").split(".");
+                        let locale = astypeArr.length > 1 ? astypeArr[1] : 'it-IT';
+                        let currency = astypeArr.length > 2 ? astypeArr[2] : 'EUR';
+                        targetObj.value = Number(value).toLocaleString(locale, { style: 'currency', currency: currency });
+                    } else {
+                        targetObj.value = value;
+                        try {
+                            let list = targetObj.getAttribute("linked-list");
+                            if (list) {
+                                Liquid.setDescDatalistFromCode(window, targetObj);
+                            }
+                        } catch (e) {
                         }
-                    } catch (e) {
                     }
                 }
                 if(isDef(disabled)) {
@@ -19973,10 +20009,15 @@ var Liquid = {
             } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(targetObj.nodeName)) {
                 var astype = targetObj.getAttribute('astype');
                 if(astype == 'color') {
-                    if(value && value.trim().toLowerCase().startsWith("0x")) {
+                    if (value && value.trim().toLowerCase().startsWith("0x")) {
                         value = "#" + value.trim().substring(2);
                     }
                     jQ1124(targetObj).css("backgroundColor", value);
+                } else if(isDef(astype) && astype.toLowerCase().startsWith('currency')) {
+                    let astypeArr = astype.replace(",", ".").split(".");
+                    let locale = astypeArr.length > 1 ? astypeArr[1] : 'it-IT';
+                    let currency = astypeArr.length > 2 ? astypeArr[2] : 'EUR';
+                    jQ1124(targetObj).html( Number(value).toLocaleString(locale, { style: 'currency', currency: currency }));
                 } else {
                     jQ1124(targetObj).html(value);
                     // targetObj.innertHTML = value;
@@ -23309,81 +23350,83 @@ columns:[
     getDB:function() {
         if(glLiquidDBEnable) {
             if(!glLiquidIDB && !glLiquidDB) {
-
-                // WebDB
-                if (isDef(window.openDatabase)) {
-                    glLiquidDB = window.openDatabase('Liquid', '1.0', 'LiquidDB', Liquid.loadDBInitialSize);
-                    if (glLiquidDB) {
-                        glLiquidDB.transaction(function (tx) {
-                            tx.executeSql('CREATE TABLE IF NOT EXISTS WORKERS (id INTEGER PRIMARY KEY,userId TEXT,status TEXT,controlId TEXT,command TEXT, date DATETIME)');
-                            tx.executeSql('CREATE TABLE IF NOT EXISTS CLIPBOARD (id INTEGER PRIMARY KEY,controlId TEXT,columns TEXT, rows TEXT, date DATETIME)');
-                            tx.executeSql('CREATE TABLE IF NOT EXISTS USERDATA (id INTEGER PRIMARY KEY,field TEXT,note TEXT, value TEXT, date DATETIME)');
-                        }, null);
-                    }
-                    return glLiquidDB;
-                }
-
-                // localStorage o window.indexedDB
-                window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-                window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
-                window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
-                if (isDef(window.indexedDB)) {
-                    // var idbCallback = function (e) { console.load("idbCallback():"+e); }
-                    // var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion, idbCallback);
-                    var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion);
-                    request.onerror = function (event) {
-                        console.error("IndexedDB not enabled! error:" + event.target.error.message);
-                        event.target.readyState = 'done';
-                    };
-                    request.onsuccess = function (event) {
-                        glLiquidIDB = event.target.result;
-                        event.target.readyState = 'done';
-                    };
-                    request.onupgradeneeded = function (event) {
-                        try {
-                            glLiquidIDB = event.target.result;
-                            // var transaction = glLiquidIDB.transaction([],  IDBTransaction.READ_WRITE, 2000);
-                            // transaction.oncomplete = function(){}
-                            if (!glLiquidIDB.objectStoreNames.contains('WORKERS')) {
-                                var objStoreWorker = glLiquidIDB.createObjectStore("WORKERS", {autoIncrement: true});
-                                objStoreWorker.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
-                                objStoreWorker.createIndex("userId", "userId", {unique: false});
-                                objStoreWorker.createIndex("status", "status", {unique: false});
-                                objStoreWorker.createIndex("controlId", "controlId", {unique: false});
-                                objStoreWorker.createIndex("command", "command", {unique: false});
-                                objStoreWorker.createIndex("date", "date", {unique: false});
-                            }
-                            if (!glLiquidIDB.objectStoreNames.contains('CLIPBOARD')) {
-                                var objStoreClipboard = glLiquidIDB.createObjectStore("CLIPBOARD", {autoIncrement: true});
-                                objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
-                                objStoreClipboard.createIndex("controlId", "controlId", {unique: false});
-                                objStoreClipboard.createIndex("columns", "command", {unique: false});
-                                objStoreClipboard.createIndex("rows", "rows", {unique: false});
-                                objStoreClipboard.createIndex("date", "date", {unique: false});
-                            }
-                            if (!glLiquidIDB.objectStoreNames.contains('USERDATA')) {
-                                var objStoreClipboard = glLiquidIDB.createObjectStore("USERDATA", {autoIncrement: true});
-                                objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
-                                objStoreClipboard.createIndex("field", "controlId", {unique: false});
-                                objStoreClipboard.createIndex("note", "command", {unique: false});
-                                objStoreClipboard.createIndex("value", "rows", {unique: false});
-                                objStoreClipboard.createIndex("date", "date", {unique: false});
-                            }
-                        } catch (e) {
-                            console.error("IndexedDB not enabled! error:" + e);
+                try {
+                    // WebDB
+                    if (isDef(window.openDatabase)) {
+                        glLiquidDB = window.openDatabase('Liquid', '1.0', 'LiquidDB', Liquid.loadDBInitialSize);
+                        if (glLiquidDB) {
+                            glLiquidDB.transaction(function (tx) {
+                                tx.executeSql('CREATE TABLE IF NOT EXISTS WORKERS (id INTEGER PRIMARY KEY,userId TEXT,status TEXT,controlId TEXT,command TEXT, date DATETIME)');
+                                tx.executeSql('CREATE TABLE IF NOT EXISTS CLIPBOARD (id INTEGER PRIMARY KEY,controlId TEXT,columns TEXT, rows TEXT, date DATETIME)');
+                                tx.executeSql('CREATE TABLE IF NOT EXISTS USERDATA (id INTEGER PRIMARY KEY,field TEXT,note TEXT, value TEXT, date DATETIME)');
+                            }, null);
                         }
-                        event.target.readyState = 'done';
-                    };
-
-                    request.onblocked = function (event) {
-                        console.log("Please close all other tabs with this site open!");
-                    };
-                    if (Liquid.wait_for_indexdb_ready(request, "")) {
-                        glLiquidIDB = request.result;
+                        return glLiquidDB;
                     }
-                    return glLiquidIDB;
-                }
 
+                    // localStorage o window.indexedDB
+                    window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+                    window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
+                    window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
+                    if (isDef(window.indexedDB)) {
+                        // var idbCallback = function (e) { console.load("idbCallback():"+e); }
+                        // var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion, idbCallback);
+                        var request = window.indexedDB.open("LiquidDB", Liquid.loadDBversion);
+                        request.onerror = function (event) {
+                            console.error("IndexedDB not enabled! error:" + event.target.error.message);
+                            event.target.readyState = 'done';
+                        };
+                        request.onsuccess = function (event) {
+                            glLiquidIDB = event.target.result;
+                            event.target.readyState = 'done';
+                        };
+                        request.onupgradeneeded = function (event) {
+                            try {
+                                glLiquidIDB = event.target.result;
+                                // var transaction = glLiquidIDB.transaction([],  IDBTransaction.READ_WRITE, 2000);
+                                // transaction.oncomplete = function(){}
+                                if (!glLiquidIDB.objectStoreNames.contains('WORKERS')) {
+                                    var objStoreWorker = glLiquidIDB.createObjectStore("WORKERS", {autoIncrement: true});
+                                    objStoreWorker.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
+                                    objStoreWorker.createIndex("userId", "userId", {unique: false});
+                                    objStoreWorker.createIndex("status", "status", {unique: false});
+                                    objStoreWorker.createIndex("controlId", "controlId", {unique: false});
+                                    objStoreWorker.createIndex("command", "command", {unique: false});
+                                    objStoreWorker.createIndex("date", "date", {unique: false});
+                                }
+                                if (!glLiquidIDB.objectStoreNames.contains('CLIPBOARD')) {
+                                    var objStoreClipboard = glLiquidIDB.createObjectStore("CLIPBOARD", {autoIncrement: true});
+                                    objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
+                                    objStoreClipboard.createIndex("controlId", "controlId", {unique: false});
+                                    objStoreClipboard.createIndex("columns", "command", {unique: false});
+                                    objStoreClipboard.createIndex("rows", "rows", {unique: false});
+                                    objStoreClipboard.createIndex("date", "date", {unique: false});
+                                }
+                                if (!glLiquidIDB.objectStoreNames.contains('USERDATA')) {
+                                    var objStoreClipboard = glLiquidIDB.createObjectStore("USERDATA", {autoIncrement: true});
+                                    objStoreClipboard.createIndex('id', 'id', {keyPath: 'id', autoIncrement: true});
+                                    objStoreClipboard.createIndex("field", "controlId", {unique: false});
+                                    objStoreClipboard.createIndex("note", "command", {unique: false});
+                                    objStoreClipboard.createIndex("value", "rows", {unique: false});
+                                    objStoreClipboard.createIndex("date", "date", {unique: false});
+                                }
+                            } catch (e) {
+                                console.error("IndexedDB not enabled! error:" + e);
+                            }
+                            event.target.readyState = 'done';
+                        };
+
+                        request.onblocked = function (event) {
+                            console.log("Please close all other tabs with this site open!");
+                        };
+                        if (Liquid.wait_for_indexdb_ready(request, "")) {
+                            glLiquidIDB = request.result;
+                        }
+                        return glLiquidIDB;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
                 alert("This browser desn't support HTML WebDB / IndexDB\n\nUnable to use local database");
                 glLiquidDBEnable = false;
 
