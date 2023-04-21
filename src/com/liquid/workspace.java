@@ -1256,13 +1256,17 @@ public class workspace {
             }
 
             try {
-                if(tableJson.has("connectionDriver"))
+                if(tableJson.has("connectionDriver")) {
                     connectionDriver = tableJson.getString("connectionDriver");
+                    connectionDriver = utility.base64Decode(connectionDriver);
+                }
             } catch (Exception e) {
             }
             try {
-                if(tableJson.has("connectionURL"))
+                if(tableJson.has("connectionURL")) {
                     connectionURL = tableJson.getString("connectionURL");
+                    connectionURL = utility.base64Decode(connectionURL);
+                }
             } catch (Exception e) {
             }
             try {
