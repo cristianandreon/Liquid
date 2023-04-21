@@ -5352,7 +5352,7 @@ public class db {
         }
         int valueType = Types.CHAR; // string
         
-        if (colTypes == 8 || colTypes == 7) { // float
+        if (isNumeric(colTypes)) {
             if(oValue instanceof String) {
                 String value = (String)oValue;
                 value = value.replace(",", ".");
@@ -5361,18 +5361,17 @@ public class db {
                 } else {
                     oValue = (Object)0.0f;
                 }
-            } else {
             }
         }
 
-        if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
+        if (colTypes == Types.TIMESTAMP || colTypes == Types.DATE) { // date, datetime
             if(oValue instanceof String) {
                 String value = (String) oValue;
                 value = getLocalDate(value, colTypes, nullable);
                 if (value != null && !value.isEmpty()) {
                     // refine
                     if (isOracle || isPostgres) {
-                        if (colTypes == 6 || colTypes == 93) { // date, datetime
+                        if (colTypes == Types.TIMESTAMP) { // date, datetime
                             if (value.equalsIgnoreCase("CURRENT_TIMESTAMP")) {
                                 oValue = value;
                                 valueType = 0; // is an expression
@@ -5387,13 +5386,13 @@ public class db {
                                 oValue = value = "TO_DATE('" + value + "','YYYY-MM-DD')";
                                 valueType = 0; // is an expression
                             }
-                        } else if (colTypes == 91) { // date
+                        } else if (colTypes == Types.DATE) { // date
                             if (value.length() > 9) value = value.substring(0, 9);
                             oValue = value = "TO_DATE('" + value + "','YYYY-MM-DD')";
                             valueType = 0; // is an expression
                         }
                     } else if (isMySQL) {
-                        if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
+                        if (colTypes == Types.TIMESTAMP) { //  datetime
                             if (value.equalsIgnoreCase("CURRENT_TIMESTAMP")) {
                                 oValue = value;
                                 valueType = 0; // is an expression
@@ -5407,7 +5406,7 @@ public class db {
                                 oValue = value = "STR_TO_DATE('" + value + "','%Y-%m-%d')";
                                 valueType = 0; // is an expression
                             }
-                        } else if (colTypes == 91) { // date
+                        } else if (colTypes == Types.DATE) { // date
                             oValue = value = "STR_TO_DATE('" + value + "','%Y-%m-%d')";
                             valueType = 0; // is an expression
                         }
@@ -5416,10 +5415,10 @@ public class db {
                             oValue = value;
                             valueType = 0; // is an expression
                         } else {
-                            if (colTypes == 6 || colTypes == 91 || colTypes == 93) { // date, datetime
+                            if (colTypes == Types.TIMESTAMP) { // date, datetime
                                 oValue = value = "CONVERT(DATETIME,'" + value + "')";
                                 valueType = 0; // is an expression
-                            } else if (colTypes == 91) { // date
+                            } else if (colTypes == Types.DATE) { // date
                                 oValue = value = "CONVERT(DATETIME,'" + value + ")";
                                 valueType = 0; // is an expression
                             }
@@ -5443,7 +5442,7 @@ public class db {
             } else {
                 throw new Exception("format_db_value() : unsupported case");
             }
-        } else if (colTypes == 92) { // time
+        } else if (colTypes == Types.TIME) { // time
             // TODO: 24/09/2020 Test to do
             if(oValue instanceof String) {
                 String value = (String) oValue;
@@ -5490,7 +5489,7 @@ public class db {
                 valueType = colTypes; // is a number
             }
 
-        } else if (colTypes == -7) { // boolean
+        } else if (colTypes == Types.BIT) { // boolean
             valueType = colTypes; // is a boolean
             if(oValue instanceof String) {
                 String value = (String) oValue;
@@ -5507,8 +5506,6 @@ public class db {
                 return new Object[]{oValue, valueType};
             } else {
             }
-        } else if (colTypes == Types.NUMERIC) { // boolean
-            valueType = colTypes; // is a boolean
         }
 
         if(sDefault != null && !sDefault.isEmpty()) {

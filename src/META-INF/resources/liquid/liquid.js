@@ -12911,6 +12911,7 @@ var Liquid = {
                     }
                 }
 
+                liquid.comboModeObjHeight = Liquid.getPrecomputedHeight(liquid.comboModeObj);
                 liquid.commandsObjHeight = Liquid.getPrecomputedHeight(liquid.commandsObj);
                 liquid.filtersObjHeight = Liquid.getPrecomputedHeight(liquid.filtersObj);
                 liquid.gridTabsObjHeight = Liquid.getPrecomputedHeight(liquid.gridTabsObj, 31);
@@ -12921,6 +12922,7 @@ var Liquid = {
                     var gridTabsHeight = Number((liquid.gridTabsObj ? (liquid.gridTabsObjHeight ? liquid.gridTabsObjHeight : 0) : 0));
                     var aggridContainerHeight = (
                         (referenceHeight)
+                        - (liquid.comboModeObjHeight ? liquid.comboModeObjHeight : 0)
                         - (liquid.popupCaptionObj ? liquid.popupCaptionObj.offsetHeight : 0)
                         - (liquid.lookupObj ? liquid.lookupObj.offsetHeight : 0)
                         - (liquid.foreignTablesTabsObj ? liquid.foreignTablesTabsObj.offsetHeight : 0)
