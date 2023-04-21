@@ -14090,6 +14090,19 @@ var Liquid = {
                         + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                         + " title=\"" + toolTip + "\""
                         + " />";
+                } else if (Liquid.isBoolean(col.type)) {
+                    innerHTML += "<input " + " " + inputAutocomplete + " " + inputAutofocus + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
+                        + " value=\"\" id=\"" + itemId + "\""
+                        + " type=\"" + "checkbox" + "\" "
+                        + inputReadonly
+                        + inputDisabled
+                        + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
+                        + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
+                        + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
+                        + " onblur=\"Liquid.onGridFieldModify(event,this,true)\""
+                        + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
+                        + " title=\"" + toolTip + "\""
+                        + " />";
                 } else if (Liquid.isFloat(col.type)) {
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " " + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
                         + " value=\"\" id=\"" + itemId + "\""
