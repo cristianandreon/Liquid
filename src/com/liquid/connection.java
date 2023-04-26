@@ -308,8 +308,8 @@ public class connection {
                                 Object driverClass = null;
                                 if(curDriver != null)
                                     driverClass = Class.forName(curDriver);
-                                if(driverClass != null) {
-                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() : registered class for "+curDriver);
+                                if(driverClass == null) {
+                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() : register class failed for "+curDriver);
                                 }
                             } catch(Throwable th2) {
                             }
