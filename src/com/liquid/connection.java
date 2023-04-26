@@ -304,6 +304,15 @@ public class connection {
                         String curDriver = utility.base64Decode((String)request.getSession().getAttribute("GLLiquidDriver"));
                         Object curConnectionURL = utility.base64Decode((String)request.getSession().getAttribute("GLLiquidConnectionURL"));
                         if(curDriver != null && !curDriver.isEmpty()) {
+                            try {
+                                Object driverClass = null;
+                                if(curDriver != null)
+                                    driverClass = Class.forName(curDriver);
+                                if(driverClass != null) {
+                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "// getConnection() : registered class for "+curDriver);
+                                }
+                            } catch(Throwable th2) {
+                            }
                             if(curConnectionURL != null) {
                                 try {
                                     if(curConnectionURL instanceof ArrayList<?>) {
