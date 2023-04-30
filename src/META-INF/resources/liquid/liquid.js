@@ -10896,7 +10896,7 @@ var Liquid = {
                     if (prop == "value") {
                         let obj = document.getElementById(liquid.tableJson.actions[i].id);
                         if (obj) {
-                            if (obj.type == 'check') {
+                            if (obj.type == 'check' || obj.type == 'checkbox') {
                                 return obj.checked ? true : false;
                             } else if (obj.type == 'text') {
                                 return obj.value;
@@ -14458,8 +14458,15 @@ var Liquid = {
                                     let newValue = null;
                                     let curValue = selNodes[node].data[col.field];
                                     let doUpdateField = false;
-                                    if (obj.nodeName === 'INPUT' || obj.nodeName === 'SELECT') newValue = obj.value;
-                                    else newValue = obj.innerHTML;
+                                    if (obj.nodeName === 'INPUT' || obj.nodeName === 'SELECT') {
+                                        if (obj.type == 'check' || obj.type == 'checkbox') {
+                                            newValue = obj.checked ? true : false;
+                                        } else {
+                                            newValue = obj.value;
+                                        }
+                                    } else {
+                                        newValue = obj.innerHTML;
+                                    }
                                     let pure_value = obj.getAttribute('pure_value');
                                     curValue = pure_value != null ? pure_value : curValue;
                                     if (bValidate) {
