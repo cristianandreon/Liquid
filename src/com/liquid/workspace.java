@@ -2586,7 +2586,11 @@ public class workspace {
                             } catch (Exception ex) {
                             }
                             try {
-                                img = cmd.getString("img");
+                                img = cmd.has("img") ? cmd.getString("img") : null;
+                                if (cmd.has("image")) {
+                                    img = cmd.getString("image");
+                                    cmd.put("img", img);
+                                }
                             } catch (Exception ex) {
                                 img = null;
                             }
