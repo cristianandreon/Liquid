@@ -42,5 +42,69 @@ public class wsStreamerServer {
         } catch (Exception ex) {
             Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "Could not create web server "+ex.getLocalizedMessage());
         }        
-    }   
+    }
+
+    public static void stop() {
+        try {
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID] : Stopping WS Server ... ");
+            serverThread.run = false;
+            if(serverThread != null) {
+                if (wsStreamerServer.serverThread.server != null) {
+                    try {
+                        wsStreamerServer.serverThread.server.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (wsStreamerServer.serverThread.clientThreads != null) {
+                    for (int i = 0; i < wsStreamerServer.serverThread.clientThreads.size(); i++) {
+                        wsClientThread clientThread = wsStreamerServer.serverThread.clientThreads.get(i);
+
+                        if (clientThread.clientSocket != null) {
+                            try {
+                                clientThread.clientSocket.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        if (clientThread.outputStream != null) {
+                            try {
+                                clientThread.outputStream.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        if (clientThread.isAlive()) {
+                            clientThread.run = false;
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            if (clientThread.isAlive()) {
+                                clientThread.stop();
+                            }
+                        }
+                        wsStreamerServer.serverThread.clientThreads.set(i, null);
+                    }
+                    wsStreamerServer.serverThread.clientThreads.clear();
+                    wsStreamerServer.serverThread.clientThreads = null;
+                }
+
+                long timeut = System.currentTimeMillis() + 30 * 1000;
+                while(System.currentTimeMillis() < timeut) {
+                    Thread.sleep(100);
+                    if(!serverThread.isAlive()) break;
+                }
+                if(serverThread.isAlive()) {
+                    serverThread.stop();
+                }
+                serverThread = null;
+            }
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID] : WS Server stopped ");
+        } catch (Exception ex) {
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.SEVERE, "Could not create web server "+ex.getLocalizedMessage());
+        }
+    }
 }

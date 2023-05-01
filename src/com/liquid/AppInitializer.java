@@ -16,7 +16,9 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.ServletContextEvent;
 
 
-// @WebListener
+/**
+ *
+ */
 public class AppInitializer implements ServletContextListener {
 
     public static boolean bHttpSessionListnerAdded = false;
@@ -41,64 +43,7 @@ public class AppInitializer implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        if (wsStreamerServer.serverThread != null) {
-            if (wsStreamerServer.serverThread.server != null) {
-                try {
-                    wsStreamerServer.serverThread.server.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (wsStreamerServer.serverThread.run) {
-                wsStreamerServer.serverThread.run = false;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if (wsStreamerServer.serverThread.clientThreads != null) {
-                for (int i = 0; i < wsStreamerServer.serverThread.clientThreads.size(); i++) {
-                    wsClientThread clientThread = wsStreamerServer.serverThread.clientThreads.get(i);
-
-                    if (clientThread.clientSocket != null) {
-                        try {
-                            clientThread.clientSocket.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    if (clientThread.outputStream != null) {
-                        try {
-                            clientThread.outputStream.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    if (clientThread.isAlive()) {
-                        clientThread.run = false;
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        if (clientThread.isAlive()) {
-                            clientThread.stop();
-                        }
-                    }
-                    wsStreamerServer.serverThread.clientThreads.set(i, null);
-                }
-                wsStreamerServer.serverThread.clientThreads.clear();
-                wsStreamerServer.serverThread.clientThreads = null;
-            }
-
-            if (wsStreamerServer.serverThread.isAlive()) {
-                wsStreamerServer.serverThread.stop();
-            }
-            wsStreamerServer.serverThread = null;
-        }
+        wsStreamerServer.stop();
     }
 
     static public boolean check_libs() {
@@ -113,7 +58,7 @@ public class AppInitializer implements ServletContextListener {
                 if (location.toString().contains("json-20211205.jar!/org/json/JSONArray.class")) {
                     System.out.println(" .. [OK]");
                 } else {
-                    System.out.println(" .. [FAIL]");
+                    System.out.println(" .. [FAIL : need json-20211205.jar]");
                     retVal = false;
                 }
             }

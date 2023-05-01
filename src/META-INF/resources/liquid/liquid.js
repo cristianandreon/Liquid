@@ -281,6 +281,13 @@ class LiquidCtrl {
                 this.tableJson.mode = "";
             }
 
+            if(this.mode === "lookup" || (isDef(this.tableJson) && this.tableJson.mode === "lookup") ) {
+                if(!isDef(this.tableJson.autoLoad)) {
+                    this.tableJson.autoLoad = true;
+                }
+            }
+
+
             if(this.outDivCreated) {
                 if (this.tableJson) {
                     if (isDef(this.tableJson.width)) {
@@ -22396,19 +22403,20 @@ columns:[
                             table: (sourceCol ? sourceCol.foreignTable : null),
                             columns:columns,
                             autoFitColumns:true,
-                            autoLoad:true,
                             width:"auto"
                         };
                     }
                     if(lookupJson) {
                         try {
                             lookupJson.mode = "lookup";
+                            lookupJson.autoLoad = true;
                             lookupJson.columnsResolved = false;
                             lookupJson.registerControlId = registerControlId;
                             lookupJson.token = liquid.token;
                             lookupJson.gridLink = (linkType === 'grid' ? containerObjId : null);
                             lookupJson.filtertLink = (linkType === 'filter' ? containerObjId : null);
                             lookupJson.layoutLink = (linkType === 'layout' ? containerObjId : null);
+
                             // Let autoload data
                             // lookupJson.autoLoad = false;
                             if(isDef(json.lookupField))

@@ -487,7 +487,10 @@ public class wsStreamerClient {
      * @throws IOException 
      */
     public static int send(OutputStream outputStream, String data, String token) throws IOException {
-        return send(outputStream, data.getBytes(Charset.forName("UTF-8")), token, null);
+        if(data != null)
+            return send(outputStream, data.getBytes(Charset.forName("UTF-8")), token, null);
+        else
+            return 0;
     }
     /**
      * 
@@ -499,7 +502,10 @@ public class wsStreamerClient {
      * @throws IOException 
      */
     public static int send(OutputStream outputStream, String data, String token, String typeOf) throws IOException {
-        return send(outputStream, data.getBytes(), token, typeOf);
+        if(data != null)
+            return send(outputStream, data.getBytes(), token, typeOf);
+        else
+            return 0;
     }
     /**
      * 
@@ -511,11 +517,15 @@ public class wsStreamerClient {
      * @throws IOException 
      */
     public static int send(OutputStream outputStream, byte[] data, String token, String typeOf) throws IOException {
-        boolean bZip = false;
-        byte[] compressedData = encode(bZip ? gzip(data) : data, token, typeOf );
-        outputStream.write(compressedData, 0, compressedData.length);
-        outputStream.flush();
-        return compressedData.length;
+        if (outputStream != null && data != null) {
+            boolean bZip = false;
+            byte[] compressedData = encode(bZip ? gzip(data) : data, token, typeOf);
+            outputStream.write(compressedData, 0, compressedData.length);
+            outputStream.flush();
+            return compressedData.length;
+        } else {
+            return 0;
+        }
     }
     
     private static byte[] gzip(String data) throws IOException {
