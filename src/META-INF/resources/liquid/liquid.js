@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.65
+// Liquid ver.2.66
 //
 //  First update 06-01-2020 - Last update 16-04-2023
 //
@@ -2679,7 +2679,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.65,
+    version: 2.66,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -11889,7 +11889,9 @@ var Liquid = {
                                 if(command.fromToolbar == true) {
                                     liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 } else {
-                                    liquid.currentCommand.step = Liquid.CMD_EXECUTE;
+                                    // Disapprovato : il comando esplicito passa sempre per lo stadio editazione
+                                    // liquid.currentCommand.step = Liquid.CMD_EXECUTE;
+                                    liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 }
                                 bContinue = true;
                             }
@@ -11918,7 +11920,9 @@ var Liquid = {
                                         if(command.fromToolbar == true) {
                                             liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                         } else {
-                                            liquid.currentCommand.step = Liquid.CMD_EXECUTE;
+                                            // Disapprovato : il comando esplicito passa sempre per lo stadio editazione
+                                            // liquid.currentCommand.step = Liquid.CMD_EXECUTE;
+                                            liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                         }
                                         bContinue = true;
                                     }
@@ -12025,7 +12029,7 @@ var Liquid = {
                                 Liquid.refreshLayouts(liquid, true);
                                 return false;
                             } else {
-                                if (command.fromToolbar === true) {
+                                if (command.fromToolbar == true) {
                                     // Se la barra non è visibile il click è interpretato come conferma
                                 } else {
                                     // N.B.: Se la barra di conferma è attiva il nodo puo essere delezionato
@@ -19737,7 +19741,9 @@ var Liquid = {
                                     let gridObj = grid.columns[ic];
                                     let obj = Liquid.getItemObj(gridObj);
                                     if(obj) {
-                                        obj.removeAttribute("pure_value");
+                                        try {
+                                            obj.removeAttribute("pure_value");
+                                        } catch (e) {}
                                     }
                                 }
                             }
@@ -19754,7 +19760,9 @@ var Liquid = {
                                 for (let ir = 0; ir < layout.rowsContainer.length; ir++) {
                                     if (isDef(layout.rowsContainer[ir])) {
                                         if (isDef(layout.rowsContainer[ir].objs)) {
-                                            Liquid.reset_pure_value(layout.rowsContainer[ir]);
+                                            for (var io = 0; io < layout.rowsContainer[ir].objs.length; io++) {
+                                                Liquid.reset_pure_value(layout.rowsContainer[ir].objs[io]);
+                                            }
                                         }
                                     }
                                 }
@@ -19767,7 +19775,9 @@ var Liquid = {
     },
     reset_pure_value:function(obj) {
         if(obj) {
-            obj.removeAttribute("pure_value");
+            try {
+                obj.removeAttribute("pure_value");
+            } catch (e) {}
             if (obj.childNodes) {
                 for (var i = 0; i < obj.childNodes.length; i++) {
                     Liquid.reset_pure_value(obj.childNodes[i]);
