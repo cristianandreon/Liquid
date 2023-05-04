@@ -11890,8 +11890,8 @@ var Liquid = {
                                     liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 } else {
                                     // Disapprovato : il comando esplicito passa sempre per lo stadio editazione
-                                    // liquid.currentCommand.step = Liquid.CMD_EXECUTE;
-                                    liquid.currentCommand.step = Liquid.CMD_ENABLED;
+                                    liquid.currentCommand.step = Liquid.CMD_EXECUTE;
+                                    // liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 }
                                 bContinue = true;
                             }
@@ -11921,8 +11921,8 @@ var Liquid = {
                                             liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                         } else {
                                             // Disapprovato : il comando esplicito passa sempre per lo stadio editazione
-                                            // liquid.currentCommand.step = Liquid.CMD_EXECUTE;
-                                            liquid.currentCommand.step = Liquid.CMD_ENABLED;
+                                            liquid.currentCommand.step = Liquid.CMD_EXECUTE;
+                                            // liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                         }
                                         bContinue = true;
                                     }
