@@ -2828,6 +2828,12 @@ public class bean {
 
         try {
 
+            // cerca o cerca il controllo
+            workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, controlId);
+            if (tbl_wrk == null) {
+                return null;
+            }
+
             if (tableParts != null) {
                 if (tableParts.length == 1) {
                     table = tableParts[0];
@@ -2839,14 +2845,18 @@ public class bean {
                     schema = tableParts[1];
                     database = tableParts[0];
                 }
+            } else {
+                if(tbl_wrk.tableJson.has("table")) {
+                    table = tbl_wrk.tableJson.getString("table");
+                }
+                if(tbl_wrk.tableJson.has("schema")) {
+                    schema = tbl_wrk.tableJson.getString("schema");
+                }
+                if(tbl_wrk.tableJson.has("database")) {
+                    database = tbl_wrk.tableJson.getString("database");
+                }
             }
 
-
-            // cerca o cerca il controllo
-            workspace tbl_wrk = load_beans_get_workspace(request, databaseSchemaTable, controlId);
-            if (tbl_wrk == null) {
-                return null;
-            }
 
             boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
             String itemIdString = "\"", tableIdString = "\"";
