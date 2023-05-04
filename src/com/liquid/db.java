@@ -5354,12 +5354,51 @@ public class db {
         
         if (isNumeric(colTypes)) {
             if(oValue instanceof String) {
-                String value = (String)oValue;
+                String value = (String) oValue;
                 value = value.replace(",", ".");
+                if (colTypes == Types.BIGINT) {
+                    if(value != null && !value.isEmpty()) {
+                        oValue = Long.parseLong(value);
+                    } else {
+                        oValue = (Object)0L;
+                    }
+                } else if(colTypes == Types.DECIMAL || colTypes == Types.NUMERIC) {
+                    // TODO: test
+                    if(value != null && !value.isEmpty()) {
+                        oValue = (Number)Double.parseDouble(value);
+                    } else {
+                        oValue = (Object)0.0;
+                    }
+                } else if(colTypes == Types.DOUBLE || colTypes == Types.REAL) {
+                    if(value != null && !value.isEmpty()) {
+                        oValue = Double.parseDouble(value);
+                    } else {
+                        oValue = (Object)0.0;
+                    }
+                } else if(colTypes == Types.FLOAT) {
                 if(value != null && !value.isEmpty()) {
                     oValue = Float.parseFloat(value);
                 } else {
                     oValue = (Object)0.0f;
+                }
+                } else if(colTypes == Types.INTEGER) {
+                    if(value != null && !value.isEmpty()) {
+                        oValue = Integer.parseInt(value);
+                    } else {
+                        oValue = (Object)0;
+                    }
+                } else if(colTypes == Types.SMALLINT) {
+                    if(value != null && !value.isEmpty()) {
+                        oValue = Short.parseShort(value);
+                    } else {
+                        oValue = (Object)new Short((short) 0);
+                    }
+                } else if(colTypes == Types.TINYINT) {
+                    if(value != null && !value.isEmpty()) {
+                        oValue = Byte.parseByte(value);
+                    } else {
+                        oValue = (Object)new Byte((byte) 0);
+                    }
                 }
             }
         }
