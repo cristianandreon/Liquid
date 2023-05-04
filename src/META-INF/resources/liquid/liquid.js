@@ -690,7 +690,8 @@ class LiquidCtrl {
                                                                 console.info("Row change");
                                                             } else {
                                                                 if(!isDef(liquid.currentCommand)) {
-                                                                    Liquid.onCommand(liquid, "update");
+                                                                    Liquid.onButton(liquid, {name:"update"});
+                                                                    // Liquid.onCommand(liquid, "update");
                                                                 } else {
                                                                     // Chnage row inside command
                                                                 }
