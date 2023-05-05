@@ -6207,7 +6207,7 @@ var Liquid = {
                             }
                             if (liquid.currentCommand && liquid.currentCommand.name === 'insert') {
                             } else {
-                                var insertCommand = {name: "insert", isNative: true, fromToolbar: false};
+                                var insertCommand = {name: "insert", isNative: true, fromToolbar: true};
                                 Liquid.onButton(liquid, insertCommand);
                             }
                         }
@@ -6340,7 +6340,7 @@ var Liquid = {
                 if (liquid.autoInsertIfMissing === true) {
                     if (liquid.nRows === 0) {
                         // no row
-                        Liquid.onButton(liquid, {name: "insert", fromToolbar: false});
+                        Liquid.onButton(liquid, {name: "insert", fromToolbar: true});
                         console.debug("INFO: autoInsertingIfMissing on control '" + liquid.controlId + "'");
                     }
                     liquid.autoInsertIfMissing = false;
@@ -6407,7 +6407,7 @@ var Liquid = {
                 if (liquid.autoInsertIfMissing === true) {
                     var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                     if (nodes === null || nodes.length == 0) {
-                        Liquid.onButton(liquid, {name: "insert", fromToolbar: false});
+                        Liquid.onButton(liquid, {name: "insert", fromToolbar: true});
                     }
                     liquid.autoInsertIfMissing = false;
                 }
@@ -11470,6 +11470,9 @@ var Liquid = {
         var retVal = null;
         if (command) {
             let doConfirm = false;
+            if (!isDef(command.fromToolbar)) {
+                command.fromToolbar = true;
+            }
             if (command.fromToolbar) {
                 if (command.step == Liquid.CMD_VALIDATE || command.step == Liquid.CMD_EXECUTE) {
                     if (command.isCommandConfirmed === true) {
@@ -11890,8 +11893,8 @@ var Liquid = {
                                 if(command.fromToolbar == true) {
                                     liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 } else {
-                                    // Disapprovato : il comando esplicito passa sempre per lo stadio editazione
                                     liquid.currentCommand.step = Liquid.CMD_EXECUTE;
+                                    // Disapprovato : il comando esplicito passa sempre per lo stadio editazione
                                     // liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                 }
                                 bContinue = true;
@@ -11921,8 +11924,8 @@ var Liquid = {
                                         if(command.fromToolbar == true) {
                                             liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                         } else {
-                                            // Disapprovato : il comando esplicito passa sempre per lo stadio editazione
                                             liquid.currentCommand.step = Liquid.CMD_EXECUTE;
+                                            // Disapprovato : il comando esplicito passa sempre per lo stadio editazione
                                             // liquid.currentCommand.step = Liquid.CMD_ENABLED;
                                         }
                                         bContinue = true;
