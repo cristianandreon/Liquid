@@ -11540,7 +11540,9 @@ var Liquid = {
                             var cmd = liquid.tableJson.commands[icmd];
                             if (cmd.name === command.name) {
                                 // Liquid.transferProperties(cmd, command, ["server","client","rollback","rollbackObj","rollbackImg","rollbackCommand","linkedLabelObj","isNative","img","size","labels","text","lastGridIndex"]);
+                                let fromToolbar = command.fromToolbar;
                                 command = cmd;
+                                command.fromToolbar = fromToolbar;
                                 bCmdFound = true;
                                 break
                             }
