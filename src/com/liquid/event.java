@@ -3491,7 +3491,7 @@ public class event {
                     if (paramJSON.has(paramName)) {
                         if (!paramJSON.has("name")) {
                             Object value = paramJSON.get(paramName);
-                            if(controlId.equals(String.valueOf(value))) {
+                            if(controlId != null && controlId.equals(String.valueOf(value))) {
                                 if (paramJSON.has("data")) {
                                     value = paramJSON.get("data");
                                 }
