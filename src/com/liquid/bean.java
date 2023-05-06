@@ -1583,7 +1583,7 @@ public class bean {
 
 
     /**
-     * Creane new empty bean for control
+     * Creane new empty bean for control or set it from the modifications tag
      *
      * @param requestParam
      * @param tblWrk    the control workspace
@@ -2432,7 +2432,9 @@ public class bean {
                 if (tbl_wrk == null) {
                     tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, runtimeControlId);
                     if (tbl_wrk == null) {
-                        tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, null);
+                        if("*".equalsIgnoreCase(controlId)) {
+                            tbl_wrk = workspace.get_tbl_manager_workspace_from_db(databaseSchemaTable, null);
+                        }
                     }
                 }
             }

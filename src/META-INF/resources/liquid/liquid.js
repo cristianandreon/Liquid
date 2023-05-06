@@ -9759,10 +9759,10 @@ var Liquid = {
      * @param {commandName} the name of the command to execute
      * @return {} n/d
      */
-    command: async function (obj, commandName, commandPostFunc) { // aux entry
-        return Liquid.onCommand(obj, commandName, commandPostFunc);
+    command: async function (obj, commandName, commandPostFunc, fromToobar) { // aux entry
+        return Liquid.onCommand(obj, commandName, commandPostFunc, fromToobar);
     },
-    onCommand: async function (obj, commandName, commandPostFunc) { // aux entry
+    onCommand: async function (obj, commandName, commandPostFunc, fromToobar) { // aux entry
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             if (isDef(liquid.tableJson)) {
@@ -9806,7 +9806,7 @@ var Liquid = {
                                 // Continue or start current command
                                 if (liquid.currentCommand.name === command.name || liquid.currentCommand.name + "-rollback" === command.name) {
                                     liquid.currentCommand.postFunc = commandPostFunc;
-                                    liquid.currentCommand.fromToolbar = false;
+                                    liquid.currentCommand.fromToolbar = isDef(fromToobar) ? fromToobar : false;
                                     return await Liquid.onButton(liquid, command);
                                 } else {
                                     console.error("LIQUID: Command '" + command.name + "' not accepted! current running command:" + liquid.currentCommand.name);
@@ -9815,14 +9815,14 @@ var Liquid = {
                             }
                             if (command.isNative) {
                                 // native step command .. continue or start
-                                command.fromToolbar = false;
+                                command.fromToolbar = isDef(fromToobar) ? fromToobar : false;
                                 return await Liquid.onButton(liquid, command);
                             } else {
                                 // Single step command
                                 isCommandFound = true;
                                 command.step = Liquid.CMD_EXECUTE;
                                 command.postFunc = commandPostFunc;
-                                command.fromToolbar = false;
+                                command.fromToolbar = isDef(fromToobar) ? fromToobar : false;
                                 var eventName = "before" + commandName;
                                 var eventData = null;
                                 var defaultRetval = null;
@@ -11774,14 +11774,14 @@ var Liquid = {
                         }
                         if (nodes) {
                             if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
-                                if(nodes != null && nodes.length>cRow+1)
+                                if(nodes != null && nodes.length>=cRow+1)
                                     nodes[cRow].setSelected(true);
                             } else {
                                 if (liquid.gridOptions.rowSelection === 'single') {
-                                    if(nodes != null && nodes.length>cRow+1)
+                                    if(nodes != null && nodes.length>=cRow+1)
                                         nodes[cRow].setSelected(true);
                                 } else if (typeof liquid.tableJson.rowMultiSelectWithClick !== true) {
-                                    if(nodes != null && nodes.length>cRow+1)
+                                    if(nodes != null && nodes.length>=cRow+1)
                                         nodes[cRow].setSelected(true);
                                 } else {
                                     // no selection
@@ -14956,7 +14956,12 @@ var Liquid = {
 
             if (layout) {
 
-                if (layout.pendingRowTemplateLoad) return;
+                if (layout.pendingRowTemplateLoad) {
+                    if(!isDef(layout.pendingRowTemplateRefresh)) layout.pendingRowTemplateRefresh = 0;
+                    layout.pendingRowTemplateRefresh++;
+                    console.debug("pending template on control:"+liquid.controlId);
+                    return;
+                }
 
                 if (containerObj) {
                     var slideDownContainerObjs = [];
@@ -15452,12 +15457,22 @@ var Liquid = {
                     if (i + 1 >= slideDownContainerObjs.length) {
                         Liquid.postProcessRefreshLayout(liquid, layout, nRows);
                         layout.pendingRowTemplateLoad = false;
+                        if(layout.pendingRowTemplateRefresh>0) {
+                            layout.pendingRowTemplateRefresh = 0;
+                            Liquid.linkLayoutToFields(liquid, layout, containerObj, bSetup);
+                            // Fire event
+                            Liquid.onEvent(liquid, "onLoadLayout", layout, null);
+                        }
                     }
                 });
             }
         } else {
             Liquid.postProcessRefreshLayout(liquid, layout, nRows);
             layout.pendingRowTemplateLoad = false;
+            if(layout.pendingRowTemplateRefresh>0) {
+                layout.pendingRowTemplateRefresh = 0;
+                Liquid.linkLayoutToFields(liquid, layout, containerObj, bSetup);
+            }
         }
         if (setMode) {
             if (nRowsToRender > 0) {
@@ -15513,6 +15528,7 @@ var Liquid = {
      */
     change_layout_row_template:function(liquid, layout, ir, templateRowSource, templateRow) {
         layout.pendingRowTemplateLoad = true;
+        layout.pendingRowTemplateRefresh = 0;
 
         var rowsContainer = layout.rowsContainer[ir];
 
@@ -15722,14 +15738,14 @@ var Liquid = {
                     lay_coord.layout.lastCRow = liquid.cRow;
                     var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                     if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
-                        if(nodes != null && nodes.length>cRow+1)
+                        if(nodes != null && nodes.length>=cRow+1)
                             nodes[cRow].setSelected(true);
                     } else {
                         if (liquid.gridOptions.rowSelection === 'single') {
-                            if(nodes != null && nodes.length>cRow+1)
+                            if(nodes != null && nodes.length>=cRow+1)
                                 nodes[cRow].setSelected(true);
                         } else if (typeof liquid.tableJson.rowMultiSelectWithClick !== true) {
-                            if(nodes != null && nodes.length>cRow+1)
+                            if(nodes != null && nodes.length>=cRow+1)
                                 nodes[cRow].setSelected(true);
                         } else {
                             // no selection
@@ -19763,11 +19779,13 @@ var Liquid = {
                         var layout = liquid.tableJson.layouts[il];
                         if (layout) {
                             if (layout.pageLoaded === true) {
-                                for (let ir = 0; ir < layout.rowsContainer.length; ir++) {
-                                    if (isDef(layout.rowsContainer[ir])) {
-                                        if (isDef(layout.rowsContainer[ir].objs)) {
-                                            for (var io = 0; io < layout.rowsContainer[ir].objs.length; io++) {
-                                                Liquid.reset_pure_value(layout.rowsContainer[ir].objs[io]);
+                                if (layout.rowsContainer) {
+                                    for (let ir = 0; ir < layout.rowsContainer.length; ir++) {
+                                        if (isDef(layout.rowsContainer[ir])) {
+                                            if (isDef(layout.rowsContainer[ir].objs)) {
+                                                for (var io = 0; io < layout.rowsContainer[ir].objs.length; io++) {
+                                                    Liquid.reset_pure_value(layout.rowsContainer[ir].objs[io]);
+                                                }
                                             }
                                         }
                                     }
