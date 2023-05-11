@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.sql.*;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -1753,6 +1754,67 @@ public class metadata {
         return false;
     }
 
+
+
+    public static boolean create_table_from_json(String database, String schema, String table, JSONObject bean, String primaryKey) throws Throwable {
+        Connection conn = null;
+        try {
+            Object[] connResult = connection.getDBConnection(database);
+            conn = (Connection) connResult[0];
+            String connError = (String) connResult[1];
+            if (conn != null) {
+                JSONObject tableJson = new JSONObject();
+                tableJson.put("primaryKey", primaryKey);
+                HashMap<String, Object> FieldsAndValues = (HashMap<String, Object>) utility.jsonToMap(bean);
+                JSONArray columns = new JSONArray();
+                for (String k : FieldsAndValues.keySet()) {
+                    Object field = FieldsAndValues.get(k);
+                    JSONObject column = new JSONObject();
+                    column.put("name", k);
+                    if (field instanceof Boolean) {
+                        column.put("type", Types.BOOLEAN);
+                    } else if (field instanceof Byte) {
+                        column.put("type", Types.INTEGER);
+                    } else if (field instanceof Short) {
+                        column.put("type", Types.INTEGER);
+                    } else if (field instanceof Integer) {
+                        column.put("type", Types.INTEGER);
+                    } else if (field instanceof Long) {
+                        column.put("type", Types.INTEGER);
+                    } else if (field instanceof Float) {
+                        column.put("type", Types.FLOAT);
+                    } else if (field instanceof Double) {
+                        column.put("type", Types.DOUBLE);
+                    } else {
+                        column.put("type", Types.VARCHAR);
+                    }
+                    columns.put(column);
+                }
+                tableJson.put("columns", columns);
+                return create_table(conn, database, schema, table, tableJson);
+            }
+        } finally {
+            try {
+                if (conn != null)
+                    conn.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(db.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return false;
+    }
+
+    /**
+     *
+     * @param conn
+     * @param database
+     * @param schema
+     * @param table
+     * @param tableJson
+     * @return
+     * @throws SQLException
+     * @throws JSONException
+     */
     static boolean create_table(Connection conn, String database, String schema, String table, JSONObject tableJson) throws SQLException, JSONException {
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
         String itemIdString = "\"", tableIdString = "\"";
@@ -1811,11 +1873,7 @@ public class metadata {
                 int size = col.has("size") ? col.getInt("size") : 256;
 
 
-                String sDefault = "";
-                try {
-                    sDefault = col.getString("default");
-                } catch (Exception e) {
-                }
+                String sDefault = col.has("default") ? col.getString("default") : "";
 
                 if (ic > 0) {
                     sql += ",";

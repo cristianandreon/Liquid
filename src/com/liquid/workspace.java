@@ -4313,7 +4313,11 @@ public class workspace {
                 if (ct > 0) {
                     listObj.append(separator);
                 }
-                listObj.append((prefix != null ? prefix : "") + (objs[ct] != null ? objs[ct].toString() : "") + (postfix != null ? postfix : ""));
+                String value = objs[ct] != null ? objs[ct].toString() : "";
+                if(value.indexOf(separator) >= 0) {
+                    value = value.replace(separator, "\\"+value);
+                }
+                listObj.append((prefix != null ? prefix : "") + (value) + (postfix != null ? postfix : ""));
             }
         }
         return listObj.toString();
@@ -4340,8 +4344,12 @@ public class workspace {
                     if (ct > 0) {
                         listObj.append(separator);
                     }
-                    Object value = objs.get(ct);
-                    listObj.append((prefix != null ? prefix : "") + (value != null ? value.toString() : "") + (postfix != null ? postfix : ""));
+                    Object ovalue = objs.get(ct);
+                    String value = ovalue != null ? String.valueOf(ovalue) : "";
+                    if(value.indexOf(separator) >= 0) {
+                        value = value.replace(separator, "\\"+value);
+                    }
+                    listObj.append((prefix != null ? prefix : "") + value + (postfix != null ? postfix : ""));
                 } catch (JSONException ex) {
                     Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
                 }

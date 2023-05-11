@@ -3628,9 +3628,50 @@ public class db {
      * @throws Throwable
      */
     static public Object [] insert_row ( String DatabaseSchemaTable, HashMap<String, Object> FieldsAndValues ) throws Throwable {
-        return insert_row ( DatabaseSchemaTable, FieldsAndValues,null);
+        return insert_row ( DatabaseSchemaTable, FieldsAndValues, (HttpServletRequest)null);
     }
 
+
+    /**
+     *
+     * Insert row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     *
+     * @param DatabaseSchemaTable
+     * @param bean
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] insert_row ( String DatabaseSchemaTable, Object bean, String option ) throws Throwable {
+        HashMap<String, Object> FieldsAndValues = new HashMap<>();
+        Field[] allFields = bean.class.getDeclaredFields();
+        for (Field field : allFields) {
+            Class<?> targetType = field.getType();
+            Object objectValue = targetType.newInstance();
+            Object value = field.get(objectValue);
+            FieldsAndValues.put(field.getName(), value);
+        }
+        return insert_row ( DatabaseSchemaTable,FieldsAndValues );
+    }
+
+
+    /**
+     *
+     * Insert row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param bean
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] insert_row ( String DatabaseSchemaTable, JSONObject bean ) throws Throwable {
+        HashMap<String,Object> FieldsAndValues = (HashMap<String, Object>) utility.jsonToMap(bean);
+        return insert_row ( DatabaseSchemaTable, FieldsAndValues, (HttpServletRequest)null );
+    }
 
     /**
      * Insert row by Fields and Values
@@ -3929,6 +3970,46 @@ public class db {
     }
 
 
+
+    /**
+     * Insert or update row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param bean
+     * @return Object [] (boolean OK/KO, Object newId/error num, String error)
+     * @throws Throwable
+     */
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, Object bean, Object [] keys) throws Throwable {
+        HashMap<String, Object> FieldsAndValues = new HashMap<>();
+        Field[] allFields = bean.class.getDeclaredFields();
+        for (Field field : allFields) {
+            Class<?> targetType = field.getType();
+            Object objectValue = targetType.newInstance();
+            Object value = field.get(objectValue);
+            FieldsAndValues.put(field.getName(), value);
+        }
+        return insert_update_row (DatabaseSchemaTable, FieldsAndValues, keys );
+    }
+
+    /**
+     * Insert or update row by Fields and Values
+     *
+     * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
+     *
+     * @param DatabaseSchemaTable
+     * @param bean
+     * @return Object [] (boolean OK/KO, Object newId/error num, String error)
+     * @throws Throwable
+     */
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, JSONObject bean, Object [] keys) throws Throwable {
+        Map<String,Object> FieldsAndValues = (HashMap<String, Object>) utility.jsonToMap(bean);
+        return insert_update_row (DatabaseSchemaTable, (HashMap<String, Object>)FieldsAndValues, keys );
+    }
+
+
+
     /**
      * Insert or update row by Fields and Values
      *
@@ -3958,7 +4039,7 @@ public class db {
     static public Object [] insert_update_row ( String DatabaseSchemaTable, HashMap<String,Object>FieldsAndValues, Object [] keys) throws Throwable {
         String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
         Object [] Values = FieldsAndValues.values().toArray();
-        return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, null );
+        return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, (HttpServletRequest)null);
     }
 
     /**
@@ -3975,7 +4056,8 @@ public class db {
      */
     static public Object [] insert_update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, Object [] keys, HttpServletRequest request ) throws Throwable {
         boolean retVal = false;
-        Object new_id = null;
+        Object new_id = null, main_id = null;
+        ArrayList<Object> new_ids = null;
 
         Connection conn = null;
         String sSTMTUpdate = null;
@@ -3984,6 +4066,9 @@ public class db {
             return new Object [] { false, -1 };
         }
         if(Fields.length > Values.length) {
+            return new Object [] { false, -1 };
+        }
+        if(Fields.length == 0 || Values.length == 0) {
             return new Object [] { false, -1 };
         }
 
@@ -4017,7 +4102,13 @@ public class db {
                 sSTMTUpdate += ") VALUES (";
                 for(int i=0; i<Fields.length; i++) {
                     sSTMTUpdate += (i > 0 ? "," : "") + "?";
-                    params.add(Values[i]);
+                    if(Values[i] instanceof String []) {
+                        params.add(utility.arrayToString((String[]) Values[i], "", "", ","));
+                    } else if(Values[i] instanceof List) {
+                        params.add(utility.arrayToString( (ArrayList<String>)Values[i], "", "", ","));
+                    } else {
+                        params.add(Values[i]);
+                    }
                 }
 
 
@@ -4028,7 +4119,13 @@ public class db {
                         sConflictFields += (sConflictFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"";
                     } else {
                         sUpdatingFields += (sUpdatingFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"" + "=?";
-                        params.add(Values[i]);
+                        if(Values[i] instanceof String []) {
+                            params.add(utility.arrayToString((String[]) Values[i], "", "", ","));
+                        } else if(Values[i] instanceof List) {
+                            params.add(utility.arrayToString( (ArrayList<String>)Values[i], "", "", ","));
+                        } else {
+                            params.add(Values[i]);
+                        }
                     }
                 }
 
@@ -4053,32 +4150,43 @@ public class db {
                 } else {
                     ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
                     if (rs != null && rs.next()) {
-                        switch (rs.getMetaData().getColumnType(1)) {
-                            case Types.INTEGER:
-                                new_id = rs.getInt(1);
-                                break;
-                            case Types.NUMERIC:
-                                new_id = rs.getInt(1);
-                                break;
-                            case Types.NVARCHAR:
-                            case Types.VARCHAR:
-                                new_id = rs.getString(1);
-                                break;
-                            case Types.BIGINT:
-                            case Types.DECIMAL:
-                                new_id = rs.getBigDecimal(1);
-                                break;
-                            case Types.ROWID:
-                                new_id = rs.getRowId(1);
-                                break;
-                            default:
-                                throw new UnsupportedOperationException("ID type non implemented ... please update me");
+                        int foundKey = 0;
+                        for (int ic=0; ic<rs.getMetaData().getColumnCount(); ic++) {
+                            for(int ik=0; ik < keys.length; ik++) {
+                                if (rs.getMetaData().getColumnName(ic+1).equalsIgnoreCase(String.valueOf(keys[ik]))) {
+                                    foundKey++;
+                                    switch (rs.getMetaData().getColumnType(ic+1)) {
+                                        case Types.INTEGER:
+                                            new_id = rs.getInt(ic+1);
+                                            break;
+                                        case Types.NUMERIC:
+                                            new_id = rs.getInt(ic+1);
+                                            break;
+                                        case Types.NVARCHAR:
+                                        case Types.VARCHAR:
+                                            new_id = rs.getString(ic+1);
+                                            break;
+                                        case Types.BIGINT:
+                                        case Types.DECIMAL:
+                                            new_id = rs.getBigDecimal(ic+1);
+                                            break;
+                                        case Types.ROWID:
+                                            new_id = rs.getRowId(ic+1);
+                                            break;
+                                        default:
+                                            throw new UnsupportedOperationException("Column type non implemented ... please update me");
+                                    }
+                                    if (foundKey == 1) {
+                                        main_id = new_id;
+                                    }
+                                    if(new_ids == null)
+                                        new_ids = new ArrayList<Object>();
+                                    new_ids.add( new_id );
+                                }
+                            }
                         }
-
                         retVal = true;
                     }
-                    if (rs != null)
-                        rs.close();
                 }
                 sqlSTMTUpdate.close();
                 sqlSTMTUpdate = null;
@@ -4111,7 +4219,7 @@ public class db {
             conn = null;
         }
 
-        return new Object [] { retVal, new_id } ;
+        return new Object [] { retVal, main_id, new_ids } ;
     }
 
 
@@ -7755,7 +7863,7 @@ public class db {
     
     
     
-    public static void set_statement_param( PreparedStatement psdo, int iParam, Object Param ) throws SQLException {
+    public static void set_statement_param( PreparedStatement psdo, int iParam, Object Param ) throws Exception {
         if(psdo != null) {
             if(Param == null) {
                 int sqltype = 1;
@@ -7802,6 +7910,8 @@ public class db {
                     java.sql.Array arrayParam = psdo.getConnection().createArrayOf(typeName, ((List<Object>)Param).toArray() );
                     psdo.setArray(iParam, arrayParam);
                 }
+            } else {
+                throw new Exception("set_statement_param() : unexpected type");
             }
         }
     }

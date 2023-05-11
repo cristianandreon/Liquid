@@ -28,7 +28,6 @@
         <webroots>
           <root url="file://$MODULE_DIR$/src/META-INF/resources/liquid" relative="/liquid" />
         </webroots>
-        <sourceRoots />
       </configuration>
     </facet>
   </component>
