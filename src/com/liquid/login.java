@@ -318,16 +318,37 @@ public class login {
                         JSONObject paramJson = (JSONObject)paramsJson.get(i);
                         if(paramJson.has("form")) {
                             if(paramJson.has("data")) {
-                                JSONObject dataJson = paramJson.getJSONObject("data");
-                                if(dataJson != null) {
-                                    String application_id = dataJson.has("application_id") ? dataJson.getString("application_id") : "";
-                                    String domain_id = dataJson.has("domain_id") ? dataJson.getString("domain_id") : "";
-                                    String sUserID = dataJson.has("user") ? dataJson.getString("user") : "";
-                                    String sEMail = dataJson.has("email") ? dataJson.getString("email") : "";
-                                    String sPassword = dataJson.has("password") ? dataJson.getString("password") : "";
-                                    String sRedirect = dataJson.has("redirect") ? dataJson.getString("redirect") : "";
-                                    HttpServletRequest request = (HttpServletRequest)freeParam;
-                                    return login( application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request);
+                                JSONArray dataJsons = paramJson.getJSONArray("data");
+                                if(dataJsons != null) {
+                                    String application_id = null, domain_id = null;
+                                    String sUserID = null, sPassword = null, sEMail = null, sRedirect = null;
+                                    for (int j = 0; j < dataJsons.length(); j++) {
+                                        JSONObject dataJson = dataJsons.getJSONObject(j);
+                                        switch (dataJson.getString("fieldName")) {
+                                            case "redirect":
+                                                sRedirect = dataJson.getString("fieldValue");
+                                                break;
+                                            case "user":
+                                                sUserID = dataJson.getString("fieldValue");
+                                                break;
+                                            case "password":
+                                                sPassword = dataJson.getString("fieldValue");
+                                                break;
+                                            case "email":
+                                                sEMail = dataJson.getString("fieldValue");
+                                                break;
+                                            case "application_id":
+                                                application_id = dataJson.getString("fieldValue");
+                                                break;
+                                            case "domain_id":
+                                                domain_id = dataJson.getString("fieldValue");
+                                                break;
+                                        }
+                                    }
+                                    if(sUserID != null || sEMail != null) {
+                                        HttpServletRequest request = (HttpServletRequest) freeParam;
+                                        return login(application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request);
+                                    }
                                 }
                             }
                         }
@@ -909,8 +930,8 @@ public class login {
                 }
             } else {
                 // no connection
-                error += " connection to db failed";
-                return "{ \"result\":-50, \"error\":\""+error+"\"}";
+                error += " connection to db failed : "+connError;
+                return "{ \"result\":-50, \"error\":\""+utility.base64Encode(error)+"\"}";
             }
                     
         } catch (Throwable e) {

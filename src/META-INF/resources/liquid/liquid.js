@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.66
+// Liquid ver.2.67
 //
 //  First update 06-01-2020 - Last update 16-04-2023
 //
@@ -2680,7 +2680,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.66,
+    version: 2.67,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -10032,8 +10032,8 @@ var Liquid = {
                             Liquid.onLayoutMode(liquid.tableJson.layouts[il].layoutTabObj, 0, "write");
                         }
                     }
+                    liquid.currentCommand.step = Liquid.CMD_VALIDATE;
                 }
-                liquid.currentCommand.step = Liquid.CMD_VALIDATE;
             }
             if (obj) obj.disabled = false;
         }

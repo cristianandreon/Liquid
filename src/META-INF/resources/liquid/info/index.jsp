@@ -53,7 +53,7 @@
         <title>Liquid Framework Info - developing version - 1.x engine test</title>
 
         <!-- Start Liquid Engine -->
-        <%@ include file="/liquid/liquidXHeader.jsp" %>
+        <%@ include file="/liquid/liquidHeader.jsp" %>
         <%@ include file="/liquid/liquidSelector.jsp" %>
 
         <script>
