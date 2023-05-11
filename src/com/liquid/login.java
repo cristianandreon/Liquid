@@ -646,22 +646,26 @@ public class login {
                         }
                         
                         prepare_database(conn);
-                        
+
+                        driver = db.getDriver(conn);
+
                         try {
 
                             // MYSQL
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`="+ "?" +" OR `email`="+ "?" +") AND (`password`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `password`='') AND `status`<>'A' AND `status`<>'D' AND `emailValidated`>0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`="+ "?" +" OR `email`="+ "?" +") AND (`password`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `password`='' OR \"password\" is null) AND `status`<>'A' AND `status`<>'D' AND `emailValidated`>0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
 
                             // POSTGRES
                             } else if("postgres".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"="+ "?" +" OR \"email\"="+ "?" +") AND (\"password\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \"password\"='') AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"="+ "?" +" OR \"email\"="+ "?" +") AND (\"password\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \"password\"='' OR \"password\" is null) AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
 
                             // ORACLE
                             } else if("oracle".equalsIgnoreCase(driver)) {
+                                throw new Exception("Still Unsupported");
 
                             // SQL SERVER
                             } else if("sqlserver".equalsIgnoreCase(driver)) {
+                                throw new Exception("Still Unsupported");
                             }
 
                             psdoLogin = conn.prepareStatement(sqlSTMT);
@@ -696,6 +700,10 @@ public class login {
                                 }
                             } else {
                                 return "{ \"result\":-30, \"error\":\""+utility.base64Encode("Unexpected null recorset")+"\"}";
+                            }
+
+                            if (!isLoginPassed) {
+                                // MYSQL
                             }
 
                             // Verifica filtro IP                            
@@ -889,7 +897,7 @@ public class login {
                         } catch (Throwable e) {
                             String err = e.getLocalizedMessage();
                             error += "Error:" + err;
-                            if(err.indexOf("crypt(") >= 0) {
+                            if(err != null && err.indexOf("crypt(") >= 0) {
                                 try {
                                     if (psdoLogin != null) psdoLogin.close();
                                     if (rsdoLogin != null) rsdoLogin.close();                                    

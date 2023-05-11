@@ -454,7 +454,11 @@ public class db {
                     view = tbl_wrk.tableJson.getString("view");
                 }
                 if(tbl_wrk.tableJson.has("columns")) {
-                    cols = tbl_wrk.tableJson.getJSONArray("columns");
+                    Object oCols = tbl_wrk.tableJson.has("columns") ? tbl_wrk.tableJson.get("columns") : null;
+                    if(oCols instanceof String) {
+                    } else if(oCols instanceof JSONArray) {
+                        cols = tbl_wrk.tableJson.getJSONArray("columns");
+                    }
                 }
                 if(tbl_wrk.tableJson.has("primaryKey")) {
                     primaryKey = tbl_wrk.tableJson.getString("primaryKey");
@@ -1168,7 +1172,12 @@ public class db {
                 try {
                     if (!isCrossTableService) {
                         if (tbl_wrk != null && requestJson != null) {
-                            JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+                            Object oCols = tbl_wrk.tableJson.has("columns") ? tbl_wrk.tableJson.get("columns") : null;
+                            JSONArray cols = null;
+                            if(oCols instanceof String) {
+                            } else if(oCols instanceof JSONArray) {
+                                cols = tbl_wrk.tableJson.getJSONArray("columns");
+                            }
                             if (requestJson.has("filtersJson")) {
                                 JSONArray filtersCols = requestJson.getJSONArray("filtersJson");    // filtri valorizzati
                                 JSONArray allFiltersDefinition = null;                                  // (SOLO INFORMATIVO) tutti i gruppi di filtro
@@ -1269,10 +1278,16 @@ public class db {
                         || "distinct".equalsIgnoreCase(targetMode)
                 ) {
                     JSONArray preFilters = null;
-                    JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
+                    Object oCols = tbl_wrk.tableJson.has("columns") ? tbl_wrk.tableJson.get("columns") : null;
+                    JSONArray cols = null;
+                    if(oCols instanceof String) {
+                    } else if(oCols instanceof JSONArray) {
+                        cols = tbl_wrk.tableJson.getJSONArray("columns");
+                    }
+
 
                     try {
-                        preFilters = (tbl_wrk != null ? tbl_wrk.tableJson.getJSONArray("preFilters") : null);
+                        preFilters = (tbl_wrk != null ? (tbl_wrk.tableJson.has("preFilters") ? tbl_wrk.tableJson.getJSONArray("preFilters") : null )  : null);
                     } catch (Exception e) {
                     }
 

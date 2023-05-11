@@ -1408,9 +1408,12 @@ public class workspace {
                 }
 
                 try {
-                    String colsAsName = tableJson.getString("columns");
-                    if ("*".equalsIgnoreCase(colsAsName) || "all".equalsIgnoreCase(colsAsName)) {
-                        bAllColumns = true;
+                    Object oCols = tableJson.has("columns") ? tableJson.get("columns") : null;
+                    if(oCols instanceof String) {
+                        String colsAsName = tableJson.getString("columns");
+                        if ("*".equalsIgnoreCase(colsAsName) || "all".equalsIgnoreCase(colsAsName)) {
+                            bAllColumns = true;
+                        }
                     }
                 } catch (Exception e) {
                 }
@@ -1422,33 +1425,32 @@ public class workspace {
 
                 if (sTableJson != null && !sTableJson.isEmpty()) {
                     try {
-                        primaryKey = tableJson.getString("primaryKey");
+                        primaryKey = tableJson.has("primaryKey") ? tableJson.getString("primaryKey") : null;
                     } catch (Exception e) {
                     }
-                    try {
-                        foreignTables = tableJson.getString("foreignTable");
-                    } catch (Exception e) {
-                    }
-                    try {
-                        if (foreignTables == null || foreignTables.isEmpty()) {
-                            foreignTables = tableJson.getString("foreignTables");
+
+                    foreignTables = tableJson.has("foreignTable") ? tableJson.getString("foreignTable") : "";
+
+                    if (foreignTables == null || foreignTables.isEmpty()) {
+                        if (tableJson.has("foreignTables")) {
+                            Object oforeignTables = tableJson.get("foreignTables");
+                            if (oforeignTables instanceof JSONArray) {
+                                foreignTablesJson = (JSONArray) oforeignTables;
+                            } else if (oforeignTables instanceof String) {
+                                foreignTables = tableJson.getString("foreignTables");
+                            }
                         }
-                    } catch (Exception e) {
-                    }
-                    try {
-                        foreignTablesJson = tableJson.getJSONArray("foreignTables");
-                    } catch (Exception e) {
                     }
                 }
 
                 if (table != null && !table.isEmpty()) {
                     boolean createTableIfMissing = false, createIfMissing = false;
                     try {
-                        createIfMissing = tableJson.getBoolean("createIfMissing");
+                        createIfMissing = tableJson.has("createIfMissing") ? tableJson.getBoolean("createIfMissing") : false;
                     } catch (Exception e) {
                     }
                     try {
-                        createTableIfMissing = tableJson.getBoolean("createTableIfMissing");
+                        createTableIfMissing = tableJson.has("createTableIfMissing") ? tableJson.getBoolean("createTableIfMissing") : false;
                     } catch (Exception e) {
                     }
 
@@ -1570,7 +1572,7 @@ public class workspace {
                 JSONArray additionalCols = null;
                 int icn = cols != null ? cols.length() + 1 : 1;
                 try {
-                    additionalCols = tableJson.getJSONArray("additionalColumns");
+                    additionalCols = tableJson.has("additionalColumns") ? tableJson.getJSONArray("additionalColumns") : null;
                 } catch (Exception ex) {
                 }
                 if (additionalCols != null) {
@@ -1628,7 +1630,7 @@ public class workspace {
                         ArrayList<String> columns = new ArrayList<String>();
 
                         try {
-                            foreignTable = col.getString("foreignTable");
+                            foreignTable = col.has("foreignTable") ? col.getString("foreignTable") : null;
                         } catch (Exception e) {
                             foreignTable = null;
                         }
@@ -1912,7 +1914,7 @@ public class workspace {
 
                 boolean isSystem = false;
                 try {
-                    isSystem = tableJson.getBoolean("isSystem");
+                    isSystem = tableJson.has("isSystem") ? tableJson.getBoolean("isSystem") : false;
                 } catch (Exception ex) {
                 }
 
@@ -1941,11 +1943,11 @@ public class workspace {
                                 JSONObject col = cols.getJSONObject(ic);
                                 String colName = null, colTable = null, colForeignTable = null, colQuery = null;
                                 try {
-                                    colName = col.getString("name");
+                                    colName = col.has("name") ? col.getString("name") : null;
                                 } catch (Exception ex) {
                                 }
                                 try {
-                                    colQuery = col.getString("query");
+                                    colQuery = col.has("query") ? col.getString("query") : null;
                                 } catch (Exception ex) {
                                 }
 
@@ -2103,13 +2105,13 @@ public class workspace {
                 //
                 String lookupField = null;
                 try {
-                    lookupField = tableJson.getString("lookupField");
+                    lookupField = tableJson.has("lookupField") ? tableJson.getString("lookupField") : null;
                 } catch (Exception e) {
                 }
                 if (lookupField != null) {
                     String resLookupField = "1";
                     try {
-                        cols = tableJson.getJSONArray("columns");
+                        cols = tableJson.has("columns") ? tableJson.getJSONArray("columns") : null;
                     } catch (Exception ex) {
                     }
                     if (cols != null) {
@@ -2167,7 +2169,7 @@ public class workspace {
                 boolean gridChanged = false;
                 boolean bDeleteMismatchingAssetGrid = true;
                 try {
-                    grids = tableJson.getJSONArray("grids");
+                    grids = tableJson.has("grids") ? tableJson.getJSONArray("grids") : null;
                 } catch (Exception ex) {
                 }
                 if (grids != null) {
@@ -2269,7 +2271,7 @@ public class workspace {
             if (owner == null) {
                 String ownerClassName = null;
                 try {
-                    ownerClassName = tableJson.getString("owner");
+                    ownerClassName = tableJson.has("owner") ? tableJson.getString("owner") : null;
                 } catch (Exception e) {
                 }
                 if (ownerClassName != null && !ownerClassName.isEmpty()) {
@@ -2563,7 +2565,7 @@ public class workspace {
             JSONArray commands = null;
             JSONArray new_commands = new JSONArray();
             try {
-                commands = tableJson.getJSONArray("commands");
+                commands = tableJson.has("commands") ? tableJson.getJSONArray("commands") : null;
             } catch (Exception e) {
             }
 
@@ -2582,7 +2584,7 @@ public class workspace {
                         cmd = commands.getJSONObject(ic);
                         if (cmd != null) {
                             try {
-                                cmdName = cmd.getString("name");
+                                cmdName = cmd.has("\"name\"") ? cmd.getString("name") : null;
                             } catch (Exception ex) {
                             }
                             try {
@@ -2595,27 +2597,27 @@ public class workspace {
                                 img = null;
                             }
                             try {
-                                rollback = cmd.getString("rollback");
+                                rollback = cmd.has("rollback") ? cmd.getString("rollback") : null;
                             } catch (Exception ex) {
                                 rollback = null;
                             }
                             try {
-                                rollbackImg = cmd.getString("rollbackImg");
+                                rollbackImg = cmd.has("rollbackImg") ? cmd.getString("rollbackImg") : null;
                             } catch (Exception ex) {
                                 rollbackImg = null;
                             }
                             try {
-                                text = cmd.getString("text");
+                                text = cmd.has("text") ? cmd.getString("text") : null;
                             } catch (Exception ex) {
                                 text = null;
                             }
                             try {
-                                labels = cmd.getJSONArray("labels");
+                                labels = cmd.has("labels") ? cmd.getJSONArray("labels") : null;
                             } catch (Exception ex) {
                                 labels = null;
                             }
                             try {
-                                size = cmd.getInt("size");
+                                size = cmd.has("size") ? cmd.getInt("size") : 0;
                             } catch (Exception ex) {
                                 size = 0;
                             }
@@ -2624,17 +2626,17 @@ public class workspace {
                             } catch (Exception ex) {
                             }
                             try {
-                                assetsOp = cmd.getString("assetsOp");
+                                assetsOp = cmd.has("assetsOp") ? cmd.getString("assetsOp") : null;
                             } catch (Exception ex) {
                                 assetsOp = null;
                             }
                             try {
-                                assets = cmd.getJSONArray("assets");
+                                assets = cmd.has("assets") ? cmd.getJSONArray("assets") : null;
                             } catch (Exception ex) {
                                 assets = null;
                             }
                             try {
-                                asset = cmd.getString("asset");
+                                asset = cmd.has("asset") ? cmd.getString("asset") : null;
                             } catch (Exception ex) {
                                 asset = null;
                             }
@@ -2843,7 +2845,7 @@ public class workspace {
 
         String sOwner = null;
         try {
-            sOwner = tableJson.getString("owner");
+            sOwner = tableJson.has("owner") ? tableJson.getString("owner") : null;
         } catch (JSONException e) {
         }
         if (sOwner != null && !sOwner.isEmpty()) {
@@ -2852,7 +2854,7 @@ public class workspace {
         JSONArray events = null;
         try {
             try {
-                events = tableJson.getJSONArray("events");
+                events = tableJson.has("events") ? tableJson.getJSONArray("events") : null;
             } catch (JSONException e) {
             }
             if (events != null) {
@@ -2972,12 +2974,16 @@ public class workspace {
     private static int solveClientSideVariableFields(JSONObject tableJsonForClient, HttpServletRequest request) throws Exception {
         int solvedCount = 0;
         if(tableJsonForClient.has("columns")) {
-            JSONArray cols = tableJsonForClient.getJSONArray("columns");
-            for(int ic=0; ic<cols.length(); ic++) {
-                JSONObject col = cols.getJSONObject(ic);
-                String [] keys = new String [] { "default" };
-                for(String key : Arrays.asList(keys)) {
-                    solvedCount += solveClientSideVariableFieldsKey(col, key, request);
+            Object oCols = tableJsonForClient.get("columns");
+            if (oCols instanceof String) {
+            } else if (oCols instanceof JSONArray) {
+                JSONArray cols = (JSONArray)oCols;
+                for (int ic = 0; ic < cols.length(); ic++) {
+                    JSONObject col = cols.getJSONObject(ic);
+                    String[] keys = new String[]{"default"};
+                    for (String key : Arrays.asList(keys)) {
+                        solvedCount += solveClientSideVariableFieldsKey(col, key, request);
+                    }
                 }
             }
         }
@@ -3043,12 +3049,17 @@ public class workspace {
                     if (foreignTable.has("options")) {
                         JSONObject options = foreignTable.getJSONObject("options");
                         if (options.has("columns")) {
-                            JSONArray cols = options.getJSONArray("columns");
-                            for (int ic = 0; ic < cols.length(); ic++) {
-                                JSONObject col = cols.getJSONObject(ic);
-                                String[] keys = new String[]{"default"};
-                                for (String key : Arrays.asList(keys)) {
-                                    solvedCount += solveClientSideVariableFieldsKey(col, key, request);
+                            Object oCols = options.get("columns");
+                            if(oCols instanceof String) {
+                                // Resolved not here
+                            } else if(oCols instanceof JSONArray) {
+                                JSONArray cols = options.getJSONArray("columns");
+                                for (int ic = 0; ic < cols.length(); ic++) {
+                                    JSONObject col = cols.getJSONObject(ic);
+                                    String[] keys = new String[]{"default"};
+                                    for (String key : Arrays.asList(keys)) {
+                                        solvedCount += solveClientSideVariableFieldsKey(col, key, request);
+                                    }
                                 }
                             }
                         }

@@ -4193,6 +4193,8 @@ var Liquid = {
                 } else {
                     targetObj = newTargetObj;
                 }
+            } else if (typeof newTargetObj === 'object') {
+                targetObj = newTargetObj;
             }
         }
         return targetObj;
@@ -9772,10 +9774,16 @@ var Liquid = {
                     console.debug("INFO: command:" + commandName + " on control:" + liquid.controlId);
                 }
                 liquid.gridOptions.api.stopEditing();
-                if (liquid.tableJson.commands) {
+                let commands = null;
+                if(isDef(liquid.tableJson)) {
+                    commands = liquid.tableJson.commands;
+                } else if(isDef(liquid.menuJson)) {
+                    commands = liquid.menuJson.commands;
+                }
+                if(commands) {
                     var searchingCommandName = commandName.toLowerCase();
-                    for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
-                        var command = liquid.tableJson.commands[icmd];
+                    for (var icmd = 0; icmd < commands.length; icmd++) {
+                        var command = commands[icmd];
                         var commandDetected = false;
                         if (command) {
                             if (command.name) {
@@ -10520,22 +10528,30 @@ var Liquid = {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             try {
-                for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
-                    var cmd = liquid.tableJson.commands[icmd];
-                    if (cmd.name === commandName) {
-                        if (!isDef(cmd.disabledByCommand)) {
-                            if (cmd.linkedObj) {
-                                if (bEnable === true) {
-                                    cmd.linkedObj.classList.remove("liquidCommandDisabled");
-                                } else if (bEnable === false) {
-                                    cmd.linkedObj.classList.add("liquidCommandDisabled");
-                                }
-                                if (bShow === true) {
-                                    cmd.linkedObj.style.visibility = '';
-                                    cmd.linkedObj.style.display = '';
-                                } else if (bShow === false) {
-                                    cmd.linkedObj.style.visibility = '';
-                                    cmd.linkedObj.style.display = 'none';
+                let commands = null;
+                if(isDef(liquid.tableJson)) {
+                    commands = liquid.tableJson.commands;
+                } else if(isDef(liquid.menuJson)) {
+                    commands = liquid.menuJson.commands;
+                }
+                if(commands) {
+                    for (var icmd = 0; icmd < commands.length; icmd++) {
+                        var cmd = commands[icmd];
+                        if (cmd.name === commandName) {
+                            if (!isDef(cmd.disabledByCommand)) {
+                                if (cmd.linkedObj) {
+                                    if (bEnable === true) {
+                                        cmd.linkedObj.classList.remove("liquidCommandDisabled");
+                                    } else if (bEnable === false) {
+                                        cmd.linkedObj.classList.add("liquidCommandDisabled");
+                                    }
+                                    if (bShow === true) {
+                                        cmd.linkedObj.style.visibility = '';
+                                        cmd.linkedObj.style.display = '';
+                                    } else if (bShow === false) {
+                                        cmd.linkedObj.style.visibility = '';
+                                        cmd.linkedObj.style.display = 'none';
+                                    }
                                 }
                             }
                         }
@@ -11436,16 +11452,23 @@ var Liquid = {
         }
     },
     restoreCommands: function (liquid) {
-        liquid.gridOptions.suppressRowClickSelection = liquid.lastSuppressRowClickSelection;
+        if(liquid.gridOptions)
+            liquid.gridOptions.suppressRowClickSelection = liquid.lastSuppressRowClickSelection;
         liquid.currentCommand = null;
 
         let cmdBarObj = document.getElementById(liquid.controlId + ".commands");
         if (cmdBarObj) {
             cmdBarObj.classList.remove("liquidCommandDisabled");
         }
-        if (liquid.tableJson.commands) {
-            for (var icmd = 0; icmd < liquid.tableJson.commands.length; icmd++) {
-                var cmd = liquid.tableJson.commands[icmd];
+        let commands = null;
+        if(isDef(liquid.tableJson)) {
+            commands = liquid.tableJson.commands;
+        } else if(isDef(liquid.menuJson)) {
+            commands = liquid.menuJson.commands;
+        }
+        if(commands) {
+            for (var icmd = 0; icmd < commands.length; icmd++) {
+                var cmd = commands[icmd];
                 cmd.disabledByCommand = null;
                 if (cmd.linkedObj) {
                     cmd.linkedObj.classList.remove("liquidCommandDisabledTemporary");
@@ -13167,9 +13190,15 @@ var Liquid = {
     hideCommandsRollbackButton(liquid, parentObj) {
         if (liquid) {
             if (parentObj) {
-                if (isDef(liquid.tableJson.commands)) {
-                    for (var i = 0; i < liquid.tableJson.commands.length; i++) {
-                        var command = liquid.tableJson.commands[i];
+                let commands = null;
+                if(isDef(liquid.tableJson)) {
+                    commands = liquid.tableJson.commands;
+                } else if(isDef(liquid.menuJson)) {
+                    commands = liquid.menuJson.commands;
+                }
+                if(commands) {
+                    for (var i = 0; i < commands.length; i++) {
+                        var command = commands[i];
                         if (isDef(command.name)) {
                             if (command.linkedLabelObj)
                                 command.linkedLabelObj.innerHTML = (isDef(command.text) ? command.text : "");
@@ -13213,14 +13242,20 @@ var Liquid = {
                     console.error(e);
                 }
                 if (isDef(liquid.tableJson)) {
-                    if (liquid.tableJson.commands) {
-                        for (var i = 0; i < liquid.tableJson.commands.length; i++) {
-                            if (liquid.tableJson.commands[i].name === cmdName) {
-                                var command = liquid.tableJson.commands[i];
+                    let commands = null;
+                    if(isDef(liquid.tableJson)) {
+                        commands = liquid.tableJson.commands;
+                    } else if(isDef(liquid.menuJson)) {
+                        commands = liquid.menuJson.commands;
+                    }
+                    if(commands) {
+                        for (var i = 0; i < commands.length; i++) {
+                            if (commands[i].name === cmdName) {
+                                var command = commands[i];
                                 command.fromToolbar = true;
                                 return Liquid.onButton(liquid, command);
-                            } else if (liquid.tableJson.commands[i].name + "-rollback" === cmdName) {
-                                var command = liquid.tableJson.commands[i].rollbackCommand;
+                            } else if (commands[i].name + "-rollback" === cmdName) {
+                                var command = commands[i].rollbackCommand;
                                 command.fromToolbar = true;
                                 liquid.lastCommand = command;
                                 return Liquid.onButton(liquid, command);
@@ -20203,7 +20238,11 @@ var Liquid = {
                     liquid.gridOptions.columnApi.getAllColumns().forEach(function(column) {
                         var width = "auto";
                         if(isDef(column.width)) width = column.width;
-                        if(isDef(width)) width = width.replace('%', '').replace('px', '');
+                        if(isDef(width)) {
+                            if(typeof width === 'string') {
+                                width = width.replace('%', '').replace('px', '');
+                            }
+                        }
                         if (isNaN(width) || Number(width) < 0) {
                             allColumnIds.push(column.colId);
                         }
@@ -20214,7 +20253,11 @@ var Liquid = {
                         if(liquid.tableJson.columns[ic].autoSize === true || liquid.tableJson.autoFitColumns === true || liquid.mode === 'auto') {
                             var width = "auto";
                             if(isDef(column.width)) width = column.width;
-                            if(isDef(width)) width = width.replace('%', '').replace('px', '');
+                            if(isDef(width)) {
+                                if(typeof width === 'string') {
+                                    width = width.replace('%', '').replace('px', '');
+                                }
+                            }
                             if (isNaN(width) || Number(width) < 0) {
                                 liquid.gridOptions.columnApi.autoSizeColumns([liquid.tableJson.columns[ic].field], true);
                             }
@@ -20306,10 +20349,12 @@ var Liquid = {
         }
     },
     updateSlideshowBar:function(liquid) {
-        if(liquid.tableJson.navBarStyle === 'slideShow') {
-            Liquid.addSlideShowItemsToLayout(liquid, null, true);
-            if(liquid.tableJson.slideShowStart === 'auto' || liquid.tableJson.slideShowStart === true) {
-                Liquid.startSlideShow(liquid, null);
+        if(liquid.tableJson) {
+            if (liquid.tableJson.navBarStyle === 'slideShow') {
+                Liquid.addSlideShowItemsToLayout(liquid, null, true);
+                if (liquid.tableJson.slideShowStart === 'auto' || liquid.tableJson.slideShowStart === true) {
+                    Liquid.startSlideShow(liquid, null);
+                }
             }
         }
     },
@@ -20319,9 +20364,15 @@ var Liquid = {
      */
     updateCommandBar(liquid) {
         if(liquid) {
-            if(liquid.tableJson.commands) {
-                for (let i = 0; i < liquid.tableJson.commands.length; i++) {
-                    let cmd = liquid.tableJson.commands[i];
+            let commands = null;
+            if(isDef(liquid.tableJson)) {
+                commands = liquid.tableJson.commands;
+            } else if(isDef(liquid.menuJson)) {
+                commands = liquid.menuJson.commands;
+            }
+            if(commands) {
+                for (let i = 0; i < commands.length; i++) {
+                    let cmd = commands[i];
                     var chekIfRowSelected = false;
                     var chekIfSingleSelection = false;
                     if (cmd.name === 'delete' || cmd.name === 'update') {
