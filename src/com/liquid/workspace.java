@@ -4325,9 +4325,12 @@ public class workspace {
                     listObj.append(separator);
                 }
                 String value = objs[ct] != null ? objs[ct].toString() : "";
+                // NO : dipende dal contesto : a carico della chiamante
+                /*
                 if(value.indexOf(separator) >= 0) {
-                    value = value.replace(separator, "\\"+value);
+                    value = value.replace(separator, "\\"+separator);
                 }
+                */
                 listObj.append((prefix != null ? prefix : "") + (value) + (postfix != null ? postfix : ""));
             }
         }
