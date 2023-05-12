@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.67
+// Liquid ver.2.68
 //
 //  First update 06-01-2020 - Last update 16-04-2023
 //
@@ -2680,7 +2680,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.67,
+    version: 2.68,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -5516,7 +5516,7 @@ var Liquid = {
         if (liquid.tableJson.checkboxSelection === true) {
             if (liquid.tableJson.columns) {
                 if (liquid.tableJson.columns[0].visible === false) {
-                    console.error("ERROR: first column must me visible when rowSelection is defined");
+                    console.error("ERROR: first column must me visible when rowSelection is defined on control:"+liquid.controlId);
                     liquid.tableJson.columns[0].visible = true;
                 }
             }
@@ -22482,10 +22482,12 @@ columns:[
                                 }
                             }
                         }
+                        let jsonObj = JSON.parse(json);
                         lookupJson = {
-                            database:liquid.tableJson.database,
-                            schema:liquid.tableJson.schema,
-                            table: (sourceCol ? sourceCol.foreignTable : null),
+                            database: isDef(liquid.tableJson.database) ? liquid.tableJson.database : null,
+                            schema: isDef(liquid.tableJson.schema) ? liquid.tableJson.schema : null,
+                            table: isDef(sourceCol) ? sourceCol.foreignTable : (isDef(jsonObj.table) ? jsonObj.table : null),
+                            query: isDef(jsonObj.query) ? jsonObj.query : null,
                             columns:columns,
                             autoFitColumns:true,
                             width:"auto"

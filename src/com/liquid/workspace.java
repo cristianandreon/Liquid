@@ -35,7 +35,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.67";
+    public static String version_string = "2.68";
     public static String getGLLang() {
         return GLLang;
     }
@@ -1280,7 +1280,7 @@ public class workspace {
             } catch (Exception e) {
             }
             try {
-                if(tableJson.has("table"))
+                if(tableJson.has("table") && !tableJson.isNull("table"))
                     table = tableJson.getString("table");
             } catch (Exception e) {
             }
@@ -1466,7 +1466,7 @@ public class workspace {
                                 return ("json".equalsIgnoreCase(returnType) ? "{\"error\":\"" + err + "\"}" : get_js_console_error_report(err));
                             }
                         } else {
-                            String err = "database:" + database + " schema:" + schema + " table " + table + " not exist";
+                            String err = "On Control '"+ controlId + "' table not found (" + database + "." + schema + "." + table + ")";
                             System.out.println(err);
                             if("json".equalsIgnoreCase(returnType)) {
                                 return "{\"error\":\"" + err + "\"}";
@@ -1474,6 +1474,17 @@ public class workspace {
                             // get_js_console_error_report(err);
                             throw new Exception(err);
                         }
+                    }
+                } else {
+                    if(query != null && !query.isEmpty()) {
+                    } else {
+                        String err = "On Control '"+ controlId + "' table not defined (" + database + "." + schema + "." + table + ")";
+                        System.out.println(err);
+                        if("json".equalsIgnoreCase(returnType)) {
+                            return "{\"error\":\"" + err + "\"}";
+                        }
+                        // get_js_console_error_report(err);
+                        throw new Exception(err);
                     }
                 }
 
