@@ -2095,8 +2095,10 @@ public class workspace {
                                                             }
                                                         }
                                                     }
-
                                                     cols.put(ic, col);
+                                                } else {
+                                                    // Colonna non trovata nella tabella : lascia inalterata
+                                                    col.put("unresolved", true);
                                                 }
                                             }
                                         }
@@ -2583,7 +2585,7 @@ public class workspace {
             if (commands != null) {
                 for (int ic = 0; ic < commands.length(); ic++) {
                     Object oCmd = commands.get(ic);
-                    String cmdName = null, img = null, text = null, rollback = null, rollbackImg = null, asset = null, assetsOp = null, mismatching_assets = null;
+                    String cmdName = null, img = null, text = null, rollback = null, rollback_it = null, rollbackImg = null, asset = null, assetsOp = null, mismatching_assets = null;
                     boolean bServerDefined = false;
                     boolean hasActiveAsset = true;
                     JSONObject cmd = null;
@@ -2595,7 +2597,7 @@ public class workspace {
                         cmd = commands.getJSONObject(ic);
                         if (cmd != null) {
                             try {
-                                cmdName = cmd.has("\"name\"") ? cmd.getString("name") : null;
+                                cmdName = cmd.has("name") ? cmd.getString("name") : null;
                             } catch (Exception ex) {
                             }
                             try {
@@ -2611,6 +2613,11 @@ public class workspace {
                                 rollback = cmd.has("rollback") ? cmd.getString("rollback") : null;
                             } catch (Exception ex) {
                                 rollback = null;
+                            }
+                            try {
+                                rollback_it = cmd.has("rollback_it") ? cmd.getString("rollback_it") : null;
+                            } catch (Exception ex) {
+                                rollback_it = null;
                             }
                             try {
                                 rollbackImg = cmd.has("rollbackImg") ? cmd.getString("rollbackImg") : null;
@@ -2708,6 +2715,8 @@ public class workspace {
                                 }
                                 if (rollback == null || rollback.isEmpty()) {
                                     cmd.put("rollback", "Cancel");
+                                }
+                                if (rollback_it == null || rollback_it.isEmpty()) {
                                     cmd.put("rollback_it", "Annulla");
                                 }
                                 if (rollbackImg == null || rollbackImg.isEmpty()) {
@@ -2739,6 +2748,8 @@ public class workspace {
                                 }
                                 if (rollback == null || rollback.isEmpty()) {
                                     cmd.put("rollback", "Cancel");
+                                }
+                                if (rollback_it == null || rollback_it.isEmpty()) {
                                     cmd.put("rollback_it", "Annulla");
                                 }
                                 if (rollbackImg == null || rollbackImg.isEmpty()) {
@@ -2769,6 +2780,8 @@ public class workspace {
                                 }
                                 if (rollback == null || rollback.isEmpty()) {
                                     cmd.put("rollback", "Cancel");
+                                }
+                                if (rollback_it == null || rollback_it.isEmpty()) {
                                     cmd.put("rollback_it", "Annulla");
                                 }
                                 if (rollbackImg == null || rollbackImg.isEmpty()) {
@@ -3546,6 +3559,7 @@ public class workspace {
             }
         } catch (Exception e) {
             System.err.println(" get_default_json() [" + controlId + "] Error:" + e.getLocalizedMessage());
+            throw e;
         }
         return null;
     }

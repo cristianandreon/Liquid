@@ -2462,6 +2462,12 @@ public class bean {
                 if (controlId == null) {
                     controlId = workspace.getControlIdFromDatabaseSchemaTable(databaseSchemaTable);
                 }
+
+                table = table != null ? table.replace("\"", "") : null;
+                schema = schema != null ? schema.replace("\"", "") : null;
+                database = database != null ? database.replace("\"", "") : null;
+
+
                 String sRequest = "";
                 String parentControlId = null;
 

@@ -299,7 +299,7 @@ public class metadata {
                 if (columnName != null) {
                     Object foundMcol = getTableMetadata(conn, null, schema, table, columnName, true);
                     if (foundMcol == null) {
-                        System.err.println("readTableMetadata() error: on table:" + schema + "." + table + " Column just added '"+columnName+"' not found!");
+                        System.err.println("readTableMetadata() error: on '" + schema + "." + table + "' Column '"+columnName+"' not found!");
                         // Add dummy data to avoid adding loop
                         MetaDataCol metaDataCol = new MetaDataCol(columnName, "", "", "", "", "", "", "", "", "", "", "", "", "");
                         metaDataCols.add(metaDataCol);
@@ -1397,7 +1397,7 @@ public class metadata {
         String result = null;
         try {
             if(conn == null) {
-                Object[] connResult = connection.getDBConnection(database);
+                Object[] connResult = connection.getDBConnection(database.replace("\"", ""));
                 conn = (Connection) connResult[0];
                 String connError = (String) connResult[1];
                 connToUse = connToDB = conn;
