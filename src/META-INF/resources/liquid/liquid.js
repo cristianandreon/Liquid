@@ -2775,6 +2775,9 @@ var Liquid = {
     WARNING_STRING: "WARNING",
     QUESTION_STRING: "QUESTION",
     INFO_STRING: "INFO",
+    showErrors:true,
+    showWarnings:false,
+    showMessages:false,
     setProjectMode: function (mode) {
         if (isDef(mode)) {
             if (mode === true) {
@@ -4719,12 +4722,15 @@ var Liquid = {
             } catch (e) {
                 err = obj.error;
             }
-            console.error("[SERVER] ERROR:" + err + " on " + commandOrEvent.name + " on control " + liquid.controlId);
-            if (showErrors) {
-                Liquid.setErrorDiv(liquid, err, "error");
+            if(err) {
+                console.error("[SERVER] ERROR:" + err + " on " + commandOrEvent.name + " on control " + liquid.controlId);
+                if (showErrors) {
+                    Liquid.setErrorDiv(liquid, err, "error");
+                }
             }
             if (isDef(obj.query)) {
-                console.error("[SERVER] QUERY on " + liquid.controlId + ":\n\n" + atob(obj.query));
+                if(obj.query)
+                    console.error("[SERVER] QUERY on " + liquid.controlId + ":\n\n" + atob(obj.query));
             }
         } else {
             if (Liquid.projectMode) {
@@ -4744,10 +4750,12 @@ var Liquid = {
             } catch (e) {
                 wrn = obj.warning;
             }
-            console.warn("[SERVER] WARNING:" + wrn + " on " + commandOrEvent.name + " on control " + liquid.controlId);
-            if (showWarnings) {
-                Liquid.setErrorDiv(liquid, wrn, "warning");
-                Liquid.showToast(Liquid.appTitle, wrn, "warning");
+            if(wrn) {
+                console.warn("[SERVER] WARNING:" + wrn + " on " + commandOrEvent.name + " on control " + liquid.controlId);
+                if (showWarnings) {
+                    Liquid.setErrorDiv(liquid, wrn, "warning");
+                    Liquid.showToast(Liquid.appTitle, wrn, "warning");
+                }
             }
         }
         if (isDef(obj.message)) {
@@ -4757,10 +4765,12 @@ var Liquid = {
             } catch (e) {
                 msg = obj.message;
             }
-            console.log("[SERVER] MESSAGE:" + msg + " on " + commandOrEvent.name + " on control " + liquid.controlId);
-            if (showMessages) {
-                Liquid.setErrorDiv(liquid, msg, "info");
-                Liquid.showToast(Liquid.appTitle, msg, "into");
+            if(msg) {
+                console.log("[SERVER] MESSAGE:" + msg + " on " + commandOrEvent.name + " on control " + liquid.controlId);
+                if (showMessages) {
+                    Liquid.setErrorDiv(liquid, msg, "info");
+                    Liquid.showToast(Liquid.appTitle, msg, "info");
+                }
             }
         }
     },
@@ -10100,19 +10110,19 @@ var Liquid = {
                                 }
                                 Liquid.executeClientSide(liquid, "command response:" + command.name, clientCode, liquidCommandParams, command.isNative);
                             }
-                            Liquid.processXHRMessagesFromServer(liquid, httpResultJson, command, true, false, false, false);
+                            Liquid.processXHRMessagesFromServer(liquid, httpResultJson, command, Liquid.showErrors, Liquid.showWarnings, Liquid.showMessages, false);
 
                             if (isDef(httpResultJson.data)) {
-                                Liquid.processXHRMessagesFromServer(liquid, httpResultJson.data, command, true, false, false, false);
+                                Liquid.processXHRMessagesFromServer(liquid, httpResultJson.data, command, Liquid.showErrors, Liquid.showWarnings, Liquid.showMessages, false);
                             }
                             if (isDef(httpResultJson.tables)) {
                                 for (var id = 0; id < httpResultJson.tables.length; id++) {
-                                    Liquid.processXHRMessagesFromServer(liquid, httpResultJson.tables[id], command, true, false, false, false);
+                                    Liquid.processXHRMessagesFromServer(liquid, httpResultJson.tables[id], command, Liquid.showErrors, Liquid.showWarnings, Liquid.showMessages, false);
                                 }
                             }
                             if (isDef(httpResultJson.foreignTables)) {
                                 for (var id = 0; id < httpResultJson.foreignTables.length; id++) {
-                                    Liquid.processXHRMessagesFromServer(liquid, httpResultJson.foreignTables[id], command, true, false, false, false);
+                                    Liquid.processXHRMessagesFromServer(liquid, httpResultJson.foreignTables[id], command, Liquid.showErrors, Liquid.showWarnings, Liquid.showMessages, false);
                                 }
                             }
                             if (isDef(httpResultJson.data)) {
@@ -10122,14 +10132,14 @@ var Liquid = {
                                         if (isDef(detail.tables)) {
                                             for (var it = 0; it < detail.tables.length; it++) {
                                                 if (isDef(detail.tables[it])) {
-                                                    Liquid.processXHRMessagesFromServer(liquid, detail.tables[it], command, true, false, false, false);
+                                                    Liquid.processXHRMessagesFromServer(liquid, detail.tables[it], command, Liquid.showErrors, Liquid.showWarnings, Liquid.showMessages, false);
                                                 }
                                             }
                                         }
                                         if (isDef(detail.foreignTables)) {
                                             for (var it = 0; it < detail.foreignTables.length; it++) {
                                                 if (isDef(detail.foreignTables[it])) {
-                                                    Liquid.processXHRMessagesFromServer(liquid, detail.foreignTables[it], command, true, false, false, false);
+                                                    Liquid.processXHRMessagesFromServer(liquid, detail.foreignTables[it], command, Liquid.showErrors, Liquid.showWarnings, Liquid.showMessages, false);
                                                 }
                                             }
                                         }
@@ -14230,6 +14240,7 @@ var Liquid = {
                 if (isDef(gridObj.fieldData.height)) inputHeight = "height:" + Liquid.getCSSDim(gridObj.fieldData.height) + ";";
                 if (isDef(gridObj.fieldData.style)) itemCssText = gridObj.fieldData.style;
             }
+            // if(gridObj.name=="product_diameter") debugger;
             if (typeof col === 'undefined' || !col) {
                 if (isDef(gridObj.query)) { // runtime field
                     if (!isDef(inputHeight) || inputHeight == '') inputHeight = "height:100%;";
@@ -21918,7 +21929,16 @@ var Liquid = {
                 "showMethod": "fadeIn",
                 "hideMethod": "fadeOut"
             };
-            window.toastr[(type ? type.toLowerCase() : 'info')](message, title);
+            try {
+                type = (type ? type.toLowerCase() : 'info');
+                if(typeof window.toastr[type] === 'function') {
+                    window.toastr[type](message, title);
+                } else {
+                    console.error("showToast() : type not recognized:"+type);
+                }
+            } catch(e) {
+                console.error(e);
+            }
         }
     },
     showDesktopNofity:function( msg ) {

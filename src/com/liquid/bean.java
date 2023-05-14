@@ -3391,70 +3391,78 @@ public class bean {
                                                 }
                                                 if (clazz != null) {
                                                     Object obj = clazz.newInstance();
-                                                    JSONArray rowsJson = jsonRecord.getJSONArray("resultSet");
-                                                    beans = new ArrayList<Object>();
-                                                    nBeans = rowsJson.length();
-                                                    if (nBeans > 0) {
-                                                        for (int ir = 0; ir < nBeans; ir++) {
-                                                            JSONObject row = rowsJson.getJSONObject(ir);
-                                                            tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
+                                                    if(jsonRecord.has("resultSet")) {
+                                                        JSONArray rowsJson = jsonRecord.getJSONArray("resultSet");
+                                                        beans = new ArrayList<Object>();
+                                                        nBeans = rowsJson.length();
+                                                        if (nBeans > 0) {
+                                                            for (int ir = 0; ir < nBeans; ir++) {
+                                                                JSONObject row = rowsJson.getJSONObject(ir);
+                                                                tbl_wrk = workspace.get_tbl_manager_workspace(controlId);
 
-                                                            // @return Object [] { bResult, primaryKey, error, primaryKeyValue }
-                                                            Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, null, request);
-                                                            if (resSet != null) {
-                                                                if (!(boolean) resSet[0]) {
-                                                                    errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[1]) + "]";
+                                                                // @return Object [] { bResult, primaryKey, error, primaryKeyValue }
+                                                                Object[] resSet = set_bean_by_json_row_data(obj, tbl_wrk, row, null, request);
+                                                                if (resSet != null) {
+                                                                    if (!(boolean) resSet[0]) {
+                                                                        errors += "[Error setting row " + (ir + 1) + "/" + (rowsJson.length()) + ":" + ((String) resSet[1]) + "]";
+                                                                    }
+                                                                } else {
+                                                                    errors += "[Nulll result setting row " + (ir + 1) + "/" + (rowsJson.length()) + "]";
                                                                 }
-                                                            } else {
-                                                                errors += "[Nulll result setting row " + (ir + 1) + "/" + (rowsJson.length()) + "]";
+                                                                beans.add(obj);
+                                                                nBeansLoaded++;
                                                             }
-                                                            beans.add(obj);
-                                                            nBeansLoaded++;
-                                                        }
-                                                        // set del risultato sulla propietà del bean
-                                                        utility.set(bean, beanNameFound, beans);
-                                                        utility.set(bean, beanNameFound + "$Read", true);
-                                                        // set changed as false
-                                                        try { utility.set(bean, beanNameFound + "$Changed", false); } catch ( NoSuchFieldException nsf) {}
+                                                            // set del risultato sulla propietà del bean
+                                                            utility.set(bean, beanNameFound, beans);
+                                                            utility.set(bean, beanNameFound + "$Read", true);
+                                                            // set changed as false
+                                                            try {
+                                                                utility.set(bean, beanNameFound + "$Changed", false);
+                                                            } catch (NoSuchFieldException nsf) {
+                                                            }
 
-                                                        //
-                                                        // Recursive mode : read all child beans
-                                                        //
-                                                        if(curLevel <= maxLevel || maxLevel <= 0) {
-                                                            for (int ic=0; ic<beans.size(); ic++) {
-                                                                Object childBean = beans.get(ic);
-                                                                if(childBean != null) {
-                                                                    Object [] resLoad = load_bean_internal(childBean, "*", null/*params*/, maxRows, maxLevel, curLevel+1, runtimeForeignTables, request);
-                                                                    if(resLoad != null) {
-                                                                        if(resLoad[0] != null) {
-                                                                            // @return Object [] { beans, nBeans, nBeansLoaded, errors, warnings }
-                                                                            nBeansLoaded += (int)resLoad[2];
-                                                                            if(resLoad[3] != null) {
-                                                                                if(!((String)resLoad[3]).isEmpty()) {
-                                                                                    errors += (errors.length() > 0 ? "\n" : "") + resLoad[3];
+                                                            //
+                                                            // Recursive mode : read all child beans
+                                                            //
+                                                            if (curLevel <= maxLevel || maxLevel <= 0) {
+                                                                for (int ic = 0; ic < beans.size(); ic++) {
+                                                                    Object childBean = beans.get(ic);
+                                                                    if (childBean != null) {
+                                                                        Object[] resLoad = load_bean_internal(childBean, "*", null/*params*/, maxRows, maxLevel, curLevel + 1, runtimeForeignTables, request);
+                                                                        if (resLoad != null) {
+                                                                            if (resLoad[0] != null) {
+                                                                                // @return Object [] { beans, nBeans, nBeansLoaded, errors, warnings }
+                                                                                nBeansLoaded += (int) resLoad[2];
+                                                                                if (resLoad[3] != null) {
+                                                                                    if (!((String) resLoad[3]).isEmpty()) {
+                                                                                        errors += (errors.length() > 0 ? "\n" : "") + resLoad[3];
+                                                                                    }
                                                                                 }
-                                                                            }
-                                                                            if(resLoad[4] != null) {
-                                                                                if(!((String)resLoad[4]).isEmpty()) {
-                                                                                    warnings += (warnings.length() > 0 ? "\n" : "") + resLoad[4];
+                                                                                if (resLoad[4] != null) {
+                                                                                    if (!((String) resLoad[4]).isEmpty()) {
+                                                                                        warnings += (warnings.length() > 0 ? "\n" : "") + resLoad[4];
+                                                                                    }
+                                                                                }
+                                                                            } else {
+
+                                                                                warnings += "[ " + tbl_wrk.tableJson.getString("table") + " : bean is empty ]\n";
+                                                                                if (workspace.projectMode) {
+                                                                                    warnings += "[ *** DBG : child row warning on '" + childBeanName + "' : " + className + " : bean is empty ]\n";
                                                                                 }
                                                                             }
                                                                         } else {
-
-                                                                            warnings += "[ "+tbl_wrk.tableJson.getString("table") + " : bean is empty ]\n";
-                                                                            if(workspace.projectMode) {
-                                                                                warnings += "[ *** DBG : child row warning on '" + childBeanName + "' : " + className + " : bean is empty ]\n";
-                                                                            }
+                                                                            errors += "[child row error on '" + childBeanName + "' : " + className + " : resLoad is null ]\n";
                                                                         }
-                                                                    } else {
-                                                                        errors += "[child row error on '" + childBeanName + "' : " + className + " : resLoad is null ]\n";
                                                                     }
                                                                 }
                                                             }
-                                                        }
 
-                                                    } else {
-                                                        errors += "[row not found on '" + childBeanName + "' : " + className + "]\n";
+                                                        } else {
+                                                            errors += "[row not found on '" + childBeanName + "' : " + className + "]\n";
+                                                        }
+                                                    }
+                                                    if(jsonRecord.has("error")) {
+                                                        errors += "" + jsonRecord.getString("error");
                                                     }
                                                 } else {
                                                     errors += "[class not found on '" + childBeanName + "' : " + className + "]\n";
