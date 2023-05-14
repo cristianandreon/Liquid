@@ -87,7 +87,7 @@ rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
 .liquidFiltersLabel { width:80px; font-size: 10px; }
 .liquidFiltersSelector { width:auto; }
 .liquidFiltersSpacer { width:auto; }
-.liquidFilterButton { width:100px; }
+.liquidFilterButton { width:100px; margin: 4px; }
 .liquidFilterButtonTd { width:120px; }
 .liquidFilterImg { width:20px; overflow: hidden; }
 .liquidTab { float: left; text-align: center; text-decoration: none; color:darkgray;

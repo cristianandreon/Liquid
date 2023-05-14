@@ -1291,13 +1291,18 @@ class LiquidCtrl {
                     // lookup
                     if(this.mode === "lookup") {
                         // if(isDef(this.tableJson.query)) debugger;
-                        this.isLookupShared = Liquid.createLookupObjects(this, this.rootObj, this.rootObj.id);
+                        let linkType = "lookup";
+                        if(this.tableJson.filtertLink) {
+                            linkType = "filter";
+                        } else if(this.tableJson.gridLink) {
+                            linkType = "grid";
+                        }
+                        this.isLookupShared = Liquid.createLookupObjects(this, this.rootObj, this.rootObj.id, linkType);
                     }
 
                     if(!isDef(this.rootObj)) {
                         console.error("ERROR : control:" + this.controlId + " Failed set/create rootObj");
                     }
-
 
                     if(this.tableJson.resize === true || this.tableJson.resize === 'both' || this.tableJson.resize === 'linked') {
                         if(this.tableJson.resize === true || this.tableJson.resize === 'both') {
@@ -3910,6 +3915,8 @@ var Liquid = {
                 } else if (result[0] === 'pending') {
                     status = 'pending';
                     pendingControlIds.push(result[2]);
+                } else if (result[0] === 'empty') {
+                    status = 'empty';
                 }
                 queryParams[i].value = result[1];
                 queryParams[i].types = result[3];
@@ -3979,7 +3986,11 @@ var Liquid = {
                     var s = ic;
                     var e = ic;
                     if (expression[ic] === '$') {
-                        ic += Liquid.parseExpression(liquid, expression.substring(ic), retObj);
+                        try {
+                            ic += Liquid.parseExpression(liquid, expression.substring(ic), retObj);
+                        } catch (e) {
+                            retObj.status = "empty";
+                        }
                     } else if (expression[ic] === "@") {
                         let expr_len = expression.length;
                         var targetObj = Liquid.getObjectByName(liquid, expression.substring(1));
@@ -4108,6 +4119,7 @@ var Liquid = {
                         } else {
                             if(searchingLiquid.pendingLoadData) {
                                 console.error("ERROR: parseExpression() : control '"+searchingLiquid.controlid+"' still pending load...");
+                                throw "Pending load in control "+searchingLiquid.controlId;
                             } else {
                                 if (isFormX) {
                                     if (searchingLiquid.addingRow) {
@@ -4116,7 +4128,8 @@ var Liquid = {
                                         console.error("ERROR: parseExpression() : adding node undefined");
                                     }
                                 } else {
-                                    console.error("ERROR: parseExpression() : unexpected case");
+                                    // console.error("ERROR: parseExpression() : unexpected case");
+                                    throw "No data in control "+searchingLiquid.controlId;
                                 }
                             }
                         }
@@ -6055,7 +6068,7 @@ var Liquid = {
                 var bFoundSelection = false;
                 var bFirstTimeLoad = false;
                 var datasetReplaced = true;
-                var disableLinkedControlRefresh = false;
+                var disableLinkedControlRefresh = isDef(xhr.disableLinkedControlRefresh) ? xhr.disableLinkedControlRefresh : false;
                 var allowPartialLoadDatasetReplace = false;
 
                 try {
@@ -6077,7 +6090,6 @@ var Liquid = {
                     } else if (Liquid.isDialogX(liquid)) {
                         // allowPartialLoadDatasetReplace = true
                     }
-
                     if (responseText) {
                         var httpResultJson = JSON.parse(responseText);
                         if (!xhr.params.ids) { // set data as full partial
@@ -6088,14 +6100,12 @@ var Liquid = {
                                 liquid.nRows = httpResultJson.nRows;
                             }
                         }
-
                         // columns redifined by server
                         if (isDef(httpResultJson.columns)) {
                             if (Liquid.compareColumns(liquid, httpResultJson.columns)) {
                                 Liquid.updateColumns(liquid, httpResultJson.columns, true, true);
                             }
                         }
-
                         // any changes
                         var anyFieldsChange = false;
 
@@ -6230,6 +6240,7 @@ var Liquid = {
                             liquid.onceRefreshAll = null;
                             result.selectionChanged = true;
                             if (!disableLinkedControlRefresh) {
+                                liquid.pendingLoadData = false;
                                 Liquid.refreshGrids(liquid, null, refreshReason);
                                 Liquid.refreshLayouts(liquid, false);
                                 Liquid.refreshDocuments(liquid, false);
@@ -6636,6 +6647,10 @@ var Liquid = {
                         }
                     }
                 }
+                liquid.gridOptions.api.setRowData(null);
+                return;
+            } else if (liquid.tableJson.queryParamsJSON.status === 'empty') {
+                liquid.gridOptions.api.setRowData(null);
                 return;
             }
         }
@@ -7337,10 +7352,29 @@ var Liquid = {
                     if (isDef(filterJson.columns)) {
                         if (filterJson.columns.length > 0) {
                             if (filterJson.columns.length) {
+                                retVal = true;
                                 for (var i = 0; i < filterJson.columns.length; i++) {
                                     if (bInternal && filterJson.columns[i].mode === "internal" || !bInternal) {
+                                        if(filterJson.columns[i].value != null && filterJson.columns[i].value != "")
+                                            retVal = false;
                                         filterJson.columns[i].value = null;
-                                        retVal = true;
+                                        if(filterJson.columns[i].linkedContainerId) {
+                                            for(let j=0; j<3; j++) {
+                                                let node = null;
+                                                if (j == 0)
+                                                    node = document.getElementById(filterJson.columns[i].linkedContainerId);
+                                                else if (j == 1)
+                                                    node = document.getElementById(filterJson.columns[i].linkedContainerId + ".input");
+                                                else if (j == 2)
+                                                    node = document.getElementById(filterJson.columns[i].linkedContainerId + ".lookup.input");
+                                                if (node) {
+                                                    try {
+                                                        node.value = null;
+                                                    } catch (e) {
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -7403,7 +7437,8 @@ var Liquid = {
     },
     onPrevRow: function (event) {
     },
-    createLookupObjects: function (obj, rootObj, instanceId) {
+    createLookupObjects: function (obj, rootObj, instanceId, linkType) {
+        var isFilterLookup = linkType === 'filter';
         var isShared = false;
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
@@ -7433,8 +7468,8 @@ var Liquid = {
                 displayMode = "";
                 boxShadow = "";
             }
-
             let title = "";
+            var resetTooltip = Liquid.lang === 'eng' ? "Reset filter field" : "Reimposta il filtro";
             if(projectMode) {
                 title = "Control id:" + liquid.controlId
                     + "\nTable :" + liquid.tableJson.table
@@ -7458,11 +7493,23 @@ var Liquid = {
                 + " onClick=\"Liquid.onOpenLookup(this)\""
                 + " onkeyup=\"if(Liquid.onChangeLookup(event)){ }\""
                 + "/>"
-                + "<div id=\"" + instanceId + ".icon_container\" class=\"liquidLookupIconContainer\">"
-                + "<img id=\"" + instanceId + ".lookup.input.source\" src=\"" + Liquid.getImagePath("open.png") + "\" onclick=\"Liquid.onOpenSourceLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:-17px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
-                + "<img id=\"" + instanceId + ".lookup.input.reset\" src=\"" + Liquid.getImagePath("delete.png") + "\" onclick=\"Liquid.onResetLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:7px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
-                + "<img id=\"" + instanceId + ".lookup.input.reload\" src=\"" + Liquid.getImagePath("update2.png") + "\" onclick=\"Liquid.onReloadLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:7px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
-                + "</div>";
+                + (isFilterLookup ?
+                    ("<div style=\"display:inline-block; margin-left:-22px; z-index: 100; position: relative;\">"
+                        + "<img src=\"" + Liquid.getImagePath("delete.png") + "\" "
+                        + "id=\"" + instanceId + ".filter.reset\""
+                        + "class=\"liquidFilterBt\" "
+                        + "title=\"" + resetTooltip + "\" "
+                        + "onClick=\"Liquid.onResetLookup('" + instanceId + ".lookup.input')\" "
+                        + "style=\"top:4px; right:7px; position:relative; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\">"
+                        + "</div>"
+                    ) : (
+                          "<div id=\"" + instanceId + ".icon_container\" class=\"liquidLookupIconContainer\">"
+                        + "<img id=\"" + instanceId + ".lookup.input.source\" src=\"" + Liquid.getImagePath("open.png") + "\" onclick=\"Liquid.onOpenSourceLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:-17px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
+                        + "<img id=\"" + instanceId + ".lookup.input.reset\" src=\"" + Liquid.getImagePath("delete.png") + "\" onclick=\"Liquid.onResetLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:7px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
+                        + "<img id=\"" + instanceId + ".lookup.input.reload\" src=\"" + Liquid.getImagePath("update2.png") + "\" onclick=\"Liquid.onReloadLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:7px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
+                        + "</div>"
+                    )
+                );
             liquid.lookupObj.onmouseover = Liquid.lookupMouseOver;
             liquid.lookupObj.onmouseout = Liquid.lookupMouseOut;
 
@@ -7849,17 +7896,16 @@ var Liquid = {
     onResetLookup: function (obj_id, reason) {
         var obj = document.getElementById(obj_id);
         if (obj) {
-            if (!obj.readOnly && !obj.disabled) {
-                if (obj.value !== '') {
-                    obj.value = '';
-                } else {
-                    if (obj.dataset) {
-                        var gridLink = obj.dataset.gridlink;
-                        var layoutLink = obj.dataset.layoutlink;
-                        var filterLink = obj.dataset.filterlink;
-                        if (filterLink)
-                            Liquid.onBtFilterExecute(filterLink);
-                    }
+            // if (!obj.readOnly && !obj.disabled) {
+            if (obj.value !== '') {
+                obj.value = '';
+            } else {
+                if (obj.dataset) {
+                    var gridLink = obj.dataset.gridlink;
+                    var layoutLink = obj.dataset.layoutlink;
+                    var filterLink = obj.dataset.filterlink;
+                    if (filterLink)
+                        Liquid.onBtFilterExecute(filterLink);
                 }
             }
         }
@@ -8185,8 +8231,14 @@ var Liquid = {
         td.innerHTML = "<center><button id=\"" + liquid.controlId
             + ".filter.execute\" type=\"button\" class=\"liquidFilterButton\" onClick=\"Liquid.onBtFilterExecute(this)\">"
             + (Liquid.lang === 'eng' ? "Search" : "Cerca")
-            + "</button></center>";
+            + "</button>"
+            + "<button id=\"" + liquid.controlId
+            + ".filter.reset\" type=\"button\" class=\"liquidFilterButton\" onClick=\"if(Liquid.onResetFilters(this,false)) { Liquid.onExecuteFilter(this);}\">"
+            + (Liquid.lang === 'eng' ? "Reset" : "Reimposta")
+            + "</button>"
+            + "</center>";
         tr.appendChild(td);
+
         if (filterCount == 0) {
             // No filters visible
             tr.style.display = 'none';
@@ -13664,11 +13716,12 @@ var Liquid = {
                 if (isDef(filterObj.lookup)) {
                     isLookup = filterObj.lookup;
                 }
+                var resetTooltip = Liquid.lang === 'eng' ? "Reset filter field" : "Reimposta il filtro";
+                var distinctTooltip = Liquid.lang === 'eng' ? "Get all dinstinct values" : "Ottiene tutti i valori distinti";
                 if (!isLookup) {
-                    var tooltip = Liquid.lang === 'eng' ? "Get all dinstinct values" : "Ottiene tutti i valori distinti";
                     var searchCode = "<img id=\"" + baseId + ".filter.search\" " +
                         "class=\"liquidFilterBt\" " +
-                        "title=\"" + tooltip + "\" " +
+                        "title=\"" + distinctTooltip + "\" " +
                         "src=\"" + Liquid.getImagePath("search.png") + "\" " +
                         "onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterObj.linkedContainerId + "')\" " +
                         "style=\"padding-top:1; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\" " +
@@ -13679,7 +13732,6 @@ var Liquid = {
                         onMouseDownCode = " onmousedown=\"this.setAttribute('rel',this.value); this.placeholder=this.value; this.value =''\"";
                         onBlurCode = " onblur=\"this.value=this.getAttribute('rel');\"";
                     }
-                    var tooltip = Liquid.lang === 'eng' ? "Reset filter field" : "Reimposta il filtro";
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " "
                         + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " "
                         + inputWidth + " " + inputHeight + " " + inputPlaceholder + " " + inputRequired + " " + inputAutocomplete
@@ -13687,6 +13739,7 @@ var Liquid = {
                         + " id=\"" + filterObj.linkedContainerId + "\""
                         + " type=\"" + inputType + "\""
                         + " class=\"liquidFilterInput\""
+                        + "title=\"" + resetTooltip + "\" "
                         + " onkeypress=\"return Liquid.onKeyPress(event, this)\""
                         + " data-rel=\"\""
                         + " style='"+inputStyleFloat+"'"
@@ -13702,7 +13755,7 @@ var Liquid = {
                                 ("<img src=\"" + Liquid.getImagePath("delete.png") + "\" "
                                 + "id=\"" + baseId + ".filter.reset\""
                                 + "class=\"liquidFilterBt\" "
-                                + "title=\"" + tooltip + "\" "
+                                + "title=\"" + resetTooltip + "\" "
                                 + "onClick=\"Liquid.onResetFilter('" + filterObj.linkedContainerId + "')\" "
                                 + "style=\"top:4px; right:7px; position:relative; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\">"
                                 ) : "" )
@@ -13814,9 +13867,7 @@ var Liquid = {
                     let lookupOptions = null;
                     let sourceCol = null;
 
-                    if(filterJson.columns[ic].name == "customers.name")
-                        debugger;
-
+                    // if(filterJson.columns[ic].name == "customers.name") debugger;
                     let col = Liquid.getColumn(liquid, filterJson.columns[ic].name);
                     if (col) {
                         if (isDef(col.lookup)) {
@@ -14142,6 +14193,10 @@ var Liquid = {
             var isDatalistEditor2 = Liquid.isDatalistEditor(col);
             var isDatalistEditor = isDatalistEditor1 ? isDatalistEditor1 : isDatalistEditor2;
 
+            var decimalDigit = isDef(col) ? (isDef(col.decimalDigit) ? col.decimalDigit : null) : null;
+            decimalDigit = isDef(gridObj.decimalDigit) ? gridObj.decimalDigit : decimalDigit;
+            var inputDdecimaligit = isDef(decimalDigit) && decimalDigit ? ("decimaldigit=\""+decimalDigit+"\" ") : "";
+
             var itemContainerId = grid.id + "." + (gridObj.index1B) + ".div";
             if ((col && typeof col.required !== 'undefined')) {
                 inputRequired = "required=\"" + col.required + "\"";
@@ -14227,6 +14282,7 @@ var Liquid = {
                         // + " data-date-format=\"DD-MM-YYYY HH:mm:ss\""
                         + inputReadonly
                         + inputDisabled
+                        + inputDdecimaligit
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " autocomplete=\"off\""
@@ -14244,6 +14300,7 @@ var Liquid = {
                         // + " data-date-format=\"DD-MM-YYYY HH:mm:ss\""
                         + inputReadonly
                         + inputDisabled
+                        + inputDdecimaligit
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " autocomplete=\"off\""
@@ -14259,6 +14316,7 @@ var Liquid = {
                         + " type=\"" + "number" + "\" "
                         + inputReadonly
                         + inputDisabled
+                        + inputDdecimaligit
                         + " step=\"" + "1" + "\" "
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
@@ -14273,6 +14331,7 @@ var Liquid = {
                         + " type=\"" + "checkbox" + "\" "
                         + inputReadonly
                         + inputDisabled
+                        + inputDdecimaligit
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
@@ -14286,6 +14345,7 @@ var Liquid = {
                         + " type=\"" + "number" + "\" "
                         + inputReadonly
                         + inputDisabled
+                        + inputDdecimaligit
                         + " step=\"" + "0.01" + "\" "
                         + " pattern=\"" + "\d*" + "\" "
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
@@ -14301,6 +14361,7 @@ var Liquid = {
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + inputReadonly
                         + inputDisabled
+                        + inputDdecimaligit
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
                         + " onblur=\"Liquid.onGridFieldModify(event,this,true)\""
@@ -14346,6 +14407,7 @@ var Liquid = {
                         + " type=\"" + inputType + "\" "
                         + inputReadonly
                         + inputDisabled
+                        + inputDdecimaligit
                         + " class=\"liquidGridControl " + itemClass + " " + (gridObj.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
                         + " style=\"" + inputWidth + " " + inputHeight + " " + position + " " + itemCssText + "\""
                         + " onchange=\"Liquid.onGridFieldModify(event,this,false)\""
@@ -16431,6 +16493,9 @@ var Liquid = {
                                 if (isDef(linkedCol.asType)) {
                                     obj.setAttribute('astype', linkedCol.asType);
                                 }
+                                if (isDef(linkedCol.decimalDigit)) {
+                                    obj.setAttribute('decimaldigit', linkedCol.decimalDigit);
+                                }
                             }
 
                             if (obj.onclick) {
@@ -16742,6 +16807,7 @@ var Liquid = {
                                 obj.setAttribute('linkedid', newId);
                                 obj.setAttribute('name', obj.id);
                                 obj.setAttribute('astype', null);
+                                obj.setAttribute('decimaldigit', null);
 
                                 // we need unique id ... only in linked to field nodes
                                 if (obj.id) {
@@ -19854,10 +19920,14 @@ var Liquid = {
                             for(let j=0; j<itemObj.parentNode.childNodes.length; j++) {
                                 var obj = itemObj.parentNode.childNodes[j];
                                 if(obj.classList.contains("liquidLookupIconContainer")) {
-                                    jQ1124(obj).animate( { zoom:1, top:-14}, 300, function(){
-                                        obj.style.filter = "grayscale(0.0)";
-                                        obj.style.boxShadow = "";
-                                    });
+                                    jQ1124(obj).animate(
+                                        { zoom:1, top:-14, visible:"" },
+                                        300,
+                                        function(){
+                                            obj.style.filter = "grayscale(0.0)";
+                                            obj.style.boxShadow = "";
+                                            obj.style.visible = "";
+                                        });
                                 }
                             }
                         }
@@ -19889,12 +19959,15 @@ var Liquid = {
                             for(let j=0; j<itemObj.parentNode.childNodes.length; j++) {
                                 var obj = itemObj.parentNode.childNodes[j];
                                 if(obj.classList.contains("liquidLookupIconContainer")) {
-                                    jQ1124(obj).animate( { zoom:0.6, top:0 }, 300, function(){
-                                        obj.style.filter = "grayscale(0.6)";
-                                        obj.style.right = "";
-                                        obj.style.boxShadow = "";
-                                        // obj.style.boxShadow = "rgb(167, 167, 167) 5px 5px 7px 1px";
-                                    });
+                                    jQ1124(obj).animate(
+                                        { zoom:0.6, top:0, visible:"hidden" },
+                                        300,
+                                        function(){
+                                            obj.style.filter = "grayscale(0.6)";
+                                            obj.style.right = "";
+                                            obj.style.boxShadow = "";
+                                            obj.style.visible = "hidden";
+                                        });
                                 }
                             }
                         }
@@ -20170,6 +20243,7 @@ var Liquid = {
                             null,
                             liquid.controlId+".refreshLinkedLiquid",
                             function (liquid) {
+                                /*
                                 var curNodes = Liquid.getCurNodes(liquid);
                                 Liquid.updateSelectionData(liquid);
                                 Liquid.refreshGrids(liquid, curNodes && curNodes.length ? curNodes[0].data : null, "refreshLinked");
@@ -20177,6 +20251,7 @@ var Liquid = {
                                 Liquid.refreshLayouts(liquid, true);
                                 Liquid.refreshDocuments(liquid, false);
                                 Liquid.refreshCharts(liquid, false);
+                                */
                             }
                         );
                         liquid.linkedLiquids[i].lastRowClickedNode = null;
@@ -20217,6 +20292,10 @@ var Liquid = {
                         if(isNaN(value)) {
                             console.error("LIQUID: cannot set numeric field with value:'"+value+"' .. please check layout:"+(isDef(layoutOrGrid) ? layoutOrGrid.name : ""));
                         }
+                    }
+                    var decimalDigit = targetObj.getAttribute('decimaldigit');
+                    if(isDef(decimalDigit)) {
+                        value = Number(value).toFixed(Number(decimalDigit));
                     }
                     var astype = targetObj.getAttribute('astype');
                     if(astype == 'color') {
@@ -22446,7 +22525,7 @@ columns:[
                 lookupLiquid.tableJson.gridLink = (linkType === 'grid' ? containerId : null);
                 lookupLiquid.tableJson.filtertLink = (linkType === 'filter' ? containerId : null);
                 lookupLiquid.tableJson.layoutLink = (linkType === 'layout' ? containerId : null);
-                Liquid.createLookupObjects(lookupLiquid, containerObj, containerId);
+                Liquid.createLookupObjects(lookupLiquid, containerObj, containerId, linkType);
                 return lookupLiquid;
             } else {
                 // control not exist so empty html to rebuild correctly
@@ -24208,7 +24287,7 @@ columns:[
      * @param onCompleted           the callback when completed
      * @param onFailed              the callback when failed
      * @param onCancelled           the callback when cancelled
-     * @param callback              the callback when terminated
+     * @param callback              the callback when terminated (disable autorefresh if defined)
      * @param callbackParam         the callback param when terminated
      * @returns {*}
      */
@@ -24269,8 +24348,13 @@ columns:[
                 if (!isDef(liquid.xhr))
                     liquid.xhr = {};
                 liquid.xhr.params = paramsObject;
-                if(isDef(callback)) xhr.callback = callback;
-                if(isDef(callbackParam)) xhr.callbackParam = callbackParam;
+                if(isDef(callback)) {
+                    xhr.callback = callback;
+                    xhr.disableLinkedControlRefresh = true;
+                }
+                if(isDef(callbackParam)) {
+                    xhr.callbackParam = callbackParam;
+                }
             }
 
             // create the queue object
