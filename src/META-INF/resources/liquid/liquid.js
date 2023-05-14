@@ -2770,6 +2770,30 @@ var Liquid = {
     WARNING_STRING: "WARNING",
     QUESTION_STRING: "QUESTION",
     INFO_STRING: "INFO",
+    setProjectMode: function (mode) {
+        if (isDef(mode)) {
+            if (mode === true) {
+                projectMode = true;
+                document.addEventListener("contextmenu", ( e )=> { return true; } );
+            } else if (mode === false) {
+                // document.body.style
+                projectMode = false;
+                document.addEventListener("contextmenu", ( e )=> { e.preventDefault(); return false; } );
+                try {
+                    document.body.style.MozUserSelect = 'none';
+                    document.body.style.KhtmlUserSelect = 'none';
+                    document.body.style.WebkitUserSelect = 'none';
+                    document.body.style.MsUserSelect = 'none';
+                    document.body.style.UserSelect = 'none';
+                } catch (e) {
+                    conaole.error(e);
+                }
+            }
+        } else {
+            console.warn("WARNING : mode is undefined");
+            return false;
+        }
+    },
     setLanguage: function (language, serverSide) {
         if (isDef(language)) {
             var lang_list = language.split(';');
@@ -5540,10 +5564,12 @@ var Liquid = {
         if (liquid.tableJson.checkboxSelection === true) {
             if (liquid.tableJson.columns) {
                 if (liquid.tableJson.columns[0].visible === false) {
-                    console.error("ERROR: first column must be visible when rowSelection is defined on control:"+liquid.controlId);
-                    console.error("column[0] = "+liquid.tableJson.columns[0].name);
+                    liquid.tableJson.columns[0].visible = true;
+                    liquid.tableJson.columns[0].width = 0;
+                    console.warn("ERROR: first column must be visible when rowSelection is defined on control:"+liquid.controlId);
+                    console.warn("column[0] = "+liquid.tableJson.columns[0].name);
                     try {
-                        console.error("column[1] = "+liquid.tableJson.columns[1].name);
+                        console.warn("column[1] = "+liquid.tableJson.columns[1].name);
                     } catch (e) {}
                     liquid.tableJson.columns[0].visible = true;
                 }
@@ -7186,10 +7212,12 @@ var Liquid = {
                                                 if (element.nodeName === "SELECT") {
                                                     elementValue = element.options[element.selectedIndex].getAttribute("value");
                                                 } else {
-                                                    if (element.type.toUpperCase() === "CHECKBOX") {
-                                                        elementValue = element.checked ? true : false;
-                                                    } else {
-                                                        elementValue = element.value;
+                                                    if (element.type) {
+                                                        if (element.type.toUpperCase() === "CHECKBOX") {
+                                                            elementValue = element.checked ? true : false;
+                                                        } else {
+                                                            elementValue = element.value;
+                                                        }
                                                     }
                                                 }
                                                 if (filtersJson.columns[i].value !== elementValue) {
@@ -7406,9 +7434,21 @@ var Liquid = {
                 boxShadow = "";
             }
 
+            let title = "";
+            if(projectMode) {
+                title = "Control id:" + liquid.controlId
+                    + "\nTable :" + liquid.tableJson.table
+                    + "\nSchema :" + liquid.tableJson.schema
+                    + "\nDatabase :" + liquid.tableJson.database
+                    + "\nLookupField :" + liquid.tableJson.lookupField
+                    + "\nrootObj :" + rootObj.id
+                    + "\ninstanceId :" + instanceId
+                ;
+            }
             liquid.lookupObj.innerHTML = "<input id=\"" + liquid.linkedInputId + "\""
                 + " style=\"width:100%; \""
                 + " class=\"liquidLookup " + (className) + (liquid.tableJson.zoomable === true ? "liquidGridControlZoomable" : "") + "\""
+                + " title=\""+title+"\""
                 + " readonly=\"readonly\" autocomplete=\"off\" type=\"text\""
                 + " data-mode=\"" + (lookupMode) + "\""
                 + " data-gridlink=\"" + (liquid.tableJson.gridLink ? liquid.tableJson.gridLink : "") + "\""
@@ -13612,7 +13652,19 @@ var Liquid = {
                     + "<div style=\"width:24px;\"></div>"
                     + "</td>";
             } else {
-                if (!filterObj.lookup || typeof filterObj.lookup === 'undefined') {
+                let isLookup = false;
+                let col = Liquid.getColumn(liquid, filterObj.name);
+                if (col) {
+                    if (isDef(col.lookup)) {
+                        isLookup = true;
+                    } else if (isDef(col.foreignTable)) {
+                        isLookup = true;
+                    }
+                }
+                if (isDef(filterObj.lookup)) {
+                    isLookup = filterObj.lookup;
+                }
+                if (!isLookup) {
                     var tooltip = Liquid.lang === 'eng' ? "Get all dinstinct values" : "Ottiene tutti i valori distinti";
                     var searchCode = "<img id=\"" + baseId + ".filter.search\" " +
                         "class=\"liquidFilterBt\" " +
@@ -13621,14 +13673,12 @@ var Liquid = {
                         "onClick=\"Liquid.onSearchControl(this, '" + filterObj.name + "', '" + filterObj.linkedContainerId + "')\" " +
                         "style=\"padding-top:1; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\" " +
                         ">";
-
                     var onMouseDownCode = "";
                     var onBlurCode = "";
                     if (filterObj.comboBox == true || filterObj.combobox == true) {
                         onMouseDownCode = " onmousedown=\"this.setAttribute('rel',this.value); this.placeholder=this.value; this.value =''\"";
                         onBlurCode = " onblur=\"this.value=this.getAttribute('rel');\"";
                     }
-
                     var tooltip = Liquid.lang === 'eng' ? "Reset filter field" : "Reimposta il filtro";
                     innerHTML += "<input " + inputMax + " " + inputMin + " " + inputStep + " "
                         + inputPattern + " " + inputMaxlength + " " + inputAutocomplete + " " + inputAutofocus + " "
@@ -13669,7 +13719,6 @@ var Liquid = {
                         + "<td class=\"liquidFilterImg\">"
                         + "<div style=\"width:24px;\"></div>"
                         + "</td>";
-                    ;
                 }
             }
 
@@ -13759,14 +13808,42 @@ var Liquid = {
             var filterJson = filtersJson[i];
             if (filterJson.columns) {
                 for (var ic = 0; ic < filterJson.columns.length; ic++) {
+                    let isLookup = false;
+                    let lookupJson = null;
+                    let lookupField = null;
+                    let lookupOptions = null;
+                    let sourceCol = null;
+
+                    if(filterJson.columns[ic].name == "customers.name")
+                        debugger;
+
+                    let col = Liquid.getColumn(liquid, filterJson.columns[ic].name);
+                    if (col) {
+                        if (isDef(col.lookup)) {
+                            isLookup = true;
+                            lookupJson = col.lookup;
+                            lookupField = isDef(col.lookup.lookupField) ? col.lookup.lookupField : col.lookupField;
+                            lookupOptions = isDef(col.lookup.options) ? col.lookup.options : col.options;
+                            sourceCol = col;
+                        } else if (isDef(col.foreignTable)) {
+                            isLookup = true;
+                            lookupJson = col.foreignTable;
+                            lookupField = isDef(col.foreignTable.lookupField) ? col.foreignTable.lookupField : col.lookupField;
+                            lookupOptions = isDef(col.foreignTable.options) ? col.foreignTable.options : col.options;
+                            sourceCol = col;
+                        }
+                    }
                     if (isDef(filterJson.columns[ic].lookup)) {
-                        if (filterJson.columns[ic].lookup) {
-                            // var sourceCol = null; 26/06/2022
-                            var sourceCol = Liquid.getColumn(liquid, filterJson.columns[ic].name);
-                            var lookupControlId = liquid.controlId + ("filters_" + (i + 1) + "_" + filterJson.columns[ic].name).replace(/\./g, "_");
-                            if (!Liquid.startLookup(liquid.controlId, sourceCol, lookupControlId, filterJson.columns[ic].linkedContainerId, filterJson.columns[ic].lookup, filterJson.columns[ic].lookupField, filterJson.columns[ic].options, 'filter', "filter field", null)) {
-                                // TODO: normal filter?
-                            }
+                        isLookup = filterJson.columns[ic].lookup;
+                        lookupJson = filterJson.columns[ic].lookup;
+                        lookupField = filterJson.columns[ic].lookupField;
+                        lookupOptions = filterJson.columns[ic].options;
+                        sourceCol = Liquid.getColumn(liquid, filterJson.columns[ic].name);
+                    }
+                    if (isLookup) {
+                        var lookupControlId = liquid.controlId + ("filters_" + (i + 1) + "_" + filterJson.columns[ic].name).replace(/\./g, "_");
+                        if (!Liquid.startLookup(liquid.controlId, sourceCol, lookupControlId, filterJson.columns[ic].linkedContainerId, lookupJson, lookupField, lookupOptions, 'filter', "filter field", null)) {
+                            // TODO: normal filter?
                         }
                     }
                 }
@@ -14372,6 +14449,7 @@ var Liquid = {
                         }
                         if (json) {
                             var lookupControlId = "LOOKUP_" + liquid.controlId + "_GRID_" + grid.name + "_COL_" + grid.columns[i].name.replace(/\./g, "_");
+                            // if(liquid.controlId == "formats$study_id$id@Quotes") debugger;
                             Liquid.startLookup(liquid.controlId, sourceCol, lookupControlId, grid.columns[i].linkedContainerId, json, outField, options, 'grid', "grid \"" + grid.name + "\" field \"" + grid.columns[i].name + "\"", null);
                             if (bAddResizeObserver) {
                                 var obj = document.getElementById(grid.columns[i].linkedContainerId);
@@ -22265,6 +22343,19 @@ var Liquid = {
             }
         } catch(e) { console.error(e); }
     },
+    mergeLookupOptions:function(lookupJson, options) {
+        // TODO : complete
+        if(isDef(options.autoSelect)) lookupJson.autoSelect = options.autoSelect;
+        if(isDef(options.commands)) lookupJson.commands = options.commands;
+        if(isDef(options.grids)) lookupJson.grids = options.grids;
+        if(isDef(options.width)) lookupJson.width = options.width;
+        if(isDef(options.height)) lookupJson.height = options.height;
+        if(isDef(options.idColumn)) lookupJson.idColumn = options.idColumn;
+        if(isDef(options.lookupField)) lookupJson.lookupField = options.lookupField;
+        if(isDef(options.navVisible)) lookupJson.navVisible = options.navVisible;
+        if(isDef(options.targetColumn)) lookupJson.targetColumn = options.targetColumn;
+        if(isDef(options.status)) lookupJson.status = options.status;
+    },
     mergeCommand:function(currentCommand, command) {
         let result_command = deepClone(currentCommand);
         result_command.client = Liquid.pushObjToArray(command.client, result_command.client);
@@ -22578,7 +22669,8 @@ columns:[
                                     // need all columns to work fine (grid/layout/commands*events etc..
                                     // special transfer for columns : add all columns setting visble = false for undetected
                                     //
-                                    Liquid.mergeColumns(lookupJson, options, true );
+                                    Liquid.mergeColumns(lookupJson, options, true);
+                                    Liquid.mergeLookupOptions(lookupJson, options);
                                     // multiple row = multiple instance .. archive it far as .columns, Liquid.overlayObjectContent shouldn't copy it
                                     if(isDef(options.columns)) {
                                         options.rtColumns = options.columns
