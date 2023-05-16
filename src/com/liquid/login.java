@@ -67,7 +67,7 @@ public class login {
     
     static private String itemIdString = "\"";
     static private String tableIdString = "";
-    static private boolean debug = true;
+    public static boolean debug = false;
     static private String password_seed = "Liquid2020";
     
     static public int minCharsUser = 3;
@@ -703,7 +703,9 @@ public class login {
                             }
 
                             if (!isLoginPassed) {
-                                // MYSQL
+                                if(debug) {
+                                    Logger.getLogger(login.class.getName()).log(Level.WARNING, "NO LOGIN PASSED:" + psdoLogin.toString());
+                                }
                             }
 
                             // Verifica filtro IP                            

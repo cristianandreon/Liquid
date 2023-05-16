@@ -1874,7 +1874,7 @@ public class db {
                             }
                             newCol.put("name", cName);
                             newCol.put("label", cLabel);
-                            newCol.put("type", cType);
+                            newCol.put("type", String.valueOf(cType));
                             newCols.put(newCol);
                         }
                         tbl_wrk.tableJson.put("columns", newCols);
@@ -1914,7 +1914,9 @@ public class db {
                                 colTypes[ic] = 1;
                             }
                         } catch(Exception e) {
-                            error += "ERROR: invalid datatype at controlId:"+tbl_wrk.controlId+" field:"+col.getString("name")+" Error:" + e.getLocalizedMessage();
+                            String err = "ERROR: invalid datatype at controlId:"+tbl_wrk.controlId+" field:"+col.getString("name")+" Error:" + e.toString();
+                            error += err;
+                            System.err.println("// get_table_recordset() [" + controlId + "] Error:" + err);
                         }
                     }
                     if(col.has("precision")) {
@@ -4974,15 +4976,15 @@ public class db {
                                                                         //
                                                                         // compute the value by metadata
                                                                         //
-                                                                        String sDefault = null;
+                                                                        String sDBDefault = null;
                                                                         if("update".equalsIgnoreCase(sType)) {
                                                                             // N.B.: é una modifica non un inserimento, il campo default non ha rilevanza
-                                                                            sDefault = null;
+                                                                            sDBDefault = null;
                                                                         } else if("insert".equalsIgnoreCase(sType)) {
-                                                                            sDefault = dbDefault;
+                                                                            sDBDefault = dbDefault;
                                                                         }
 
-                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, sDefault);
+                                                                        Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, sDBDefault);
                                                                         oValue = (Object) fres[0];
                                                                         valueType = (int) fres[1];
 
@@ -5445,7 +5447,7 @@ public class db {
      * @param nullable
      * @param oValue
      * @param operator
-     * @param sDefault
+     * @param sDBDefault
      * @return Object [] { oValue, valueType };
      * oValue = value as Object class
      * valueType = Types.XXX (see Types.java) or :
@@ -5454,7 +5456,7 @@ public class db {
      * -1  ->       Truncate data (made by caller)
      * -999->       Skip field
      */
-    static public Object[] format_db_value(workspace tbl_wrk, int colTypes, boolean nullable, Object oValue, String operator, String sDefault) throws Exception {
+    static public Object[] format_db_value(workspace tbl_wrk, int colTypes, boolean nullable, Object oValue, String operator, String sDBDefault) throws Exception {
 
         boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
 
@@ -5670,8 +5672,8 @@ public class db {
             }
         }
 
-        if(sDefault != null && !sDefault.isEmpty()) {
-            if(sDefault.equalsIgnoreCase(String.valueOf(oValue))) {
+        if(sDBDefault != null && !sDBDefault.isEmpty()) {
+            if(sDBDefault.equalsIgnoreCase(String.valueOf(oValue))) {
                 // Campo espressione da risolvere nel DB
                 // N.B.: il campo dev'essere risoldo dal DB
                 oValue = null;

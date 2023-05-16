@@ -75,7 +75,7 @@ rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
 .liquidGridControlMod { color:darkRed; }
 .liquidGridRowOdd{ }
 .liquidGridRowEven{ background-color: rgba(211, 211, 211, 0.2) }
-.liquidGridLabel { color:#423e3e; font-size:95%; font-style: italic; background-color: transparent; text-align:right; right:5px; text-overflow: ellipsis; overflow: hidden; }
+.liquidGridLabel { color:#423e3e; font-size:100%; font-style: italic; background-color: transparent; text-align:right; right:5px; text-overflow: ellipsis; overflow: hidden; }
 .liquidFilterControl { height:27px; width:calc(100% - 2px); overflow:auto; padding-left: 3px; }
 .liquidFiltersTable { table-layout: fixed; width: 100%; z-index:130; position:relative; background:rgb(234, 234, 234); }
 .liquidFiltersTable tr:hover { background-color:rgba(220, 241, 255, 70) !important; }

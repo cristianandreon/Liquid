@@ -35,7 +35,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.68";
+    public static String version_string = "2.69";
     public static String getGLLang() {
         return GLLang;
     }
@@ -2085,12 +2085,14 @@ public class workspace {
                                                         col.put("isReflected", true);
                                                     }
 
-                                                    if (!mdCol.isNullable) {
-                                                        if (mdCol.columnDef == null || mdCol.columnDef.isEmpty()) {
-                                                            if (!mdCol.autoIncString) {
-                                                                if (colForeignTable == null || colForeignTable.isEmpty()) { // NON campo esterno
-                                                                    col.put("required", true);
-                                                                    col.put("requiredByDB", true);
+                                                    if(table.equalsIgnoreCase(colTable) || colTable == null) {
+                                                        if (!mdCol.isNullable) {
+                                                            if (mdCol.columnDef == null || mdCol.columnDef.isEmpty()) {
+                                                                if (!mdCol.autoIncString) {
+                                                                    if (colForeignTable == null || colForeignTable.isEmpty()) { // NON campo esterno
+                                                                        col.put("required", true);
+                                                                        col.put("requiredByDB", true);
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -3204,7 +3206,7 @@ public class workspace {
         } else if(expression != null && !expression.isEmpty()) {
             if("default".equalsIgnoreCase(key)) {
                 // N.B.: Inviato al client
-                obj.put("dbDefault", expression);
+                obj.put("default", expression);
             }
         }
         return solvedCount;

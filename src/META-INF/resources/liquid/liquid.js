@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.68
+// Liquid ver.2.69
 //
 //  First update 06-01-2020 - Last update 16-04-2023
 //
@@ -274,8 +274,19 @@ class LiquidCtrl {
             console.error("LiquidCtrl() : parse error:" + e);
         }
 
+
+
         if(this.tableJson) {
             // if(typeof parentObjId !== 'undefined' && parentObjId) this.tableJson.parentObjId = parentObjId;
+            if(isDef(sourceData)) {
+                if (isDef(sourceData.options)) {
+                    var propsToTransfer = ["actions"];
+                    Liquid.transferFeaturesProps(liquid, sourceData.options, this.tableJson, propsToTransfer);
+                    if(sourceData.options.loadDataSync === true) {
+                        this.tableJson.autoLoad = true;
+                    }
+                }
+            }
 
             if(!isDef(this.tableJson.mode)) {
                 this.tableJson.mode = "";
@@ -2685,7 +2696,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.68,
+    version: 2.69,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -2778,6 +2789,7 @@ var Liquid = {
     showErrors:true,
     showWarnings:false,
     showMessages:false,
+    focusedZIndex:30000,
     setProjectMode: function (mode) {
         if (isDef(mode)) {
             if (mode === true) {
@@ -6329,7 +6341,7 @@ var Liquid = {
                             Liquid.setErrorDiv(liquid, httpResultJson.error, "error");
                             Liquid.showToast(Liquid.appTitle, error, "error");
                         } else {
-                            Liquid.setErrorDiv(liquid, null);
+                            // Liquid.setErrorDiv(liquid, null);
                         }
                         if (httpResultJson.warning) {
                             let warning = null;
@@ -7288,6 +7300,8 @@ var Liquid = {
                     }
                 }
                 if (bDoFilter) {
+                    Liquid.setErrorDiv(liquid, null);
+
                     // funzione callback : necessario rinfrescco dei grafici
                     liquid.onTransferCompleted = function (liquid) {
                         Liquid.refreshCharts(liquid, false);
@@ -7348,7 +7362,6 @@ var Liquid = {
                 }
             }
         }
-        ;
     },
     onResetFilters: function (obj, bInternal) {
         var retVal = false;
@@ -8487,19 +8500,19 @@ var Liquid = {
             if (isDef(glVar)) {
                 console.info("INFO: Loading control '" + obj + "' as iconized winX...");
                 Liquid.startWinX(glVar.controlId, glVar.json, null, "iconic", {loadDataSync: true});
+                /*
                 var timeout_msec = 9000;
                 const date = Date.now();
                 do {
                     currentDate = Date.now();
                     liquid = Liquid.getLiquid(obj);
                 } while (liquid === null && currentDate - date < timeout_msec);
+                */
+                liquid = Liquid.getLiquid(obj);
                 if (!liquid) {
                     console.error("ERROR: Timeout loading control '" + obj + "'");
                 } else {
-                    if (liquid.tableJson.autoLoad !== false) {
-                        do {
-                            currentDate = Date.now();
-                        } while (liquid.absoluteLoadCounter === 0 && currentDate - date < timeout_msec);
+                    if (liquid.tableJson.autoLoad === true) {
                         if (liquid.absoluteLoadCounter === 0) {
                             console.error("ERROR: Timeout loading data of control '" + obj + "'");
                         }
@@ -10830,6 +10843,7 @@ var Liquid = {
                                                         col.isValidated = false;
                                                     retVal = false;
                                                 } else {
+                                                    Liquid.validateHtmlObject(obj);
                                                     if (col)
                                                         col.isValidated = true;
                                                 }
@@ -10926,6 +10940,34 @@ var Liquid = {
                         retVal = false;
                         Liquid.messageBox(null, Liquid.WARNING_STRING, msg, function () {
                         }, null);
+                    }
+                }
+            }
+        }
+        return retVal;
+    },
+    onResetValidateFields: async function (obj, command) {
+        var liquid = Liquid.getLiquid(obj);
+        var retVal = true;
+        if (liquid) {
+            if (liquid.tableJson.grids) {
+                for (var ig = 0; ig < liquid.tableJson.grids.length; ig++) {
+                    var grid = liquid.tableJson.grids[ig];
+                    let visible = isDef(grid.visible) ? grid.visible : null;
+                    let hidden = isDef(grid.hidden) ? grid.hidden : null;
+                    if (visible !== false && hidden !== true) {
+                        if (isDef(grid.columns)) {
+                            for (var i = 0; i < grid.columns.length; i++) {
+                                var obj = document.getElementById(grid.columns[i].linkedContainerId);
+                                var col = grid.columns[i].colLink1B > 0 ? liquid.tableJson.columns[grid.columns[i].colLink1B - 1] : null;
+                                var gridObj = grid.columns[i];
+                                if (col) {
+                                    if (isDef(gridObj.linkedObj)) {
+                                        Liquid.validateHtmlObject(gridObj.linkedObj);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -11482,16 +11524,18 @@ var Liquid = {
                         glLastFocusedLiquid.popupCaptionObj.classList.add("liquidPopupCaptionUnselected");
                 }
             if (liquid) {
-                liquid.outDivObj.style.zIndex = liquid.focusedZIndex;
+                liquid.outDivObj.style.zIndex = Liquid.focusedZIndex;
                 if (liquid.outDivObj)
                     liquid.outDivObj.style.display = "";
                 if (liquid.obscuringObj)
                     liquid.obscuringObj.style.display = "";
             }
-            glLastFocusedLiquid = liquid;
-            if (glLastFocusedLiquid)
-                if (glLastFocusedLiquid.popupCaptionObj)
-                    glLastFocusedLiquid.popupCaptionObj.classList.remove("liquidPopupCaptionUnselected");
+            if (liquid) {
+                if (liquid.popupCaptionObj) {
+                    liquid.popupCaptionObj.classList.remove("liquidPopupCaptionUnselected");
+                    glLastFocusedLiquid = liquid;
+                }
+            }
         }
     },
     /**
@@ -12046,6 +12090,8 @@ var Liquid = {
                                             Liquid.invalidateLayoutField(liquid, liquid.tableJson.layouts[il], "*", true);
                                         }
                                     }
+                                    // validating grids
+                                    Liquid.onResetValidateFields(liquid, command);
                                 }, liquid, defaultValue, bCallbackNow);
 
                             if (result.systemResult === defaultValue) {
@@ -12072,6 +12118,16 @@ var Liquid = {
                                 }
                                 bContinue = true;
                             }
+
+                            // validating layouts
+                            if (liquid.tableJson.layouts) {
+                                for (let il = 0; il < liquid.tableJson.layouts.length; il++) {
+                                    Liquid.invalidateLayoutField(liquid, liquid.tableJson.layouts[il], "*", true);
+                                }
+                            }
+                            // validating grids
+                            Liquid.onResetValidateFields(liquid, command);
+
                             // set layout rows state by command
                             Liquid.setLayoutsRowStateByCommand(liquid, command);
 
@@ -12271,7 +12327,8 @@ var Liquid = {
                             } else {
                                 restoreControls = true;
                             }
-                        } else if (command.name === "update") {
+                            // restoring the layout/grids...
+                        } else if (command.name === "insert" || command.name === "update" || command.name === "paste") {
                             restoreControls = true;
                         }
                         //
@@ -12286,6 +12343,10 @@ var Liquid = {
                             Liquid.refreshDocuments(liquid);
                             Liquid.refreshCharts(liquid);
                         }
+                        // validating grids
+                        Liquid.onResetValidateFields(liquid, command);
+                        // set layout rows state by command
+                        Liquid.setLayoutsRowStateByCommand(liquid, command);
                     }
 
                     if (Liquid.isRollbackCommand(command)) {
@@ -22105,7 +22166,6 @@ var Liquid = {
     onStart:function(obj) {
         var liquid = Liquid.getLiquid(obj);
         if(liquid) {
-
             if(liquid.tableJson.modeless || liquid.tableJson.modless) {
                 var id = "Liquid.backgroud.dlg";
                 liquid.obscuringObj = document.getElementById(id);
@@ -22127,7 +22187,7 @@ var Liquid = {
                 liquid.zIndex = liquid.focusedZIndex;
 
             } else {
-                liquid.focusedZIndex = 30000;
+                liquid.focusedZIndex = Liquid.focusedZIndex;
             }
             if(liquid.outDivObj) {
                 liquid.outDivObj.classList.remove('liquidHide');
@@ -22299,9 +22359,13 @@ var Liquid = {
                         jsonString = jsonString.json;
                     }
                 }
-                retVal = liquid = new LiquidCtrl(refControlId, controlId, jsonString
+                retVal = liquid = new LiquidCtrl(
+                    refControlId,
+                    controlId,
+                    jsonString
                     , (isDef(options) ? { options:options } : null)
-                    , "winX", parentId);
+                    , "winX",
+                    parentId);
             }
         } else {
             retVal = liquid;
