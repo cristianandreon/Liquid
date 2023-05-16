@@ -1397,7 +1397,7 @@ public class metadata {
         String result = null;
         try {
             if(conn == null) {
-                Object[] connResult = connection.getDBConnection(database.replace("\"", ""));
+                Object[] connResult = connection.getDBConnection(database != null ? database.replace("\"", ""):null);
                 conn = (Connection) connResult[0];
                 String connError = (String) connResult[1];
                 connToUse = connToDB = conn;
