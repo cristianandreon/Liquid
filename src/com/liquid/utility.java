@@ -126,7 +126,7 @@ public class utility {
             return "";
         }
         try {
-            return DatatypeConverter.printBase64Binary(data);
+            return URLEncoder.encode(DatatypeConverter.printBase64Binary(data));
         } catch (Throwable th) {
             try {
                 if (javaVersion >= 8) {
@@ -137,7 +137,7 @@ public class utility {
                 }
             } catch (Throwable th2) {
                 try {
-                    return new String(org.apache.commons.codec.binary.Base64.encodeBase64URLSafe(data));
+                    return URLEncoder.encode(new String(org.apache.commons.codec.binary.Base64.encodeBase64URLSafe(data)));
                 } catch (Throwable th3) {
                     System.err.println("Error:" + th3.getLocalizedMessage() + "Please try adding apache commons-codes.jar to your project");
                 }
