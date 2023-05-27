@@ -1224,6 +1224,26 @@ public class utility {
         return true;
     }
 
+
+
+
+    /**
+     * delete a file if it exist
+     *
+     * @param fileName
+     * @return true if file does't exist
+     *
+     * @throws IOException
+     */
+    static public boolean deleteFile(String fileName) throws IOException {
+        File file = new File(fileName);
+        if(file.exists()) {
+            return Files.deleteIfExists(file.toPath());
+        } else {
+            return true;
+        }
+    }
+
     /**
      * Set file or folder writable setting owner and group if not null
      *
