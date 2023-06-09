@@ -839,7 +839,10 @@ public class metadata {
                         } else {
                             databaseName = null;
                             schemaName = col0 != null ? rs.getString(col0) : null;
-                            ;
+                        }
+                        if(databaseName != null && schemaName == null) {
+                            schemaName = databaseName;
+                            databaseName = null;
                         }
                     } else {
                         databaseName = rs.getString("TABLE_CAT");
