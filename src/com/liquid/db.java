@@ -5396,7 +5396,7 @@ public class db {
                         java.util.Date valueDate = dateFormat.parse(value);
                         DateFormat dateFormat2 = new SimpleDateFormat("yyyy-MM-dd");
                         return dateFormat2.format(valueDate);
-                        // JAVA MERDA : "10/02/2020" con "dd/MM/yyyy" -> Text  could not be parsed at index 2 e could not be parsed: Unable to obtain LocalDateTime from TemporalAccessor: {},ISO resolved to 2020-02-10 of type java.time.format.Parsed
+                        // JAVA SHIT : "10/02/2020" con "dd/MM/yyyy" -> Text  could not be parsed at index 2 e could not be parsed: Unable to obtain LocalDateTime from TemporalAccessor: {},ISO resolved to 2020-02-10 of type java.time.format.Parsed
                         // formatter = DateTimeFormatter.ofPattern(pattern1);
                         // LocalDateTime dateTime = LocalDateTime.parse(value, formatter);
                         // result = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));

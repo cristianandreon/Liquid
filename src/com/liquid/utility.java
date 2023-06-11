@@ -362,9 +362,9 @@ public class utility {
         return null;
     }
 
-    // JAVA MERDA : se la libreria non è presente ANCHE sul progetto principale si solleva la throwable
+    // JAVA SHIT : se la libreria non è presente ANCHE sul progetto principale si solleva la throwable
     /*
-    APACHE MERDA : devo tirarmi dentro un pianete per usare un solo metodo ...
+    APACHE SHIT : devo tirarmi dentro un pianete per usare un solo metodo ...
     static public boolean set(Object bean, String propName, Object propValue) throws IllegalAccessException, InvocationTargetException {
         try {
             BeanUtils.setProperty(bean, propName, propValue);

@@ -300,7 +300,7 @@ public class PojoGenerator {
         return null;
     }    
     
-    // JAVA MERDA : (javassist.CannotCompileException) javassist.CannotCompileException: 
+    // JAVA SHIT : (javassist.CannotCompileException) javassist.CannotCompileException:
     //  [source error] invoke(java.lang.Object,java.lang.Object) not found in java.lang.reflect.Method
     //  say : FUCKYOU
     private CtMethod generateGenericSetter(CtClass declaringClass, String fieldName, Class fieldClass) throws CannotCompileException {

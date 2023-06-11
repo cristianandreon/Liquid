@@ -426,7 +426,7 @@ public class metadata {
 
                 //
                 // TODO : lettura information_schema
-                // Per ora non serve postgres NON è una merda nella gestione dei metadati
+                // Per ora non serve postgres NON è uno schifo nella gestione dei metadati
                 //
                 String[] postgresQueryList = {
                         // tabelle

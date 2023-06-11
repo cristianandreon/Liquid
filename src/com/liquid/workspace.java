@@ -35,7 +35,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.69";
+    public static String version_string = "2.70";
     public static String getGLLang() {
         return GLLang;
     }

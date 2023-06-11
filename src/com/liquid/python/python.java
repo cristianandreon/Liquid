@@ -222,7 +222,7 @@ public class python {
                         }
 
                         // Molto Importante : Chiude il processo se il client abbandona
-                        // JAVA DI MERDA : Non ha la Response.isClientConnected() di microsoft
+                        // JAVA SHIT : Non ha la Response.isClientConnected() di micro$oft
                         // Esporre il socket a response costava troppo
                         if ((System.currentTimeMillis() - cCheckClientTimeMs) >= expireTimeMsec && expireTimeMsec > 0) {
                             cCheckClientTimeMs = System.currentTimeMillis();

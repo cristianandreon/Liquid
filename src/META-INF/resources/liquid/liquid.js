@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.69
+// Liquid ver.2.70
 //
 //  First update 06-01-2020 - Last update 16-04-2023
 //
@@ -2696,7 +2696,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.69,
+    version: 2.70,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -14778,7 +14778,7 @@ var Liquid = {
                                         newValue = obj.innerHTML;
                                     }
                                     let pure_value = obj.getAttribute('pure_value');
-                                    curValue = pure_value != null ? pure_value : curValue;
+                                    newValue = pure_value != null ? pure_value : newValue;
                                     if (bValidate) {
                                         if (newValue !== curValue) {
                                             var validateResult = await Liquid.validateField(liquid, col, newValue);
