@@ -1678,10 +1678,10 @@ public class event {
                             String sFields = "";
                             JSONArray fieldsJSON = new JSONArray();
                             for (int ic = 0; ic < cols.length(); ic++) {
-                                String fieldData = rowData.getString(String.valueOf(ic + 1));
+                                Object ofieldData = rowData.get(String.valueOf(ic + 1));
                                 JSONObject fieldJSON = new JSONObject();
                                 fieldJSON.put("field", cols.getJSONObject(ic).getString("field"));
-                                fieldJSON.put("value", fieldData);
+                                fieldJSON.put("value", ofieldData);
                                 fieldsJSON.put(fieldJSON);
                             }
                             // sFields = (sFields.length()>0?",":"")+"{\"field\":\""+cols.getJSONObject(ic).getString("field")+"\",\"value\":\""+(fieldData != null ? fieldData : "")+"\"}";
