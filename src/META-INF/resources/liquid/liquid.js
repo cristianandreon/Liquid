@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.70
+// Liquid ver.2.71
 //
-//  First update 06-01-2020 - Last update 16-04-2023
+//  First update 06-01-2020 - Last update 27-06-2023
 //
 //  TODO : see trello.com
 //
@@ -2696,7 +2696,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.70,
+    version: 2.71,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -14777,9 +14777,9 @@ var Liquid = {
                                     } else {
                                         newValue = obj.innerHTML;
                                     }
-                                    let pure_value = obj.getAttribute('pure_value');
-                                    newValue = pure_value != null ? pure_value : newValue;
                                     if (bValidate) {
+                                        let pure_value = obj.getAttribute('pure_value');
+                                        newValue = isDef(pure_value) && pure_value != null ? pure_value : newValue;
                                         if (newValue !== curValue) {
                                             var validateResult = await Liquid.validateField(liquid, col, newValue);
                                             if (validateResult !== null) {
@@ -14797,6 +14797,9 @@ var Liquid = {
                                     } else {
                                         if (newValue !== curValue) {
                                             doUpdateField = true;
+                                            if (Liquid.isDate(col.type)) {
+                                                obj.setAttribute("pure_value", newValue);
+                                            }
                                         }
                                     }
                                     if (doUpdateField) {
