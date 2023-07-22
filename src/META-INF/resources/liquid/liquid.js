@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.70
+// Liquid ver.2.71
 //
-//  First update 06-01-2020 - Last update 16-04-2023
+//  First update 06-01-2020 - Last update 16-07-2023
 //
 //  TODO : see trello.com
 //
@@ -3035,7 +3035,7 @@ var Liquid = {
                     } else {
                         if (isDef(searchingNameOrObject.id)) {
                             if (!searchingNameOrObject.id) {
-                                while (!searchingNameOrObject.id && searchingNameOrObject) {
+                                while (!isDef(searchingNameOrObject.id) && searchingNameOrObject) {
                                     searchingNameOrObject = searchingNameOrObject.parentNode;
                                 }
                             }

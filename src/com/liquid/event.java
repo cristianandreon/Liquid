@@ -122,7 +122,7 @@ public class event {
                             retVal = utility.mergeJsonObject(retVal, subRetVal);
                         }
                     } else {
-                        System.err.println("class not found : " + className);
+                        System.err.println("class not found : " + className + " .. please check it exist, is public and not static");
                     }
                     // executing events as syncronous chain
                     try {

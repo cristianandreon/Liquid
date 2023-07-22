@@ -4212,6 +4212,8 @@ public class db {
 
         } catch (Exception e) {
             System.err.println("insert_update_row() error : "+e.getMessage());
+            if(workspace.projectMode)
+                System.err.println(""+sSTMTUpdate);
             retVal = false;
 
             if(transaction.isTransaction(request)) {
@@ -4485,8 +4487,8 @@ public class db {
     }
 
 
-    public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKey) throws Throwable {
-        return update(bean, DatabaseSchemaTable, primaryKey, null);
+    public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKeyName) throws Throwable {
+        return update(bean, DatabaseSchemaTable, primaryKeyName, null);
     }
 
     /**
@@ -4494,21 +4496,22 @@ public class db {
      *
      * @param bean
      * @param DatabaseSchemaTable
-     * @param primaryKey   the primary key property name
+     * @param primaryKeyName   the primary key property name
      */
-    public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKey, HttpServletRequest request) throws Throwable {
+    // TODO: what if primary key is not the firset field???
+    public static Object [] update(Object bean, String DatabaseSchemaTable, String primaryKeyName, HttpServletRequest request) throws Throwable {
             boolean retVal = false;
             String infoFields = "";
-            int new_id = 0;
+            Object new_id = null;
 
             Connection conn = null;
             String sSTMTUpdate = null;
 
-            if(DatabaseSchemaTable == null || bean == null || primaryKey == null) {
+            if(DatabaseSchemaTable == null || bean == null || primaryKeyName == null) {
                 if(bean != null) {
                     String beanPrimaryKey = (String)utility.get(bean, "$primaryKey");
                     if(beanPrimaryKey != null) {
-                        primaryKey = beanPrimaryKey;
+                        primaryKeyName = beanPrimaryKey;
                     } else {
                         return new Object[]{false, -1, "missing database or bean or primary key name"};
                     }
@@ -4547,7 +4550,7 @@ public class db {
                         String fieldName = f.getName();
                         Object fieldData = utility.getEx(bean, fieldName);
 
-                        if (fieldName.equals(primaryKey)) {
+                        if (fieldName.equals(primaryKeyName)) {
                             primaryKeyValue = fieldData;
                         } else {
                             if(fieldName.indexOf("$") < 0) {
@@ -4561,11 +4564,11 @@ public class db {
                         }
                     }
 
-                    if (primaryKey != null && !primaryKey.isEmpty()) {
+                    if (primaryKeyName != null && !primaryKeyName.isEmpty()) {
 
                         if (primaryKeyValue != null) {
 
-                            sWhere += primaryKey + "='" + primaryKeyValue + "'";
+                            sWhere += primaryKeyName + "='" + primaryKeyValue + "'";
 
                             sSTMTUpdate += sFields;
 
@@ -4597,7 +4600,7 @@ public class db {
                             } else {
                                 ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
                                 if (rs != null && rs.next()) {
-                                    new_id = rs.getInt(1);
+                                    new_id = rs.getObject(1);
                                     retVal = true;
                                 }
                                 if (rs != null)

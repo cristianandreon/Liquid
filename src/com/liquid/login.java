@@ -64,7 +64,9 @@ public class login {
     
     static public int maxWrongPasswordEvent = 3;
     static public int maxWrongPasswordDisable = 0;
-    
+    public static String login_field = null;
+    public static String password_field = null;
+
     static private String itemIdString = "\"";
     static private String tableIdString = "";
     public static boolean debug = false;
@@ -505,8 +507,19 @@ public class login {
             return "{ \"result\":-60, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
         }
     }
-    
-    
+
+
+    /**
+     *
+     * @param application_id
+     * @param domain_id
+     * @param sUserID
+     * @param sEMail
+     * @param sPassword
+     * @param sRedirect
+     * @param request
+     * @return
+     */
     static public String login( String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sRedirect, HttpServletRequest request) {
         HttpSession session = request.getSession();
         ResultSet rsdoLogin = null;
@@ -649,15 +662,17 @@ public class login {
 
                         driver = db.getDriver(conn);
 
+
+
                         try {
 
                             // MYSQL
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`="+ "?" +" OR `email`="+ "?" +") AND (`password`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `password`='' OR \"password\" is null) AND `status`<>'A' AND `status`<>'D' AND `emailValidated`>0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`"+"user"+"`="+ "?" +" OR `email`="+ "?" +") AND (`"+"password"+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `"+"password"+"`='' OR \""+"password"+"\" is null) AND `"+"status"+"`<>'A' AND `status`<>'D' AND `emailValidated`>0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
 
                             // POSTGRES
                             } else if("postgres".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"="+ "?" +" OR \"email\"="+ "?" +") AND (\"password\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \"password\"='' OR \"password\" is null) AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\""+"user"+"\"="+ "?" +" OR \"email\"="+ "?" +") AND (\""+"password"+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \""+"password"+"\"='' OR \""+"password"+"\" is null) AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
 
                             // ORACLE
                             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -1596,7 +1611,7 @@ public class login {
                                                     try {
 
                                                         if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`user`,`email`,`password`,`date`,`status`,`admin`,`token`,`expire`,`emailValidated`,`emailToken`) VALUES (" 
+                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`user`,`email`,`password`,`date`,`status`,`admin`,`token`,`expire`,`emailValidated`,`emailToken`) VALUES ("
                                                                     + "'" + (application_id != null ? application_id : "") + "'"
                                                                     + ",'" + (domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
@@ -1611,7 +1626,7 @@ public class login {
                                                                     + ",'"+sEmailToken+"'"
                                                                     + ")";
                                                         } else if("postgres".equalsIgnoreCase(driver)) {
-                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (\"application_id\",\"domain_id\",\"user\",\"email\",\"password\",\"date\",\"status\",\"admin\",\"token\",\"expire\",\"emailValidated\",\"emailToken\") VALUES (" 
+                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (\"application_id\",\"domain_id\",\"user\",\"email\",\"password\",\"date\",\"status\",\"admin\",\"token\",\"expire\",\"emailValidated\",\"emailToken\") VALUES ("
                                                                     + "'" +(application_id != null ? application_id : "") + "'"
                                                                     + ",'" +(domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
@@ -1943,7 +1958,7 @@ public class login {
                                                 + " AND `user` = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
                                                 + ")";
                                     } else if("postgres".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" \"password\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text)) WHERE (" 
+                                        sqlSTMT = "UPDATE "+schemaTable+" \"password\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text)) WHERE ("
                                                 + "\"application_id\" = '" + (application_id != null ? application_id : "") + "'"
                                                 + " AND \"domain_id\" = '" + (domain_id != null ? domain_id : "") + "'"
                                                 + " AND \"user\" = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"

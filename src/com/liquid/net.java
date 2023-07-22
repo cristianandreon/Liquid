@@ -9,6 +9,8 @@
  */
 package com.liquid;
 
+import org.apache.commons.lang.ArrayUtils;
+
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -219,6 +221,8 @@ public class net {
                     }
                 } else if (headers instanceof ArrayList) {
                     params = (ArrayList<Object>) headers;
+                } else if (headers instanceof String[]) {
+                    params.addAll( Arrays.asList( (String []) headers) );
                 } else if (headers instanceof HashMap) {
                     HashMap hmparams = (HashMap) headers;
                     Iterator it = hmparams.entrySet().iterator();
@@ -243,9 +247,9 @@ public class net {
                                 hostName = true;
                             }
                             if (connh != null) {
-                                connh.setRequestProperty(pair[0], pair[1].trim());
+                                connh.setRequestProperty(pair[0].trim(), pair[1].trim());
                             } else if (conns != null) {
-                                conns.setRequestProperty(pair[0], pair[1].trim());
+                                conns.setRequestProperty(pair[0].trim(), pair[1].trim());
                             }
                         } else if (pair.length == 1) {
                             if (connh != null) {
