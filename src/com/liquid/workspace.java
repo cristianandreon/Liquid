@@ -72,6 +72,7 @@ public class workspace {
 
     static private String timestampFormat = null;
     static public boolean projectMode;
+    static public String developing_host = null;
 
     static public long maxRows = 100000;
     static public long pageSize = 1000;
@@ -95,6 +96,18 @@ public class workspace {
         }
     }
 
+    public static boolean is_developing_host() {
+        if(developing_host != null) {
+            try {
+                if(developing_host.equalsIgnoreCase(InetAddress.getLocalHost().getHostName())) {
+                    return true;
+                }
+            } catch (UnknownHostException e) {
+                return false;
+            }
+        }
+        return false;
+    }
 
 
     public Locale getLocale() {
@@ -640,6 +653,7 @@ public class workspace {
     static public String enableProjectMode(JspWriter out, boolean keepMetadata, String onlyToHost) {
         String hostName = null;
         try {
+            if(developing_host == null) developing_host = onlyToHost;
             hostName = InetAddress.getLocalHost().getHostName();
             if(hostName.equalsIgnoreCase(onlyToHost)) {
                 System.out.println("LIQUID: Enabling project mode by working in host "+onlyToHost);

@@ -7,7 +7,6 @@ package com.liquid;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONPointer;
 import org.jsoup.Jsoup;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -2622,17 +2621,17 @@ public class utility {
 
 
     /**
-     *
      * @param inputId
      * @param onChange
      * @param style
+     * @param className
      * @return
      * @throws Throwable
      */
     public static String get_search_text_box(
             String inputId,
-            String onChange, String style
-    ) throws Throwable {
+            String onChange, String style,
+            String className) throws Throwable {
 
         String input = "<input class=\"auctionEditboxClass\"\n" +
                 "id=\""+inputId+"\"\n" +

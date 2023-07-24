@@ -70,7 +70,7 @@ rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
 .liquidGridControlZoomable:hover { transform: scale(2.5); font-size:4px; z-index: 90000; position: relative; background-color: whitesmoke; border: 1px solid lightsalmon; transition: all 0.3s ease-Out; }
 .liquidGridControlNumber { text-align:left; }
 .liquidGridControlRW { font-weight: bold; border:1px solid lightgray; background-color: white; }
-.liquidGridControlRO { overflow: auto; color:darkslategrey; padding-left:5px; border: 0px; background-color: transparent; -webkit-text-stroke-width: thin; box-shadow: -2px 2px 4px rgba(0,0,0,0.2), -2px -1px 0px rgba(0,0,0,0.02); }
+.liquidGridControlRO { overflow: auto; color:darkslategrey; padding-left:5px; border: 0px; background-color: transparent; -webkit-text-stroke-width: thin; /*box-shadow: -2px 2px 4px rgba(0,0,0,0.2), -2px -1px 0px rgba(0,0,0,0.02);*/ }
 .liquidGridControlDel { color:red !important; text-decoration: line-through !important; background-color: transparent !important; }
 .liquidGridControlMod { color:darkRed; }
 .liquidGridRowOdd{ }

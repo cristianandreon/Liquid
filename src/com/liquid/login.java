@@ -26,6 +26,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspWriter;
+
+import com.sun.javafx.fxml.expression.Expression;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -56,6 +58,7 @@ public class login {
     
     static public String [] additionalProperties = null;
     static public String additionalPropertiesPrefix = null;
+    static public boolean additionalPropertiesInSession = false;
     
     // coordinate tabella log eventi
     static public String schemaLog = null;
@@ -64,8 +67,11 @@ public class login {
     
     static public int maxWrongPasswordEvent = 3;
     static public int maxWrongPasswordDisable = 0;
-    public static String login_field = null;
-    public static String password_field = null;
+    public static String login_field = "user";
+    public static String email_field = "email";
+    public static String password_field = "password";
+    public static String admin_field = "admin";
+    public static String status_field = "status";
 
     static private String itemIdString = "\"";
     static private String tableIdString = "";
@@ -310,7 +316,7 @@ public class login {
         return false;
     }
     
-    static public String login (Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
+    static public String doLogin(Object tbl_wrk, Object params, Object clientData, Object freeParam ) {
         try {            
             if(params != null) {
                 JSONObject rootJson = new JSONObject((String)params);
@@ -349,7 +355,7 @@ public class login {
                                     }
                                     if(sUserID != null || sEMail != null) {
                                         HttpServletRequest request = (HttpServletRequest) freeParam;
-                                        return login(application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request);
+                                        return doLogin(application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request);
                                     }
                                 }
                             }
@@ -408,13 +414,13 @@ public class login {
                                 if(dataJson != null) {
                                     String application_id = dataJson.has("application_id") ? dataJson.getString("application_id") : "";
                                     String domain_id = dataJson.has("domain_id") ? dataJson.getString("domain_id") : "";
-                                    String sUserID = dataJson.has("user") ? dataJson.getString("user") : "";
-                                    String sEMail = dataJson.has("email") ? dataJson.getString("email") : "";
+                                    String sUserID = dataJson.has(login_field) ? dataJson.getString(login_field) : "";
+                                    String sEMail = dataJson.has(email_field) ? dataJson.getString(email_field) : "";
                                     String sRegisterUserID = dataJson.has("registerUser") ? dataJson.getString("registerUser") : "";
                                     String sRegisterEMail = dataJson.has("registerEmail") ? dataJson.getString("registerEmail") : "";
                                     String sRegisterPassword = dataJson.has("registerPassword") ? dataJson.getString("registerPassword") : "";
                                     String sStatus = dataJson.has("status") ? dataJson.getString("status") : "";
-                                    String sAdmin = dataJson.has("admin") ? dataJson.getString("admin") : "";
+                                    String sAdmin = dataJson.has(admin_field) ? dataJson.getString(admin_field) : "";
                                     String sRegisterRedirect = dataJson.has("registerRedirect") ? dataJson.getString("registerRedirect") : "";
                                     HttpServletRequest request = (HttpServletRequest)freeParam;
                                     return register( application_id, domain_id, (sRegisterUserID != null && !sRegisterUserID.isEmpty() ? sRegisterUserID : sUserID), (sRegisterEMail != null && !sRegisterEMail.isEmpty() ? sRegisterEMail : sEMail), sRegisterPassword, sStatus, sAdmin, sRegisterRedirect, request );                                    
@@ -452,11 +458,11 @@ public class login {
                                 if(dataJson != null) {
                                     String application_id = dataJson.has("application_id") ? dataJson.getString("application_id") : "";
                                     String domain_id = dataJson.has("domain_id") ? dataJson.getString("domain_id") : "";
-                                    String sUserID = dataJson.has("user") ? dataJson.getString("user") : "";
-                                    String sEMail = dataJson.has("email") ? dataJson.getString("email") : "";
-                                    String sPassword = dataJson.has("password") ? dataJson.getString("password") : "";
+                                    String sUserID = dataJson.has(login_field) ? dataJson.getString(login_field) : "";
+                                    String sEMail = dataJson.has(email_field) ? dataJson.getString(email_field) : "";
+                                    String sPassword = dataJson.has(password_field) ? dataJson.getString(password_field) : "";
                                     String sStatus = dataJson.has("status") ? dataJson.getString("status") : "";
-                                    String sAdmin = dataJson.has("admin") ? dataJson.getString("admin") : "";
+                                    String sAdmin = dataJson.has(admin_field) ? dataJson.getString(admin_field) : "";
                                     String sRedirect = dataJson.has("redirect") ? dataJson.getString("redirect") : "";
                                     HttpServletRequest request = (HttpServletRequest)freeParam;
                                     return recovery(application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request);
@@ -473,7 +479,7 @@ public class login {
     }
 
     
-    static public String login(HttpServletRequest request, HttpServletResponse response, JspWriter out) {
+    static public String doLogin(HttpServletRequest request, HttpServletResponse response, JspWriter out) {
         JSONObject requestJson = null;
         
         try {
@@ -489,9 +495,9 @@ public class login {
 
             application_id = request.getParameter("application_id");
             domain_id = request.getParameter("domain_id");
-            sUserID = request.getParameter("user");
-            sEMail = request.getParameter("email");
-            sPassword = request.getParameter("password");
+            sUserID = request.getParameter(login_field);
+            sEMail = request.getParameter(email_field);
+            sPassword = request.getParameter(password_field);
 
             sRedirect = request.getParameter("redirect");
             
@@ -500,7 +506,7 @@ public class login {
                 if(sRequest != null && !sRequest.isEmpty()) requestJson = new JSONObject(sRequest); 
             } catch (Exception e) { System.err.println(e.getLocalizedMessage()); }
         
-            return login( application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request );
+            return doLogin( application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request );
             
         } catch (Exception e) { 
             Logger.getLogger("// login() Error:" + e.getLocalizedMessage());
@@ -520,7 +526,7 @@ public class login {
      * @param request
      * @return
      */
-    static public String login( String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sRedirect, HttpServletRequest request) {
+    static public String doLogin(String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sRedirect, HttpServletRequest request) {
         HttpSession session = request.getSession();
         ResultSet rsdoLogin = null;
         PreparedStatement psdoLogin = null;
@@ -668,11 +674,11 @@ public class login {
 
                             // MYSQL
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`"+"user"+"`="+ "?" +" OR `email`="+ "?" +") AND (`"+"password"+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `"+"password"+"`='' OR \""+"password"+"\" is null) AND `"+"status"+"`<>'A' AND `status`<>'D' AND `emailValidated`>0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`"+""+login_field+""+"`="+ "?" +" OR `"+email_field+"`="+ "?" +") AND (`"+""+password_field+""+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `"+""+password_field+""+"`='' OR \""+""+password_field+""+"\" is null) AND (`"+"status"+"`<>'A' AND `status`<>'D' or `status` is null) AND `emailValidated`>0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
 
                             // POSTGRES
                             } else if("postgres".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\""+"user"+"\"="+ "?" +" OR \"email\"="+ "?" +") AND (\""+"password"+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \""+"password"+"\"='' OR \""+"password"+"\" is null) AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\""+""+login_field+""+"\"="+ "?" +" OR \""+email_field+"\"="+ "?" +") AND (\""+""+password_field+""+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \""+""+password_field+""+"\"='' OR \""+""+password_field+""+"\" is null) AND (\"status\"<>'A' AND \"status\"<>'D' OR \"status\" is null) AND \"emailValidated\">0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
 
                             // ORACLE
                             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -685,7 +691,7 @@ public class login {
 
                             psdoLogin = conn.prepareStatement(sqlSTMT);
                             psdoLogin.setString(1, sUserID.toLowerCase());
-                            psdoLogin.setString(2, sUserID.toLowerCase());
+                            psdoLogin.setString(2, sEMail.toLowerCase());
                             psdoLogin.setString(3, (domain_id != null ? domain_id : ""));
                             psdoLogin.setString(4, (application_id != null ? application_id : ""));
                             rsdoLogin = psdoLogin.executeQuery();
@@ -697,6 +703,7 @@ public class login {
                             String token = "";
                             int iUserId = 0;
                             int iIsAddmin = 0;
+                            Object oIsAddmin = null;
 
                             ///////////////////////////////////////////////////////////////////////////////////////
                             ////
@@ -706,7 +713,14 @@ public class login {
                             if (rsdoLogin != null) {
                                 // Ok legge dal recordset
                                 if (rsdoLogin.next()) {
-                                    iIsAddmin = rsdoLogin.getInt("admin");
+                                    oIsAddmin = rsdoLogin.getObject(admin_field);
+                                    if(oIsAddmin instanceof Boolean) {
+                                        iIsAddmin = (Boolean)oIsAddmin ? 1 : 0;
+                                    } else if(oIsAddmin instanceof Integer) {
+                                        iIsAddmin = (Integer)oIsAddmin > 0 ? 1 : 0;
+                                    } else if(oIsAddmin instanceof String) {
+                                        iIsAddmin = "N".equalsIgnoreCase((String)oIsAddmin) ? 0 : 1;
+                                    }
                                     iUserId = rsdoLogin.getInt("id");
                                     token = getSaltString(32);
                                     isLoginPassed = true;
@@ -746,11 +760,11 @@ public class login {
 
                                         // MYSQL
                                         if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`user`="+"?"+" OR `email`="+"?"+") AND `status`<>'A' AND `status`<>'D' AND `emailValidated`>=0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`"+login_field+"`="+"?"+" OR `"+email_field+"`="+"?"+") AND `"+status_field+"`<>'A' AND `"+status_field+"`<>'D' AND `emailValidated`>=0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
 
                                         // POSTGRES
                                         } else if("postgres".equalsIgnoreCase(driver)) {
-                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\"user\"="+"?"+" OR \"email\"="+"?"+") AND \"status\"<>'A' AND \"status\"<>'D' AND \"emailValidated\">=0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\""+login_field+"\"="+"?"+" OR \""+email_field+"\"="+"?"+") AND \""+status_field+"\"<>'A' AND \""+status_field+"\"<>'D' AND \"emailValidated\">=0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
 
                                         // ORACLE
                                         } else if("oracle".equalsIgnoreCase(driver)) {
@@ -773,7 +787,7 @@ public class login {
 
                                         if (rsdoLogin != null) {
                                             if (rsdoLogin.next()) {
-                                                iIsAddmin = rsdoLogin.getInt("admin");
+                                                iIsAddmin = rsdoLogin.getInt(admin_field);
                                                 iUserId = rsdoLogin.getInt("id");
                                             } else {
                                                 // no record : wrong password or user not defined
@@ -814,20 +828,22 @@ public class login {
                                 
                                 if(additionalProperties != null) {
                                     try {
-                                        Object bean = com.liquid.bean.load_bean(request, databaseSchemaTable, "*", "id", String.valueOf(iUserId));
+                                        Object bean = com.liquid.bean.load_bean(request, databaseSchemaTable, "*", "*", "id="+String.valueOf(iUserId));
 
                                         for(int i=0; i<additionalProperties.length; i++) {
                                             String prop = additionalProperties[i];
-                                            String propValue = (String)(bean != null ? utility.get(bean, prop) : "");
+                                            Object propValue = (bean != null ? utility.get(bean, prop) : "");
 
                                             if(prop != null) {
-                                                String sessionProp = ((additionalPropertiesPrefix != null && !additionalPropertiesPrefix.isEmpty()) ? additionalPropertiesPrefix : "") + prop;
-                                                session.setAttribute(sessionProp, propValue);
+                                                if(additionalPropertiesInSession) {
+                                                    String sessionProp = ((additionalPropertiesPrefix != null && !additionalPropertiesPrefix.isEmpty()) ? additionalPropertiesPrefix : "") + prop;
+                                                    session.setAttribute(sessionProp, propValue);
+                                                }
                                                 sAdditionalProperties += (i>0 ? "," : "") + "\"" + prop + "\":\""+propValue+"\"";
                                             }
                                         }
                                     } catch (Exception e) {
-                                        sAdditionalPropertiesError = e.getLocalizedMessage();
+                                        sAdditionalPropertiesError = utility.base64Encode(e.toString());
                                     }
                                 }
                                 
@@ -858,6 +874,7 @@ public class login {
                                         +",\"assets_name\":\""+utility.base64Encode(assets_name)+"\""
                                         +",\"assets_inactive_name\":\""+utility.base64Encode(assets_inactive_name)+"\""
                                         +",\"additionalProperties\":"+(sAdditionalProperties)+""
+                                        +",\"redirect\":"+(sRedirect)+""
                                         + (sAdditionalPropertiesError != null ? ",\"additionalPropertiesError\":\""+(sAdditionalPropertiesError)+"\"" : "")
                                         +"}";
                             }
@@ -884,10 +901,10 @@ public class login {
                                     message = sUserID + " : Utente o password errati. ["+iwrongPass+1+"] Utente disabilitato" + (Debug != null && Debug.equalsIgnoreCase("1") ? "[" + psdoLogin + "]" + "</br>" + "encPassword:" + encPassword : "");
                                     add_event(conn, request, message, -1);
                                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" SET status='D' WHERE id="+iUserId;
+                                        sqlSTMT = "UPDATE "+schemaTable+" SET "+status_field+"='D' WHERE id="+iUserId;
 
                                     } else if("postgres".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" SET \"status\"='D' WHERE id="+iUserId;
+                                        sqlSTMT = "UPDATE "+schemaTable+" SET \""+status_field+"\"='D' WHERE id="+iUserId;
                                     }
                                 }
  
@@ -1305,14 +1322,14 @@ public class login {
         JSONObject requestJson = null;
         String application_id = request.getParameter("application_id");
         String domain_id = request.getParameter("domain_id");
-        String sUserID = request.getParameter("user");
-        String sEMail = request.getParameter("email");
+        String sUserID = request.getParameter(login_field);
+        String sEMail = request.getParameter(email_field);
         String sRegisterUserID = request.getParameter("registerUser");
         String sRegisterEMail = request.getParameter("registerEmail");
-        String sPassword = request.getParameter("password");
+        String sPassword = request.getParameter(password_field);
 
-        String sStatus = request.getParameter("status");
-        String sAdmin = request.getParameter("admin");
+        String sStatus = request.getParameter(status_field);
+        String sAdmin = request.getParameter(admin_field);
 
         String sRedirect = request.getParameter("redirect");
 
@@ -1453,9 +1470,9 @@ public class login {
                                 // Controllo campo email
                                 if(sEMail != null && !sEMail.isEmpty()) {
                                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (email='"+sEMail.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
+                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE ("+email_field+"='"+sEMail.toLowerCase()+"' AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
                                     } else if("postgres".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (email='"+sEMail.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
+                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE ("+email_field+"='"+sEMail.toLowerCase()+"' AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
                                     } else if("oracle".equalsIgnoreCase(driver)) {
                                     } else if("sqlserver".equalsIgnoreCase(driver)) {
                                     }
@@ -1481,9 +1498,9 @@ public class login {
                                 if(!allowDuplicateUserName) {
                                     if(sUserID != null && !sUserID.isEmpty()) {
                                         if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE ("+login_field+"='"+sUserID.toLowerCase()+"' AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
                                         } else if("postgres".equalsIgnoreCase(driver)) {
-                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (user='"+sUserID.toLowerCase()+"' AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE ("+login_field+"='"+sUserID.toLowerCase()+"' AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
                                         } else if("oracle".equalsIgnoreCase(driver)) {
                                         } else if("sqlserver".equalsIgnoreCase(driver)) {
                                         }
@@ -1611,7 +1628,7 @@ public class login {
                                                     try {
 
                                                         if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`user`,`email`,`password`,`date`,`status`,`admin`,`token`,`expire`,`emailValidated`,`emailToken`) VALUES ("
+                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`"+login_field+"`,`"+email_field+"`,`"+password_field+"`,`date`,`"+status_field+"`,`"+admin_field+"`,`token`,`expire`,`emailValidated`,`emailToken`) VALUES ("
                                                                     + "'" + (application_id != null ? application_id : "") + "'"
                                                                     + ",'" + (domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
@@ -1626,7 +1643,7 @@ public class login {
                                                                     + ",'"+sEmailToken+"'"
                                                                     + ")";
                                                         } else if("postgres".equalsIgnoreCase(driver)) {
-                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (\"application_id\",\"domain_id\",\"user\",\"email\",\"password\",\"date\",\"status\",\"admin\",\"token\",\"expire\",\"emailValidated\",\"emailToken\") VALUES ("
+                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (\"application_id\",\"domain_id\",\""+login_field+"\",\""+email_field+"\",\""+password_field+"\",\"date\",\""+status_field+"\",\""+admin_field+"\",\"token\",\"expire\",\"emailValidated\",\"emailToken\") VALUES ("
                                                                     + "'" +(application_id != null ? application_id : "") + "'"
                                                                     + ",'" +(domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
@@ -1692,9 +1709,9 @@ public class login {
 
         application_id = request.getParameter("application_id");
         domain_id = request.getParameter("domain_id");
-        sUserID = request.getParameter("user");
-        sEMail = request.getParameter("email");
-        sPassword = request.getParameter("password");
+        sUserID = request.getParameter(login_field);
+        sEMail = request.getParameter(email_field);
+        sPassword = request.getParameter(password_field);
         sRedirect = request.getParameter("redirect");
 
         String sRequest = workspace.get_request_content(request);
@@ -1774,9 +1791,9 @@ public class login {
                     message = "";
 
                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE email=? AND status<>'A' AND emailValidated>0 AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
+                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE "+email_field+"=? AND "+status_field+"<>'A' AND emailValidated>0 AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
                     } else if("postgres".equalsIgnoreCase(driver)) {
-                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE email=? AND status<>'A' AND \"emailValidated\">0 AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
+                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE "+email_field+"=? AND "+status_field+"<>'A' AND \"emailValidated\">0 AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
                     } else if("oracle".equalsIgnoreCase(driver)) {
                     } else if("sqlserver".equalsIgnoreCase(driver)) {
                     }
@@ -1800,16 +1817,16 @@ public class login {
                         String sLink = "http://app.com/?DomainId="+domain_id + "&ApplicationId="+application_id;
                         String sLinkHTML = "<a href='"+sLink+"'>Login here <b>"+domain_id.toUpperCase()+"</b></a>";
                         String newPassword = getSaltString(6);
-                        String[] params = {newPassword, rsdoLogin.getString("id"), rsdoLogin.getString("user"), sLinkHTML };
+                        String[] params = {newPassword, rsdoLogin.getString("id"), rsdoLogin.getString(login_field), sLinkHTML };
 
                         try {
 
                             prepare_database(conn);
 
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "UPDATE "+schemaTable+" SET `password`=MD5(AES_ENCRYPT(?,'"+password_seed+"')) WHERE `id`="+params[1]+"";
+                                sqlSTMT = "UPDATE "+schemaTable+" SET `"+password_field+"`=MD5(AES_ENCRYPT(?,'"+password_seed+"')) WHERE `id`="+params[1]+"";
                             } else if("postgres".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "UPDATE "+schemaTable+" SET \"password\"=crypt(CAST(? AS text),CAST('"+password_seed+"' AS text)) WHERE \"id\"="+params[1]+"";
+                                sqlSTMT = "UPDATE "+schemaTable+" SET \""+password_field+"\"=crypt(CAST(? AS text),CAST('"+password_seed+"' AS text)) WHERE \"id\"="+params[1]+"";
                             } else if("oracle".equalsIgnoreCase(driver)) {
                             } else if("sqlserver".equalsIgnoreCase(driver)) {
                             }
@@ -1952,16 +1969,16 @@ public class login {
                                 
                                 if (application_id != null && !application_id.isEmpty()) {
                                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" SET `password`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) WHERE ( "
+                                        sqlSTMT = "UPDATE "+schemaTable+" SET `"+password_field+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) WHERE ( "
                                                 + "`application_id` = '" + (application_id != null ? application_id : "") + "'"
                                                 + " AND `domain_id` = '" + (domain_id != null ? domain_id : "") + "'"
-                                                + " AND `user` = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
+                                                + " AND `"+login_field+"` = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
                                                 + ")";
                                     } else if("postgres".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" \"password\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text)) WHERE ("
+                                        sqlSTMT = "UPDATE "+schemaTable+" \""+password_field+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text)) WHERE ("
                                                 + "\"application_id\" = '" + (application_id != null ? application_id : "") + "'"
                                                 + " AND \"domain_id\" = '" + (domain_id != null ? domain_id : "") + "'"
-                                                + " AND \"user\" = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
+                                                + " AND \""+login_field+"\" = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
                                                 + ")";
 
                                     } else if("oracle".equalsIgnoreCase(driver)) {
@@ -2009,7 +2026,7 @@ public class login {
 
         application_id = request.getParameter("application_id");
         domain_id = request.getParameter("domain_id");
-        sEMail = request.getParameter("email");
+        sEMail = request.getParameter(email_field);
         sEmailToken = request.getParameter("emailToken");
         sRedirect = request.getParameter("redirect");
         sDatabase = request.getParameter("database");
@@ -2103,9 +2120,9 @@ public class login {
                     message = "";
 
                     if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE email=? AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
+                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE "+email_field+"=? AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
                     } else if("postgres".equalsIgnoreCase(driver)) {
-                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE email=? AND status<>'A' AND status<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
+                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE "+email_field+"=? AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") + "' AND application_id='" + (application_id != null ? application_id : "")+"'";
                     } else if("oracle".equalsIgnoreCase(driver)) {
                     } else if("sqlserver".equalsIgnoreCase(driver)) {
                     }
@@ -2128,7 +2145,7 @@ public class login {
                     if (rsdoLogin.next()) {
                         String sLink = "http://"+sApplicationURL+"?DomainId="+domain_id + "&ApplicationId="+application_id;
                         String sLinkHTML = "<a href='"+sLink+"'>Login here into <b>"+domain_id+"</b></a>";
-                        String[] params = { sApplicationURL, rsdoLogin.getString("id"), rsdoLogin.getString("user"), sLinkHTML };
+                        String[] params = { sApplicationURL, rsdoLogin.getString("id"), rsdoLogin.getString(login_field), sLinkHTML };
 
                         try {
 

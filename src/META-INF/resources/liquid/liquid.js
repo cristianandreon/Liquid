@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.71
+// Liquid ver.2.72
 //
-//  First update 06-01-2020 - Last update 21-07-2023
+//  First update 06-01-2020 - Last update 24-07-2023
 //
 //  TODO : see trello.com
 //
@@ -24874,6 +24874,37 @@ columns:[
                 code_obj.dispatchEvent(event);
             } else {
                 console.error("ERROR : Missing code_id control");
+            }
+        }
+    },
+
+    /**
+     * Gestione dei filtri sulla ricerca Personalizzata
+     * @param obj
+     */
+    onSearchFilterChange:function(controlId, obj) {
+        var objParts = obj.id.split(".");
+        var filterName = obj.id;
+        if(objParts.length>=2) {
+            if(objParts[1]) {
+                var filterOperator = "";
+                if(objParts[2] == '') {
+                } else if(objParts[2] == 'from') {
+                    filterOperator = '>=';
+                } else if(objParts[2] == 'to') {
+                    filterOperator = '<=';
+                } else if(objParts[2] == 'like') {
+                    filterOperator = 'LIKE';
+                } else if(objParts[2] == 'less') {
+                    filterOperator = '<';
+                } else if(objParts[2] == 'lessEq') {
+                    filterOperator = '<=';
+                } else if(objParts[2] == 'greater') {
+                    filterOperator = '>';
+                } else if(objParts[2] == 'greaterEq') {
+                    filterOperator = '>=';
+                }
+                Liquid.setFilters(controlId, objParts[1], filterName, obj.value, filterOperator);
             }
         }
     },

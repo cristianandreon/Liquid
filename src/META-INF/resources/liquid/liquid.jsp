@@ -135,7 +135,7 @@
             
         } else if ("login".equalsIgnoreCase(operation)) {
             // Login Service : login
-            out.print( login.login(request, response, out) );
+            out.print( login.doLogin(request, response, out) );
 
         } else if ("logout".equalsIgnoreCase(operation)) {
             // Login Service : logout
