@@ -24910,7 +24910,8 @@ columns:[
                 } else if(objParts[2] == '==') {
                     filterOperator = '=';
                 } else {
-                    console.error("onSearchFilterChange(): operator "+objParts[2]+" not recognized");
+                    if(isDef(objParts[2]))
+                        console.error("onSearchFilterChange(): operator "+objParts[2]+" not recognized");
                 }
                 Liquid.setFilters(controlId, objParts[1], filterName, obj.value, filterOperator);
             }
