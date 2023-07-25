@@ -20,15 +20,13 @@
     </src_description>
   </component>
   <component name="FacetManager">
-    <facet type="web" name="Web">
+    <facet type="web" name="Web2">
       <configuration>
         <descriptors>
-          <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/src/META-INF/resources/web/web/WEB-INF/web.xml" />
           <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/src/META-INF/resources/web.xml" />
-          <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/src/META-INF/resources/web/WEB-INF/web.xml" />
         </descriptors>
         <webroots>
-          <root url="file://$MODULE_DIR$/src/META-INF/resources/liquid" relative="/liquid" />
+          <root url="file://$MODULE_DIR$/src/META-INF/resources" relative="/WEB-INF" />
         </webroots>
       </configuration>
     </facet>
