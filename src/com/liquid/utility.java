@@ -2399,6 +2399,18 @@ public class utility {
         }
         return colName;
     }
+    public static boolean compare_db_column(String table, String colName, String searchingColName) {
+        String[] colParts = searchingColName.split("\\.");
+        if (colParts.length > 1) {
+            if (table.equalsIgnoreCase(colParts[0])) {
+                return colName.equalsIgnoreCase(colParts[1]);
+            } else {
+                return false;
+            }
+        } else {
+            return colName.equalsIgnoreCase(searchingColName);
+        }
+    }
 
     public static String escapeForJson(String sjson) {
         if(sjson.indexOf("\\")>=0) {
@@ -2409,6 +2421,13 @@ public class utility {
             }
         }
         return sjson;
+    }
+
+    public static JSONArray insert(JSONArray array, Object o) {
+        JSONArray result = new JSONArray();
+        result.put(o);
+        result.putAll(array);
+        return result;
     }
 
 
@@ -2881,6 +2900,25 @@ public class utility {
         return arrayToString(columns != null ? columns.toArray() : null, prefix, postfix, separator);
     }
 
+
+    public static boolean contains(JSONArray list, Object key) {
+        for (int i = 0; i < list.length(); i++) {
+            Object o = list.get(i);
+            if (o instanceof String)
+                if (((String) o).compareTo(String.valueOf(key)) == 0) return true;
+            else if(o instanceof Integer)
+                if (((Integer)o).compareTo((Integer) key) == 0) return true;
+            else if(o instanceof Long)
+                if (((Long)o).compareTo((Long) key) == 0) return true;
+            else if(o instanceof Float)
+                if (((Float)o).compareTo((Float) key) == 0) return true;
+            else if(o instanceof Double)
+                if (((Double)o).compareTo((Double) key) == 0) return true;
+            else if(o instanceof BigDecimal)
+                if (((BigDecimal)o).compareTo((BigDecimal) key) == 0) return true;
+        }
+        return false;
+    }
 
     private static boolean contains(String[] list, Object key) {
         for (int i = 0; i < list.length; i++) {

@@ -2270,7 +2270,7 @@ var LiquidEditing = {
                 grid = tagetLiquid.tableJson.grids[gridIndex1B];
             }
         } else {
-            grid = tagetLiquid.tableJson.grids[gridNameOrIndex];
+            grid = isDef(tagetLiquid.tableJson.grids) ? tagetLiquid.tableJson.grids[gridNameOrIndex] : null;
         }
         if(grid) {
             var onCancelCode = "LiquidEditing.onContextMenuClose();";

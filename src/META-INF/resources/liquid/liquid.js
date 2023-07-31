@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.72
+// Liquid ver.2.73
 //
-//  First update 06-01-2020 - Last update 24-07-2023
+//  First update 06-01-2020 - Last update 26-07-2023
 //
 //  TODO : see trello.com
 //
@@ -203,6 +203,7 @@ class LiquidCtrl {
         this.resizeCounter = 0;
 
         let doOnFirstLoad = false;
+        if(!isDef(this.absoluteLoadCounter)) this.absoluteLoadCounter = 0;
         if(this.absoluteLoadCounter === 0) doOnFirstLoad = true;
 
 
@@ -4710,6 +4711,24 @@ var Liquid = {
             console.error("ERROR on get_datalist_value() : " + e);
         }
     },
+    get_label: function (obj) {
+        try {
+            if (obj) {
+                if (obj.labels) {
+                    for (let i = 0; i < obj.labels.length; i++) {
+                        let label = obj.labels[i];
+                        if(label.nodeType='LABEL') {
+                            if (label.innerText.length>0) {
+                                return label.innerText;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("ERROR on get_label() : " + e);
+        }
+    },
     translate_data_list: function (data, prop, propVal, outProp) {
         try {
             if (data) {
@@ -6221,6 +6240,8 @@ var Liquid = {
                             }
                         }
                         liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(liquid.nRows / liquid.gridOptions.paginationPageSize)) : 1;
+                        if(liquid.cPage >= liquid.nPages)
+                            liquid.cPage = 0;
 
                         // Initially selected ...
                         if (bFirstTimeLoad) {
@@ -6548,6 +6569,11 @@ var Liquid = {
                 delete liquid.runtimeFiltersJson;
                 liquid.runtimeFiltersJson = null;
             }
+        }
+        if (isDef(liquid.filtersJson) || isDef(liquid.runtimeFiltersJson)) {
+            Liquid.onEventSync(liquid, "onFiltering", ids);
+            if(!isDef(liquid.filtersChanges)) liquid.filtersChanges = 0;
+            liquid.filtersChanges = 0;
         }
         if (typeof liquid.srcLiquidControlId === 'string') {
             if (typeof liquid.srcLiquid === 'undefined' || liquid.srcLiquid === null) {
@@ -7453,6 +7479,17 @@ var Liquid = {
             liquid.cPage = Number(document.getElementById(liquid.controlId + ".cPage").value) - 1;
             if (liquid.cPage >= liquid.nPages) liquid.cPage = liquid.nPages - 1;
             if (liquid.cPage < 0) liquid.cPage = 0;
+            Liquid.loadData(liquid, null, "gotoPage");
+        }
+    },
+    gotoPage: function (obj, cPage) {
+        var liquid = Liquid.getLiquid(obj);
+        if (liquid) {
+            liquid.cPage = Number(cPage);
+            if (liquid.cPage >= liquid.nPages) liquid.cPage = liquid.nPages - 1;
+            if (liquid.cPage < 0) liquid.cPage = 0;
+            let obj = document.getElementById(liquid.controlId + ".cPage");
+            if(obj) obj.value = (cPage+1);
             Liquid.loadData(liquid, null, "gotoPage");
         }
     },
@@ -9768,6 +9805,8 @@ var Liquid = {
                                                             liquid.addingNode.data[primaryKeyField] = String(tables[it].ids[iid]);
                                                             liquid.nRows++;
                                                             liquid.nPages = liquid.gridOptions.paginationPageSize > 0 ? Number(Math.ceil(liquid.nRows / liquid.gridOptions.paginationPageSize)) : 1;
+                                                            if(liquid.cPage >= liquid.nPages)
+                                                                liquid.cPage = 0;
                                                             if (liquid.navObj) {
                                                                 Liquid.updateStatusBar(liquid);
                                                             }
@@ -15363,6 +15402,18 @@ var Liquid = {
                             } else {
                                 layout.bodyContainerObj.attachEvent('scroll', Liquid.onLayourScroll);
                             }
+                            if(isDef(layout.nCols)) {
+                                // layout.bodyContainerObj.style.display = "table-row";
+                                layout.bodyContainerObj.style.display = "flex";
+                                if (layout.nCols > 0)
+                                    layout.bodyContainerObj.style.flexDirection = "row";
+                                else
+                                    layout.bodyContainerObj.style.flexDirection = "col";
+                                layout.bodyContainerObj.style.flexWrap = "wrap";
+                            } else {
+                                // layout.bodyContainerObj.style.display = "block";
+                            }
+
                         }
                     }
                     var nRows = 0;
@@ -15550,7 +15601,15 @@ var Liquid = {
                         if (bCreateRow) {
                             var rowObj = document.createElement("div");
                             rowObj.className = "liquidLayoutRowContainer";
-                            rowObj.style.display = "block";
+                            if(isDef(layout.nCols)) {
+                                // rowObj.style.display = "table-cell";
+                                let flexRatio = 100;
+                                if(layout.nCols>0)
+                                    flexRatio = 100 / layout.nCols;
+                                rowObj.style.flex = flexRatio + "%";
+                            } else {
+                                rowObj.style.display = "block";
+                            }
                             rowObj.style.position = "relative";
                             if (layout.overflow === 'auto' || layout.overflow === 'scroll' || layout.overflow === 'overlay') rowObj.style.overflow = 'auto';
                             else rowObj.style.overflow = 'hidden';
@@ -15565,41 +15624,43 @@ var Liquid = {
                             } else {
                                 console.error("ERROR : no template defined for layout : " + layout.name, " at row #" + ir);
                             }
-                            layout.bodyContainerObj.appendChild(rowObj);
-                            if (layout.rowsContainer.length < ir + 1) {
-                                layout.rowsContainer.push({
-                                    containerObj: rowObj,
-                                    objs: [],
-                                    objs_aux: [],
-                                    objsSource: [],
-                                    objsReload: [],
-                                    objsReset: [],
-                                    objsInput: [],
-                                    cols: [],
-                                    bSetup: true,
-                                    templateRowSource: templateRowSource,
-                                    isAdding: isAdding,
-                                    isUpdating: false,
-                                    isDeleting: false,
-                                    isSorceForEmpty: isSorceForEmpty
-                                });
-                            } else {
-                                layout.rowsContainer[ir] = {
-                                    containerObj: rowObj,
-                                    objs: [],
-                                    objs_aux: [],
-                                    objsSource: [],
-                                    objsReload: [],
-                                    objsReset: [],
-                                    objsInput: [],
-                                    cols: [],
-                                    bSetup: true,
-                                    templateRowSource: templateRowSource,
-                                    isAdding: isAdding,
-                                    isUpdating: false,
-                                    isDeleting: false,
-                                    isSorceForEmpty: isSorceForEmpty
-                                };
+                            if(layout.bodyContainerObj) {
+                                layout.bodyContainerObj.appendChild(rowObj);
+                                if (layout.rowsContainer.length < ir + 1) {
+                                    layout.rowsContainer.push({
+                                        containerObj: rowObj,
+                                        objs: [],
+                                        objs_aux: [],
+                                        objsSource: [],
+                                        objsReload: [],
+                                        objsReset: [],
+                                        objsInput: [],
+                                        cols: [],
+                                        bSetup: true,
+                                        templateRowSource: templateRowSource,
+                                        isAdding: isAdding,
+                                        isUpdating: false,
+                                        isDeleting: false,
+                                        isSorceForEmpty: isSorceForEmpty
+                                    });
+                                } else {
+                                    layout.rowsContainer[ir] = {
+                                        containerObj: rowObj,
+                                        objs: [],
+                                        objs_aux: [],
+                                        objsSource: [],
+                                        objsReload: [],
+                                        objsReset: [],
+                                        objsInput: [],
+                                        cols: [],
+                                        bSetup: true,
+                                        templateRowSource: templateRowSource,
+                                        isAdding: isAdding,
+                                        isUpdating: false,
+                                        isDeleting: false,
+                                        isSorceForEmpty: isSorceForEmpty
+                                    };
+                                }
                             }
                             if (isAdding) {
                                 Liquid.scrollToBottomLayout(liquid, layout);
@@ -15810,7 +15871,10 @@ var Liquid = {
             layout.footerScriptExecuted = true;
         }
         // startup currencies fields
-        $('input.liquidCurrency').currencyInput();
+        try {
+            $('input.liquidCurrency').currencyInput();
+        } catch(e) {
+        }
     },
     /**
      * Set template_row in a layout row
@@ -16200,7 +16264,11 @@ var Liquid = {
                                 return layout.templateRows[2].templateRowRootObj;
 
                 if (liquid.nRows == 0) {
-                    return layout.templateRows[9].templateRowRootObj;
+                    if(layout.templateRows[9]) {
+                        return layout.templateRows[9].templateRowRootObj;
+                    } else {
+                        return layout.templateRows[0].templateRowRootObj;
+                    }
                 } else {
                     return layout.templateRows[0].templateRowRootObj;
                 }
@@ -16245,9 +16313,13 @@ var Liquid = {
                     }
                 } else {
                     if (liquid.nRows == 0) {
-                        if (layout.templateRows[9][Field]) {
-                            // source for empty
-                            return [layout.templateRows[9][Field], false];
+                        if (layout.templateRows[9]) {
+                            if (layout.templateRows[9][Field]) {
+                                // source for empty
+                                return [layout.templateRows[9][Field], false];
+                            } else {
+                                return [layout.templateRows[0][Field], false];
+                            }
                         } else {
                             return [layout.templateRows[0][Field], false];
                         }
@@ -16991,6 +17063,11 @@ var Liquid = {
                                             value = decodeURIComponent(escape(window.atob(value)));
                                         } catch (e) {
                                         }
+                                    }
+                                }
+                                if(targetObj.nodeName.toUpperCase() === 'IMG') {
+                                    if(!value) {
+                                        value = isDef(layout.emptyImageSrc) ? layout.emptyImageSrc : value;
                                     }
                                 }
                                 Liquid.setHTMLElementValue(targetObj, value, null, layout);
@@ -18568,8 +18645,10 @@ var Liquid = {
      * @param filterOperator:   filter operator (>, < = ...)
      * @param filterLogic   :   filter logic operator with previour filter (and / or)
      * @param filterGroup   :   filter group name where to add
+     * @param multipleProp  :   prop name on multiple filter on the same field
+     * @param multiplePropLabel : label for the prop on multiple filter on the same field
      */
-    setFilters: function (obj, columnName, filterName, filterValue, filterOperator, filterLogic, filterGroup) {
+    setFilters: function (obj, columnName, filterName, filterValue, filterOperator, filterLogic, filterGroup, multipleProp, multiplePropLabel) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             var column = Liquid.getColumn(liquid, columnName);
@@ -18595,10 +18674,32 @@ var Liquid = {
                                             filtersJson.columns[i].op = filterOperator;
                                         }
                                     } else {
-                                        if (filterValue !== null && filterValue !== "") {
-                                            filtersJson.columns[i].value = filterValue;
+                                        if(isDef(multipleProp)) {
+                                            filtersJson.columns[i].multipleValues = isDef(filtersJson.columns[i].multipleValues) ? filtersJson.columns[i].multipleValues : [];
+                                            let found = false;
+                                            for(let imv=0; imv<filtersJson.columns[i].multipleValues.length; imv++) {
+                                                if (filtersJson.columns[i].multipleValues[imv].prop == multipleProp) {
+                                                    filtersJson.columns[i].multipleValues[imv].value = filterValue;
+                                                    filtersJson.columns[i].multipleValues[imv].label = multiplePropLabel;
+                                                    if(!isDef(liquid.filtersChanges)) liquid.filtersChanges = 0;
+                                                    liquid.filtersChanges++;
+                                                    found = true;
+                                                    break
+                                                }
+                                            }
+                                            if(!found) {
+                                                filtersJson.columns[i].multipleValues.push({prop:multipleProp, value:filterValue, label:multiplePropLabel});
+                                                if(!isDef(liquid.filtersChanges)) liquid.filtersChanges = 0;
+                                                liquid.filtersChanges++;
+                                            }
                                         } else {
-                                            filtersJson.columns[i].value = null;
+                                            if (filterValue !== null && filterValue !== "") {
+                                                filtersJson.columns[i].value = filterValue;
+                                            } else {
+                                                filtersJson.columns[i].value = null;
+                                            }
+                                            if(!isDef(liquid.filtersChanges)) liquid.filtersChanges = 0;
+                                            liquid.filtersChanges++;
                                         }
                                     }
                                     if (isDef(filterLogic)) {
@@ -18626,11 +18727,14 @@ var Liquid = {
                         value: filterValue,
                         op: filterOperator
                     }];
+                    if(isDef(multipleProp)) {
+                        filtersColumns[0].multipleValues = [{prop:multipleProp, value:filterValue, label:multiplePropLabel}];
+                    }
                     var nFilters = isDef(targetLiquid.filtersJson) ? targetLiquid.filtersJson.length : 0;
                     var curFilter = -1;
                     if (nFilters > 0) {
                         for (var i = 0; i < nFilters; i++) {
-                            if (targetLiquid.filtersJson[i].name == filterGroup || typeof filterGroup === 'undefined') {
+                            if (targetLiquid.filtersJson[i].name == filterGroup || !isDef(filterGroup)) {
                                 curFilter = i;
                                 break;
                             }
@@ -24883,11 +24987,14 @@ columns:[
      * @param obj
      */
     onSearchFilterChange:function(controlId, obj) {
-        var objParts = obj.id.split(".");
-        var filterName = obj.id;
+        var columnName = null;
+        var filterName = isDef(obj.dataset.filtercol) ? obj.dataset.filtercol : (isDef(obj.id) ? obj.id : obj.name);
+        var filterLabel = isDef(obj.dataset.filterlabel) ? obj.dataset.filterlabel : (isDef(obj.labels) ? Liquid.get_label(obj) :null);
+        var objParts = filterName.split(".");
         if(objParts.length>=2) {
             if(objParts[1]) {
                 var filterOperator = "";
+                columnName = objParts[1];
                 if(objParts[2] == '') {
                 } else if(objParts[2] == 'from') {
                     filterOperator = '>=';
@@ -24913,7 +25020,20 @@ columns:[
                     if(isDef(objParts[2]))
                         console.error("onSearchFilterChange(): operator "+objParts[2]+" not recognized");
                 }
-                Liquid.setFilters(controlId, objParts[1], filterName, obj.value, filterOperator);
+                let multipleProp = null, multiplePropLabel = null;
+                let refId = obj.id ? obj.id : obj.name;
+                if(filterName != refId && refId != null) {
+                    // multiple filters on same field
+                    multipleProp = refId;
+                    multiplePropLabel = filterLabel
+                }
+                val = null;
+                if (obj.type.toUpperCase() === "CHECKBOX") {
+                    val = obj.checked;
+                } else {
+                    val = obj.value;
+                }
+                Liquid.setFilters(controlId, columnName, filterName, val, filterOperator, null, null, multipleProp, multiplePropLabel);
             }
         }
     },
