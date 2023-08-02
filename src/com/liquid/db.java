@@ -7,8 +7,7 @@ package com.liquid;
 import static com.liquid.bean.beansToArray;
 import static com.liquid.bean.load_bean;
 import static com.liquid.event.forwardEvent;
-import static com.liquid.utility.compare_db_column;
-import static com.liquid.utility.searchProperty;
+import static com.liquid.utility.*;
 import static com.liquid.workspace.check_database_definition;
 import com.liquid.metadata.ForeignKey;
 
@@ -342,7 +341,7 @@ public class db {
                 out_string += "{\"resultSet\":[";
             }
 
-            String distinct = null, sDistinct = "";
+            String distinct = null, sDistinct = "", sDistinctForCount = "";
             String groupBy = null, sGroupBy = "";
             String query = "";
             String token = "";
@@ -1163,14 +1162,14 @@ public class db {
                     groupBy = (String)oGroupBy;
                     if(groupBy != null && !groupBy.isEmpty()) {
                         // groupBy = utility.base64Decode(query);
-                        sGroupBy = " GROUP BY " + resolve_column_for_distinct_group(table, groupBy, leftJoinsMap, columns_alias_array, tableIdString, itemIdString);
+                        sGroupBy = " GROUP BY " + resolve_column_for_distinct_group(table, groupBy, leftJoinsMap, columns_alias_array, tableIdString, itemIdString, "ALIAS");
                     }
                 } else if(oGroupBy instanceof JSONArray) {
                     JSONArray jaGroupBy = (JSONArray)oGroupBy;
                     sGroupBy += " GROUP BY ";
                     for (int ijd=0; ijd<jaGroupBy.length(); ijd++) {
                         String [] columnParts = jaGroupBy.getString(ijd).split("\\.");
-                        sGroupBy += (ijd > 0 ? ",":"") +  resolve_column_for_distinct_group(table, jaGroupBy.getString(ijd), leftJoinsMap, columns_alias_array, tableIdString, itemIdString);
+                        sGroupBy += (ijd > 0 ? ",":"") +  resolve_column_for_distinct_group(table, jaGroupBy.getString(ijd), leftJoinsMap, columns_alias_array, tableIdString, itemIdString, null);
                     }
                     sGroupBy += "";
                 }
@@ -1181,15 +1180,19 @@ public class db {
                     distinct = (String)oDistinct;
                     if (distinct != null && !distinct.isEmpty()) {
                         // distinct = utility.base64Decode(query);
-                        sDistinct += " DISTINCT ON(" + resolve_column_for_distinct_group(table, distinct, leftJoinsMap, columns_alias_array, tableIdString, itemIdString) + ")";
+                        sDistinct += " DISTINCT ON(" + resolve_column_for_distinct_group(table, distinct, leftJoinsMap, columns_alias_array, tableIdString, itemIdString, "ALIAS") + ")";
+                        sDistinctForCount  += " DISTINCT " + resolve_column_for_distinct_group(table, distinct, leftJoinsMap, columns_alias_array, tableIdString, itemIdString, null) + "";
                     }
                 } else if(oDistinct instanceof JSONArray) {
                     JSONArray jaDistinct = (JSONArray)oDistinct;
                     sDistinct += " DISTINCT ON(";
+                    sDistinctForCount += "DISTINCT ROW(";
                     for (int ijd=0; ijd<jaDistinct.length(); ijd++) {
-                        sDistinct += (ijd > 0 ? ",":"") +  resolve_column_for_distinct_group(table, jaDistinct.getString(ijd), leftJoinsMap, columns_alias_array, tableIdString, itemIdString);
+                        sDistinct += (ijd > 0 ? ",":"") +  resolve_column_for_distinct_group(table, jaDistinct.getString(ijd), leftJoinsMap, columns_alias_array, tableIdString, itemIdString, "ALIAS");
+                        sDistinctForCount += (ijd > 0 ? ",":"") +  resolve_column_for_distinct_group(table, jaDistinct.getString(ijd), leftJoinsMap, columns_alias_array, tableIdString, itemIdString, null);
                     }
                     sDistinct += ") ";
+                    sDistinctForCount += ")";
                 }
             }
 
@@ -1458,7 +1461,6 @@ public class db {
                                 }
                             } else if (oDistinct instanceof JSONArray) {
                                 JSONArray jaDistinct = (JSONArray) oDistinct;
-                                sDistinct += " DISTINCT ON(";
                                 for (int ijd = 0; ijd < jaDistinct.length(); ijd++) {
                                     if (!utility.contains(sortColumns, jaDistinct.getString(ijd))) {
                                         sortColumns = utility.insert(sortColumns, jaDistinct.getString(ijd));
@@ -1683,7 +1685,6 @@ public class db {
                 } else {
                     if (sSort != null && !sSort.isEmpty()) {
                         executingQuery += "\n" + sSort;
-                        executingQuery += "\n" + sSort;
                     }
                 }
             }
@@ -1701,7 +1702,11 @@ public class db {
                     try {
                         if (table != null && !table.isEmpty()) {
                             if (connToUse != null) {
-                                countQuery = "SELECT COUNT(*) AS nRows FROM " + tbl_wrk.schemaTable + " " + leftJoinList + " " + sWhere;
+                                countQuery = "SELECT "
+                                        + "COUNT(" + (!sDistinctForCount.isEmpty() ? sDistinctForCount:"*") + ") AS nRows"
+                                        + " FROM " + tbl_wrk.schemaTable
+                                        + " " + leftJoinList
+                                        + " " + sWhere;
                                 psdo = connToUse.prepareStatement(countQuery);
                                 if(sWhereParams != null) {
                                     for (int iParam=0; iParam<sWhereParams.size(); iParam++) {
@@ -1736,7 +1741,6 @@ public class db {
                 //
                 try {
                     if (tbl_wrk != null) {
-                        
                         Object owner = tbl_wrk.getOwner();
                         if (owner != null) {
                             JSONArray events = null;
@@ -2204,7 +2208,7 @@ public class db {
         return out_string;
     }
 
-    private static String resolve_column_for_distinct_group(String table, String column_name, ArrayList<LeftJoinMap> leftJoinsMap, ArrayList<Object> columns_alias_array, String tableIdString, String itemIdString) {
+    private static String resolve_column_for_distinct_group(String table, String column_name, ArrayList<LeftJoinMap> leftJoinsMap, ArrayList<Object> columns_alias_array, String tableIdString, String itemIdString, String Mode) {
         String columnSolved = null;;
         String [] columnParts = column_name.split("\\.");
         if(columnParts.length>1) {
@@ -2213,11 +2217,19 @@ public class db {
                 // "v_auctions"."user_id" -- B5."user_id"
                 LeftJoinMap resJoin = LeftJoinMap.getByForeignTable(leftJoinsMap, columnParts[0]);
                 if(resJoin != null) {
-                    columnSolved = resJoin.alias + "." + (tableIdString + columnParts[1] + tableIdString);
+                    if("ALIAS".equalsIgnoreCase(Mode)) {
+                        columnSolved = resJoin.alias + "." + (tableIdString + columnParts[1] + tableIdString);
+                    } else {
+                        columnSolved = resJoin.foreignTable + "." + (tableIdString + columnParts[1] + tableIdString);
+                    }
                 }
             }
         } else {
-            columnSolved = "A_"+column_name;
+            if("ALIAS".equalsIgnoreCase(Mode)) {
+                columnSolved = "A_" + column_name;
+            } else {
+                columnSolved = column_name;
+            }
         }
         return columnSolved;
     }
@@ -3123,6 +3135,7 @@ public class db {
                         } else if("AND(".equalsIgnoreCase(filterLogic)) {
                             sWhere += "\nAND( ";
                             justOpenParent = true;
+                        } else if(filterLogic == null) {
                         } else {
                             String err = " Filters Error: unrecognized logic operator : "+filterLogic;
                             error += err;
@@ -5412,6 +5425,7 @@ public class db {
                                                     if (rs != null) {
                                                         String idsList = "";
                                                         while (rs.next()) {
+                                                            // TODO : get_primary_key_field(liquid.tableJson)
                                                             idsList += (idsList.length() > 0 ? "," : "") + rs.getString(1);
                                                         }
                                                         foreignTableUpdates.add("{\"table\":\"" + foreignTableTransactList.transactionList.get(i).table.replace(itemIdString, "") + "\",\"ids\":[" + idsList + "]}");
@@ -5472,7 +5486,7 @@ public class db {
                                                     if (rs != null) {
                                                         String idsList = "";
                                                         while (rs.next()) {
-                                                            idsList += (idsList.length() > 0 ? "," : "") + rs.getString(1);
+                                                            idsList += (idsList.length() > 0 ? "," : "") + rs.getString(get_primary_key_field(liquid.tableJson));
                                                         }
                                                         tableUpdates.add("{\"table\":\"" + liquid.schemaTable.replace(tableIdString, "") + "\",\"ids\":[" + idsList + "]}");
                                                         rs.close();

@@ -2469,7 +2469,7 @@ public class utility {
      * @return
      */
     public static String get_datalist_from_table(String controlId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
-        return get_datalist_from_table(controlId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, null, chacheIt);
+        return get_datalist_from_table(controlId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, null, chacheIt, true);
     }
 
 
@@ -2493,7 +2493,8 @@ public class utility {
                                                  String where, String order,
                                                  String emptyRow,
                                                  String currentValue,
-                                                 boolean chacheIt) throws Throwable {
+                                                 boolean chacheIt,
+                                                 boolean includeInput) throws Throwable {
         String out = "";
         String datalistId = inputId+".list";
         String descId = inputId+".desc";
@@ -2518,7 +2519,9 @@ public class utility {
         }
 
         if(codeHidden) {
-            out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + "value=\"" + "" + "\" />";
+            if(includeInput) {
+                out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + "value=\"" + "" + "\" />";
+            }
         }
         out += "<datalist " +
                 "id=\"" + datalistId + "\" " +
@@ -2619,7 +2622,7 @@ public class utility {
                 codeColumn,
                 descColumn,
                 tooltipColumn,
-                null, where, order, emptyRow, null, chacheIt
+                null, where, order, emptyRow, null, chacheIt, true
         );
 
         String descId = inputId+".desc";

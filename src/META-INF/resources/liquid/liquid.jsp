@@ -227,7 +227,18 @@
             }
 
 
-
+        } else if ("getDatalist".equalsIgnoreCase(operation)) {
+            out.print(
+                    utility.get_datalist_from_table(
+                            request.getParameter("inputId"), request.getParameter("databaseSchemaTable"),
+                            request.getParameter("codeColumn"), request.getParameter("descColumn"), request.getParameter("tooltipColumn"), request.getParameter("svgColumn"),
+                            request.getParameter("where"), request.getParameter("order"),
+                            request.getParameter("emptyRow"),
+                            request.getParameter("currentValue"),
+                            false,
+                            false
+                    )
+            );
         } else {
             out.println( "<br/><h1><center>Welcome in Liquid ver. "+workspace.version_string+"</center><br/></h1>");
             if(operation != null) {
