@@ -2430,6 +2430,15 @@ public class utility {
         return result;
     }
 
+    public static String get_file_name(String filePath) {
+        Path path = new File(filePath).toPath();
+        if (path != null) {
+            return Paths.get(filePath).getFileName().toString();
+        } else {
+            return null;
+        }
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;

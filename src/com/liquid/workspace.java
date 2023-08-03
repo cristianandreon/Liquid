@@ -109,6 +109,18 @@ public class workspace {
         return false;
     }
 
+    public static ArrayList<Object> getRowsField(Object tblWrk, String params, String field) {
+        ArrayList<Object> res = new ArrayList<Object>();
+        JSONArray rows = workspace.getRows(tblWrk, (String) params);
+        for(int ir=0; ir<rows.length(); ir++) {
+            JSONObject row = rows.getJSONObject(ir);
+            if(row.has(field)) {
+                res.add(row.get(field));
+            }
+        }
+        return res;
+    }
+
 
     public Locale getLocale() {
         return locale;

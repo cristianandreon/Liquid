@@ -5,7 +5,6 @@
 package com.liquid;
 
 import com.liquid.python.python;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,7 +29,6 @@ import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -139,8 +137,8 @@ public class event {
                 System.err.println("nested exception - " + cause + " " + ite.getCause());
 
             } catch (Throwable th) {
-                error = "Error in class.method:" + sClassName + " (" + th.getLocalizedMessage() + ")";
-                System.err.println(" execute() [" + controlId + "] Error:" + th.getLocalizedMessage());
+                error = "Error in class.method:" + sClassName + " (" + th.toString() + ")";
+                System.err.println(" execute() [" + controlId + "] Error:" + th.toString());
             }
 
             if (error != null && !error.isEmpty()) {
@@ -148,8 +146,8 @@ public class event {
             }
 
         } catch (Throwable e) {
-            error += "Error:" + e.getLocalizedMessage();
-            System.err.println(" execute() [" + controlId + "] Error:" + e.getLocalizedMessage());
+            error += "Error:" + e.toString();
+            System.err.println(" execute() [" + controlId + "] Error:" + e.toString());
             errorJson = "{ \"error\":\"" + utility.base64Encode(error.getBytes()) + "\"}";
         }
 
@@ -670,15 +668,15 @@ public class event {
             try {
                 return python.exec(request, "Liquid", pythonFileToProcess, (Object) tbl_wrk, (Object) params, (Object) clientData, (Object) null);
             } catch (Throwable th) {
-                error = "Error in pythonExecute():" + pythonFileToProcess + " (" + th.getLocalizedMessage() + ")\"}";
-                System.err.println(" pythonExecute() [" + controlId + "] Error:" + th.getLocalizedMessage());
+                error = "Error in pythonExecute():" + pythonFileToProcess + " (" + th.toString() + ")\"}";
+                System.err.println(" pythonExecute() [" + controlId + "] Error:" + th.toString());
             }
 
             errorJson = "{ \"error\":\"" + utility.base64Encode(error) + "\"}";
 
         } catch (Throwable e) {
             error += "Error:" + e.getLocalizedMessage();
-            System.err.println(" pythonExecute() [" + controlId + "] Error:" + e.getLocalizedMessage());
+            System.err.println(" pythonExecute() [" + controlId + "] Error:" + e.toString());
         }
         return errorJson;
     }
@@ -2010,7 +2008,7 @@ public class event {
         ResultSet rsdo = null;
         String sQuery = null;
         String sWhere = "";
-        String dmsSchema = null, dmsTable = null, dmsDocType = null, dmsRootFolder = null;
+        String dmsSchema = null, dmsTable = null, dmsDocType = null;
         int nRecs = 0;
 
 
@@ -2122,7 +2120,7 @@ public class event {
 
 
     /**
-     * put file into DMS
+     * put file by content into DMS
      *
      * @param tbl_wrk
      * @param b64FileContent
@@ -2137,6 +2135,7 @@ public class event {
      * @param rowId
      * @param clientData
      * @param requestParam
+     * @param mode
      * @return
      * @throws IOException
      * @throws ClassNotFoundException
@@ -2149,7 +2148,7 @@ public class event {
                                         String b64FileContent, String fileName, Long fileSize,
                                         String docType, String userData,
                                         String database, String schema, String table, String name, Object rowId,
-                                        Object clientData, Object requestParam) throws Throwable {
+                                        Object clientData, Object requestParam, String mode) throws Throwable {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
             if (tbl_wrk != null) {
@@ -2185,6 +2184,7 @@ public class event {
                     JSONArray ids = new JSONArray();
                     ids.put(rowId);
                     dmsParamsJson.put("ids", ids);
+                    dmsParamsJson.put("mode", mode);
                     paramsJson.put("params", dmsParamsJson);
                     return uploadDocument(tbl_wrk, paramsJson.toString(), clientData, requestParam);
                 }
@@ -2196,6 +2196,80 @@ public class event {
         }
         return result;
     }
+
+    /**
+     * Upload existing file into DMS
+     *
+     * @param tbl_wrk
+     * @param filePath
+     * @param fileSize
+     * @param docType
+     * @param userData
+     * @param database
+     * @param schema
+     * @param table
+     * @param name
+     * @param rowId
+     * @param clientData
+     * @param requestParam
+     * @param mode
+     * @return
+     * @throws Throwable
+     */
+    static public String uploadDocument(Object tbl_wrk,
+                                        String filePath, Long fileSize,
+                                        String docType, String userData,
+                                        String database, String schema, String table, String name, Object rowId,
+                                        Object clientData, Object requestParam, String mode) throws Throwable {
+        String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
+        try {
+            if (tbl_wrk != null) {
+                workspace tblWrk = (workspace) tbl_wrk;
+                JSONObject paramsJson = new JSONObject("{\"params\":null}");
+                JSONObject dmsParamsJson = new JSONObject();
+
+                if(!workspace.is_dms_readonly((workspace)tbl_wrk, name)){
+                    String fileName = utility.get_file_name(filePath);
+
+                    dmsParamsJson.put("database", database != null ? database : tblWrk.tableJson.has("database") ? tblWrk.tableJson.getString("database") : null);
+                    dmsParamsJson.put("schema", schema != null ? schema : tblWrk.tableJson.has("schema") ? tblWrk.tableJson.getString("schema") : null);
+                    dmsParamsJson.put("table", table != null ? table : tblWrk.tableJson.has("table") ? tblWrk.tableJson.getString("table") : null);
+                    dmsParamsJson.put("name", name != null ? name : tblWrk.tableJson.has("name") ? tblWrk.tableJson.getString("name") : null);
+                    dmsParamsJson.put("row", rowId != null ? String.valueOf(rowId) : null);
+                    dmsParamsJson.put("file", fileName != null ? fileName : null);
+                    dmsParamsJson.put("size", fileSize != null ? fileSize : null);
+
+                    String mimeType = null;
+                    if (mimeType == null) {
+                        ServletContext context = ((HttpServletRequest) requestParam).getSession().getServletContext();
+                        mimeType = context.getMimeType(fileName);
+                        if (mimeType == null) {
+                            if (requestParam != null) {
+                                mimeType = (String) ((HttpServletRequest) requestParam).getAttribute("mimeType");
+                            }
+                        }
+                        dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
+                    }
+
+                    dmsParamsJson.put("filePath", filePath);
+                    dmsParamsJson.put("doc_type", docType != null ? docType : null);
+                    dmsParamsJson.put("user_data", userData != null ? userData : null);
+                    JSONArray ids = new JSONArray();
+                    ids.put(rowId);
+                    dmsParamsJson.put("ids", ids);
+                    dmsParamsJson.put("mode", mode);
+                    paramsJson.put("params", dmsParamsJson);
+                    return uploadDocument(tbl_wrk, paramsJson.toString(), clientData, requestParam);
+                }
+            }
+        } catch(Throwable th){
+            error = " uploadDocuments() error:" + th.getLocalizedMessage();
+            System.err.println(error);
+            throw th;
+        }
+        return result;
+    }
+
 
     /**
      * Handle file update from DMS panel
@@ -2324,7 +2398,8 @@ public class event {
         PreparedStatement psdo = null;
         String sQuery = null;
         String sWhere = "";
-        String dmsSchema = null, dmsTable = null, dmsDocType = null, dmsRootFolder = null, dmsName = null;
+        String dmsSchema = null, dmsTable = null, dmsDocTypeTable = null, dmsRootFolder = null, dmsName = null;
+        String mode = null;
         long dmsMaxFileSize = 0;
         int nRecs = 0;
 
@@ -2345,7 +2420,7 @@ public class event {
             Field fdt = cls.getDeclaredField("dmsDocType");
             if(fdt != null) {
                 fdt.setAccessible(true);
-                dmsDocType = (String) fdt.get(null);
+                dmsDocTypeTable = (String) fdt.get(null);
             }
             Field fr = cls.getDeclaredField("dmsRootFolder");
             if(fr != null) {
@@ -2359,6 +2434,7 @@ public class event {
             }
 
             if(dmsRootFolder != null && !dmsRootFolder.isEmpty()){
+                dmsRootFolder = getAbsoluteRootPath(dmsRootFolder, request);
                 if (!utility.folderExist(dmsRootFolder)) {
                     if(!utility.createFolder(dmsRootFolder)) {
                         throw new Exception("Unable to create foolder : " + dmsRootFolder);
@@ -2414,6 +2490,11 @@ public class event {
                 }
             }
 
+            // Mode
+            comp = paramJson.has("row") ? paramJson.getString("mode") : null;
+            if(comp != null && !comp.isEmpty()) {
+                mode = comp;
+            }
 
 
             // Time tick
@@ -2431,15 +2512,15 @@ public class event {
             // Scrittura file
             if(paramJson.has("content")) {
                 String b64FileContent = paramJson.getString("content");
-                byte [] fileContent = null;
-                if(b64FileContent.startsWith("base64,")) {
+                byte[] fileContent = null;
+                if (b64FileContent.startsWith("base64,")) {
                     fileContent = utility.base64DecodeBytes(b64FileContent.substring(7));
                 } else {
                     fileContent = utility.base64DecodeBytes(b64FileContent);
                 }
-                if(fileContent != null) {
-                    if(fileContent.length > dmsMaxFileSize && dmsMaxFileSize > 0) {
-                        throw new Exception("File too large .. max:"+(dmsMaxFileSize/1024)+"Kb");
+                if (fileContent != null) {
+                    if (fileContent.length > dmsMaxFileSize && dmsMaxFileSize > 0) {
+                        throw new Exception("File too large .. max:" + (dmsMaxFileSize / 1024) + "Kb");
                     }
                     Files.write(Paths.get(fileAbsolutePath), fileContent);
                     paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
@@ -2447,6 +2528,15 @@ public class event {
                     // paramJson.put("hash", null);
                     throw new Exception("File content not valid! Please check it's base 64 encoded");
                 }
+            } else if(paramJson.has("filePath")) {
+                // Link a file esistente
+                fileAbsolutePath = paramJson.getString("filePath");
+                File f = new File(fileAbsolutePath);
+                if(!f.exists()) {
+                    throw new Exception("File "+fileAbsolutePath+" not exist");
+                }
+                paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
+
             } else {
                 // paramJson.put("hash", null);
                 throw new Exception("File content not defined");
@@ -2464,10 +2554,16 @@ public class event {
                 doc_type_id = paramJson.get("docTypeId");
             } else {
                 if (paramJson.has("doc_type")) {
-                    doc_type_id = "(SELECT id FROM \"cnconline\".\"" + dmsDocType + "\" WHERE \"type\"='" + paramJson.get("doc_type") + "')";
+                    doc_type_id = "(SELECT id FROM "
+                            + (dmsSchema != null ? "\""+dmsSchema+"\"." : "")
+                            + "\"" + dmsDocTypeTable + "\""
+                            + " WHERE \"type\"='" + paramJson.get("doc_type") + "')";
                     bResolveDocTypeId = true;
                 } else if (paramJson.has("docType")) {
-                    doc_type_id = "(SELECT id FROM \"cnconline\".\""+dmsDocType+"\" WHERE \"type\"='"+paramJson.get("docType")+"')";
+                    doc_type_id = "(SELECT id FROM "
+                            + (dmsSchema != null ? "\""+dmsSchema+"\"." : "")
+                            + "\"" + dmsDocTypeTable + "\""
+                            + " WHERE \"type\"='"+paramJson.get("docType")+"')";
                     bResolveDocTypeId = true;
                 }
             }
@@ -2501,6 +2597,67 @@ public class event {
                         }
 
                         for (int i = 0; i < keyList.size(); i++) {
+                            String link = keyList.get(i);
+                            String delete_file_error = "";
+
+                            if("REPLACE".equalsIgnoreCase(mode)) {
+                                String sQueryDel = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
+                                String sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link='" + link + "')";
+                                if (sQuerySel != null) {
+                                    ResultSet rsdo = null;
+                                    try { // /home/ubuntu/IdeaProjects/LoveNsexWeb/target/LoveNsexWeb-1.0-SNAPSHOT/LoveNsexDMS/D.LOVENSEX.S.lovensex.T.users.R.125414.N.DMS.TK.1691070126586.F.Screenshot from 2023-07-27 18-25-19.png
+                                        psdo = conn.prepareStatement(sQuerySel);
+                                        rsdo = psdo.executeQuery();
+                                        if (rsdo != null) {
+                                            while(rsdo.next()) {
+                                                String file = rsdo.getString("file");
+                                                if (file != null && !file.isEmpty()) {
+                                                    File f = new File(file);
+                                                    if(f.exists()) {
+                                                        boolean resDel = f.delete();
+                                                        if (!resDel) {
+                                                            if (delete_file_error.length() == 0) {
+                                                                delete_file_error += "{";
+                                                            } else {
+                                                                delete_file_error += ",";
+                                                            }
+                                                            delete_file_error += "[\"Failed to delete " + file + "\"]";
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } finally {
+                                        if (rsdo != null)
+                                            rsdo.close();
+                                        rsdo = null;
+
+                                        if (psdo != null)
+                                            psdo.close();
+                                        psdo = null;
+                                    }
+
+                                    try {
+                                        if (sQueryDel != null) {
+                                            psdo = conn.prepareStatement(sQueryDel);
+                                            int res = psdo.executeUpdate();
+                                            if (res >= 0) {
+                                            } else {
+                                                if (delete_file_error.length() == 0) {
+                                                    delete_file_error += "{";
+                                                } else {
+                                                    delete_file_error += ",";
+                                                }
+                                                delete_file_error += "[\"Failed to delete row " + link + "\"]";
+                                            }
+                                        }
+                                    } finally {
+                                        if (psdo != null)
+                                            psdo.close();
+                                        psdo = null;
+                                    }
+                                }
+                            }
 
                             sQuery = "INSERT INTO \"" + dmsSchema + "\".\"" + dmsTable + "\" " +
                                     "(\"file\",\"size\",\"note\",\"type\",\"hash\",\"link\",\"doc_type_id\",\"user_data\")" +
@@ -2510,7 +2667,7 @@ public class event {
                                     + "," + "?" + ""
                                     + ",'" + paramJson.getString("mimeType") + "'"
                                     + ",'" + paramJson.getString("hash") + "'"
-                                    + ",'" + keyList.get(i) + "'"
+                                    + ",'" + link + "'"
                                     + "," + doc_type_id
                                     + ",?"
                                     + ")";
@@ -2553,12 +2710,14 @@ public class event {
                                 }
                                 String fieldSet = "{"
                                         + "\"file\":\"" + (paramJson.getString("file")) + "\""
+                                        + ",\"filePath\":\"" + (fileAbsolutePath != null ? fileAbsolutePath : "") + "\""
                                         + ",\"size\":" + paramJson.getInt("size")
                                         + ",\"note\":\"" + paramJson.getString("note") + "\""
                                         + ",\"type\":\"" + paramJson.getString("mimeType") + "\""
                                         + ",\"hash\":\"" + paramJson.getString("hash") + "\""
                                         + ",\"link\":\"" + keyList.get(i) + "\""
                                         + ",\"doc_type_id\":\"" + doc_type_id + "\""
+                                        + (delete_file_error.isEmpty() ? ",\"errors\":\"" + delete_file_error + "\"" : "")
                                         + "}";
                                 resultSet.append(nRecs > 0 ? "," : "" + fieldSet);
                                 nRecs++;
@@ -2599,8 +2758,19 @@ public class event {
         return resultSet.toString();
     }
 
-
-
+    private static String getAbsoluteRootPath(String dmsRootFolder, HttpServletRequest request) {
+        if(dmsRootFolder.startsWith("/")) {
+            return dmsRootFolder;
+        } else {
+            ServletContext servletContext = request.getSession().getServletContext();
+            String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath(dmsRootFolder));
+            if (absoluteFilePathRoot != null) {
+                return absoluteFilePathRoot;
+            } else {
+                return dmsRootFolder;
+            }
+        }
+    }
 
 
     /**
@@ -2941,14 +3111,17 @@ public class event {
                                     if (rsdo.next()) {
                                         String file = rsdo.getString("file");
                                         if (file != null && !file.isEmpty()) {
-                                            boolean resDel = new File(file).delete();
-                                            if (!resDel) {
-                                                if (delete_file_error.length() == 0) {
-                                                    delete_file_error += "{";
-                                                } else {
-                                                    delete_file_error += ",";
+                                            File f = new File(file);
+                                            if(f.exists()) {
+                                                boolean resDel = f.delete();
+                                                if (!resDel) {
+                                                    if (delete_file_error.length() == 0) {
+                                                        delete_file_error += "{";
+                                                    } else {
+                                                        delete_file_error += ",";
+                                                    }
+                                                    delete_file_error += "[\"Failed to delete " + file + "\"]";
                                                 }
-                                                delete_file_error += "[\"Failed to delete " + file + "\"]";
                                             }
                                         }
                                     }
@@ -3736,8 +3909,8 @@ public class event {
                     result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
 
                 } catch (Throwable th) {
-                    error = "Error in class.method:" + className + " (" + th.getMessage() + ")";
-                    System.err.println(" execute() [" + tbl_wrk.controlId + "] Error:" + th.getMessage());
+                    error = "Error in class.method:" + className + " (" + th.toString() + ")";
+                    System.err.println(" execute() [" + tbl_wrk.controlId + "] Error:" + th.toString());
                     result = "{ \"error\":\""+utility.base64Encode(error)+"\" }";
                 }
 

@@ -3593,7 +3593,7 @@ var Liquid = {
         });
     },
     is_file_in_table: function (tableId, cellIndex, fileName) {
-        if (isDef(tableId) && isDef(cellIndex)) {
+        if (isDef(tableId) && isDef(cellIndex) && tableId) {
             let tblNode = document.getElementById(tableId);
             if (tblNode) {
                 if (tblNode.tBodies) {
@@ -3675,7 +3675,7 @@ var Liquid = {
                                             if (frm_elements[i].files.length) {
                                                 let result_files = [];
                                                 for (let iFile = 0; iFile < frm_elements[i].files.length; iFile++) {
-                                                    if (Liquid.is_file_in_table(filteringTableId, filteringCellIndex, frm_elements[i].files[iFile].name)) {
+                                                    if(!isDef(filteringTableId) || (isDef(filteringTableId) && Liquid.is_file_in_table(filteringTableId, filteringCellIndex, frm_elements[i].files[iFile].name))) {
                                                         result_files.push(frm_elements[i].files[iFile]);
                                                     }
                                                 }
@@ -11312,9 +11312,15 @@ var Liquid = {
         if (isDef(liquid.tableJson.layouts)) {
             for (let il = 0; il < liquid.tableJson.layouts.length; il++) {
                 var layout = liquid.tableJson.layouts[il];
-                layout.baseIndex1B = cRow + 1;
-                layout.currentRelativeRow1B = 1;
-                layout.currentAbsoluteRow1B = cRow + 1;
+                if( layout.nRows <= 0
+                    || layout.firstNodeId == null
+                    || (isDef(layout.nRows) && layout.nRows > 0 && isDef(layout.nCols) && layout.nCols > 0)) {
+                    // No change in scroll
+                } else {
+                    layout.baseIndex1B = cRow + 1;
+                    layout.currentRelativeRow1B = 1;
+                    layout.currentAbsoluteRow1B = cRow + 1;
+                }
             }
         }
         Liquid.updateStatusBar(liquid);
@@ -15301,7 +15307,9 @@ var Liquid = {
                         }
                     }
                     var curNodes = null;
-                    if (layout.nRows <= 0) { // all rows : baseIndex1B = 1
+                    if (layout.nRows <= 0
+                        || (isDef(layout.nRows) && layout.nRows > 0 && isDef(layout.nCols) && layout.nCols > 0)
+                    ) { // all rows : baseIndex1B = 1
                         layout.baseIndex1B = 1;
                         curNodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                     } else {
@@ -15755,7 +15763,10 @@ var Liquid = {
                     if (layout.inlineMode === true) {
                         layout.firstNodeId = null;
                     }
-                    if (layout.nRows <= 0 || layout.firstNodeId == null) { // all rows : baseIndex1B = 1
+                    if (layout.nRows <= 0
+                        || (isDef(layout.nRows) && layout.nRows > 0 && isDef(layout.nCols) && layout.nCols > 0)
+                    ) {
+                        // all rows or tab with external pagination : baseIndex1B = 1
                         layout.baseIndex1B = 1;
                     } else {
                         // nRows from cur nodes
@@ -16694,7 +16705,7 @@ var Liquid = {
                     var controlName = "";
                     var newId = liquid.controlId + ".layout." + layoutIndex1B; // generic id .. to refine
 
-                    // if(obj.id == "UserProfile.purposes.1") debugger;
+                    // if(obj.id == "profile_gallery") debugger;
 
                     if (linkCount) {
                         if (linkedCol) {
@@ -16728,6 +16739,8 @@ var Liquid = {
                                 }
                             }
 
+                            if(obj.id == "new_profile_image_thumb")
+                                debugger;
 
                             // We need uniquie id
                             obj.id = newId;

@@ -205,7 +205,7 @@
                             + "/>";
                         var html_dl = "<%= com.liquid.utility.get_datalist_from_table(
                                 "@@@DatalistID@@@",
-                                "cnconline.DMS_DOC_TYPE",
+                                com.liquid.documents.schema+".DMS_DOC_TYPE",
                                 "id",
                                 ("ENG".equalsIgnoreCase((String) session.getAttribute("GLLang")) ? "type_desc" : "type_desc_"+((String) session.getAttribute("GLLang")).toLowerCase()+"" ),
                                 ("ENG".equalsIgnoreCase((String) session.getAttribute("GLLang")) ? "type_desc" : "type_desc_"+((String) session.getAttribute("GLLang")).toLowerCase()+"" ),

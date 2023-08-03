@@ -1634,8 +1634,26 @@ public class db {
                             } else {
                                 // N.B : alla prima esecuzione non può essere eseguita la limitazione perchè impedirebbe la lettura degli indici (limitazione cmw a workspace.maxRows)
                                 //      alla sucessiva escuzione il codice non passa di qua'
-                                // read now and store the cache, limit to workspace.maxRow
+                                // read now and store the cache, limit to maxRow (workspace)
                                 cRow = startRow;
+                                long maxRows = 0L;
+                                if(tbl_wrk.tableJson.has("maxRows")) {
+                                    Object oMaxRows = tbl_wrk.tableJson.get("maxRows");
+                                    if(oMaxRows instanceof Boolean) {
+                                        if((Boolean)oMaxRows == false) {
+                                            maxRows = -1;
+                                        } else {
+                                            maxRows = 1;
+                                        }
+                                    } else if(oMaxRows instanceof String) {
+                                        maxRows = Long.parseLong((String)oMaxRows);
+                                    } else {
+                                        maxRows = Long.parseLong(String.valueOf(oMaxRows));
+                                    }
+                                }
+                                if (maxRows <= 0) {
+                                     maxRows = workspace.maxRows;
+                                }
                                 if (workspace.maxRows > 0) {
                                     if (isOracle) {
                                         limitString = "";
@@ -4028,28 +4046,7 @@ public class db {
                 } else {
                     ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
                     if (rs != null && rs.next()) {
-                        switch (rs.getMetaData().getColumnType(1)) {
-                            case Types.INTEGER:
-                                new_id = rs.getInt(1);
-                                break;
-                            case Types.NUMERIC:
-                                new_id = rs.getInt(1);
-                                break;
-                            case Types.NVARCHAR:
-                            case Types.VARCHAR:
-                                new_id = rs.getString(1);
-                                break;
-                            case Types.BIGINT:
-                            case Types.DECIMAL:
-                                new_id = rs.getBigDecimal(1);
-                                break;
-                            case Types.ROWID:
-                                new_id = rs.getRowId(1);
-                                break;
-                            default:
-                                throw new UnsupportedOperationException("ID type non implemented ... please update me");
-                        }
-
+                        new_id = getGeneratedKey(rs);
                         retVal = true;
                     }
                     if (rs != null)
@@ -4089,6 +4086,71 @@ public class db {
         return new Object [] { retVal, new_id } ;
     }
 
+    private static Object [] getGeneratedKeys(ResultSet rs, Object [] keys) throws SQLException {
+        Object new_id = null;
+        ArrayList<Object> new_ids = new ArrayList<Object>();
+        int foundKey = 0;
+        for (int ic=0; ic<rs.getMetaData().getColumnCount(); ic++) {
+            for(int ik=0; ik < keys.length; ik++) {
+                if (rs.getMetaData().getColumnName(ic+1).equalsIgnoreCase(String.valueOf(keys[ik]))) {
+                    foundKey++;
+                    switch (rs.getMetaData().getColumnType(ic+1)) {
+                        case Types.INTEGER:
+                            new_id = rs.getInt(ic+1);
+                            break;
+                        case Types.NUMERIC:
+                            new_id = rs.getInt(ic+1);
+                            break;
+                        case Types.NVARCHAR:
+                        case Types.VARCHAR:
+                            new_id = rs.getString(ic+1);
+                            break;
+                        case Types.BIGINT:
+                        case Types.DECIMAL:
+                            new_id = rs.getBigDecimal(ic+1);
+                            break;
+                        case Types.ROWID:
+                            new_id = rs.getRowId(ic+1);
+                            break;
+                        default:
+                            throw new UnsupportedOperationException("Column type non implemented ... please update me");
+                    }
+                    if(new_ids == null)
+                        new_ids = new ArrayList<Object>();
+                    new_ids.add( new_id );
+                }
+            }
+        }
+        return new Object[] { foundKey, new_id, new_ids };
+    }
+
+    private static Object getGeneratedKey(ResultSet rs) throws SQLException {
+        Object new_id = null;
+        int ic = 0;
+        switch (rs.getMetaData().getColumnType(ic+1)) {
+            case Types.INTEGER:
+                new_id = rs.getInt(ic+1);
+                break;
+            case Types.NUMERIC:
+                new_id = rs.getInt(ic+1);
+                break;
+            case Types.NVARCHAR:
+            case Types.VARCHAR:
+                new_id = rs.getString(ic+1);
+                break;
+            case Types.BIGINT:
+            case Types.DECIMAL:
+                new_id = rs.getBigDecimal(ic+1);
+                break;
+            case Types.ROWID:
+                new_id = rs.getRowId(ic+1);
+                break;
+            default:
+                throw new UnsupportedOperationException("Column type non implemented ... please update me");
+        }
+        return new_id;
+    }
+
 
     /**
      * Delete row by keyFields and keyValues
@@ -4105,6 +4167,7 @@ public class db {
     static public Object [] delete_row ( String DatabaseSchemaTable, String [] keyFields, Object [] keyValues, HttpServletRequest request ) throws Throwable {
         boolean retVal = false;
         Object new_id = null;
+        ArrayList<Object> new_ids = null;
 
         Connection conn = null;
         String sSTMTDelete = null;
@@ -4174,31 +4237,10 @@ public class db {
                     retVal = false;
                 } else {
                     ResultSet rs = sqlSTMTDelete.getGeneratedKeys();
-                    if (rs != null && rs.next()) {
-                        switch (rs.getMetaData().getColumnType(1)) {
-                            case Types.INTEGER:
-                                new_id = rs.getInt(1);
-                                break;
-                            case Types.NUMERIC:
-                                new_id = rs.getInt(1);
-                                break;
-                            case Types.NVARCHAR:
-                            case Types.VARCHAR:
-                                new_id = rs.getString(1);
-                                break;
-                            case Types.BIGINT:
-                            case Types.DECIMAL:
-                                new_id = rs.getBigDecimal(1);
-                                break;
-                            case Types.ROWID:
-                                new_id = rs.getRowId(1);
-                                break;
-                            default:
-                                throw new UnsupportedOperationException("ID type non implemented ... please update me");
-                        }
-
-                        retVal = true;
-                    }
+                    Object [] newIdRsult = getGeneratedKeys(rs, keyFields);
+                    new_id = newIdRsult[1];
+                    new_ids = (ArrayList<Object>) newIdRsult[2];
+                    retVal = true;
                     if (rs != null)
                         rs.close();
                 }
@@ -4233,7 +4275,7 @@ public class db {
             conn = null;
         }
 
-        return new Object [] { retVal, new_id } ;
+        return new Object [] { retVal, new_id, new_ids } ;
     }
 
 
@@ -4417,41 +4459,9 @@ public class db {
                 } else {
                     ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
                     if (rs != null && rs.next()) {
-                        int foundKey = 0;
-                        for (int ic=0; ic<rs.getMetaData().getColumnCount(); ic++) {
-                            for(int ik=0; ik < keys.length; ik++) {
-                                if (rs.getMetaData().getColumnName(ic+1).equalsIgnoreCase(String.valueOf(keys[ik]))) {
-                                    foundKey++;
-                                    switch (rs.getMetaData().getColumnType(ic+1)) {
-                                        case Types.INTEGER:
-                                            new_id = rs.getInt(ic+1);
-                                            break;
-                                        case Types.NUMERIC:
-                                            new_id = rs.getInt(ic+1);
-                                            break;
-                                        case Types.NVARCHAR:
-                                        case Types.VARCHAR:
-                                            new_id = rs.getString(ic+1);
-                                            break;
-                                        case Types.BIGINT:
-                                        case Types.DECIMAL:
-                                            new_id = rs.getBigDecimal(ic+1);
-                                            break;
-                                        case Types.ROWID:
-                                            new_id = rs.getRowId(ic+1);
-                                            break;
-                                        default:
-                                            throw new UnsupportedOperationException("Column type non implemented ... please update me");
-                                    }
-                                    if (foundKey == 1) {
-                                        main_id = new_id;
-                                    }
-                                    if(new_ids == null)
-                                        new_ids = new ArrayList<Object>();
-                                    new_ids.add( new_id );
-                                }
-                            }
-                        }
+                        Object [] newIdRsult = getGeneratedKeys(rs, keys);
+                        new_id = newIdRsult[1];
+                        new_ids = (ArrayList<Object>) newIdRsult[2];
                         retVal = true;
                     }
                 }
@@ -4547,14 +4557,15 @@ public class db {
      * @param DatabaseSchemaTable
      * @param Fields                fields to update, must include the "primaryKey"
      * @param Values                values of fields to update (use instanceof StringBuffer or Expression for SQL Espression)
-     * @param primaryKey            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
+     * @param primaryKeyName            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
      * @param request
      * @return
      * @throws Throwable
      */
-    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String primaryKey, HttpServletRequest request ) throws Throwable {
+    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String primaryKeyName, HttpServletRequest request ) throws Throwable {
         boolean retVal = false;
-        int new_id = 0;
+        Object new_id = null;
+        ArrayList<Object> new_ids = null;
         Object keyValue = null;
 
 
@@ -4593,7 +4604,7 @@ public class db {
 
 
                 for(int i=0, ia=0; i<Fields.length; i++) {
-                    if (primaryKey.equalsIgnoreCase(Fields[i])) {
+                    if (primaryKeyName.equalsIgnoreCase(Fields[i])) {
                         keyValue = Values[i];
                     } else {
                         sSTMTUpdate += (ia > 0 ? "," : "");
@@ -4608,13 +4619,14 @@ public class db {
                     }
                 }
 
-                if(primaryKey.startsWith("WHERE ")) {
-                    sSTMTUpdate += " " + primaryKey;
+                if(primaryKeyName.startsWith("WHERE ")) {
+                    sSTMTUpdate += " " + primaryKeyName;
+                    primaryKeyName = null;
                 } else {
                     if(keyValue == null) {
                         throw new Exception("Primary key not found");
                     } else {
-                        sSTMTUpdate += " WHERE \"" + primaryKey + "\"=?";
+                        sSTMTUpdate += " WHERE \"" + primaryKeyName + "\"=?";
                     }
                 }
 
@@ -4622,7 +4634,7 @@ public class db {
 
                 int ip=1;
                 for(int i=0; i<Values.length; i++) {
-                    if(primaryKey.equalsIgnoreCase(Fields[i])) {
+                    if(primaryKeyName.equalsIgnoreCase(Fields[i])) {
                     } else {
                         if (i < Fields.length) {
                             Object val = Values[i];
@@ -4634,7 +4646,7 @@ public class db {
                 }
 
                 // primary key
-                if(primaryKey.startsWith("WHERE ")) {
+                if(primaryKeyName.startsWith("WHERE ")) {
                 } else {
                     if(db.mapStatementParam(sqlSTMTUpdate, ip, keyValue)) {
                         ip++;
@@ -4653,7 +4665,14 @@ public class db {
                 } else {
                     ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
                     if (rs != null && rs.next()) {
-                        new_id = rs.getInt(1);
+                        if(primaryKeyName.startsWith("WHERE ")) {
+                            new_id = getGeneratedKey(rs);
+                            new_ids = null;
+                        } else {
+                            Object[] newIdRsult = getGeneratedKeys(rs, new Object [] {primaryKeyName});
+                            new_id = newIdRsult[1];
+                            new_ids = (ArrayList<Object>) newIdRsult[2];
+                        }
                         retVal = true;
                     }
                     if (rs != null)
@@ -4690,7 +4709,7 @@ public class db {
             }
         }
 
-        return new Object [] { retVal, new_id } ;
+        return new Object [] { retVal, new_id, new_ids } ;
     }
 
     public static boolean mapStatementParam(PreparedStatement sqlSTMTUpdate, int ip, Object val) throws Exception {
@@ -4753,7 +4772,7 @@ public class db {
             boolean retVal = false;
             String infoFields = "";
             Object new_id = null;
-
+            ArrayList<Object> new_ids = null;
             Connection conn = null;
             String sSTMTUpdate = null;
 
@@ -4850,7 +4869,9 @@ public class db {
                             } else {
                                 ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
                                 if (rs != null && rs.next()) {
-                                    new_id = rs.getObject(1);
+                                    Object [] newIdRsult = getGeneratedKeys(rs, new Object [] { primaryKeyName });
+                                    new_id = newIdRsult[1];
+                                    new_ids = (ArrayList<Object>)newIdRsult[2];
                                     retVal = true;
                                 }
                                 if (rs != null)
@@ -4894,7 +4915,7 @@ public class db {
                 }
             }
 
-            return new Object [] { retVal, new_id, infoFields } ;
+            return new Object [] { retVal, new_id, new_ids, infoFields } ;
         }
 
 
