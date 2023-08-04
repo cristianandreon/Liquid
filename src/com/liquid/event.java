@@ -38,6 +38,7 @@ public class event {
     public static final int MAX_DOWNLOAD_SIZE = 16 * 1024 * 1024;
 
 
+
     public interface eventCallback<T extends Object> {
 
         /**
@@ -1942,6 +1943,14 @@ public class event {
     }
 
 
+    public static String getDMSFileAbsolutePath(String fileName, HttpServletRequest request) {
+        ServletContext servletContext = request.getSession().getServletContext();
+        String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
+        String APP_CONTEXT = request.getContextPath();
+        return absoluteFilePathRoot + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
+    }
+
+
 
     // Per Test con "events":[ ... "com.liquid.event.onRetrieveRows" ...]
     static public String onRetrieveRows(Object tbl_wrk, Object params, Object clientData, Object freeParam) {
@@ -2156,8 +2165,19 @@ public class event {
                 JSONObject paramsJson = new JSONObject("{\"params\":null}");
                 JSONObject dmsParamsJson = new JSONObject();
 
-                if(!workspace.is_dms_readonly((workspace)tbl_wrk, name)){
+                boolean readObly = true;
+                if(name != null) {
+                    readObly = workspace.is_dms_readonly((workspace)tbl_wrk, name);
+                } else {
+                    Class cls = Class.forName("app.liquid.dms.connection");
+                    Field fs = cls.getDeclaredField("dmsReadOnly");
+                    if(fs != null) {
+                        fs.setAccessible(true);
+                        readObly = (boolean) fs.get(null);
+                    }
+                }
 
+                if(!readObly) {
                     dmsParamsJson.put("database", database != null ? database : tblWrk.tableJson.has("database") ? tblWrk.tableJson.getString("database") : null);
                     dmsParamsJson.put("schema", schema != null ? schema : tblWrk.tableJson.has("schema") ? tblWrk.tableJson.getString("schema") : null);
                     dmsParamsJson.put("table", table != null ? table : tblWrk.tableJson.has("table") ? tblWrk.tableJson.getString("table") : null);
@@ -2228,7 +2248,19 @@ public class event {
                 JSONObject paramsJson = new JSONObject("{\"params\":null}");
                 JSONObject dmsParamsJson = new JSONObject();
 
-                if(!workspace.is_dms_readonly((workspace)tbl_wrk, name)){
+                boolean readObly = true;
+                if(name != null) {
+                    readObly = workspace.is_dms_readonly((workspace)tbl_wrk, name);
+                } else {
+                    Class cls = Class.forName("app.liquid.dms.connection");
+                    Field fs = cls.getDeclaredField("dmsReadOnly");
+                    if(fs != null) {
+                        fs.setAccessible(true);
+                        readObly = (boolean) fs.get(null);
+                    }
+                }
+
+                if(!readObly) {
                     String fileName = utility.get_file_name(filePath);
 
                     dmsParamsJson.put("database", database != null ? database : tblWrk.tableJson.has("database") ? tblWrk.tableJson.getString("database") : null);
@@ -2355,7 +2387,19 @@ public class event {
                     // collecting keys for the link
                     ArrayList<String> keyList = utility.get_dms_keys(tblWrk, (Object) params);
                     if(keyList != null) {
-                        if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+                        boolean readObly = true;
+                        if(paramJson.has("name")) {
+                            readObly = workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"));
+                        } else {
+                            cls = Class.forName("app.liquid.dms.connection");
+                            Field fs = cls.getDeclaredField("dmsReadOnly");
+                            if(fs != null) {
+                                fs.setAccessible(true);
+                                readObly = (boolean) fs.get(null);
+                            }
+                        }
+
+                        if(!readObly) {
                             try {
                                 cls = Class.forName("app.liquid.dms.connection");
                                 Object classInstance = (Object) cls.newInstance();
@@ -2573,8 +2617,19 @@ public class event {
             }
 
 
-            if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+            boolean readObly = true;
+            if(paramJson.has("name")) {
+                readObly = workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"));
+            } else {
+                cls = Class.forName("app.liquid.dms.connection");
+                fs = cls.getDeclaredField("dmsReadOnly");
+                if(fs != null) {
+                    fs.setAccessible(true);
+                    readObly = (boolean) fs.get(null);
+                }
+            }
 
+            if(!readObly) {
                 if (requestParam != null) {
                     if (transaction.isTransaction(request)) {
                         conn = transaction.getTransaction(request);
@@ -3007,7 +3062,19 @@ public class event {
             JSONObject paramJson = paramsJson.getJSONObject("params");
             // { paramJson:..., schema:..., table:..., ids:..., id: ... };
 
-            if(!workspace.is_dms_readonly(tblWrk, paramJson.getString("name"))) {
+            boolean readObly = true;
+            if(paramJson.has("name")) {
+                readObly = workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"));
+            } else {
+                Class cls = Class.forName("app.liquid.dms.connection");
+                Field fs = cls.getDeclaredField("dmsReadOnly");
+                if(fs != null) {
+                    fs.setAccessible(true);
+                    readObly = (boolean) fs.get(null);
+                }
+            }
+
+            if(!readObly) {
                 Class cls = null;
                 try {
                     cls = Class.forName("app.liquid.dms.connection");
@@ -3068,8 +3135,19 @@ public class event {
 
             if(paramJson != null) {
 
-                if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+                boolean readObly = true;
+                if(paramJson.has("name")) {
+                    readObly = workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"));
+                } else {
+                    cls = Class.forName("app.liquid.dms.connection");
+                    fs = cls.getDeclaredField("dmsReadOnly");
+                    if(fs != null) {
+                        fs.setAccessible(true);
+                        readObly = (boolean) fs.get(null);
+                    }
+                }
 
+                if(!readObly) {
                     if(transaction.isTransaction(request)) {
                         conn = transaction.getTransaction(request);
                     } else {
@@ -3100,6 +3178,19 @@ public class event {
                             all_links += ")";
                             sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link IN " + all_links + ")";
                             sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (link IN " + all_links + ")";
+                        } else if (paramJson.has("files")) {
+                            JSONArray files = paramJson.getJSONArray("files");
+                            String all_files = "(";
+                            int n_links = 0;
+                            for (int il = 0; il < files.length(); il++) {
+                                String link = files.getString(il);
+                                if (link.startsWith("DMS://")) link = link.substring(6);
+                                all_files += (n_links > 0 ? "," : "") + "'" + link + "'";
+                                n_links++;
+                            }
+                            all_files += ")";
+                            sQuery = "DELETE FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (file IN " + all_files + ")";
+                            sQuerySel = "SELECT file FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" WHERE (file IN " + all_files + ")";
                         } else {
                             throw new Exception("Unknown record handler in deleteDocumentDefault()");
                         }
@@ -3108,7 +3199,7 @@ public class event {
                                 psdo = conn.prepareStatement(sQuerySel);
                                 rsdo = psdo.executeQuery();
                                 if (rsdo != null) {
-                                    if (rsdo.next()) {
+                                    while (rsdo.next()) {
                                         String file = rsdo.getString("file");
                                         if (file != null && !file.isEmpty()) {
                                             File f = new File(file);
@@ -3198,7 +3289,20 @@ public class event {
                 JSONObject paramsJson = new JSONObject((String)params);
                 JSONObject paramJson = paramsJson.getJSONObject("params");
                 // { paramJson:..., schema:..., table:..., ids:..., id: ... };
-                if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+
+                boolean readObly = true;
+                if(paramJson.has("name")) {
+                    readObly = workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"));
+                } else {
+                    Class cls = Class.forName("app.liquid.dms.connection");
+                    Field fs = cls.getDeclaredField("dmsReadOnly");
+                    if(fs != null) {
+                        fs.setAccessible(true);
+                        readObly = (boolean) fs.get(null);
+                    }
+                }
+
+                if(!readObly) {
                     Class cls = null;
                     try {
                         cls = Class.forName("app.liquid.dms.connection");
@@ -3263,7 +3367,19 @@ public class event {
                             throw new Exception("No keys defined");
                         }
 
-                        if(!workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"))) {
+                        boolean readObly = true;
+                        if(paramJson.has("name")) {
+                            readObly = workspace.is_dms_readonly((workspace)tbl_wrk, paramJson.getString("name"));
+                        } else {
+                            cls = Class.forName("app.liquid.dms.connection");
+                            fs = cls.getDeclaredField("dmsReadOnly");
+                            if(fs != null) {
+                                fs.setAccessible(true);
+                                readObly = (boolean) fs.get(null);
+                            }
+                        }
+
+                        if(!readObly) {
                             for (int ik = 0; ik < keyList.length(); ik++) {
                                 sQuery = "UPDATE \"" + dmsSchema + "\".\"" + dmsTable + "\" SET " + "note='" + paramJson.getString("note") + "'" + " WHERE (id='" + keyList.get(ik) + "')";
                                 psdo = conn.prepareStatement(sQuery);

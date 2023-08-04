@@ -1044,7 +1044,7 @@ public class db {
                                         }
 
                                         if (!isCrossTableService) {
-                                            col.put("alias", column_alias);
+                                            col.put("dbAlias", column_alias);
                                             cols.put(ic, col);
                                         } else {
                                             // Imposta l'indice targetColumnIndex
@@ -1487,8 +1487,8 @@ public class db {
                                         }
                                         if (compare_db_column(table, colName, sortColumn)) {
                                             try {
-                                                if(col.has("alias")) {
-                                                    sortColumnAlias = col.getString("alias");
+                                                if(col.has("dbAlias")) {
+                                                    sortColumnAlias = col.getString("dbAlias");
                                                 } else {
                                                     String sortTable = null;
                                                     String sortCol = null;
@@ -2554,8 +2554,8 @@ public class db {
                                     colName = col.getString("name");
                                 }
                                 String colAlias = null;// (colTable != null ? LeftJoinMap.getAlias(leftJoinsMap, colTable) : table) + "." + itemIdString+colName+itemIdString;
-                                if (col.has("alias")) {
-                                    colAlias = col.getString("alias");
+                                if (col.has("dbAlias")) {
+                                    colAlias = col.getString("dbAlias");
                                 }
 
 

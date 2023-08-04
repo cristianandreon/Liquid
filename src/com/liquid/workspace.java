@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspWriter;
 import java.io.*;
+import java.math.BigDecimal;
 import java.net.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -1632,25 +1633,31 @@ public class workspace {
                         JSONObject col = cols.getJSONObject(ic);
                         String colName = col.getString("name");
                         String colLabel = col.has("label") ? col.getString("label") : "";
-                        for (int jc = ic + 1; jc < cols.length(); jc++) {
-                            boolean duplicateFound = false;
-                            JSONObject jcol = cols.getJSONObject(jc);
-                            String jcolName = jcol.getString("name");
-                            String jcolLabel = jcol.has("label") ? jcol.getString("label") : "";
-                            if (colName.equalsIgnoreCase(jcolName)) {
-                                String aliasName = colName;
-                                String jaliasName = jcolName;
-                                if (!colLabel.isEmpty() && !jcolLabel.isEmpty() && colLabel.equalsIgnoreCase(jcolLabel)) {
-                                    aliasName = colLabel + "_1";
-                                    jaliasName = jcolLabel + "_2";
-                                } else {
-                                    aliasName = colLabel.replaceAll(" ", "_");
-                                    jaliasName = jcolLabel.replaceAll(" ", "_");
+                        if(col.has("alias")) {
+                            col.put("runtimeName", col.get("alias"));
+                            cols.put(ic, col);
+                        } else {
+                            for (int jc = ic + 1; jc < cols.length(); jc++) {
+                                boolean duplicateFound = false;
+                                JSONObject jcol = cols.getJSONObject(jc);
+                                String jcolName = jcol.getString("name");
+                                String jcolLabel = jcol.has("label") ? jcol.getString("label") : "";
+                                if (colName.equalsIgnoreCase(jcolName)) {
+                                    String aliasName = colName;
+                                    String jaliasName = jcolName;
+                                    if (!colLabel.isEmpty() && !jcolLabel.isEmpty() && colLabel.equalsIgnoreCase(jcolLabel)) {
+                                        aliasName = colLabel + "_1";
+                                        jaliasName = jcolLabel + "_2";
+                                    } else {
+                                        aliasName = colLabel.replaceAll(" ", "_");
+                                        jaliasName = jcolLabel.replaceAll(" ", "_");
+                                    }
+                                    col.put("runtimeName", aliasName);
+                                    cols.put(ic, col);
+                                    jcol.put("runtimeName", jaliasName);
+                                    cols.put(jc, jcol);
+                                    duplicateFound = true;
                                 }
-                                col.put("runtimeName", aliasName);
-                                cols.put(ic, col);
-                                jcol.put("runtimeName", jaliasName);
-                                cols.put(jc, jcol);
                             }
                         }
                     }
@@ -4843,9 +4850,9 @@ public class workspace {
                             if (userProp != null) {
                                 if (userProp.has("name")) {
                                     if (userPropName.equalsIgnoreCase(userProp.getString("name"))) {
-                                        Object oUuserPropValue = userProp.getJSONArray("value");
+                                        Object oUuserPropValue = userProp.get("value");
                                         if (oUuserPropValue instanceof JSONArray) {
-                                            JSONArray userPropValues = (JSONArray)oUuserPropValue;
+                                            JSONArray userPropValues = (JSONArray) oUuserPropValue;
                                             if (userPropValues != null) {
                                                 for (int iv = 0; iv < userPropValues.length(); iv++) {
                                                     JSONObject userPropValue = userPropValues.getJSONObject(iv);
@@ -4864,6 +4871,8 @@ public class workspace {
                                                                                 return null;
                                                                             }
                                                                         }
+                                                                    } else {
+                                                                        return new JSONArray().put(data);
                                                                     }
                                                                 }
                                                             }
@@ -4871,6 +4880,14 @@ public class workspace {
                                                     }
                                                 }
                                             }
+                                        } else if (oUuserPropValue instanceof String
+                                                || oUuserPropValue instanceof Long || oUuserPropValue instanceof Integer
+                                                || oUuserPropValue instanceof Float || oUuserPropValue instanceof Double
+                                                || oUuserPropValue instanceof BigDecimal
+                                        ) {
+                                            return new JSONArray().put(oUuserPropValue);
+                                        } else if (oUuserPropValue instanceof JSONObject) {
+                                            return new JSONArray().put(oUuserPropValue);
                                         } else {
                                             String err = "Unexpected Object type in user properties";
                                             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, err);

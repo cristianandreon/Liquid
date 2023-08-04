@@ -16617,6 +16617,7 @@ var Liquid = {
                 }
             }
 
+            // if(obj.id == "nick_name" && liquid.controlId=='UserVisits') debugger;
 
             // search for aux linked obj
             var obj_aux = null;
@@ -16706,6 +16707,8 @@ var Liquid = {
                     var newId = liquid.controlId + ".layout." + layoutIndex1B; // generic id .. to refine
 
                     // if(obj.id == "profile_gallery") debugger;
+                    // if(obj.id == "nick_name" && liquid.controlId=='UserVisits') debugger;
+
 
                     if (linkCount) {
                         if (linkedCol) {
