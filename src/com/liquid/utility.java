@@ -2932,7 +2932,7 @@ public class utility {
         return false;
     }
 
-    private static boolean contains(String[] list, Object key) {
+    public static boolean contains(String[] list, Object key) {
         for (int i = 0; i < list.length; i++) {
             if (list[i].compareTo(String.valueOf(key)) == 0) return true;
         }

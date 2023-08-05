@@ -11245,7 +11245,11 @@ var Liquid = {
                                 } else if (typeof clients[i] === "string" && clients[i]) {
                                     var clientCode = null;
                                     try {
-                                        clientCode = atob(clients[i]);
+                                        if(clients[i].endsWith('=')) {
+                                            clientCode = atob(clients[i]);
+                                        } else {
+                                            clientCode = clients[i];
+                                        }
                                     } catch (e) {
                                         clientCode = clients[i];
                                     }

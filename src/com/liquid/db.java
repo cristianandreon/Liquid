@@ -4532,9 +4532,14 @@ public class db {
      * @return
      * @throws Throwable
      */
-    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String primaryKey ) throws Throwable {
-        return update_row ( DatabaseSchemaTable, Fields, Values, primaryKey, null );
+    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String primaryKeyName ) throws Throwable {
+        return update_row ( DatabaseSchemaTable, Fields, Values, new String [] { primaryKeyName }, null );
     }
+
+    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String [] primaryKeysName ) throws Throwable {
+        return update_row ( DatabaseSchemaTable, Fields, Values, primaryKeysName, null );
+    }
+
 
     /**
      *
@@ -4547,7 +4552,7 @@ public class db {
     static public Object [] update_row ( String DatabaseSchemaTable, HashMap<String,Object> FieldsAndValues, String primaryKey ) throws Throwable {
         String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
         Object [] Values = FieldsAndValues.values().toArray();
-        return update_row ( DatabaseSchemaTable, Fields, Values, primaryKey, null );
+        return update_row ( DatabaseSchemaTable, Fields, Values, new String [] { primaryKey }, null );
     }
 
 
@@ -4557,16 +4562,16 @@ public class db {
      * @param DatabaseSchemaTable
      * @param Fields                fields to update, must include the "primaryKey"
      * @param Values                values of fields to update (use instanceof StringBuffer or Expression for SQL Espression)
-     * @param primaryKeyName            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
+     * @param primaryKeysName            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
      * @param request
      * @return
      * @throws Throwable
      */
-    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String primaryKeyName, HttpServletRequest request ) throws Throwable {
+    static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String [] primaryKeysName, HttpServletRequest request ) throws Throwable {
         boolean retVal = false;
         Object new_id = null;
         ArrayList<Object> new_ids = null;
-        Object keyValue = null;
+        ArrayList<Object> keyValues = new ArrayList<Object>();
 
 
         Connection conn = null;
@@ -4604,8 +4609,8 @@ public class db {
 
 
                 for(int i=0, ia=0; i<Fields.length; i++) {
-                    if (primaryKeyName.equalsIgnoreCase(Fields[i])) {
-                        keyValue = Values[i];
+                    if (utility.contains(primaryKeysName, Fields[i])) {
+                        keyValues.add(Values[i]);
                     } else {
                         sSTMTUpdate += (ia > 0 ? "," : "");
                         sSTMTUpdate += "\"" + Fields[i] + "\"";
@@ -4619,14 +4624,16 @@ public class db {
                     }
                 }
 
-                if(primaryKeyName.startsWith("WHERE ")) {
-                    sSTMTUpdate += " " + primaryKeyName;
-                    primaryKeyName = null;
+                if(primaryKeysName.length == 1 && primaryKeysName[0].startsWith("WHERE ")) {
+                    sSTMTUpdate += " " + primaryKeysName[0];
+                    primaryKeysName = null;
                 } else {
-                    if(keyValue == null) {
+                    if(keyValues == null) {
                         throw new Exception("Primary key not found");
                     } else {
-                        sSTMTUpdate += " WHERE \"" + primaryKeyName + "\"=?";
+                        for(int ik=0; ik< primaryKeysName.length; ik++) {
+                            sSTMTUpdate += (ik == 0 ? " WHERE \"" + primaryKeysName[ik] + "\"=?" : " AND \"" + primaryKeysName[ik] + "\"=?");
+                        }
                     }
                 }
 
@@ -4634,7 +4641,7 @@ public class db {
 
                 int ip=1;
                 for(int i=0; i<Values.length; i++) {
-                    if(primaryKeyName.equalsIgnoreCase(Fields[i])) {
+                    if (utility.contains(primaryKeysName, Fields[i])) {
                     } else {
                         if (i < Fields.length) {
                             Object val = Values[i];
@@ -4646,10 +4653,12 @@ public class db {
                 }
 
                 // primary key
-                if(primaryKeyName.startsWith("WHERE ")) {
+                if(primaryKeysName.length == 1 && primaryKeysName[0].startsWith("WHERE ")) {
                 } else {
-                    if(db.mapStatementParam(sqlSTMTUpdate, ip, keyValue)) {
-                        ip++;
+                    for(int ik=0; ik< primaryKeysName.length; ik++) {
+                        if(db.mapStatementParam(sqlSTMTUpdate, ip, keyValues.get(ik))) {
+                            ip++;
+                        }
                     }
                 }
 
@@ -4665,11 +4674,11 @@ public class db {
                 } else {
                     ResultSet rs = sqlSTMTUpdate.getGeneratedKeys();
                     if (rs != null && rs.next()) {
-                        if(primaryKeyName.startsWith("WHERE ")) {
+                        if(primaryKeysName.length == 1 && primaryKeysName[0].startsWith("WHERE ")) {
                             new_id = getGeneratedKey(rs);
                             new_ids = null;
                         } else {
-                            Object[] newIdRsult = getGeneratedKeys(rs, new Object [] {primaryKeyName});
+                            Object[] newIdRsult = getGeneratedKeys(rs, primaryKeysName );
                             new_id = newIdRsult[1];
                             new_ids = (ArrayList<Object>) newIdRsult[2];
                         }
@@ -4708,10 +4717,20 @@ public class db {
                 conn = null;
             }
         }
-
         return new Object [] { retVal, new_id, new_ids } ;
     }
 
+
+
+
+    /**
+     *
+     * @param sqlSTMTUpdate
+     * @param ip
+     * @param val
+     * @return
+     * @throws Exception
+     */
     public static boolean mapStatementParam(PreparedStatement sqlSTMTUpdate, int ip, Object val) throws Exception {
         if (val instanceof Expression || val instanceof StringBuffer) {
             // Already processed
