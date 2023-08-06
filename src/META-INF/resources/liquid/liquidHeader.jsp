@@ -32,7 +32,8 @@
      * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      */
 
-    String path = request.getContextPath(); 
+    String path = request.getContextPath();
+    String dmsPath = com.liquid.event.getDMSFileAbsolutePath("", request);
     String jssVersion = workspace.version_string;
     if(workspace.path == null) {
         workspace.path = path;
@@ -49,6 +50,7 @@
 <!-- -->
 <script>
     var glLiquidRoot = "<%=path%>";
+    var glLiquidDMSRoot = "<%=dmsPath%>";
 </script>
 <script src="<%=jspath%>/liquid/ag-grid-enterprise.min.js" type="text/javascript"></script>
 

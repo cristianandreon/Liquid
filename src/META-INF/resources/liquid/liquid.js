@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.74
+// Liquid ver.2.75
 //
 //  First update 06-01-2020 - Last update 01-08-2023
 //
@@ -5484,7 +5484,7 @@ var Liquid = {
                     columns = liquid.tableJson.columns;
                 for (var ic = 0; ic < columns.length; ic++) {
                     if (!purgedMode) result[columns[ic].field] = node.data[columns[ic].field];
-                    result[columns[ic].name] = node.data[columns[ic].field];
+                    result[isDef(columns[ic].alias)?columns[ic].alias:columns[ic].name] = node.data[columns[ic].field];
                 }
                 // Add runtime fields (not key numeric)...
                 for (let key of Object.keys(node.data)) {
@@ -16564,24 +16564,27 @@ var Liquid = {
     },
     setLayoutField: function (liquid, layout, obj, iRow, bSetup) {
         if (obj) {
+            // if((obj.id == "message" || obj.name == "message") && liquid.controlId=='Message') debugger;
+            // if((obj.id == "message" || obj.name == "message")) debugger;
+            // if((obj.id == "sender_profile_image_thumb" || obj.name == "sender_profile_image_thumb")) debugger;
             var objLinkers = null;
             var objLinkersTarget = null;
             if (obj.nodeName.toUpperCase() === 'INPUT' || obj.nodeName.toUpperCase() === 'SELECT' || obj.nodeName.toUpperCase() === 'TEXTAREA') {
-                objLinkers = [obj.id, obj.name];
+                objLinkers = [obj.id, obj.getAttribute("name")];
                 objLinkersTarget = [null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'DIV' || obj.nodeName.toUpperCase() === 'SPAN' || obj.nodeName.toUpperCase() === 'TD' || obj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(obj.nodeName)) {
-                objLinkers = [obj.innerHTML, obj.id, obj.name];
+                objLinkers = [obj.innerHTML, obj.id, obj.getAttribute("name")];
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'A' || obj.nodeName.toUpperCase() === 'BUTTON' || obj.nodeName.toUpperCase() === 'IMG') {
-                objLinkers = [obj.innerHTML, obj.id, obj.name];
+                objLinkers = [obj.innerHTML, obj.id, obj.getAttribute("name")];
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'FORM') {
                 liquid.linkedForm = obj;
             } else if (obj.nodeName.toUpperCase() === 'PICTURE' || obj.nodeName.toUpperCase() === 'EMBED' || obj.nodeName.toUpperCase() === 'AUDIO' || obj.nodeName.toUpperCase() === 'VIDEO') {
-                objLinkers = [obj.innerHTML, obj.id, obj.name];
+                objLinkers = [obj.innerHTML, obj.id, obj.getAttribute("name")];
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'CANVAS') {
-                objLinkers = [obj.innerHTML, obj.id, obj.name];
+                objLinkers = [obj.innerHTML, obj.id, obj.getAttribute("name")];
                 objLinkersTarget = [null, null, "className"];
             } else if (obj.nodeName.toUpperCase() === 'IFRAME') {
                 // Link to document of a control
@@ -16621,7 +16624,6 @@ var Liquid = {
                 }
             }
 
-            // if(obj.id == "nick_name" && liquid.controlId=='UserVisits') debugger;
 
             // search for aux linked obj
             var obj_aux = null;
@@ -18067,6 +18069,9 @@ var Liquid = {
     onUpdateDocument: function (controlId, e) {
         var liquid = Liquid.getLiquid(controlId);
         Liquid.onEvent(e.target, "onUpdateDocument", {liquid: liquid, obj: e.target, command: null}, null);
+    },
+    getDMSFilePath: function (filePath) {
+        return filePath ? filePath.replace(glLiquidDMSRoot, glLiquidRoot) : null;
     },
     loadChartsContent: function (liquid) {
         if (isDef(liquid.tableJson.charts)) {
