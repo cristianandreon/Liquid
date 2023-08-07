@@ -615,7 +615,7 @@ class LiquidCtrl {
                     singleClickEdit: (typeof this.tableJson.singleClickEdit !== "undefined" ? this.tableJson.singleClickEdit : false),
                     groupSelectsChildren: false,
                     rowSelection: rowSelection,
-                    rowMultiSelectWithClick: (typeof this.tableJson.rowMultiSelectWithClick !== "undefined" ? this.tableJson.rowMultiSelectWithClick : (this.tableJson.mode === "lookup"?true:false)),
+                    rowMultiSelectWithClick: (isDef(this.tableJson.rowMultiSelectWithClick) ? this.tableJson.rowMultiSelectWithClick : (this.tableJson.mode === "lookup"?true:false)),
                     rowDeselection: (typeof this.tableJson.rowDeselection !== "undefined" ? this.tableJson.rowDeselection : false),
                     rowStyle: { background: '', color:'', border:'' },
                     editType: (typeof this.tableJson.editType !== "undefined" ? this.tableJson.editType : ''),
@@ -623,7 +623,7 @@ class LiquidCtrl {
                     skipHeaderOnAutoSize: (typeof this.tableJson.skipHeaderOnAutoSize !== "undefined" ? this.tableJson.skipHeaderOnAutoSize : false),
 
                     stopEditingWhenGridLosesFocus: true,
-                    suppressRowClickSelection: false,
+                    suppressRowClickSelection: isDef(this.tableJson.suppressRowClickSelection) ? isDef(this.tableJson.suppressRowClickSelection) : false,
                     suppressAggFuncInHeader: false,
                     paginationPageSize: this.pageSize,
                     pagination: this.pageSize > 0 ? true : false,
@@ -3665,36 +3665,21 @@ var Liquid = {
                                         break;
                                     case "select-one":
                                     case "select-multi":
-                                        if (processAll)
-                                            field_value = frm_elements[i].selectedIndex;
-                                        else
+                                        if (processAll) {
+                                            nodes_data = frm_elements[i].selectedIndex;
+                                        } else {
                                             field_name = null;
+                                        }
                                         break;
                                     case "file":
                                         if (processFiles) {
-                                            if (frm_elements[i].files.length) {
-                                                let result_files = [];
-                                                for (let iFile = 0; iFile < frm_elements[i].files.length; iFile++) {
-                                                    if(!isDef(filteringTableId) || (isDef(filteringTableId) && Liquid.is_file_in_table(filteringTableId, filteringCellIndex, frm_elements[i].files[iFile].name))) {
-                                                        result_files.push(frm_elements[i].files[iFile]);
-                                                    }
-                                                }
-                                                if (result_files.length > 0) {
-                                                    var queue = {
-                                                        liquid: null,
-                                                        obj: frm_elements[i],
-                                                        files: result_files,
-                                                        iFile: 0,
-                                                        callback: null
-                                                    };
-                                                    if (await Liquid.formFilesToObjectExchange(queue)) {
-                                                        field_value = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
-                                                    } else {
-                                                        console.error("LIQUID: Internal error reading file");
-                                                        field_name = null;
-                                                    }
+                                            let res = Liquid.getFormFileContent(frm_elements[i], filteringTableId, filteringCellIndex);
+                                            if(res) {
+                                                for (let ir=0; ir<res.length; ir++) {
+                                                    nodes_data.push(res[ir])
                                                 }
                                             }
+                                            field_name = null; // gia' proc
                                         } else
                                             field_name = null;
                                         break;
@@ -3722,6 +3707,39 @@ var Liquid = {
                 }
             }
         }
+        return nodes_data;
+    },
+    getFormFileContent:async function (element, filteringTableId, filteringCellIndex) {
+        let field_value = null, field_name = element.name;
+        let result = true;
+        let nodes_data = [];
+        if (element.files.length) {
+            let result_files = [];
+            for (let iFile = 0; iFile < element.files.length; iFile++) {
+                if ( !isDef(filteringTableId) || (isDef(filteringTableId) && Liquid.is_file_in_table(filteringTableId, filteringCellIndex, element.files[iFile].name)) ) {
+                    result_files.push(element.files[iFile]);
+                }
+            }
+            if (result_files.length > 0) {
+                var queue = {
+                    liquid: null,
+                    obj: element,
+                    files: result_files,
+                    iFile: 0,
+                    callback: null
+                };
+                if (await Liquid.formFilesToObjectExchange(queue)) {
+                    field_value = Liquid.arraysToDict([queue.propNames, queue.propValues, queue.propSizes], ["file", "content", "size"]);
+                } else {
+                    console.error("LIQUID: Internal error reading file");
+                    result = false;
+                }
+            }
+        }
+        nodes_data.push({
+            "fieldName": field_name,
+            "fieldValue": field_value
+        });
         return nodes_data;
     },
     htmlNodesToJsonSync: function (paramObj, processAll, processFiles, excludingNames, filteringTableId, filteringCellIndex) {
@@ -11256,7 +11274,7 @@ var Liquid = {
                                     try {
                                         retVal = eval(clientCode);
                                     } catch (e) {
-                                        if (isNative === true) {
+                                        if (isDef(isNative) && isNative == true) {
                                         } else {
                                             console.error("ERROR: on control:" + liquid.controlId + " at " + sourceDesciption + "\nAn error occours in function:'" + clientCode + "' ..\nError:" + e);
                                         }
@@ -11329,6 +11347,30 @@ var Liquid = {
         }
         Liquid.updateStatusBar(liquid);
         Liquid.updateCommandBar(liquid);
+    },
+    /**
+     * set node selected by a check box in the layout
+     * @param obj
+     * @returns {*}
+     */
+    setNodeSelected: function (obj) {
+        var liquid = Liquid.getLiquid(obj);
+        if (liquid) {
+            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+            if(nodes && nodes.length>0) {
+                if (obj.nodeName.toUpperCase() === 'INPUT') {
+                    if (obj.type === 'checkbox') {
+                        var lay_coord = Liquid.getLayoutCoords(liquid, obj.getAttribute("newId"));
+                        if (lay_coord.layout) {
+                            if (lay_coord.row >= 0 && lay_coord.row < nodes.length) {
+                                nodes[lay_coord.row].setSelected(obj.checked);
+                                return obj.checked;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     },
     setNodesSelected: function (obj, ids) {
         var liquid = Liquid.getLiquid(obj);
@@ -17689,8 +17731,10 @@ var Liquid = {
                                         nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                                         isddingNode = Liquid.isAddingNode(liquid, baseIndex1B - 1 + linkedRow1B - 1, nodes, true);
                                         cNode = baseIndex1B - 1 + linkedRow1B - 1;
-                                        if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
-                                            nodes[baseIndex1B - 1 + linkedRow1B - 1].setSelected(true);
+                                        if(!liquid.gridOptions.suppressRowClickSelection) {
+                                            if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
+                                                nodes[baseIndex1B - 1 + linkedRow1B - 1].setSelected(true);
+                                            }
                                         }
                                     }
                                 }
@@ -25101,53 +25145,55 @@ columns:[
      * @param obj
      */
     onSearchFilterChange:function(controlId, obj) {
-        var columnName = null;
-        var filterName = isDef(obj.dataset.filtercol) ? obj.dataset.filtercol : (isDef(obj.id) ? obj.id : obj.name);
-        var filterLabel = isDef(obj.dataset.filterlabel) ? obj.dataset.filterlabel : (isDef(obj.labels) ? Liquid.get_label(obj) :null);
-        var objParts = filterName.split(".");
-        if(objParts.length>=2) {
-            if(objParts[1]) {
-                var filterOperator = "";
-                columnName = objParts[1];
-                if(objParts[2] == '') {
-                } else if(objParts[2] == 'from') {
-                    filterOperator = '>=';
-                } else if(objParts[2] == 'to') {
-                    filterOperator = '<=';
-                } else if(objParts[2] == 'like') {
-                    filterOperator = 'LIKE';
-                } else if(objParts[2] == 'less') {
-                    filterOperator = '<';
-                } else if(objParts[2] == 'lessEq') {
-                    filterOperator = '<=';
-                } else if(objParts[2] == 'greater') {
-                    filterOperator = '>';
-                } else if(objParts[2] == 'greaterEq') {
-                    filterOperator = '>=';
-                } else if(objParts[2] == 'eq') {
-                    filterOperator = '=';
-                } else if(objParts[2] == '=') {
-                    filterOperator = '=';
-                } else if(objParts[2] == '==') {
-                    filterOperator = '=';
-                } else {
-                    if(isDef(objParts[2]))
-                        console.error("onSearchFilterChange(): operator "+objParts[2]+" not recognized");
+        if(obj) {
+            var columnName = null;
+            var filterName = isDef(obj.dataset.filtercol) ? obj.dataset.filtercol : (isDef(obj.id) ? obj.id : obj.name);
+            var filterLabel = isDef(obj.dataset.filterlabel) ? obj.dataset.filterlabel : (isDef(obj.labels) ? Liquid.get_label(obj) : null);
+            var objParts = filterName.split(".");
+            if (objParts.length >= 2) {
+                if (objParts[1]) {
+                    var filterOperator = "";
+                    columnName = objParts[1];
+                    if (objParts[2] == '') {
+                    } else if (objParts[2] == 'from') {
+                        filterOperator = '>=';
+                    } else if (objParts[2] == 'to') {
+                        filterOperator = '<=';
+                    } else if (objParts[2] == 'like') {
+                        filterOperator = 'LIKE';
+                    } else if (objParts[2] == 'less') {
+                        filterOperator = '<';
+                    } else if (objParts[2] == 'lessEq') {
+                        filterOperator = '<=';
+                    } else if (objParts[2] == 'greater') {
+                        filterOperator = '>';
+                    } else if (objParts[2] == 'greaterEq') {
+                        filterOperator = '>=';
+                    } else if (objParts[2] == 'eq') {
+                        filterOperator = '=';
+                    } else if (objParts[2] == '=') {
+                        filterOperator = '=';
+                    } else if (objParts[2] == '==') {
+                        filterOperator = '=';
+                    } else {
+                        if (isDef(objParts[2]))
+                            console.error("onSearchFilterChange(): operator " + objParts[2] + " not recognized");
+                    }
+                    let multipleProp = null, multiplePropLabel = null;
+                    let refId = obj.id ? obj.id : obj.name;
+                    if (filterName != refId && refId != null) {
+                        // multiple filters on same field
+                        multipleProp = refId;
+                        multiplePropLabel = filterLabel
+                    }
+                    val = null;
+                    if (obj.type.toUpperCase() === "CHECKBOX") {
+                        val = obj.checked;
+                    } else {
+                        val = obj.value;
+                    }
+                    Liquid.setFilters(controlId, columnName, filterName, val, filterOperator, null, null, multipleProp, multiplePropLabel);
                 }
-                let multipleProp = null, multiplePropLabel = null;
-                let refId = obj.id ? obj.id : obj.name;
-                if(filterName != refId && refId != null) {
-                    // multiple filters on same field
-                    multipleProp = refId;
-                    multiplePropLabel = filterLabel
-                }
-                val = null;
-                if (obj.type.toUpperCase() === "CHECKBOX") {
-                    val = obj.checked;
-                } else {
-                    val = obj.value;
-                }
-                Liquid.setFilters(controlId, columnName, filterName, val, filterOperator, null, null, multipleProp, multiplePropLabel);
             }
         }
     },

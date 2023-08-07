@@ -4785,7 +4785,7 @@ public class workspace {
      * @param prop
      * @return
      */
-    static public String getUserProp(Object tbl_wrk, Object params, String prop) {
+    static public String getUserProps(Object tbl_wrk, Object params, String prop) {
         JSONObject paramsJson = null;
         if (params instanceof String) {
             paramsJson = new JSONObject((String) params);
@@ -4831,7 +4831,7 @@ public class workspace {
      * @param fieldName
      * @return
      */
-    static public JSONArray getUserProp(Object oParams, String userPropName, String layoutName, String fieldName) throws Exception {
+    static public JSONArray getUserProps(Object oParams, String userPropName, String layoutName, String fieldName) throws Exception {
         try {
             JSONObject params_json = null;
             if(oParams instanceof JSONObject) {
@@ -4856,25 +4856,46 @@ public class workspace {
                                             if (userPropValues != null) {
                                                 for (int iv = 0; iv < userPropValues.length(); iv++) {
                                                     JSONObject userPropValue = userPropValues.getJSONObject(iv);
-                                                    if (layoutName.equalsIgnoreCase(userPropValue.getString("layoutName"))) {
-                                                        JSONArray datas = userPropValue.getJSONArray("data");
-                                                        if (datas != null) {
-                                                            for (int id = 0; id < datas.length(); id++) {
-                                                                JSONObject data = datas.getJSONObject(id);
-                                                                if (data != null) {
-                                                                    if (data.has("fieldName")) {
-                                                                        if (fieldName.equalsIgnoreCase(data.getString("fieldName"))) {
-                                                                            Object ofieldValue = data.get("fieldValue");
-                                                                            if (ofieldValue instanceof JSONArray) {
-                                                                                return (JSONArray) ofieldValue;
-                                                                            } else {
-                                                                                return null;
+                                                    if (
+                                                            "*".equals((layoutName))
+                                                                    || layoutName == null
+                                                                    || (layoutName != null && userPropValue.has("layoutName") && layoutName.equalsIgnoreCase(userPropValue.getString("layoutName")))
+                                                    ) {
+                                                        if(userPropValue.has("data")) {
+                                                            // form data : nultiple fields
+                                                            JSONArray datas = userPropValue.getJSONArray("data");
+                                                            if (datas != null) {
+                                                                for (int id = 0; id < datas.length(); id++) {
+                                                                    JSONObject data = datas.getJSONObject(id);
+                                                                    if (data != null) {
+                                                                        if (data.has("fieldName") && fieldName != null) {
+                                                                            if (fieldName.equalsIgnoreCase(data.getString("fieldName"))) {
+                                                                                Object ofieldValue = data.get("fieldValue");
+                                                                                if (ofieldValue instanceof JSONArray) {
+                                                                                    return (JSONArray) ofieldValue;
+                                                                                } else {
+                                                                                    return null;
+                                                                                }
                                                                             }
+                                                                        } else {
+                                                                            return new JSONArray().put(data);
                                                                         }
-                                                                    } else {
-                                                                        return new JSONArray().put(data);
                                                                     }
                                                                 }
+                                                            }
+                                                        } else {
+                                                            // single field
+                                                            if (userPropValue.has("fieldName") && fieldName != null) {
+                                                                if (fieldName.equalsIgnoreCase(userPropValue.getString("fieldName"))) {
+                                                                    Object ofieldValue = userPropValue.get("fieldValue");
+                                                                    if (ofieldValue instanceof JSONArray) {
+                                                                        return (JSONArray) ofieldValue;
+                                                                    } else {
+                                                                        return null;
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                return new JSONArray().put(userPropValue);
                                                             }
                                                         }
                                                     }
@@ -4888,9 +4909,11 @@ public class workspace {
                                             return new JSONArray().put(oUuserPropValue);
                                         } else if (oUuserPropValue instanceof JSONObject) {
                                             return new JSONArray().put(oUuserPropValue);
+                                        } else if (userProp.isNull("value")) {
+                                            return new JSONArray();
                                         } else {
                                             String err = "Unexpected Object type in user properties";
-                                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, err);
+                                            Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, err);
                                             throw new Exception(err);
                                         }
                                     }
@@ -4907,6 +4930,10 @@ public class workspace {
         return null;
     }
 
+
+    static public Object getUserProp(Object oParams, String userPropName, String layoutName, String fieldName) throws Exception {
+        return getUserProps(oParams, userPropName, layoutName, fieldName).get(0);
+    }
 
 
     static public JSONArray getRows(Object tbl_wrk, Object params) {

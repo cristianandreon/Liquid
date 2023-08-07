@@ -1987,7 +1987,7 @@ public class bean {
      * @throws Throwable
      */
     static public Object load_bean(HttpServletRequest request, String sql, Object [] params) throws Exception, Throwable {
-        ArrayList<Object> beans = load_beans((HttpServletRequest)request, sql,new ArrayList<Object> (Arrays.asList(params)),1);
+        ArrayList<Object> beans = load_beans((HttpServletRequest)request, sql, params != null ? new ArrayList<Object> (Arrays.asList(params)) : null,1);
         if (beans != null) {
             if (beans.size() > 0) {
                 return beans.get(0);
@@ -1995,6 +1995,25 @@ public class bean {
         }
         return null;
     }
+
+    /**
+     *
+     * @param request
+     * @param sql
+     * @return
+     * @throws Exception
+     * @throws Throwable
+     */
+    static public Object load_bean(HttpServletRequest request, String sql) throws Exception, Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest)request, sql, (ArrayList<Object>)null,1);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
+
 
     /**
      *

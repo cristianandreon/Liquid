@@ -2444,6 +2444,7 @@ public class event {
         String sWhere = "";
         String dmsSchema = null, dmsTable = null, dmsDocTypeTable = null, dmsRootFolder = null, dmsName = null;
         String mode = null;
+        String sRecId = null;
         long dmsMaxFileSize = 0;
         int nRecs = 0;
 
@@ -2747,8 +2748,9 @@ public class event {
                                     doc_type_id = null;
                                     try {
                                         if (rs != null && rs.next()) {
+                                            sRecId = rs.getString(1);
                                             sQuery = "SELECT doc_type_id FROM \"" + dmsSchema + "\".\"" + dmsTable + "\" " +
-                                                    "WHERE id=" + rs.getString(1);
+                                                    "WHERE id=" + sRecId;
                                             psdoRead = conn.prepareStatement(sQuery);
                                             rsdoRead = psdoRead.executeQuery();
                                             if (rsdoRead != null) {
@@ -2764,7 +2766,8 @@ public class event {
                                     }
                                 }
                                 String fieldSet = "{"
-                                        + "\"file\":\"" + (paramJson.getString("file")) + "\""
+                                        + "\"id\":\"" + (sRecId != null ? sRecId : "") + "\""
+                                        + ",\"file\":\"" + (paramJson.getString("file")) + "\""
                                         + ",\"filePath\":\"" + (fileAbsolutePath != null ? fileAbsolutePath : "") + "\""
                                         + ",\"size\":" + paramJson.getInt("size")
                                         + ",\"note\":\"" + paramJson.getString("note") + "\""

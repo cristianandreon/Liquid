@@ -4655,7 +4655,7 @@ public class db {
                 // primary key
                 if(primaryKeysName.length == 1 && primaryKeysName[0].startsWith("WHERE ")) {
                 } else {
-                    for(int ik=0; ik< primaryKeysName.length; ik++) {
+                    for(int ik=0; ik<primaryKeysName.length; ik++) {
                         if(db.mapStatementParam(sqlSTMTUpdate, ip, keyValues.get(ik))) {
                             ip++;
                         }
@@ -7030,7 +7030,7 @@ public class db {
     }
 
     static public String getUserProp(Object tbl_wrk, Object params, String prop) {
-        return workspace.getUserProp(tbl_wrk, params, prop);
+        return workspace.getUserProps(tbl_wrk, params, prop);
     }
 
 
