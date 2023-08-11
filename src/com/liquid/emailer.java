@@ -31,7 +31,8 @@ public class emailer {
     public static String Password = "";
     public static String Auth = "true";
     public static String Protocol = "smtp";
-    
+    public static String SSLProtocol = null;
+    public static String defaultFrom = "liquid.java.framework@gmail.com";
 
     public String AppName = "";
     public String AppURL = "";
@@ -130,19 +131,28 @@ public class emailer {
             // Setup mail server
             properties.put("mail.transport.protocol", Protocol);
             properties.put("mail.smtp.starttls.enable", "true");
+
             properties.put("mail.smtp.host", Host);
             properties.put("mail.smtp.port", Port);
             properties.put("mail.smtp.auth", Auth);
             properties.put("mail.smtp.ssl.trust", "*");
 
-
             properties.put("mail.smtps.ssl.checkserveridentity", "false");
             properties.put("mail.smtps.ssl.trust", "*");
-             
+
+            // Accept only TLS 1.1 and 1.2
+            if(SSLProtocol != null) {
+                properties.setProperty("mail.smtps.ssl.protocols", SSLProtocol);
+            }
+
             MailSSLSocketFactory sf = new MailSSLSocketFactory();
             sf.setTrustAllHosts(true); 
             properties.put("mail.imap.ssl.trust", "*");
             properties.put("mail.imap.ssl.socketFactory", sf);
+
+            // properties.put("mail.smtp.socketFactory.class",  "javax.net.ssl.SSLSocketFactory");
+            properties.put("mail.smtp.socketFactory.class",  sf);
+            properties.put("mail.debug", "true");
 
 
             javax.mail.Authenticator auth = new SMTPAuthenticator();
@@ -188,7 +198,7 @@ public class emailer {
             try {
 
                 MimeMessage message = new MimeMessage(session);
-                message.setFrom(new InternetAddress(From != null ? From : "liquid.java.framework@gmail.com"));
+                message.setFrom(new InternetAddress(From != null ? From : defaultFrom));
                 message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
                 message.setSubject(subject);
                 message.setText(msg, "utf-8", "html");
@@ -490,119 +500,159 @@ public class emailer {
                         + "\">"
                         + "validate your account" + "</a>";
                 String loginLink = "<a style=\"color:darkGray; font-size:19px;\" href=\"" + AppURL + "/" + params[2] + "/?user=" + params[1] + "\">login <b>" + params[1] + "</b></a>";
-                return ""
-                        + "<table cellpadding=20 cellspacing=20 style=\" font-family:calibri; font-size:24px; border:1px solid lightGray; "
-                        + "-moz-border-radius: 11px; -webkit-border-radius: 11px; border-radius: 11px; -khtml-border-radius: 11px; -moz-box-shadow: 6px  6px 5px #dedede; -webkit-box-shadow:  6px  6px 5px #dedede; "
-                        + "filter: progid:DXImageTransform.Microsoft.Shadow(color='#dedede', Direction=135, Strength=5); box-shadow: 6px 6px 5px #dedede; "
-                        + "\">"
-                        + "<tr>"
-                        + "<td colspan=\"2\" style=\"background-color:#a3c4da; color:#292929; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px;  -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<img src=\"" + imgBase64 + "\" style=\"background-color: lightgray;margin: 5px;border: 1px solid #87b7de;padding: 3px;\"><div style=\"float:left; top:10px; padding-top:15px;\" /><b>" + AppName + "</b> - User registration</div>"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "Domain"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b>" + params[2] + "</b>"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "Password"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b>" + params[0] + "</b>"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "validate account link"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + validateAccountLink
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"2\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + loginLink
-                        + "</td>"
-                        + "</tr>"
-                        + "</table>";
 
+                if(login.RegisterUserTemplateFile != null) {
+                    String gileContent = workspace.get_file_content(request, login.RegisterUserTemplateFile, false, false);
+                    if(gileContent != null) {
+                        // String[] params = { newPassword, sEMail, application_id, domain_id, sApplicationURL, sEmailToken, sRedirect, database, schema, table };
+                        gileContent = gileContent.replace("${nick_name}", params[0]);
+                        gileContent = gileContent.replace("${password}", params[1]);
+                        gileContent = gileContent.replace("${email}", params[2]);
+                        gileContent = gileContent.replace("${application_id}", params[3]);
+                        gileContent = gileContent.replace("${domain_id}", params[4]);
+                        gileContent = gileContent.replace("${application_url}", params[5]);
+                        gileContent = gileContent.replace("${email_token}", params[6]);
+                    }
+                    return gileContent;
+                } else {
+
+                    return ""
+                            + "<table cellpadding=20 cellspacing=20 style=\" font-family:calibri; font-size:24px; border:1px solid lightGray; "
+                            + "-moz-border-radius: 11px; -webkit-border-radius: 11px; border-radius: 11px; -khtml-border-radius: 11px; -moz-box-shadow: 6px  6px 5px #dedede; -webkit-box-shadow:  6px  6px 5px #dedede; "
+                            + "filter: progid:DXImageTransform.Microsoft.Shadow(color='#dedede', Direction=135, Strength=5); box-shadow: 6px 6px 5px #dedede; "
+                            + "\">"
+                            + "<tr>"
+                            + "<td colspan=\"2\" style=\"background-color:#a3c4da; color:#292929; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px;  -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<img src=\"" + imgBase64 + "\" style=\"background-color: lightgray;margin: 5px;border: 1px solid #87b7de;padding: 3px;\"><div style=\"float:left; top:10px; padding-top:15px;\" /><b>" + AppName + "</b> - User registration</div>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "Domain"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + params[3] + "</b>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "Password"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + params[1] + "</b>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "validate account link"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + validateAccountLink
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"2\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + loginLink
+                            + "</td>"
+                            + "</tr>"
+                            + "</table>";
+                }
+                
             } else if (key.equalsIgnoreCase("RegisterUserNotify")) {
-                return ""
-                        + "<table cellpadding=20 cellspacing=20 style=\" font-family:calibri; font-size:24px; border:1px solid lightGray; "
-                        + "-moz-border-radius: 11px; -webkit-border-radius: 11px; border-radius: 11px; -khtml-border-radius: 11px; -moz-box-shadow: 6px  6px 5px #dedede; -webkit-box-shadow:  6px  6px 5px #dedede; "
-                        + "filter: progid:DXImageTransform.Microsoft.Shadow(color='#dedede', Direction=135, Strength=5); box-shadow: 6px 6px 5px #dedede; "
-                        + "\">"
-                        + "<tr>"
-                        + "<td colspan=\"2\" style=\"background-color:#a3c4da; color:#292929; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px;  -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b>" + AppName + "</b> - New user"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "Domain"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b>" + params[3] + "</b>"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "Email"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b>" + params[1] + "</b>"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "validate account link"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b><a href=\"\" onclick=\"location.href='" + params[4] + "?operation=validateEmail&emailToken=" + params[5] + "'&redirect=" + params[6] + "'&domain_id=" + params[3] + "'&application_id=" + params[2] + "'&email=" + params[1] + "\">" + "click here to validate your account" + "</b></a>"
-                        + "</td>"
-                        + "</tr>"
-                        + "</table>";
-
+                if(login.RegisterUserNotifyTemplateFile != null) {
+                    String gileContent = workspace.get_file_content(request, login.RegisterUserNotifyTemplateFile, false, false);
+                    if(gileContent != null) {
+                        // String[] params = { newPassword, sEMail, application_id, domain_id, sApplicationURL, sEmailToken, sRedirect, database, schema, table };
+                        gileContent = gileContent.replace("${password}", params[0]);
+                        gileContent = gileContent.replace("${email}", params[1]);
+                        gileContent = gileContent.replace("${application_id}", params[2]);
+                        gileContent = gileContent.replace("${domain_id}", params[3]);
+                        gileContent = gileContent.replace("${application_url}", params[4]);
+                        gileContent = gileContent.replace("${email_token}", params[5]);
+                    }
+                    return gileContent;
+                } else {
+                    return ""
+                            + "<table cellpadding=20 cellspacing=20 style=\" font-family:calibri; font-size:24px; border:1px solid lightGray; "
+                            + "-moz-border-radius: 11px; -webkit-border-radius: 11px; border-radius: 11px; -khtml-border-radius: 11px; -moz-box-shadow: 6px  6px 5px #dedede; -webkit-box-shadow:  6px  6px 5px #dedede; "
+                            + "filter: progid:DXImageTransform.Microsoft.Shadow(color='#dedede', Direction=135, Strength=5); box-shadow: 6px 6px 5px #dedede; "
+                            + "\">"
+                            + "<tr>"
+                            + "<td colspan=\"2\" style=\"background-color:#a3c4da; color:#292929; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px;  -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + AppName + "</b> - New user"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "Domain"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + params[3] + "</b>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "Email"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + params[1] + "</b>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "validate account link"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b><a href=\"\" onclick=\"location.href='" + params[4] + "?operation=validateEmail&emailToken=" + params[5] + "'&redirect=" + params[6] + "'&domain_id=" + params[3] + "'&application_id=" + params[2] + "'&email=" + params[1] + "\">" + "click here to validate your account" + "</b></a>"
+                            + "</td>"
+                            + "</tr>"
+                            + "</table>";
+                }
             } else if (key.equalsIgnoreCase("RecoveryPassword")) {
-                return "<table cellpadding=20 cellspacing=20 style=\" font-family:calibri; font-size:24px; border:1px solid lightGray; "
-                        + "-moz-border-radius: 11px; -webkit-border-radius: 11px; border-radius: 11px; -khtml-border-radius: 11px; -moz-box-shadow: 6px  6px 5px #dedede; -webkit-box-shadow:  6px  6px 5px #dedede; "
-                        + "filter: progid:DXImageTransform.Microsoft.Shadow(color='#dedede', Direction=135, Strength=5); box-shadow: 6px 6px 5px #dedede; "
-                        + "\">"
-                        + "<tr>"
-                        + "<td colspan=\"2\" style=\"background-color:#a3c4da; color:#292929; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px;  -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<img src=\"" + imgBase64 + "\" style=\"background-color: lightgray;margin: 5px;border: 1px solid #87b7de;padding: 3px;\"><div style=\"float:right; top:10px; padding-top:15px;\" /><b>" + AppName + "</b> - Password recovery</div>"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "User"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b>" + params[2] + "</b>"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "Password"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b>" + params[0] + "</b>"
-                        + "</td>"
-                        + "</tr>"
-                        + "<tr>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "Link"
-                        + "</td>"
-                        + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
-                        + "<b>" + params[3] + "</b>"
-                        + "</td>"
-                        + "</tr>"
-                        + "</table>";
+                if(login.RecoveryPasswordTemplateFile != null) {
+                    String gileContent = workspace.get_file_content(request, login.RecoveryPasswordTemplateFile, false, false);
+                    if(gileContent != null) {
+                        gileContent = gileContent.replace("${link}", params[3]);
+                        gileContent = gileContent.replace("${user}", params[2]);
+                        gileContent = gileContent.replace("${password}", params[0]);
+                    }
+                    return gileContent;
+                } else {
+                    return "<table cellpadding=20 cellspacing=20 style=\" font-family:calibri; font-size:24px; border:1px solid lightGray; "
+                            + "-moz-border-radius: 11px; -webkit-border-radius: 11px; border-radius: 11px; -khtml-border-radius: 11px; -moz-box-shadow: 6px  6px 5px #dedede; -webkit-box-shadow:  6px  6px 5px #dedede; "
+                            + "filter: progid:DXImageTransform.Microsoft.Shadow(color='#dedede', Direction=135, Strength=5); box-shadow: 6px 6px 5px #dedede; "
+                            + "\">"
+                            + "<tr>"
+                            + "<td colspan=\"2\" style=\"background-color:#a3c4da; color:#292929; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px;  -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<img src=\"" + imgBase64 + "\" style=\"background-color: lightgray;margin: 5px;border: 1px solid #87b7de;padding: 3px;\"><div style=\"float:right; top:10px; padding-top:15px;\" /><b>" + AppName + "</b> - Password recovery</div>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "User"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + params[2] + "</b>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "Password"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + params[0] + "</b>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "Link"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + params[3] + "</b>"
+                            + "</td>"
+                            + "</tr>"
+                            + "</table>";
+                }
 
             } else if (key.equalsIgnoreCase("newPassword")) {
                 String newPassword = params[0];

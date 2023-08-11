@@ -698,7 +698,7 @@ public class utility {
                 } else if (propType.equals(java.sql.Date.class)) {
                     java.sql.Date newDate = DateUtil.toDate(value);
                     if(value != null) {
-                        java.sql.Date newValue = (value != null ? new java.sql.Date( newDate.getTime()) : null);
+                        java.sql.Date newValue = (value != null && newDate != null ? new java.sql.Date( newDate.getTime()) : null);
                         if(curValue == null || ((java.sql.Date)field.get(bean)).compareTo(newValue) != 0) {
                             field.set(bean, newValue);
                             retVal = true;

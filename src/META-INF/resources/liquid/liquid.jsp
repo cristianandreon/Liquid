@@ -156,6 +156,15 @@
             if(!liquid.is_session_expired (request, response, out))
                 response.sendRedirect( login.validate_email(request, response, out) );
 
+        } else if ("checkEmail".equalsIgnoreCase(operation)) {
+            // Login Service : controlla il campo email
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( login.check_email(request, response, out) );
+        } else if ("checkUser".equalsIgnoreCase(operation)) {
+            // Login Service : controlla il campo user
+            if(!liquid.is_session_expired (request, response, out))
+                out.print( login.check_user(request, response, out) );
+
         } else if ("email".equalsIgnoreCase(operation)) {
             // Emailer Service : sending
             if(!liquid.is_session_expired (request, response, out))

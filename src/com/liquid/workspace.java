@@ -3752,11 +3752,11 @@ public class workspace {
                 }
             }
             String sCommandJson = "{ "
-                    + "name:'" + (name != null ? name : "") + "'"
-                    + ",client:'" + (clientSideCode != null ? clientSideCode : "") + "'"
-                    + ",server:'" + (className != null ? className : "") + "'"
-                    + ",params:[" + (params != null ? params : "") + "]"
-                    + ",clientAfter:" + clientAfter
+                    + "\"name\":\"" + (name != null ? name : "") + "\""
+                    + ",\"client\":\"" + (clientSideCode != null ? clientSideCode : "") + "\""
+                    + ",\"server\":\"" + (className != null ? className : "") + "\""
+                    + ",\"params\":[" + (params != null ? params : "") + "]"
+                    + ",\"clientAfter\":\"" + clientAfter + "\""
                     + "}";
             JSONObject commandJson = new JSONObject(sCommandJson);
             if (additionParams != null && !additionParams.isEmpty()) {
@@ -3939,7 +3939,7 @@ public class workspace {
 
     static public String get_file_content(HttpServletRequest request, String fileName, boolean trackFileName, boolean b64Encode, Charset charset) throws Exception {
         String fileContent = "", lineContent;
-        String fullFileName = null;
+        String fullFileName = null, fullFileName2 = null;
         String foundFileName = null;
         try {
             String clsPath = workspace.class.getClassLoader().getResource("").getPath();
@@ -3960,6 +3960,7 @@ public class workspace {
                 fileName = f.getName();
             } else {
                 fullFileName = path + (path.charAt(path.length() - 1) != File.separatorChar ? File.separatorChar : "") + localFileName;
+                fullFileName2 = path + (path.charAt(path.length() - 1) != File.separatorChar ? File.separatorChar : "") + "WEB-INF/classes" + (localFileName.charAt(0) != File.separatorChar ? File.separatorChar : "") + localFileName;
             }
 
             fileFound = utility.fileExist(fullFileName);
@@ -3969,6 +3970,11 @@ public class workspace {
                 fileFound = utility.fileExist(localFileName);
                 if (fileFound) {
                     foundFileName = localFileName;
+                } else {
+                    fileFound = utility.fileExist(fullFileName2);
+                    if (fileFound) {
+                        foundFileName = fullFileName2;
+                    }
                 }
             }
 

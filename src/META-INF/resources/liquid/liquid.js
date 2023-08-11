@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.75
+// Liquid ver.2.76
 //
-//  First update 06-01-2020 - Last update 01-08-2023
+//  First update 06-01-2020 - Last update 10-08-2023
 //
 //  TODO : see trello.com
 //
@@ -3085,6 +3085,14 @@ var Liquid = {
                         var controlId = searchingNames[0];
                         for (var i = 0; i < glLiquids.length; i++) {
                             if (glLiquids[i].controlId === controlId) return glLiquids[i];
+                        }
+                    } else {
+                        // searching for table
+                        searchingNames = searchingNameOrObjectBk.id.split(".");
+                        for (var i = 0; i < glLiquids.length; i++) {
+                            if (isDef(glLiquids[i].tableJson)) {
+                                if (glLiquids[i].tableJson.table === searchingNames[0]) return glLiquids[i];
+                            }
                         }
                     }
                 }
@@ -24786,17 +24794,86 @@ columns:[
         if(xhr.status === 200) {
             try {
                 if(xhr.responseText) {
-                    console.message(xhr.responseText);
-                } else {
-                    console.error(xhr.responseText);
+                    console.info(xhr.responseText);
                 }
             } catch (e) {
-                console.error(xhr.responseText);
+                console.error(e);
             }
             if(reload) {
                 Liquid.disableUnloadPagePrompt();
                 window.location.reload();
             }
+        }
+    },
+    check_login_email:function(obj, callback, callbackParam) {
+        if(obj && obj.value) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', glLiquidServlet + '?operation=checkEmail', true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            if (xhr.responseText) {
+                                console.info(xhr.responseText);
+                            }
+                            if (isDef(callback)) {
+                                if (typeof callback === "function") {
+                                    callback(xhr.responseText, callbackParam);
+                                } else {
+                                    var userCallbackFunc = Liquid.getJSProperty(callback);
+                                    if (userCallbackFunc && typeof userCallbackFunc === "function") {
+                                        userCallbackFunc(xhr.responseText, callbackParam);
+                                    } else {
+                                        console.error("check_login_email() : callback not solved");
+                                    }
+                                }
+                            } else {
+                                console.info(xhr.responseText);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                    obj.disabled = false;
+                }
+            }
+            xhr.send("email=" + obj.value);
+            obj.disabled = true;
+        }
+    },
+    check_login_user:function(obj, callback, callbackParam) {
+        if(obj && obj.value) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', glLiquidServlet + '?operation=checkUser', true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            if (isDef(callback)) {
+                                if (typeof callback === "function") {
+                                    callback(xhr.responseText, callbackParam);
+                                } else {
+                                    var userCallbackFunc = Liquid.getJSProperty(callback);
+                                    if (userCallbackFunc && typeof userCallbackFunc === "function") {
+                                        userCallbackFunc(xhr.responseText, callbackParam);
+                                    } else {
+                                        console.error("check_login_user() : callback not solved");
+                                    }
+                                }
+                            } else {
+                                console.info(xhr.responseText);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                    obj.disabled = false;
+                }
+            }
+            xhr.send("user=" + obj.value);
+            obj.disabled = true;
         }
     },
     showDlg:function(dlg) {

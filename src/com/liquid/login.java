@@ -1,5 +1,6 @@
 package com.liquid;
 
+import static com.liquid.connection.closeConnection;
 import static com.liquid.connection.getLiquidDBConnection;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,7 +28,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.jsp.JspWriter;
 
-import com.sun.javafx.fxml.expression.Expression;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -72,6 +72,11 @@ public class login {
     public static String password_field = "password";
     public static String admin_field = "admin";
     public static String status_field = "status";
+    public static String date_field = "date";
+
+    public static String RegisterUserTemplateFile = null;
+    public static String RegisterUserNotifyTemplateFile = null;
+    public static String RecoveryPasswordTemplateFile = null;
 
     static private String itemIdString = "\"";
     static private String tableIdString = "";
@@ -81,7 +86,10 @@ public class login {
     static public int minCharsUser = 3;
     static public int minCharsPasswords = 6;
     private static boolean allowDuplicateUserName = false;
-    
+
+    private static boolean check_email_validated = true;
+
+    public static String cLang = "eng";
     
     // Filter on ip address
     static class ipFilter {
@@ -147,7 +155,6 @@ public class login {
     //              user and or password may be null
     //
     static public Object [] getConnection() throws ClassNotFoundException, SQLException, Throwable {
-        Connection conn = null;
         Object[] connResult = null;
 
         if(connRead) {
@@ -172,7 +179,7 @@ public class login {
             if(table == null || table.isEmpty())
                 table = "users";
 
-            driver = db.getDriver(conn);
+            driver = db.getDriver((Connection)connResult[0]);
 
             itemIdString = "\"";
             tableIdString = "\"";
@@ -329,7 +336,7 @@ public class login {
                                 JSONArray dataJsons = paramJson.getJSONArray("data");
                                 if(dataJsons != null) {
                                     String application_id = null, domain_id = null;
-                                    String sUserID = null, sPassword = null, sEMail = null, sRedirect = null;
+                                    String sUserID = null, sPassword = null, sEMail = null, sRedirect = null, emailValidated = null;
                                     for (int j = 0; j < dataJsons.length(); j++) {
                                         JSONObject dataJson = dataJsons.getJSONObject(j);
                                         switch (dataJson.getString("fieldName")) {
@@ -345,6 +352,9 @@ public class login {
                                             case "email":
                                                 sEMail = dataJson.getString("fieldValue");
                                                 break;
+                                            case "emailValidated":
+                                                emailValidated = dataJson.getString("emailValidated");
+                                                break;
                                             case "application_id":
                                                 application_id = dataJson.getString("fieldValue");
                                                 break;
@@ -355,7 +365,7 @@ public class login {
                                     }
                                     if(sUserID != null || sEMail != null) {
                                         HttpServletRequest request = (HttpServletRequest) freeParam;
-                                        return doLogin(application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request);
+                                        return doLogin(application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, "S".equalsIgnoreCase(emailValidated) || "Y".equalsIgnoreCase(emailValidated), request);
                                     }
                                 }
                             }
@@ -487,6 +497,7 @@ public class login {
             String RemoteIP = request.getRemoteAddr();
             String sUserID = null, sRegisterUserID = null;
             String sEMail = null, sRegisterEMail = null;
+            String emailValidated = null;
             String sPassword = null;
             String application_id = null;
             String domain_id = "";
@@ -495,6 +506,7 @@ public class login {
 
             application_id = request.getParameter("application_id");
             domain_id = request.getParameter("domain_id");
+            emailValidated = request.getParameter("emailValidated");
             sUserID = request.getParameter(login_field);
             sEMail = request.getParameter(email_field);
             sPassword = request.getParameter(password_field);
@@ -506,7 +518,7 @@ public class login {
                 if(sRequest != null && !sRequest.isEmpty()) requestJson = new JSONObject(sRequest); 
             } catch (Exception e) { System.err.println(e.getLocalizedMessage()); }
         
-            return doLogin( application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, request );
+            return doLogin( application_id, domain_id, sUserID, sEMail, sPassword, sRedirect, "S".equalsIgnoreCase(emailValidated) || "Y".equalsIgnoreCase(emailValidated), request );
             
         } catch (Exception e) { 
             Logger.getLogger("// login() Error:" + e.getLocalizedMessage());
@@ -516,24 +528,23 @@ public class login {
 
 
     /**
-     *
      * @param application_id
      * @param domain_id
      * @param sUserID
      * @param sEMail
      * @param sPassword
      * @param sRedirect
+     * @param checkEmailValidate
      * @param request
      * @return
      */
-    static public String doLogin(String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sRedirect, HttpServletRequest request) {
+    static public String doLogin(String application_id, String domain_id, String sUserID, String sEMail, String sPassword, String sRedirect, boolean checkEmailValidate, HttpServletRequest request) {
         HttpSession session = request.getSession();
         ResultSet rsdoLogin = null;
         PreparedStatement psdoLogin = null;
         PreparedStatement psdoSetup = null;
         ResultSet rsdoSetup = null;
         boolean doAutentication = true;
-        String cLang = "it";
         String sUserImpersonatingID = null;
 
         String Debug = null;
@@ -674,11 +685,26 @@ public class login {
 
                             // MYSQL
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`"+""+login_field+""+"`="+ "?" +" OR `"+email_field+"`="+ "?" +") AND (`"+""+password_field+""+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `"+""+password_field+""+"`='' OR \""+""+password_field+""+"\" is null) AND (`"+"status"+"`<>'A' AND `status`<>'D' or `status` is null) AND `emailValidated`>0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" " +
+                                        "WHERE " +
+                                        "(`"+""+login_field+""+"`="+ "?" +" OR `"+email_field+"`="+ "?" +")" +
+                                        " AND (`"+""+password_field+""+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `"+""+password_field+""+"`='' OR \""+""+password_field+""+"\" is null)" +
+                                        " AND (`"+"status"+"`<>'A' AND `status`<>'D' or `status` is null)" +
+                                        (check_email_validated && checkEmailValidate ? " AND \"emailValidated\">0" : "") +
+                                        " AND `domain_id`=" + "?" +"" +
+                                        " AND `application_id`=" + "?" + "";
 
                             // POSTGRES
                             } else if("postgres".equalsIgnoreCase(driver)) {
-                                sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\""+""+login_field+""+"\"="+ "?" +" OR \""+email_field+"\"="+ "?" +") AND (\""+""+password_field+""+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))  OR \""+""+password_field+""+"\"='' OR \""+""+password_field+""+"\" is null) AND (\"status\"<>'A' AND \"status\"<>'D' OR \"status\" is null) AND \"emailValidated\">0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
+                                sqlSTMT = "SELECT * FROM "+schemaTable+" " +
+                                        "WHERE " +
+                                        "(\""+""+login_field+""+"\"="+ "?" +" OR \""+email_field+"\"="+ "?" +")" +
+                                        " AND (\""+""+password_field+""+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))" +
+                                        " OR \""+""+password_field+""+"\"='' OR \""+""+password_field+""+"\" is null)" +
+                                        " AND (\"status\"<>'A' AND \"status\"<>'D' OR \"status\" is null)" +
+                                        (check_email_validated && checkEmailValidate ? " AND \"emailValidated\">0" : "") +
+                                        " AND \"domain_id\"=" + "?" + "" +
+                                        " AND \"application_id\"=" + "?" + "";
 
                             // ORACLE
                             } else if("oracle".equalsIgnoreCase(driver)) {
@@ -887,7 +913,8 @@ public class login {
 
                                 try {
                                     if (session != null) {
-                                        iwrongPass = (int) session.getAttribute("GLLoquidWrongPassword");
+                                        if(session.getAttribute("GLLoquidWrongPassword") != null)
+                                            iwrongPass = (int) session.getAttribute("GLLoquidWrongPassword");
                                     }
                                 } catch (Exception e) {
                                     iwrongPass = 0;
@@ -992,11 +1019,7 @@ public class login {
                 }
             } catch (Throwable e2) {}
 
-            try {
-                if(conn != null)
-                    conn.close();
-                } catch (Throwable e2) {}
-            conn = null;
+            closeConnection(conn);
         }
             
         Logger.getLogger("// login() Error:" + "undetected case");
@@ -1020,7 +1043,6 @@ public class login {
     
     static public String logout( String sRedirect, HttpServletRequest request) {
         HttpSession session = request.getSession();
-        String cLang = "it";
         String error = "";
         try {
             if (session != null) {
@@ -1351,7 +1373,6 @@ public class login {
         PreparedStatement psdoSetup = null;
         ResultSet rsdoSetup = null;
         boolean doAutentication = true;
-        String cLang = "it";
         String sApplicationURL = null;
                 
         HttpSession session = request.getSession();
@@ -1372,7 +1393,8 @@ public class login {
             if(domain_id == null || domain_id.isEmpty())
                 domain_id = (String)request.getSession().getAttribute("GLLiquidLoginDomainId");                                        
             if(daysValidity<=0)
-                iDaysValidity = (int)request.getSession().getAttribute("GLLiquidLoginDaysValidity");
+                if(request.getSession().getAttribute("GLLiquidLoginDaysValidity") != null)
+                    iDaysValidity = (int)request.getSession().getAttribute("GLLiquidLoginDaysValidity");
             else
                 iDaysValidity = daysValidity;
 
@@ -1469,14 +1491,7 @@ public class login {
                                 
                                 // Controllo campo email
                                 if(sEMail != null && !sEMail.isEmpty()) {
-                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE ("+email_field+"='"+sEMail.toLowerCase()+"' AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
-                                    } else if("postgres".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE ("+email_field+"='"+sEMail.toLowerCase()+"' AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
-                                    } else if("oracle".equalsIgnoreCase(driver)) {
-                                    } else if("sqlserver".equalsIgnoreCase(driver)) {
-                                    }
-                                    isEmailDuplicate = check_login_field(conn, sqlSTMT);
+                                    isEmailDuplicate = check_login_field(conn, email_field, sEMail.toLowerCase(), domain_id, application_id, false);
                                 }
 
                             } catch (Exception e) {
@@ -1496,16 +1511,7 @@ public class login {
 
                                 // Controllo campo userId
                                 if(!allowDuplicateUserName) {
-                                    if(sUserID != null && !sUserID.isEmpty()) {
-                                        if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE ("+login_field+"='"+sUserID.toLowerCase()+"' AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "") +"' AND application_id='" + (application_id != null ? application_id : "")+"')";
-                                        } else if("postgres".equalsIgnoreCase(driver)) {
-                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE ("+login_field+"='"+sUserID.toLowerCase()+"' AND "+status_field+"<>'A' AND "+status_field+"<>'D' AND domain_id='" + (domain_id != null ? domain_id : "")+"' AND application_id='" + (application_id != null ? application_id : "")+"')";
-                                        } else if("oracle".equalsIgnoreCase(driver)) {
-                                        } else if("sqlserver".equalsIgnoreCase(driver)) {
-                                        }
-                                        isUserIdDuplicate = check_login_field(conn, sqlSTMT);
-                                    }
+                                    isUserIdDuplicate = check_login_field(conn, login_field, sUserID.toLowerCase(), domain_id, application_id, false);
                                 }
 
                                 if (isUserIdDuplicate) {
@@ -1525,6 +1531,7 @@ public class login {
                                     String sEmailToken = getSaltString(32);
                                     String newPassword = null;
                                     if(sPassword != null && !sPassword.isEmpty()) {
+                                        sPassword = utility.base64Decode(sPassword);
                                         if(sPassword.length() < minCharsPasswords) {
                                             if (cLang.equalsIgnoreCase("IT")) {
                                                 message = "Password tropppo breve; minimo "+minCharsPasswords+" caratteri";
@@ -1540,7 +1547,7 @@ public class login {
                                         newPassword = getSaltString(minCharsPasswords);
                                     }
 
-                                    String[] params = { newPassword, sEMail, application_id, domain_id, sApplicationURL, sEmailToken, sRedirect, database, schema, table };
+                                    String[] params = { sUserID, newPassword, sEMail, application_id, domain_id, sApplicationURL, sEmailToken, sRedirect, database, schema, table };
 
                                     try {
 
@@ -1617,7 +1624,7 @@ public class login {
                                                         }
                                                     }
 
-                                                    String sExpireDate = "";
+                                                    String sExpireDate = null;
                                                     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
                                                     java.util.Date cDate = new java.util.Date();
                                                     java.util.Date expireDate = addDays(cDate, login.daysValidity);
@@ -1628,7 +1635,7 @@ public class login {
                                                     try {
 
                                                         if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`"+login_field+"`,`"+email_field+"`,`"+password_field+"`,`date`,`"+status_field+"`,`"+admin_field+"`,`token`,`expire`,`emailValidated`,`emailToken`) VALUES ("
+                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`"+login_field+"`,`"+email_field+"`,`"+password_field+"`,`"+date_field+"`,`"+status_field+"`,`"+admin_field+"`,`token`,`expire`,`emailValidated`,`emailToken`) VALUES ("
                                                                     + "'" + (application_id != null ? application_id : "") + "'"
                                                                     + ",'" + (domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
@@ -1643,7 +1650,7 @@ public class login {
                                                                     + ",'"+sEmailToken+"'"
                                                                     + ")";
                                                         } else if("postgres".equalsIgnoreCase(driver)) {
-                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (\"application_id\",\"domain_id\",\""+login_field+"\",\""+email_field+"\",\""+password_field+"\",\"date\",\""+status_field+"\",\""+admin_field+"\",\"token\",\"expire\",\"emailValidated\",\"emailToken\") VALUES ("
+                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (\"application_id\",\"domain_id\",\""+login_field+"\",\""+email_field+"\",\""+password_field+"\",\""+date_field+"\",\""+status_field+"\",\""+admin_field+"\",\"token\",\"expire\",\"emailValidated\",\"emailToken\") VALUES ("
                                                                     + "'" +(application_id != null ? application_id : "") + "'"
                                                                     + ",'" +(domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
@@ -1653,7 +1660,7 @@ public class login {
                                                                     + ",'" + sStatus + "'"
                                                                     + "," + (sAdmin != null && !sAdmin.isEmpty() ? sAdmin : "0") + ""
                                                                     + ",'" + "" + "'"
-                                                                    + ",'"+sExpireDate+"'"
+                                                                    + ","+sExpireDate+""
                                                                     + ",'"+sEmailValidated+"'"
                                                                     + ",'"+sEmailToken+"'"
                                                                     + ")";
@@ -1693,6 +1700,8 @@ public class login {
             }
         } catch (Exception e) {
             return "{ \"result\":-12, \"error\":\""+utility.base64Encode("Exception:"+e.getLocalizedMessage())+"\"}";
+        } finally {
+            closeConnection(conn);
         }
         return "{ \"result\":666, \"error\":\"undetected case\"}";
     }
@@ -1732,8 +1741,7 @@ public class login {
         PreparedStatement psdoSetup = null;
         ResultSet rsdoSetup = null;
         boolean doAutentication = true;
-        String cLang = "it";
-        
+
         HttpSession session = request.getSession();
         
         try {
@@ -1861,6 +1869,8 @@ public class login {
             }
         } catch (Exception e) {
             return "{ \"result\":-6, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+        } finally {
+            closeConnection(conn);
         }
     }
     
@@ -1874,8 +1884,7 @@ public class login {
         PreparedStatement psdoSetup = null;
         ResultSet rsdoSetup = null;
         boolean doAutentication = true;
-        String cLang = "it";
-                
+
         HttpSession session = request.getSession();
         
         try {
@@ -2005,6 +2014,8 @@ public class login {
             }
         } catch (Exception e) {
             return "{ \"result\":-12, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+        } finally {
+            closeConnection(conn);
         }
         return "{ \"result\":666, \"error\":\"undetected case\"}";
     }
@@ -2048,32 +2059,19 @@ public class login {
     // http://localhost:8080/LiquidX/liquid/liquid.jsp?operation=validateEmail&emailToken=MMCW1VO04SM1T8TGCS8RNF0BKSAXE2R5&redirect=&domain_id=LiquidX&application_id=LiquidX&email=cristianandreon@gmail.com    
     
     static public String validate_email( String application_id, String domain_id, String sUserID, String sEMail, String sEmailToken, String sRedirect, String sDatabase, String sSchema, String sTable, HttpServletRequest request ) throws Throwable {
-        String out_string = "", error = "";
-        JSONObject requestJson = null;
+        String error = "";
         Connection conn = null;
 
         ResultSet rsdoLogin = null;
         PreparedStatement psdoLogin = null;
-        PreparedStatement psdoSetup = null;
-        ResultSet rsdoSetup = null;
-        boolean doAutentication = true;
-        String cLang = "it";
         String sApplicationURL = null;
             
         
-        HttpSession session = request.getSession();
-        
         try {
         
-            String RemoteIP = request.getRemoteAddr();
-
-            String Debug = null;
             String message = null;
             String sqlSTMT = null;
-            int iDaysValidity = 0;
 
-
-            Debug = request.getParameter("debug");
 
             if(application_id == null || application_id.isEmpty())
                 application_id = (String)request.getSession().getAttribute("GLLiquidLoginApplicationId");
@@ -2099,8 +2097,6 @@ public class login {
                 String schemaTable = "";
                 String databaseSchemaTable = "";
 
-                schemaTable = "";
-                databaseSchemaTable = "";
                 if(sDatabase != null && !sDatabase.isEmpty()) {
                     databaseSchemaTable += itemIdString+sDatabase+itemIdString;
                 }
@@ -2129,7 +2125,6 @@ public class login {
 
                     psdoLogin = conn.prepareStatement(sqlSTMT);
                     psdoLogin.setString(1, sEMail.toLowerCase());
-
                     rsdoLogin = psdoLogin.executeQuery();
 
                 } catch (Exception e) {
@@ -2160,23 +2155,6 @@ public class login {
                             }
                             psdoLogin = conn.prepareStatement(sqlSTMT);
                             psdoLogin.executeUpdate();
-
-                            /*
-                            emailer emailerInstance = new emailer();
-                            emailerInstance.AppName = (String)request.getSession().getAttribute("GLLiquidLoginEmailAppName");
-                            emailerInstance.AppURL = (String)request.getSession().getAttribute("GLLiquidLoginEmailAppURL");
-                            emailerInstance.AppImage = (String)request.getSession().getAttribute("GLLiquidLoginEmailAppImage");
-                            emailerInstance.From = (String)request.getSession().getAttribute("GLLiquidLoginEmailFrom");
-                            
-                            if (emailerInstance.send(sEMail, null, application_id+" - Validazione email", emailerInstance.get_standard_message("EmailValidated", params))) {
-                                message = "Password inviata a <b>" + sEMail + "</b>";
-                                message += emailerInstance.DebugMessage;
-                                return "{ \"result\":1, \"message\":\""+utility.base64Encode(message)+"\"}";
-                            } else {
-                                message = "Invio Password Fallito : " + emailerInstance.LastError + "";
-                                return "{ \"result\":-3, \"error\":\""+utility.base64Encode(message)+"\"}";
-                            }
-                            */
                         } catch (Exception e) {
                             error = "recovery() Error:" + e.getLocalizedMessage();
                             System.err.println(error);
@@ -2197,18 +2175,151 @@ public class login {
             error = "recovery() Error:" + e.getLocalizedMessage();
             Logger.getLogger(error);
             // return "{ \"result\":-6, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+        } finally {
+            closeConnection(conn);
         }
-        
         return get_redirect_string(sRedirect, null, error, null);
     }
-    
 
-    
-    static boolean check_login_field( Connection conn, String sqlSTMT ) throws Exception {
+
+    static public StringBuffer get_password_crypt_expression(String password) throws Throwable {
+        return new StringBuffer("crypt(CAST('"+password+"'AS text), CAST('"+password_seed+"'AS text))");
+    }
+
+    /**
+     *
+     * @param request
+     * @param response
+     * @param out
+     * @return
+     * @throws Throwable
+     */
+    static public String check_email(HttpServletRequest request, HttpServletResponse response, JspWriter out) throws Throwable {
+        String application_id = request.getParameter("application_id");
+        String domain_id = request.getParameter("domain_id");
+        String sEMail = request.getParameter("email");
+        Connection conn = null;
+        try {
+            Object[] connResult = getConnection();
+            conn = (Connection) connResult[0];
+            String connError = (String) connResult[1];
+            if (conn != null && conn.isValid(30)) {
+                if(sEMail != null && !sEMail.isEmpty()) {
+                    EmailValidator validator = new EmailValidator();
+                    if(!validator.validate(sEMail)) {
+                        String message = "Error";
+                        if (cLang.equalsIgnoreCase("IT")) {
+                            message = "Email non valida";
+                        } else {
+                            message = "Invalid email";
+                        }
+                        return "{ \"result\":-1, \"error\":\"" + utility.base64Encode(message) + "\"}";
+                    } else {
+                        boolean isUserIdDuplicate = check_login_field(conn, email_field, sEMail.toLowerCase(), domain_id, application_id, false);
+                        if (isUserIdDuplicate) {
+                            return "{ \"result\":-1, \"error\":\"" + utility.base64Encode("DUPLICATED") + "\"}";
+                        } else {
+                            return "{ \"result\":1, \"message\":\"OK\"}";
+                        }
+                    }
+                } else {
+                    return "{ \"result\":0, \"error\":\""+utility.base64Encode("EMPTY")+"\"}";
+                }
+            }
+        } catch (Exception e) {
+            return "{ \"result\":-6, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+        } finally {
+            closeConnection(conn);
+        }
+        return "{ \"result\":-9, \"error\":\""+utility.base64Encode("UNEXPECTED")+"\"}";
+    }
+
+
+    /**
+     *
+     * @param request
+     * @param response
+     * @param out
+     * @return
+     * @throws Throwable
+     */
+    static public String check_user(HttpServletRequest request, HttpServletResponse response, JspWriter out) throws Throwable {
+        String application_id = request.getParameter("application_id");
+        String domain_id = request.getParameter("domain_id");
+        String sUser = request.getParameter("user");
+        Connection conn = null;
+        try {
+            Object[] connResult = getConnection();
+            conn = (Connection) connResult[0];
+            String connError = (String) connResult[1];
+            if (conn != null && conn.isValid(30)) {
+                if(sUser != null && !sUser.isEmpty()) {
+                    boolean isUserIdDuplicate = check_login_field(conn, login_field, sUser.toLowerCase(), domain_id, application_id, false);
+                    if(isUserIdDuplicate) {
+                        return "{ \"result\":-1, \"error\":\"DUPLICATED\"}";
+                    } else {
+                        return "{ \"result\":1, \"message\":\"OK\"}";
+                    }
+                } else {
+                    return "{ \"result\":0, \"error\":\""+utility.base64Encode("EMPTY")+"\"}";
+                }
+            }
+        } catch (Exception e) {
+            return "{ \"result\":-6, \"error\":\""+utility.base64Encode(e.getLocalizedMessage())+"\"}";
+        } finally {
+            closeConnection(conn);
+        }
+        return "{ \"result\":-9, \"error\":\"UNEXPECTED\"}";
+    }
+
+
+    /**
+     * @param conn
+     * @param field
+     * @param value
+     * @param domain_id
+     * @param application_id
+     * @param sensitiveCase
+     * @return
+     * @throws Exception
+     */
+    static boolean check_login_field(Connection conn, String field, String value, String domain_id, String application_id, boolean sensitiveCase) throws Exception {
         PreparedStatement psdoLogin = null;
         ResultSet rsdoLogin = null;
         boolean bRetVal = true;
+        String sqlSTMT = null;
 
+        String schemaTable = "";
+        String databaseSchemaTable = "";
+
+        if(database != null && !database.isEmpty()) {
+            databaseSchemaTable += itemIdString+database+itemIdString;
+        }
+        if(schema != null && !schema.isEmpty()) {
+            schemaTable += itemIdString+schema+itemIdString;
+            databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+itemIdString+schema+itemIdString;
+        }
+        if(table != null && !table.isEmpty()) {
+            schemaTable += (schemaTable.length()>0?".":"")+itemIdString+table+itemIdString;
+            databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+itemIdString+table+itemIdString;
+        }
+
+        if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+            sqlSTMT = "SELECT * FROM "+schemaTable+"" +
+                    " WHERE "
+                    + (!sensitiveCase ? "lower(":"") + field + (!sensitiveCase ? ")":"")+"='"+value+"'"
+                    + (domain_id != null ? "AND domain_id='" + (domain_id != null ? domain_id : "") : "")
+                    + (application_id != null ? "' AND application_id='" + (application_id != null ? application_id : "")+"')" : "");
+        } else if("postgres".equalsIgnoreCase(driver)) {
+            sqlSTMT = "SELECT * FROM "+schemaTable+"" +
+                    " WHERE "
+                    + (!sensitiveCase ? "lower(":"") + field + (!sensitiveCase ? ")":"")+"='"+value+"'"
+                    + " AND ("+status_field+"<>'A' AND "+status_field+"<>'D' OR "+status_field+" IS NULL)"
+                    + (domain_id != null ? " AND domain_id='" + (domain_id != null ? domain_id : "")+"' " : "")
+                    + (application_id != null ? " AND application_id='" + (application_id != null ? application_id : "")+"'" : "");
+        } else if("oracle".equalsIgnoreCase(driver)) {
+        } else if("sqlserver".equalsIgnoreCase(driver)) {
+        }
         try {
             psdoLogin = conn.prepareStatement(sqlSTMT);
             rsdoLogin = psdoLogin.executeQuery();
@@ -2256,17 +2367,13 @@ public class login {
     
     static public boolean addFilterIP( String IP, String typeOf ) throws Exception {
         boolean bRetVal = true;
-
         try {
-            
             if(IP != null) {
                 if(FilterIPs == null) {
                     FilterIPs = new ArrayList<ipFilter>();
                 }
-
                 FilterIPs.add( new ipFilter(IP, typeOf) );
             }
-            
         } catch (Exception e) {
             throw new Exception(e);            
         }
@@ -2275,12 +2382,9 @@ public class login {
     
     static public boolean removeFilterIP( String IP ) throws Exception {
         boolean bRetVal = true;
-
         try {
-            
             if(IP != null) {
             }
-                    
         } catch (Exception e) {
             throw new Exception(e);            
         }
@@ -2289,13 +2393,10 @@ public class login {
     
     
     static public boolean hasIpAccess( String IP ) throws Exception {
-
         try {
-            
             if(FilterIPs == null) {
                 return true;
             } else {
-                
                 for(int i=0; i<FilterIPs.size(); i++) {
                     String filterIp = FilterIPs.get(i).ip;
                     boolean match = compareIp(filterIp, IP);
@@ -2318,7 +2419,6 @@ public class login {
     static public boolean compareIp( String IP1, String IP2 ) throws Exception {
         String [] ip1Parts = IP1.split("\\.");
         String [] ip2Parts = IP2.split("\\.");
-        
         for(int i=0; i<4; i++) {
             if(ip1Parts.length >= i+1) {
                 if(ip2Parts.length >= i+1) {
@@ -2344,5 +2444,6 @@ public class login {
             }
         }
         return true;
-    }    
+    }
+
 }
