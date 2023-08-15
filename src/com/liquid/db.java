@@ -4406,16 +4406,28 @@ public class db {
 
                 ArrayList<Object> params = new ArrayList<Object>();
                 for(int i=0; i<Fields.length; i++) {
-                    sSTMTUpdate += (i > 0 ? "," : "") + "\"" + Fields[i] + "\"";
+                    if(Values[i] instanceof StringBuffer || Values[i] instanceof Expression) {
+                        // N.B.: espressione non utilizzabile nel valori da inserire
+                    } else {
+                        sSTMTUpdate += (i > 0 ? "," : "") + "\"" + Fields[i] + "\"";
+                    }
                 }
                 sSTMTUpdate += ") VALUES (";
                 for(int i=0; i<Fields.length; i++) {
-                    sSTMTUpdate += (i > 0 ? "," : "") + "?";
                     if(Values[i] instanceof String []) {
+                        sSTMTUpdate += (i > 0 ? "," : "");
+                        sSTMTUpdate += "?";
                         params.add(utility.arrayToString((String[]) Values[i], "", "", ","));
                     } else if(Values[i] instanceof List) {
+                        sSTMTUpdate += (i > 0 ? "," : "");
+                        sSTMTUpdate += "?";
                         params.add(utility.arrayToString( (ArrayList<String>)Values[i], "", "", ","));
+                    } else if(Values[i] instanceof StringBuffer || Values[i] instanceof Expression) {
+                        // N.B.: espressione non utilizzabile nel valori da inserire
+                        // sSTMTUpdate += "" + ((StringBuffer)Values[i]) + "";
                     } else {
+                        sSTMTUpdate += (i > 0 ? "," : "");
+                        sSTMTUpdate += "?";
                         params.add(Values[i]);
                     }
                 }
@@ -4427,12 +4439,19 @@ public class db {
                     if(ArrayUtils.contains(keys, Fields[i])) {
                         sConflictFields += (sConflictFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"";
                     } else {
-                        sUpdatingFields += (sUpdatingFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"" + "=?";
+                        sUpdatingFields += (sUpdatingFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"" + "=";
                         if(Values[i] instanceof String []) {
+                            sUpdatingFields += "?";
                             params.add(utility.arrayToString((String[]) Values[i], "", "", ","));
                         } else if(Values[i] instanceof List) {
+                            sUpdatingFields += "?";
                             params.add(utility.arrayToString( (ArrayList<String>)Values[i], "", "", ","));
+                        } else if(Values[i] instanceof StringBuffer) {
+                            sUpdatingFields += "" + ((StringBuffer)Values[i]) + "";
+                        } else if(Values[i] instanceof Expression) {
+                            sUpdatingFields += "" + ((Expression)Values[i]).getMethodName() + "";
                         } else {
+                            sUpdatingFields += "?";
                             params.add(Values[i]);
                         }
                     }
@@ -4557,6 +4576,21 @@ public class db {
 
 
     /**
+     *
+     * @param DatabaseSchemaTable
+     * @param FieldsAndValues
+     * @param primaryKeys
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] update_row ( String DatabaseSchemaTable, HashMap<String,Object> FieldsAndValues, String [] primaryKeys ) throws Throwable {
+        String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
+        Object [] Values = FieldsAndValues.values().toArray();
+        return update_row ( DatabaseSchemaTable, Fields, Values, primaryKeys, null );
+    }
+
+
+    /**
      * TODO: addition where conditions
      *
      * @param DatabaseSchemaTable
@@ -4564,7 +4598,7 @@ public class db {
      * @param Values                values of fields to update (use instanceof StringBuffer or Expression for SQL Espression)
      * @param primaryKeysName            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
      * @param request
-     * @return
+     * @return true on update ok or no rows updated, false on error
      * @throws Throwable
      */
     static public Object [] update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, String [] primaryKeysName, HttpServletRequest request ) throws Throwable {
@@ -4616,7 +4650,9 @@ public class db {
                         sSTMTUpdate += "\"" + Fields[i] + "\"";
                         Object val = Values[i];
                         if(val instanceof Expression) {
-                            sSTMTUpdate += "=" + ((Expression)val).getMethodName();
+                            sSTMTUpdate += "=" + ((Expression) val).getMethodName();
+                        } else if(val instanceof StringBuffer) {
+                            sSTMTUpdate += "=" + ((StringBuffer) val).toString();
                         } else {
                             sSTMTUpdate += "=?";
                         }
@@ -4682,8 +4718,8 @@ public class db {
                             new_id = newIdRsult[1];
                             new_ids = (ArrayList<Object>) newIdRsult[2];
                         }
-                        retVal = true;
                     }
+                    retVal = true;
                     if (rs != null)
                         rs.close();
                 }
@@ -8181,6 +8217,8 @@ public class db {
                 psdo.setNull(iParam, sqltype);
             } else if (Param instanceof String) {
                 psdo.setString(iParam, (String)Param);
+            } else if (Param instanceof StringBuilder) {
+                psdo.setString(iParam, ((StringBuilder)Param).toString());
             } else if (Param instanceof Integer) {
                 psdo.setInt(iParam, (Integer)Param);
             } else if (Param instanceof Long) {
@@ -8197,6 +8235,8 @@ public class db {
                 psdo.setTime(iParam, (java.sql.Time)Param);
             } else if (Param instanceof java.sql.Date) {
                 psdo.setDate(iParam, (java.sql.Date)Param);
+            } else if (Param instanceof java.util.Date) {
+                psdo.setDate(iParam, new java.sql.Date(((java.util.Date)Param).getTime()));
             } else if (Param instanceof java.sql.Timestamp) {
                 psdo.setTimestamp(iParam, (java.sql.Timestamp)Param);
             } else if (Param instanceof Blob) {

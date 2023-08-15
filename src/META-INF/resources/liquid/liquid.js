@@ -16006,7 +16006,8 @@ var Liquid = {
         }
         // startup currencies fields
         try {
-            $('input.liquidCurrency').currencyInput();
+            let obj = $('input.liquidCurrency');
+            if(obj) obj.currencyInput();
         } catch(e) {
         }
     },

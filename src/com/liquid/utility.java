@@ -14,6 +14,7 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import javax.crypto.Cipher;
 import javax.naming.OperationNotSupportedException;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -46,6 +47,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -862,17 +864,17 @@ public class utility {
      */
     static public Object get(Object bean, String property) throws Exception {
         try {
-            property = property.replace("\\.", "$");
-            String clasName = bean.getClass().getName();
-            if (clasName.equalsIgnoreCase("java.util.ArrayList") || clasName.equalsIgnoreCase("java.util.List")) {
-                // wrap to bean
-                List<?> list = (List<?>) bean;
-                if (list.size() > 0) {
-                    bean = (Object) list.get(0);
-                }
-            }
-            String searchingProperty = property.replaceAll("\\.", "\\$");
             if (bean != null) {
+                property = property.replace("\\.", "$");
+                String clasName = bean.getClass().getName();
+                if (clasName.equalsIgnoreCase("java.util.ArrayList") || clasName.equalsIgnoreCase("java.util.List")) {
+                    // wrap to bean
+                    List<?> list = (List<?>) bean;
+                    if (list.size() > 0) {
+                        bean = (Object) list.get(0);
+                    }
+                }
+                String searchingProperty = property.replaceAll("\\.", "\\$");
                 Field field = null;
                 try {
                     field = bean.getClass().getDeclaredField(searchingProperty);
@@ -3632,4 +3634,42 @@ public class utility {
         }
         return list;
     }
+
+    public static byte[] decrypt(byte[] encryptedValue) throws Exception {
+        return crypt.decrypt(encryptedValue);
+    }
+    private static byte[] encrypt(String valueToEnc) throws Exception {
+        return crypt.encrypt(valueToEnc);
+    }
+
+
+    /**
+     *
+     * @param date
+     * @param addingDays
+     * @return
+     */
+    static public java.util.Date addDays(java.util.Date date, int addingDays) {
+        int cWeekDay = 0;
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        c.add(Calendar.DATE, addingDays);
+        return c.getTime();
+    }
+
+    /**
+     *
+     * @param date
+     * @param addingDays
+     * @return
+     */
+    static public java.sql.Timestamp addDays(java.sql.Timestamp date, float addingDays) {
+        int cWeekDay = 0;
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        c.add(Calendar.DATE, (int)addingDays);
+        c.add(Calendar.SECOND, (int)((addingDays-Math.floor(addingDays)) * 24 * 3600));
+        return new Timestamp( c.getTime().getTime() );
+    }
+
 }

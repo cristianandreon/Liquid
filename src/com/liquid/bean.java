@@ -2046,7 +2046,7 @@ public class bean {
      * @throws Exception
      * @throws Throwable
      */
-    static public ArrayList<Object> load_beans(HttpServletRequest request, String sql, ArrayList<Object> params, long maxRows) throws Exception, Throwable {
+    static public ArrayList<Object> load_beans(HttpServletRequest request, String sql, List<Object> params, long maxRows) throws Exception, Throwable {
         ArrayList<Object> beans = null;
         String controlId = null;
         String errors = "", connError = null;

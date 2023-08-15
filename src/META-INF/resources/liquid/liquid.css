@@ -77,18 +77,18 @@ rgba(0,0,0,0.2), 0 -1px 0px rgba(0,0,0,0.02); }
 .liquidGridRowEven{ background-color: rgba(211, 211, 211, 0.2) }
 .liquidGridLabel { color:#423e3e; font-size:100%; font-style: italic; background-color: transparent; text-align:right; right:5px; text-overflow: ellipsis; overflow: hidden; }
 .liquidFilterControl { height:27px; width:calc(100% - 2px); overflow:auto; padding-left: 3px; }
-.liquidFiltersTable { table-layout: fixed; width: 100%; z-index:130; position:relative; background:rgb(234, 234, 234); }
+.liquidFiltersTable { table-layout: fixed; auto: 100%; z-index:130; position:relative; background:rgb(234, 234, 234); }
 .liquidFiltersTable tr:hover { background-color:rgba(220, 241, 255, 70) !important; }
 .liquidFilterTbl { table-layout: fixed; background-color: whitesmoke; z-index: 121; position: relative; text-decoration: none; font-size: 12px; color: rgba(90, 30, 30, 1.0); border-top:1px solid white; border-bottom:1px solid lightGray; width:100%; }
 .liquidFilterTbl td:hover { background-color:rgba(220, 241, 255, 40) !important; }
 .liquidFilterLabel { font-size: 10px; color: rgba(30, 30, 30, 1.0); text-align: right; padding-right:5px; width:25%; overflow: hidden; background-color: transparent; }
 .liquidFilterInput { font-size: 12px; color: rgba(30, 30, 90, 1.0); height:23px; width: 97%; }
 .liquidFilterInputTd { width:calc(70% - 20px); }
-.liquidFiltersLabel { width:80px; font-size: 10px; }
+.liquidFiltersLabel { width:120px; font-size: 10px; }
 .liquidFiltersSelector { width:auto; }
 .liquidFiltersSpacer { width:auto; }
 .liquidFilterButton { width:100px; margin: 4px; }
-.liquidFilterButtonTd { width:120px; }
+.liquidFilterButtonTd { width:230px; }
 .liquidFilterImg { width:20px; overflow: hidden; }
 .liquidTab { float: left; text-align: center; text-decoration: none; color:darkgray;
             background-color: lightgrey; border: 1px solid gray; padding-left: 10px; padding-right: 10px; padding-top: 5px; padding-bottom: 5px;

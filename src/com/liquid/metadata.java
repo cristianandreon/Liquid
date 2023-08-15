@@ -2070,16 +2070,16 @@ public class metadata {
                 try {
                     String driver = db.getDriver(conn);
                     if ("mysql" .equalsIgnoreCase(driver)) {
-                        sql = "CREATE DATABASE IF NOT EXISTS " + database;
+                        sql = "CREATE DATABASE IF NOT EXISTS \"" + database + "\"";
                     } else if ("mariadb" .equalsIgnoreCase(driver)) {
-                        sql = "CREATE DATABASE IF NOT EXISTS " + database;
+                        sql = "CREATE DATABASE IF NOT EXISTS \"" + database + "\"";
                     } else if ("postgres" .equalsIgnoreCase(driver)) {
-                        sql = "CREATE DATABASE " + database;
+                        sql = "CREATE DATABASE \"" + database + "\"";
                     } else if ("oracle" .equalsIgnoreCase(driver)) {
                         // N.B. database = oracle instance
-                        sql = "CREATE DATABASE IF NOT EXISTS " + database;
+                        sql = "CREATE DATABASE IF NOT EXISTS \"" + database + "\"";
                     } else if ("sqlserver" .equalsIgnoreCase(driver)) {
-                        sql = "CREATE DATABASE IF NOT EXISTS " + database;
+                        sql = "CREATE DATABASE IF NOT EXISTS \"" + database + "\"";
                     }
                     if (sql != null) {
                         PreparedStatement psdo = conn.prepareStatement(sql);

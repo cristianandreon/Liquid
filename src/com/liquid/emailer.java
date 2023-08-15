@@ -37,7 +37,7 @@ public class emailer {
     public String AppName = "";
     public String AppURL = "";
     public String AppImage = "";
-    public String From = "info@liquid-framework.eu";
+    public String From = null;
 
     
     /**
@@ -152,7 +152,7 @@ public class emailer {
 
             // properties.put("mail.smtp.socketFactory.class",  "javax.net.ssl.SSLSocketFactory");
             properties.put("mail.smtp.socketFactory.class",  sf);
-            properties.put("mail.debug", "true");
+            properties.put("mail.debug", "false");
 
 
             javax.mail.Authenticator auth = new SMTPAuthenticator();
@@ -177,13 +177,13 @@ public class emailer {
             try {
             
                 properties.put("mail.smtp.starttls.enable", "false");
+                properties.put("mail.debug", "true");
             
                 transport = session.getTransport(Protocol);
                 transport.connect(Host, Username, Password);
                 transport.close();
                 bAutenticated = true;
-        
-        
+
             } catch (Exception e) {
                 Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "send() Error:" + e.getLocalizedMessage());
                 LastError = "[Sending mail Exception:" + e.getMessage() + "]";
@@ -679,6 +679,38 @@ public class emailer {
                         + "</td>"
                         + "</tr>"
                         + "</table>";
+
+            } else if (key.equalsIgnoreCase("newEmail")) {
+                if(login.NewEmailNotifyTemplateFile != null) {
+                    String gileContent = workspace.get_file_content(request, login.NewEmailNotifyTemplateFile, false, false);
+                    if(gileContent != null) {
+                        // String[] params = { newEmail, act };
+                        gileContent = gileContent.replace("${nick_name}", params[0]);
+                        gileContent = gileContent.replace("${new_email}", params[1]);
+                        gileContent = gileContent.replace("${email}", params[1]);
+                        gileContent = gileContent.replace("${act}", params[2]);
+                    }
+                    return gileContent;
+                } else {
+                    return "<table cellpadding=20 cellspacing=20 style=\" font-family:calibri; font-size:24px; border:1px solid lightGray; "
+                            + "-moz-border-radius: 11px; -webkit-border-radius: 11px; border-radius: 11px; -khtml-border-radius: 11px; -moz-box-shadow: 6px  6px 5px #dedede; -webkit-box-shadow:  6px  6px 5px #dedede; "
+                            + "filter: progid:DXImageTransform.Microsoft.Shadow(color='#dedede', Direction=135, Strength=5); box-shadow: 6px 6px 5px #dedede; "
+                            + "\">"
+                            + "<tr>"
+                            + "<td colspan=\"2\" style=\"background-color:#a3c4da; color:#292929; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px;  -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<img src=\"" + imgBase64 + "\" style=\"background-color: lightgray;margin: 5px;border: 1px solid #87b7de;padding: 3px;\" /><div style=\"float:right; top:10px; padding-top:15px;\"><b>" + AppName + "</b> - Password change</div>"
+                            + "</td>"
+                            + "</tr>"
+                            + "<tr>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "New email"
+                            + "</td>"
+                            + "<td colspan=\"1\" style=\"background-color:#efedee; color:#5298c7; -moz-border-radius: 5px; -webkit-border-radius: 5px; border-radius: 5px; -khtml-border-radius: 5px; -moz-box-shadow: 4px 4px 3px #dedede; -webkit-box-shadow:  4px 4px 3px #dedede; \">"
+                            + "<b>" + params[1] + "</b>"
+                            + "</td>"
+                            + "</tr>"
+                            + "</table>";
+                }
             } else if (key.equalsIgnoreCase("sendFeedback")) {
                 return "<table cellpadding=20 cellspacing=20 style=\" font-family:calibri; font-size:24px; border:1px solid lightGray; "
                         + "-moz-border-radius: 11px; -webkit-border-radius: 11px; border-radius: 11px; -khtml-border-radius: 11px; -moz-box-shadow: 6px  6px 5px #dedede; -webkit-box-shadow:  6px  6px 5px #dedede; "

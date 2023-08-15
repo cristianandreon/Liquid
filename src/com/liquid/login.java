@@ -77,6 +77,7 @@ public class login {
     public static String RegisterUserTemplateFile = null;
     public static String RegisterUserNotifyTemplateFile = null;
     public static String RecoveryPasswordTemplateFile = null;
+    public static String NewEmailNotifyTemplateFile = null;
 
     static private String itemIdString = "\"";
     static private String tableIdString = "";
@@ -1284,11 +1285,7 @@ public class login {
 
 
     static public java.util.Date addDays(java.util.Date d, int g) {
-        int cWeekDay = 0;	 
-        Calendar c = Calendar.getInstance();
-        c.setTime(d);
-        c.add(Calendar.DATE, g);
-        return c.getTime();	
+        return utility.addDays(d, g);
     }
 
     static public String get_redirect_string(String sRedirect, String sRedirectParam, String error, String message) {
@@ -2444,6 +2441,18 @@ public class login {
             }
         }
         return true;
+    }
+
+
+    /**
+     *
+     * @param sEMail
+     * @return
+     * @throws Exception
+     */
+    static public boolean isEmailValid( String sEMail ) throws Exception {
+        EmailValidator validator = new EmailValidator();
+        return validator.validate(sEMail);
     }
 
 }

@@ -12,7 +12,7 @@ public class crypt {
     private static final String ALGORITHM = "AES";
     private static final byte[] keyValue = "GTHSDALO92762945".getBytes();
 
-// [-104, 57, 48, -62, 103, 112, -100, -74, 10, 120, -106, -34, 119, 21, -17, -41, 45, -75, 73, -44, 100, -73, 1, 71, -58, 7, 78, 52, -83, -113, 55, 98]
+    // [-104, 57, 48, -62, 103, 112, -100, -74, 10, 120, -106, -34, 119, 21, -17, -41, 45, -75, 73, -44, 100, -73, 1, 71, -58, 7, 78, 52, -83, -113, 55, 98]
     public static void test() throws Exception {
         String encriptValue = utility.base64Encode(encrypt("{\"test\":\"enc_aes\",  \"data\":0.001}\n"));
         byte[] decryptedValue = decrypt(utility.base64DecodeBytes(encriptValue));
