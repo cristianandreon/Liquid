@@ -57,6 +57,7 @@ public class login {
     static public int daysValidity = 0;
     
     static public String [] additionalProperties = null;
+    static public String [] additionalPropertiesValue = null;
     static public String additionalPropertiesPrefix = null;
     static public boolean additionalPropertiesInSession = false;
     
@@ -88,7 +89,7 @@ public class login {
     static public int minCharsPasswords = 6;
     private static boolean allowDuplicateUserName = false;
 
-    private static boolean check_email_validated = true;
+    public static boolean check_email_validated = true;
 
     public static String cLang = "eng";
     
@@ -1631,8 +1632,18 @@ public class login {
 
                                                     try {
 
+                                                        String aSdditionalPropertiesField = "";
+                                                        String sAdditionalPropertiesValue = "";
+                                                        if(additionalProperties != null && additionalPropertiesValue != null) {
+                                                            aSdditionalPropertiesField = utility.arrayToString(additionalProperties, "\"", "\"", ",");
+                                                            sAdditionalPropertiesValue = utility.arrayToString(additionalPropertiesValue, "'", "'", ",");
+                                                        }
+
+
                                                         if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`"+login_field+"`,`"+email_field+"`,`"+password_field+"`,`"+date_field+"`,`"+status_field+"`,`"+admin_field+"`,`token`,`expire`,`emailValidated`,`emailToken`) VALUES ("
+                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (`application_id`,`domain_id`,`"+login_field+"`,`"+email_field+"`,`"+password_field+"`,`"+date_field+"`,`"+status_field+"`,`"+admin_field+"`,`token`,`expire`,`emailValidated`,`emailToken`"
+                                                                    + (!aSdditionalPropertiesField.isEmpty() ? "," + aSdditionalPropertiesField : "")
+                                                                    + ") VALUES ("
                                                                     + "'" + (application_id != null ? application_id : "") + "'"
                                                                     + ",'" + (domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
@@ -1645,9 +1656,12 @@ public class login {
                                                                     + ",'"+sExpireDate+"'"
                                                                     + ",'"+sEmailValidated+"'"
                                                                     + ",'"+sEmailToken+"'"
+                                                                    + (!sAdditionalPropertiesValue.isEmpty() ? "," + sAdditionalPropertiesValue : "")
                                                                     + ")";
                                                         } else if("postgres".equalsIgnoreCase(driver)) {
-                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (\"application_id\",\"domain_id\",\""+login_field+"\",\""+email_field+"\",\""+password_field+"\",\""+date_field+"\",\""+status_field+"\",\""+admin_field+"\",\"token\",\"expire\",\"emailValidated\",\"emailToken\") VALUES ("
+                                                            sqlSTMT = "INSERT INTO "+schemaTable+" (\"application_id\",\"domain_id\",\""+login_field+"\",\""+email_field+"\",\""+password_field+"\",\""+date_field+"\",\""+status_field+"\",\""+admin_field+"\",\"token\",\"expire\",\"emailValidated\",\"emailToken\""
+                                                                    + (!aSdditionalPropertiesField.isEmpty() ? "," + aSdditionalPropertiesField : "")
+                                                                    + ") VALUES ("
                                                                     + "'" +(application_id != null ? application_id : "") + "'"
                                                                     + ",'" +(domain_id != null ? domain_id : "") + "'"
                                                                     + ",'" + (sUserID != null && !sUserID.isEmpty() ? sUserID : sUserName).toLowerCase() + "'"
@@ -1660,6 +1674,7 @@ public class login {
                                                                     + ","+sExpireDate+""
                                                                     + ",'"+sEmailValidated+"'"
                                                                     + ",'"+sEmailToken+"'"
+                                                                    + (!sAdditionalPropertiesValue.isEmpty() ? "," + sAdditionalPropertiesValue : "")
                                                                     + ")";
                                                             
                                                             
@@ -1667,12 +1682,17 @@ public class login {
                                                         } else if("sqlserver".equalsIgnoreCase(driver)) {
                                                         }
 
-                                                        psdoLogin = conn.prepareStatement(sqlSTMT);
-                                                        psdoLogin.executeUpdate();
-                                                        
+                                                        psdoLogin = conn.prepareStatement(sqlSTMT, Statement.RETURN_GENERATED_KEYS);
+                                                        int res = psdoLogin.executeUpdate();
+
+                                                        String id = null;
+                                                        ResultSet rs = psdoLogin.getGeneratedKeys();
+                                                        if (rs != null && rs.next()) {
+                                                            id = rs.getString("id");
+                                                        }
                                                         message = "Registered";
                                                         
-                                                        return "{ \"result\":1, \"message\":\""+utility.base64Encode(message)+"\"}";
+                                                        return "{ \"result\":1, \"message\":\""+utility.base64Encode(message)+"\", \"id\":\""+id+"\"}";
 
                                                     } catch (Exception e) {
                                                         return "{ \"result\":-9, \"error\":\""+utility.base64Encode((e.getLocalizedMessage() + " on : ["+sqlSTMT+"]"))+"\"}";

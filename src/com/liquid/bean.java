@@ -2756,6 +2756,10 @@ public class bean {
         return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, -1, null);
     }
 
+    static public ArrayList<Object> load_beans(String databaseSchemaTable, String controlId, String columns, String where_condition, String orderBy) throws Throwable {
+        return load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, -1, orderBy);
+    }
+
 
     static public Object load_bean(String databaseSchemaTable, String columns, String where_condition) throws Throwable {
         ArrayList<Object> beans = load_beans((HttpServletRequest) null, (String) databaseSchemaTable, columns, where_condition, 1);
@@ -2775,6 +2779,17 @@ public class bean {
         }
         return null;
     }
+
+    static public Object load_bean(String databaseSchemaTable, String controlId, String columns, String where_condition, String orderBy) throws Throwable {
+        ArrayList<Object> beans = load_beans((HttpServletRequest) null, controlId, databaseSchemaTable, columns, where_condition, 1, orderBy);
+        if (beans != null) {
+            if (beans.size() > 0) {
+                return beans.get(0);
+            }
+        }
+        return null;
+    }
+
     static public Object load_bean(HttpServletRequest request, String databaseSchemaTable, String controlId, String columns, String where_condition) throws Throwable {
         ArrayList<Object> beans = load_beans((HttpServletRequest) request, controlId, databaseSchemaTable, columns, where_condition, 1, null);
         if (beans != null) {

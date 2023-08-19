@@ -3946,8 +3946,10 @@ public class workspace {
             String fullPath = URLDecoder.decode(clsPath, "UTF-8");
             String pathArr[] = fullPath.split("/WEB-INF/classes/");
             fullPath = pathArr[0];
-            String path = request != null ? request.getSession().getServletContext().getRealPath("/") : fullPath;
+            String path = request != null ? (request.getSession() != null ? request.getSession().getServletContext().getRealPath("/") : fullPath ): fullPath;
             boolean fileFound = false;
+
+            // File f = new File(workspace.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
             String localFileName = fileName;
             if (localFileName.charAt(0) == File.separatorChar || localFileName.charAt(0) == '/') {
