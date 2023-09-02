@@ -2441,6 +2441,21 @@ public class utility {
         }
     }
 
+    /**
+     * resize string untime str.lenght < maxSize
+     * @param str
+     * @param maxSize
+     * @return
+     */
+    public static String resizeString(String str, int maxSize) {
+        int cSize = maxSize;
+        while(str.getBytes().length>=maxSize) {
+            str = str.substring(0, cSize);
+            cSize--;
+        }
+        return str;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
