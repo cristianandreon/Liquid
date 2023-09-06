@@ -5462,8 +5462,10 @@ public class workspace {
                 // Il controllo tbl_wrk non ha definizione di DMS, dunque non ha restrizione ... accesso in lettura/scrittura
                 return false;
             }
+        } else {
+            return false;
         }
-        throw new Exception("is_dms_readonly() : unexpected path");
+        // throw new Exception("is_dms_readonly() : unexpected path");
     }
 
 

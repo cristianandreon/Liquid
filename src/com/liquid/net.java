@@ -9,7 +9,9 @@
  */
 package com.liquid;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -42,7 +44,12 @@ public class net {
      *
      * @param baseURL
      * @param postData
-     * @return
+     *
+     * @return Objkect []
+     *  [0] = content (byte[])
+     *  [1] = responseCode (int)
+     *  [2] = contentType (String)
+     *
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
@@ -58,7 +65,12 @@ public class net {
      * @param baseURL
      * @param postData
      * @param headers
-     * @return
+     *
+     * @return Objkect []
+     *  [0] = content (byte[])
+     *  [1] = responseCode (int)
+     *  [2] = contentType (String)
+     *
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
@@ -75,7 +87,12 @@ public class net {
      * @param postData
      * @param timeout
      * @param headers
-     * @return
+     *
+     * @return Objkect []
+     *  [0] = content (byte[])
+     *  [1] = responseCode (int)
+     *  [2] = contentType (String)
+     *
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
@@ -84,10 +101,39 @@ public class net {
         return new net().getURLEx(baseURL, postData, timeout, headers);
     }
 
+
+
+    /**
+     *
+     * @param surl
+     * @return
+     * @throws MalformedURLException
+     */
+    public static Object getDefaultHeaders(String surl) throws MalformedURLException {
+        URL url = new URL(surl);
+        HashMap<String,String> headers = new HashMap<String,String>();
+        headers.put("Host", url.getHost());
+        headers.put("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0");
+        headers.put("Connection", "keep-alive");
+        // headers.put("Accept", "*/*");
+        headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8");
+        headers.put("Accept-Encoding", "gzip, deflate, br");
+        headers.put("Accept-Language", "en-US,en;q=0.5");
+        headers.put("Cookie", "_ga=GA1.2.996091584.1661426985; cookie_policy=1");
+        headers.put("Upgrade-Insecure-Requests", "1");
+        return headers;
+    }
+
+
     /**
      * Internal function
      * Read an URL and return Object [ content (byte[]), http status code (int) ]
      * if postData in not null user "POST" method, elsewhere "GET"
+     *
+     * return Objkect []
+     *  [0] = content (byte[])
+     *  [1] = responseCode (int)
+     *  [2] = contentType (String)
      *
      * @param baseURL
      * @param postData
@@ -210,9 +256,14 @@ public class net {
         boolean hostName = false;
         if (headers != null) {
             try {
-                HttpsURLConnection conns = (HttpsURLConnection) (conn instanceof HttpsURLConnection ? conn : null);
-                HttpURLConnection connh = (HttpURLConnection) (conn instanceof HttpURLConnection ? conn : null);
+                HttpsURLConnection conns = null;
+                HttpURLConnection connh = null;
                 ArrayList<Object> params = new ArrayList<Object>();
+
+                if(conn instanceof HttpsURLConnection)
+                    conns = (HttpsURLConnection)conn;
+                else if(conn instanceof HttpURLConnection)
+                    connh = (HttpURLConnection)conn;
 
                 if (headers instanceof String) {
                     String[] sparams = ((String) headers).split(",");
@@ -304,6 +355,57 @@ public class net {
 
         public X509Certificate[] getAcceptedIssuers() {
             return new X509Certificate[]{};
+        }
+    }
+
+
+
+    public static Object[] read_url(String url, String postData, int timeput, HashMap<String, String> params) throws Exception {
+        Connection c = Jsoup.connect(url);
+
+        // if(coockies != null) c.headers(coockies);
+
+        c.ignoreContentType(true);
+
+        c.header("accept","application/json,text/plain,*/*");
+        c.header("accept-encoding","gzip, deflate, br");
+        c.header("accept-language","it,en-US;q=0.9,en;q=0.8");
+        // c.header("content-type","application/json;charset=UTF-8");
+        // c.header("content-length", String.valueOf(body.length()));
+        c.header("user-agent","Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36");
+        // c.header("authorization","Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vc2NvcGFtaWNpLmNvbS9hcGkvbG9naW4iLCJpYXQiOjE2ODM3MDcxOTUsImV4cCI6MTY5MTU5MTE5NSwibmJmIjoxNjgzNzA3MTk1LCJqdGkiOiJjRGdoVWo4RFpQT1JwSUpVIiwic3ViIjozMzQyMzIwMCwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyJ9.HZFkz_G5d586M1-JykAz6QyD1EchEeBX08zrwBJD1so");
+        c.header("sec-ch-ua", "\"Chromium\";v=\"112\", \"Google Chrome\";v=\"112\", \"Not:A-Brand\";v=\"99\"");
+        c.header("sec-ch-ua-mobile","?0");
+        c.header("sec-ch-ua-platform", "Linux");
+        c.header("sec-fetch-dest", "empty");
+        c.header("sec-fetch-mode","cors");
+        c.header("sec-fetch-site","same-origin");
+        c.header("x-csrf-token","xoHspX7CtBcILCmyUieaQ0EpzuVLk4pMHWBoKCtG");
+        c.header("x-requested-with","XMLHttpRequest");
+        c.header("x-socket","");
+        c.header("referer", params.get("referer"));
+        c.header("origin", params.get("Origin"));
+        c.header("host", params.get("host"));
+
+
+
+        Document doc = null;
+        if(postData != null) {
+            c.header("Method","POST");
+            c.data(postData);
+        } else {
+            c.header("Method","GET");
+        }
+        try {
+            Connection.Response response = c.execute();
+            if (response != null) {
+                response = response.bufferUp();
+                return new Object[]{response.bodyAsBytes(), response.statusCode(), response.contentType()};
+            } else {
+                return new Object[]{null, -1, null};
+            }
+        } catch (org.jsoup.HttpStatusException e) {
+            return new Object[]{null, e.getStatusCode(), null};
         }
     }
 

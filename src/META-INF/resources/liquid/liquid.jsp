@@ -204,7 +204,7 @@
             if(!liquid.is_session_expired (request, response, out))
                 out.print( worker.get_worker(request, operation, out) );
 
-            
+
 
         } else if ("setMessageResponse".equalsIgnoreCase(operation)) {
             // Dispatch message service
@@ -230,12 +230,19 @@
         } else if ("downloadDocument".equalsIgnoreCase(operation)) {
             if(!liquid.is_session_expired (request, response, out)) {
                 String clientData = "content";
-                String params = "{\"params\":{\"link\":\"" + (request.getParameter("link") != null ? request.getParameter("link") : "") + "\"}}";
-                workspace tbl_wrk = null;
-                event.downloadDocument((Object) tbl_wrk, (Object) params, (Object) clientData, (Object) request);
+                String params = "{\"params\":{\"link\":\"" + (request.getParameter("link") != null ? request.getParameter("link") : "") + "\",\"id\":\"" + (request.getParameter("id") != null ? request.getParameter("id") : "") + "\"}}";
+                event.downloadDocument((Object) null, (Object) params, (Object) clientData, (Object) request);
             }
 
+            // Scaricamento immagine da URL
+        } else if ("downloadImage".equalsIgnoreCase(operation)) {
+            if(!liquid.is_session_expired (request, response, out)) {
+                String clientData = "contentBase64";
+                String params = "{\"params\":{\"link\":\"" + (request.getParameter("link") != null ? request.getParameter("link") : "") + "\",\"id\":\"" + (request.getParameter("id") != null ? request.getParameter("id") : "") + "\"}}";
+                event.downloadDocumentFromURL((Object) null, (Object) params, (Object) clientData, (Object) request);
+            }
 
+            // Datalist
         } else if ("getDatalist".equalsIgnoreCase(operation)) {
             out.print(
                     utility.get_datalist_from_table(

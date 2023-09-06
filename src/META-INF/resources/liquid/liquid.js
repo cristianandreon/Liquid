@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.76
+// Liquid ver.2.77
 //
-//  First update 06-01-2020 - Last update 10-08-2023
+//  First update 06-01-2020 - Last update 02-09-2023
 //
 //  TODO : see trello.com
 //
@@ -992,6 +992,16 @@ class LiquidCtrl {
                                         rowsContainer: null
                                     };
                                     var eventResult = /*await*/ Liquid.onEventSync(liquid, "onRowRendering", eventData, null);
+                                    if(eventData.rowData) {
+                                        for (let j = 0; j < liquid.tableJson.columns.length; j++) {
+                                            if (isDef(liquid.tableJson.columns[j].field)) {
+                                                let col = liquid.tableJson.columns[j];
+                                                if(eventData.rowData[col.field] != eventData.rowData[col.name]) {
+                                                    eventData.rowData[col.field] = eventData.rowData[col.name];
+                                                }
+                                            }
+                                        }
+                                    }
                                     if(typeof eventResult === 'object') {
                                         var rowStyle = eventResult.result;
                                         if(typeof rowStyle === 'object') {
@@ -3035,17 +3045,25 @@ var Liquid = {
                     if (isDef(searchingNameOrObject.controlId)) {
                         searchingNames = [searchingNameOrObject.controlId];
                     } else {
-                        if (isDef(searchingNameOrObject.id)) {
-                            if (!searchingNameOrObject.id) {
-                                while (!isDef(searchingNameOrObject.id) && searchingNameOrObject) {
-                                    searchingNameOrObject = searchingNameOrObject.parentNode;
-                                }
+                        if (isDef(searchingNameOrObject.name) && searchingNameOrObject.name) {
+                            searchingNames = searchingNameOrObject.name.split(".");
+                            if (!searchingNames) {
+                                while (!searchingNameOrObject.name) searchingNameOrObject = searchingNameOrObject.parentNode
+                                searchingNames = searchingNameOrObject.name.split(".");
                             }
+                        } else {
                             if (isDef(searchingNameOrObject.id)) {
-                                searchingNames = searchingNameOrObject.id.split(".");
-                                if (!searchingNames) {
-                                    while (!searchingNameOrObject.id) searchingNameOrObject = searchingNameOrObject.parentNode
+                                if (!searchingNameOrObject.id) {
+                                    while (!isDef(searchingNameOrObject.id) && searchingNameOrObject) {
+                                        searchingNameOrObject = searchingNameOrObject.parentNode;
+                                    }
+                                }
+                                if (isDef(searchingNameOrObject.id)) {
                                     searchingNames = searchingNameOrObject.id.split(".");
+                                    if (!searchingNames) {
+                                        while (!searchingNameOrObject.id) searchingNameOrObject = searchingNameOrObject.parentNode
+                                        searchingNames = searchingNameOrObject.id.split(".");
+                                    }
                                 }
                             }
                         }
@@ -7555,11 +7573,36 @@ var Liquid = {
             Liquid.loadData(liquid, null, "lastPage");
         }
     },
-    onBtNext: function (obj) {
+    onBtNext: function (obj, bRotate, callback, callbackParam) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid.cPage + 1 < liquid.nPages) {
             liquid.cPage++;
-            Liquid.loadData(liquid, null);
+            Liquid.loadData(liquid, null, "nextPage", function() {
+                if(bRotate) {
+                    liquid.cRow = 0;
+                    Liquid.updateCRow(liquid, liquid.cRow);
+                    Liquid.stopFlashingFields();
+                    Liquid.updateStatusBar(liquid);
+                }
+                if(isDef(callback))
+                    callback(callbackParam);
+            } );
+        } else {
+            if(bRotate) {
+                if(liquid.nPages > 1) {
+                    liquid.cPage = 0;
+                    Liquid.loadData(liquid, null, "rotate", function() {
+                        if(bRotate) {
+                            liquid.cRow = 0;
+                        }
+                        Liquid.updateCRow(liquid, liquid.cRow);
+                        Liquid.stopFlashingFields();
+                        Liquid.updateStatusBar(liquid);
+                        if(isDef(callback))
+                            callback(callbackParam);
+                    } );
+                }
+            }
         }
     },
     onPageKeyPress: function (e, obj) {
@@ -7568,11 +7611,44 @@ var Liquid = {
         } else if (e.keyCode === 27) {
         }
     },
-    onBtPrevious: function (obj) {
+    onBtPrevious: function (obj, bRotate, callback, callbackParam) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid.cPage > 0) {
             liquid.cPage--;
-            Liquid.loadData(liquid, null, "previousPage");
+            Liquid.loadData(liquid, null, "previousPage", function() {
+                if(bRotate) {
+                    var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                    if (nodes.length > 0)
+                        liquid.cRow = nodes.length - 1;
+                    else
+                        liquid.cRow = 0;
+                    Liquid.updateCRow(liquid, liquid.cRow);
+                    Liquid.stopFlashingFields();
+                    Liquid.updateStatusBar(liquid);
+                }
+                if(isDef(callback))
+                    callback(callbackParam);
+            } );
+        } else {
+            if(bRotate) {
+                if (liquid.nPages > 1) {
+                    liquid.cPage = liquid.nPages - 1;
+                    Liquid.loadData(liquid, null, "rotate", function() {
+                        if(bRotate) {
+                            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                            if (nodes.length > 0)
+                                liquid.cRow = nodes.length - 1;
+                            else
+                                liquid.cRow = 0;
+                        }
+                        Liquid.updateCRow(liquid, cRow);
+                        Liquid.stopFlashingFields();
+                        Liquid.updateStatusBar(liquid);
+                        if(isDef(callback))
+                            callback(callbackParam);
+                    } );
+                }
+            }
         }
     },
     onGotoPage: function (obj) {
@@ -12166,6 +12242,7 @@ var Liquid = {
                         var selNodes = liquid.gridOptions.api.getSelectedNodes();
                         var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                         var cRow = liquid.cRow;
+                        let doNextPage = false, doPrevPage = false;
                         if (selNodes && selNodes.length > 0) {
                             if (typeof liquid.tableJson.resetSelectionOnRowChange === true) {
                                 if (liquid.gridOptions.rowSelection === "multiple")
@@ -12178,9 +12255,19 @@ var Liquid = {
                                 }
                             }
                             if (command.name === "previous") {
-                                if (cRow > 0) cRow--; else cRow = nodes.length - 1;
+                                if (cRow > 0) {
+                                    cRow--;
+                                } else {
+                                    cRow = nodes.length - 1;
+                                    doPrevPage = true;
+                                }
                             } else if (command.name === "next") {
-                                if (cRow + 1 < nodes.length) cRow++; else cRow = 0;
+                                if (cRow + 1 < nodes.length) {
+                                    cRow++;
+                                } else {
+                                    cRow = 0;
+                                    doNextPage = true;
+                                }
                             }
                         } else {
                             cRow = 0;
@@ -12209,6 +12296,10 @@ var Liquid = {
                             Liquid.onSlideShowUpdateCurrent(liquid);
                         }
                         Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
+                        if(doNextPage)
+                            Liquid.onBtNext(liquid, true);
+                        if(doPrevPage)
+                            Liquid.onBtPrevious(liquid, true);
                         Liquid.processCommandPostFunc(liquid, command);
                         return true;
 
@@ -16830,6 +16921,10 @@ var Liquid = {
                                 obj.setAttribute('linkedfield', linkedCol.field);
                                 obj.setAttribute('linkedname', linkedCol.name);
                                 obj.setAttribute('linkedrow1b', iRow + 1);
+
+                                if((isDef(linkedCol.embedded))) {
+                                    obj.setAttribute('embedded', linkedCol.embedded);
+                                }
                                 if (isDef(linkedCol.asType)) {
                                     obj.setAttribute('astype', linkedCol.asType);
                                 }
@@ -17150,6 +17245,8 @@ var Liquid = {
                                 obj.setAttribute('linkedid', newId);
                                 obj.setAttribute('astype', null);
                                 obj.setAttribute('decimaldigit', null);
+                                obj.setAttribute('embedded', null);
+
                                 if(!obj.name && obj.id)
                                     obj.setAttribute('name', obj.id);
 
@@ -20663,164 +20760,187 @@ var Liquid = {
         }
         Liquid.setForeignTablesModeCascade(liquidRoot);
     },
-    // return 0 in non Input or TEXTAREA
-    setHTMLElementValue:function(targetObj, value, disabled, layoutOrGrid) {
+    setHTMLElementValue:function(targetObjOrNodeList, value, disabled, layoutOrGrid) {
         var imageMode = 'auto';
-        if(targetObj) {
-            if(targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'SELECT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
-                if(targetObj.type === 'checkbox') {
-                    targetObj.checked = (
-                        value === 'on' || value === 'true' || value === 'yes' ||  value === 'si'
-                        || value === 'Y' || value === 'y' || value === 'S' || value === 's'  || value === 'T' || value === 't'
-                        || value === true || value === '1'
-                            ? true : false);
-                } else if(targetObj.type === 'file') {
-                    console.warn("WARNING : cannot set file of a form element " + targetObj.id);
-                } else {
-                    if(targetObj.type === 'number')
-                        if (isDef(value)) if(isNaN(Number(value))) value = value.replace(/\,/g, ".");
-                    if(targetObj.type === 'number') {
-                        if(isNaN(value)) {
-                            console.error("LIQUID: cannot set numeric field with value:'"+value+"' .. please check layout:"+(isDef(layoutOrGrid) ? layoutOrGrid.name : ""));
+        let targetObjs = null;
+        if(targetObjOrNodeList instanceof NodeList) {
+            targetObjs = targetObjOrNodeList;
+        } else {
+            targetObjs = targetObjOrNodeList ? [ targetObjOrNodeList ] : null;
+        }
+        if(targetObjs) {
+            for (let i = 0; i < targetObjs.length; i++) {
+                let targetObj = targetObjs[i];
+                if (targetObj.nodeName.toUpperCase() === 'INPUT' || targetObj.nodeName.toUpperCase() === 'SELECT' || targetObj.nodeName.toUpperCase() === 'TEXTAREA') {
+                    if (targetObj.type === 'checkbox') {
+                        targetObj.checked = (
+                            value === 'on' || value === 'true' || value === 'yes' || value === 'si'
+                            || value === 'Y' || value === 'y' || value === 'S' || value === 's' || value === 'T' || value === 't'
+                            || value === true || value === '1'
+                                ? true : false);
+                    } else if (targetObj.type === 'file') {
+                        console.warn("WARNING : cannot set file of a form element " + targetObj.id);
+                    } else {
+                        if (targetObj.type === 'number')
+                            if (isDef(value)) if (isNaN(Number(value))) value = value.replace(/\,/g, ".");
+                        if (targetObj.type === 'number') {
+                            if (isNaN(value)) {
+                                console.error("LIQUID: cannot set numeric field with value:'" + value + "' .. please check layout:" + (isDef(layoutOrGrid) ? layoutOrGrid.name : ""));
+                            }
+                        }
+                        var decimalDigit = targetObj.getAttribute('decimaldigit');
+                        if (isDef(decimalDigit)) {
+                            value = Number(value).toFixed(Number(decimalDigit));
+                        }
+                        var astype = targetObj.getAttribute('astype');
+                        if (astype == 'color') {
+                        } else if (isDef(astype) && astype.toLowerCase().startsWith('currency')) {
+                            let astypeArr = astype.replace(",", ".").split(".");
+                            let locale = astypeArr.length > 1 ? astypeArr[1] : 'it-IT';
+                            let currency = astypeArr.length > 2 ? astypeArr[2] : 'EUR';
+                            targetObj.value = Number(value).toLocaleString(locale, {
+                                style: 'currency',
+                                currency: currency
+                            });
+                        } else {
+                            targetObj.value = value;
+                            try {
+                                let list = targetObj.getAttribute("linked-list");
+                                if (list) {
+                                    Liquid.setDescDatalistFromCode(window, targetObj);
+                                }
+                            } catch (e) {
+                            }
                         }
                     }
-                    var decimalDigit = targetObj.getAttribute('decimaldigit');
-                    if(isDef(decimalDigit)) {
-                        value = Number(value).toFixed(Number(decimalDigit));
+                    if (isDef(disabled)) {
+                        if (targetObj.type !== "checkbox") {
+                            targetObj.disabled = disabled;
+                            if (disabled)
+                                targetObj.style.cursor = '';
+                        }
                     }
+                    return 1;
+                } else if (targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(targetObj.nodeName)) {
                     var astype = targetObj.getAttribute('astype');
-                    if(astype == 'color') {
-                    } else if(isDef(astype) && astype.toLowerCase().startsWith('currency')) {
+                    if (astype == 'color') {
+                        if (value && value.trim().toLowerCase().startsWith("0x")) {
+                            value = "#" + value.trim().substring(2);
+                        }
+                        jQ1124(targetObj).css("backgroundColor", value);
+                    } else if (isDef(astype) && astype.toLowerCase().startsWith('currency')) {
                         let astypeArr = astype.replace(",", ".").split(".");
                         let locale = astypeArr.length > 1 ? astypeArr[1] : 'it-IT';
                         let currency = astypeArr.length > 2 ? astypeArr[2] : 'EUR';
-                        targetObj.value = Number(value).toLocaleString(locale, { style: 'currency', currency: currency });
+                        jQ1124(targetObj).html(Number(value).toLocaleString(locale, {
+                            style: 'currency',
+                            currency: currency
+                        }));
                     } else {
-                        targetObj.value = value;
-                        try {
-                            let list = targetObj.getAttribute("linked-list");
-                            if (list) {
-                                Liquid.setDescDatalistFromCode(window, targetObj);
-                            }
-                        } catch (e) {
+                        jQ1124(targetObj).html(value);
+                        // targetObj.innertHTML = value;
+                        // targetObj.innerText = String(value);
+                    }
+                    if (isDef(disabled)) {
+                        if (targetObj.type !== "checkbox") {
+                            targetObj.disabled = disabled;
+                            if (disabled)
+                                targetObj.style.cursor = '';
                         }
                     }
-                }
-                if(isDef(disabled)) {
-                    if(targetObj.type !== "checkbox") {
-                        targetObj.disabled = disabled;
-                        if(disabled)
-                            targetObj.style.cursor = '';
+                    return 0;
+                } else if (targetObj.nodeName.toUpperCase() === 'CANVAS') {
+                    var astype = targetObj.getAttribute('astype');
+                    if (value.endsWith(".pdf)")) {
+                        load_pdf_to_canvas(targetObj, value);
+                    } else if (value.endsWith(".png)") || value.endsWith(".jpg)") || value.endsWith(".jpeg)") || value.endsWith(".gif)")) {
+                        load_image_to_canvas(targetObj, value, imageMode);
+                    } else {
+                        if (value.startsWith("DMS://")) {
+                            let cacheControl = targetObj.getAttribute("cache");
+                            if (!isDef(cacheControl)) {
+                                cacheControl = Liquid.firstTimeCacheControl;
+                                targetObj.getAttribute("cache", Liquid.cacheControl);
+                            }
+                            let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
+                            const canvasRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
+                            canvasRequest.then(blob => {
+                                if (blob.type.indexOf("video") >= 0) {
+                                    targetObj.src = window.URL.createObjectURL(blob);
+                                } else if (blob.type.indexOf("application/pdf") >= 0) {
+                                    load_pdf_to_canvas(targetObj, window.URL.createObjectURL(blob));
+                                } else {
+                                    load_image_to_canvas(targetObj, window.URL.createObjectURL(blob), imageMode);
+                                }
+                            });
+                        }
                     }
-                }
-                return 1;
-            } else if(targetObj.nodeName.toUpperCase() === 'DIV' || targetObj.nodeName.toUpperCase() === 'SPAN' || targetObj.nodeName.toUpperCase() === 'TD' || targetObj.nodeName.toUpperCase() === 'P' || Liquid.isHNode(targetObj.nodeName)) {
-                var astype = targetObj.getAttribute('astype');
-                if(astype == 'color') {
-                    if (value && value.trim().toLowerCase().startsWith("0x")) {
-                        value = "#" + value.trim().substring(2);
-                    }
-                    jQ1124(targetObj).css("backgroundColor", value);
-                } else if(isDef(astype) && astype.toLowerCase().startsWith('currency')) {
-                    let astypeArr = astype.replace(",", ".").split(".");
-                    let locale = astypeArr.length > 1 ? astypeArr[1] : 'it-IT';
-                    let currency = astypeArr.length > 2 ? astypeArr[2] : 'EUR';
-                    jQ1124(targetObj).html( Number(value).toLocaleString(locale, { style: 'currency', currency: currency }));
-                } else {
-                    jQ1124(targetObj).html(value);
-                    // targetObj.innertHTML = value;
-                    // targetObj.innerText = String(value);
-                }
-                if (isDef(disabled)) {
-                    if (targetObj.type !== "checkbox") {
-                        targetObj.disabled = disabled;
-                        if(disabled)
-                            targetObj.style.cursor = '';
-                    }
-                }
-                return 0;
-            } else if(targetObj.nodeName.toUpperCase() === 'CANVAS') {
-                var astype = targetObj.getAttribute('astype');
-                if(value.endsWith(".pdf)")) {
-                    load_pdf_to_canvas(targetObj, value);
-                } else if(value.endsWith(".png)") || value.endsWith(".jpg)") || value.endsWith(".jpeg)") || value.endsWith(".gif)")) {
-                    load_image_to_canvas(targetObj, value, imageMode);
-                } else {
-                    if(value.startsWith("DMS://")) {
+
+                } else if (targetObj.nodeName.toUpperCase() === 'PICTURE' || targetObj.nodeName.toUpperCase() === 'EMBED' || targetObj.nodeName.toUpperCase() === 'AUDIO' || targetObj.nodeName.toUpperCase() === 'VIDEO') {
+                    /*
+                        src: It is used to hold the path of media content.
+                        media: It is used to define the type of the media content.
+                        srcset: It is used to specify the URL of image used in different situations.
+                        sizes: It is used to specify the sizes of image in different page layout.
+                        type: It is used to specify the MIME-type resource.
+                     */
+                    if (value.startsWith("DMS://")) {
                         let cacheControl = targetObj.getAttribute("cache");
-                        if(!isDef(cacheControl)) {
+                        if (!isDef(cacheControl)) {
                             cacheControl = Liquid.firstTimeCacheControl;
                             targetObj.getAttribute("cache", Liquid.cacheControl);
                         }
                         let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
-                        const canvasRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
-                        canvasRequest.then(blob => {
-                            if (blob.type.indexOf("video") >= 0) {
-                                targetObj.src = window.URL.createObjectURL(blob);
-                            } else if (blob.type.indexOf("application/pdf") >= 0) {
-                                load_pdf_to_canvas(targetObj, window.URL.createObjectURL(blob));
+                        const videoRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
+                        videoRequest.then(blob => {
+                            if (targetObj.nodeName.toUpperCase() === 'VIDEO') {
+                                if (blob.type.indexOf("video") >= 0) {
+                                    targetObj.src = window.URL.createObjectURL(blob);
+                                } else {
+                                    targetObj.poster = window.URL.createObjectURL(blob);
+                                }
                             } else {
-                                load_image_to_canvas(targetObj, window.URL.createObjectURL(blob), imageMode);
                             }
                         });
+                    } else {
+                        targetObj.innerHTML = value;
                     }
-                }
-
-            } else if(targetObj.nodeName.toUpperCase() === 'PICTURE' || targetObj.nodeName.toUpperCase() === 'EMBED' || targetObj.nodeName.toUpperCase() === 'AUDIO' || targetObj.nodeName.toUpperCase() === 'VIDEO') {
-                /*
-                    src: It is used to hold the path of media content.
-                    media: It is used to define the type of the media content.
-                    srcset: It is used to specify the URL of image used in different situations.
-                    sizes: It is used to specify the sizes of image in different page layout.
-                    type: It is used to specify the MIME-type resource.
-                 */
-                if(value.startsWith("DMS://")) {
-                    let cacheControl = targetObj.getAttribute("cache");
-                    if(!isDef(cacheControl)) {
-                        cacheControl = Liquid.firstTimeCacheControl;
-                        targetObj.getAttribute("cache", Liquid.cacheControl);
-                    }
-                    let src = glLiquidServlet + '?operation=downloadDocument&link='+value;
-                    const videoRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
-                    videoRequest.then(blob => {
-                        if(targetObj.nodeName.toUpperCase() === 'VIDEO') {
-                            if(blob.type.indexOf("video")>=0) {
-                                targetObj.src = window.URL.createObjectURL(blob);
-                            } else {
-                                targetObj.poster = window.URL.createObjectURL(blob);
-                            }
-                        } else {
+                } else if (targetObj.nodeName.toUpperCase() === 'IMG') {
+                    if (value.startsWith("DMS://")) {
+                        let cacheControl = targetObj.getAttribute("cache");
+                        if (!isDef(cacheControl)) {
+                            cacheControl = Liquid.firstTimeCacheControl;
+                            targetObj.getAttribute("cache", Liquid.cacheControl);
                         }
-                    });
+                        let src = glLiquidServlet + '?operation=downloadDocument&link=' + value;
+                        const videoRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
+                        videoRequest.then(blob => {
+                            targetObj.src = window.URL.createObjectURL(blob);
+                        });
+                    } else {
+                        if (targetObj.getAttribute("embedded") && targetObj.getAttribute("embedded") != 'false') {
+                            let cacheControl = targetObj.getAttribute("cache");
+                            if (!isDef(cacheControl)) {
+                                cacheControl = Liquid.firstTimeCacheControl;
+                                targetObj.getAttribute("cache", Liquid.cacheControl);
+                            }
+                            let src = glLiquidServlet + '?operation=downloadImage&link=' + value;
+                            const videoRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
+                            videoRequest.then(blob => {
+                                targetObj.src = window.URL.createObjectURL(blob);
+                            });
+                        }
+                        targetObj.src = value;
+                    }
+                } else if (targetObj.nodeName.toUpperCase() === 'A') {
+                    targetObj.innerHTML = value;
+                } else if (targetObj.nodeName.toUpperCase() === 'SELECT') {
+                    // elementValue = targetObj.options.[targetObj.selectedIndex].getAttribute("value");
+                    targetObj.value = value;
                 } else {
+                    console.error("Unknown control type : " + targetObj.nodeName);
                     targetObj.innerHTML = value;
                 }
-            } else if(targetObj.nodeName.toUpperCase() === 'IMG') {
-                if(value.startsWith("DMS://")) {
-                    let cacheControl = targetObj.getAttribute("cache");
-                    if(!isDef(cacheControl)) {
-                        cacheControl = Liquid.firstTimeCacheControl;
-                        targetObj.getAttribute("cache", Liquid.cacheControl);
-                    }
-                    let src = glLiquidServlet + '?operation=downloadDocument&link='+value;
-                    const videoRequest = fetch(src, {cache: cacheControl}).then(response => response.blob());
-                    videoRequest.then(blob => {
-                        if(targetObj.nodeName.toUpperCase() === 'IMG') {
-                            targetObj.src = window.URL.createObjectURL(blob);
-                        } else {
-                        }
-                    });
-                } else {
-                    targetObj.src = value;
-                }
-            } else if(targetObj.nodeName.toUpperCase() === 'A') {
-                targetObj.innerHTML = value;
-            } else if(targetObj.nodeName.toUpperCase() === 'SELECT') {
-                // elementValue = targetObj.options.[targetObj.selectedIndex].getAttribute("value");
-                targetObj.value = value;
-            } else {
-                console.error("Unknown control type : " + targetObj.nodeName);
-                targetObj.innerHTML = value;
             }
         }
         if(isDef(disabled)) {

@@ -4547,7 +4547,7 @@ public class db {
      * @param DatabaseSchemaTable
      * @param Fields                fields to update, must include the "primaryKey"
      * @param Values                values of fields to update
-     * @param primaryKey            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
+     * @param primaryKeyName            the field used as primaryKey, must me defined in "Fields" or use "WHERE ..." for direct where condition
      * @return
      * @throws Throwable
      */
