@@ -4317,6 +4317,19 @@ public class db {
         return insert_update_row (DatabaseSchemaTable, (HashMap<String, Object>)FieldsAndValues, keys );
     }
 
+    /**
+     *
+     * @param DatabaseSchemaTable
+     * @param bean
+     * @param keys
+     * @param excludingUpdateField
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, JSONObject bean, String [] keys, String [] excludingUpdateField) throws Throwable {
+        Map<String,Object> FieldsAndValues = (HashMap<String, Object>) utility.jsonToMap(bean);
+        return insert_update_row (DatabaseSchemaTable, (HashMap<String, Object>)FieldsAndValues, keys, excludingUpdateField );
+    }
 
 
     /**
@@ -4331,8 +4344,23 @@ public class db {
      * @throws Throwable
      */
     static public Object [] insert_update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, Object [] keys) throws Throwable {
-        return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, null );
+        return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, null, null );
     }
+
+    /**
+     *
+     * @param DatabaseSchemaTable
+     * @param Fields
+     * @param Values
+     * @param keys
+     * @param excludingUpdateFields
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, Object [] keys, String [] excludingUpdateFields) throws Throwable {
+        return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, excludingUpdateFields, null );
+    }
+
 
     /**
      * Insert or update row by Fields and Values
@@ -4352,6 +4380,21 @@ public class db {
     }
 
     /**
+     *
+     * @param DatabaseSchemaTable
+     * @param FieldsAndValues
+     * @param keys
+     * @param excludingFields
+     * @return
+     * @throws Throwable
+     */
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, HashMap<String,Object>FieldsAndValues, Object [] keys, String [] excludingFields) throws Throwable {
+        String [] Fields = utility.arrayToArray(FieldsAndValues.keySet().toArray(), String.class);
+        Object [] Values = FieldsAndValues.values().toArray();
+        return insert_update_row (DatabaseSchemaTable, Fields, Values, keys, excludingFields, (HttpServletRequest)null);
+    }
+
+    /**
      * Insert or update row by Fields and Values
      *
      * the connection is opened by the class app.liquid.dbx.connection.getDBConnection"
@@ -4364,6 +4407,9 @@ public class db {
      * @throws Throwable
      */
     static public Object [] insert_update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, Object [] keys, HttpServletRequest request ) throws Throwable {
+        return insert_update_row ( DatabaseSchemaTable, Fields, Values, keys, null, request);
+    }
+    static public Object [] insert_update_row ( String DatabaseSchemaTable, String [] Fields, Object [] Values, Object [] keys, String [] ExcludingUpdateFiled, HttpServletRequest request ) throws Throwable {
         boolean retVal = false;
         Object new_id = null, main_id = null;
         ArrayList<Object> new_ids = null;
@@ -4414,15 +4460,15 @@ public class db {
                 }
                 sSTMTUpdate += ") VALUES (";
                 for(int i=0; i<Fields.length; i++) {
-                    if(Values[i] instanceof String []) {
+                    if (Values[i] instanceof String[]) {
                         sSTMTUpdate += (i > 0 ? "," : "");
                         sSTMTUpdate += "?";
                         params.add(utility.arrayToString((String[]) Values[i], "", "", ","));
-                    } else if(Values[i] instanceof List) {
+                    } else if (Values[i] instanceof List) {
                         sSTMTUpdate += (i > 0 ? "," : "");
                         sSTMTUpdate += "?";
-                        params.add(utility.arrayToString( (ArrayList<String>)Values[i], "", "", ","));
-                    } else if(Values[i] instanceof StringBuffer || Values[i] instanceof Expression) {
+                        params.add(utility.arrayToString((ArrayList<String>) Values[i], "", "", ","));
+                    } else if (Values[i] instanceof StringBuffer || Values[i] instanceof Expression) {
                         // N.B.: espressione non utilizzabile nel valori da inserire
                         // sSTMTUpdate += "" + ((StringBuffer)Values[i]) + "";
                     } else {
@@ -4439,20 +4485,23 @@ public class db {
                     if(ArrayUtils.contains(keys, Fields[i])) {
                         sConflictFields += (sConflictFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"";
                     } else {
-                        sUpdatingFields += (sUpdatingFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"" + "=";
-                        if(Values[i] instanceof String []) {
-                            sUpdatingFields += "?";
-                            params.add(utility.arrayToString((String[]) Values[i], "", "", ","));
-                        } else if(Values[i] instanceof List) {
-                            sUpdatingFields += "?";
-                            params.add(utility.arrayToString( (ArrayList<String>)Values[i], "", "", ","));
-                        } else if(Values[i] instanceof StringBuffer) {
-                            sUpdatingFields += "" + ((StringBuffer)Values[i]) + "";
-                        } else if(Values[i] instanceof Expression) {
-                            sUpdatingFields += "" + ((Expression)Values[i]).getMethodName() + "";
-                        } else {
-                            sUpdatingFields += "?";
-                            params.add(Values[i]);
+                        boolean proceed = ExcludingUpdateFiled == null || (ExcludingUpdateFiled != null && !utility.contains(ExcludingUpdateFiled, Fields[i]));
+                        if(proceed) {
+                            sUpdatingFields += (sUpdatingFields.length() > 0 ? "," : "") + "\"" + Fields[i] + "\"" + "=";
+                            if (Values[i] instanceof String[]) {
+                                sUpdatingFields += "?";
+                                params.add(utility.arrayToString((String[]) Values[i], "", "", ","));
+                            } else if (Values[i] instanceof List) {
+                                sUpdatingFields += "?";
+                                params.add(utility.arrayToString((ArrayList<String>) Values[i], "", "", ","));
+                            } else if (Values[i] instanceof StringBuffer) {
+                                sUpdatingFields += "" + ((StringBuffer) Values[i]) + "";
+                            } else if (Values[i] instanceof Expression) {
+                                sUpdatingFields += "" + ((Expression) Values[i]).getMethodName() + "";
+                            } else {
+                                sUpdatingFields += "?";
+                                params.add(Values[i]);
+                            }
                         }
                     }
                 }

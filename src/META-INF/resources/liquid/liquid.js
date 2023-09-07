@@ -7583,6 +7583,8 @@ var Liquid = {
                     Liquid.updateCRow(liquid, liquid.cRow);
                     Liquid.stopFlashingFields();
                     Liquid.updateStatusBar(liquid);
+                    var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                    nodes[liquid.cRow].setSelected(true);
                 }
                 if(isDef(callback))
                     callback(callbackParam);
@@ -7598,6 +7600,8 @@ var Liquid = {
                         Liquid.updateCRow(liquid, liquid.cRow);
                         Liquid.stopFlashingFields();
                         Liquid.updateStatusBar(liquid);
+                        var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                        nodes[liquid.cRow].setSelected(true);
                         if(isDef(callback))
                             callback(callbackParam);
                     } );
@@ -7622,6 +7626,7 @@ var Liquid = {
                         liquid.cRow = nodes.length - 1;
                     else
                         liquid.cRow = 0;
+                    nodes[liquid.cRow].setSelected(true);
                     Liquid.updateCRow(liquid, liquid.cRow);
                     Liquid.stopFlashingFields();
                     Liquid.updateStatusBar(liquid);
@@ -7640,10 +7645,11 @@ var Liquid = {
                                 liquid.cRow = nodes.length - 1;
                             else
                                 liquid.cRow = 0;
+                            nodes[liquid.cRow].setSelected(true);
+                            Liquid.updateCRow(liquid, liquid.cRow);
+                            Liquid.stopFlashingFields();
+                            Liquid.updateStatusBar(liquid);
                         }
-                        Liquid.updateCRow(liquid, cRow);
-                        Liquid.stopFlashingFields();
-                        Liquid.updateStatusBar(liquid);
                         if(isDef(callback))
                             callback(callbackParam);
                     } );
@@ -12296,11 +12302,13 @@ var Liquid = {
                             Liquid.onSlideShowUpdateCurrent(liquid);
                         }
                         Liquid.executeClientSide(liquid, "command:" + command.name, command.client, null, command.isNative);
-                        if(doNextPage)
-                            Liquid.onBtNext(liquid, true);
-                        if(doPrevPage)
-                            Liquid.onBtPrevious(liquid, true);
-                        Liquid.processCommandPostFunc(liquid, command);
+                        if(doNextPage) {
+                            Liquid.onBtNext(liquid, true, function() { Liquid.processCommandPostFunc(liquid, command) } );
+                        } else if(doPrevPage) {
+                            Liquid.onBtPrevious(liquid, true, function() { Liquid.processCommandPostFunc(liquid, command) } );
+                        } else {
+                            Liquid.processCommandPostFunc(liquid, command);
+                        }
                         return true;
 
                     } else if (command.name === "copy") {
@@ -17243,9 +17251,9 @@ var Liquid = {
                                 obj.setAttribute('previd', prevId);
                                 obj.setAttribute('newid', newId);
                                 obj.setAttribute('linkedid', newId);
-                                obj.setAttribute('astype', null);
-                                obj.setAttribute('decimaldigit', null);
-                                obj.setAttribute('embedded', null);
+                                obj.removeAttribute('astype');
+                                obj.removeAttribute('decimaldigit');
+                                obj.removeAttribute('embedded');
 
                                 if(!obj.name && obj.id)
                                     obj.setAttribute('name', obj.id);
@@ -22068,7 +22076,7 @@ var Liquid = {
     },
     resumeNodeSelected:function(liquid) {
         if(liquid) {
-            nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+            let nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
             for(let i=0; i<nodes.length; i++) {
                 var id = nodes[i].data[ liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null ];
                 if(liquid.selection.all) {
