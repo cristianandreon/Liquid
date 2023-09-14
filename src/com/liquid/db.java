@@ -4471,6 +4471,10 @@ public class db {
                     } else if (Values[i] instanceof StringBuffer || Values[i] instanceof Expression) {
                         // N.B.: espressione non utilizzabile nel valori da inserire
                         // sSTMTUpdate += "" + ((StringBuffer)Values[i]) + "";
+                    } else if (Values[i] == null) {
+                        sSTMTUpdate += (i > 0 ? "," : "");
+                        sSTMTUpdate += "?";
+                        params.add(null);
                     } else {
                         sSTMTUpdate += (i > 0 ? "," : "");
                         sSTMTUpdate += "?";

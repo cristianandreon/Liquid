@@ -4709,22 +4709,43 @@ public class workspace {
                 JSONObject obj = (JSONObject) paramsJson.get(i);
                 if (obj != null) {
                     if (obj.has("data")) {
-                        JSONObject data = obj.getJSONObject("data");
-                        boolean bFoundControl = false;
-                        if (data.has("name")) {
-                            String name = data.getString("name");
-                            if (name != null) {
-                                if (name.equalsIgnoreCase(controlId)) {
-                                    bFoundControl = true;
+                        Object odata = obj.get("data");
+                        if(odata instanceof JSONObject) {
+                            JSONObject data = obj.getJSONObject("data");
+                            boolean bFoundControl = false;
+                            if (data.has("name")) {
+                                String name = data.getString("name");
+                                if (name != null) {
+                                    if (name.equalsIgnoreCase(controlId)) {
+                                        bFoundControl = true;
+                                    }
+                                }
+                            } else {
+                                bFoundControl = true;
+                            }
+                            if (bFoundControl) {
+                                if (data.has(column)) {
+                                    return data.getString(column);
+                                }
+                            }
+                        } else if(odata instanceof JSONArray) {
+                            JSONArray dataArr = (JSONArray)odata;
+                            for(int id=0; id<dataArr.length(); id++) {
+                                JSONObject data = dataArr.getJSONObject(id);
+                                if(data != null) {
+                                    if(data.has("fieldName")) {
+                                        if(column.equalsIgnoreCase(data.getString("fieldName"))) {
+                                            if (data.has("fieldValue")) {
+                                                return String.valueOf(data.get("fieldValue"));
+                                            } else {
+                                                return null;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         } else {
-                            bFoundControl = true;
-                        }
-                        if (bFoundControl) {
-                            if (data.has(column)) {
-                                return data.getString(column);
-                            }
+                            throw new JSONException("Unexpected type of data");
                         }
                     }
                 }

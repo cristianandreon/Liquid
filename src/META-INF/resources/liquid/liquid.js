@@ -3230,7 +3230,7 @@ var Liquid = {
     buildCommandParams: async function (liquid, command, obj) {
         if (liquid || command) {
             // command.name, command.params, command.server, command.client, command.isNative
-            var controlIdList = command.params;
+            var controlIdList = typeof command.params == 'string' ? [ command.params ] : command.params;
             var liquidProcessed = false;
             var liquidCommandParams = {
                 liquid: (liquid ? liquid : {xhr: null, controlId: null, command: command, outDivObj: obj}),
@@ -3699,8 +3699,9 @@ var Liquid = {
                                         break;
                                     case "file":
                                         if (processFiles) {
-                                            let res = Liquid.getFormFileContent(frm_elements[i], filteringTableId, filteringCellIndex);
+                                            let res = await Liquid.getFormFileContent(frm_elements[i], filteringTableId, filteringCellIndex);
                                             if(res) {
+                                                if(!nodes_data) nodes_data = [];
                                                 for (let ir=0; ir<res.length; ir++) {
                                                     nodes_data.push(res[ir])
                                                 }
@@ -5989,7 +5990,7 @@ var Liquid = {
                     var tooltipField = liquid.tableJson.columns[ic].tooltipField ? liquid.tableJson.columns[ic].name : null;
 
                     var labelName = (Liquid.translateLabels ? ("label" + (Liquid.lang.toLowerCase() != 'eng' ? "_" + Liquid.lang.toLowerCase() : "")) : "label");
-                    var labelValue = isDef(liquid.tableJson.columns[ic][labelName]) ? liquid.tableJson.columns[ic][labelName] : liquid.tableJson.columns[ic].name;
+                    var labelValue = isDef(liquid.tableJson.columns[ic][labelName]) ? liquid.tableJson.columns[ic][labelName] : (isDef(liquid.tableJson.columns[ic].label) ? liquid.tableJson.columns[ic].label : liquid.tableJson.columns[ic].name);
 
                     var colData = {
                         headerName: labelValue,
@@ -7368,7 +7369,7 @@ var Liquid = {
      * @return {} n/d
      */
     executeFilter: function (obj) {
-        return Liquid.onExecuteFilter(obj);
+        return Liquid.onExecuteFilter(obj, false);
     },
     onExecuteFilter: function (obj, bReloadAlways) {
         var liquid = Liquid.getLiquid(obj);
@@ -8232,6 +8233,7 @@ var Liquid = {
                             theLink = gridLink ? gridLink : layoutLink ? layoutLink : filterLink ? filterLink : null;
                         }
                         // search for the control owning the row that owns the lookup
+                        var targetLFieldName
                         var targetLField = null;
                         var targetLiquid = null;
                         if (isDef(liquid.sourceData.idColumnLinkedFields)) {
@@ -15122,13 +15124,28 @@ var Liquid = {
                         return liquid.tableJson.layouts[ig];
         return null;
     },
-    getLayoutCoords: function (liquid, obj) {
-        if (liquid && obj) {
+    getLayoutCoords: function (liquidOrControlId, obj) {
+        if (liquidOrControlId && obj) {
+            let liquid = Liquid.getLiquid(liquidOrControlId);
             let nameItems = null;
             if (obj instanceof HTMLElement) {
                 let objId = obj.getAttribute('newid');
                 if (!objId) objId = obj.id;
-                if (objId) nameItems = objId.split(".");
+                if (objId) {
+                    nameItems = objId.split(".");
+                } else {
+                    do {
+                        obj = obj.parentNode;
+                        if(obj) {
+                            objId = obj.getAttribute('newid');
+                            if (!objId) objId = obj.id;
+                            if (objId) break;
+                        }
+                    } while(!objId && obj);
+                    if (objId) {
+                        nameItems = objId.split(".");
+                    }
+                }
             } else {
                 nameItems = obj.split(".");
             }
@@ -15158,6 +15175,22 @@ var Liquid = {
                     if (liquid.tableJson.layouts[il].name === layoutName)
                         return il + 1;
         return 0;
+    }, getLayoutField: function (liquidOrControlId, obj, colName) {
+        if (liquidOrControlId && obj) {
+            let liquid = Liquid.getLiquid(liquidOrControlId);
+            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+            if (nodes && nodes.length > 0) {
+                let layCoords = Liquid.getLayoutCoords(liquid, obj);
+                if(layCoords) {
+                    if (!isNaN(layCoords.row)) {
+                        let col = Liquid.getColumn(liquid, colName);
+                        if(col) {
+                            return nodes[layCoords.row].data[col.field];
+                        }
+                    }
+                }
+            }
+        }
     },
     loadLayoutsContent: function (liquid) {
         if (isDef(liquid.tableJson.layouts)) {
@@ -15184,7 +15217,7 @@ var Liquid = {
                                 , {key: "headerForUpdate", def: null}       // 7 - the footer when updating row
                                 , {key: "footerForUpdate", def: null}       // 8 - the footer when updating row
                                 // new templates for empty rowset
-                                , {key: "sourceForEmpty", def: "source"}    // 9 - the no rows case
+                                , {key: "sourceForEmpty", def: null}        // 9 - the no rows case
                                 , {key: "headerForEmpty", def: null}        // 10 - the header when no rows
                                 , {key: "footerForEmpty", def: null}        // 11 - the footer when no rows
                             ];
@@ -15752,7 +15785,9 @@ var Liquid = {
                     var isFormX = Liquid.isFormX(liquid);
                     var isDialogX = Liquid.isDialogX(liquid);
                     var isAutoInsert = Liquid.isAutoInsert(liquid, layout);
-                    if (isFormX || isDialogX) {
+                    // if (isFormX || isDialogX) {
+                    // Non ha senso mostrare una riga vuota se il controllo è legato alla base dati (DialogX): genera confusione
+                    if (isFormX) {
                         if (isDef(layout.nRows)) {
                             if (layout.nRows <= 0) { // all rows
                                 if (nRows <= 0) nRows = 1;
@@ -15819,9 +15854,11 @@ var Liquid = {
                     var nRowsToRender = nRows;
                     var isSorceForEmpty = false;
                     if (nRowsToRender == 0) {
-                        if (layout.templateRows[9].templateRowRootObj != null) {
-                            nRowsToRender = 1;
-                            isSorceForEmpty = true;
+                        if(isDef(layout.templateRows[9])) {
+                            if (layout.templateRows[9].templateRowRootObj != null) {
+                                nRowsToRender = 1;
+                                isSorceForEmpty = true;
+                            }
                         }
                     }
                     for (var ir = 0; ir < nRowsToRender; ir++) {
