@@ -40,9 +40,8 @@
 <!-- Strumenti di selezione -->
 <%@ include file="/liquid/liquidSelector.jsp" %>
 
-<!-- Servizio websocket
-include file="/liquid/liquidStreamer.jsp"
--->
+<!-- Servizio websocket -->
+<%@ include file="/liquid/liquidStreamer.jsp" %>
 
 
 <% workspace.enableProjectMode(out); %>

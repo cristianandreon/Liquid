@@ -2707,7 +2707,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.70,
+    version: 2.77,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
