@@ -511,7 +511,7 @@ public class metadata {
                         if (bReadDefault) {
                             // ORACLE SHIT : lettura DATA_DEFAULT
                             if ("oracle" .equalsIgnoreCase(dialet)) {
-                                String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from DBA_TAB_COLUMNS where DATA_DEFAULT is not null and TABLE_NAME = '" + table + "'";
+                                String stmtSQL = "SELECT COLUMN_NAME, DATA_DEFAULT from all_tab_cols where DATA_DEFAULT is not null and TABLE_NAME = '" + table + "'";
                                 Statement stmtc = conn.createStatement();
                                 stmtc.setFetchSize(8 * 1024);
                                 ResultSet rsc = stmtc.executeQuery(stmtSQL);
@@ -561,7 +561,7 @@ public class metadata {
             }
 
         } catch (Exception e) {
-            System.err.println("readTableMetadataBySQL() error : " + e.getMessage());
+            System.err.println("readTableMetadataBySQL() error : " + e);
         }
 
         return null;

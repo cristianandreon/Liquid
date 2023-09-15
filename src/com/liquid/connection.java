@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
@@ -657,7 +658,9 @@ public class connection {
                 String serviceSeparator = "/";
                 if(service.startsWith("/") || service.startsWith(":")) serviceSeparator = "";
                 if(host.startsWith("(")) {
-                    url = "jdbc:oracle:thin:"+user+"/"+password+"@"+host;
+                    url = "jdbc:oracle:thin:" + user + "/" + password + "@" + host;
+                } else if(host.toLowerCase(Locale.ROOT).startsWith("jdbc")) {
+                    url = host;
                 } else {
                     url = "jdbc:oracle:thin:@"+host+":"+port+((serviceName != null && !serviceName.isEmpty()) ? (serviceSeparator+serviceName) : "");
                 }
