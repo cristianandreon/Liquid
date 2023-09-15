@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.77
+// Liquid ver.2.78
 //
 //  First update 06-01-2020 - Last update 02-09-2023
 //
@@ -2805,11 +2805,11 @@ var Liquid = {
     setProjectMode: function (mode) {
         if (isDef(mode)) {
             if (mode === true) {
-                projectMode = true;
+                Liquid.projectMode = true;
                 document.addEventListener("contextmenu", ( e )=> { return true; } );
             } else if (mode === false) {
                 // document.body.style
-                projectMode = false;
+                Liquid.projectMode = false;
                 document.addEventListener("contextmenu", ( e )=> { e.preventDefault(); return false; } );
                 try {
                     document.body.style.MozUserSelect = 'none';
@@ -7715,7 +7715,7 @@ var Liquid = {
             }
             let title = "";
             var resetTooltip = Liquid.lang === 'eng' ? "Reset filter field" : "Reimposta il filtro";
-            if(projectMode) {
+            if(Liquid.projectMode) {
                 title = "Control id:" + liquid.controlId
                     + "\nTable :" + liquid.tableJson.table
                     + "\nSchema :" + liquid.tableJson.schema
