@@ -926,8 +926,6 @@ public class db {
                                                         String foreignColumnSolved = null, columnSolved = null;
                                                         if(column.indexOf("{")>=0) {
                                                             columnSolved = solveVariableField(column, recordset_params.request, true);
-                                                            if(!columnSolved.equalsIgnoreCase(column)) {
-                                                            }
                                                         } else {
                                                             // colonna eserna ? .. cerca l'alias come risultato del join
                                                             // Es : link di secondo livello
@@ -949,8 +947,6 @@ public class db {
 
                                                         if(foreignColumn.indexOf("{")>=0) {
                                                             foreignColumnSolved = solveVariableField(foreignColumn, recordset_params.request, true);
-                                                            if(!foreignColumnSolved.equalsIgnoreCase(foreignColumn)) {
-                                                            }
                                                         } else {
                                                             foreignColumnSolved = leftJoinAlias + "." + (tableIdString + foreignColumn + tableIdString);
                                                         }
@@ -8358,17 +8354,20 @@ public class db {
                         }
                         String cVar = value.substring(s, i);
                         if (!cVar.isEmpty()) {
-                            if (cVar.charAt(0) == '"') {
+                            if (cVar.charAt(0) == '"' || cVar.charAt(0) == '\'') {
+                                char endChar = cVar.charAt(0);
                                 String cVarValue = cVar.substring(1);
-                                if (cVarValue.charAt(cVarValue.length()-1) == '"') {
-                                    cVarValue = cVarValue.substring(0, cVarValue.length()-2);
+                                if (cVarValue.charAt(cVarValue.length()-1) == endChar) {
+                                    cVarValue = cVarValue.substring(0, cVarValue.length()-1);
                                 }
-                                if (cVarValue.charAt(cVarValue.length()-1) == '\\') {
-                                    cVarValue = cVarValue.substring(0, cVarValue.length()-2);
+                                if(cVarValue.length() > 0) {
+                                    if (cVarValue.charAt(cVarValue.length() - 1) == '\\') {
+                                        cVarValue = cVarValue.substring(0, cVarValue.length() - 2);
+                                    }
                                 }
                                 if (currentValue == null)
                                     currentValue = "";
-                                currentValue += cVarValue;
+                                currentValue += (endChar == '\'' ? "'":"") + cVarValue + (endChar == '\'' ? "'":"");
                                 nReplaced++;
                             } else {
                                 Object oVar = request.getSession().getAttribute(cVar);

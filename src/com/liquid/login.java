@@ -556,6 +556,9 @@ public class login {
         String schemaTable = "";
         String databaseSchemaTable = "";
 
+        String insensitiveCasePrefix = "LOWER(";
+        String insensitiveCasePostfix = ")";
+
         String out_string = "", error = "";
         Connection conn = null;
         
@@ -689,7 +692,11 @@ public class login {
                             if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
                                 sqlSTMT = "SELECT * FROM "+schemaTable+" " +
                                         "WHERE " +
-                                        "(`"+""+login_field+""+"`="+ "?" +" OR `"+email_field+"`="+ "?" +")" +
+                                        "(" +
+                                        insensitiveCasePrefix + "\"" + login_field + "\"" + insensitiveCasePostfix + "="+ "?" +
+                                        " OR " +
+                                        insensitiveCasePrefix + "\"" + email_field+"\"" + insensitiveCasePostfix + "=" + "?" +
+                                        ")" +
                                         " AND (`"+""+password_field+""+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) OR `"+""+password_field+""+"`='' OR \""+""+password_field+""+"\" is null)" +
                                         " AND (`"+"status"+"`<>'A' AND `status`<>'D' or `status` is null)" +
                                         (check_email_validated && checkEmailValidate ? " AND \"emailValidated\">0" : "") +
@@ -700,7 +707,11 @@ public class login {
                             } else if("postgres".equalsIgnoreCase(driver)) {
                                 sqlSTMT = "SELECT * FROM "+schemaTable+" " +
                                         "WHERE " +
-                                        "(\""+""+login_field+""+"\"="+ "?" +" OR \""+email_field+"\"="+ "?" +")" +
+                                        "(" +
+                                        insensitiveCasePrefix + "\"" + login_field + "\"" + insensitiveCasePostfix + "="+ "?" +
+                                        " OR " +
+                                        insensitiveCasePrefix + "\"" + email_field+"\"" + insensitiveCasePostfix + "=" + "?" +
+                                        ")" +
                                         " AND (\""+""+password_field+""+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text))" +
                                         " OR \""+""+password_field+""+"\"='' OR \""+""+password_field+""+"\" is null)" +
                                         " AND (\"status\"<>'A' AND \"status\"<>'D' OR \"status\" is null)" +
@@ -788,11 +799,25 @@ public class login {
 
                                         // MYSQL
                                         if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (`"+login_field+"`="+"?"+" OR `"+email_field+"`="+"?"+") AND `"+status_field+"`<>'A' AND `"+status_field+"`<>'D' AND `emailValidated`>=0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE " +
+                                                    "(" +
+                                                    insensitiveCasePrefix + "\"" + login_field + "\"" + insensitiveCasePostfix + "="+ "?" +
+                                                    " OR " +
+                                                    insensitiveCasePrefix + "\"" + email_field+"\"" + insensitiveCasePostfix + "=" + "?" +
+                                                    ")" +
+                                                    " AND (\""+status_field+"\"<>'A' AND \""+status_field+"\"<>'D' OR \""+status_field+"\" IS NULL)" +
+                                                    " AND `emailValidated`>=0 AND `domain_id`=" + "?" +" AND `application_id`=" + "?" + "";
 
                                         // POSTGRES
                                         } else if("postgres".equalsIgnoreCase(driver)) {
-                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE (\""+login_field+"\"="+"?"+" OR \""+email_field+"\"="+"?"+") AND \""+status_field+"\"<>'A' AND \""+status_field+"\"<>'D' AND \"emailValidated\">=0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
+                                            sqlSTMT = "SELECT * FROM "+schemaTable+" WHERE " +
+                                                    "(" +
+                                                    insensitiveCasePrefix + "\"" + login_field + "\"" + insensitiveCasePostfix + "="+ "?" +
+                                                    " OR " +
+                                                    insensitiveCasePrefix + "\"" + email_field+"\"" + insensitiveCasePostfix + "=" + "?" +
+                                                    ")" +
+                                                    " AND (\""+status_field+"\"<>'A' AND \""+status_field+"\"<>'D' OR \""+status_field+"\" IS NULL)" +
+                                                    " AND \"emailValidated\">=0  AND \"domain_id\"=" + "?" + " AND \"application_id\"=" + "?" + "";
 
                                         // ORACLE
                                         } else if("oracle".equalsIgnoreCase(driver)) {

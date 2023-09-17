@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.78
+// Liquid ver.2.79
 //
-//  First update 06-01-2020 - Last update 02-09-2023
+//  First update 06-01-2020 - Last update 17-09-2023
 //
 //  TODO : see trello.com
 //
@@ -2707,7 +2707,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.77,
+    version: 2.79,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -6378,11 +6378,11 @@ var Liquid = {
                         ) {
                             var refreshReason = "";
                             if (!bFoundSelection && selNodes && selNodes.length > 0) {
-                                reason = "unselect";
+                                refreshReason = "unselect";
                             } else if (anyFieldsChange) {
-                                reason = Liquid.cacheControl;
+                                refreshReason = "anyFieldsChange";
                             } else if (liquid.onceRefreshAll) {
-                                reason = "refreshAll";
+                                refreshReason = "refreshAll";
                             }
                             liquid.onceRefreshAll = null;
                             result.selectionChanged = true;
@@ -15149,7 +15149,7 @@ var Liquid = {
             } else {
                 nameItems = obj.split(".");
             }
-            if (nameItems && nameItems.length > 2) {
+            if (nameItems && nameItems.length >= 3) {
                 let layoutIndex = null;
                 if (!isNaN(Number(nameItems[2]))) {
                     layoutIndex = Number(nameItems[2]) - 1;
@@ -15159,10 +15159,18 @@ var Liquid = {
                 }
                 return {
                     layout: liquid.tableJson.layouts[layoutIndex],
-                    itemIndex: nameItems[4] - 1,
+                    itemIndex: (nameItems && nameItems.length >= 5 ? nameItems[4] - 1 : null),
                     layoutIndex: layoutIndex,
-                    col: nameItems[4] - 1,
-                    row: nameItems[6] - 1
+                    col: (nameItems && nameItems.length >= 5 ? nameItems[4] - 1 : null),
+                    row: (nameItems && nameItems.length >= 7 ? nameItems[6] - 1 : null)
+                };
+            } else if (nameItems && nameItems.length == 2) {
+                return {
+                    layout: (liquid.tableJson.layouts != null && liquid.tableJson.layouts.length == 1 ? liquid.tableJson.layouts[0] : null),
+                    itemIndex: (liquid.tableJson.layouts != null && liquid.tableJson.layouts.length == 1 ? 0 : null),
+                    layoutIndex: null,
+                    col: null,
+                    row: null
                 };
             }
         }
@@ -15182,10 +15190,31 @@ var Liquid = {
             if (nodes && nodes.length > 0) {
                 let layCoords = Liquid.getLayoutCoords(liquid, obj);
                 if(layCoords) {
-                    if (!isNaN(layCoords.row)) {
+                    if(nodes.length == 1 && (isNaN(layCoords.row) || layCoords.row== null)) layCoords.row = 0;
+                    if (!isNaN(layCoords.row) && layCoords.row != null) {
                         let col = Liquid.getColumn(liquid, colName);
                         if(col) {
                             return nodes[layCoords.row].data[col.field];
+                        }
+                    }
+                }
+            }
+        }
+    },
+    getLayoutRowConteiner: function (liquidOrControlId, layoutName, rowIndex) {
+        if (liquidOrControlId) {
+            let liquid = Liquid.getLiquid(liquidOrControlId);
+            if(liquid) {
+                if(liquid.tableJson.layouts) {
+                    if (liquid.tableJson.layouts.length > 0) {
+                        for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                            if (liquid.tableJson.layouts[il].name == layoutName || layoutName == undefined) {
+                                if(liquid.tableJson.layouts[il].rowsContainer) {
+                                    if (rowIndex < liquid.tableJson.layouts[il].rowsContainer.length) {
+                                        return liquid.tableJson.layouts[il].rowsContainer[rowIndex].containerObj;
+                                    }
+                                }
+                            }
                         }
                     }
                 }

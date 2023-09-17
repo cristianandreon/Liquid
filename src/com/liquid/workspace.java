@@ -36,7 +36,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.77";
+    public static String version_string = "2.79";
     public static String getGLLang() {
         return GLLang;
     }
@@ -113,10 +113,12 @@ public class workspace {
     public static ArrayList<Object> getRowsField(Object tblWrk, String params, String field) {
         ArrayList<Object> res = new ArrayList<Object>();
         JSONArray rows = workspace.getRows(tblWrk, (String) params);
-        for(int ir=0; ir<rows.length(); ir++) {
-            JSONObject row = rows.getJSONObject(ir);
-            if(row.has(field)) {
-                res.add(row.get(field));
+        if(rows != null) {
+            for (int ir = 0; ir < rows.length(); ir++) {
+                JSONObject row = rows.getJSONObject(ir);
+                if (row.has(field)) {
+                    res.add(row.get(field));
+                }
             }
         }
         return res;
