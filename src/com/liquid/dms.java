@@ -25,19 +25,80 @@ public class dms {
 
     public static final int MAX_DOWNLOAD_SIZE = 16 * 1024 * 1024;
 
+    /**
+     * get absolute file path
+     *
+     * @param fileName
+     * @param request
+     * @return
+     */
     public static String getDMSFileAbsolutePath(String fileName, HttpServletRequest request) {
-        ServletContext servletContext = request.getSession().getServletContext();
-        String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
-        String APP_CONTEXT = request.getContextPath();
-        return absoluteFilePathRoot + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
+        String dmsFTP = null, dmsFTPPublicURL = null;
+        try {
+            Class cls = Class.forName("app.liquid.dms.connection");
+            Field fFtp = cls.getDeclaredField("dmsFTP");
+            if (fFtp != null) {
+                fFtp.setAccessible(true);
+                dmsFTP = (String) fFtp.get(null);
+            }
+            Field fFtpURL = cls.getDeclaredField("dmsFTPPublicURL");
+            if (fFtpURL != null) {
+                fFtpURL.setAccessible(true);
+                dmsFTPPublicURL = (String) fFtpURL.get(null);
+            }
+        } catch (Exception e) {
+            // Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, e);
+        }
+        if(dmsFTP != null && !dmsFTP.isEmpty()) {
+            String APP_CONTEXT = request.getContextPath();
+            return dmsFTPPublicURL + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
+        } else {
+            ServletContext servletContext = request.getSession().getServletContext();
+            String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
+            String APP_CONTEXT = request.getContextPath();
+            return absoluteFilePathRoot + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
+        }
     }
 
+
+    /**
+     * get relative file path
+     *
+     * @param fileName
+     * @param request
+     * @return
+     */
     public static String getDMSFileRelativePath(String fileName, HttpServletRequest request) {
-        // get relative path
-        ServletContext servletContext = request.getSession().getServletContext();
-        String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
-        String APP_CONTEXT = request.getContextPath();
-        return fileName.replace(absoluteFilePathRoot, APP_CONTEXT + "");
+        String dmsFTP = null, dmsFTPPublicURL = null, dmsRootFolder = null;
+        try {
+            Class cls = Class.forName("app.liquid.dms.connection");
+            Field fFtp = cls.getDeclaredField("dmsFTP");
+            if (fFtp != null) {
+                fFtp.setAccessible(true);
+                dmsFTP = (String) fFtp.get(null);
+            }
+            Field fFtpURL = cls.getDeclaredField("dmsFTPPublicURL");
+            if (fFtpURL != null) {
+                fFtpURL.setAccessible(true);
+                dmsFTPPublicURL = (String) fFtpURL.get(null);
+            }
+            Field fF = cls.getDeclaredField("dmsRootFolder");
+            if (fF != null) {
+                fF.setAccessible(true);
+                dmsRootFolder = (String) fF.get(null);
+            }
+        } catch (Exception e) {
+            // Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, e);
+        }
+        if(dmsFTP != null && !dmsFTP.isEmpty()) {
+            // String APP_CONTEXT = request.getContextPath();
+            return fileName.replace(dmsRootFolder, dmsFTPPublicURL);
+        } else {
+            ServletContext servletContext = request.getSession().getServletContext();
+            String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
+            String APP_CONTEXT = request.getContextPath();
+            return fileName.replace(absoluteFilePathRoot, APP_CONTEXT + "");
+        }
     }
 
 
@@ -529,7 +590,7 @@ public class dms {
         PreparedStatement psdo = null;
         String sQuery = null;
         String sWhere = "";
-        String dmsSchema = null, dmsTable = null, dmsDocTypeTable = null, dmsRootFolder = null, dmsName = null;
+        String dmsFTP = null, dmsSchema = null, dmsTable = null, dmsDocTypeTable = null, dmsRootFolder = null, dmsName = null;
         String mode = null;
         String sRecId = null;
         long dmsMaxFileSize = 0;
@@ -565,16 +626,13 @@ public class dms {
                 dmsMaxFileSize = (long) fms.get(null);
             }
 
-            if(dmsRootFolder != null && !dmsRootFolder.isEmpty()){
-                dmsRootFolder = getAbsoluteRootPath(dmsRootFolder, request);
-                if (!utility.folderExist(dmsRootFolder)) {
-                    if(!utility.createFolder(dmsRootFolder)) {
-                        throw new Exception("Unable to create foolder : " + dmsRootFolder);
-                    }
-                }
-            } else {
-                throw new InvalidParameterException("'dmsRootFolder' not set in 'app.liquid.dms.connection'");
+            Field fFtp = cls.getDeclaredField("dmsFTP");
+            if(fFtp != null) {
+                fFtp.setAccessible(true);
+                dmsFTP = (String) fFtp.get(null);
             }
+
+
 
 
             JSONObject paramsJson = new JSONObject((String)params);
@@ -654,8 +712,28 @@ public class dms {
                     if (fileContent.length > dmsMaxFileSize && dmsMaxFileSize > 0) {
                         throw new Exception("File too large .. max:" + (dmsMaxFileSize / 1024) + "Kb");
                     }
-                    Files.write(Paths.get(fileAbsolutePath), fileContent);
-                    paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
+
+                    if(dmsFTP != null && !dmsFTP.isEmpty()) {
+                        ftp.setByURL(dmsFTP);
+                        if(!ftp.upload(fileContent, fileAbsolutePath.substring(dmsRootFolder.length()))) {
+                            throw new Exception("Unable to upload file to ftp");
+                        }
+                        paramJson.put("hash", utility.get_file_content_md5(fileContent));
+                    } else {
+                        if(dmsRootFolder != null && !dmsRootFolder.isEmpty()){
+                            dmsRootFolder = getAbsoluteRootPath(dmsRootFolder, request);
+                            if (!utility.folderExist(dmsRootFolder)) {
+                                if(!utility.createFolder(dmsRootFolder)) {
+                                    throw new Exception("Unable to create foolder : " + dmsRootFolder);
+                                }
+                            }
+                        } else {
+                            throw new InvalidParameterException("'dmsRootFolder' not set in 'app.liquid.dms.connection'");
+                        }
+                        Files.write(Paths.get(fileAbsolutePath), fileContent);
+                        paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
+                    }
+
                 } else {
                     // paramJson.put("hash", null);
                     throw new Exception("File content not valid! Please check it's base 64 encoded");
@@ -663,9 +741,12 @@ public class dms {
             } else if(paramJson.has("filePath")) {
                 // Link a file esistente
                 fileAbsolutePath = paramJson.getString("filePath");
-                File f = new File(fileAbsolutePath);
-                if(!f.exists()) {
-                    throw new Exception("File "+fileAbsolutePath+" not exist");
+                if(dmsFTP != null && !dmsFTP.isEmpty()) {
+                } else {
+                    File f = new File(fileAbsolutePath);
+                    if (!f.exists()) {
+                        throw new Exception("File " + fileAbsolutePath + " not exist");
+                    }
                 }
                 paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
 
@@ -883,7 +964,6 @@ public class dms {
                         }
                     }
                 }
-
             }
 
         } catch (Throwable e) {
@@ -1042,7 +1122,7 @@ public class dms {
         String sQuery = null;
         String sWhere = "";
         String error = null;
-        String dmsSchema = null, dmsTable = null, dmsDocType = null;
+        String dmsFTP = null, dmsSchema = null, dmsTable = null, dmsDocType = null, dmsRootFolder = null;
         int nRecs = 0;
         String file = null, date = null, note = null, type = null, link = null, hash = null, id = null, doc_type = null, doc_type_desc = null, user_data = null;
         long size = 0;
@@ -1065,6 +1145,16 @@ public class dms {
             if(fdt != null) {
                 fdt.setAccessible(true);
                 dmsDocType = (String) fdt.get(null);
+            }
+            Field fFtp = cls.getDeclaredField("dmsFTP");
+            if(fFtp != null) {
+                fFtp.setAccessible(true);
+                dmsFTP = (String) fFtp.get(null);
+            }
+            Field fr = cls.getDeclaredField("dmsRootFolder");
+            if(fr != null) {
+                fr.setAccessible(true);
+                dmsRootFolder = (String) fr.get(null);
             }
 
 
@@ -1136,8 +1226,15 @@ public class dms {
                                             short_file = short_file.substring(short_file.indexOf(".F.")+3);
                                         }
                                         fileName = short_file;
+
                                         fileMimeType = Files.probeContentType(path);
-                                        fileContent = Files.readAllBytes(path);
+                                        if(dmsFTP != null && !dmsFTP.isEmpty()) {
+                                            ftp.setByURL(dmsFTP);
+                                            fileContent = ftp.download(path.toString().substring(dmsRootFolder.length()));
+                                        } else {
+                                            fileContent = Files.readAllBytes(path);
+                                        }
+
                                     } else {
                                         String err = "ERROR : File \"" + file + "\" not found";
                                         System.err.println(err);
@@ -1241,6 +1338,7 @@ public class dms {
         String sQuery = null, sQuerySel = null;
         String sWhere = "";
         String dmsSchema = null, dmsTable = null;
+        String dmsFTP = null, dmsRootFolder = null;
         int nRecs = 0;
         String delete_file_error = "";
 
@@ -1257,6 +1355,16 @@ public class dms {
             if(ft != null) {
                 ft.setAccessible(true);
                 dmsTable = (String) ft.get(null);
+            }
+            Field fFtp = cls.getDeclaredField("dmsFTP");
+            if(fFtp != null) {
+                fFtp.setAccessible(true);
+                dmsFTP = (String) fFtp.get(null);
+            }
+            Field fr = cls.getDeclaredField("dmsRootFolder");
+            if(fr != null) {
+                fr.setAccessible(true);
+                dmsRootFolder = (String) fr.get(null);
             }
 
             JSONObject paramsJson = new JSONObject((String)params);
@@ -1332,16 +1440,28 @@ public class dms {
                                     while (rsdo.next()) {
                                         String file = rsdo.getString("file");
                                         if (file != null && !file.isEmpty()) {
-                                            File f = new File(file);
-                                            if(f.exists()) {
-                                                boolean resDel = f.delete();
-                                                if (!resDel) {
+                                            if(dmsFTP != null && !dmsFTP.isEmpty()) {
+                                                ftp.setByURL(dmsFTP);
+                                                if(!ftp.delete(file.substring(dmsRootFolder.length()))) {
                                                     if (delete_file_error.length() == 0) {
                                                         delete_file_error += "{";
                                                     } else {
                                                         delete_file_error += ",";
                                                     }
                                                     delete_file_error += "[\"Failed to delete " + file + "\"]";
+                                                }
+                                            } else {
+                                                File f = new File(file);
+                                                if (f.exists()) {
+                                                    boolean resDel = f.delete();
+                                                    if (!resDel) {
+                                                        if (delete_file_error.length() == 0) {
+                                                            delete_file_error += "{";
+                                                        } else {
+                                                            delete_file_error += ",";
+                                                        }
+                                                        delete_file_error += "[\"Failed to delete " + file + "\"]";
+                                                    }
                                                 }
                                             }
                                         }
@@ -1554,4 +1674,77 @@ public class dms {
         wrk.tableJson.put("table", table);
         return wrk;
     }
+
+
+    /**
+     *
+     * @param request
+     * @return
+     * @throws Throwable
+     */
+    public String purge_dms (Object tbl_wrk, Object params, Object clientData, Object request) throws Throwable {
+        String dmsSchema = null, dmsTable = null, dmsRootFolder = null;
+
+        try {
+            // root table
+            Class cls = Class.forName("app.liquid.dms.connection");
+            Field fs = cls.getDeclaredField("dmsSchema");
+            if (fs != null) {
+                fs.setAccessible(true);
+                dmsSchema = (String) fs.get(null);
+            }
+            Field ft = cls.getDeclaredField("dmsTable");
+            if (ft != null) {
+                ft.setAccessible(true);
+                dmsTable = (String) ft.get(null);
+            }
+            Field fr = cls.getDeclaredField("dmsRootFolder");
+            if (fr != null) {
+                fr.setAccessible(true);
+                dmsRootFolder = (String) fr.get(null);
+            }
+
+            if (dmsRootFolder != null && !dmsRootFolder.isEmpty()) {
+                dmsRootFolder = getAbsoluteRootPath(dmsRootFolder, (HttpServletRequest) request);
+                if (!utility.folderExist(dmsRootFolder)) {
+                    if (!utility.createFolder(dmsRootFolder)) {
+                        throw new Exception("Unable to create foolder : " + dmsRootFolder);
+                    }
+                }
+
+                File directoryPath = new File(dmsRootFolder);
+                String contents[] = directoryPath.list();
+                Object [] connRes = connection.getDBConnection();
+                Connection conn = (Connection) connRes[0];
+                int dCount = 0;
+
+                if(conn != null) {
+                    String sQuery = "SELECT id from \"" + dmsSchema + "\".\"" + dmsTable + "\""
+                            + " WHERE file=?"
+                            + " ORDER BY date DESC";
+                    PreparedStatement psdo = conn.prepareStatement(sQuery);
+                    for(int i=0; i<contents.length; i++) {
+                        psdo.setString(1, directoryPath + "/" + contents[i]);
+                        ResultSet rsdo = psdo.executeQuery();
+                        if (rsdo != null) {
+                            if(!rsdo.next()) {
+                                // delete file
+                                // utility.deleteFile(contents[i]);
+                                System.out.println("deleting " + contents[i]);
+                                dCount++;
+                            }
+                            rsdo.close();
+                        }
+                    }
+                    psdo.close();
+                    System.out.println("No file deleted : " + dCount);
+                }
+            } else {
+                throw new InvalidParameterException("'dmsRootFolder' not set in 'app.liquid.dms.connection'");
+            }
+        } catch (Exception e) {
+        }
+        return "";
+    }
+
 }

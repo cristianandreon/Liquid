@@ -3054,9 +3054,7 @@ var Liquid = {
                         } else {
                             if (isDef(searchingNameOrObject.id)) {
                                 if (!searchingNameOrObject.id) {
-                                    while (!isDef(searchingNameOrObject.id) && searchingNameOrObject) {
-                                        searchingNameOrObject = searchingNameOrObject.parentNode;
-                                    }
+                                    while (!searchingNameOrObject.id && searchingNameOrObject) searchingNameOrObject = searchingNameOrObject.parentNode;
                                 }
                                 if (isDef(searchingNameOrObject.id)) {
                                     searchingNames = searchingNameOrObject.id.split(".");
@@ -6435,8 +6433,16 @@ var Liquid = {
                                     }
                                 }
                                 if (liquid.currentCommand && liquid.currentCommand.name === 'update') {
+                                    // Set write mode
+                                    Liquid.setLayoutsRowStateByCommand(liquid, liquid.currentCommand);
                                 } else {
-                                    Liquid.autoUpdate(liquid);
+                                    setTimeout(
+                                        function() {
+                                            Liquid.autoUpdate(liquid);
+                                            },
+                                        50
+                                    );
+                                    // let response = new Promise((resolve, reject) => { Liquid.onButton(liquid, {name: "update", isNative: true, fromToolbar: true}); });
                                 }
                             }
                         }
@@ -7508,7 +7514,9 @@ var Liquid = {
                     }
                 }
             }
+            return true;
         }
+        return false;
     },
     onResetFilters: function (obj, bInternal) {
         var retVal = false;
@@ -10190,8 +10198,16 @@ var Liquid = {
                                     liquid.currentCommand.fromToolbar = isDef(fromToobar) ? fromToobar : false;
                                     return await Liquid.onButton(liquid, command);
                                 } else {
-                                    console.error("LIQUID: Command '" + command.name + "' not accepted! current running command:" + liquid.currentCommand.name);
-                                    return;
+                                    if (!Liquid.isNativeCommand(command)) {
+                                        if (isDef(liquid.backupCommand)) {
+                                            console.error("LIQUID: Command '" + command.name + "' not accepted! current running command:" + liquid.currentCommand.name);
+                                        } else {
+                                            liquid.backupCommand = deepClone(liquid.currentCommand);
+                                            return await Liquid.onButton(liquid, command);
+                                        }
+                                    } else {
+                                        console.error("LIQUID: Command '" + command.name + "' not accepted! current running command:" + liquid.currentCommand.name);
+                                    }
                                 }
                             }
                             if (command.isNative) {
@@ -10523,6 +10539,7 @@ var Liquid = {
         var async = isDef(command) ? (isDef(command.async) ? command.async : true) : true;
         var ids = null;
 
+        command.liquid = liquid;
         if (command.name) {
             var eventName = "after_" + command.name + "";
             try {
@@ -10882,6 +10899,12 @@ var Liquid = {
                     }
                 }
                 Liquid.onButton(obj, command);
+            } else {
+                if(isDef(liquid.backupCommand)) {
+                    liquid.currentCommand = liquid.backupCommand;
+                    liquid.backupCommand = null;
+                    delete liquid.backupCommand;
+                }
             }
         }
     },
@@ -15221,6 +15244,39 @@ var Liquid = {
             }
         }
     },
+    getLayoutRowConteinerByField: function (liquidOrControlId, layoutName, fieldName, fieldValue) {
+        if (liquidOrControlId) {
+            let liquid = Liquid.getLiquid(liquidOrControlId);
+            if(liquid) {
+                if(liquid.tableJson.layouts) {
+                    if (liquid.tableJson.layouts.length > 0) {
+                        let rowIndex = -1;
+                        let col = Liquid.getColumn(liquid, fieldName);
+                        var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                        if (isDef(nodes) && nodes.length > 0) {
+                            for (var ind = 0; ind < nodes.length; ind++) {
+                                if (nodes[ind].data) {
+                                    if(nodes[ind].data[col.field] == fieldValue) {
+                                        rowIndex = ind;
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                        for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                            if (liquid.tableJson.layouts[il].name == layoutName || layoutName == undefined) {
+                                if(liquid.tableJson.layouts[il].rowsContainer) {
+                                    if (rowIndex>= 0 && rowIndex < liquid.tableJson.layouts[il].rowsContainer.length) {
+                                        return liquid.tableJson.layouts[il].rowsContainer[rowIndex].containerObj;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
     loadLayoutsContent: function (liquid) {
         if (isDef(liquid.tableJson.layouts)) {
             for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
@@ -15272,7 +15328,7 @@ var Liquid = {
                                         xhr.send();
                                         if (xhr.status === 200) {
                                             try {
-                                                if (xhr.responseText) {
+                                                if (xhr.responseText != null) {
                                                     Liquid.create_layout_from_url(liquid, layout, xhr.responseText, key, source, is, mode);
                                                 } else {
                                                     console.error("ERROR: No response reading :" + jsonURL + " of controlId:" + liquid.controlId);
@@ -15970,7 +16026,7 @@ var Liquid = {
                                         isAdding: isAdding,
                                         isUpdating: false,
                                         isDeleting: false,
-                                        isSorceForEmpty: isSorceForEmpty
+                                        isSorceForEmpty: templateRowSource == layout.templateRows[9]['source'] ? true : false
                                     });
                                 } else {
                                     layout.rowsContainer[ir] = {
@@ -15987,7 +16043,7 @@ var Liquid = {
                                         isAdding: isAdding,
                                         isUpdating: false,
                                         isDeleting: false,
-                                        isSorceForEmpty: isSorceForEmpty
+                                        isSorceForEmpty: templateRowSource == layout.templateRows[9]['source'] ? true : false
                                     };
                                 }
                             }
@@ -16611,7 +16667,7 @@ var Liquid = {
                             if (layout.rowsContainer[ir].isUpdating)
                                 return layout.templateRows[2].templateRowRootObj;
 
-                if (liquid.nRows == 0) {
+                if (liquid.nRows == 0 || layout.baseIndex1B - 1 + ir >= nodes.length) {
                     if(layout.templateRows[9]) {
                         return layout.templateRows[9].templateRowRootObj;
                     } else {
@@ -16660,7 +16716,7 @@ var Liquid = {
                         return [layout.templateRows[0][Field], true];
                     }
                 } else {
-                    if (liquid.nRows == 0) {
+                    if (liquid.nRows == 0 || layout.baseIndex1B - 1 + ir >= nodes.length) {
                         if (layout.templateRows[9]) {
                             if (layout.templateRows[9][Field]) {
                                 // source for empty
@@ -20350,10 +20406,12 @@ var Liquid = {
                             }
                         }
                     } else {
+                        var err = "setLayoutsRowStateByCommand() : missing row container on '" + liquid.controlId + "'";
                         if(Liquid.debug) {
-                            var err = "WARNING: setLayoutsRowStateByCommand() : missing row container on '" + liquid.controlId + "'";
-                            console.warn(err);
-                            Liquid.showToast(Liquid.appTitle, err, "warning");
+                            console.error(err);
+                            Liquid.showToast(Liquid.appTitle, err, "error");
+                        } else {
+                            console.error(err);
                         }
                     }
                     if(bTefreshLayout) {
@@ -25567,7 +25625,118 @@ columns:[
                 }
             }
         }
+    },
+    onRefreshPages:function(rootObjId, controlId, curPage, numPages, maxPages) {
+        let totPages = maxPages;
+        let obj = document.getElementById(rootObjId);
+        if(obj) {
+            obj.innerHTML = "";
+            if(numPages > 0) {
+                if (curPage + 1 + maxPages < numPages) {
+                    totPages -= 2;
+                }
+                if (curPage + 1 >= totPages) {
+                    totPages -= 2;
+                }
+                let newObj = document.createElement("button");
+                newObj.className = "btn btn-primary btn-prev";
+                newObj.innerHTML = "&laquo;";
+                newObj.id = "prev-pages";
+                newObj.onclick = function () {
+                    curPage -= totPages;
+                    if (curPage < 0) curPage = 0;
+                    let usr = Liquid.getLiquid(controlId);
+                    Liquid.gotoPage(usr, curPage);
+                }
+                newObj.disabled = curPage == 0 ? "disabled" : "";
+                obj.appendChild(newObj);
+
+                if (curPage + 1 >= totPages) {
+                    newObj = document.createElement("button");
+                    newObj.className = "btn btn-page";
+                    newObj.innerHTML = "1";
+                    newObj.id = "last-pages";
+                    newObj.onclick = function () {
+                        let usr = Liquid.getLiquid(controlId);
+                        Liquid.gotoPage(usr, 0);
+                    }
+                    obj.appendChild(newObj);
+
+                    newObj = document.createElement("button");
+                    newObj.className = "btn btn-page";
+                    newObj.innerHTML = "...";
+                    newObj.id = "empty-first-pages";
+                    // newObj.disabled = true;
+                    newObj.onclick = function () {
+                    }
+                    obj.appendChild(newObj);
+                }
+
+                let startPage = Math.floor((curPage + 1) / totPages) * totPages - 1;
+                if (startPage + totPages > numPages) startPage = numPages - totPages;
+                if (startPage < 0) startPage = 0;
+
+                for (let i = 0; i < totPages; i++) {
+                    newObj = document.createElement("button");
+                    newObj.className = "btn btn-page " + (curPage == startPage + i ? " active" : "");
+                    newObj.innerHTML = "<span>" + (startPage + i + 1) + "</span>";
+                    newObj.id = "page" + (startPage + i + 1);
+                    newObj.onclick = function () {
+                        let usr = Liquid.getLiquid(controlId);
+                        Liquid.gotoPage(usr, Number(this.id.substring(4)) - 1);
+                    }
+                    obj.appendChild(newObj);
+                    if (startPage + i + 1 >= curPage + maxPages) {
+                        break;
+                    }
+                    if (startPage + i + 1 >= numPages) {
+                        break;
+                    }
+                }
+
+                if (curPage + maxPages < numPages) {
+                    newObj = document.createElement("button");
+                    newObj.className = "btn btn-page";
+                    newObj.innerHTML = "...";
+                    newObj.id = "empty-last-pages";
+                    // newObj.disabled = true;
+                    newObj.onclick = function () {
+                    }
+                    obj.appendChild(newObj);
+
+                    newObj = document.createElement("button");
+                    newObj.className = "btn btn-page";
+                    newObj.innerHTML = numPages;
+                    newObj.id = "last-page";
+                    newObj.onclick = function () {
+                        let usr = Liquid.getLiquid(controlId);
+                        Liquid.gotoPage(usr, numPages - 1);
+                    }
+                    obj.appendChild(newObj);
+                }
+
+
+                newObj = document.createElement("button");
+                newObj.className = "btn btn-primary btn-prev";
+                newObj.innerHTML = "&raquo;";
+                newObj.id = "next-pages";
+                newObj.disabled = curPage + 1 >= numPages ? "disabled" : "";
+                newObj.onclick = function () {
+                    curPage = startPage + totPages;
+                    if (curPage >= numPages) curPage = numPages - 1;
+                    if (curPage < 0) curPage = 0;
+                    let usr = Liquid.getLiquid(controlId);
+                    Liquid.gotoPage(usr, curPage);
+                }
+                obj.appendChild(newObj);
+            } else {
+                // nessun risultato
+            }
+        } else {
+            console.error("root object not found");
+        }
     }
+
 };
 
 

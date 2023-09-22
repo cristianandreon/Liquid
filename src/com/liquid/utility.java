@@ -59,6 +59,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class utility {
 
@@ -2305,7 +2307,18 @@ public class utility {
         }
         return parametersString;
     }
-    public static  Map<String, String> hash_map_object_to_string(Map<String, Object> params) {
+
+    public static Map<String, String> query_string_to_hash_map(String query) {
+        Pattern pat = Pattern.compile("([^&=]+)=([^&]*)");
+        Matcher matcher = pat.matcher(query);
+        Map<String, String> map = new HashMap<>();
+        while (matcher.find()) {
+            map.put(matcher.group(1), matcher.group(2));
+        }
+        return map;
+    }
+
+    public static Map<String, String> hash_map_object_to_string(Map<String, Object> params) {
         Map<String, String> parametersString = new HashMap<String, String>();
         for (String k : params.keySet() ) {
             parametersString.put(k, String.valueOf(params.get(k)));
@@ -2436,6 +2449,15 @@ public class utility {
         Path path = new File(filePath).toPath();
         if (path != null) {
             return Paths.get(filePath).getFileName().toString();
+        } else {
+            return null;
+        }
+    }
+    public static String get_file_folder(String filePath) {
+        Path path = new File(filePath).toPath();
+        if (path != null) {
+            Path parent = Paths.get(filePath).getParent();
+            return parent != null ? parent.toString() : "";
         } else {
             return null;
         }
