@@ -6656,7 +6656,7 @@ var Liquid = {
                 if (!isDef(liquid.curFilter)) liquid.curFilter = 0;
                 if (liquid.curFilter < 0) liquid.curFilter = 0;
 
-                Liquid.onEventSync(liquid, "onFiltering", ids);
+                Liquid.onEventSync(liquid, "onFiltering", liquid.filtersJson);
                 if(!isDef(liquid.filtersChanges)) liquid.filtersChanges = 0;
                 liquid.filtersChanges = 0;
 
