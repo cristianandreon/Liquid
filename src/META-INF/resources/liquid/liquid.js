@@ -894,7 +894,7 @@ class LiquidCtrl {
                                     if (validateResult !== null) {
                                         if (validateResult[0] >= 0) {
                                             event.newValue = validateResult[1];
-                                            Liquid.registerFieldChange(liquid, event.node.id, event.node.data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], event.column.colId, event.oldValue, event.newValue);
+                                            Liquid.registerFieldChange(liquid, null, event.node.data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], event.column.colId, event.oldValue, event.newValue);
                                             Liquid.updateDependencies(liquid, liquid.tableJson.columns[iCol], null, event);
                                             console.debug("onCellValueChanged(): NOT mirror event")
                                         } else {
@@ -2301,7 +2301,11 @@ class LiquidCtrl {
                                 Liquid.onExecuteFilter(this, true);
                                 hasLoadedData = true;
                             }
-                        } else if(Liquid.cleanData) { this.gridOptions.api.setRowData(null); this.gridOptions.api.clearFocusedCell(); this.lastSelectedId = null; }
+                        } else if(Liquid.cleanData) {
+                            this.gridOptions.api.setRowData(null);
+                            this.gridOptions.api.clearFocusedCell();
+                            this.lastSelectedId = null;
+                        }
                     }
 
                     // need to build params map
@@ -4564,7 +4568,7 @@ var Liquid = {
                 for (var im = 0; im < liquid.modifications.length; im++) {
                     var modification = liquid.modifications[im];
                     if (modification) {
-                        if (modification.rowId === rowId && modification.nodeId === nodeId) {
+                        if (modification.rowId === rowId && modification.nodeId === nodeId || nodeId == null) {
                             recFound = modification;
                             if (modification.fields) {
                                 for (var iF = 0; iF < modification.fields.length; iF++) {
@@ -4590,14 +4594,14 @@ var Liquid = {
                         liquid.modifications.push({
                             nodeId: nodeId,
                             rowId: rowId,
-                            fields: [{field: field, value: newValue}]
+                            fields: [{field: field, name:liquid.tableJson.columns[Number(field)-1].name, value: newValue}]
                         });
                     } else {
                         console.error("ERROR: unable to modify node by primary key:" + rowId);
                     }
                 } else {
                     if (!fieldFound)
-                        recFound.fields.push({field: field, value: newValue});
+                        recFound.fields.push({field: field, name:liquid.tableJson.columns[Number(field)-1].name, value: newValue});
                     else
                         fieldFound.value = newValue;
                 }
@@ -5298,7 +5302,9 @@ var Liquid = {
                                     try {
                                         // \b \f \n \r \t
                                         var responseText = Liquid.getXHRResponse(liquid.xhr.responseText);
-                                        responseText = responseText ? responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : responseText;
+                                        // responseText = responseText ? responseText.replace(/.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : responseText;
+                                        // responseText = responseText ? responseText.replace(/[!@#$^&%*()+=[\]/{}|:<>?,.\\-]/g, '') : responseText;
+                                        responseText = Liquid.sanitize_json_string(responseText);
                                         httpResultJson = JSON.parse(responseText);
                                         command.response = httpResultJson;
                                         if (httpResultJson) {
@@ -6216,8 +6222,9 @@ var Liquid = {
 
                 try {
                     // \b \f \n \r \t
-                    var responseText = xhr.responseText ? xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : xhr.responseText;
-                    responseText = responseText.substring(0, responseText.lastIndexOf("}") + 1);
+                    // var responseText = xhr.responseText ? xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : xhr.responseText;
+                    var responseText = Liquid.sanitize_json_string(xhr.responseText);
+                    responseText = responseText ? responseText.substring(0, responseText.lastIndexOf("}") + 1) : responseText;
 
 
                     // Initially selected by server
@@ -6910,7 +6917,9 @@ var Liquid = {
                         , callbackParam
                     );
 
-                    liquid.gridOptions.api.showLoadingOverlay();
+                    try {
+                        liquid.gridOptions.api.showLoadingOverlay();
+                    } catch(e) {}
                     if (liquid.tableJson.loadDataSync === true) {
                         // liquid.xhr.send(sFiltersJson);
                         // onreadystatechange(liquid);
@@ -7359,7 +7368,11 @@ var Liquid = {
      * @return {} n/d
      */
     doSearch: function (obj) {
-        return Liquid.onExecuteFilter(obj, true);
+        let liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            liquid.cPage = 0;
+            return Liquid.onExecuteFilter(liquid, true);
+        }
     },
     /**
      * Execute the filter
@@ -10349,8 +10362,10 @@ var Liquid = {
             if (xhr.status === 200) {
                 try {
                     // \b \f \n \r \t
-                    var responseText = xhr.responseText ? xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : xhr.responseText;
-                    responseText = Liquid.getXHRResponse(responseText);
+                    // var responseText = xhr.responseText ? xhr.responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\r\f])/g, "\\f").replace(/(?:[\r\b])/g, "\\b") : xhr.responseText;
+                    let responseText = Liquid.getXHRResponse(xhr.responseText);
+                    // responseText = responseText ? responseText.replace(/[!@#$^&%*()+=[\]/{}|:<>?,.\\-]/g, '') : responseText;
+                    responseText = Liquid.sanitize_json_string(responseText);
                     if (responseText) {
                         httpResultJson = JSON.parse(responseText);
                         command.response = liquidCommandParams.response = httpResultJson;
@@ -12711,7 +12726,10 @@ var Liquid = {
                     command.step = Liquid.CMD_EXECUTE;
                 }
                 if (command.step === Liquid.CMD_EXECUTE) {
+                    var eventName = "before_" + command.name;
                     var liquidCommandParams = await Liquid.buildCommandParams(liquid, command, obj);
+                    eventName = eventName.toCamelCase();
+                    Liquid.onEventSync(obj, eventName, null, null, liquidCommandParams);
                     retVal = Liquid.onCommandStart(liquidCommandParams);
                     command.step = 0;
                     return retVal;
@@ -15946,6 +15964,16 @@ var Liquid = {
                             }
                         }
                     }
+
+                    let emptyTtemplateRowSource = null;
+                    if(isDef(layout.templateRows)) {
+                        if (isDef(layout.templateRows[9])) {
+                            if (layout.templateRows[9].templateRowRootObj != null) {
+                                emptyTtemplateRowSource = layout.templateRows[9]['source'];
+                            }
+                        }
+                    }
+
                     for (var ir = 0; ir < nRowsToRender; ir++) {
                         var templateRowSourceResult = Liquid.getTemplateRowSource(liquid, layout, layout.baseIndex1B - 1 + ir);
                         var templateRowRootObj = Liquid.getTemplateRowNode(liquid, layout, layout.baseIndex1B - 1 + ir);
@@ -15991,7 +16019,7 @@ var Liquid = {
                                 let flexRatio = 100;
                                 if(layout.nCols>0)
                                     flexRatio = 100 / layout.nCols;
-                                rowObj.style.flex = flexRatio + "%";
+                                rowObj.style.flex = "0 0 "+flexRatio + "%";
                             } else {
                                 rowObj.style.display = "block";
                             }
@@ -16026,7 +16054,7 @@ var Liquid = {
                                         isAdding: isAdding,
                                         isUpdating: false,
                                         isDeleting: false,
-                                        isSorceForEmpty: templateRowSource == layout.templateRows[9]['source'] ? true : false
+                                        isSorceForEmpty: templateRowSource == emptyTtemplateRowSource && emptyTtemplateRowSource ? true : false
                                     });
                                 } else {
                                     layout.rowsContainer[ir] = {
@@ -16043,7 +16071,7 @@ var Liquid = {
                                         isAdding: isAdding,
                                         isUpdating: false,
                                         isDeleting: false,
-                                        isSorceForEmpty: templateRowSource == layout.templateRows[9]['source'] ? true : false
+                                        isSorceForEmpty: templateRowSource == emptyTtemplateRowSource && emptyTtemplateRowSource ? true : false
                                     };
                                 }
                             }
@@ -16264,7 +16292,9 @@ var Liquid = {
         // startup currencies fields
         try {
             let obj = $('input.liquidCurrency');
-            if(obj) obj.currencyInput();
+            if(obj)
+                if(isDef(obj.currencyInput))
+                    obj.currencyInput();
         } catch(e) {
         }
     },
@@ -20411,7 +20441,7 @@ var Liquid = {
                             console.error(err);
                             Liquid.showToast(Liquid.appTitle, err, "error");
                         } else {
-                            console.error(err);
+                            console.warn(err);
                         }
                     }
                     if(bTefreshLayout) {
@@ -25735,6 +25765,40 @@ columns:[
         } else {
             console.error("root object not found");
         }
+    },
+    clone:function(liquidOrControlId, newControlId) {
+        var liquid = Liquid.getLiquid(liquidOrControlId);
+        if (liquid) {
+            let controlId = isDef(newControlId) ? newControlId : liquid.controlId + "_clone";
+            var newLiquid = Liquid.getLiquid(controlId);
+            if(!newLiquid) {
+                newLiquid = deepClone(liquid);
+            }
+            newLiquid.controlId = controlId;
+            newLiquid.gridOptions.api.setRowData(null);
+            newLiquid.gridOptions.api.clearFocusedCell();
+            newLiquid.lastSelectedId = null;
+            return newLiquid;
+        }
+    },
+    resetData:function(liquidOrControlId) {
+        var liquid = Liquid.getLiquid(liquidOrControlId);
+        if (liquid) {
+            liquid.gridOptions.api.setRowData(null);
+            liquid.gridOptions.api.clearFocusedCell();
+        }
+    },
+    downloadURL:function(url) {
+        var anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = url;
+        // document.body.appendChild(anchor);
+        anchor.click();
+    },
+    sanitize_json_string:function(responseText) {
+        // return responseText ? responseText.replace(/[!@#$^&%*()+=[\]\/{}|:<>?,.\\-]/g, '') : responseText;
+        // return responseText ? responseText.replace(/[\uE000-\uF8FF]/g, '') : responseText;
+        return responseText ? responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\f])/g, "\\f").replace('', "") : responseText;
     }
 
 };

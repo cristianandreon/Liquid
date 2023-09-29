@@ -1263,6 +1263,14 @@ public class db {
                                 }
 
                                 if (filtersCols != null) {
+
+                                    // On filtering (server side)
+                                    String sNewRequestJson = event.on_server_filtering(tbl_wrk, requestJson.toString(), null, recordset_params.request);
+                                    if(sNewRequestJson != null) {
+                                        requestJson = new JSONObject(sNewRequestJson);
+                                        filtersCols = requestJson.getJSONArray("filtersJson");
+                                    }
+
                                     //
                                     // N.B.: filtersCols continene le definizioni del filtro impacchettate dal client
                                     //
@@ -1470,7 +1478,15 @@ public class db {
                             JSONArray cols = tbl_wrk.tableJson.getJSONArray("columns");
                             for (int i = 0; i < sortColumns.length(); i++) {
                                 String sortColumn = sortColumns.getString(i);
-                                String sortColumnAlias = itemIdString + sortColumn + itemIdString;
+                                String sortColumnAlias = null;
+                                boolean isColumn = false;
+
+                                if(workspace.get_column(table, tbl_wrk.tableJson.getJSONArray("columns"),null, sortColumn) > 0) {
+                                    sortColumnAlias = itemIdString + sortColumn + itemIdString;
+                                    isColumn = true;
+                                } else {
+                                    sortColumnAlias = sortColumn;
+                                }
 
                                 if (isOracle || isPostgres || isMySQL || isSqlServer) { // need column alias
                                     for (int ic = 0; ic < cols.length(); ic++) {
@@ -1522,7 +1538,8 @@ public class db {
                                         if (sortColumnsMode != null && sortColumnsMode.length() > i) {
                                             sSort += " " + sortColumnsMode.getString(i);
                                         } else {
-                                            sSort += " ASC";
+                                            if(isColumn)
+                                                sSort += " ASC";
                                         }
                                     }
                                 }
@@ -2242,7 +2259,8 @@ public class db {
             if("ALIAS".equalsIgnoreCase(Mode)) {
                 columnSolved = "A_" + column_name;
             } else {
-                columnSolved = column_name;
+                columnSolved = (table != null && !table.isEmpty() ? tableIdString + table + tableIdString + "." : "")
+                        + (tableIdString + column_name + tableIdString);
             }
         }
         return columnSolved;
@@ -2654,6 +2672,9 @@ public class db {
                                 }
 
                             } else {
+                                filterValue = null;
+                                oFilterValue = null;
+                                localFilterDisabled = true;
                                 String err = " Filters Error: column '" + filterName + "' not defined on control " + tbl_wrk.controlId + "]";
                                 error += err;
                                 System.err.println(err);
@@ -2675,6 +2696,9 @@ public class db {
                                     System.err.println(err);
                                 }
                             } else {
+                                filterValue = null;
+                                oFilterValue = null;
+                                localFilterDisabled = true;
                                 String err = " Filters Error: column '" + filterName + "' not found on control " + tbl_wrk.controlId + "]";
                                 error += err;
                                 System.err.println(err);
@@ -3375,7 +3399,11 @@ public class db {
                                                     fieldValue = String.format(Locale.US, "%.4f", dFieldValue);
                                                 } else {
                                                     nf.setGroupingUsed(false);
-                                                    nf.setMaximumFractionDigits(colDigits[ic]);
+                                                    if(colDigits[ic] != 0) {
+                                                        nf.setMaximumFractionDigits(colDigits[ic]);
+                                                    } else if(colPrecs[ic] != 0) {
+                                                        nf.setMaximumFractionDigits(colPrecs[ic]);
+                                                    }
                                                     fieldValue = nf.format(dFieldValue);
                                                 }
                                                 if (ic > 0) out_string.append(",");

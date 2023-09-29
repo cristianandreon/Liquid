@@ -2730,4 +2730,37 @@ public class event {
         return new Object[] { (Object) result, (Object) nRecs, error != null ? utility.base64Encode(error) : null };
     }
 
+
+    static public String on_server_filtering(Object tbl_wrk, Object params, Object clientData, Object requestParam) throws Exception {
+        String retVal = null;
+        if (tbl_wrk != null) {
+            workspace liquid = (workspace) tbl_wrk;
+            JSONObject eventJson = clientData != null ? new JSONObject((String) clientData) : null;
+            JSONArray events = liquid.tableJson.getJSONArray("events");
+            if (events != null) {
+                for (int ievt = 0; ievt < events.length(); ievt++) {
+                    JSONObject event = events.getJSONObject(ievt);
+
+                    String uname = event.has("name") ? event.getString("name") : "";
+                    String uServer = event.has("server") ? event.getString("server") : "";
+                    Object uClient = event.has("client") ? event.get("client") : null;
+                    if ("onServerFiltering".equalsIgnoreCase(uname)) {
+                        // event to execute
+                        if (uServer != null && !uServer.isEmpty()) {
+                            // get instance and method
+                            Object[] result = get_method_by_class_name(uServer, liquid, null);
+                            Object classInstance = result[0];
+                            Method method = (Method) result[1];
+                            if (classInstance != null && method != null) {
+                                retVal = (String) method.invoke(classInstance, (Object) liquid, (Object) params, (Object) clientData, (Object) requestParam);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return retVal;
+    }
+
+
 }

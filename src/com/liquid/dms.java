@@ -50,8 +50,9 @@ public class dms {
             // Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, e);
         }
         if(dmsFTP != null && !dmsFTP.isEmpty()) {
-            String APP_CONTEXT = request.getContextPath();
-            return dmsFTPPublicURL + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
+            // String APP_CONTEXT = request.getContextPath();
+            // return dmsFTPPublicURL + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
+            return dmsFTPPublicURL;
         } else {
             ServletContext servletContext = request.getSession().getServletContext();
             String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
@@ -92,7 +93,11 @@ public class dms {
         }
         if(dmsFTP != null && !dmsFTP.isEmpty()) {
             // String APP_CONTEXT = request.getContextPath();
-            return fileName.replace(dmsRootFolder, dmsFTPPublicURL);
+            if(fileName.startsWith(dmsFTPPublicURL)) {
+                return fileName;
+            } else {
+                return fileName.replace(dmsRootFolder, dmsFTPPublicURL);
+            }
         } else {
             ServletContext servletContext = request.getSession().getServletContext();
             String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
@@ -590,7 +595,7 @@ public class dms {
         PreparedStatement psdo = null;
         String sQuery = null;
         String sWhere = "";
-        String dmsFTP = null, dmsSchema = null, dmsTable = null, dmsDocTypeTable = null, dmsRootFolder = null, dmsName = null;
+        String dmsFTP = null, dmsFTPPublicURL = null, dmsSchema = null, dmsTable = null, dmsDocTypeTable = null, dmsRootFolder = null, dmsName = null;
         String mode = null;
         String sRecId = null;
         long dmsMaxFileSize = 0;
@@ -630,6 +635,11 @@ public class dms {
             if(fFtp != null) {
                 fFtp.setAccessible(true);
                 dmsFTP = (String) fFtp.get(null);
+            }
+            Field fFtpURL = cls.getDeclaredField("dmsFTPPublicURL");
+            if (fFtpURL != null) {
+                fFtpURL.setAccessible(true);
+                dmsFTPPublicURL = (String) fFtpURL.get(null);
             }
 
 
@@ -718,6 +728,9 @@ public class dms {
                         if(!ftp.upload(fileContent, fileAbsolutePath.substring(dmsRootFolder.length()))) {
                             throw new Exception("Unable to upload file to ftp");
                         }
+                        if(fileAbsolutePath.startsWith(dmsRootFolder))
+                            fileAbsolutePath = fileAbsolutePath.substring(dmsRootFolder.length());
+                        fileAbsolutePath = dmsFTPPublicURL + File.separator + fileAbsolutePath;
                         paramJson.put("hash", utility.get_file_content_md5(fileContent));
                     } else {
                         if(dmsRootFolder != null && !dmsRootFolder.isEmpty()){

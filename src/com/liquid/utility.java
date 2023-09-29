@@ -2478,6 +2478,15 @@ public class utility {
         return str;
     }
 
+    public static String get_temp_file() throws IOException {
+        Path tf = Files.createTempFile("LiquidTempFile", ".file");
+        return tf.toString();
+    }
+
+    public static String get_file_extension(String fileName) {
+        return fileName != null ? fileName.substring(fileName.indexOf(".")+1) : null;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
@@ -2598,15 +2607,15 @@ public class utility {
             for (int i = 0; i < beans.size(); i++) {
                 String code = (codeColumn != null ? String.valueOf(utility.getEx(beans.get(i), codeColumn)) : null);
                 String desc = (descColumn != null ? (String) utility.getEx(beans.get(i), descColumn) : null);
+                String svg = (svgColumn != null ? (String) utility.getEx(beans.get(i), svgColumn) : null);
                 String tooltip = (tooltipColumn != null ? (String) (utility.has(beans.get(i), tooltipColumn) ? utility.getEx(beans.get(i), tooltipColumn) : null) : null);
                 out += "<option " +
                         (iCurrent == i+1 ? "selected " : "") +
-                        "data-id=\""+code+"\" " +
                         "data-code=\""+code+"\" " +
-                        "name=\""+desc+"\" " +
+                        "name=\""+(descColumn != null ? descColumn : "")+"\" " +
                         "" + (tooltip != null ? "title=\"" + tooltip.replace("\"", "'") +"\"" : "") +
                         (codeHidden ? "" : "value=\"" + code + "\" ") +
-                        ">" + desc + "</option>";
+                        ">" + desc + "</option><img src=\""+svg+"\"/>";
             }
         }
         out += "</datalist>";
@@ -2627,6 +2636,120 @@ public class utility {
         }
         return out;
     }
+
+
+    /**
+     * @param inputId             ID of the control (code)
+     * @param databaseSchemaTable
+     * @param codeColumn          Code field in the database
+     * @param descColumn          Description field in the database
+     * @param tooltipColumn       Tooltip field in the database
+     * @param svgColumn
+     * @param where
+     * @param order
+     * @param emptyRow            Show empty row (emptyRow define the code of the option element)
+     * @param currentValue        current code value (as selected)
+     * @param chacheIt
+     * @return
+     * @throws Throwable
+     */
+    public static String get_list_from_table(String inputId, String databaseSchemaTable,
+                                                 String codeColumn, String descColumn, String tooltipColumn, String svgColumn,
+                                                 String where, String order,
+                                                 String emptyRow,
+                                                 String currentValue,
+                                                 String rowClass, String svgClass, String descClass,
+                                                 boolean chacheIt,
+                                                 boolean includeInput) throws Throwable {
+        String out = "";
+        String datalistId = inputId+".list";
+        String descId = inputId+".desc";
+        ArrayList<Object> beans = null;
+        DataListCache dataListCache = get_datalist_from_cahce(databaseSchemaTable, codeColumn, descColumn, where);
+        if (dataListCache != null) {
+            beans = dataListCache.beans;
+        } else {
+            beans = bean.load_beans(databaseSchemaTable, null, (where != null && !where.isEmpty() ? where : "*"), 0, order);
+        }
+        boolean codeHidden = false;
+        String [] codeColumnParts = null;
+        String idColumn = null;
+        if(codeColumn != null) {
+            /*codeColumnParts = codeColumn.split("\\|");
+            if (codeColumnParts.length > 1) {
+                codeColumn = codeColumnParts[0];
+                idColumn = codeColumnParts[1];
+                codeHidden = true;
+            }*/
+            codeHidden = true;
+        }
+
+        if(codeHidden) {
+            if(includeInput) {
+                out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + "value=\"" + "" + "\" />";
+            }
+        }
+        out += "<div " +
+                "id=\"" + datalistId + "\" " +
+                "class='liquidDatalist' "+
+                "data-inputid=\""+inputId+"\" " +
+                // (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
+                ">";
+        int iCurrent = 0;
+        if(currentValue != null) {
+            if (beans != null) {
+                for (int i = 0; i < beans.size(); i++) {
+                    String code = (codeColumn != null ? String.valueOf(utility.getEx(beans.get(i), codeColumn)) : null);
+                    if(currentValue.compareTo(code) == 0) {
+                        iCurrent = i + 1;
+                        break;
+                    }
+                }
+            }
+        }
+        if (emptyRow != null) {
+            out += "<p title=\"" + ("") + "\" " +
+                    (iCurrent == 0 ? "selected " : "") +
+                    "value=\"" + emptyRow + "\">" + " " + "</p>";
+        }
+        if (beans != null) {
+            for (int i = 0; i < beans.size(); i++) {
+                String code = (codeColumn != null ? String.valueOf(utility.getEx(beans.get(i), codeColumn)) : null);
+                String desc = (descColumn != null ? (String) utility.getEx(beans.get(i), descColumn) : null);
+                String svg = (svgColumn != null ? (String) utility.getEx(beans.get(i), svgColumn) : null);
+                String tooltip = (tooltipColumn != null ? (String) (utility.has(beans.get(i), tooltipColumn) ? utility.getEx(beans.get(i), tooltipColumn) : null) : null);
+                out += "<div class=\""+(rowClass!=null?rowClass:"")+"\">" +
+                        "<img class=\""+(svgClass!=null?svgClass:"")+"\" src=\""+svg+"\"/>" +
+                        "<p class=\""+(descClass!=null?descClass:"")+"\"" +
+                        (iCurrent == i+1 ? "selected " : "") +
+                        "data-id=\""+code+"\" " +
+                        "data-code=\""+code+"\" " +
+                        "name=\""+(descColumn != null ? descColumn : "")+"\" " +
+                        "" + (tooltip != null ? "title=\"" + tooltip.replace("\"", "'") +"\"" : "") +
+                        (codeHidden ? "" : "value=\"" + code + "\" ") +
+                        ">" + desc + "</p>" +
+                        "</div>";
+            }
+        }
+        out += "</div>";
+        if (dataListCache == null) {
+            if (chacheIt) {
+                dataListCache = new DataListCache();
+                dataListCache.databaseSchemaTable = databaseSchemaTable;
+                dataListCache.codeColumn = codeColumn;
+                dataListCache.descColumn = descColumn;
+                dataListCache.where = where;
+                dataListCache.beans = beans;
+                glDataListCache.add(dataListCache);
+            }
+        }
+        if(codeHidden) {
+            // No attavato da document ready in liquid.js
+            // out += "<script>Liquid.setupDescDatalist('" + inputId + "','" + descId + "','" + datalistId + "')</script>";
+        }
+        return out;
+    }
+
 
 
     /**
@@ -2766,6 +2889,54 @@ public class utility {
             }
 
             out = new BufferedWriter(new FileWriter(fileName));
+            out.write(fileContent);
+
+        } catch (IOException e) {
+            System.out.println("set_file_content() error: " + e.getMessage());
+            return false;
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    System.out.println("set_file_content() error: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     *
+     * @param fileName
+     * @param fileContent
+     * @return
+     */
+    public static boolean set_file_content(String fileName, byte [] fileContent) {
+        FileOutputStream out = null;
+        File f = new File(fileName);
+
+        try {
+
+            if (!f.exists()) {
+                if (f.createNewFile()) {
+                    System.out.println("File created: " + f.getName());
+                } else {
+                    System.out.println("set_file_content() connot create file: " + fileName);
+                    return false;
+                }
+            }
+            if (!f.canRead()) {
+                System.out.println("set_file_content() connot read file: " + fileName);
+                return false;
+            }
+            if (!f.canWrite()) {
+                System.out.println("set_file_content() connot write file: " + fileName);
+                return false;
+            }
+
+            out = new FileOutputStream(fileName);
             out.write(fileContent);
 
         } catch (IOException e) {

@@ -4299,6 +4299,16 @@ public class workspace {
     }
 
 
+    /**
+     * Get column index by search by key (name or field)
+     *
+     * @param table
+     * @param cols
+     * @param key
+     * @param searching
+     * @return
+     * column index (1 based)
+     */
     static public int get_column(String table, JSONArray cols, String key, String searching) {
         String[] searchColParts = searching.split("\\.");
         String searchTable = null, searchField = null;
@@ -4741,6 +4751,12 @@ public class workspace {
                                                 return String.valueOf(data.get("fieldValue"));
                                             } else {
                                                 return null;
+                                            }
+                                        }
+                                    } else if(data.has("name")) {
+                                        if (column.equalsIgnoreCase(data.getString("name"))) {
+                                            if ("userFilters".equalsIgnoreCase(column)) {
+                                                return data.toString();
                                             }
                                         }
                                     }
