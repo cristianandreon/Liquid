@@ -2487,6 +2487,41 @@ public class utility {
         return fileName != null ? fileName.substring(fileName.indexOf(".")+1) : null;
     }
 
+    public static boolean is_next_day(Timestamp timestamp) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(timestamp);
+        int day = calendar.get(Calendar.DAY_OF_YEAR);
+        Calendar tcalendar = Calendar.getInstance();
+        int today = tcalendar.get(Calendar.DAY_OF_YEAR);
+        if(today != day) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean is_next_day(Timestamp timestamp1, Timestamp timestamp2) {
+        Calendar calendar1 = Calendar.getInstance();
+        calendar1.setTime(timestamp1);
+        Calendar calendar2 = Calendar.getInstance();
+        calendar2.setTime(timestamp2);
+        if(calendar2.get(Calendar.DAY_OF_YEAR) >= calendar1.get(Calendar.DAY_OF_YEAR)+1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public static boolean is_next_week(Timestamp timestamp1, Timestamp timestamp2) {
+        Calendar calendar1 = Calendar.getInstance();
+        calendar1.setTime(timestamp1);
+        Calendar calendar2 = Calendar.getInstance();
+        calendar2.setTime(timestamp2);
+        if(calendar2.get(Calendar.DAY_OF_YEAR) >= calendar1.get(Calendar.DAY_OF_YEAR)+7) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
