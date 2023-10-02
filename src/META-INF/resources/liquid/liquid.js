@@ -29,7 +29,7 @@
 /* */
 
 //
-// Liquid ver.2.79
+// Liquid ver.2.80
 //
 //  First update 06-01-2020 - Last update 17-09-2023
 //
@@ -10373,7 +10373,11 @@ var Liquid = {
                             if (httpResultJson.client) {
                                 let clientCode = null;
                                 try {
-                                    clientCode = atob(httpResultJson.client);
+                                    if(typeof httpResultJson.client == 'function') {
+                                        clientCode = httpResultJson.client;
+                                    } else {
+                                        clientCode = atob(httpResultJson.client);
+                                    }
                                 } catch(e) {
                                     clientCode = httpResultJson.client;
                                 }
