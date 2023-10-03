@@ -10373,10 +10373,14 @@ var Liquid = {
                             if (httpResultJson.client) {
                                 let clientCode = null;
                                 try {
-                                    if(typeof httpResultJson.client == 'function') {
+                                    if(typeof window[httpResultJson.client] == 'function') {
                                         clientCode = httpResultJson.client;
                                     } else {
-                                        clientCode = atob(httpResultJson.client);
+                                        if(httpResultJson.client.endsWith('=')) {
+                                            clientCode = atob(httpResultJson.client);
+                                        } else {
+                                            clientCode = httpResultJson.client;
+                                        }
                                     }
                                 } catch(e) {
                                     clientCode = httpResultJson.client;
