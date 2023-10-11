@@ -283,7 +283,7 @@ public class dms {
      * put file by content into DMS
      *
      * @param tbl_wrk
-     * @param b64FileContent
+     * @param b64FileContentOrByteArray
      * @param fileName
      * @param fileSize
      * @param docType
@@ -305,13 +305,13 @@ public class dms {
      * @throws NoSuchMethodException
      */
     static public String uploadDocument(Object tbl_wrk,
-                                        String b64FileContent, String fileName, Long fileSize,
+                                        Object b64FileContentOrByteArray, String fileName, Long fileSize,
                                         String docType, String userData,
                                         String database, String schema, String table, String name, Object rowId,
                                         Object clientData, Object requestParam, String mode) throws Throwable {
         String result = "{ \"resultSet\":{} }", error = "", resultSet = "";
         try {
-            if (tbl_wrk != null && b64FileContent != null) {
+            if (tbl_wrk != null && b64FileContentOrByteArray != null) {
                 workspace tblWrk = (workspace) tbl_wrk;
                 JSONObject paramsJson = new JSONObject("{\"params\":null}");
                 JSONObject dmsParamsJson = new JSONObject();
@@ -349,7 +349,13 @@ public class dms {
                         dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
                     }
 
-                    dmsParamsJson.put("content", b64FileContent != null ? b64FileContent : null);
+                    byte[] fileContentByteArray = null;
+                    if(b64FileContentOrByteArray instanceof String) {
+                        dmsParamsJson.put("content", b64FileContentOrByteArray != null ? b64FileContentOrByteArray : null);
+                    } else if (b64FileContentOrByteArray instanceof byte[]) {
+                        fileContentByteArray = (byte[])b64FileContentOrByteArray;
+                    }
+                    // collecting keys for the link
                     dmsParamsJson.put("doc_type", docType != null ? docType : null);
                     dmsParamsJson.put("user_data", userData != null ? userData : null);
                     JSONArray ids = new JSONArray();
@@ -357,7 +363,12 @@ public class dms {
                     dmsParamsJson.put("ids", ids);
                     dmsParamsJson.put("mode", mode);
                     paramsJson.put("params", dmsParamsJson);
-                    return uploadDocument(tbl_wrk, paramsJson.toString(), clientData, requestParam);
+
+                    // return uploadDocument(tbl_wrk, paramsJson.toString(), clientData, requestParam);
+                    ArrayList<String> keyList = utility.get_dms_keys(tblWrk, (Object) paramsJson.toString());
+                    if(keyList != null) {
+                        return uploadDocumentDefault(tbl_wrk, paramsJson.toString(), clientData, requestParam, keyList, fileContentByteArray);
+                    }
                 }
             }
         } catch(Throwable th){
@@ -578,7 +589,9 @@ public class dms {
     }
 
 
-
+    static public String uploadDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam, Object keyListParam) throws Throwable {
+        return uploadDocumentDefault( tbl_wrk, params, clientData, requestParam, keyListParam, null);
+    }
     /**
      * Default upload file into DMS implementation : set file name, write file, create row in DB
      *
@@ -588,7 +601,7 @@ public class dms {
      * @param requestParam  (Campo link nel DB; elenco identificatori ArrayList<String> per identificare i records ai quali il doc è collegato)
      * @return
      */
-    static public String uploadDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam, Object keyListParam ) throws Throwable {
+    static public String uploadDocumentDefault( Object tbl_wrk, Object params, Object clientData, Object requestParam, Object keyListParam, byte[] content ) throws Throwable {
         HttpServletRequest request = (HttpServletRequest) requestParam;
         StringBuilder resultSet = new StringBuilder("{\"resultSet\":[");
         Connection conn = null;
@@ -654,7 +667,7 @@ public class dms {
                 dmsRootFolder += File.separator;
 
             int added = 0;
-            String fileAbsolutePath = dmsRootFolder;
+            String fileAbsolutePath = getAbsoluteRootPath(dmsRootFolder, request) + File.separator;
             // Database
             String comp = paramJson.has("database") ? paramJson.getString("database") : null;
             if(comp != null && !comp.isEmpty()) {
@@ -763,6 +776,36 @@ public class dms {
                 }
                 paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
 
+            } else if (content != null) {
+                byte[] fileContent = content;
+                if (fileContent.length > dmsMaxFileSize && dmsMaxFileSize > 0) {
+                    throw new Exception("File too large .. max:" + (dmsMaxFileSize / 1024) + "Kb");
+                }
+                if(dmsFTP != null && !dmsFTP.isEmpty()) {
+                    ftp.setByURL(dmsFTP);
+                    if(!ftp.upload(fileContent, fileAbsolutePath.substring(dmsRootFolder.length()))) {
+                        throw new Exception("Unable to upload file to ftp");
+                    }
+                    if(fileAbsolutePath.startsWith(dmsRootFolder))
+                        fileAbsolutePath = fileAbsolutePath.substring(dmsRootFolder.length());
+                    fileAbsolutePath = dmsFTPPublicURL + File.separator + fileAbsolutePath;
+                    paramJson.put("hash", utility.get_file_content_md5(fileContent));
+                } else {
+                    if(dmsRootFolder != null && !dmsRootFolder.isEmpty()){
+                        dmsRootFolder = getAbsoluteRootPath(dmsRootFolder, request);
+                        if (!utility.folderExist(dmsRootFolder)) {
+                            if(!utility.createFolder(dmsRootFolder)) {
+                                throw new Exception("Unable to create foolder : " + dmsRootFolder);
+                            }
+                        }
+                    } else {
+                        throw new InvalidParameterException("'dmsRootFolder' not set in 'app.liquid.dms.connection'");
+                    }
+                    Files.write(Paths.get(fileAbsolutePath), fileContent);
+                    paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
+                }
+
+
             } else {
                 // paramJson.put("hash", null);
                 throw new Exception("File content not defined");
@@ -824,7 +867,7 @@ public class dms {
                     }
 
                     if (conn != null) {
-                        // N.B.: one document can refers to multiple rows in table, if rowSelect is "multiple"
+                        // N.B.: one document can refres to multiple rows in table, if rowSelect is "multiple"
                         // JSONArray ids = paramJson.getJSONArray("ids");
                         ArrayList<String> keyList = null;
                         if (keyListParam != null) {
@@ -850,7 +893,7 @@ public class dms {
                                         ")";
                                 if (sQuerySel != null) {
                                     ResultSet rsdo = null;
-                                    try { // /home/ubuntu/IdeaProjects/LoveNsexWeb/target/LoveNsexWeb-1.0-SNAPSHOT/LoveNsexDMS/D.LOVENSEX.S.lovensex.T.users.R.125414.N.DMS.TK.1691070126586.F.Screenshot from 2023-07-27 18-25-19.png
+                                    try {
                                         psdo = conn.prepareStatement(sQuerySel);
                                         rsdo = psdo.executeQuery();
                                         if (rsdo != null) {

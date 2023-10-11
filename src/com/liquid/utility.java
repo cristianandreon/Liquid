@@ -4,6 +4,9 @@
 
 package com.liquid;
 
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,7 +17,6 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-import javax.crypto.Cipher;
 import javax.naming.OperationNotSupportedException;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -47,7 +49,6 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
-import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -2523,6 +2524,23 @@ public class utility {
         }
     }
 
+    /**
+     *
+     * @param str
+     * @param itemToRemove
+     * @param prefix
+     * @param postfix
+     * @param separator
+     * @return
+     */
+    public static String remove_item(String str, String itemToRemove, String prefix, String postfix, String separator) {
+        ArrayList<String> parts = new ArrayList<> (Arrays.asList(str.split(separator)));
+        if(itemToRemove != null)
+            parts.remove(itemToRemove);
+        return arrayToString(parts, prefix, postfix, separator);
+    }
+
+
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;
         public ArrayList<Object> beans = null;
@@ -2551,7 +2569,7 @@ public class utility {
 
     /**
      *
-     * @param controlId
+     * @param inputId
      * @param databaseSchemaTable
      * @param codeColumn
      * @param descColumn
@@ -2560,10 +2578,21 @@ public class utility {
      * @param chacheIt
      * @return
      */
-    public static String get_datalist_from_table(String controlId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
-        return get_datalist_from_table(controlId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, null, chacheIt, true);
+    public static String get_datalist_from_table(String inputId, String databaseSchemaTable, String codeColumn, String descColumn, String where, String emptyRow, boolean chacheIt) throws Throwable {
+        return get_datalist_from_table(inputId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, null, chacheIt, true);
     }
 
+
+    public static String get_datalist_from_table(String inputId, String databaseSchemaTable,
+                                                 String codeColumn, String descColumn, String tooltipColumn, String svgColumn,
+                                                 String where, String order,
+                                                 String emptyRow,
+                                                 String currentValue,
+                                                 boolean chacheIt,
+                                                 boolean includeInput
+    ) throws Throwable {
+        return get_datalist_from_table(inputId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, currentValue, null, chacheIt, includeInput, false);
+    }
 
     /**
      * @param inputId             ID of the control (code)
@@ -2585,8 +2614,11 @@ public class utility {
                                                  String where, String order,
                                                  String emptyRow,
                                                  String currentValue,
+                                                 String className,
                                                  boolean chacheIt,
-                                                 boolean includeInput) throws Throwable {
+                                                 boolean includeInput,
+                                                 boolean useSelect
+    ) throws Throwable {
         String out = "";
         String datalistId = inputId+".list";
         String descId = inputId+".desc";
@@ -2612,15 +2644,24 @@ public class utility {
 
         if(codeHidden) {
             if(includeInput) {
-                out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + "value=\"" + "" + "\" />";
+                out += "<input type=\"hidden\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + "value=\"" + "" + "\" />";
             }
         }
-        out += "<datalist " +
-                "id=\"" + datalistId + "\" " +
-                "class='liquidDatalist' "+
-                "data-inputid=\""+inputId+"\" " +
-                // (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
-                ">";
+        if(useSelect) {
+            out += "<select " +
+                    "id=\"" + datalistId + "\" " +
+                    "class='"+(className != null ? className : "liquidDatalist") + "' " +
+                    "data-inputid=\"" + inputId + "\" " +
+                    // (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
+                    ">";
+        } else {
+            out += "<datalist " +
+                    "id=\"" + datalistId + "\" " +
+                    "class='liquidDatalist' " +
+                    "data-inputid=\"" + inputId + "\" " +
+                    // (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
+                    ">";
+        }
         int iCurrent = 0;
         if(currentValue != null) {
             if (beans != null) {
@@ -2653,7 +2694,11 @@ public class utility {
                         ">" + desc + "</option><img src=\""+svg+"\"/>";
             }
         }
-        out += "</datalist>";
+        if(useSelect) {
+            out += "</select>";
+        } else {
+            out += "</datalist>";
+        }
         if (dataListCache == null) {
             if (chacheIt) {
                 dataListCache = new DataListCache();
@@ -2861,13 +2906,14 @@ public class utility {
             String onChange, String style,
             String className) throws Throwable {
 
-        String input = "<input class=\"auctionEditboxClass\"\n" +
+        String input = "<input\n" +
                 "id=\""+inputId+"\"\n" +
                 "type=\"text\"\n" +
                 "value=\"\"\n" +
                 "placeholder=\"\"\n" +
-                "onchange=\""+onChange+"\"\n" +
-                "style=\""+style+"\"\n" +
+                "onchange=\""+(onChange != null ? onChange : "Liquid.onSearchFilterChange(this,this)")+"\"\n" +
+                (style != null ? "style=\""+style+"\"\n" : "")+
+                (className != null ? "class=\""+className+"\"\n" : "")+
                 ">\n";
 
         String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('"+inputId+"').value) { document.getElementById('"+inputId+"').value=''; document.getElementById('"+inputId+"').placeholder=''; document.getElementById('"+inputId+"').onchange(); } else {}\"></button>";
@@ -3150,6 +3196,9 @@ public class utility {
     }
 
     public static String arrayToString(ArrayList<String> columns, String prefix, String postfix, String separator) {
+        return arrayToString(columns != null ? columns.toArray() : null, prefix, postfix, separator);
+    }
+    private static String arrayToString(List<String> columns, String prefix, String postfix, String separator) {
         return arrayToString(columns != null ? columns.toArray() : null, prefix, postfix, separator);
     }
 
@@ -3913,6 +3962,75 @@ public class utility {
         c.add(Calendar.DATE, (int)addingDays);
         c.add(Calendar.SECOND, (int)((addingDays-Math.floor(addingDays)) * 24 * 3600));
         return new Timestamp( c.getTime().getTime() );
+    }
+
+
+    /**
+     *
+     * @param request
+     * @return
+     */
+    public static ArrayList<FileItem> get_uploaded_files(HttpServletRequest request) {
+        ArrayList<FileItem> files = new ArrayList<FileItem>();
+
+        DiskFileItemFactory factory = new DiskFileItemFactory();
+        if (factory == null) {
+        }
+
+        // Create a new file upload handler
+        ServletFileUpload upload = new ServletFileUpload(factory);
+        if (upload == null) {
+        }
+
+
+        // Parse the request to get file items.
+        List fileItems = null;
+        try {
+            if (request != null) {
+                fileItems = upload.parseRequest(request);
+                if (fileItems==null) {
+                    // "upload.parseRequest(request) failed!<br>";
+                }
+            } else {
+                // "no request!<br>";
+            }
+        } catch (Exception e) {
+        }
+
+
+
+        ////////////////////////////////////////
+        // Processo parametri richiesta
+        //
+        try {
+            String uploadPath = request.getServletContext().getRealPath("") + File.separator + "UPLOAD_DIRECTORY";
+            if (request != null) {
+                if (fileItems != null) {
+                    // ImportingTable = "articoli"; // "distinte";
+                    List<FileItem> formItems = (List<FileItem>)fileItems;
+                    for (FileItem item : formItems) {
+                        if (item.isFormField()) {
+                            // Process regular form field (input type="text|radio|checkbox|etc", select, etc).
+                            String fieldname = item.getFieldName();
+                            String fieldvalue = item.getString();
+                            if (fieldname.equalsIgnoreCase("...")) {
+                            }
+                        } else {
+                            String fileName = new File(item.getName()).getName();
+                            String filePath = uploadPath + File.separator + fileName;
+                            // File storeFile = new File(filePath);
+                            // item.write(storeFile);
+                            // request.setAttribute("message", "File "+ fileName + " has uploaded successfully!");
+                            files.add(item);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // e.printStackTrace(new java.io.PrintWriter(out));
+        }
+
+        return files;
     }
 
 }

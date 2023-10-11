@@ -1485,7 +1485,11 @@ public class db {
                                     sortColumnAlias = itemIdString + sortColumn + itemIdString;
                                     isColumn = true;
                                 } else {
-                                    sortColumnAlias = sortColumn;
+                                    if("order".equalsIgnoreCase(sortColumn)) {
+                                        sortColumnAlias = itemIdString + sortColumn + itemIdString;
+                                    } else {
+                                        sortColumnAlias = sortColumn;
+                                    }
                                 }
 
                                 if (isOracle || isPostgres || isMySQL || isSqlServer) { // need column alias
@@ -1608,117 +1612,6 @@ public class db {
                 }
             }
 
-            //
-            // Applicazione Limitazione recordset
-            //
-            String limitString = "";
-            boolean canApplyLimit = true;
-            if (query != null && !query.isEmpty()) {
-                if (query.endsWith(";") || query.lastIndexOf(";") >= query.length() - 2) {
-                    canApplyLimit = false;
-                }
-                int where_index = query.toLowerCase().indexOf("where");
-                if(where_index >= 0)
-                    sWhere = query.substring(where_index);
-            }
-            if (canApplyLimit) {
-                if (!bCacheIdsInAvailable) {
-                    if (!isCrossTableService) {
-                        if (filtersIds == null) {
-                            // Il filtro sugli ID pprevale sulla paginazione
-                            if (cacheIds < 1 || (cacheIds == 2 && !bCacheIdsInAvailable)) {
-                                // no cache : read data now
-                                if (endRow > 0) {
-                                    cRow = startRow;
-                                    if (isOracle) {
-                                        executingQuery += ") WHERE ROWNUM < " + (endRow);
-                                        executingQuery = "select * from (select * from (" + executingQuery + ") WHERE ROWNUMBER > " + startRow + "";
-                                        limitString = "";
-                                    } else if (isSqlServer) {
-                                        if (sSort == null || sSort.isEmpty()) {
-                                            sSort += "ORDER BY 1";
-                                        }
-                                        limitString += "\nOFFSET " + startRow + " ROWS";
-                                        limitString += "\nFETCH NEXT " + (endRow - startRow) + " ROWS ONLY";
-                                    } else {
-                                        limitString = " LIMIT " + (endRow - startRow) + " OFFSET " + startRow + "";
-                                    }
-                                }
-                            } else {
-                                // N.B : alla prima esecuzione non può essere eseguita la limitazione perchè impedirebbe la lettura degli indici (limitazione cmw a workspace.maxRows)
-                                //      alla sucessiva escuzione il codice non passa di qua'
-                                // read now and store the cache, limit to maxRow (workspace)
-                                cRow = startRow;
-                                long maxRows = 0L;
-                                if(tbl_wrk.tableJson.has("maxRows")) {
-                                    Object oMaxRows = tbl_wrk.tableJson.get("maxRows");
-                                    if(oMaxRows instanceof Boolean) {
-                                        if((Boolean)oMaxRows == false) {
-                                            maxRows = -1;
-                                        } else {
-                                            maxRows = 1;
-                                        }
-                                    } else if(oMaxRows instanceof String) {
-                                        maxRows = Long.parseLong((String)oMaxRows);
-                                    } else {
-                                        maxRows = Long.parseLong(String.valueOf(oMaxRows));
-                                    }
-                                }
-                                if (maxRows <= 0) {
-                                     maxRows = workspace.maxRows;
-                                }
-                                if (workspace.maxRows > 0) {
-                                    if (isOracle) {
-                                        limitString = "";
-                                        if (sWhere == null || sWhere.isEmpty()) {
-                                            limitString += "\nWHERE ";
-                                        } else {
-                                            limitString += " AND ";
-                                        }
-                                        // limitString += " OFFSET "+startRow+" ROWS FETCH NEXT "+(workspace.maxRows-startRow)+" ROWS ONLY";
-                                        limitString += "ROWNUM <= " + (startRow + workspace.maxRows);
-                                        executingQuery += limitString;
-                                        executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUMBER > " + startRow + "";
-                                        limitString = "";
-                                    } else {
-                                        limitString = " LIMIT " + (workspace.maxRows) + " OFFSET " + startRow + "";
-                                    }
-                                }
-                            }
-                        }
-                        executingQuery += limitString;
-                    }
-                } else {
-                    // walk the cache : no limit
-                }
-            }
-
-
-            //
-            // Aggiunta del criterio group by
-            //
-            if (isOracle) {
-                if (query != null && !query.isEmpty()) {
-                } else {
-                    if (sGroupBy != null && !sGroupBy.isEmpty()) {
-                        executingQuery += "\n" + sGroupBy;
-                        executingQuery += "\n" + sGroupBy;
-                    }
-                }
-            }
-
-
-            //
-            // Aggiunta del criterio di ordinamento
-            //
-            if (isOracle) {
-                if (query != null && !query.isEmpty()) {
-                } else {
-                    if (sSort != null && !sSort.isEmpty()) {
-                        executingQuery += "\n" + sSort;
-                    }
-                }
-            }
 
             long maxRow = endRow - startRow;
 
@@ -1917,6 +1810,135 @@ public class db {
                 } catch (Throwable e) {
                     error += "Error:" + e.getLocalizedMessage();
                     System.err.println("// get_table_recordset() Error:" + e.getLocalizedMessage());
+                }
+            }
+
+
+
+            if(startRow >= nRows && nRows > 0) {
+                long nRetriveRows = endRow - startRow;
+                while (startRow >= nRows) {
+                    startRow -= nRetriveRows;
+                    if(startRow < 0) {
+                        startRow = 0;
+                        break;
+                    }
+                }
+                endRow = startRow + nRetriveRows;
+            }
+
+
+
+
+            //
+            // Applicazione Limitazione recordset
+            //
+            String limitString = "";
+            boolean canApplyLimit = true;
+            if (query != null && !query.isEmpty()) {
+                if (query.endsWith(";") || query.lastIndexOf(";") >= query.length() - 2) {
+                    canApplyLimit = false;
+                }
+                int where_index = query.toLowerCase().indexOf("where");
+                if(where_index >= 0)
+                    sWhere = query.substring(where_index);
+            }
+            if (canApplyLimit) {
+                if (!bCacheIdsInAvailable) {
+                    if (!isCrossTableService) {
+                        if (filtersIds == null) {
+                            // Il filtro sugli ID pprevale sulla paginazione
+                            if (cacheIds < 1 || (cacheIds == 2 && !bCacheIdsInAvailable)) {
+                                // no cache : read data now
+                                if (endRow > 0) {
+                                    cRow = startRow;
+                                    if (isOracle) {
+                                        executingQuery += ") WHERE ROWNUM < " + (endRow);
+                                        executingQuery = "select * from (select * from (" + executingQuery + ") WHERE ROWNUMBER > " + startRow + "";
+                                        limitString = "";
+                                    } else if (isSqlServer) {
+                                        if (sSort == null || sSort.isEmpty()) {
+                                            sSort += "ORDER BY 1";
+                                        }
+                                        limitString += "\nOFFSET " + startRow + " ROWS";
+                                        limitString += "\nFETCH NEXT " + (endRow - startRow) + " ROWS ONLY";
+                                    } else {
+                                        limitString = " LIMIT " + (endRow - startRow) + " OFFSET " + startRow + "";
+                                    }
+                                }
+                            } else {
+                                // N.B : alla prima esecuzione non può essere eseguita la limitazione perchè impedirebbe la lettura degli indici (limitazione cmw a workspace.maxRows)
+                                //      alla sucessiva escuzione il codice non passa di qua'
+                                // read now and store the cache, limit to maxRow (workspace)
+                                cRow = startRow;
+                                long maxRows = 0L;
+                                if(tbl_wrk.tableJson.has("maxRows")) {
+                                    Object oMaxRows = tbl_wrk.tableJson.get("maxRows");
+                                    if(oMaxRows instanceof Boolean) {
+                                        if((Boolean)oMaxRows == false) {
+                                            maxRows = -1;
+                                        } else {
+                                            maxRows = 1;
+                                        }
+                                    } else if(oMaxRows instanceof String) {
+                                        maxRows = Long.parseLong((String)oMaxRows);
+                                    } else {
+                                        maxRows = Long.parseLong(String.valueOf(oMaxRows));
+                                    }
+                                }
+                                if (maxRows <= 0) {
+                                    maxRows = workspace.maxRows;
+                                }
+                                if (workspace.maxRows > 0) {
+                                    if (isOracle) {
+                                        limitString = "";
+                                        if (sWhere == null || sWhere.isEmpty()) {
+                                            limitString += "\nWHERE ";
+                                        } else {
+                                            limitString += " AND ";
+                                        }
+                                        // limitString += " OFFSET "+startRow+" ROWS FETCH NEXT "+(workspace.maxRows-startRow)+" ROWS ONLY";
+                                        limitString += "ROWNUM <= " + (startRow + workspace.maxRows);
+                                        executingQuery += limitString;
+                                        executingQuery = "select * from (" + executingQuery + ") WHERE ROWNUMBER > " + startRow + "";
+                                        limitString = "";
+                                    } else {
+                                        limitString = " LIMIT " + (workspace.maxRows) + " OFFSET " + startRow + "";
+                                    }
+                                }
+                            }
+                        }
+                        executingQuery += limitString;
+                    }
+                } else {
+                    // walk the cache : no limit
+                }
+            }
+
+
+            //
+            // Aggiunta del criterio group by
+            //
+            if (isOracle) {
+                if (query != null && !query.isEmpty()) {
+                } else {
+                    if (sGroupBy != null && !sGroupBy.isEmpty()) {
+                        executingQuery += "\n" + sGroupBy;
+                        executingQuery += "\n" + sGroupBy;
+                    }
+                }
+            }
+
+
+            //
+            // Aggiunta del criterio di ordinamento
+            //
+            if (isOracle) {
+                if (query != null && !query.isEmpty()) {
+                } else {
+                    if (sSort != null && !sSort.isEmpty()) {
+                        executingQuery += "\n" + sSort;
+                    }
                 }
             }
 

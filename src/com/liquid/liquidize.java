@@ -24,7 +24,7 @@ public class liquidize {
     static boolean bCompactMode = false;
     static String sTabular = "    ";
     
-    static ArrayList<String> glJSONPropsList = new ArrayList<String> (  Arrays.asList( 
+    static ArrayList<String> glJSONPropsList = new ArrayList<String> ( Arrays.asList(
         "database", "schema", "table", "driver", "connectionURL"
         ,"primaryKey"
         ,"name"

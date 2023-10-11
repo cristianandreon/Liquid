@@ -29,9 +29,9 @@
 /* */
 
 //
-// Liquid ver.2.80
+// Liquid ver.2.81
 //
-//  First update 06-01-2020 - Last update 17-09-2023
+//  First update 06-01-2020 - Last update 04-10-2023
 //
 //  TODO : see trello.com
 //
@@ -787,12 +787,15 @@ class LiquidCtrl {
                                         }
                                     }
                                     if(event.node.id == liquid.lastSelectedId) {
-                                        Liquid.onEvent(liquid, "onRowSelected", null);
+                                        Liquid.onEvent(liquid, "onRowSelected", event);
                                     }
                                     liquid.lastSelectedId = null;
                                 }
                             }
                             Liquid.updateCaption(liquid);
+                        } else {
+                            // Undetected
+                            // Liquid.onEvent(liquid, "onRow...", event);
                         }
                     },
                     onCellContextMenu:function(event) {
@@ -937,7 +940,8 @@ class LiquidCtrl {
                         // Firing event onRowRendering
                         //
                         var allNodesMap = event.api.rowModel.nodeManager.allNodesMap;
-                        var nRows = allNodesMap.length;
+                        var nRows = event.api.rowModel.rootNode.allChildrenCount;
+                        // var nRows = allNodesMap.length;
                         for (var ir = 0; ir < nRows; ir++) {
                             var data = allNodesMap[ir].data;
                             var containerObj = null;
@@ -1640,7 +1644,7 @@ class LiquidCtrl {
                     this.dockerTbl.cellPadding = 0;
                     this.dockerTbl.cellSpacing = 0;
                     this.dockerTbl.id = controlId + ".docker";
-                    this.dockerTbl.className = "liquidDocker";
+
 
                     var tbody = document.createElement("tbody");
                     var tr = document.createElement("tr");
@@ -2711,7 +2715,7 @@ class LiquidMenuXCtrl {
 
 var Liquid = {
 
-    version: 2.79,
+    version: 2.81,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -3049,24 +3053,22 @@ var Liquid = {
                     if (isDef(searchingNameOrObject.controlId)) {
                         searchingNames = [searchingNameOrObject.controlId];
                     } else {
-                        if (isDef(searchingNameOrObject.name) && searchingNameOrObject.name) {
+                        if (isDef(searchingNameOrObject.id)) {
+                            if (!searchingNameOrObject.id) {
+                                while (!searchingNameOrObject.id && searchingNameOrObject) searchingNameOrObject = searchingNameOrObject.parentNode;
+                            }
+                            if (isDef(searchingNameOrObject.id)) {
+                                searchingNames = searchingNameOrObject.id.split(".");
+                                if (!searchingNames) {
+                                    while (!searchingNameOrObject.id) searchingNameOrObject = searchingNameOrObject.parentNode
+                                    searchingNames = searchingNameOrObject.id.split(".");
+                                }
+                            }
+                        } else if (isDef(searchingNameOrObject.name) && searchingNameOrObject.name) {
                             searchingNames = searchingNameOrObject.name.split(".");
                             if (!searchingNames) {
                                 while (!searchingNameOrObject.name) searchingNameOrObject = searchingNameOrObject.parentNode
                                 searchingNames = searchingNameOrObject.name.split(".");
-                            }
-                        } else {
-                            if (isDef(searchingNameOrObject.id)) {
-                                if (!searchingNameOrObject.id) {
-                                    while (!searchingNameOrObject.id && searchingNameOrObject) searchingNameOrObject = searchingNameOrObject.parentNode;
-                                }
-                                if (isDef(searchingNameOrObject.id)) {
-                                    searchingNames = searchingNameOrObject.id.split(".");
-                                    if (!searchingNames) {
-                                        while (!searchingNameOrObject.id) searchingNameOrObject = searchingNameOrObject.parentNode
-                                        searchingNames = searchingNameOrObject.id.split(".");
-                                    }
-                                }
                             }
                         }
                     }
@@ -5706,7 +5708,17 @@ var Liquid = {
                     var keyColumn = Liquid.getColumn(liquid, liquid.tableJson.primaryKey);
                     if (keyColumn) liquid.tableJson.primaryKeyField = keyColumn.field;
                 } else {
-                    console.error("ERROR: controlId:" + liquid.controlId + " missing primary key");
+                    // idColumn, idColumnField, layoutLink, lookupField, lookupFiled
+                    if(liquid.tableJson.mode == "lookup") {
+                        if(isDef(liquid.tableJson.idColumnField)) {
+                            liquid.tableJson.primaryKey = liquid.tableJson.idColumnField;
+                            var keyColumn = Liquid.getColumn(liquid, liquid.tableJson.primaryKey);
+                            if (keyColumn) liquid.tableJson.primaryKeyField = keyColumn.field;
+                        }
+                    }
+                    if (isDef(liquid.tableJson.primaryKey)) {
+                        console.error("ERROR: controlId:" + liquid.controlId + " missing primary key");
+                    }
                 }
             }
         }
@@ -7188,9 +7200,9 @@ var Liquid = {
                     Liquid.onBringLookup(lookups[i], true);
                 }
             }
-            glLookupScrollLeft = document.body.scrollLeft;
-            glLookupScrollTop = document.body.scrollTop;
         }
+        glLookupScrollLeft = document.body.scrollLeft;
+        glLookupScrollTop = document.body.scrollTop;
     },
     onLayourScroll: function (e) {
         var lookups = document.getElementsByClassName("liquidLookupOpen");
@@ -7203,12 +7215,15 @@ var Liquid = {
     onFilterChange: function (e, obj) {
         if (e) {
             if (obj) {
+                let isChanged = false;
                 var liquid = Liquid.getLiquid(obj);
                 if (liquid !== null) {
                     if (e.keyCode !== 13
                         && (e.keyCode < 35 || e.keyCode > 40)
                         && e.keyCode != 27
-                    ) {
+                    ) isChanged = true;
+                    // if (e.type=='change') isChanged = true;
+                    if(isChanged) {
                         if (!isDef(liquid.lastFilterTimetick)) {
                             liquid.lastFilterTimetick = getCurrentTimetick();
                         }
@@ -7379,18 +7394,18 @@ var Liquid = {
      * @param obj the control where to start the filters
      * @return {} n/d
      */
-    executeSearch: function (obj) {
-        return Liquid.onExecuteFilter(obj, true);
+    executeSearch: function (obj, callback, callbackParam) {
+        return Liquid.onExecuteFilter(obj, true, callback, callbackParam);
     },
     /**
      * Execute the filter
      * @param obj the control where to start the filters
      * @return {} n/d
      */
-    executeFilter: function (obj) {
-        return Liquid.onExecuteFilter(obj, false);
+    executeFilter: function (obj, callback, callbackParam) {
+        return Liquid.onExecuteFilter(obj, false, callback, callbackParam);
     },
-    onExecuteFilter: function (obj, bReloadAlways) {
+    onExecuteFilter: function (obj, bReloadAlways, callback, callbackParam) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             if (liquid.filtersJson) {
@@ -7520,10 +7535,10 @@ var Liquid = {
                 }
             } else {
                 if (isDef(bReloadAlways)) {
-                    Liquid.loadData(liquid, null, "executeFilter/reload");
+                    Liquid.loadData(liquid, null, "executeFilter/reload", callback, callbackParam);
                 } else {
                     if (liquid.loadCounter <= 0) {
-                        Liquid.loadData(liquid, null, "executeFilter/reload");
+                        Liquid.loadData(liquid, null, "executeFilter/reload", callback, callbackParam);
                     }
                 }
             }
@@ -7808,6 +7823,7 @@ var Liquid = {
                 liquid.lookupContainerCombo.style.width = "100%";
                 liquid.lookupContainerCombo.style.height = (liquid.tableJson.keepOpen === true ? "calc(100% - 30px)" : "0px");
                 liquid.lookupContainerCombo.style.display = displayMode;
+                liquid.lookupContainerCombo.style.backgroundColor = "white";
                 liquid.lookupContainerCombo.style.position = (liquid.tableJson.keepOpen === true ? "" : "");
 
                 if (isDef(liquid.tableJson.query)) {
@@ -7826,6 +7842,7 @@ var Liquid = {
                 liquid.lookupContainerComboContent.style.height = "";
                 liquid.lookupContainerComboContent.style.position = "relative";
                 liquid.lookupContainerComboContent.style.display = displayMode;
+                liquid.lookupContainerComboContent.style.backgroundColor = "white";
                 liquid.lookupContainerComboContent.style.zIndex = "150";
                 liquid.lookupContainerComboContent.style.boxShadow = boxShadow;
                 liquid.lookupContainerCombo.appendChild(liquid.lookupContainerComboContent);
@@ -8116,10 +8133,17 @@ var Liquid = {
                     if (comboObj && inputObj) {
                         if (bBrigUp) {
                             var rect = inputObj.getBoundingClientRect();
+                            /* not always visible over z-index
+                            if(comboObj.parentNode != inputObj.parentNode) {
+                                inputObj.parentNode.appendChild(comboObj);
+                                comboObj.style.top = Number(rect.height).toFixed(0)+"px";
+                                comboObj.style.left = "0px";
+                            }
+                            */
                             if (rect.width != 0 || rect.height != 0) {
                                 comboObj.style.width = rect.width + "px";
-                                comboObj.style.top = rect.y + rect.height;
-                                comboObj.style.left = rect.x;
+                                comboObj.style.top = Number(rect.y + rect.height).toFixed(0)+"px";
+                                comboObj.style.left = Number(rect.x).toFixed(0)+"px";
                                 comboObj.classList.add('liquidLookupOpen');
                             }
                         } else {
@@ -11368,6 +11392,21 @@ var Liquid = {
         }
         e.stopPropagation();
     },
+    onDnlClick: function (e) {
+        let liquid = Liquid.getLiquid(e.target);
+        if(liquid) {
+            var lay_coord = Liquid.getLayoutCoords(liquid, event.target);
+            if (lay_coord) {
+                if (lay_coord.layout) {
+                    if (liquid.currentCommand && liquid.currentCommand.name === "update") {
+                        Liquid.onButton(liquid, {name:"update", "fromToolbar":true});
+                    } else {
+                        Liquid.onButton(liquid, {name:"update", "fromToolbar":true});
+                    }
+                }
+            }
+        }
+    },
     appendActions: function (liquid, cmdName, server, client) {
         if (liquid) {
             for (var i = 0; i < liquid.tableJson.actions.length; i++) {
@@ -13551,7 +13590,8 @@ var Liquid = {
                     // if(liquid.controlId === 'testGrid7') debugger;
                     // put the docker to fixed height (container of tabs list/grids/layout
                     if (liquid.dockerTbl) {
-                        liquid.dockerTbl.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight + gridTabsHeight : "0") + "px";
+                        // liquid.dockerTbl.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight + gridTabsHeight : "0") + "px";
+                        liquid.dockerTbl.style.height = "100%";
                     }
 
                 } else {
@@ -13591,7 +13631,7 @@ var Liquid = {
                 if (liquid.tableJson.grids) {
                     for (var ig = 0; ig < liquid.tableJson.grids.length; ig++) {
                         if (liquid.tableJson.grids[ig].containerObj) {
-                            liquid.tableJson.grids[ig].containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                            liquid.tableJson.grids[ig].containerObj.style.height = isDef(chart.height) ? chart.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
                         }
                         Liquid.onGridResize(liquid, liquid.tableJson.grids[ig]);
                     }
@@ -15235,15 +15275,21 @@ var Liquid = {
     }, getLayoutField: function (liquidOrControlId, obj, colName) {
         if (liquidOrControlId && obj) {
             let liquid = Liquid.getLiquid(liquidOrControlId);
-            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
-            if (nodes && nodes.length > 0) {
-                let layCoords = Liquid.getLayoutCoords(liquid, obj);
-                if(layCoords) {
-                    if(nodes.length == 1 && (isNaN(layCoords.row) || layCoords.row== null)) layCoords.row = 0;
-                    if (!isNaN(layCoords.row) && layCoords.row != null) {
-                        let col = Liquid.getColumn(liquid, colName);
-                        if(col) {
-                            return nodes[layCoords.row].data[col.field];
+            while(!liquid && liquidOrControlId) {
+                liquidOrControlId = liquidOrControlId.parentNode;
+                liquid = Liquid.getLiquid(liquidOrControlId);
+            }
+            if(liquid) {
+                var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                if (nodes && nodes.length > 0) {
+                    let layCoords = Liquid.getLayoutCoords(liquid, obj);
+                    if (layCoords) {
+                        if (nodes.length == 1 && (isNaN(layCoords.row) || layCoords.row == null)) layCoords.row = 0;
+                        if (!isNaN(layCoords.row) && layCoords.row != null) {
+                            let col = Liquid.getColumn(liquid, colName);
+                            if (col) {
+                                return nodes[layCoords.row].data[col.field];
+                            }
                         }
                     }
                 }
@@ -19786,7 +19832,10 @@ var Liquid = {
             if (layout) {
                 var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
                 if (aggridContainerHeight > 0) {
-                    layout.containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                    layout.containerObj.style.height = isDef(layout.height) ? layout.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
+                    if(isDef(layout.minHeight)) {
+                        layout.containerObj.style.minHeight = layout.minHeight;
+                    }
                     if (!isDef(layout.resizeCounter)) layout.resizeCounter = 0;
                     layout.resizeCounter++;
                 }
@@ -19799,7 +19848,10 @@ var Liquid = {
                 if(document.customized !== true) {
                     var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
                     if (aggridContainerHeight > 0) {
-                        document.containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                        document.containerObj.style.height = isDef(document.height) ? document.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
+                        if(isDef(document.minHeight)) {
+                            document.containerObj.style.minHeight = document.minHeight;
+                        }
                         if (!isDef(document.resizeCounter)) document.resizeCounter = 0;
                         document.resizeCounter++;
                     }
@@ -19813,7 +19865,10 @@ var Liquid = {
                 if(chart.customized !== true) {
                     var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
                     if (aggridContainerHeight > 0) {
-                        chart.containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                        chart.containerObj.style.height = isDef(chart.height) ? chart.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
+                        if(isDef(chart.minHeight)) {
+                            chart.containerObj.style.minHeight = chart.minHeight;
+                        }
                         if (!isDef(chart.resizeCounter)) chart.resizeCounter = 0;
                         chart.resizeCounter++;
                     }
@@ -20706,7 +20761,7 @@ var Liquid = {
             }
         }
     },
-    reloadAll:function(obj, event, reason, callback, callbackParam) {
+    reloadAll:function(obj, reason, callback, callbackParam) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
             liquid.onceRefreshAll = true;
@@ -22816,6 +22871,7 @@ var Liquid = {
         console.log("Wellcome in Liquid version:" + Liquid.version + " - Copyright 2023 Cristian Andreon - https://www.cristianandreon.eu/?cContent=&cPage=Liquid - info@cristianandreon.eu");
 
         // scroll listner
+        if(document.addEventListener) { document.addEventListener('scroll', Liquid.onWindowScroll); } else { document.attachEvent('scroll', Liquid.onWindowScroll); }
         if(document.body.addEventListener) { document.body.addEventListener('scroll', Liquid.onWindowScroll); } else { document.body.attachEvent('scroll', Liquid.onWindowScroll); }
 
         for(let i=0; i<glLiquidStartupTables.length; i++) {
@@ -23430,11 +23486,11 @@ columns:[
                             // Let autoload data
                             // lookupJson.autoLoad = false;
                             if(isDef(json.lookupField))
-                                lookupJson.lookupFiled = json.lookupField;
+                                lookupJson.lookupField = json.lookupField;
                             if(isDef(json.lookupId))
                                 lookupJson.lookupId = json.lookupId;
                             if(isDef(lookupField))
-                                lookupJson.lookupFiled = lookupField;
+                                lookupJson.lookupField = lookupField;
                             if(isDef(options)) {
                                 if(isDef(options.columns) || isDef(options.rtColumns)) {
                                     //
@@ -25812,6 +25868,7 @@ columns:[
 };
 
 
+if(window.addEventListener) { window.addEventListener('dblclick', Liquid.onDnlClick); } else { window.attachEvent('ondblclick', Liquid.onDnlClick); }
 if(window.addEventListener) { window.addEventListener('click', Liquid.onClick); } else { window.attachEvent('onclick', Liquid.onClick); }
 if(window.addEventListener) { window.addEventListener('load', Liquid.startup); } else { window.attachEvent('onload', Liquid.Startup); }
 if(window.addEventListener) { window.addEventListener('keydown', Liquid.onWindowKeyDown); } else { window.attachEvent('onkeydown', Liquid.onWindowKeyDown); }

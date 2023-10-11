@@ -1999,7 +1999,7 @@ public class event {
      * put file by content into DMS
      *
      * @param tbl_wrk
-     * @param b64FileContent
+     * @param b64FileContentOrByteArray
      * @param fileName
      * @param fileSize
      * @param docType
@@ -2021,11 +2021,11 @@ public class event {
      * @throws NoSuchMethodException
      */
     static public String uploadDocument(Object tbl_wrk,
-                                        String b64FileContent, String fileName, Long fileSize,
+                                        Object b64FileContentOrByteArray, String fileName, Long fileSize,
                                         String docType, String userData,
                                         String database, String schema, String table, String name, Object rowId,
                                         Object clientData, Object requestParam, String mode) throws Throwable {
-        return dms.uploadDocument(tbl_wrk, b64FileContent, fileName, fileSize, docType, userData, database, schema, table, name, rowId, clientData, requestParam, mode);
+        return dms.uploadDocument(tbl_wrk, b64FileContentOrByteArray, fileName, fileSize, docType, userData, database, schema, table, name, rowId, clientData, requestParam, mode);
     }
 
 
