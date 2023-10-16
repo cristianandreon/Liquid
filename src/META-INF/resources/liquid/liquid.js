@@ -4598,7 +4598,10 @@ var Liquid = {
                         liquid.modifications.push({
                             nodeId: nodeId,
                             rowId: rowId,
-                            fields: [{field: field, name:liquid.tableJson.columns[Number(field)-1].name, value: newValue}]
+                            fields: [{
+                                field: field
+                                , name: (field ? liquid.tableJson.columns[Number(field)-1].name : null)
+                                , value: newValue}]
                         });
                     } else {
                         console.error("ERROR: unable to modify node by primary key:" + rowId);
@@ -4618,8 +4621,11 @@ var Liquid = {
                         }
                     }
                 }
-                if (rowId === '' || rowId === null || isFormX) {
-                    // N.B.: formX work always on addingRow/addingNode
+                if (rowId === ''
+                    || rowId === null
+                    || (liquid.addingNode && liquid.tableJson.primaryKeyField && liquid.addingNode.data[liquid.tableJson.primaryKeyField] === rowId)
+                    || isFormX // N.B.: formX work always on addingRow/addingNode
+                ) {
                     try {
                         if (liquid.addingNode) {
                             liquid.addingNode.data[field] = newValue;
@@ -13677,7 +13683,7 @@ var Liquid = {
                 if (liquid.tableJson.grids) {
                     for (var ig = 0; ig < liquid.tableJson.grids.length; ig++) {
                         if (liquid.tableJson.grids[ig].containerObj) {
-                            liquid.tableJson.grids[ig].containerObj.style.height = isDef(chart.height) ? chart.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
+                            liquid.tableJson.grids[ig].containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
                         }
                         Liquid.onGridResize(liquid, liquid.tableJson.grids[ig]);
                     }
