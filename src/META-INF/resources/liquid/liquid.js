@@ -26,7 +26,7 @@
 // N.B.: Link to external control by : @controlId o url( controlId )
 // N.B.: foreigTable controls default name : ForeignTable$ForeignColumn@controlId
 
-/* */
+
 
 //
 // Liquid ver.2.82
