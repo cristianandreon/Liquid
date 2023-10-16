@@ -362,8 +362,8 @@ public class db {
             String column_alias = null;
             ArrayList<ForeignKey> foreignKeys = null;
             ArrayList<LeftJoinMap> leftJoinsMap = new ArrayList<LeftJoinMap>();
-            workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null ? tblWrk : controlId);
-            String tblWrkDesc = (tblWrk != null ? tblWrk + "." : "") + (controlId != null ? controlId : "");
+            workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null && !tblWrk.isEmpty() ? tblWrk : controlId);
+            String tblWrkDesc = (tblWrk != null && !tblWrk.isEmpty()  ? tblWrk + "." : "") + (controlId != null ? controlId : "");
             boolean isOracle = false, isMySQL = false, isPostgres = false, isSqlServer = false;
 
             if (tbl_wrk != null) {
@@ -1193,6 +1193,9 @@ public class db {
             }
 
 
+            if(workingTable.contains("tab_tecnica") && column_list.contains("tipologia")) {
+                int lb = 1;
+            }
 
             String baseQuery = ""
                     + "SELECT " + sDistinct + column_list
@@ -3565,9 +3568,9 @@ public class db {
             } catch (Exception e) {
             }
 
-            workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null ? tblWrk : controlId);
+            workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null && !tblWrk.isEmpty()  ? tblWrk : controlId);
 
-            String tblWrkDesc = (tblWrk != null ? tblWrk : "") + "." + (controlId != null ? controlId : "");
+            String tblWrkDesc = (tblWrk != null && !tblWrk.isEmpty()  ? tblWrk : "") + "." + (controlId != null ? controlId : "");
 
             if (tbl_wrk != null && tbl_wrk.tableJson != null) {
 
@@ -6223,8 +6226,8 @@ public class db {
 
             String schemaTable = null;
             String databaseSchemaTable = null;
-            workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null ? tblWrk : controlId);
-            String tblWrkDesc = (tblWrk != null ? tblWrk + "." : "") + (controlId != null ? controlId : "");
+            workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null && !tblWrk.isEmpty()  ? tblWrk : controlId);
+            String tblWrkDesc = (tblWrk != null && !tblWrk.isEmpty()  ? tblWrk + "." : "") + (controlId != null ? controlId : "");
             boolean isOracle = false;
             boolean isMySQL = false;
             boolean isPostgres = false;

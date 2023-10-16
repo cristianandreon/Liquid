@@ -666,6 +666,8 @@ public class dms {
             if(!dmsRootFolder.endsWith(File.separator))
                 dmsRootFolder += File.separator;
 
+            String dmsAbsoluteRootFolder = getAbsoluteRootPath(dmsRootFolder, request) + File.separator;
+
             int added = 0;
             String fileAbsolutePath = getAbsoluteRootPath(dmsRootFolder, request) + File.separator;
             // Database
@@ -738,11 +740,11 @@ public class dms {
 
                     if(dmsFTP != null && !dmsFTP.isEmpty()) {
                         ftp.setByURL(dmsFTP);
-                        if(!ftp.upload(fileContent, fileAbsolutePath.substring(dmsRootFolder.length()))) {
+                        if(!ftp.upload(fileContent, fileAbsolutePath.substring(dmsAbsoluteRootFolder.length()))) {
                             throw new Exception("Unable to upload file to ftp");
                         }
-                        if(fileAbsolutePath.startsWith(dmsRootFolder))
-                            fileAbsolutePath = fileAbsolutePath.substring(dmsRootFolder.length());
+                        if(fileAbsolutePath.startsWith(dmsAbsoluteRootFolder))
+                            fileAbsolutePath = fileAbsolutePath.substring(dmsAbsoluteRootFolder.length());
                         fileAbsolutePath = dmsFTPPublicURL + File.separator + fileAbsolutePath;
                         paramJson.put("hash", utility.get_file_content_md5(fileContent));
                     } else {

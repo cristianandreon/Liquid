@@ -2591,7 +2591,7 @@ public class utility {
                                                  boolean chacheIt,
                                                  boolean includeInput
     ) throws Throwable {
-        return get_datalist_from_table(inputId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, currentValue, null, chacheIt, includeInput, false);
+        return get_datalist_from_table(inputId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, currentValue, null, chacheIt, includeInput, false, true, null);
     }
 
     /**
@@ -2617,7 +2617,9 @@ public class utility {
                                                  String className,
                                                  boolean chacheIt,
                                                  boolean includeInput,
-                                                 boolean useSelect
+                                                 boolean useSelect,
+                                                 boolean resetButton,
+                                                 String onChange
     ) throws Throwable {
         String out = "";
         String datalistId = inputId+".list";
@@ -2653,6 +2655,7 @@ public class utility {
                     "class='"+(className != null ? className : "liquidDatalist") + "' " +
                     "data-inputid=\"" + inputId + "\" " +
                     // (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
+                    "onchange=\""+onChange+"\"\n" +
                     ">";
         } else {
             out += "<datalist " +
@@ -2660,6 +2663,7 @@ public class utility {
                     "class='liquidDatalist' " +
                     "data-inputid=\"" + inputId + "\" " +
                     // (idColumn != null ? "onchange=\"try { Liquid.onOptionSelected(this,'"+idColumn+"') } catch (e) { console.error(e) }\" " : " ") +
+                    "onchange=\""+onChange+"\"\n" +
                     ">";
         }
         int iCurrent = 0;
@@ -2699,6 +2703,12 @@ public class utility {
         } else {
             out += "</datalist>";
         }
+
+        if(resetButton) {
+            String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('" + datalistId + "').value) { document.getElementById('" + datalistId + "').value=''; document.getElementById('" + datalistId + "').placeholder=''; document.getElementById('" + datalistId + "').onchange(); } else {}\"></button>";
+            out += "\n" + reset;
+        }
+
         if (dataListCache == null) {
             if (chacheIt) {
                 dataListCache = new DataListCache();
@@ -2832,6 +2842,19 @@ public class utility {
 
 
 
+
+    public static String get_search_datalist_from_table(
+            String inputId, String databaseSchemaTable, String codeColumn,
+            String descColumn, String tooltipColumn,
+            String where, String order, String emptyRow, boolean chacheIt,
+            String onChange, String style) throws Throwable {
+        return get_search_datalist_from_table(
+                inputId, databaseSchemaTable, codeColumn,
+                descColumn, tooltipColumn,
+                where, order, emptyRow, chacheIt,
+                onChange, style, null);
+    }
+
     /**
      * Create search input HRML control
      *
@@ -2853,7 +2876,7 @@ public class utility {
             String inputId, String databaseSchemaTable, String codeColumn,
             String descColumn, String tooltipColumn,
             String where, String order, String emptyRow, boolean chacheIt,
-            String onChange, String style
+            String onChange, String style, String className
     ) throws Throwable {
 
         String input = "<input class=\"auctionEditboxClass\"\n" +
@@ -2863,6 +2886,7 @@ public class utility {
                 "placeholder=\"\"\n" +
                 "onchange=\""+onChange+"\"\n" +
                 "style=\""+style+"\"\n" +
+                "class=\""+className+"\"\n" +
                 "onmousedown=\"this.placeholder=this.value; if(!this.readOnly && !this.disabled) this.value =''\"\n" +
                 "onblur=\"if(!this.value) { this.value=this.placeholder; onchange(this); }\"\n" +
                 ">\n";
@@ -2873,7 +2897,12 @@ public class utility {
                 codeColumn,
                 descColumn,
                 tooltipColumn,
-                null, where, order, emptyRow, null, chacheIt, true
+                null,
+                where, order,
+                emptyRow, null,
+                null,
+                chacheIt, true, false, false,
+                null
         );
 
         String descId = inputId+".desc";

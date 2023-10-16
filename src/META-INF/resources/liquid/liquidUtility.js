@@ -225,9 +225,18 @@ SelectEditor.prototype.init = function(params) {
 
     if(this.table && this.column) {
 
+        let controlId = this.liquid.controlId;
+        let srcForeignWrk = (typeof this.liquid.srcForeignWrk !== "undefined" && this.liquid.srcForeignWrk ? this.liquid.srcForeignWrk : null);
+        if(isDef(this.liquid.tableJson.columns[this.iCol].lookup)) {
+            controlId = this.liquid.tableJson.columns[this.iCol].lookup.controlId;
+            srcForeignWrk = null;
+        }
+
         var xhr = new XMLHttpRequest();
         if(params.colDef.cellEditorParams.cache === false || typeof params.colDef.cellEditorParams.values === 'undefined' || params.colDef.cellEditorParams.values === null) {
-            xhr.open('POST', glLiquidServlet + '?operation=get&controlId=' + this.liquid.controlId + (typeof this.liquid.srcForeignWrk !== "undefined" && this.liquid.srcForeignWrk ? '&tblWrk=' + this.liquid.srcForeignWrk : '')
+            xhr.open('POST', glLiquidServlet + '?operation=get'
+                + '&controlId=' + controlId
+                + (srcForeignWrk != null ? '&tblWrk=' + srcForeignWrk : '')
                 + (this.table ? '&targetTable=' + this.table : "")
                 + '&targetColumn=' + this.column
                 + (this.idColumn ? '&idColumn=' + this.idColumn : '')

@@ -523,6 +523,9 @@ public class workspace {
      * @return
      */
     static public workspace get_tbl_manager_workspace(String controlId) throws Exception {
+        if(controlId == null || controlId.isEmpty() || "null".equalsIgnoreCase(controlId)) {
+            throw new Exception("Invalid control id");
+        }
         if(glTblWorkspaces == null) {
             Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID ERROR: Global data corrupted!!! Please restart Application server");
             glTblWorkspaces = new ArrayList<workspace>();
@@ -3469,7 +3472,8 @@ public class workspace {
             String result = "{\"error\":\"" + "unexpected result" + "\"}";;
             // Verifica della sorgente source : il client non può leggere un controllo in modalità auto se il padre non è autorizzato
             if ((parentControlId != null && !parentControlId.isEmpty()) || (sourceToken != null && !sourceToken.isEmpty())) {
-                workspace source_tbl_wrk = workspace.get_tbl_manager_workspace(parentControlId);
+                String registeringControlId = (parentControlId != null && !parentControlId.isEmpty() ? parentControlId :  "") + "." + controlId;
+                workspace source_tbl_wrk = workspace.get_tbl_manager_workspace(registeringControlId);
                 if (source_tbl_wrk != null || sourceSpecialToken.equals(sourceToken)) {
                     if (sourceSpecialToken.equals(parentControlId)) {
                         parentControlId = null;
