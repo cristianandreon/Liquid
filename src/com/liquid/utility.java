@@ -2540,6 +2540,16 @@ public class utility {
         return arrayToString(parts, prefix, postfix, separator);
     }
 
+    public static boolean createSymbolicLink(String linkFileName, String targetFileName) throws IOException {
+        Path target = new File(targetFileName).toPath();
+        Path link = Paths.get(linkFileName);
+        if (Files.exists(link)) {
+            return true;
+        }
+        Files.createSymbolicLink(link, target);
+        return true;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;

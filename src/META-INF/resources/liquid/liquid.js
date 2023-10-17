@@ -7220,16 +7220,12 @@ var Liquid = {
         }
     },
     onWindowScroll: function (e) {
-        if (glLookupScrollLeft != document.body.scrollLeft || glLookupScrollTop != document.body.scrollTop) {
-            var lookups = document.getElementsByClassName("liquidLookupOpen");
-            if (lookups) {
-                for (var i = 0; i < lookups.length; i++) {
-                    Liquid.onBringLookup(lookups[i], true);
-                }
+        var lookups = document.getElementsByClassName("liquidLookupOpen");
+        if (lookups) {
+            for (var i = 0; i < lookups.length; i++) {
+                Liquid.onBringLookup(lookups[i], true);
             }
         }
-        glLookupScrollLeft = document.body.scrollLeft;
-        glLookupScrollTop = document.body.scrollTop;
     },
     onLayourScroll: function (e) {
         var lookups = document.getElementsByClassName("liquidLookupOpen");
@@ -9869,15 +9865,15 @@ var Liquid = {
                         }
                     }
                     if (!systemEventCounter) { // no starting system event : execute now
-                        for (var ievt = 0; ievt < events.length; ievt++) {
-                            var event = events[ievt];
-                            if (event) {
-                                if (!Liquid.isSystemEvent(event)) {
-                                    var eventParams = await Liquid.buildCommandParams(liquid, event, null);
-                                    res = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, null, null, defaultRetval);
-                                    result = res;
-                                    eventCounter++;
-                                }
+                    }
+                    for (var ievt = 0; ievt < events.length; ievt++) {
+                        var event = events[ievt];
+                        if (event) {
+                            if (!Liquid.isSystemEvent(event)) {
+                                var eventParams = await Liquid.buildCommandParams(liquid, event, null);
+                                res = Liquid.onEventProcess(liquid, event, obj, eventName, eventParams.params, eventData, null, null, defaultRetval);
+                                result = res;
+                                eventCounter++;
                             }
                         }
                     }
@@ -21081,7 +21077,7 @@ var Liquid = {
                             if (isDef(value)) if (isNaN(Number(value))) value = value.replace(/\,/g, ".");
                         if (targetObj.type === 'number') {
                             if (isNaN(value)) {
-                                console.error("LIQUID: cannot set numeric field with value:'" + value + "' .. please check layout:" + (isDef(layoutOrGrid) ? layoutOrGrid.name : ""));
+                                console.warn("LIQUID: cannot set numeric field with value:'" + value + "' .. please check layout:" + (isDef(layoutOrGrid) ? layoutOrGrid.name : ""));
                             }
                         }
                         var decimalDigit = targetObj.getAttribute('decimaldigit');
@@ -21439,6 +21435,19 @@ var Liquid = {
                 }
             }
         }
+    },
+    isAddingRow:function(obj) {
+        let liquid = Liquid.getLiquid(obj);
+        if(liquid) {
+            let nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+            let lay_coord = Liquid.getLayoutCoords(liquid, obj);
+            if (lay_coord.layout) {
+                if (lay_coord.row >= 0 && lay_coord.row < nodes.length) {
+                    return Liquid.isAddingNode(liquid, lay_coord.row, nodes, true);
+                }
+            }
+        }
+        return false;
     },
     isAddingNode:function(liquid, rowIndex, nodes, bCheckCommand) {
         if(rowIndex+0 === liquid.nRows) {

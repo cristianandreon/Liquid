@@ -37,7 +37,16 @@ public class AppInitializer implements ServletContextListener {
                 }
             }
         }
+
+        // Check libraries version
         check_libs();
+
+        // setuo the DMS
+        try {
+            dms.startUp(sc);
+        } catch (IOException e) {
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID] : error on contextInitialized : "+e);
+        }
     }
 
     @Override

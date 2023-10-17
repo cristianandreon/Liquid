@@ -2,6 +2,7 @@ package com.liquid;
 
 
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,5 +21,11 @@ public class AppInitializerContainer implements javax.servlet.ServletContainerIn
             sc.addListener(new HttpSessionCollector()); // javax.servlet.ServletContext.addListener(Ljava/util/EventListener;)V
         }
         AppInitializer.check_libs();
+        // setuo the DMS
+        try {
+            dms.startUp(sc);
+        } catch (IOException e) {
+            Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID] : error on contextInitialized : "+e);
+        }
     }
 }

@@ -102,7 +102,10 @@ public class dms {
             ServletContext servletContext = request.getSession().getServletContext();
             String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
             String APP_CONTEXT = request.getContextPath();
-            return fileName.replace(absoluteFilePathRoot, APP_CONTEXT + "");
+            String baseURL = APP_CONTEXT + "/" + new File(dmsRootFolder).getName() + "/";
+            if(fileName.startsWith(absoluteFilePathRoot)) fileName = fileName.substring(fileName.length()+1);
+            if(fileName.startsWith(dmsRootFolder)) fileName = fileName.substring(dmsRootFolder.length()+1);
+            return baseURL + fileName;
         }
     }
 
@@ -663,13 +666,15 @@ public class dms {
             // paramJson : { database: ... , schema: ..., table: ..., name: ..., ids:nodesKey, file:"", size:"", note:"", fileContent:"" mimeType:""};
 
 
-            if(!dmsRootFolder.endsWith(File.separator))
-                dmsRootFolder += File.separator;
+            dmsRootFolder = utility.strip_last_slash(dmsRootFolder);
 
-            String dmsAbsoluteRootFolder = getAbsoluteRootPath(dmsRootFolder, request) + File.separator;
+            String dmsAbsoluteRootFolder = getAbsoluteRootPath(dmsRootFolder, request);
+            dmsAbsoluteRootFolder = utility.strip_last_slash(dmsAbsoluteRootFolder);
 
             int added = 0;
-            String fileAbsolutePath = getAbsoluteRootPath(dmsRootFolder, request) + File.separator;
+            String fileAbsolutePath = getAbsoluteRootPath(dmsRootFolder, request);
+            fileAbsolutePath = utility.strip_last_slash(fileAbsolutePath) + File.separator;
+
             // Database
             String comp = paramJson.has("database") ? paramJson.getString("database") : null;
             if(comp != null && !comp.isEmpty()) {
@@ -740,11 +745,11 @@ public class dms {
 
                     if(dmsFTP != null && !dmsFTP.isEmpty()) {
                         ftp.setByURL(dmsFTP);
-                        if(!ftp.upload(fileContent, fileAbsolutePath.substring(dmsAbsoluteRootFolder.length()))) {
+                        if(!ftp.upload(fileContent, fileAbsolutePath.substring((dmsAbsoluteRootFolder+File.separator).length()))) {
                             throw new Exception("Unable to upload file to ftp");
                         }
-                        if(fileAbsolutePath.startsWith(dmsAbsoluteRootFolder))
-                            fileAbsolutePath = fileAbsolutePath.substring(dmsAbsoluteRootFolder.length());
+                        if(fileAbsolutePath.startsWith((dmsAbsoluteRootFolder+File.separator)))
+                            fileAbsolutePath = fileAbsolutePath.substring((dmsAbsoluteRootFolder+File.separator).length());
                         fileAbsolutePath = dmsFTPPublicURL + File.separator + fileAbsolutePath;
                         paramJson.put("hash", utility.get_file_content_md5(fileContent));
                     } else {
@@ -1805,4 +1810,48 @@ public class dms {
         return "";
     }
 
+
+    /**
+     * Statup the DMS
+     * (Crea link simbolido dentro alla cartella root del .war all percorso assoluto del DMS)
+     * In caso di Redploy il link viene ripristinato
+     * Il vantaggio è che il browser puà accedere (con la sua cache) alle risorse del DMS
+     * @param sc
+     * @return
+     * @throws IOException
+     */
+    static public boolean startUp(ServletContext sc) throws IOException {
+        String linkFileName, targetFileName;
+        String dmsFTP = null, dmsFTPPublicURL = null, dmsRootFolder = null;
+        try {
+            Class cls = Class.forName("app.liquid.dms.connection");
+            Field fFtp = cls.getDeclaredField("dmsFTP");
+            if (fFtp != null) {
+                fFtp.setAccessible(true);
+                dmsFTP = (String) fFtp.get(null);
+            }
+            Field fFtpURL = cls.getDeclaredField("dmsFTPPublicURL");
+            if (fFtpURL != null) {
+                fFtpURL.setAccessible(true);
+                dmsFTPPublicURL = (String) fFtpURL.get(null);
+            }
+            Field fF = cls.getDeclaredField("dmsRootFolder");
+            if (fF != null) {
+                fF.setAccessible(true);
+                dmsRootFolder = (String) fF.get(null);
+            }
+        } catch (Exception e) {
+            // Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, e);
+        }
+        if(dmsFTP != null && !dmsFTP.isEmpty()) {
+            System.out.println("[LIQUID] setup DMS : ftp to " + dmsFTPPublicURL);
+        } else if(dmsRootFolder != null && !dmsRootFolder.isEmpty()) {
+            String fullPath = sc.getRealPath("/");
+            linkFileName = utility.strip_last_slash(fullPath) + File.separator + new File(dmsRootFolder).getName();;
+            utility.createSymbolicLink(linkFileName, dmsRootFolder);
+            System.out.println("[LIQUID] setup DMS : symlink '"+linkFileName+"' to '" + dmsRootFolder+"'");
+        }
+
+        return true;
+    }
 }
