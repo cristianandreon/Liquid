@@ -13644,15 +13644,16 @@ var Liquid = {
                     // if(liquid.controlId === 'testGrid7') debugger;
                     // put the docker to fixed height (container of tabs list/grids/layout
                     if (liquid.dockerTbl) {
-                        liquid.dockerTbl.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight + gridTabsHeight : "0") + "px";
-                        /*
+                        // Non valido per l'altezza variabile
+                        // liquid.dockerTbl.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight + gridTabsHeight : "0") + "px";
                         let htGap = referenceHeight
-                            - aggridContainerHeight
+                            - aggridContainerHeight;
+                            /*
                             + (liquid.navObj ? (liquid.navObjHeight+2) : 0)
                             + (liquid.commandsObj ? liquid.commandsObjHeight : 0)
                             + (liquid.filtersObj ? liquid.filtersObjHeight : 0)
+                            */
                         liquid.dockerTbl.style.height = "calc(100% - "+htGap+"px)";
-                        */
                     }
 
                 } else {
