@@ -13358,6 +13358,14 @@ var Liquid = {
         }
         return 0;
     },
+    onResizeAll: function () {
+        var liquids = document.getElementsByClassName("liquidShow");
+        if (liquids) {
+            for (var i = 0; i < liquids.length; i++) {
+                Liquid.onResize(liquids[i]);
+            }
+        }
+    },
     onResize: function (obj) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
@@ -13636,13 +13644,15 @@ var Liquid = {
                     // if(liquid.controlId === 'testGrid7') debugger;
                     // put the docker to fixed height (container of tabs list/grids/layout
                     if (liquid.dockerTbl) {
-                        // liquid.dockerTbl.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight + gridTabsHeight : "0") + "px";
+                        liquid.dockerTbl.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight + gridTabsHeight : "0") + "px";
+                        /*
                         let htGap = referenceHeight
                             - aggridContainerHeight
                             + (liquid.navObj ? (liquid.navObjHeight+2) : 0)
                             + (liquid.commandsObj ? liquid.commandsObjHeight : 0)
                             + (liquid.filtersObj ? liquid.filtersObjHeight : 0)
                         liquid.dockerTbl.style.height = "calc(100% - "+htGap+"px)";
+                        */
                     }
 
                 } else {
