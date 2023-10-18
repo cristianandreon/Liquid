@@ -13647,7 +13647,7 @@ var Liquid = {
                         // Non valido per l'altezza variabile
                         // liquid.dockerTbl.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight + gridTabsHeight : "0") + "px";
                         let htGap = referenceHeight
-                            - aggridContainerHeight;
+                            - (aggridContainerHeight + gridTabsHeight);
                             /*
                             + (liquid.navObj ? (liquid.navObjHeight+2) : 0)
                             + (liquid.commandsObj ? liquid.commandsObjHeight : 0)
