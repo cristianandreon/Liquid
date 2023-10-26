@@ -505,7 +505,7 @@ public class emailer {
                     String gileContent = workspace.get_file_content(request, login.RegisterUserTemplateFile, false, false);
                     if(gileContent != null) {
                         // String[] params = { newPassword, sEMail, application_id, domain_id, sApplicationURL, sEmailToken, sRedirect, database, schema, table };
-                        gileContent = gileContent.replace("${nick_name}", params[0]);
+                        gileContent = gileContent.replace("${name}", params[0]);
                         gileContent = gileContent.replace("${password}", params[1]);
                         gileContent = gileContent.replace("${email}", params[2]);
                         gileContent = gileContent.replace("${application_id}", params[3]);
@@ -685,7 +685,7 @@ public class emailer {
                     String gileContent = workspace.get_file_content(request, login.NewEmailNotifyTemplateFile, false, false);
                     if(gileContent != null) {
                         // String[] params = { newEmail, act };
-                        gileContent = gileContent.replace("${nick_name}", params[0]);
+                        gileContent = gileContent.replace("${name}", params[0]);
                         gileContent = gileContent.replace("${new_email}", params[1]);
                         gileContent = gileContent.replace("${email}", params[1]);
                         gileContent = gileContent.replace("${act}", params[2]);

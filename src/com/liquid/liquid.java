@@ -13,7 +13,6 @@ public class liquid {
 
     static public Object is_session_expired_class_instance;
     static public Method is_session_expired_method;
-
     static public String is_session_expired_method_name;
 
     /**

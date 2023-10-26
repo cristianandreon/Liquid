@@ -2480,8 +2480,12 @@ public class utility {
     }
 
     public static String get_temp_file() throws IOException {
-        Path tf = Files.createTempFile("LiquidTempFile", ".file");
-        return tf.toString();
+        String tempDir=System.getProperty("java.io.tmpdir");
+        return new File(tempDir + File.separator + getUniqueFileName()+".tmp").toString();
+    }
+
+    public static String getUniqueFileName() {
+        return UUID.randomUUID().toString();
     }
 
     public static String get_file_extension(String fileName) {
@@ -4070,6 +4074,21 @@ public class utility {
         }
 
         return files;
+    }
+
+    public static boolean isNumber(Object obj) {
+        if(obj instanceof Integer || obj instanceof Long || obj instanceof Float || obj instanceof Double || obj instanceof BigDecimal || obj instanceof BigInteger) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public static boolean isBoolean(Object obj) {
+        if(obj instanceof Boolean) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

@@ -1074,6 +1074,9 @@ class LiquidCtrl {
                     }
                 };
 
+                if(isDef(this.tableJson.rowHeight)) {
+                    this.gridOptions.rowHeight = this.tableJson.rowHeight;
+                }
 
                 var setSize = false;
                 if(this.mode === "popup") {
@@ -1894,7 +1897,7 @@ class LiquidCtrl {
                                     var layoutId = controlId + ".layout_tab." + (il + 1);
                                     var layoutName = layout.title ? layout.title : layout.name ? layout.name : "Layout";
                                     if(this.tableJson.listTabVisible === false) listTabStyle = "style=\"display:none\"";
-                                    layoutTabHTML += "<li "+layoutsTabStyle+"><a href=\"javascript:void(0)\" id=\"" + layoutId + "\" class=\"liquidTab liquidLayoutTab liquidForeignTableEnabled\" onClick=\"Liquid.onLayoutTab(this)\">" + layoutName + "</a></li>";
+                                    layoutTabHTML += "<li "+layoutsTabStyle+"><a href=\"javascript:void(0)\" id=\"" + layoutId + "\" class=\"liquidTab liquidLayoutTab liquidForeignTableEnabled\" onClick=\"Liquid.onGridTab(this)\">" + layoutName + "</a></li>";
                                     this.tabList.push( { name:layoutName, id:layoutId });
                                 }
                             }
@@ -5205,7 +5208,7 @@ var Liquid = {
                     var liquidCommandParams = await Liquid.buildCommandParams(liquid, command, null);
                     liquidCommandParams.params.push({data: {col: col, value: value}});
                     if (command.client) {
-                        if (command.clientAfter !== true || command.clientBefore === true) {
+                        if ((command.clientAfter !== true && command.clientAfter !== "true" ) || command.clientBefore === true) {
                             validateResult = Liquid.executeClientSide(liquid, "validate:" + command.name, command.client, liquidCommandParams, command.isNative);
                             if (validateResult) {
                                 value = validateResult[1];
@@ -5235,7 +5238,7 @@ var Liquid = {
                     var liquidCommandParams = Liquid.buildCommandParamsSync(liquid, command, null);
                     liquidCommandParams.params.push({data: {col: col, value: value}});
                     if (command.client) {
-                        if (command.clientAfter !== true || command.clientBefore === true) {
+                        if ((command.clientAfter !== true && command.clientAfter !== "true" ) || command.clientBefore === true) {
                             validateResult = Liquid.executeClientSide(liquid, "validate:" + command.name, command.client, liquidCommandParams, command.isNative);
                             if (validateResult) {
                                 value = validateResult[1];
@@ -10526,7 +10529,7 @@ var Liquid = {
                 if (obj) obj.disabled = true;
                 Liquid.startWaiting(liquid);
                 if (command.client) {
-                    if (command.clientAfter !== true || command.clientBefore === true) {
+                    if ((command.clientAfter !== true && command.clientAfter !== "true" ) || command.clientBefore === true) {
                         Liquid.executeClientSide(liquid, "command:" + command.name, command.client, liquidCommandParams, command.isNative);
                     }
                 }
@@ -13628,7 +13631,6 @@ var Liquid = {
                         if (!isDef(liquid.aggridContainerDocked) || liquid.aggridContainerDocked === false) {
                             liquid.aggridContainerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
                             if (liquid.referenceHeightObj) {
-                                if (liquid.AAA === "testGrid4 - mode:undefined - div:testGrid4") debugger;
                                 if (liquid.referenceHeightObj.offsetHeight > 0 && liquid.referenceHeightObj.offsetHeight !== referenceHeight) { // something escaped
                                     var gap = liquid.referenceHeightObj.offsetHeight - referenceHeight;
                                     if (gap <= 4) {
@@ -13636,6 +13638,8 @@ var Liquid = {
                                         liquid.aggridContainerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
                                     }
                                 }
+                                if(isDef(liquid.tableJson.maxHeight))
+                                    liquid.aggridContainerObj.style.maxHeight = liquid.tableJson.maxHeight;
                             }
                             liquid.aggridContainerHeight = aggridContainerHeight;
                         }
@@ -13694,26 +13698,45 @@ var Liquid = {
                     for (var ig = 0; ig < liquid.tableJson.grids.length; ig++) {
                         if (liquid.tableJson.grids[ig].containerObj) {
                             liquid.tableJson.grids[ig].containerObj.style.height = (aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px";
+                            if(isDef(liquid.tableJson.grids[ig].maxHeight))
+                                liquid.tableJson.grids[ig].containerObj.style.maxHeight = liquid.tableJson.grids[ig].maxHeight;
+                            if(isDef(liquid.tableJson.grids[ig].minHeight))
+                                liquid.tableJson.grids[ig].containerObj.style.minHeight = liquid.tableJson.grids[ig].minHeight;
                         }
                         Liquid.onGridResize(liquid, liquid.tableJson.grids[ig]);
                     }
                 }
                 if (liquid.tableJson.layouts) {
                     for (var ig = 0; ig < liquid.tableJson.layouts.length; ig++) {
-                        if (liquid.tableJson.layouts[ig].containerObj)
-                            Liquid.onLayoutResize(liquid, liquid.tableJson.layouts[ig]);
+                        if (liquid.tableJson.layouts[ig].containerObj) {
+                            if (isDef(liquid.tableJson.layouts[ig].maxHeight))
+                                liquid.tableJson.layouts[ig].containerObj.style.maxHeight = liquid.tableJson.layouts[ig].maxHeight;
+                            if (isDef(liquid.tableJson.layouts[ig].minHeight))
+                                liquid.tableJson.layouts[ig].containerObj.style.minHeight = liquid.tableJson.layouts[ig].minHeight;
+                        }
+                        Liquid.onLayoutResize(liquid, liquid.tableJson.layouts[ig]);
                     }
                 }
                 if (liquid.tableJson.documents) {
                     for (var ig = 0; ig < liquid.tableJson.documents.length; ig++) {
-                        if (liquid.tableJson.documents[ig].containerObj)
-                            Liquid.onDocumentResize(liquid, liquid.tableJson.documents[ig]);
+                        if (liquid.tableJson.documents[ig].containerObj) {
+                            if (isDef(liquid.tableJson.documents[ig].maxHeight))
+                                liquid.tableJson.documents[ig].containerObj.style.maxHeight = liquid.tableJson.documents[ig].maxHeight;
+                            if (isDef(liquid.tableJson.documents[ig].minHeight))
+                                liquid.tableJson.documents[ig].containerObj.style.minHeight = liquid.tableJson.documents[ig].minHeight;
+                        }
                     }
+                    Liquid.onDocumentResize(liquid, liquid.tableJson.documents[ig]);
                 }
                 if (liquid.tableJson.charts) {
                     for (var ig = 0; ig < liquid.tableJson.charts.length; ig++) {
-                        if (liquid.tableJson.charts[ig].containerObj)
-                            Liquid.onChartResize(liquid, liquid.tableJson.charts[ig]);
+                        if (liquid.tableJson.charts[ig].containerObj) {
+                            if (isDef(liquid.tableJson.charts[ig].maxHeight))
+                                liquid.tableJson.charts[ig].containerObj.style.maxHeight = liquid.tableJson.charts[ig].maxHeight;
+                            if (isDef(liquid.tableJson.charts[ig].minHeight))
+                                liquid.tableJson.charts[ig].containerObj.style.minHeight = liquid.tableJson.charts[ig].minHeight;
+                        }
+                        Liquid.onChartResize(liquid, liquid.tableJson.charts[ig]);
                     }
                 }
             } else if (liquid instanceof LiquidMenuXCtrl) {
@@ -15899,6 +15922,7 @@ var Liquid = {
                             layout.bCreateHeader = true;
                             layout.headerContainerObj = document.createElement("div");
                             layout.headerContainerObj.id = headerContainerObjId;
+                            layout.headerContainerObj.className = "liquidLayoutRowContainer liquidLayoutHeaderontainer";
                             layout.headerContainerObj.style.width = "100%";
                             layout.headerContainerObj.style.height = "auto";
                             layout.headerContainerObj.style.overflow = "auto";
@@ -15909,6 +15933,7 @@ var Liquid = {
                             layout.bCreateFooter = true;
                             layout.footerContainerObj = document.createElement("div");
                             layout.footerContainerObj.id = footerContainerObjId;
+                            layout.footerContainerObj.className = "liquidLayoutRowContainer liquidLayoutFooterontainer";
                             layout.footerContainerObj.style.width = "100%";
                             layout.footerContainerObj.style.height = "auto";
                             layout.footerContainerObj.style.overflow = "auto";
@@ -15918,7 +15943,7 @@ var Liquid = {
                         if (!layout.bodyContainerObj) {
                             layout.bodyContainerObj = document.createElement("div");
                             layout.bodyContainerObj.id = bodyContainerObjId;
-                            layout.bodyContainerObj.className = "liquidLayoutRowContainer";
+                            layout.bodyContainerObj.className = "liquidLayoutRowContainer liquidLayoutBodyontainer";
                             layout.bodyContainerObj.style.width = "100%";
                             layout.bodyContainerObj.style.height = "calc(100% - " + (layout.headerContainerObj.offsetHeight + layout.footerContainerObj.offsetHeight + 0) + "px)";
                             layout.bodyContainerObj.style.overflow = "auto";
@@ -17191,10 +17216,6 @@ var Liquid = {
                     var layoutIndex1B = Liquid.getLayoutIndex(liquid, layout.name);
                     var controlName = "";
                     var newId = liquid.controlId + ".layout." + layoutIndex1B; // generic id .. to refine
-
-                    // if(obj.id == "profile_gallery") debugger;
-                    // if(obj.id == "nick_name" && liquid.controlId=='UserVisits') debugger;
-
 
                     if (linkCount) {
                         if (linkedCol) {
@@ -20365,11 +20386,13 @@ var Liquid = {
     onLayoutTab: function (obj) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
+            delete liquid.curLayout;
             if (liquid.tableJson.layouts) {
                 Liquid.changeCurrentGridTab(liquid, obj);
                 var lay_coords = Liquid.getLayoutCoords(liquid, obj);
                 if (lay_coords) {
                     if (lay_coords.layout) {
+                        liquid.curLayout = lay_coords.layoutIndex;
                         if (lay_coords.layout.pendingLink) {
                             Liquid.refreshLayout(liquid, lay_coords.layout, true);
                             Liquid.onLayoutMode(lay_coords.layout.containerObj, null, "readonly");
@@ -20387,6 +20410,7 @@ var Liquid = {
                     if (bRestoreList) {
                         Liquid.setAggrigParent(liquid, null, null);
                     }
+                    Liquid.setCurrentTab(liquid, lay_coords.layout.name);
                 }
             }
         }
@@ -21791,6 +21815,13 @@ var Liquid = {
     },
     setFieldTooltip:function(liquidControlOrId, field, value) {
         return Liquid.fieldServiceEx(liquidControlOrId, -4, field, value);
+    },
+    setRowHeight:function(liquidControlOrId, rowHeight) {
+        var liquid = Liquid.getLiquid(liquidControlOrId);
+        if (liquid) {
+            return liquid.gridOptions.rowHeight = rowHeight;
+        }
+        return null;
     },
     getNodes:function(liquidControlOrId) {
         var liquid = Liquid.getLiquid(liquidControlOrId);
@@ -25310,7 +25341,7 @@ columns:[
             }
             if(reload) {
                 Liquid.disableUnloadPagePrompt();
-                window.location.reload();
+                window.location = window.location.href.split("?")[0];
             }
         }
     },
@@ -25977,8 +26008,16 @@ columns:[
         // return responseText ? responseText.replace(/[!@#$^&%*()+=[\]\/{}|:<>?,.\\-]/g, '') : responseText;
         // return responseText ? responseText.replace(/[\uE000-\uF8FF]/g, '') : responseText;
         return responseText ? responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\f])/g, "\\f").replace('', "") : responseText;
+    },
+    switchPasswordVisibility:function(obj) {
+        if(obj) {
+            if(obj.type == 'password') {
+                obj.type = 'text';
+            } else {
+                obj.type = 'password';
+            }
+        }
     }
-
 };
 
 

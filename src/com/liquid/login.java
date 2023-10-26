@@ -565,7 +565,10 @@ public class login {
         if(application_id == null || application_id.isEmpty())
             application_id = (String)request.getSession().getAttribute("GLLiquidLoginApplicationId");
         if(domain_id == null || domain_id.isEmpty())
-            domain_id = (String)request.getSession().getAttribute("GLLiquidLoginDomainId");                                        
+            domain_id = (String)request.getSession().getAttribute("GLLiquidLoginDomainId");
+
+        // GLLiquidUserID
+        // GLLiquidToken
 
         
         sUserID = utility.base64Decode(sUserID);
@@ -870,7 +873,7 @@ public class login {
                                 if (session != null) {
                                     session.setAttribute("GLLiquidUserID", iUserId);
                                     session.setAttribute("GLLiquidAdmin", iIsAddmin);
-                                    session.setAttribute("GLLiquidUserToken", token);
+                                    session.setAttribute("GLLiquidToken", token);
                                 }
                                 
                                 
@@ -892,7 +895,14 @@ public class login {
                                                     String sessionProp = ((additionalPropertiesPrefix != null && !additionalPropertiesPrefix.isEmpty()) ? additionalPropertiesPrefix : "") + prop;
                                                     session.setAttribute(sessionProp, propValue);
                                                 }
-                                                sAdditionalProperties += (i>0 ? "," : "") + "\"" + prop + "\":\""+propValue+"\"";
+                                                sAdditionalProperties += (i>0 ? "," : "");
+                                                if(utility.isNumber(propValue)) {
+                                                    sAdditionalProperties += "\"" + prop + "\":" + propValue + "";
+                                                } else if(utility.isBoolean(propValue)) {
+                                                    sAdditionalProperties += "\"" + prop + "\":" + ((boolean)propValue ? "true" : "false");
+                                                } else {
+                                                    sAdditionalProperties += "\"" + prop + "\":\""+propValue+"\"";
+                                                }
                                             }
                                         }
                                     } catch (Exception e) {
