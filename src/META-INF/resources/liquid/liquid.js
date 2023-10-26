@@ -15253,8 +15253,10 @@ var Liquid = {
                                     } else {
                                         newValue = obj.innerHTML;
                                     }
-                                    let pure_value = obj.getAttribute('pure_value');
-                                    newValue = pure_value != null ? pure_value : newValue;
+                                    if (obj.getAttribute("dp")) {
+                                        let pure_value = obj.getAttribute('pure_value');
+                                        newValue = pure_value != null ? pure_value : newValue;
+                                    }
                                     if (bValidate) {
                                         if (newValue !== curValue) {
                                             var validateResult = await Liquid.validateField(liquid, col, newValue);
