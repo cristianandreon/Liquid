@@ -68,6 +68,8 @@ public class login {
     
     static public int maxWrongPasswordEvent = 3;
     static public int maxWrongPasswordDisable = 0;
+
+    public static String login_id = "id";
     public static String login_field = "user";
     public static String email_field = "email";
     public static String password_field = "password";
@@ -1933,9 +1935,6 @@ public class login {
 
         ResultSet rsdoLogin = null;
         PreparedStatement psdoLogin = null;
-        PreparedStatement psdoSetup = null;
-        ResultSet rsdoSetup = null;
-        boolean doAutentication = true;
 
         HttpSession session = request.getSession();
         
@@ -1943,11 +1942,8 @@ public class login {
         
             String RemoteIP = request.getRemoteAddr();
 
-            String Debug = null;
             String message = null;
             String sqlSTMT = null;
-            String encPassword = "";
-            int iDaysValidity = 0;
 
 
             if(application_id == null || application_id.isEmpty()) {
@@ -1960,108 +1956,90 @@ public class login {
                     domain_id = (String)request.getSession().getAttribute("GLLiquidLoginDomainId");
                 }
             }
-            if(daysValidity<=0) {
-                if(request != null) {
-                    iDaysValidity = (int)request.getSession().getAttribute("GLLiquidLoginDaysValidity");
-                }
-            } else
-                iDaysValidity = daysValidity;
 
-            
 
     
             ////////////////////////////////
             // Aggiornamwento password
             //
-            { 
-                {
-                    boolean isValidUserId = true;
-                    if(sUserID != null && sUserID.length() < 3) isValidUserId = false;
+            if(sUserID == null || sUserID.isEmpty()) {
+                if (cLang.equalsIgnoreCase("IT")) {
+                    message = "sUserID non valida .. min 3 caratteri";
+                } else {
+                    message = "Invalid sUserID .. min. 3 chars";
+                }
+                return "{ \"result\":-3, \"error\":\""+utility.base64Encode(message)+"\"}";
 
-                    if(!isValidUserId) {
-                        if (cLang.equalsIgnoreCase("IT")) {
-                            message = "sUserID non valida .. min 3 caratteri";
-                        } else {
-                            message = "Invalid sUserID .. min. 3 chars";
-                        }
-                        return "{ \"result\":-3, \"error\":\""+utility.base64Encode(message)+"\"}";
+            } else {
 
-                    } else {
+                Object [] connResult = getConnection();
+                conn = (Connection)connResult[0];
+                String connError = (String)connResult[1];
 
-                        boolean isEmailDuplicate = false;
-                        boolean isUserIdDuplicate = false;
-                        message = "";
+                if(conn != null && conn.isValid(30)) {
 
-                        Object [] connResult = getConnection();
-                        conn = (Connection)connResult[0];
-                        String connError = (String)connResult[1];
+                    String schemaTable = "";
+                    String databaseSchemaTable = "";
 
-                        if(conn != null && conn.isValid(30)) {
-                        
-                            String schemaTable = "";
-                            String databaseSchemaTable = "";
-
-                            schemaTable = "";
-                            databaseSchemaTable = "";
-                            if(database != null && !database.isEmpty()) {
-                                databaseSchemaTable += itemIdString+database+itemIdString;
-                            }
-                            if(schema != null && !schema.isEmpty()) {
-                                schemaTable += itemIdString+schema+itemIdString;
-                                databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+itemIdString+schema+itemIdString;
-                            }
-                            if(table != null && !table.isEmpty()) {
-                                schemaTable += (schemaTable.length()>0?".":"")+itemIdString+table+itemIdString;
-                                databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+itemIdString+table+itemIdString;
-                            }
-
-                            
-                            if(!check_login_table_exist(conn, schema, table)) {
-                                message = "login table error";
-                                return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
-                            }
-                            
-                            
-                            try {
-        
-                                db.set_current_database(conn, database, driver, tableIdString);
-
-                                prepare_database(conn);
-                                
-                                if (application_id != null && !application_id.isEmpty()) {
-                                    if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" SET `"+password_field+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) WHERE ( "
-                                                + "`application_id` = '" + (application_id != null ? application_id : "") + "'"
-                                                + " AND `domain_id` = '" + (domain_id != null ? domain_id : "") + "'"
-                                                + " AND `"+login_field+"` = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
-                                                + ")";
-                                    } else if("postgres".equalsIgnoreCase(driver)) {
-                                        sqlSTMT = "UPDATE "+schemaTable+" \""+password_field+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text)) WHERE ("
-                                                + "\"application_id\" = '" + (application_id != null ? application_id : "") + "'"
-                                                + " AND \"domain_id\" = '" + (domain_id != null ? domain_id : "") + "'"
-                                                + " AND \""+login_field+"\" = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
-                                                + ")";
-
-                                    } else if("oracle".equalsIgnoreCase(driver)) {
-                                    } else if("sqlserver".equalsIgnoreCase(driver)) {
-                                    }
-
-                                    psdoLogin = conn.prepareStatement(sqlSTMT);
-                                    // psdoLogin.setString(1, sPassword);
-                                    psdoLogin.executeUpdate();
-
-                                    message = "Password updated";
-
-                                    return "{ \"result\":1, \"message\":\""+utility.base64Encode(message)+"\"}";
-                                }
-                                
-                            } catch (Exception e) {
-                                return "{ \"result\":-9, \"error\":\""+utility.base64Encode((e.getLocalizedMessage() + " on : ["+sqlSTMT+"]"))+"\"}";
-                            }
-                        } else {
-                            return "{ \"result\":-50, \"error\":\""+utility.base64Encode("No connection to db")+"\"}";
-                        }
+                    schemaTable = "";
+                    databaseSchemaTable = "";
+                    if(database != null && !database.isEmpty()) {
+                        databaseSchemaTable += itemIdString+database+itemIdString;
                     }
+                    if(schema != null && !schema.isEmpty()) {
+                        schemaTable += itemIdString+schema+itemIdString;
+                        databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+itemIdString+schema+itemIdString;
+                    }
+                    if(table != null && !table.isEmpty()) {
+                        schemaTable += (schemaTable.length()>0?".":"")+itemIdString+table+itemIdString;
+                        databaseSchemaTable += (databaseSchemaTable.length()>0?".":"")+itemIdString+table+itemIdString;
+                    }
+
+
+                    if(!check_login_table_exist(conn, schema, table)) {
+                        message = "login table error";
+                        return "{ \"result\":-1, \"error\":\""+utility.base64Encode(message)+"\"}";
+                    }
+
+
+                    try {
+
+                        db.set_current_database(conn, database, driver, tableIdString);
+
+                        prepare_database(conn);
+
+                        if (application_id != null && !application_id.isEmpty()) {
+                            if("mysql".equalsIgnoreCase(driver) || "mariadb".equalsIgnoreCase(driver)) {
+                                sqlSTMT = "UPDATE "+schemaTable+" SET `"+password_field+"`=MD5(AES_ENCRYPT('"+sPassword+"','"+password_seed+"')) WHERE ( "
+                                        + "`application_id` = '" + (application_id != null ? application_id : "") + "'"
+                                        + " AND `domain_id` = '" + (domain_id != null ? domain_id : "") + "'"
+                                        + " AND `"+login_id+"` = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
+                                        + ")";
+                            } else if("postgres".equalsIgnoreCase(driver)) {
+                                sqlSTMT = "UPDATE "+schemaTable+" SET \""+password_field+"\"=crypt(CAST('"+sPassword+"' AS text),CAST('"+password_seed+"' AS text)) WHERE ("
+                                        + "\"application_id\" = '" + (application_id != null ? application_id : "") + "'"
+                                        + " AND \"domain_id\" = '" + (domain_id != null ? domain_id : "") + "'"
+                                        + " AND \""+login_id+"\" = '" + (sUserID != null && !sUserID.isEmpty() ? sUserID : "") + "'"
+                                        + ")";
+
+                            } else if("oracle".equalsIgnoreCase(driver)) {
+                            } else if("sqlserver".equalsIgnoreCase(driver)) {
+                            }
+
+                            psdoLogin = conn.prepareStatement(sqlSTMT);
+                            // psdoLogin.setString(1, sPassword);
+                            psdoLogin.executeUpdate();
+
+                            message = "Password updated";
+
+                            return "{ \"result\":1, \"message\":\""+utility.base64Encode(message)+"\"}";
+                        }
+
+                    } catch (Exception e) {
+                        return "{ \"result\":-9, \"error\":\""+utility.base64Encode((e.getLocalizedMessage() + " on : ["+sqlSTMT+"]"))+"\"}";
+                    }
+                } else {
+                    return "{ \"result\":-50, \"error\":\""+utility.base64Encode("No connection to db")+"\"}";
                 }
             }
         } catch (Exception e) {

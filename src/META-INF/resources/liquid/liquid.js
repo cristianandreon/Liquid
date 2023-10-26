@@ -6069,7 +6069,18 @@ var Liquid = {
                         lockPinned: (liquid.tableJson.columns[ic].lockPinned === true ? true : false),
                         cellStyle: cellStyle,
                         filter: (typeof liquid.tableJson.columns[ic].filter !== "undefined" ? liquid.tableJson.columns[ic].filter : (typeof liquid.tableJson.clientFilters !== "undefined" ? liquid.tableJson.clientFilters : true)),
-                        editable: editable,
+                        editable: function (param) {
+                            try {
+                                let ic = Number(param.column.field)-1;
+                                var editable = (liquid.tableJson.columns[ic].foreignTable ? (liquid.tableJson.columns[ic].foreignEdit === true ? true : false) : (liquid.tableJson.columns[ic].readonly === true ? false : true));
+                                editable = (editable && ((liquid.tableJson.editable === true ? true : false) || (liquid.tableJson.editable === 'true' ? true : false))) ? true : false;
+                                editable = (editable && (isDef(liquid.tableJson.columns[ic].lookup) ? true : true)); // N.B.: lookup cannot be changed directly referenced id will be wrong
+                                return editable;
+                            } catch(e) {
+                                console.error(e);
+                            }
+                            return false;
+                        },
                         cellEditor: cellEditor,
                         cellEditorParams: cellEditorParams,
                         cellRenderer: cellRenderer,
@@ -11434,20 +11445,22 @@ var Liquid = {
                         if (e.target.classList.contains("liquidGridControlRW") || e.target.classList.contains("liquidGridControlRO")) {
                             onControl = true;
                         }
-                        if (liquid.currentCommand && liquid.currentCommand.name === "update") {
-                            if (!onControl) {
-                                Liquid.onButton(liquid, {name: "update", "fromToolbar": true});
-                            }
-                        } else if (liquid.currentCommand && liquid.currentCommand.name === "insert") {
-                            if (!onControl) {
-                                Liquid.onButton(liquid, {name: "insert", "fromToolbar": false});
-                            }
-                        } else {
-                            if (isDef(lay_coord.row)) {
-                                if (onControl) {
+                        if(liquid.tableJson.editable == true || liquid.tableJson.editable == 'true') {
+                            if (liquid.currentCommand && liquid.currentCommand.name === "update") {
+                                if (!onControl) {
                                     Liquid.onButton(liquid, {name: "update", "fromToolbar": true});
-                                } else {
-                                    // dblclick outside control
+                                }
+                            } else if (liquid.currentCommand && liquid.currentCommand.name === "insert") {
+                                if (!onControl) {
+                                    Liquid.onButton(liquid, {name: "insert", "fromToolbar": false});
+                                }
+                            } else {
+                                if (isDef(lay_coord.row)) {
+                                    if (onControl) {
+                                        Liquid.onButton(liquid, {name: "update", "fromToolbar": true});
+                                    } else {
+                                        // dblclick outside control
+                                    }
                                 }
                             }
                         }
@@ -21481,10 +21494,8 @@ var Liquid = {
         if(liquid) {
             let nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
             let lay_coord = Liquid.getLayoutCoords(liquid, obj);
-            if (lay_coord.layout) {
-                if (lay_coord.row >= 0 && lay_coord.row < nodes.length) {
-                    return Liquid.isAddingNode(liquid, lay_coord.row, nodes, true);
-                }
+            if (lay_coord.row >= 0 && lay_coord.row < nodes.length) {
+                return Liquid.isAddingNode(liquid, lay_coord.row, nodes, true);
             }
         }
         return false;
@@ -25999,10 +26010,10 @@ columns:[
             liquid.gridOptions.api.clearFocusedCell();
         }
     },
-    downloadURL:function(url) {
+    downloadURL:function(url, fileName) {
         var anchor = document.createElement('a');
         anchor.href = url;
-        anchor.download = url;
+        anchor.download = fileName ? fileName : url;
         // document.body.appendChild(anchor);
         anchor.click();
     },
@@ -26011,6 +26022,22 @@ columns:[
         // return responseText ? responseText.replace(/[\uE000-\uF8FF]/g, '') : responseText;
         return responseText ? responseText.replace(/(?:[\r\n])/g, "\\n").replace(/(?:[\t])/g, "\\t").replace(/(?:[\f])/g, "\\f").replace('', "") : responseText;
     },
+    cloneNodesValue: function (obj, targetObj) {
+        if (obj && targetObj) {
+            for (var j = 0; j < obj.childNodes.length; j++) {
+                var nodeName = obj.childNodes[j].nodeName.toUpperCase();
+                if (nodeName === 'INPUT' || nodeName === 'SELECT') {
+                    let tobjs = targetObj.querySelectorAll("[id^='"+obj.childNodes[j].id+"']");
+                    for (let i = 0; i < tobjs.length; i++) {
+                        tobjs[i].value = obj.childNodes[j].value;
+                    }
+                }
+                if(obj.childNodes[j].childNodes.length>0) {
+                    Liquid.cloneNodesValue(obj.childNodes[j], targetObj);
+                }
+            }
+        }
+    },
     switchPasswordVisibility:function(obj) {
         if(obj) {
             if(obj.type == 'password') {
@@ -26018,6 +26045,12 @@ columns:[
             } else {
                 obj.type = 'password';
             }
+        }
+    },
+    setReadonly:function(bReadOnly) {
+        for(let i=0; i<glLiquids.length; i++) {
+            if(isDef(glLiquids[i].tableJson))
+                glLiquids[i].tableJson.editable = !bReadOnly;
         }
     }
 };

@@ -2954,6 +2954,7 @@ public class utility {
                 "type=\"text\"\n" +
                 "value=\"\"\n" +
                 "placeholder=\"\"\n" +
+                "autocomplete=\"off\"\n" +
                 "onchange=\""+(onChange != null ? onChange : "Liquid.onSearchFilterChange(this,this)")+"\"\n" +
                 (style != null ? "style=\""+style+"\"\n" : "")+
                 (className != null ? "class=\""+className+"\"\n" : "")+
