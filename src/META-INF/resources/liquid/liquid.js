@@ -18602,6 +18602,60 @@ var Liquid = {
     getDMSFilePath: function (filePath) {
         return filePath ? filePath.replace(glLiquidDMSRoot, glLiquidRoot) : null;
     },
+    getDocumentTypeHTML:function( type ) {
+    switch(type) {
+        case 'step':
+        case 'stp':
+        case 'iges':
+        case 'igs':
+        case 'stl':
+        case 'obj':
+            return glLiquidRoot + "/liquid/images/step.png";
+            break
+        case 'pdf':
+            return glLiquidRoot + "/liquid/images/pdf.png";
+            break
+        case 'xlsx':
+        case 'xls':
+            return glLiquidRoot + "/liquid/images/xls.png";
+            break
+        case 'ods':
+            return glLiquidRoot + "/liquid/images/ods.png";
+            break
+        case 'docx':
+        case 'doc':
+            return glLiquidRoot + "/liquid/images/world.png";
+            break
+        case 'dxf':
+        case 'dwt':
+        case 'dwg':
+            return glLiquidRoot + "/liquid/images/dwg.png";
+            break
+        case 'xml':
+            return glLiquidRoot + "/liquid/images/toXML.png";
+            break
+        case 'jpeg':
+        case 'jpg':
+            return glLiquidRoot + "/liquid/images/jpeg.jeg";
+            break
+        case 'png':
+            return glLiquidRoot + "/liquid/images/png.png";
+            break
+        case 'txt':
+            return glLiquidRoot + "/liquid/images/txt.png";
+            break
+        case 'csv':
+            return glLiquidRoot + "/liquid/images/csv.png";
+            break
+        case 'nc':
+            return glLiquidRoot + "/liquid/images/nc.png";
+            break
+        default:
+            return glLiquidRoot + "/liquid/images/compute_cycle.png";
+            break
+        }
+        return "";
+    },
     loadChartsContent: function (liquid) {
         if (isDef(liquid.tableJson.charts)) {
             for (var ic = 0; ic < liquid.tableJson.charts.length; ic++) {

@@ -33,7 +33,7 @@ public class dms {
      * @return
      */
     public static String getDMSFileAbsolutePath(String fileName, HttpServletRequest request) {
-        String dmsFTP = null, dmsFTPPublicURL = null;
+        String dmsFTP = null, dmsFTPPublicURL = null, dmsRootFolder = null;
         try {
             Class cls = Class.forName("app.liquid.dms.connection");
             Field fFtp = cls.getDeclaredField("dmsFTP");
@@ -46,6 +46,11 @@ public class dms {
                 fFtpURL.setAccessible(true);
                 dmsFTPPublicURL = (String) fFtpURL.get(null);
             }
+            Field fF = cls.getDeclaredField("dmsRootFolder");
+            if (fF != null) {
+                fF.setAccessible(true);
+                dmsRootFolder = (String) fF.get(null);
+            }
         } catch (Exception e) {
             // Logger.getLogger(connection.class.getName()).log(Level.SEVERE, null, e);
         }
@@ -54,10 +59,16 @@ public class dms {
             // return dmsFTPPublicURL + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
             return dmsFTPPublicURL;
         } else {
-            ServletContext servletContext = request.getSession().getServletContext();
-            String absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
-            String APP_CONTEXT = request.getContextPath();
-            return absoluteFilePathRoot + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
+            String absoluteFilePathRoot = null;
+            String APP_CONTEXT = APP_CONTEXT = request.getContextPath();
+            if(dmsRootFolder == null || !dmsRootFolder.isEmpty()) {
+                absoluteFilePathRoot = dmsRootFolder;
+                return absoluteFilePathRoot + (absoluteFilePathRoot.endsWith(File.separator) ? "" : File.separator) + utility.get_file_name(fileName);
+            } else {
+                ServletContext servletContext = request.getSession().getServletContext();
+                absoluteFilePathRoot = utility.strip_last_slash(servletContext.getRealPath("/"));
+                return absoluteFilePathRoot + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
+            }
         }
     }
 
