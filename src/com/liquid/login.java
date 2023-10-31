@@ -1948,7 +1948,13 @@ public class login {
 
                             String sLinkHTML = "<a href='" + sLink + "'>Login here ...</a>";
 
-                            String[] params = {newPassword, rsdoLogin.getString("id"), rsdoLogin.getString(login_field), sLinkHTML};
+                            String[] params = { 
+                                    newPassword, 
+                                    rsdoLogin.getString("id"), 
+                                    rsdoLogin.getString(login_field), 
+                                    sLinkHTML,
+                                    rsdoLogin.getString(email_field),
+                            };
 
                             try {
 
@@ -1961,9 +1967,6 @@ public class login {
                                 } else if ("oracle".equalsIgnoreCase(driver)) {
                                 } else if ("sqlserver".equalsIgnoreCase(driver)) {
                                 }
-                                psdoLogin = conn.prepareStatement(sqlSTMT);
-                                psdoLogin.setString(1, params[0]);
-                                psdoLogin.executeUpdate();
 
                                 emailer emailerInstance = new emailer();
                                 emailerInstance.AppName = (String) request.getSession().getAttribute("GLLiquidLoginEmailAppName");
@@ -1971,14 +1974,47 @@ public class login {
                                 emailerInstance.AppImage = (String) request.getSession().getAttribute("GLLiquidLoginEmailAppImage");
                                 emailerInstance.From = (String) request.getSession().getAttribute("GLLiquidLoginEmailFrom");
 
-                                if (emailerInstance.send(sEMail, null, application_id + " - Recupero password", emailerInstance.get_standard_message("RecoveryPassword", params, request))) {
-                                    message = "Password inviata a <b>" + sEMail + "</b>";
-                                    message += emailerInstance.DebugMessage;
-                                    return "{ \"result\":1, \"message\":\"" + utility.base64Encode(message) + "\"}";
+                                // ${nick_name}
+                                // ${password}
+
+
+                                String emailMessage = null;
+                                if(login.RecoveryPasswordTemplateFile != null) {
+                                    emailMessage = workspace.get_file_content(request, login.RecoveryPasswordTemplateFile, false, false);
+                                    if(emailMessage != null) {
+                                        // String[] params = { newPassword, sEMail, application_id, domain_id, sApplicationURL, sEmailToken, sRedirect, database, schema, table };
+                                        emailMessage = emailMessage.replace("${name}", params[2]);
+                                        emailMessage = emailMessage.replace("${nick_name}", params[2]);
+                                        emailMessage = emailMessage.replace("${password}", params[0]);
+                                        emailMessage = emailMessage.replace("${new_password}", params[0]);
+                                        emailMessage = emailMessage.replace("${email}", params[4]);
+                                        emailMessage = emailMessage.replace("${application_url}", params[3]);
+                                    }
+                                    
                                 } else {
-                                    message = "Invio Password Fallito : " + emailerInstance.LastError + "";
-                                    return "{ \"result\":-3, \"error\":\"" + utility.base64Encode(message) + "\"}";
+                                    emailMessage = emailerInstance.get_standard_message("RecoveryPassword", params, request);
                                 }
+                                
+                                if(emailMessage != null && !emailMessage.isEmpty()) {
+                                    if (emailerInstance.send(sEMail, null, application_id + " - Recupero password", emailMessage)) {
+                                        message = "Password inviata a <b>" + sEMail + "</b>";
+                                        message += emailerInstance.DebugMessage;
+                                    } else {
+                                        message = "Invio Password Fallito : " + emailerInstance.LastError + "";
+                                        return "{ \"result\":-3, \"error\":\"" + utility.base64Encode(message) + "\"}";
+                                    }
+                                } else {
+                                    message = "Creazione messaggio Fallita";
+                                    return "{ \"result\":-4, \"error\":\"" + utility.base64Encode(message) + "\"}";
+                                }
+
+                                // Aggiornamento DB
+                                psdoLogin = conn.prepareStatement(sqlSTMT);
+                                psdoLogin.setString(1, params[0]);
+                                psdoLogin.executeUpdate();
+
+                                return "{ \"result\":1, \"message\":\"" + utility.base64Encode(message) + "\"}";
+
                             } catch (Exception e) {
                                 return "{ \"result\":-4, \"error\":\"" + utility.base64Encode(e.getLocalizedMessage()) + "\"}";
                             }
