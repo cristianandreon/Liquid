@@ -60,7 +60,7 @@ public class dms {
             return dmsFTPPublicURL;
         } else {
             String absoluteFilePathRoot = null;
-            String APP_CONTEXT = APP_CONTEXT = request.getContextPath();
+            String APP_CONTEXT = request.getContextPath();
             if(dmsRootFolder != null && !dmsRootFolder.isEmpty()) {
                 absoluteFilePathRoot = dmsRootFolder;
                 return absoluteFilePathRoot + (absoluteFilePathRoot.endsWith(File.separator) ? "" : File.separator) + utility.get_file_name(fileName);
