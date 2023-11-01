@@ -2660,7 +2660,8 @@ public class utility {
 
         if(codeHidden) {
             if(includeInput) {
-                out += "<input type=\"hidden\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + " value=\"" + "" + "\" />";
+                // Description active : code is hidden, description is visible
+                out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + " value=\"" + "" + "\" />";
             }
         }
         if(useSelect) {
@@ -2709,7 +2710,9 @@ public class utility {
                         "name=\""+(descColumn != null ? descColumn : "")+"\" " +
                         "" + (tooltip != null ? "title=\"" + tooltip.replace("\"", "'") +"\"" : "") +
                         (codeHidden ? "" : "value=\"" + code + "\" ") +
-                        ">" + desc + "</option><img src=\""+svg+"\"/>";
+                        ">" + desc + "</option>" +
+                        (svg != null && !svg.isEmpty() ? "<img src=\""+svg+"\"/>" : "")
+                ;
             }
         }
         if(useSelect) {
@@ -2719,7 +2722,9 @@ public class utility {
         }
 
         if(resetButton) {
-            String reset = "<button class=\"close-icon\" onclick=\"if(document.getElementById('" + datalistId + "').value) { document.getElementById('" + datalistId + "').value=''; document.getElementById('" + datalistId + "').placeholder=''; document.getElementById('" + datalistId + "').onchange(); } else {}\"></button>";
+            String reset = "<i class=\"close-icon\" " +
+                    "onclick=\"if(document.getElementById('" + datalistId + "').value) { document.getElementById('" + datalistId + "').value=''; document.getElementById('" + datalistId + "').placeholder=''; document.getElementById('" + datalistId + "').onchange(); } else {}\">" +
+                    "</i>";
             out += "\n" + reset;
         }
 

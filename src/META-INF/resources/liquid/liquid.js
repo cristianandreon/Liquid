@@ -25814,11 +25814,21 @@ columns:[
      * @param obj
      */
     onChangedDescDatalist:function(obj) {
-        var selectedOption = obj.list.options.namedItem(obj.value);
+        var selectedOption = null;
+        if(obj.list.tagName === 'DATALIST') {
+            for(let i=0; i<obj.list.options.length; i++) {
+                if(obj.list.options[i].value == obj.value) {
+                    selectedOption = obj.list.options[i];
+                    break;
+                }
+            }
+        } else {
+            selectedOption = obj.list.options.namedItem(obj.value);
+        }
         if (selectedOption) {
             let code_id = obj.getAttribute('inputid');
             let code_obj = Liquid.getWindowFromElement(obj).document.getElementById(code_id);
-            if(code_obj) {
+            if (code_obj) {
                 code_obj.value = selectedOption.getAttribute('data-code');
                 var event = new Event('change');
                 code_obj.dispatchEvent(event);
