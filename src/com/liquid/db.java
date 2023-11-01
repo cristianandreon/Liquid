@@ -4778,12 +4778,12 @@ public class db {
                 PreparedStatement sqlSTMTUpdate = conn.prepareStatement(sSTMTUpdate, Statement.RETURN_GENERATED_KEYS);
 
                 int ip=1;
-                for(int i=0; i<Values.length; i++) {
-                    if (utility.contains(primaryKeysName, Fields[i])) {
+                for (int i = 0; i < Values.length; i++) {
+                    if (primaryKeysName != null && utility.contains(primaryKeysName, Fields[i])) {
                     } else {
                         if (i < Fields.length) {
                             Object val = Values[i];
-                            if(db.mapStatementParam(sqlSTMTUpdate, ip, val)) {
+                            if (db.mapStatementParam(sqlSTMTUpdate, ip, val)) {
                                 ip++;
                             }
                         }
@@ -4791,11 +4791,13 @@ public class db {
                 }
 
                 // primary key
-                if(primaryKeysName.length == 1 && primaryKeysName[0].startsWith("WHERE ")) {
-                } else {
-                    for(int ik=0; ik<primaryKeysName.length; ik++) {
-                        if(db.mapStatementParam(sqlSTMTUpdate, ip, keyValues.get(ik))) {
-                            ip++;
+                if(primaryKeysName != null) {
+                    if (primaryKeysName.length == 1 && primaryKeysName[0].startsWith("WHERE ")) {
+                    } else {
+                        for (int ik = 0; ik < primaryKeysName.length; ik++) {
+                            if (db.mapStatementParam(sqlSTMTUpdate, ip, keyValues.get(ik))) {
+                                ip++;
+                            }
                         }
                     }
                 }

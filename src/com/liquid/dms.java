@@ -1220,16 +1220,18 @@ public class dms {
                 fdt.setAccessible(true);
                 dmsDocType = (String) fdt.get(null);
             }
-            Field fFtp = cls.getDeclaredField("dmsFTP");
-            if(fFtp != null) {
-                fFtp.setAccessible(true);
-                dmsFTP = (String) fFtp.get(null);
-            }
             Field fr = cls.getDeclaredField("dmsRootFolder");
             if(fr != null) {
                 fr.setAccessible(true);
                 dmsRootFolder = (String) fr.get(null);
             }
+            try {
+                Field fFtp = cls.getDeclaredField("dmsFTP");
+                if (fFtp != null) {
+                    fFtp.setAccessible(true);
+                    dmsFTP = (String) fFtp.get(null);
+                }
+            } catch (Exception e) {}
 
 
 

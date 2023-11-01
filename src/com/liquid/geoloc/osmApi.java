@@ -5,14 +5,9 @@
 package com.liquid.geoloc;
 
 import com.liquid.net;
-import com.sun.org.apache.xerces.internal.impl.io.UTF8Reader;
 import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.io.IOException;
 import java.net.URLEncoder;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 
 public class osmApi {
 

@@ -11434,32 +11434,34 @@ var Liquid = {
         }
         e.stopPropagation();
     },
-    onDnlClick: function (e) {
+    onDblClick: function (e) {
         if(e) {
             let liquid = Liquid.getLiquid(e.target);
             if (liquid) {
-                var lay_coord = Liquid.getLayoutCoords(liquid, event.target);
-                if (lay_coord) {
-                    if (lay_coord.layoutIndex != null) {
-                        let onControl = false;
-                        if (e.target.classList.contains("liquidGridControlRW") || e.target.classList.contains("liquidGridControlRO")) {
-                            onControl = true;
-                        }
-                        if(liquid.tableJson.editable == true || liquid.tableJson.editable == 'true') {
-                            if (liquid.currentCommand && liquid.currentCommand.name === "update") {
-                                if (!onControl) {
-                                    Liquid.onButton(liquid, {name: "update", "fromToolbar": true});
-                                }
-                            } else if (liquid.currentCommand && liquid.currentCommand.name === "insert") {
-                                if (!onControl) {
-                                    Liquid.onButton(liquid, {name: "insert", "fromToolbar": false});
-                                }
-                            } else {
-                                if (isDef(lay_coord.row)) {
-                                    if (onControl) {
+                if(isDef(liquid.tableJson.dblClick) && liquid.tableJson.dblClick === true) {
+                    var lay_coord = Liquid.getLayoutCoords(liquid, event.target);
+                    if (lay_coord) {
+                        if (lay_coord.layoutIndex != null) {
+                            let onControl = false;
+                            if (e.target.classList.contains("liquidGridControlRW") || e.target.classList.contains("liquidGridControlRO")) {
+                                onControl = true;
+                            }
+                            if (liquid.tableJson.editable == true || liquid.tableJson.editable == 'true') {
+                                if (liquid.currentCommand && liquid.currentCommand.name === "update") {
+                                    if (!onControl) {
                                         Liquid.onButton(liquid, {name: "update", "fromToolbar": true});
-                                    } else {
-                                        // dblclick outside control
+                                    }
+                                } else if (liquid.currentCommand && liquid.currentCommand.name === "insert") {
+                                    if (!onControl) {
+                                        Liquid.onButton(liquid, {name: "insert", "fromToolbar": false});
+                                    }
+                                } else {
+                                    if (isDef(lay_coord.row)) {
+                                        if (onControl) {
+                                            Liquid.onButton(liquid, {name: "update", "fromToolbar": true});
+                                        } else {
+                                            // dblclick outside control
+                                        }
                                     }
                                 }
                             }
@@ -25772,13 +25774,15 @@ columns:[
             descObj.setAttribute('inputid', inputObj.id);
 
             if(inputObj.value) {
-                for(let i=0; i<descObj.list.options.length; i++) {
-                    if(descObj.list.options[i].getAttribute('data-code') == inputObj.value) {
-                        var selectedOption = descObj.list.options[i];
-                        if (selectedOption) {
-                            descObj.value = selectedOption.value;
+                if(descObj.list) {
+                    for (let i = 0; i < descObj.list.options.length; i++) {
+                        if (descObj.list.options[i].getAttribute('data-code') == inputObj.value) {
+                            var selectedOption = descObj.list.options[i];
+                            if (selectedOption) {
+                                descObj.value = selectedOption.value;
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
             }
@@ -26110,7 +26114,7 @@ columns:[
 };
 
 
-if(window.addEventListener) { window.addEventListener('dblclick', Liquid.onDnlClick); } else { window.attachEvent('ondblclick', Liquid.onDnlClick); }
+if(window.addEventListener) { window.addEventListener('dblclick', Liquid.onDblClick); } else { window.attachEvent('ondblclick', Liquid.onDblClick); }
 if(window.addEventListener) { window.addEventListener('click', Liquid.onClick); } else { window.attachEvent('onclick', Liquid.onClick); }
 if(window.addEventListener) { window.addEventListener('load', Liquid.startup); } else { window.attachEvent('onload', Liquid.Startup); }
 if(window.addEventListener) { window.addEventListener('keydown', Liquid.onWindowKeyDown); } else { window.attachEvent('onkeydown', Liquid.onWindowKeyDown); }

@@ -2605,7 +2605,7 @@ public class utility {
                                                  boolean chacheIt,
                                                  boolean includeInput
     ) throws Throwable {
-        return get_datalist_from_table(inputId, databaseSchemaTable, codeColumn, descColumn, null, null, where, null, emptyRow, currentValue, null, chacheIt, includeInput, false, true, null);
+        return get_datalist_from_table(inputId, databaseSchemaTable, codeColumn, descColumn, null, null, where, order, emptyRow, currentValue, null, chacheIt, includeInput, false, true, null);
     }
 
     /**
@@ -2660,7 +2660,7 @@ public class utility {
 
         if(codeHidden) {
             if(includeInput) {
-                out += "<input type=\"hidden\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + "value=\"" + "" + "\" />";
+                out += "<input type=\"hidden\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + " value=\"" + "" + "\" />";
             }
         }
         if(useSelect) {
@@ -3271,8 +3271,10 @@ public class utility {
     }
 
     public static boolean contains(String[] list, Object key) {
-        for (int i = 0; i < list.length; i++) {
-            if (list[i].compareTo(String.valueOf(key)) == 0) return true;
+        if(list != null) {
+            for (int i = 0; i < list.length; i++) {
+                if (list[i].compareTo(String.valueOf(key)) == 0) return true;
+            }
         }
         return false;
     }
