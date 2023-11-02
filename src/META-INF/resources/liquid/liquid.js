@@ -7195,9 +7195,9 @@ var Liquid = {
             }
         }
     },
-    onLayoutShow: function (e) {
+    onLayoutShow: function (e, liquid, layout) {
         if (e.target) {
-            var liquid = Liquid.getLiquid(liquid);
+            var liquid = Liquid.getLiquid(e.target);
             if (liquid) {
                 var lay_coord = Liquid.getLayoutCoords(liquid, e.target);
                 if (lay_coord) {
@@ -20005,12 +20005,15 @@ var Liquid = {
             if (layout) {
                 var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
                 if (aggridContainerHeight > 0) {
-                    layout.containerObj.style.height = isDef(layout.height) ? layout.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
-                    if(isDef(layout.minHeight)) {
-                        layout.containerObj.style.minHeight = layout.minHeight;
+                    if(layout.containerObj) {
+                        layout.containerObj.style.height = isDef(layout.height) ? layout.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
+                        if (isDef(layout.minHeight)) {
+                            layout.containerObj.style.minHeight = layout.minHeight;
+                        }
+                        if (!isDef(layout.resizeCounter)) layout.resizeCounter = 0;
+                        if (layout.containerObj.offsetHeight > 0)
+                            layout.resizeCounter++;
                     }
-                    if (!isDef(layout.resizeCounter)) layout.resizeCounter = 0;
-                    layout.resizeCounter++;
                 }
             }
         }
@@ -20021,12 +20024,15 @@ var Liquid = {
                 if(document.customized !== true) {
                     var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
                     if (aggridContainerHeight > 0) {
-                        document.containerObj.style.height = isDef(document.height) ? document.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
-                        if(isDef(document.minHeight)) {
-                            document.containerObj.style.minHeight = document.minHeight;
+                        if(document.containerObj) {
+                            document.containerObj.style.height = isDef(document.height) ? document.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
+                            if (isDef(document.minHeight)) {
+                                document.containerObj.style.minHeight = document.minHeight;
+                            }
+                            if (!isDef(document.resizeCounter)) document.resizeCounter = 0;
+                            if (document.containerObj.offsetHeight > 0)
+                                document.resizeCounter++;
                         }
-                        if (!isDef(document.resizeCounter)) document.resizeCounter = 0;
-                        document.resizeCounter++;
                     }
                 }
             }
@@ -20038,18 +20044,21 @@ var Liquid = {
                 if(chart.customized !== true) {
                     var aggridContainerHeight = (liquid.aggridContainerHeight > 0 ? liquid.aggridContainerHeight : 0);
                     if (aggridContainerHeight > 0) {
-                        chart.containerObj.style.height = isDef(chart.height) ? chart.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
-                        if(isDef(chart.minHeight)) {
-                            chart.containerObj.style.minHeight = chart.minHeight;
+                        if(chart.containerObj) {
+                            chart.containerObj.style.height = isDef(chart.height) ? chart.height : ((aggridContainerHeight > 0 ? aggridContainerHeight : "0") + "px");
+                            if (isDef(chart.minHeight)) {
+                                chart.containerObj.style.minHeight = chart.minHeight;
+                            }
+                            if (!isDef(chart.resizeCounter)) chart.resizeCounter = 0;
+                            if (chart.containerObj.offsetHeight > 0)
+                                chart.resizeCounter++;
                         }
-                        if (!isDef(chart.resizeCounter)) chart.resizeCounter = 0;
-                        chart.resizeCounter++;
                     }
                 }
             }
         }
     },
-    onGridShow: function (liquid, grid) {
+    onGridShow: function (e, liquid, grid) {
         if (liquid) {
             if (grid) {
                 if (isDef(grid.columns)) {
@@ -20231,28 +20240,28 @@ var Liquid = {
                     if (!grid_coords.grid.resizeCounter) { // need resize ?
                         doResize = true;
                     }
-                    Liquid.onGridShow(liquid, grid_coords.grid);
+                    Liquid.onGridShow({target:obj}, liquid, grid_coords.grid);
                 } else if (grid_coords.layout) {
                     gridObject = grid_coords.layout;
                     if (!grid_coords.layout.resizeCounter) { // need resize ?
                         doResize = true;
                     }
                     if (isDef(Liquid.onLayoutShow))
-                        Liquid.onLayoutShow(liquid, grid_coords.layout);
+                        Liquid.onLayoutShow({target:obj}, liquid, grid_coords.layout);
                 } else if (grid_coords.document) {
                     gridObject = grid_coords.document;
                     if (!grid_coords.document.resizeCounter) { // need resize ?
                         doResize = true;
                     }
                     if (isDef(Liquid.onDocumentShow))
-                        Liquid.onDocumentShow(liquid, grid_coords.document);
+                        Liquid.onDocumentShow({target:obj}, liquid, grid_coords.document);
                 } else if (grid_coords.chart) {
                     gridObject = grid_coords.chart;
                     if (!grid_coords.chart.resizeCounter) { // need resize ?
                         doResize = true;
                     }
                     if (isDef(Liquid.onChartShow))
-                        Liquid.onChartShow(liquid, grid_coords.chart);
+                        Liquid.onChartShow({target:obj}, liquid, grid_coords.chart);
                 }
                 if (gridObject) {
                     bRestoreList = Liquid.resizeIfDocked(liquid, gridObject);

@@ -2661,7 +2661,7 @@ public class utility {
         if(codeHidden) {
             if(includeInput) {
                 // Description active : code is hidden, description is visible
-                out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + " value=\"" + "" + "\" />";
+                out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden; height:0px\"" + " value=\"" + "" + "\" />";
             }
         }
         if(useSelect) {
@@ -2795,7 +2795,7 @@ public class utility {
 
         if(codeHidden) {
             if(includeInput) {
-                out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden;\"" + "value=\"" + "" + "\" />";
+                out += "<input type=\"text\" class=\"liquidDatalistDesc\" id=\"" + descId + "\" style=\"visibility:hidden; height:0px\"" + "value=\"" + "" + "\" />";
             }
         }
         out += "<div " +
