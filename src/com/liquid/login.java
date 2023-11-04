@@ -916,7 +916,7 @@ public class login {
 
                                 try {
                                     
-                                    if(assets.read_user_assets_roles ( request, iUserId )) {
+                                    if(assets.read_user_assets_roles_preferences( request, iUserId )) {
                                         ArrayList<Object> GLLiquidUserAssetsID = (ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserAssetsID");
                                         ArrayList<Object> GLLiquidUserAssetsName = (ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserAssetsName");
                                         ArrayList<Object> GLLiquidUserInactiveAssetsName = (ArrayList<Object>)request.getSession().getAttribute("GLLiquidUserInactiveAssetsName");

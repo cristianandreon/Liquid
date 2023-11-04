@@ -51,7 +51,8 @@
         // N.B.: Possibile riduzione del carico sul server salvando la sessione solo sui rami necessari (es.: exec)
         ThreadSession.saveThreadSessionInfo ( "Liquid", request, response, out );
 
-        boolean res = assets.read_user_assets_roles ( request, loginId );
+
+        boolean res = assets.read_user_assets_roles_preferences ( request, loginId );
         out.println( res ? "// Read user assets roles for loginId:"+loginId+" OK" : "// Read user assets roles for loginId:"+loginId+" FAILED" );
         
     } catch (Throwable th) {

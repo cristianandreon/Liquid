@@ -4,7 +4,9 @@ import com.liquid.bean.beansCondition;
 
 import static com.liquid.bean.beansToArray;
 import static com.liquid.bean.load_beans;
-import static com.liquid.login.getConnection;
+import static com.liquid.userPrefs.check_user_preferences_table_exist;
+import static com.liquid.userPrefs.user_preferences_table;
+
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -93,7 +95,7 @@ public class assets {
                         +")"
                     );
                 } else if("postgres".equalsIgnoreCase(login.driver)) {
-                    String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+assets_table+"_id_seq";
+                    String seqName = (schema != null && !schema.isEmpty() ? schema+".":"")+table+"_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS "+seqName+"");
                     sql.add("CREATE TABLE IF NOT EXISTS "+(schema != null && !schema.isEmpty() ? (tableIdString+schema+tableIdString+"."):"")+(tableIdString+table+tableIdString)+" ("
                         +"\"id\" INT PRIMARY KEY DEFAULT nextval('"+seqName+"')"
@@ -530,10 +532,10 @@ public class assets {
     }
     
     // Load all roles and asset for userId, typically onLogin
-    static public boolean read_user_assets_roles ( HttpServletRequest request, int userId ) {
-        return read_user_assets_roles(request, (String)String.valueOf(userId));
+    static public boolean read_user_assets_roles_preferences(HttpServletRequest request, int userId ) {
+        return read_user_assets_roles_preferences(request, (String)String.valueOf(userId));
     }
-    static public boolean read_user_assets_roles ( HttpServletRequest request, String userId ) {
+    static public boolean read_user_assets_roles_preferences(HttpServletRequest request, String userId ) {
         boolean retVal = true;
         
         Connection conn = null;
@@ -546,6 +548,8 @@ public class assets {
                 conn = (Connection)connResult[0];
                 String connError = (String)connResult[1];
 
+                if(!check_user_preferences_table_exist( conn, login.schema, user_preferences_table )) {
+                }
                 if(!check_assets_table_exist( conn, login.schema, assets_table )) {            
                 }
                 if(!check_roles_table_exist( conn, login.schema, roles_table )) {            

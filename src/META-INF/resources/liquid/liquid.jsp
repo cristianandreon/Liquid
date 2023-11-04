@@ -255,6 +255,17 @@
                             false
                     )
             );
+
+        } else if ("saveUIParams".equalsIgnoreCase(operation)) {
+            out.print(
+                    userPrefs.saveUIParams( request.getParameter("controlId"), workspace.get_request_content(request), request)
+                    );
+
+        } else if ("loadUIParams".equalsIgnoreCase(operation)) {
+            out.print(
+                    userPrefs.loadUIParams( request.getParameter("controlId"), workspace.get_request_content(request), request)
+            );
+
         } else {
             out.println( "<br/><h1><center>Welcome in Liquid ver. "+workspace.version_string+"</center><br/></h1>");
             if(operation != null) {

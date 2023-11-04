@@ -5343,7 +5343,7 @@ public class db {
 
                                                                     if (!autoIncString) {
 
-                                                                        if (colType == 6 || colType == 93) { // datetime)
+                                                                        if (colType == 6 || colType == 91 || colType == 93) { // datetime)
                                                                             if(request != null) {
                                                                                 if (oValue != null) {
                                                                                     if (oValue instanceof String && ((String) oValue).isEmpty()) {
@@ -5985,7 +5985,7 @@ public class db {
                                 valueType = 0; // is an expression
                             }
                         } else if (colTypes == Types.DATE) { // date
-                            if (value.length() > 9) value = value.substring(0, 9);
+                            if (value.length() > 9) value = value.substring(0, 10);
                             oValue = value = "TO_DATE('" + value + "','YYYY-MM-DD')";
                             valueType = 0; // is an expression
                         }
