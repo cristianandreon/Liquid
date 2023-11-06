@@ -226,8 +226,19 @@ SelectEditor.prototype.init = function(params) {
     if(this.table && this.column) {
 
         let controlId = this.liquid.controlId;
+        // var lookupControlId = this.liquid.controlId + "_" + "list" + "_" + lookupControlName.replace(/\./g, "_");
         let srcForeignWrk = (typeof this.liquid.srcForeignWrk !== "undefined" && this.liquid.srcForeignWrk ? this.liquid.srcForeignWrk : null);
         if(isDef(this.liquid.tableJson.columns[this.iCol].lookup)) {
+            if(!isDef(this.liquid.tableJson.columns[this.iCol].lookup.controlId)) {
+                for (var i = 0; i < glLiquids.length; i++) {
+                    if (isDef(glLiquids[i].tableJson)) {
+                        if (glLiquids[i].tableJson.table === this.liquid.tableJson.columns[this.iCol].lookup.foreignTable) {
+                            this.liquid.tableJson.columns[this.iCol].lookup.controlId = glLiquids[i].controlId;
+                            break;
+                        }
+                    }
+                }
+            }
             controlId = this.liquid.tableJson.columns[this.iCol].lookup.controlId;
             srcForeignWrk = null;
         }
