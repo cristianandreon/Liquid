@@ -9,6 +9,7 @@
  */
 package com.liquid;
 
+import com.sun.javafx.fxml.builder.URLBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -20,10 +21,7 @@ import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.*;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -54,7 +52,7 @@ public class net {
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
      */
-    public static Object [] getURL(String baseURL, String postData) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+    public static Object [] getURL(String baseURL, String postData) throws IOException, NoSuchAlgorithmException, KeyManagementException, URISyntaxException {
         return new net().getURLEx(baseURL, postData, 0, null);
     }
 
@@ -75,7 +73,7 @@ public class net {
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
      */
-    public static Object [] getURL(String baseURL, String postData, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+    public static Object [] getURL(String baseURL, String postData, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException, URISyntaxException {
         return new net().getURLEx(baseURL, postData, 0, headers);
     }
 
@@ -97,7 +95,7 @@ public class net {
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
      */
-    public static Object [] getURL(String baseURL, String postData, int timeout, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+    public static Object [] getURL(String baseURL, String postData, int timeout, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException, URISyntaxException {
         return new net().getURLEx(baseURL, postData, timeout, headers);
     }
 
@@ -144,7 +142,7 @@ public class net {
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
      */
-    public Object [] getURLEx(String baseURL, String postData, int timeout, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+    public Object [] getURLEx(String baseURL, String postData, int timeout, Object headers) throws IOException, NoSuchAlgorithmException, KeyManagementException, URISyntaxException {
         Object [] outObject = new Object [3];
         HttpsURLConnection conns = null;
         HttpURLConnection connh = null;
@@ -154,6 +152,7 @@ public class net {
 
             long lastTime = System.currentTimeMillis();
 
+            baseURL = get_url_from_string(baseURL).toString();
             myUrl = new URL(baseURL);
             InputStream is = null;
             Map<String, List<String>> map = null;
@@ -407,6 +406,11 @@ public class net {
         } catch (org.jsoup.HttpStatusException e) {
             return new Object[]{null, e.getStatusCode(), null};
         }
+    }
+
+    public static URL get_url_from_string( String url) throws MalformedURLException, URISyntaxException {
+        URL Url = new URL(url);
+        return new URI(Url.getProtocol(), null, Url.getHost(), Url.getPort(), Url.getPath(), Url.getQuery(), null).toURL();
     }
 
 }
