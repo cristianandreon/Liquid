@@ -685,6 +685,7 @@ public class dms {
             int added = 0;
             String fileAbsolutePath = getAbsoluteRootPath(dmsRootFolder, request);
             fileAbsolutePath = utility.strip_last_slash(fileAbsolutePath) + File.separator;
+            String fileAbsoluteBasePath = fileAbsolutePath;
 
             // Database
             String comp = paramJson.has("database") ? paramJson.getString("database") : null;
@@ -742,6 +743,9 @@ public class dms {
 
             // Scrittura file
             if(paramJson.has("content")) {
+                //
+                // Vecchia modalita' : dentro al JSON
+                //
                 String b64FileContent = paramJson.getString("content");
                 byte[] fileContent = null;
                 if (b64FileContent.startsWith("base64,")) {
@@ -795,17 +799,21 @@ public class dms {
                 paramJson.put("hash", utility.get_file_md5(fileAbsolutePath));
 
             } else if (content != null) {
+                //
+                // Nuova modalita' : nei parametri
+                //
                 byte[] fileContent = content;
                 if (fileContent.length > dmsMaxFileSize && dmsMaxFileSize > 0) {
                     throw new Exception("File too large .. max:" + (dmsMaxFileSize / 1024) + "Kb");
                 }
                 if(dmsFTP != null && !dmsFTP.isEmpty()) {
                     ftp.setByURL(dmsFTP);
-                    if(!ftp.upload(fileContent, fileAbsolutePath.substring(dmsRootFolder.length()))) {
+                    // if(!ftp.upload(fileContent, fileAbsolutePath.substring(dmsRootFolder.length()))) {
+                    if(!ftp.upload(fileContent, fileAbsolutePath.substring((dmsAbsoluteRootFolder+File.separator).length()))) {
                         throw new Exception("Unable to upload file to ftp");
                     }
-                    if(fileAbsolutePath.startsWith(dmsRootFolder))
-                        fileAbsolutePath = fileAbsolutePath.substring(dmsRootFolder.length());
+                    if(fileAbsolutePath.startsWith(fileAbsoluteBasePath))
+                        fileAbsolutePath = fileAbsolutePath.substring(fileAbsoluteBasePath.length());
                     fileAbsolutePath = dmsFTPPublicURL + File.separator + fileAbsolutePath;
                     paramJson.put("hash", utility.get_file_content_md5(fileContent));
                 } else {
