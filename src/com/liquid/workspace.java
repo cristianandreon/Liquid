@@ -37,6 +37,11 @@ import static com.liquid.liquidize.liquidizeJSONContent;
 public class workspace {
 
     public static String version_string = "2.85";
+
+
+    // Converse la stringa vuota in NULL se la colonna in presenza di foreignKey (postgress11 supporta la string vuota)
+    public static boolean wrapEmptyStringToNull = true;
+
     public static String getGLLang() {
         return GLLang;
     }
@@ -122,6 +127,10 @@ public class workspace {
             }
         }
         return res;
+    }
+
+    public static void invalidateWorkspaces() {
+        glTblWorkspaces.clear();
     }
 
 
@@ -1805,6 +1814,8 @@ public class workspace {
                 boolean readAllForeignTables = false;
                 boolean readAllNestedForeignTables = false;
                 boolean updateAllForeignTables = false;
+                ArrayList<metadata.ForeignKey> foreignKeysObjectsOnTable = null;
+                ArrayList<metadata.ForeignKey> referencesObjectsOnTable = null;
 
                 if ("*".equalsIgnoreCase(foreignTables)) {
                     readAllForeignTables = true;
@@ -1822,8 +1833,6 @@ public class workspace {
                 // foreign tables (getExportedKeys e getImportedKeys)
                 if (readAllForeignTables) {
                     if (updateAllForeignTables) {
-                        ArrayList<metadata.ForeignKey> foreignKeysObjectsOnTable = null;
-                        ArrayList<metadata.ForeignKey> referencesObjectsOnTable = null;
                         //
                         // FOREIGN KEY : Elenco colonne che sono referenziate su altre tabelle (tabelle usate da questa tabella)
                         // es. campo ID_NAZIONE referenziato in NAZIONE.ID
@@ -1911,7 +1920,7 @@ public class workspace {
                                                                 // foreignTablesList.add(ft);
                                                                 int ic = cols.length();
                                                                 if (get_column(table, cols, null, fc) <= 0) {
-                                                                    if(allColumns.contains(fc)) {
+                                                                    if(!allColumns.contains(fc)) {
                                                                         JSONObject colJson = new JSONObject("{\"name\":\"" + table + "." + fc + "\",\"label\":\"" + table + "." + fc + "#AutoAdded\",\"field\":\"" + String.valueOf(ic + 1) + "\",\"visible\":false}");
                                                                         cols.put(colJson);
                                                                         ic++;
@@ -1966,6 +1975,42 @@ public class workspace {
                     isSystem = tableJson.has("isSystem") ? tableJson.getBoolean("isSystem") : false;
                 } catch (Exception ex) {
                 }
+
+
+
+
+
+                //
+                // REFERENCES : Elenco di colonne che sono utilizzate da altre tabelle (tabelle che usano questa tabella)
+                // es. campo NAZIONE.ID usato in ORDINI.ID_NAZIONE, PREVENTIVI.ID_NAZION£ etc
+                //
+                if(foreignKeysObjectsOnTable == null) {
+                    try {
+                        foreignKeysObjectsOnTable = metadata.getForeignKeyData(database, schema, table, connToUse);
+                    } catch (Exception ex) {
+                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                cols = tableJson.getJSONArray("columns");
+                if(foreignKeysObjectsOnTable != null) {
+                    for (int i = 0; i < foreignKeysObjectsOnTable.size(); i++) {
+                        if(foreignKeysObjectsOnTable.get(i).columns != null) {
+                            for (int j = 0; j < foreignKeysObjectsOnTable.get(i).columns.size(); j++) {
+                                String colName = foreignKeysObjectsOnTable.get(i).columns.get(j);
+                                int col1B = get_column(table, cols, null, colName);
+                                if(col1B > 0) {
+                                    JSONObject col = cols.getJSONObject(col1B-1);
+                                    col.put("foreignKey", new JSONObject("{" +
+                                            "\"table\":\""+foreignKeysObjectsOnTable.get(i).foreignTable+"\"" +
+                                            ",\"column\":\""+colName+"\"" +
+                                            "}}"));
+                                } else {
+                                }
+                            }
+                        }
+                    }
+                }
+
 
                 //
                 // Aggiunta Metadati

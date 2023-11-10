@@ -1095,6 +1095,9 @@ public class login {
                 session.setAttribute("GLLiquidUserID", null);
                 session.setAttribute("GLLiquidAdmin", null);
                 session.setAttribute("GLLiquidToken", null);
+                if(workspace.projectMode) {
+                    workspace.invalidateWorkspaces();
+                }
                 return result;
             } else {
                 return "{ \"result\":-666, \"error\":\"" + utility.base64Encode("undetected case : no session") + "\"}";

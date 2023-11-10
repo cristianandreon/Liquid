@@ -5417,6 +5417,25 @@ public class db {
                                                                             sDBDefault = dbDefault;
                                                                         }
 
+
+                                                                        //
+                                                                        // Verifica se stringa vuota e froeignKey presente
+                                                                        //
+                                                                        if(workspace.wrapEmptyStringToNull) {
+                                                                            if (col.has("foreignKey")) {
+                                                                                JSONObject foreignKey = col.getJSONObject("foreignKey");
+                                                                                if (foreignKey != null) {
+                                                                                    if (foreignKey.has("table") && foreignKey.has("column")) {
+                                                                                        if (oValue instanceof String) {
+                                                                                            if (((String) oValue).isEmpty()) {
+                                                                                                oValue = null;
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+
                                                                         Object[] fres = format_db_value(liquid, colTypes[ic], nullable, oValue, null, sDBDefault);
                                                                         oValue = (Object) fres[0];
                                                                         valueType = (int) fres[1];
