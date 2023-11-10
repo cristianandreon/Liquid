@@ -2000,10 +2000,12 @@ public class workspace {
                                 int col1B = get_column(table, cols, null, colName);
                                 if(col1B > 0) {
                                     JSONObject col = cols.getJSONObject(col1B-1);
-                                    col.put("foreignKey", new JSONObject("{" +
-                                            "\"table\":\""+foreignKeysObjectsOnTable.get(i).foreignTable+"\"" +
-                                            ",\"column\":\""+colName+"\"" +
-                                            "}}"));
+                                    col.put(
+                                            "foreignKey", new JSONObject("{" +
+                                                    "\"table\":\""+foreignKeysObjectsOnTable.get(i).foreignTable+"\"" +
+                                                    ",\"column\":\""+colName+"\"" +
+                                                    "}}")
+                                    );
                                 } else {
                                 }
                             }

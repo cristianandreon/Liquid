@@ -2283,6 +2283,20 @@ public class utility {
         }
     }
 
+    public static boolean content_to_file(String fileName, byte [] content) throws IOException {
+        RandomAccessFile randomAccessFile = null;
+        try {
+            randomAccessFile = new RandomAccessFile(fileName, "rw");
+            long size = randomAccessFile.length();
+            randomAccessFile.seek(0);
+            randomAccessFile.write(content);
+        } finally {
+            if (randomAccessFile != null)
+                randomAccessFile.close();
+        }
+        return true;
+    }
+
     public static Object invoke(Object clsInstance, String methodName) throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         return event.invoke(clsInstance, methodName, null);
     }
@@ -2552,6 +2566,19 @@ public class utility {
         }
         Files.createSymbolicLink(link, target);
         return true;
+    }
+
+    public static String getMimeType(String fileName) {
+        String ext = get_file_extension(fileName);
+        if("heic".equalsIgnoreCase(ext)) {
+            return "image/heic";
+        }
+        return null;
+    }
+
+    public static String replace_ext(String fileName, String newExt) {
+        int li = fileName.lastIndexOf(".");
+        return fileName.substring(0, (li > 0 ? li : fileName.length()))+"."+newExt;
     }
 
 

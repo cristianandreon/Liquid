@@ -358,6 +358,9 @@ public class dms {
                         if (mimeType == null) {
                             if (requestParam != null) {
                                 mimeType = (String) ((HttpServletRequest) requestParam).getAttribute("mimeType");
+                                if (mimeType == null) {
+                                    mimeType = utility.getMimeType(fileName);
+                                }
                             }
                         }
                         dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
@@ -455,6 +458,9 @@ public class dms {
                         if (mimeType == null) {
                             if (requestParam != null) {
                                 mimeType = (String) ((HttpServletRequest) requestParam).getAttribute("mimeType");
+                                if (mimeType == null) {
+                                    mimeType = utility.getMimeType(fileName);
+                                }
                             }
                         }
                         dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
@@ -525,6 +531,9 @@ public class dms {
                     if(mimeType == null) {
                         if (requestParam != null) {
                             mimeType = (String)((HttpServletRequest) requestParam).getAttribute("mimeType");
+                            if (mimeType == null) {
+                                // mimeType = utility.getMimeType(fileName);
+                            }
                         }
                     }
                     if(mimeType == null) {
@@ -552,6 +561,9 @@ public class dms {
                             if (mimeType == null) {
                                 if (requestParam != null) {
                                     mimeType = (String) ((HttpServletRequest) requestParam).getAttribute("mimeType");
+                                    if (mimeType == null) {
+                                        // mimeType = utility.getMimeType(fileName);
+                                    }
                                     paramJson.put("mimeType", mimeType);
                                 }
                             }
