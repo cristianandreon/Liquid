@@ -17,6 +17,7 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import javax.activation.MimetypesFileTypeMap;
 import javax.naming.OperationNotSupportedException;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -2579,6 +2580,34 @@ public class utility {
     public static String replace_ext(String fileName, String newExt) {
         int li = fileName.lastIndexOf(".");
         return fileName.substring(0, (li > 0 ? li : fileName.length()))+"."+newExt;
+    }
+
+    /**
+     *
+     * @param request
+     * @param fileName
+     * @return true if file type is ain image file
+     */
+    public static boolean is_image_file(HttpServletRequest request, String fileName) {
+        String mimetype = new MimetypesFileTypeMap().getContentType(new File(fileName));
+        ServletContext context = request.getSession().getServletContext();
+        String mimeType = context.getMimeType(fileName);
+        String ext = get_file_extension(fileName);
+        if("image/heic".equalsIgnoreCase(mimeType) || "heic".equalsIgnoreCase(ext)) {
+            return true;
+        } else if("image/heif".equalsIgnoreCase(mimeType) || "heif".equalsIgnoreCase(ext)) {
+            return true;
+        } else {
+            if("image".equalsIgnoreCase(mimeType.split("/")[0])) {
+                return true;
+            } else {
+                if("image".equalsIgnoreCase(mimetype.split("/")[0])) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
     }
 
 

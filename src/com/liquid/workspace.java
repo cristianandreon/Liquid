@@ -36,7 +36,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.85";
+    public static String version_string = "2.86";
 
 
     // Converse la stringa vuota in NULL se la colonna in presenza di foreignKey (postgress11 supporta la string vuota)
@@ -2765,9 +2765,9 @@ public class workspace {
                         if (!cmdName.isEmpty()) {
                             hasActiveAsset = true;
                             cmd = new JSONObject("{\"name\":\"" + cmdName + "\"}");
-                            if ("insert" .equalsIgnoreCase(cmdName) || "create" .equalsIgnoreCase(cmdName)
-                                    || "update" .equalsIgnoreCase(cmdName) || "modify" .equalsIgnoreCase(cmdName)
-                                    || "delete" .equalsIgnoreCase(cmdName) || "erase" .equalsIgnoreCase(cmdName)
+                            if ("insert" .equalsIgnoreCase(cmdName)
+                                    || "update" .equalsIgnoreCase(cmdName)
+                                    || "delete" .equalsIgnoreCase(cmdName)
                                     || "previous" .equalsIgnoreCase(cmdName) || "next" .equalsIgnoreCase(cmdName)
                                     || "copy" .equalsIgnoreCase(cmdName) || "paste" .equalsIgnoreCase(cmdName)
                             ) {
@@ -2778,7 +2778,7 @@ public class workspace {
 
                     if (cmdName != null) {
                         if (hasActiveAsset) {
-                            if ("insert" .equalsIgnoreCase(cmdName) || "create" .equalsIgnoreCase(cmdName)) {
+                            if ("insert" .equalsIgnoreCase(cmdName)) {
                                 if (!bServerDefined) {
                                     if(!isSystemLiquid) {
                                         cmd.put("server", "com.liquid.event.insertRow");
@@ -2811,7 +2811,7 @@ public class workspace {
                                 }
                                 bInsertActive = true;
 
-                            } else if ("update" .equalsIgnoreCase(cmdName) || "modify" .equalsIgnoreCase(cmdName)) {
+                            } else if ("update" .equalsIgnoreCase(cmdName)) {
                                 if (!bServerDefined) {
                                     if(!isSystemLiquid) {
                                         cmd.put("server", "com.liquid.event.updateRow");
@@ -2843,7 +2843,7 @@ public class workspace {
                                     cmd.put("rollbackImg", "cancel.png");
                                 }
                                 bUpdateActive = true;
-                            } else if ("delete" .equalsIgnoreCase(cmdName) || "erase" .equalsIgnoreCase(cmdName)) {
+                            } else if ("delete" .equalsIgnoreCase(cmdName)) {
                                 if (!bServerDefined) {
                                     if(!isSystemLiquid) {
                                         cmd.put("server", "com.liquid.event.deleteRow");

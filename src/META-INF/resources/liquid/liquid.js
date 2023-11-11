@@ -29,7 +29,7 @@
 
 
 //
-// Liquid ver.2.85
+// Liquid ver.2.86
 //
 //  First update 06-01-2020 - Last update 04-10-2023
 //
@@ -2743,7 +2743,7 @@ class LiquidMenuXCtrl {
 }
 
 var Liquid = {
-    version: 2.85,
+    version: 2.86,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -11082,8 +11082,13 @@ var Liquid = {
                                         cmd.linkedObj.classList.add("liquidCommandDisabled");
                                     }
                                     if (bShow === true) {
-                                        cmd.linkedObj.style.visibility = '';
-                                        cmd.linkedObj.style.display = '';
+                                        if (Liquid.isCommandVisible(command)) {
+                                            cmd.linkedObj.style.visibility = '';
+                                            cmd.linkedObj.style.display = '';
+                                        } else {
+                                            cmd.linkedObj.style.visibility = '';
+                                            cmd.linkedObj.style.display = 'none';
+                                        }
                                     } else if (bShow === false) {
                                         cmd.linkedObj.style.visibility = '';
                                         cmd.linkedObj.style.display = 'none';
@@ -14389,7 +14394,7 @@ var Liquid = {
             div.className = className + "Button";
             div.style.borderWidth = "1px";
             div.style.borderStyle = "solid";
-            div.style.visibility = Liquid.isCommandVisible(command) ? "" : "hidden";
+            div.style.display = Liquid.isCommandVisible(command) ? "" : "none";
             div.onmouseover = Liquid.toolbarButtonMouseOver;
             div.onmouseout = Liquid.toolbarButtonMouseOut;
             if (command.navigator === true) {
