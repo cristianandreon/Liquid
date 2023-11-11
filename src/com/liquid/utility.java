@@ -4043,12 +4043,15 @@ public class utility {
     }
 
 
+    public static ArrayList<FileItem> get_uploaded_files(HttpServletRequest request) {
+        return get_uploaded_files(request, null);
+    }
     /**
      *
      * @param request
      * @return
      */
-    public static ArrayList<FileItem> get_uploaded_files(HttpServletRequest request) {
+    public static ArrayList<FileItem> get_uploaded_files(HttpServletRequest request, HashMap<String, String> params) {
         ArrayList<FileItem> files = new ArrayList<FileItem>();
 
         DiskFileItemFactory factory = new DiskFileItemFactory();
@@ -4091,7 +4094,8 @@ public class utility {
                             // Process regular form field (input type="text|radio|checkbox|etc", select, etc).
                             String fieldname = item.getFieldName();
                             String fieldvalue = item.getString();
-                            if (fieldname.equalsIgnoreCase("...")) {
+                            if (params != null) {
+                                params.put(fieldname, fieldvalue);
                             }
                         } else {
                             String fileName = new File(item.getName()).getName();
@@ -4107,9 +4111,10 @@ public class utility {
         } catch (Exception e) {
             // e.printStackTrace(new java.io.PrintWriter(out));
         }
-
         return files;
     }
+
+
 
     public static boolean isNumber(Object obj) {
         if(obj instanceof Integer || obj instanceof Long || obj instanceof Float || obj instanceof Double || obj instanceof BigDecimal || obj instanceof BigInteger) {
