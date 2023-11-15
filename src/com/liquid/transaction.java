@@ -41,14 +41,17 @@ public class transaction {
     public static Connection getTransaction(HttpServletRequest request) throws SQLException {
         if(request != null) {
             Connection conn = (Connection)request.getAttribute("Liquid.connection.conn");
-            if(!conn.isClosed() && conn.isValid(30)) {
-                return conn;
-            } else {
-                throw new SQLException("Unexpected connection status");
+            if(conn != null) {
+                if(!conn.isClosed() && conn.isValid(30)) {
+                    return conn;
+                } else {
+                    System.err.println("Current thread:"+Thread.currentThread().getName());
+                    System.err.println("Transaction thread:"+request.getAttribute("Liquid.connection.thread"));
+                    throw new SQLException("Unexpected connection status");
+                }
             }
-        } else {
-            return null;
         }
+        return null;
     }
 
     /**
@@ -106,6 +109,7 @@ public class transaction {
                 request.setAttribute("Liquid.connection.commit", false);
                 request.setAttribute("Liquid.connection.rollback", false);
                 request.setAttribute("Liquid.connection.commitAsDefault", null);
+                request.setAttribute("Liquid.connection.thread", null);
                 conn.close();
             }
         }
@@ -128,22 +132,27 @@ public class transaction {
      */
     public static boolean beginTransaction(HttpServletRequest request, Object commitAsDefault) throws Throwable {
         if(request != null) {
-            Object[] connResult = connection.getLiquidDBConnection();
-            Connection sconn = (Connection) connResult[0];
-            if (sconn == null) {
-                connResult = connection.getDBConnection();
-                sconn = (Connection) connResult[0];
+            if(!isTransaction(request)) {
+                Object[] connResult = connection.getLiquidDBConnection();
+                Connection sconn = (Connection) connResult[0];
                 if (sconn == null) {
-                    return false;
+                    connResult = connection.getDBConnection();
+                    sconn = (Connection) connResult[0];
+                    if (sconn == null) {
+                        return false;
+                    }
                 }
+                sconn.setAutoCommit(false);
+                request.setAttribute("Liquid.connection", true);
+                request.setAttribute("Liquid.connection.conn", sconn);
+                request.setAttribute("Liquid.connection.commit", false);
+                request.setAttribute("Liquid.connection.rollback", false);
+                request.setAttribute("Liquid.connection.commitAsDefault", commitAsDefault);
+                request.setAttribute("Liquid.connection.thread", Thread.currentThread().getName());
+                return true;
+            } else {
+                return true;
             }
-            sconn.setAutoCommit(false);
-            request.setAttribute("Liquid.connection", true);
-            request.setAttribute("Liquid.connection.conn", sconn);
-            request.setAttribute("Liquid.connection.commit", false);
-            request.setAttribute("Liquid.connection.rollback", false);
-            request.setAttribute("Liquid.connection.commitAsDefault", commitAsDefault);
-            return true;
         } else {
             return false;
         }

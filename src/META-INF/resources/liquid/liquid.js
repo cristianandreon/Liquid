@@ -29,7 +29,7 @@
 
 
 //
-// Liquid ver.2.86
+// Liquid ver.2.87
 //
 //  First update 06-01-2020 - Last update 04-10-2023
 //
@@ -2743,7 +2743,7 @@ class LiquidMenuXCtrl {
 }
 
 var Liquid = {
-    version: 2.86,
+    version: 2.87,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -11082,7 +11082,7 @@ var Liquid = {
                                         cmd.linkedObj.classList.add("liquidCommandDisabled");
                                     }
                                     if (bShow === true) {
-                                        if (Liquid.isCommandVisible(command)) {
+                                        if (Liquid.isCommandVisible(cmd)) {
                                             cmd.linkedObj.style.visibility = '';
                                             cmd.linkedObj.style.display = '';
                                         } else {
@@ -23753,7 +23753,9 @@ columns:[
                             query: isDef(jsonObj.query) ? jsonObj.query : null,
                             columns:columns,
                             autoFitColumns:true,
-                            width:"auto"
+                            width:"auto",
+                            sortColumns:isDef(liquid.tableJson.sortColumns) ? liquid.tableJson.sortColumns : null,
+                            sortColumnsMode:isDef(liquid.tableJson.sortColumnsMode) ? liquid.tableJson.sortColumnsMode : null
                         };
                     }
                     if(lookupJson) {

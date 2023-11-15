@@ -1386,13 +1386,13 @@ public class db {
                 // Ordinamenti dalla richiesta
                 //
                 try {
-                    if (tbl_wrk != null && requestJson != null) {
+                    if (tbl_wrk != null || requestJson != null) {
                         JSONArray sortColumns = new JSONArray();
                         JSONArray sortColumnsMode = new JSONArray();
                         String sortMode = null;
                         JSONObject baseObject = null;
 
-                        if (requestJson.has("sortColumns")) {
+                        if (requestJson != null && requestJson.has("sortColumns")) {
                             //
                             // Utilizzo ordinamento della richiesta
                             //
@@ -1507,7 +1507,11 @@ public class db {
                                         if (compare_db_column(table, colName, sortColumn)) {
                                             try {
                                                 if(col.has("dbAlias")) {
-                                                    sortColumnAlias = col.getString("dbAlias");
+                                                    // String columnAlias = col.getString("dbAlias");
+                                                    String columnAlias = get_column_db_alias(columns_alias_array, table, col.getString("name"));
+                                                    if(columnAlias != null) {
+                                                        sortColumnAlias = columnAlias;
+                                                    }
                                                 } else {
                                                     String sortTable = null;
                                                     String sortCol = null;

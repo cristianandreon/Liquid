@@ -228,6 +228,8 @@ SelectEditor.prototype.init = function(params) {
         let controlId = this.liquid.controlId;
         // var lookupControlId = this.liquid.controlId + "_" + "list" + "_" + lookupControlName.replace(/\./g, "_");
         let srcForeignWrk = (typeof this.liquid.srcForeignWrk !== "undefined" && this.liquid.srcForeignWrk ? this.liquid.srcForeignWrk : null);
+        let sortColumns = null;
+        let sortColumnsMode = null;
         if(isDef(this.liquid.tableJson.columns[this.iCol].lookup)) {
             if(!isDef(this.liquid.tableJson.columns[this.iCol].lookup.controlId)) {
                 for (var i = 0; i < glLiquids.length; i++) {
@@ -242,7 +244,15 @@ SelectEditor.prototype.init = function(params) {
             controlId = this.liquid.tableJson.columns[this.iCol].lookup.controlId;
             srcForeignWrk = null;
         }
-
+        for (var i = 0; i < glLiquids.length; i++) {
+            if(glLiquids[i].controlId == controlId) {
+                if (isDef(glLiquids[i].tableJson)) {
+                    sortColumns = glLiquids[i].tableJson.sortColumns;
+                    sortColumnsMode = glLiquids[i].tableJson.sortColumnsMode;
+                }
+                break;
+            }
+        }
         var xhr = new XMLHttpRequest();
         if(params.colDef.cellEditorParams.cache === false || typeof params.colDef.cellEditorParams.values === 'undefined' || params.colDef.cellEditorParams.values === null) {
             xhr.open('POST', glLiquidServlet + '?operation=get'
@@ -253,6 +263,8 @@ SelectEditor.prototype.init = function(params) {
                 + (this.idColumn ? '&idColumn=' + this.idColumn : '')
                 + '&targetMode=' + params.colDef.cellEditorParams.editor
                 + '&extendedMetadata=false'
+                + (sortColumns ? '&sortColumns=' + sortColumns : '')
+                + (sortColumnsMode ? '&sortColumnsMode=' + sortColumnsMode : '')
                 ,(typeof params.async !== 'undefined' ? params.async : false)
             );
             xhr.setRequestHeader("X-Timezone-Offset", new Date().getTimezoneOffset());

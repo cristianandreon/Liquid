@@ -36,7 +36,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.86";
+    public static String version_string = "2.87";
 
 
     // Converse la stringa vuota in NULL se la colonna in presenza di foreignKey (postgress11 supporta la string vuota)
@@ -1564,6 +1564,12 @@ public class workspace {
                         if (primaryKey == null || primaryKey.isEmpty()) {
                             primaryKey = metadata.getPrimaryKeyData(database, schema, table, connToUse);
                             tableJson.put("primaryKey", primaryKey);
+                            if(primaryKey != null && !primaryKey.isEmpty()) {
+                            } else {
+                                if(workspace.projectMode) {
+                                    System.err.println("get_default_json() : no primary key on table:" + table);
+                                }
+                            }
                         }
 
                         try {
@@ -2232,6 +2238,12 @@ public class workspace {
                 if (primaryKey == null || primaryKey.isEmpty()) {
                     primaryKey = metadata.getPrimaryKeyData(database, schema, table, connToUse);
                     tableJson.put("primaryKey", primaryKey);
+                    if(primaryKey != null && !primaryKey.isEmpty()) {
+                    } else {
+                        if(workspace.projectMode) {
+                            System.err.println("get_table_control() : no primary key on table:" + table);
+                        }
+                    }
                 }
 
                 // cerca nei campi ...
@@ -2601,16 +2613,20 @@ public class workspace {
         } finally {
             try {
                 if (conn != null) {
-                    conn.close();
+                    if(transaction.isTransaction(request)) {
+                    } else {
+                        conn.close();
+                    }
                 }
             } catch (SQLException ex) {
                 Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "ERROR on control:" + controlId + " : " + ex);
             }
-            if (connToDB != null) 
+            if (connToDB != null) {
                 try {
-                connToDB.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                    connToDB.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(metadata.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             if (bCreatedSession) {
                 ThreadSession.removeThreadSessionInfo();

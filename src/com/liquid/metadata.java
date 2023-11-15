@@ -1401,22 +1401,28 @@ public class metadata {
         try {
             if(conn == null) {
                 Object[] connResult = connection.getDBConnection(database != null ? database.replace("\"", ""):null);
-                conn = (Connection) connResult[0];
+                connToDB = (Connection) connResult[0];
                 String connError = (String) connResult[1];
-                connToUse = connToDB = conn;
+                connToUse = connToDB;
             }
             if (database == null || database.isEmpty()) {
-                database = conn.getCatalog();
+                database = connToUse.getCatalog();
+                // prevent getPrimaryKeys fails
+                // database = null;
             } else {
                 if(conn != null) {
-                    conn.setCatalog(database);
-                    String db = conn.getCatalog();
+                    connToUse = conn;
+                    connToUse.setCatalog(database);
+                    String db = connToUse.getCatalog();
                     if (!db.equalsIgnoreCase(database)) {
                         // set catalog not supported : connect to different DB
                         Object[] connResult = connection.getDBConnection(database);
-                        conn = (Connection) connResult[0];
+                        connToDB = (Connection) connResult[0];
                         String connError = (String) connResult[1];
-                        connToUse = connToDB = conn;
+                        connToUse = connToDB;
+                    } else {
+                        // prevent getPrimaryKeys fails
+                        // database = null;
                     }
                 }
             }
