@@ -15432,7 +15432,17 @@ var Liquid = {
             }
             if(liquid) {
                 if (liquid.currentTab == 0) {
-                    return Liquid.getField(liquid, colName);
+                    let rowId = null;
+                    if(liquidOrControlId.id) {
+                        let parts = liquidOrControlId.id.split(".");
+                        if (parts[0] == liquid.controlId && parts[1] == 'list' && parts[3] == 'col' && parts[5] == 'row') {
+                            var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                            if (nodes && nodes.length > 0) {
+                                rowId = nodes[Number(parts[6])-1].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
+                            }
+                        }
+                    }
+                    return Liquid.fieldServiceEx(liquid, rowId, colName);
                 }
                 var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                 if (nodes && nodes.length > 0) {
@@ -21798,7 +21808,7 @@ var Liquid = {
             var liquid = Liquid.getLiquid(liquidControlOrId);
             if(liquid) {
                 var data = null;
-                var col = null;
+                var col = Liquid.getColumn(liquid, field);
                 var selNodes = null;
                 if(rowId !== null) {
                     // from row id
@@ -21807,7 +21817,7 @@ var Liquid = {
                             var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                             for (var i = 0; i < nodes.length; i++) {
                                 if (nodes[i].data[liquid.tableJson.primaryKeyField] == rowId) {
-                                    data = nodes[foundRow1B - 1].data;
+                                    data = nodes[i].data;
                                     break;
                                 }
                             }
@@ -21817,14 +21827,13 @@ var Liquid = {
                             var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
                             for (var i = 0; i < nodes.length; i++) {
                                 if (nodes[i].rowIndex == rowId) {
-                                    data = nodes[foundRow1B - 1].data;
+                                    data = nodes[i].data;
                                     break;
                                 }
                             }
                         } else if(rowId == 0) {
                         } else if(rowId < 0) {
                             var shouldRefresh = false;
-                            col = Liquid.getColumn(liquid, field);
                             if(col != null) {
                                 if(rowId == -1) {
                                     if (isDefOrNull(newValue)) {

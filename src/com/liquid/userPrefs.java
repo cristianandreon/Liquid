@@ -144,12 +144,11 @@ public class userPrefs {
     /**
      *
      * @param controlId
-     * @param requestContent
      * @param request
      * @return
      * @throws Throwable
      */
-    public static String loadUIParams(String controlId, String requestContent, HttpServletRequest request) throws Throwable {
+    public static String loadUIParams(String controlId, HttpServletRequest request) throws Throwable {
         String retVal = "";
         try {
             if(login.isLogged(request)) {
@@ -163,7 +162,7 @@ public class userPrefs {
                 }
             }
         } catch (Exception e) {
-            retVal = "{\"result\":false, \"error\":\""+e+"\"}";
+            retVal = "{\"result\":false, \"error\":\""+utility.base64Encode(e.toString())+"\"}";
         }
         return retVal;
     }

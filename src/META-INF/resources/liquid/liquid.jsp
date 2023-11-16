@@ -263,7 +263,7 @@
 
         } else if ("loadUIParams".equalsIgnoreCase(operation)) {
             out.print(
-                    userPrefs.loadUIParams( request.getParameter("controlId"), workspace.get_request_content(request), request)
+                    userPrefs.loadUIParams( request.getParameter("controlId"), request)
             );
 
         } else {
