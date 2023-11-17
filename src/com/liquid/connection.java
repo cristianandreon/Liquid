@@ -750,7 +750,6 @@ public class connection {
         try {
             if(conn != null) {
                 if(!conn.isClosed()) {
-                    System.out.println("closing conn on thread:"+Thread.currentThread().getName());
                     Class cls = null;
                     Method method = null;        
                     try {
