@@ -4758,7 +4758,7 @@ var Liquid = {
         var outDiv = Liquid.getStatusDiv(liquid);
         if (outDiv) outDiv.innerHTML = "";
     },
-    fill_data_list: function (obj, data, prop, propForValue, className) {
+    fill_data_list: function (obj, data, prop, propForValue, className, auxProp) {
         try {
             if (obj) {
                 obj.innerHTML = "";
@@ -4771,6 +4771,9 @@ var Liquid = {
                             opt.innerHTML = data[i][prop] ? data[i][prop] : "";
                             if (propForValue) {
                                 opt.dataset.value = data[i][propForValue] ? data[i][propForValue] : "";
+                            }
+                            if (auxProp) {
+                                opt.dataset.aux = data[i][auxProp] ? data[i][auxProp] : "";
                             }
                         }
                         obj.appendChild(opt);
