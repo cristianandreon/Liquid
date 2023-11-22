@@ -784,7 +784,7 @@ function load_image_to_canvas(canvas, url, mode) {
     img.onload = function(event){
         try {
             if(this.width > 2048 || this.height > 2048) {
-                console.warn("LIAUID : Image too large : "+this.width+"x"+this.height + " at "+this.src);
+                console.warn("LIQUID : Image too large : "+this.width+"x"+this.height + " at "+this.src);
             }
             if(this.mode === 'original') {
                 context.drawImage(this, 0, 0, this.width, this.height);
