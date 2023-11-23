@@ -2598,10 +2598,11 @@ public class utility {
         } else if("image/heif".equalsIgnoreCase(mimeType) || "heif".equalsIgnoreCase(ext)) {
             return true;
         } else {
-            if("image".equalsIgnoreCase(mimeType.split("/")[0])) {
+            String imgTyoe = mimeType != null ? mimeType.split("/")[0] : null;
+            if(mimeType != null && "image".equalsIgnoreCase(imgTyoe)) {
                 return true;
             } else {
-                if("image".equalsIgnoreCase(mimetype.split("/")[0])) {
+                if("image".equalsIgnoreCase(imgTyoe)) {
                     return true;
                 } else {
                     return false;

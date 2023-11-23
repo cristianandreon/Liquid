@@ -363,8 +363,8 @@ public class dms {
                                 }
                             }
                         }
-                        dmsParamsJson.put("mimeType", mimeType != null ? mimeType : null);
                     }
+                    dmsParamsJson.put("mimeType", mimeType != null ? mimeType : "application/"+utility.get_file_extension(fileName));
 
                     byte[] fileContentByteArray = null;
                     if(b64FileContentOrByteArray instanceof String) {
@@ -389,7 +389,7 @@ public class dms {
                 }
             }
         } catch(Throwable th){
-            error = " uploadDocuments() error:" + th.getLocalizedMessage();
+            error = " uploadDocuments() error:" + th;
             System.err.println(error);
             throw th;
         }
@@ -478,7 +478,7 @@ public class dms {
                 }
             }
         } catch(Throwable th){
-            error = " uploadDocuments() error:" + th.getLocalizedMessage();
+            error = " uploadDocument() error1:" + th.getLocalizedMessage();
             System.err.println(error);
             throw th;
         }
@@ -607,7 +607,7 @@ public class dms {
                 }
             }
         } catch (Throwable th2) {
-            error = " uploadDocuments() error:" + th2.getLocalizedMessage();
+            error = " uploadDocument() error2:" + th2.getLocalizedMessage();
             System.err.println(error);
             throw th2;
         }
