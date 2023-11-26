@@ -29,7 +29,7 @@
 
 
 //
-// Liquid ver.2.88
+// Liquid ver.2.90
 //
 //  First update 06-01-2020 - Last update 04-10-2023
 //
@@ -2743,7 +2743,7 @@ class LiquidMenuXCtrl {
 }
 
 var Liquid = {
-    version: 2.88,
+    version: 2.90,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -14147,21 +14147,26 @@ var Liquid = {
                             if ((event && event.target && event.target.id !== objId) || event == null)
                                 Liquid.onGridRefreshField(liquid, grid, gridObj, data, "dep");
                         } else if (isDef(col.dependencies[id].layoutName)) {
+                            let iRow = -1;
                             let sourceObjId = isDef(event) && isDef(event.target) && isDef(event.target.id) ? event.target.id : null;
                             if (sourceObjId != col.dependencies[id].objId) {
                                 var layout = Liquid.getLayoutByName(liquid, col.dependencies[id].layoutName);
-                                var iRow = col.dependencies[id].iRow;
                                 var obj = document.getElementById(col.dependencies[id].objId);
                                 var needRefresh = false;
-                                if (iRow === 0) {
-                                    if (event && event.target !== obj) {
-                                        needRefresh = true;
-                                    }
-                                    if (obj) {
-                                        if (obj.getAttribute("pure_value")) {
-                                            if (!obj.getAttribute("dp")) {
-                                                // non in editing
-                                                needRefresh = true;
+                                var selNodes = Liquid.getCurNodes(liquid);
+                                var data = null;
+                                if (selNodes) {
+                                    iRow = selNodes[0].rowIndex;
+                                    if(col.dependencies[id].iRow == iRow) {
+                                        if (event && event.target !== obj) {
+                                            needRefresh = true;
+                                        }
+                                        if (obj) {
+                                            if (obj.getAttribute("pure_value")) {
+                                                if (!obj.getAttribute("dp")) {
+                                                    // non in editing
+                                                    needRefresh = true;
+                                                }
                                             }
                                         }
                                     }
@@ -17337,13 +17342,17 @@ var Liquid = {
                             if (!prevId) {
                                 var prevOnchangeFunc = (obj.onchange ? obj.onchange : null);
                                 obj.onchange = function (event) {
-                                    Liquid.onLayoutFieldChange(event, false);
-                                    if (prevOnchangeFunc) prevOnchangeFunc(event);
+                                    if(!this.readOnly && !obj.disabled) {
+                                        Liquid.onLayoutFieldChange(event, false);
+                                        if (prevOnchangeFunc) prevOnchangeFunc(event);
+                                    }
                                 };
                                 var prevOnblurFunc = (obj.onblur ? obj.onblur : null);
                                 obj.onblur = function (event) {
-                                    Liquid.onLayoutFieldChange(event, true);
-                                    if (prevOnblurFunc) prevOnblurFunc(event);
+                                    if(!this.readOnly && !obj.disabled) {
+                                        Liquid.onLayoutFieldChange(event, true);
+                                        if (prevOnblurFunc) prevOnblurFunc(event);
+                                    }
                                 };
                                 if (!obj.getAttribute('ponclick')) {
                                     obj.addEventListener('click', Liquid.onLayoutFieldClick, true);
@@ -18898,8 +18907,11 @@ var Liquid = {
                         , timepicker: timePicker
                         , timePickerSeconds: false
                         , dayOfWeekStart: 1
-                        , changeMonth: true,
-                        changeYear: true
+                        , changeMonth: true
+                        , changeYear: true
+                        , scrollDay : false
+                        , scrollMonth : false
+                        , scrollYear : false
                         , beforeShowDay: function (o, $input, event) {
                             if ($input) {
                                 var pure_value = $input[0].getAttribute("pure_value");
@@ -18930,7 +18942,9 @@ var Liquid = {
                             if ($input) {
                                 if ($input[0].getAttribute("dp")) {
                                     $input[0].setAttribute("dp", "");
-                                    $input[0].setAttribute("pure_value", $input[0].value);
+                                    if(!$input[0].readOnly && !$input[0].disabled) {
+                                        $input[0].setAttribute("pure_value", $input[0].value);
+                                    }
                                     if (liquid) liquid.gridOptions.api.stopEditing();
                                 }
                             }
@@ -18942,6 +18956,7 @@ var Liquid = {
                     });
                     if (bShow)
                         jQ1124(obj).datetimepicker("show");
+
                 } catch (e) {
                     console.error("LIQUID: xdsoft_datetimepicker not found..error:" + e + " ... may be missing file jquery.datepicker.js,jquery.datetimepicker.js");
                 }
@@ -18956,6 +18971,9 @@ var Liquid = {
                     dateFormat: (typeof format !== "undefined" && format ? format : 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y'),
                     changeMonth: true,
                     changeYear: true,
+                    scrollDay : false,
+                    scrollMonth : false,
+                    scrollYear : false,
                     beforeShowDay: function (o, $input, event) {
                     }, onGenerate: function (o, $input, event) {
                         var opt = {};
@@ -18979,7 +18997,9 @@ var Liquid = {
                         if ($input) {
                             if ($input[0].getAttribute("dp")) {
                                 $input[0].setAttribute("dp", "");
-                                $input[0].setAttribute("pure_value", $input[0].value);
+                                if(!$input[0].readOnly && !$input[0].disabled) {
+                                    $input[0].setAttribute("pure_value", $input[0].value);
+                                }
                                 if (liquid) {
                                     liquid.gridOptions.api.stopEditing();
                                     if (obj) obj.onchange();
@@ -18997,6 +19017,9 @@ var Liquid = {
                 });
                 if (bShow)
                     jQ1124(obj).datepicker("show");
+                jQ1124(obj).bind("mousewheel", function () {
+                    return false;
+                });
             }
             return controlName;
         }
@@ -19076,6 +19099,9 @@ var Liquid = {
                         , timePickerIncrement: 1
                         , dayOfWeekStart: 1
                         , changeMonth: true, changeYear: true
+                        , scrollDay : false
+                        , scrollMonth : false
+                        , scrollYear : false
                         , onShow: function (o, $input, event) {
                             if ($input) {
                                 var field = $input ? $input[0].getAttribute("linkedfield") : null;
@@ -19096,7 +19122,9 @@ var Liquid = {
                             if ($input) {
                                 if ($input[0].getAttribute("dp")) {
                                     $input[0].setAttribute("dp", "");
-                                    $input[0].setAttribute("pure_value", $input[0].value);
+                                    if(!$input[0].readOnly && !$input[0].disabled) {
+                                        $input[0].setAttribute("pure_value", $input[0].value);
+                                    }
                                     if (Liquid.debug) console.info("DATETIMEPICKER:onClose()");
                                 }
                             }
@@ -19108,6 +19136,9 @@ var Liquid = {
                 } catch (e) {
                     console.error(e);
                 }
+                jQ1124(obj).bind("mousewheel", function () {
+                    return false;
+                });
             }
         }
     },
@@ -22391,7 +22422,9 @@ var Liquid = {
                     if(!selNodes || selNodes.length === 0) {
                         if(!liquid.tableJson.requireSelected) {
                             if(liquid.lastRowClickedNode) {
-                                selNodes = [liquid.lastRowClickedNode];
+                                if(liquid.gridOptions.api.rowModel.rootNode.allLeafChildren.length > 0) {
+                                    selNodes = [liquid.lastRowClickedNode];
+                                }
                             }
                         }
                     }
