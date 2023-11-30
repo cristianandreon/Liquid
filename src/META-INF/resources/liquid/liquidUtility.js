@@ -107,7 +107,39 @@ const capitalizeOnlyFirstLetter = (s) => {
     return s.charAt(0).toUpperCase() + s.slice(1).replace(/ /g, "");
 };
 
+
+
 // Editors
+
+
+
+function MultiLineEditor() {}
+MultiLineEditor.prototype.init = function(params) {
+    this.eInput = document.createElement('textarea');
+    this.eInput.rows="5";
+    this.eInput.cols="20";
+    this.eInput.multiline = true;
+    this.eInput.value = params.value;
+    this.eInput.style.color = 'red';
+    this.eInput.style.minWidth = '500px';
+    this.eInput.style.minHeight = '200px';
+    this.eInput.style.zIndex = 30000;
+
+};
+MultiLineEditor.prototype.getGui = function() {
+    return this.eInput;
+};
+MultiLineEditor.prototype.afterGuiAttached = function() {
+    this.eInput.focus();
+    this.eInput.select();
+};
+MultiLineEditor.prototype.getValue = function() { return this.eInput.value; };
+MultiLineEditor.prototype.destroy = function() {};
+MultiLineEditor.prototype.isPopup = function() {
+    return false;
+};
+
+
 function IntegerEditor() {}
 IntegerEditor.prototype.init = function(params) {
     this.eInput = document.createElement('input');

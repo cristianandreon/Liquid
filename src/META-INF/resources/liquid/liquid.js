@@ -639,7 +639,8 @@ class LiquidCtrl {
                         SelectEditor: SelectEditor,
                         IntegerEditor: IntegerEditor,
                         FloatEditor: FloatEditor,
-                        DateEditor: DateEditor
+                        DateEditor: DateEditor,
+                        MultiLineEditor:MultiLineEditor
                     },
                     columnTypes: {
                         'nonEditableColumn': { editable: false },
@@ -918,9 +919,17 @@ class LiquidCtrl {
                                             event.newValue = validateResult[1];
                                             Liquid.registerFieldChange(liquid, null, event.node.data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null], event.column.colId, event.oldValue, event.newValue);
                                             Liquid.updateDependencies(liquid, liquid.tableJson.columns[iCol], null, event);
-                                            console.debug("onCellValueChanged(): NOT mirror event")
+                                            // autoupdate
+                                            if (
+                                                (isDef(liquid.tableJson.saveAlways) && liquid.tableJson.saveAlways == true)
+                                                || (isDef(liquid.tableJson.autoSave) && liquid.tableJson.autoSave == true)) {
+                                                if (!isDef(liquid.currentCommand)) {
+                                                    Liquid.onButton(liquid, {name: "update", "fromToolbar": false});
+                                                } else {
+                                                    // Chnage row inside command
+                                                }
+                                            }
                                         } else {
-                                            console.debug("onCellValueChanged(): mirror event")
                                         }
                                     }
                                 }
@@ -5796,11 +5805,13 @@ var Liquid = {
                         alert(err);
                         console.error(err);
                     }
-
                     try {
                         var cellStyle = (liquid.tableJson.columns[ic].cellStyle ? Liquid.getJSProperty(liquid.tableJson.columns[ic].cellStyle) : null);
                     } catch (e) {
                     }
+                    var wrapText = false;
+                    var autoHeight = false;
+                    var cellEditorPopup = false;
                     var cellEditor = null;
                     var cellEditorParams = null;
                     var cellRenderer = (typeof liquid.tableJson.columns[ic].cellRenderer !== "undefined" ? Liquid.getJSProperty(liquid.tableJson.columns[ic].cellRenderer) : null);
@@ -5814,6 +5825,22 @@ var Liquid = {
                             column: liquid.tableJson.columns[ic],
                             iCol: ic
                         };
+                    } else if (liquid.tableJson.columns[ic].type === "12" && (liquid.tableJson.columns[ic].multiLine || liquid.tableJson.columns[ic].multiline)) { // text multiline
+                        cellEditorParams = {
+                            liquid: liquid,
+                            maxLength: Liquid.richText.maxLength,
+                            cols: Liquid.richText.cols,
+                            rows: Liquid.richText.rows,
+                            column: liquid.tableJson.columns[ic],
+                            iCol: ic,
+                            rows: 15,
+                            cols: 50
+                        };
+                        // cellEditor = MultiLineEditor;
+                        cellEditor = 'agLargeTextCellEditor';
+                        cellEditorPopup = true;
+                        wrapText = true;
+                        autoHeight = false;
                     } else if (Liquid.isInteger(liquid.tableJson.columns[ic].type)) { // generic Int
                         cellEditor = IntegerEditor;
                         cellEditorParams = {};
@@ -6111,9 +6138,13 @@ var Liquid = {
                             }
                             return false;
                         },
+                        cellEditorPopup: cellEditorPopup,
                         cellEditor: cellEditor,
                         cellEditorParams: cellEditorParams,
                         cellRenderer: cellRenderer,
+                        wrapText:wrapText,
+                        autoHeight:autoHeight,
+                        detailRowAutoHeight:autoHeight,
                         sortable: (typeof liquid.tableJson.columns[ic].sortable !== "undefined" ? liquid.tableJson.columns[ic].sortable : true),
                         comparator: sortComparator,
                         headerComponentParams: {
@@ -6197,11 +6228,11 @@ var Liquid = {
     },
     transferFailed: function (event, liquid) {
         console.error("WARNING: controlId:" + liquid.controlId + " failed..." + event);
-        Liquid.showHideWaiters(liquid, true);
+        Liquid.showHideWaiters(liquid, false);
     },
     transferCanceled: function (event, liquid) {
         console.error("WARNING: controlId:" + liquid.controlId + " cancelled..." + event);
-        Liquid.showHideWaiters(liquid, true);
+        Liquid.showHideWaiters(liquid, false);
     },
     /**
      * Register Component Server Side callback (internal)
@@ -6702,6 +6733,8 @@ var Liquid = {
             var overlayNoRowsTemplate = (typeof liquid.tableJson.noRowsMessage !== "undefined" ? liquid.tableJson.noRowsMessage : Liquid.noRowsMessage);
             if (liquid.gridOptions)
                 liquid.gridOptions.overlayNoRowsTemplate = overlayNoRowsTemplate;
+
+            // liquid.gridOptions.api.resetRowHeights();
 
             if (isDef(liquid.tableJson.rowData)) {
                 // fixed data :
@@ -24330,10 +24363,8 @@ columns:[
                     };
                     request.onsuccess = function (event) {
                         event.target.readyState = 'done';
-                    };
-                    if (Liquid.wait_for_indexdb_ready(request, "")) {
                         Liquid.addWorkerToIndexDB(request.result, liquid, command, userId, status);
-                    }
+                    };
                 }
             } else {
                 console.error("addWorker() no localDB media");
@@ -24781,7 +24812,7 @@ columns:[
             }
         }
     },
-    getDB:function() {
+    getDB:function(callback) {
         if(glLiquidDBEnable) {
             if(!glLiquidIDB && !glLiquidDB) {
                 try {
@@ -24813,6 +24844,9 @@ columns:[
                         request.onsuccess = function (event) {
                             glLiquidIDB = event.target.result;
                             event.target.readyState = 'done';
+                            if(isDef(callback)) {
+                                callback(glLiquidIDB);
+                            }
                         };
                         request.onupgradeneeded = function (event) {
                             try {
@@ -24849,13 +24883,9 @@ columns:[
                             }
                             event.target.readyState = 'done';
                         };
-
                         request.onblocked = function (event) {
                             console.log("Please close all other tabs with this site open!");
                         };
-                        if (Liquid.wait_for_indexdb_ready(request, "")) {
-                            glLiquidIDB = request.result;
-                        }
                         return glLiquidIDB;
                     }
                 } catch (e) {
@@ -24957,23 +24987,6 @@ columns:[
             chunks[i] = str.substr(o, size)
         }
         return chunks;
-    },
-    wait_for_indexdb_ready:function(request, title) {
-        if(request.readyState !== 'done') {
-            console.log("wait_for_indexdb_ready:"+request.readyState);
-            var timeout_msec = 10000;
-            const date = Date.now();
-            var currentDate = null;
-            do {
-                currentDate = Date.now();
-            } while (request.readyState != 'done' && currentDate - date < timeout_msec)
-            if(request.readyState === 'done') {
-                return true;
-            }
-        } else {
-            return true;
-        }
-        return false;
     },
     getHTMLElementOffset:function offset(element) {
         var top = 0, left = 0;
