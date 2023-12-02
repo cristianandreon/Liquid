@@ -454,4 +454,6 @@ span.deleteicon input { padding-right: 16px; box-sizing: border-box;}
     cursor: pointer;
 }
 
+.liquidNoSelection{ -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none; }
+
 @keyframes slideshow-fade { from {opacity: .4} to {opacity: 1} }

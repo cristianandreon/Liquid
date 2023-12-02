@@ -115,7 +115,7 @@ const capitalizeOnlyFirstLetter = (s) => {
 function DatalistEditor() {}
 DatalistEditor.prototype.init = function(params) {
     this.eInput = document.createElement('input');
-    this.eInput.style.color = 'blue';
+    // this.eInput.style.color = 'blue';
     this.eInput.style.minWidth = '500px';
     this.eInput.style.minHeight = '30px';
     this.eInput.style.zIndex = 30000;
@@ -134,16 +134,17 @@ DatalistEditor.prototype.getGui = function() {
     return this.eInput;
 };
 DatalistEditor.prototype.afterGuiAttached = function() {
-    this.eInput.focus();
-    this.eInput.select();
     this.eInput.parentNode.appendChild(this.eDatalist);
     this.eInput.setAttribute('list', this.eDatalist.id);
     this.eInput.click();
-    if(this.params.charPress) {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_DATALIST) {
         this.eInput.value = this.params.charPress;
+        this.eInput.selectionStart = this.eInput.selectionEnd = -1;
     } else {
         this.eInput.value = this.params.value;
+        this.eInput.select();
     }
+    this.eInput.focus();
 };
 DatalistEditor.prototype.getValue = function() { return this.eInput.value; };
 DatalistEditor.prototype.destroy = function() {};
@@ -168,56 +169,87 @@ DatalistEditor.prototype.create_datalist_from_column = function(liquid, colId) {
     }
 }
 
+function exitFromEdit(obj) {
+    let cell = obj.params.liquid.gridOptions.api.getFocusedCell();
+    if (cell) {
+        obj.params.liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
+    }
+    obj.params.liquid.gridOptions.api.stopEditing();
+}
 
 
 function MultiLineEditor() {}
 
 MultiLineEditor.prototype.init = function(params) {
+    this.params = params;
     this.eInput = document.createElement('textarea');
-    this.eInput.rows="5";
-    this.eInput.cols="20";
+    this.eInput.type = "textarea";
+    this.eInput.rows = "5";
+    this.eInput.cols = "20";
     this.eInput.multiline = true;
-    this.eInput.value = params.value;
-    this.eInput.style.color = 'red';
+    this.eInput.style.color = 'darkgreen';
     this.eInput.style.minWidth = '500px';
     this.eInput.style.minHeight = '200px';
     this.eInput.style.zIndex = 30000;
-
+    this.eInput.onkeydown = this.onKeyDown;
 };
+MultiLineEditor.prototype.onKeyDown = function (e) {
+    var t = e.which || e.keyCode;
+    (t == Liquid.KEY_LEFT || t == Liquid.KEY_UP || t == Liquid.KEY_RIGHT || t == Liquid.KEY_DOWN
+        || (e.shiftKey && t == Liquid.KEY_ENTER)
+        || (!e.shiftKey && t == Liquid.KEY_ENTER && Liquid.persist.CAPTURE_ENTER_ON_MULTILINE)
+    ) && e.stopPropagation()
+}
 MultiLineEditor.prototype.getGui = function() {
     return this.eInput;
 };
 MultiLineEditor.prototype.afterGuiAttached = function() {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_MULTILINE && this.params.charPress != '\n') {
+        this.eInput.value = this.params.charPress;
+        this.eInput.selectionStart = this.eInput.selectionEnd = -1;
+    } else {
+        this.eInput.value = this.params.value;
+        this.eInput.select();
+    }
     this.eInput.focus();
-    this.eInput.select();
 };
 MultiLineEditor.prototype.getValue = function() { return this.eInput.value; };
-MultiLineEditor.prototype.destroy = function() {};
+MultiLineEditor.prototype.destroy = function() {
+    exitFromEdit(this);
+};
 MultiLineEditor.prototype.isPopup = function() {
-    return false;
+    return true;
 };
 
 
 function IntegerEditor() {}
 IntegerEditor.prototype.init = function(params) {
+    this.params = params;
     this.eInput = document.createElement('input');
     this.eInput.type = "number";
     this.eInput.step = 1;
     this.eInput.onkeypress = function(event) {
         return (event.charCode === 8 || event.charCode === 0 || event.charCode === 13) ? null : event.charCode >= 48 && event.charCode <= 57;
     };
-    this.eInput.value = params.value;
     this.eInput.style.zIndex = 30000;
 };
 IntegerEditor.prototype.getGui = function() {
     return this.eInput;
 };
 IntegerEditor.prototype.afterGuiAttached = function() {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR) {
+        this.eInput.value = this.params.charPress;
+        this.eInput.selectionStart = this.eInput.selectionEnd = -1;
+    } else {
+        this.eInput.value = this.params.value;
+        this.eInput.select();
+    }
     this.eInput.focus();
-    this.eInput.select();
 };
 IntegerEditor.prototype.getValue = function() { return this.eInput.value; };
-IntegerEditor.prototype.destroy = function() {};
+IntegerEditor.prototype.destroy = function() {
+    exitFromEdit(this);
+};
 IntegerEditor.prototype.isPopup = function() {
     return false;
 };
@@ -225,21 +257,29 @@ IntegerEditor.prototype.isPopup = function() {
 
 function FloatEditor() {}
 FloatEditor.prototype.init = function(params) {
+    this.params = params;
     this.eInput = document.createElement('input');
     this.eInput.type = "number";
     if(isNaN(Number(params.value))) params.value = params.value.replace(/\,/g, ".");
-    this.eInput.value = params.value;
     this.eInput.style.zIndex = 30000;
 };
 FloatEditor.prototype.getGui = function() {
     return this.eInput;
 };
 FloatEditor.prototype.afterGuiAttached = function() {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR) {
+        this.eInput.value = this.params.charPress;
+        // this.eInput.selectionStart = this.eInput.selectionEnd = -1;
+    } else {
+        this.eInput.value = this.params.value;
+        this.eInput.select();
+    }
     this.eInput.focus();
-    this.eInput.select();
 };
 FloatEditor.prototype.getValue = function() { return this.eInput.value; };
-FloatEditor.prototype.destroy = function() {};
+FloatEditor.prototype.destroy = function() {
+    exitFromEdit(this);
+};
 FloatEditor.prototype.isPopup = function() {
     return false;
 };
@@ -247,6 +287,7 @@ FloatEditor.prototype.isPopup = function() {
 
 function DateEditor() {}
 DateEditor.prototype.init = function(params) {
+    this.params = params;
     this.col = Liquid.getColumn(params.liquid, params.colDef.field);
     this.format = (this.col.format !== 'undefined' ? this.col.format : 'dd'+Liquid.dateSep+'mm'+Liquid.dateSep+'yy');
     this.params = params;
@@ -260,12 +301,10 @@ DateEditor.prototype.init = function(params) {
 
     this.eInputX = document.createElement('input');
     this.eInputX.id = 'LiquidDatepicker.' + params.liquid.controlId+"."+this.col.name+"";
-    this.eInputX.value = params.value;
     this.eInputX.style.zIndex = 30000;
     this.eInputX.style.width = '100%';
     this.eInputX.style.height = '25px';
     this.eInput.appendChild(this.eInputX);
-
     this.controlName = Liquid.createDateTimePicker(this.col, this.eInputX, false, this.params.liquid, this.params );
 };
 DateEditor.prototype.getGui = function() { return this.eInput; };
@@ -273,19 +312,20 @@ DateEditor.prototype.afterGuiAttached = function() {
     this.eInputX.parentNode.parentNode.style.zIndex = 50000;
     this.dp = this.getControlObj(this.controlName, this.eInputX);
     if(this.dp) {
-        // jQ1124(this.eInput).append(this.dp);
-        // jQ1124(this.dp).css('position', 'unset');
-        // jQ1124(this.dp).css('display', 'block');
-        // jQ1124(this.dp).css('width', '100%');
-        // jQ1124(this.dp).css('height', '100%');
-        // jQ1124(this.dp).css('top', '0');
-        // jQ1124(this.dp).css('left', '0');
+    }
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR) {
+        this.eInputX.value = this.params.charPress;
+        this.eInput.selectionStart = this.eInput.selectionEnd = -1;
+    } else {
+        this.eInputX.value = this.params.value;
+        this.eInputX.select();
     }
     this.eInputX.focus();
-    this.eInputX.select();
 };
 DateEditor.prototype.getValue = function() { return this.eInputX.value; };
-DateEditor.prototype.destroy = function() { /*this.dp.parentNode.removeChild(this.dp);*/ };
+DateEditor.prototype.destroy = function() {
+    exitFromEdit(this);
+};
 DateEditor.prototype.isPopup = function() { return true; };
 DateEditor.prototype.getControlObj = function(controlName, linkedObj) {
     var dpList = jQ1124(this.controlName);
@@ -295,6 +335,7 @@ DateEditor.prototype.getControlObj = function(controlName, linkedObj) {
 
 function SelectEditor() {}
 SelectEditor.prototype.init = function(params) {
+    this.params = params;
     this.eInput = document.createElement('select');
     this.eInput.style.width = '100%';
     this.eInput.style.height = '100%';
@@ -431,7 +472,15 @@ SelectEditor.prototype.init = function(params) {
     }
 };
 SelectEditor.prototype.getGui = function() { return this.eInput; };
-SelectEditor.prototype.afterGuiAttached = function() { this.eInput.focus(); };
+SelectEditor.prototype.afterGuiAttached = function() {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR) {
+        this.eInput.value = this.params.charPress;
+        this.eInput.selectionStart = this.eInput.selectionEnd = -1;
+    } else {
+        this.eInput.value = this.params.value;
+    }
+    this.eInput.focus();
+};
 SelectEditor.prototype.getValue = function () {
     if (this.cellEditorParams.idColumn && this.cellEditorParams.targetColumn) {
         var fullTargetColumn = this.liquid.tableJson.table + "." + this.cellEditorParams.targetColumn;

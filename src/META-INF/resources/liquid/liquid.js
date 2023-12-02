@@ -633,6 +633,9 @@ class LiquidCtrl {
                     overlayLoadingTemplate: overlayLoadingTemplate,
                     overlayNoRowsTemplate: overlayNoRowsTemplate,
 
+                    // enterMovesDownAfterEdit:false,
+                    // enterMovesDown:false,
+
                     components: {
                         agColumnHeader: LiquidGridHeader,
                         SystemEditor: SystemEditor,
@@ -2881,6 +2884,15 @@ var Liquid = {
     showWarnings:false,
     showMessages:false,
     focusedZIndex:30000,
+    KEY_BACKSPACE:8,KEY_TAB:9,KEY_NEW_LINE:10,KEY_ENTER:13,KEY_SHIFT:16,KEY_ESCAPE:27,KEY_SPACE:32,KEY_LEFT:37,KEY_UP:38,KEY_RIGHT:39,KEY_DOWN:40,KEY_DELETE:46,KEY_A:65,KEY_C:67,KEY_V:86,KEY_D:68,KEY_F2:113,KEY_PAGE_UP:33,KEY_PAGE_DOWN:34,KEY_PAGE_HOME:36,KEY_PAGE_END:35,
+    persist: {
+        CAPTURE_ENTER_ON_MULTILINE:true,
+        CAPTURE_CHAR_PRESSED_ON_MULTILINE:true,
+        CAPTURE_CHAR_PRESSED_ON_DATALIST:true,
+        CAPTURE_CHAR_PRESSED_ON_EDITOR:true,
+        DISABLE_PAGE_SELECTION:true,
+        MASK_DATE_TIME_PICKER:false,
+    },
     setProjectMode: function (mode) {
         if (isDef(mode)) {
             if (mode === true) {
@@ -5261,6 +5273,88 @@ var Liquid = {
         return null;
     },
     /**
+     * validate date field
+     * @param liquid
+     * @param col
+     * @param value
+     */
+    validateDate:function(liquid, col, value) {
+        let stat = 0;
+        let day = '', month = '', year = '';
+        try {
+            for (let i = 0; i < value.length; i++) {
+                if (stat == 0) {
+                    day += value[i];
+                } else if (stat == 1) {
+                    month += value[i];
+                } else if (stat == 2) {
+                    year += value[i];
+                }
+                if (!isNaN(Number(value.charAt(i)))) {
+                    if (i <= 2 && stat == 0) {
+                        stat = 1;
+                    }
+                } else if (value.charAt(i) == '/' || value.charAt(i) == '-' || value.charAt(i) == '_' || value.charAt(i) == ' ' || value.charAt(i) == ',' || value.charAt(i) == '.' || value.charAt(i) == ';' || value.charAt(i) == ':') {
+                    stat++;
+                } else if (isNaN(Number(value.charAt(i)))) {
+                    if (stat == 1 && i >= 3 && !isNaN(Number(value.charAt(i+1))) && i+1 < value.length) {
+                        stat++;
+                    }
+                }
+            }
+            if (Number.isInteger(day)) {
+                day = Number(day);
+                if (day < 10)
+                    day = String('0' + day);
+                else
+                    day = String(day);
+            }
+            if (Number.isInteger(month)) {
+                month = number(month);
+                if (month == 0) month = 1;
+                if (month < 10)
+                    month = String('0' + month);
+                else
+                    month = String(month);
+            } else {
+                if (month.toLowerCase() == 'gen') {
+                    month = '01';
+                } else if (month.toLowerCase() == 'feb') {
+                    month = '02';
+                } else if (month.toLowerCase() == 'mar') {
+                    month = '03';
+                } else if (month.toLowerCase() == 'apr') {
+                    month = '04';
+                } else if (month.toLowerCase() == 'mag') {
+                    month = '05';
+                } else if (month.toLowerCase() == 'giu') {
+                    month = '06';
+                } else if (month.toLowerCase() == 'lug') {
+                    month = '07';
+                } else if (month.toLowerCase() == 'ago') {
+                    month = '08';
+                } else if (month.toLowerCase() == 'set') {
+                    month = '09';
+                } else if (month.toLowerCase() == 'ott') {
+                    month = '10';
+                } else if (month.toLowerCase() == 'nov') {
+                    month = '11';
+                } else if (month.toLowerCase() == 'dic') {
+                    month = '12';
+                }
+            }
+            if (!isNaN(Number(year))) {
+                if (String(year).length == 2) {
+                    year = String(2000 + Number(year));
+                }
+            }
+            return day + "/" + month + "/" + year;
+        }catch(e) {
+            console.error(e);
+        }
+        return null;
+    },
+    /**
      * validate a field for change
      * @param liquid
      * @param col
@@ -5293,6 +5387,12 @@ var Liquid = {
 
                     Liquid.validateFieldProcess(liquid, col, value, command, validateResult, liquidCommandParams);
                 }
+                if(Liquid.isDate(col.type)) {
+                    let new_value = Liquid.validateDate(liquid, col, value);
+                    if(new_value != null) {
+                        validateResult[1] = new_value;
+                    }
+                }
             }
         }
         return validateResult;
@@ -5320,8 +5420,13 @@ var Liquid = {
                             }
                         }
                     }
-
                     Liquid.validateFieldProcess(liquid, col, value, command, validateResult, liquidCommandParams);
+                }
+                if(Liquid.isDate(col.type)) {
+                    let new_value = Liquid.validateDate(liquid, col, value);
+                    if(new_value != null) {
+                        validateResult[1] = new_value;
+                    }
                 }
             }
         }
@@ -5882,20 +5987,20 @@ var Liquid = {
                             rows: 15,
                             cols: 50
                         };
-                        // cellEditor = MultiLineEditor;
-                        cellEditor = 'agLargeTextCellEditor';
-                        cellEditorPopup = true;
+                        cellEditor = MultiLineEditor;
+                        // cellEditor = 'agLargeTextCellEditor';
+                        cellEditorPopup = false;
                         wrapText = true;
                         autoHeight = false;
                     } else if (Liquid.isInteger(liquid.tableJson.columns[ic].type)) { // generic Int
                         cellEditor = IntegerEditor;
-                        cellEditorParams = {};
+                        cellEditorParams = { liquid: liquid };
                     } else if (Liquid.isFloat(liquid.tableJson.columns[ic].type)) { // generic float
                         cellEditor = FloatEditor;
-                        cellEditorParams = {};
+                        cellEditorParams = { liquid: liquid, iCol: ic };
                     } else if (Liquid.isDate(liquid.tableJson.columns[ic].type)) { // datetime, date, timestamp
                         cellEditor = DateEditor;
-                        cellEditorParams = {liquid: liquid};
+                        cellEditorParams = { liquid: liquid, iCol: ic };
                     } else if (Liquid.isBoolean(liquid.tableJson.columns[ic].type)) { // booelan
                         cellRenderer = function (params) {
                             var checked = null;
@@ -18991,6 +19096,7 @@ var Liquid = {
                         , scrollDay : false
                         , scrollMonth : false
                         , scrollYear : false
+                        , mask: Liquid.persist.MASK_DATE_TIME_PICKER
                         , beforeShowDay: function (o, $input, event) {
                             if ($input) {
                                 var pure_value = $input[0].getAttribute("pure_value");
@@ -19031,7 +19137,8 @@ var Liquid = {
                         },
                         onSelectDate: function (ct, $i) {
                             // $i.datetimepicker('destroy');
-                        }
+                        },
+                        onChangeDateTime: Liquid.ensureDate
                     });
                     if (bShow)
                         jQ1124(obj).datetimepicker("show");
@@ -19050,9 +19157,10 @@ var Liquid = {
                     dateFormat: (typeof format !== "undefined" && format ? format : 'd' + Liquid.dateSep + 'm' + Liquid.dateSep + 'Y'),
                     changeMonth: true,
                     changeYear: true,
-                    scrollDay : false,
-                    scrollMonth : false,
-                    scrollYear : false,
+                    scrollDay: false,
+                    scrollMonth: false,
+                    scrollYear: false,
+                    mask: Liquid.persist.MASK_DATE_TIME_PICKER,
                     beforeShowDay: function (o, $input, event) {
                     }, onGenerate: function (o, $input, event) {
                         var opt = {};
@@ -19092,7 +19200,8 @@ var Liquid = {
                     },
                     onSelect: function (date, inst) {
                         // $i.datetimepicker('destroy');
-                    }
+                    },
+                    onChangeDateTime: Liquid.ensureDate
                 });
                 if (bShow)
                     jQ1124(obj).datepicker("show");
@@ -19102,6 +19211,8 @@ var Liquid = {
             }
             return controlName;
         }
+    },
+    ensureDate: function (dp, input) {
     },
     /**
      * Apply column format to the picker
@@ -24952,15 +25063,12 @@ columns:[
         let liquid = Liquid.getLiquid(liquidOrControlId);
         if(liquid) {
             let result = {};
-            /*
-            let cols = [];
-            if(liquid.gridOptions.api.columnController.allDisplayedColumns) {
-                let allDisplayedColumns = liquid.gridOptions.api.columnController.allDisplayedColumns;
-                for(let i=0; i<allDisplayedColumns.length; i++) {
-                    cols.push({ idx:i, field:allDisplayedColumns[i].field, width:allDisplayedColumns[i].actualWidth });
-                }
-            }*/
-            result.cols = liquid.gridOptions.columnApi.getColumnState();
+
+            if(liquidOrControlId=='LIQUID') {
+                result.persist = Liquid.persist;
+            } else {
+                result.cols = liquid.gridOptions.columnApi.getColumnState();
+            }
             var xhr = new XMLHttpRequest();
             xhr.open('POST', glLiquidServlet + '?operation=saveUIParams&controlId=' + liquid.controlId, false);
             xhr.send(JSON.stringify(result));
@@ -24997,26 +25105,12 @@ columns:[
                         // OK
                         let result = JSON.parse(xhr.responseText);
                         if(result) {
-                            if (result.cols) {
-                                liquid.gridOptions.columnApi.setColumnState(result.cols);
-                                /*
-                                for (let i = 0; i < result.cols.length; i++) {
-                                    let idx = result.cols[i].idx;
-                                    let field = result.cols[i].field;
-                                    let width = result.cols[i].width;
-                                    if (isDef(liquid.gridOptions)) {
-                                        if (isDef(liquid.gridOptions.columnApi)) {
-                                            // let col = liquid.gridOptions.columnApi.getAllDisplayedColumns().findIndex(col => col.field === field);
-                                            if(col>=0) {
-                                                if(idx+1 != col+1) {
-                                                    liquid.gridOptions.api.columnController.moveColumnByIndex(idx+1, col+1);
-                                                }
-                                                liquid.gridOptions.api.columnController.columnApi.setColumnWidth(col+1, width, finished=false);
-                                            }
-                                        }
-                                    }
+                            if(liquidOrControlId=='LIQUID') {
+                                Liquid.persist = result.persist;
+                            } else {
+                                if (result.cols) {
+                                    liquid.gridOptions.columnApi.setColumnState(result.cols);
                                 }
-                                */
                             }
                         }
                     }
@@ -25159,7 +25253,6 @@ columns:[
                     }
                 }
             }
-
             var liquidMenuX = Liquid.getLiquid(event.target.id);
             if(liquidMenuX) {
                 if(event.target.classList.contains('liquidMenuX') || event.target.classList.contains('liquidMenuXContainer')) {
@@ -26409,6 +26502,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     jQ1124(this).prev('input').val('').trigger('change');
                 }));
             });
+        }
+        if(Liquid.persist.DISABLE_PAGE_SELECTION) {
+            document.body.classList.add("liquidNoSelection");
         }
     } catch (e) {
         console.error(e);
