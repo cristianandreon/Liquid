@@ -112,8 +112,66 @@ const capitalizeOnlyFirstLetter = (s) => {
 // Editors
 
 
+function DatalistEditor() {}
+DatalistEditor.prototype.init = function(params) {
+    this.eInput = document.createElement('input');
+    this.eInput.style.color = 'blue';
+    this.eInput.style.minWidth = '500px';
+    this.eInput.style.minHeight = '30px';
+    this.eInput.style.zIndex = 30000;
+    this.eInput.autocomplete = "off";
+    this.create_datalist_from_column(params.liquid, params.column.colId);
+    this.onmousedown = function (e) {
+        this.placeholder = this.value;
+        if (!this.readOnly && !this.disabled) this.value = ''
+    };
+    this.onblur = function (e) {
+        if (!this.value) this.value = this.placeholder;
+    };
+    this.params = params;
+};
+DatalistEditor.prototype.getGui = function() {
+    return this.eInput;
+};
+DatalistEditor.prototype.afterGuiAttached = function() {
+    this.eInput.focus();
+    this.eInput.select();
+    this.eInput.parentNode.appendChild(this.eDatalist);
+    this.eInput.setAttribute('list', this.eDatalist.id);
+    this.eInput.click();
+    if(this.params.charPress) {
+        this.eInput.value = this.params.charPress;
+    } else {
+        this.eInput.value = this.params.value;
+    }
+};
+DatalistEditor.prototype.getValue = function() { return this.eInput.value; };
+DatalistEditor.prototype.destroy = function() {};
+DatalistEditor.prototype.isPopup = function() {
+    return false;
+};
+
+DatalistEditor.prototype.create_datalist_from_column = function(liquid, colId) {
+    this.eDatalist = document.createElement('datalist');
+    this.eDatalist.id = "liquid.editor.datalistEditor.datalist";
+    var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+    var values = [];
+    for (var i = 0; i < nodes.length; i++) {
+        if(nodes[i].data[colId]) {
+            var opt = document.createElement('option');
+            if(!values.contains(nodes[i].data[colId])) {
+                opt.text = nodes[i].data[colId];
+                this.eDatalist.appendChild(opt);
+                values.push(nodes[i].data[colId]);
+            }
+        }
+    }
+}
+
+
 
 function MultiLineEditor() {}
+
 MultiLineEditor.prototype.init = function(params) {
     this.eInput = document.createElement('textarea');
     this.eInput.rows="5";

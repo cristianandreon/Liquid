@@ -29,7 +29,7 @@
 
 
 //
-// Liquid ver.2.90
+// Liquid ver.2.91
 //
 //  First update 06-01-2020 - Last update 04-10-2023
 //
@@ -39,7 +39,7 @@
 //
 //  1°  project LiquidX (DEVELOPING)
 //  2°  project Liquid  (inside JAR)
-//  3°  project LiquidD (BACKUP)
+//  3°  project LiquidD (BACKUP).dayalist
 //
 //
 //
@@ -640,7 +640,8 @@ class LiquidCtrl {
                         IntegerEditor: IntegerEditor,
                         FloatEditor: FloatEditor,
                         DateEditor: DateEditor,
-                        MultiLineEditor:MultiLineEditor
+                        MultiLineEditor:MultiLineEditor,
+                        DatalistEditor:DatalistEditor
                     },
                     columnTypes: {
                         'nonEditableColumn': { editable: false },
@@ -818,6 +819,10 @@ class LiquidCtrl {
                             // Liquid.onEvent(liquid, "onRow...", event);
                         }
                     },
+                    onCellEditingStarted:function(event) {
+                        var liquid = Liquid.getLiquid(this.liquidLink.controlId);
+                        Liquid.onEvent(liquid, "onCellEditingStarted", event.data);
+                    },
                     onCellContextMenu:function(event) {
                         var liquid = Liquid.getLiquid(this.liquidLink.controlId);
                         Liquid.onEvent(liquid, "onCellContextMenu", event.data);
@@ -924,7 +929,16 @@ class LiquidCtrl {
                                                 (isDef(liquid.tableJson.saveAlways) && liquid.tableJson.saveAlways == true)
                                                 || (isDef(liquid.tableJson.autoSave) && liquid.tableJson.autoSave == true)) {
                                                 if (!isDef(liquid.currentCommand)) {
-                                                    Liquid.onButton(liquid, {name: "update", "fromToolbar": false});
+                                                    // Liquid.onButton(liquid, {name: "update", "fromToolbar": false});
+                                                    Liquid.onCommand(
+                                                        liquid,
+                                                        "update",
+                                                        function () {
+                                                        let cell = liquid.gridOptions.api.getFocusedCell();
+                                                        if (cell) {
+                                                            liquid.gridOptions.api.setFocusedCell( cell.rowIndex, cell.column );
+                                                        }
+                                                    }, false);
                                                 } else {
                                                     // Chnage row inside command
                                                 }
@@ -1058,6 +1072,26 @@ class LiquidCtrl {
                             } catch (e) {
                                 console.error("ERROR : "+e);
                             }
+                        }
+                        return null;
+                    }
+                    ,getRowHeight:function(event) {
+                        // params => params.node.group ? 50 : 20,
+                        try {
+                            // return 70;
+                            return onRowHeightArts(liquid, event.node);
+                            var node = event.node;
+                            var eventData = {
+                                rowData: Liquid.getFullRecordData(liquid, node),
+                                node: Liquid.getCleanNodeData(node),
+                            };
+                            var eventResult = Liquid.onEventSync(liquid, "onRowHeight", eventData, null);
+                            if (eventResult) {
+                                return eventResult.result;
+                            } else {
+                                return null;
+                            }
+                        } catch (e) {
                         }
                         return null;
                     }
@@ -2752,7 +2786,7 @@ class LiquidMenuXCtrl {
 }
 
 var Liquid = {
-    version: 2.90,
+    version: 2.91,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -5815,6 +5849,18 @@ var Liquid = {
                     var cellEditor = null;
                     var cellEditorParams = null;
                     var cellRenderer = (typeof liquid.tableJson.columns[ic].cellRenderer !== "undefined" ? Liquid.getJSProperty(liquid.tableJson.columns[ic].cellRenderer) : null);
+
+                    if(isDef(liquid.tableJson.columns[ic].datalist)) {
+                        if(liquid.tableJson.columns[ic].datalist) {
+                            cellEditor = DatalistEditor;
+                            cellEditorParams = {
+                                liquid: liquid,
+                                column: liquid.tableJson.columns[ic],
+                                iCol: ic
+                            };
+                        }
+                    }
+
                     if (liquid.tableJson.columns[ic].type === "12" && liquid.tableJson.columns[ic].size > Liquid.richText.size) {
                         cellEditor = SunEditor;
                         cellEditorParams = {
