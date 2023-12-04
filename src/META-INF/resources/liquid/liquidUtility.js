@@ -221,7 +221,11 @@ MultiLineEditor.prototype.afterGuiAttached = function() {
                 obj.eInput.selectionStart = obj.eInput.selectionEnd = -1;
             } else {
                 obj.eInput.value = obj.params.value;
-                obj.eInput.select();
+                if(Liquid.persist.SELECT_ALL_TEXT_ON_MULTILINE) {
+                    obj.eInputX.select();
+                } else {
+                    obj.eInput.selectionStart = obj.eInput.selectionEnd = -1;
+                }
             }
             obj.eInput.focus();
         }, 50
@@ -333,8 +337,6 @@ DateEditor.prototype.getGui = function() { return this.eInput; };
 DateEditor.prototype.afterGuiAttached = function() {
     this.eInputX.parentNode.parentNode.style.zIndex = 50000;
     this.dp = this.getControlObj(this.controlName, this.eInputX);
-    if(this.dp) {
-    }
     if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR && this.params.charPress.charAt(0) != Liquid.KEY_ENTER) {
         this.eInputX.value = this.params.charPress;
         this.eInput.selectionStart = this.eInput.selectionEnd = -1;

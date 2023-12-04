@@ -2889,6 +2889,7 @@ var Liquid = {
     focusedZIndex:30000,
     KEY_BACKSPACE:8,KEY_TAB:9,KEY_NEW_LINE:10,KEY_ENTER:13,KEY_SHIFT:16,KEY_ESCAPE:27,KEY_SPACE:32,KEY_LEFT:37,KEY_UP:38,KEY_RIGHT:39,KEY_DOWN:40,KEY_DELETE:46,KEY_A:65,KEY_C:67,KEY_V:86,KEY_D:68,KEY_F2:113,KEY_PAGE_UP:33,KEY_PAGE_DOWN:34,KEY_PAGE_HOME:36,KEY_PAGE_END:35,
     persist: {
+        SELECT_ALL_TEXT_ON_MULTILINE:false,
         CAPTURE_ENTER_ON_MULTILINE:true,
         CAPTURE_CHAR_PRESSED_ON_MULTILINE:true,
         CAPTURE_CHAR_PRESSED_ON_DATALIST:true,
@@ -5296,11 +5297,16 @@ var Liquid = {
                     } else if (stat == 2) {
                         year += value[i];
                     }
-                    if (!isNaN(Number(value.charAt(i)))
-                        && !Liquid.isDateSep(value.charAt(i + 1))
-                    ) {
+                    if(isNaN(Number(value.charAt(i+1))) && !Liquid.isDateSep(value.charAt(i + 1))) {
+                        if (i <= 1 && stat == 0) {
+                            stat = 1;
+                        }
+                    } else if(!isNaN(Number(value.charAt(i))) && !Liquid.isDateSep(value.charAt(i + 1))
+                        ) {
                         if (i == 1 && stat == 0) {
                             stat = 1;
+                        } else if (i == 3 && stat == 1) {
+                            stat = 2;
                         }
                     } else if (isNaN(Number(value.charAt(i)))) {
                         if (stat == 1
@@ -13883,7 +13889,7 @@ var Liquid = {
                     if (isDef(liquid.tableJson.maxHeight)) {
                         if (isDef(liquid.referenceHeightObj.style.minHeight && liquid.referenceHeightObj.style.height == '')) {
                             liquid.referenceHeightObj.style.height = liquid.referenceHeightObj.style.minHeight;
-                            referenceHeight = getComputedStyle(liquid.referenceHeightObj).height.replace(/[^0-9]/g, '');
+                            referenceHeight = getComputedStyle(liquid.referenceHeightObj).height.split('.')[0].replace(/[^0-9]/g, '');
                             liquid.referenceHeightObj.style.height = '';
                         }
                     }
