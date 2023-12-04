@@ -7,6 +7,7 @@ package com.liquid;
 
 import com.liquid.db.IdsCache;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
@@ -23,11 +24,11 @@ public class Info {
     static public String message;
 
     public static String getVersion() {
-        return "1.16";
+        return workspace.version_string;
     }
     public static String getInfo( HttpServletRequest request, HttpServletResponse response) {
         String out_string = "";
-        
+
         out_string += "<div style=\"padding-top:70px; width:calc( 100% - 20px );\">";
         out_string += "<table class=\"liquidFoundTable liquidMenuXLeft\" border=0 cellspacing=0 cellpadding=10 style=\"display:block; padding: 3; border: 1px solid darkolivegreen; width:calc( 100% - 10px )\">";
         
@@ -301,14 +302,14 @@ public class Info {
                 
                 out_string += "</tr>";
 
-                out_string += "<tr style=\"background-color:lightGray\">";
-                out_string += "<td>"+"Resets"+"</td>";
+                out_string += "<tr rowspan=\"2\" style=\"background-color:lightGray\">";
+                out_string += "<td>"+""+"</td>";
                 out_string += "<td>"
                         + "<span style=\"font-size: 85%;\">"
-                        + "<a href='' onclick='javascript:location.href=\"./index.jsp/act=resetTableMetadata\"'>Reset Tables Metadata</a>"
+                        + "<a href='' onclick='javascript:location.href=\"./index.jsp/act=resetTableMetadata\"'>[Reset Tables Metadata]</a>"
                         + "</span>"
                         + "<span style=\"font-size: 85%;\">"
-                        + "<a href='' onclick='javascript:location.href=\"./index.jsp/act=resetDatalist\"'>Reset Datalist</a>"
+                        + "<a href='' onclick='javascript:location.href=\"./index.jsp/act=resetDatalist\"'>[Reset Datalist]</a>"
                         + "</span>"
                         + "</td>";
                 out_string += "<td>"
@@ -332,7 +333,121 @@ public class Info {
             Logger.getLogger(Info.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        
+
+
+        String dmsFTP = null, dmsFTPPublicURL = null, dmsSchema = null, dmsTable = null, dmsDocTypeTable = null, dmsRootFolder = null, dmsName = null;
+        String mode = null;
+        long dmsMaxFileSize = 0;
+
+        try {
+            // root table
+            Class cls = Class.forName("app.liquid.dms.connection");
+            Field fs = cls.getDeclaredField("dmsSchema");
+            if (fs != null) {
+                fs.setAccessible(true);
+                dmsSchema = (String) fs.get(null);
+            }
+            Field ft = cls.getDeclaredField("dmsTable");
+            if (ft != null) {
+                ft.setAccessible(true);
+                dmsTable = (String) ft.get(null);
+            }
+            Field fdt = cls.getDeclaredField("dmsDocType");
+            if (fdt != null) {
+                fdt.setAccessible(true);
+                dmsDocTypeTable = (String) fdt.get(null);
+            }
+            Field fr = cls.getDeclaredField("dmsRootFolder");
+            if (fr != null) {
+                fr.setAccessible(true);
+                dmsRootFolder = (String) fr.get(null);
+            }
+            Field fms = cls.getDeclaredField("dmsMaxFileSize");
+            if (fms != null) {
+                fms.setAccessible(true);
+                dmsMaxFileSize = (long) fms.get(null);
+            }
+
+            Field fFtp = cls.getDeclaredField("dmsFTP");
+            if (fFtp != null) {
+                fFtp.setAccessible(true);
+                dmsFTP = (String) fFtp.get(null);
+            }
+            Field fFtpURL = cls.getDeclaredField("dmsFTPPublicURL");
+            if (fFtpURL != null) {
+                fFtpURL.setAccessible(true);
+                dmsFTPPublicURL = (String) fFtpURL.get(null);
+            }
+        } catch (Exception e) {
+        }
+
+        out_string += "<tr style=\"background-color:transparent\">";
+        out_string += "<td>D.M.S.</td>";
+        out_string += "<td colspan=\"2\">";
+        out_string += "<table cellspacing=\"10\" cellpadding=\"10\" style=\"border:1px solid gray; padding:30px; width:800px\">";
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Schema</td>"
+                + "<td><b>"
+                + dmsSchema
+                + "</b></td>"
+                + "</tr>";
+        out_string += "</td></tr>";
+        out_string += "<tr style=\"background-color:whitesmoke\">";
+        out_string += "<td>Table</td>"
+                + "<td><b>"
+                + dmsTable
+                + "</b></td>"
+                + "</tr>";
+        out_string += "</td></tr>";
+
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Max File Size</td>"
+                + "<td><b>"
+                + dmsMaxFileSize
+                + "</b></td>"
+                + "</tr>";
+        out_string += "</td></tr>";
+        out_string += "<tr style=\"background-color:whitesmoke\">";
+        out_string += "<td>Doc Type Table</td>"
+                + "<td><b>"
+                + dmsDocTypeTable
+                + "</b></td>"
+                + "</tr>";
+        out_string += "</td></tr>";
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>Root Folder</td>"
+                + "<td><b>"
+                + dmsRootFolder
+                + "</b></td>"
+                + "</tr>";
+        out_string += "</td></tr>";
+        out_string += "<tr style=\"background-color:whitesmoke\">";
+        out_string += "<td>FTP</td>"
+                + "<td><b>"
+                + (dmsFTP != null ? utility.purge_password_url(dmsFTP) : "[N/D]")
+                + "</b></td>"
+                + "</tr>";
+
+        out_string += "<tr style=\"background-color:lightGray\">";
+        out_string += "<td>FTP Public URL</td>"
+                + "<td><b>"
+                + (dmsFTPPublicURL != null ? utility.purge_password_url(dmsFTPPublicURL) : "[N/D]")
+                + "</b></td>"
+                + "</tr>";
+        out_string += "</td></tr>";
+        out_string += "<tr style=\"background-color:whitesmoke\">";
+        out_string += "<td></td>"
+                + "<td><b>"
+                + com.liquid.workspace.get_button_control("PURGE DMS", "", "com.liquid.dms.purge_dms")
+                + "</b></td>"
+                + "</tr>";
+
+        out_string += "</td></tr>";
+
+        out_string += "</table>";
+
+
         out_string += "</table>";
         out_string += "</div>";
 

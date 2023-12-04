@@ -35,17 +35,21 @@
      * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      */
 
-        Info.message = "";
+    Info.message = "";
 
-        String act = request.getParameter("act");
-        if("resetTableMetadata".equalsIgnoreCase(act)) {
-            com.liquid.metadata.invalidateMetadata();
-            Info.message += "["+metaDataTable.size()  + " Table metadata cache resetted]";
-        }
-        if("resetDatalist".equalsIgnoreCase(act)) {
-            utility.resetDatalistCache();
-            Info.message += "["+glDataListCache.size() + " Datalist resetted]";
-        }
+    String act = request.getParameter("act");
+    if("resetTableMetadata".equalsIgnoreCase(act)) {
+        com.liquid.metadata.invalidateMetadata();
+        Info.message += "["+metaDataTable.size()  + " Table metadata cache resetted]";
+    }
+    if("resetDatalist".equalsIgnoreCase(act)) {
+        utility.resetDatalistCache();
+        Info.message += "["+glDataListCache.size() + " Datalist resetted]";
+    }
+    if("purgeDMS".equalsIgnoreCase(act)) {
+        // utility.resetDatalistCache();
+        Info.message += "["+glDataListCache.size() + " DMS purged]";
+    }
 
     %>
 <html>
@@ -89,7 +93,7 @@
              </td></tr>
              <tr><td colspan="2" style="width: 100%; height:40px;">
                 <div style="display: inline-flex">
-                    <center><h2><a href="javascript:history.back()">go back</a></center></h2>
+                    <center><h2><a href="javascript:history.back()">go back</a></h2></center>
                 </div>
              </td></tr>
         </table>

@@ -137,7 +137,7 @@ DatalistEditor.prototype.afterGuiAttached = function() {
     this.eInput.parentNode.appendChild(this.eDatalist);
     this.eInput.setAttribute('list', this.eDatalist.id);
     this.eInput.click();
-    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_DATALIST) {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_DATALIST && this.params.charPress.charAt(0) != Liquid.KEY_ENTER) {
         this.eInput.value = this.params.charPress;
         this.eInput.selectionStart = this.eInput.selectionEnd = -1;
     } else {
@@ -169,13 +169,22 @@ DatalistEditor.prototype.create_datalist_from_column = function(liquid, colId) {
     }
 }
 
-function exitFromEdit(obj) {
-    let cell = obj.params.liquid.gridOptions.api.getFocusedCell();
-    if (cell) {
-        obj.params.liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
+function exitFromEdit(obj, setCellFocus, tabToNextCell, tabToPreviousCell) {
+    // obj.params.liquid.outDivObj.focus();
+    if(setCellFocus) {
+        let cell = obj.params.liquid.gridOptions.api.getFocusedCell();
+        if (cell) {
+            obj.params.liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
+        }
     }
     obj.params.liquid.gridOptions.api.stopEditing();
+    if(tabToNextCell) {
+        obj.params.liquid.gridOptions.api.tabToNextCell();
+    } else if(tabToPreviousCell) {
+        obj.params.liquid.gridOptions.api.tabToPreviousCell();
+    }
 }
+
 
 
 function MultiLineEditor() {}
@@ -204,18 +213,23 @@ MultiLineEditor.prototype.getGui = function() {
     return this.eInput;
 };
 MultiLineEditor.prototype.afterGuiAttached = function() {
-    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_MULTILINE && this.params.charPress != '\n') {
-        this.eInput.value = this.params.charPress;
-        this.eInput.selectionStart = this.eInput.selectionEnd = -1;
-    } else {
-        this.eInput.value = this.params.value;
-        this.eInput.select();
-    }
-    this.eInput.focus();
+    var obj = this;
+    setTimeout(
+        function () {
+            if (obj.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_MULTILINE && obj.params.charPress.charAt(0) != Liquid.KEY_ENTER) {
+                obj.eInput.value = obj.params.charPress;
+                obj.eInput.selectionStart = obj.eInput.selectionEnd = -1;
+            } else {
+                obj.eInput.value = obj.params.value;
+                obj.eInput.select();
+            }
+            obj.eInput.focus();
+        }, 50
+    );
 };
 MultiLineEditor.prototype.getValue = function() { return this.eInput.value; };
 MultiLineEditor.prototype.destroy = function() {
-    exitFromEdit(this);
+    exitFromEdit(this, true);
 };
 MultiLineEditor.prototype.isPopup = function() {
     return true;
@@ -237,7 +251,7 @@ IntegerEditor.prototype.getGui = function() {
     return this.eInput;
 };
 IntegerEditor.prototype.afterGuiAttached = function() {
-    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR) {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR && this.params.charPress.charAt(0) != Liquid.KEY_ENTER) {
         this.eInput.value = this.params.charPress;
         this.eInput.selectionStart = this.eInput.selectionEnd = -1;
     } else {
@@ -248,7 +262,7 @@ IntegerEditor.prototype.afterGuiAttached = function() {
 };
 IntegerEditor.prototype.getValue = function() { return this.eInput.value; };
 IntegerEditor.prototype.destroy = function() {
-    exitFromEdit(this);
+    exitFromEdit(this, true);
 };
 IntegerEditor.prototype.isPopup = function() {
     return false;
@@ -267,7 +281,7 @@ FloatEditor.prototype.getGui = function() {
     return this.eInput;
 };
 FloatEditor.prototype.afterGuiAttached = function() {
-    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR) {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR && this.params.charPress.charAt(0) != Liquid.KEY_ENTER) {
         this.eInput.value = this.params.charPress;
         // this.eInput.selectionStart = this.eInput.selectionEnd = -1;
     } else {
@@ -278,7 +292,7 @@ FloatEditor.prototype.afterGuiAttached = function() {
 };
 FloatEditor.prototype.getValue = function() { return this.eInput.value; };
 FloatEditor.prototype.destroy = function() {
-    exitFromEdit(this);
+    exitFromEdit(this, true);
 };
 FloatEditor.prototype.isPopup = function() {
     return false;
@@ -306,14 +320,22 @@ DateEditor.prototype.init = function(params) {
     this.eInputX.style.height = '25px';
     this.eInput.appendChild(this.eInputX);
     this.controlName = Liquid.createDateTimePicker(this.col, this.eInputX, false, this.params.liquid, this.params );
+    this.eInputX.onkeydown = this.onKeyDown(event, this);
+    Liquid.lastKeyDown = null;
+    Liquid.lastKeyDownShift = null;
 };
+DateEditor.prototype.onKeyDown = function (e, obj) {
+    var t = e.which || e.keyCode;
+    if(obj) obj.params.lastCharPress = t;
+    (t == Liquid.KEY_LEFT || t == Liquid.KEY_UP || t == Liquid.KEY_RIGHT || t == Liquid.KEY_DOWN || t == Liquid.KEY_TAB) && e.stopPropagation()
+}
 DateEditor.prototype.getGui = function() { return this.eInput; };
 DateEditor.prototype.afterGuiAttached = function() {
     this.eInputX.parentNode.parentNode.style.zIndex = 50000;
     this.dp = this.getControlObj(this.controlName, this.eInputX);
     if(this.dp) {
     }
-    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR) {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR && this.params.charPress.charAt(0) != Liquid.KEY_ENTER) {
         this.eInputX.value = this.params.charPress;
         this.eInput.selectionStart = this.eInput.selectionEnd = -1;
     } else {
@@ -324,9 +346,17 @@ DateEditor.prototype.afterGuiAttached = function() {
 };
 DateEditor.prototype.getValue = function() { return this.eInputX.value; };
 DateEditor.prototype.destroy = function() {
-    exitFromEdit(this);
+    var obj= this;
+    setTimeout(
+        function () {
+            exitFromEdit(obj,
+                true,
+                Liquid.lastKeyDown == 9 && !Liquid.lastKeyDownShift,
+                Liquid.lastKeyDown == 9 && Liquid.lastKeyDownShift);
+        }, 10
+    );
 };
-DateEditor.prototype.isPopup = function() { return true; };
+DateEditor.prototype.isPopup = function() { return false; };
 DateEditor.prototype.getControlObj = function(controlName, linkedObj) {
     var dpList = jQ1124(this.controlName);
     return dpList && dpList.length ? dpList[0] : null;
@@ -473,7 +503,7 @@ SelectEditor.prototype.init = function(params) {
 };
 SelectEditor.prototype.getGui = function() { return this.eInput; };
 SelectEditor.prototype.afterGuiAttached = function() {
-    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR) {
+    if(this.params.charPress && Liquid.persist.CAPTURE_CHAR_PRESSED_ON_EDITOR && this.params.charPress.charAt(0) != Liquid.KEY_ENTER) {
         this.eInput.value = this.params.charPress;
         this.eInput.selectionStart = this.eInput.selectionEnd = -1;
     } else {

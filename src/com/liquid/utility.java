@@ -2611,6 +2611,19 @@ public class utility {
         }
     }
 
+    public static String purge_password_url(String sURL) {
+        int s = sURL.indexOf("password=");
+        if(s>=0) {
+            String nURL = sURL.substring(0, s+9);
+            int e = sURL.substring(s+9).indexOf("&");
+            if(e >= 0) {
+                nURL = nURL + "***" + sURL.substring(s+9+e);
+                return nURL;
+            }
+        }
+        return sURL;
+    }
+
 
     public static class DataListCache {
         public String databaseSchemaTable = null, codeColumn = null, descColumn = null, where = null;

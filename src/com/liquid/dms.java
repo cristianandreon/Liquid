@@ -1779,7 +1779,8 @@ public class dms {
      * @throws Throwable
      */
     public String purge_dms (Object tbl_wrk, Object params, Object clientData, Object request) throws Throwable {
-        String dmsSchema = null, dmsTable = null, dmsRootFolder = null;
+        String dmsSchema = null, dmsTable = null, dmsRootFolder = null, dmsFTP = null, dmsFTPPublicURL = null;
+        StringBuffer outStringBuffer = new StringBuffer("");
 
         try {
             // root table
@@ -1800,12 +1801,25 @@ public class dms {
                 dmsRootFolder = (String) fr.get(null);
             }
 
+            Field fFtp = cls.getDeclaredField("dmsFTP");
+            if (fFtp != null) {
+                fFtp.setAccessible(true);
+                dmsFTP = (String) fFtp.get(null);
+            }
+            Field fFtpURL = cls.getDeclaredField("dmsFTPPublicURL");
+            if (fFtpURL != null) {
+                fFtpURL.setAccessible(true);
+                dmsFTPPublicURL = (String) fFtpURL.get(null);
+            }
+
+            if(dmsFTP != null && !dmsFTP.isEmpty()) {
+                throw new Exception("purge ftp dms not supported");
+            }
+
             if (dmsRootFolder != null && !dmsRootFolder.isEmpty()) {
                 dmsRootFolder = getAbsoluteRootPath(dmsRootFolder, (HttpServletRequest) request);
                 if (!utility.folderExist(dmsRootFolder)) {
-                    if (!utility.createFolder(dmsRootFolder)) {
-                        throw new Exception("Unable to create foolder : " + dmsRootFolder);
-                    }
+                    throw new Exception("Unable to create foolder : " + dmsRootFolder);
                 }
 
                 File directoryPath = new File(dmsRootFolder);
@@ -1813,6 +1827,8 @@ public class dms {
                 Object [] connRes = connection.getDBConnection();
                 Connection conn = (Connection) connRes[0];
                 int dCount = 0;
+                int nRowsDeleted = 0;
+                int nRows = 0;
 
                 if(conn != null) {
                     String sQuery = "SELECT id from \"" + dmsSchema + "\".\"" + dmsTable + "\""
@@ -1826,21 +1842,59 @@ public class dms {
                             if(!rsdo.next()) {
                                 // delete file
                                 // utility.deleteFile(contents[i]);
-                                System.out.println("deleting " + contents[i]);
+                                String s = "rm \"" + directoryPath  + "/" + contents[i]+"\"";
+                                outStringBuffer.append((dCount > 0 ? "\n":"") + s);
+                                System.out.println(s);
                                 dCount++;
                             }
                             rsdo.close();
                         }
                     }
                     psdo.close();
-                    System.out.println("No file deleted : " + dCount);
+
+
+                    sQuery = "SELECT id,file from \"" + dmsSchema + "\".\"" + dmsTable + "\""
+                            + " ORDER BY date DESC";
+                    psdo = conn.prepareStatement(sQuery);
+                    ResultSet rsdo = psdo.executeQuery();
+                    if (rsdo != null) {
+                        for (int i = 0; i < contents.length; i++) {
+                            contents[i] = (directoryPath + "/" + contents[i]);
+                        }
+                        while(rsdo.next()) {
+                            nRows++;
+                            boolean found = false;
+                            String file = rsdo.getString("file");
+                            for(int i=0; i<contents.length; i++) {
+                                if (contents[i].equalsIgnoreCase(file)) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if(!found) {
+                                String sUpdQuery = "UPDATE \"" + dmsSchema + "\".\"" + dmsTable + "\" SET " + "status='" + "D" + "'" + " WHERE (id='" + rsdo.getInt("id") + "')";
+                                PreparedStatement psdoUpd = conn.prepareStatement(sUpdQuery);
+                                int resUpd = psdoUpd.executeUpdate();
+                                if (resUpd >= 0) {
+                                    nRowsDeleted++;
+                                }
+                                if (psdoUpd != null) psdoUpd.close();
+                            }
+                        }
+                        rsdo.close();
+                    }
+                    psdo.close();
+
+                    System.out.println("No file to deleted : " + dCount+"/"+contents.length);
+                    System.out.println("No rows logical deleted : " + nRowsDeleted+"/"+nRows);
                 }
             } else {
                 throw new InvalidParameterException("'dmsRootFolder' not set in 'app.liquid.dms.connection'");
             }
         } catch (Exception e) {
+            System.out.println("Internal error: " + e);
         }
-        return "";
+        return outStringBuffer.toString();
     }
 
 

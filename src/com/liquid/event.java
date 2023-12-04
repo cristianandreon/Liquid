@@ -91,9 +91,16 @@ public class event {
                 tblWrk = request.getParameter("tblWrk");
             } catch (Exception e) {
             }
-            workspace tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null && !tblWrk.isEmpty() ? tblWrk : controlId);
-            if (tbl_wrk == null) {
-                // nessuna definizione del controllo
+
+            workspace tbl_wrk = null;
+            if(tblWrk != null || (controlId != null && !controlId.isEmpty() && !"null".equalsIgnoreCase(controlId))) {
+                tbl_wrk = workspace.get_tbl_manager_workspace(tblWrk != null && !tblWrk.isEmpty() ? tblWrk : controlId);
+                if (tbl_wrk == null) {
+                    // nessuna definizione del controllo
+                }
+            } else {
+                if(sClassName != null) {
+                }
             }
 
             /* NO : la ricevente toglie il carattere finale all'occorrenza
