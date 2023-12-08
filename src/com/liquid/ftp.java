@@ -195,12 +195,18 @@ public class ftp {
                 }
 
             } else if("DELETE".equalsIgnoreCase(command)) {
-                if (!ftpClient.deleteFile(remoteFile)) {
-                    System.err.println("Couldn't initiate transfer. Check that file names are valid.");
+                String absRemoteFile = remoteRootFolder + (!remoteRootFolder.endsWith(File.separator) && !remoteFile.startsWith(File.separator) ? File.separator : "") + remoteFile;
+                String remoteFolder = utility.get_file_folder(absRemoteFile);
+                if(ftpClient.changeWorkingDirectory(remoteFolder)) {
+                    if (!ftpClient.deleteFile(remoteFile)) {
+                        System.err.println("Couldn't initiate transfer. Check that file names are valid.");
+                        retVal = false;
+                        break __main;
+                    } else {
+                        retVal = true;
+                    }
+                } else {
                     retVal = false;
-                    break __main;
-                }  else {
-                    retVal = true;
                 }
             }
 

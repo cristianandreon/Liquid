@@ -57,7 +57,7 @@ public class dms {
         if(dmsFTP != null && !dmsFTP.isEmpty()) {
             // String APP_CONTEXT = request.getContextPath();
             // return dmsFTPPublicURL + (fileName.startsWith(APP_CONTEXT) ? fileName.substring(APP_CONTEXT.length()) : fileName);
-            return dmsFTPPublicURL;
+            return dmsFTPPublicURL + (fileName.endsWith(File.separator) ? "" : File.separator) + utility.get_file_name(fileName);
         } else {
             String absoluteFilePathRoot = null;
             String APP_CONTEXT = request.getContextPath();
@@ -938,16 +938,29 @@ public class dms {
                                             while(rsdo.next()) {
                                                 String file = rsdo.getString("file");
                                                 if (file != null && !file.isEmpty()) {
-                                                    File f = new File(file);
-                                                    if(f.exists()) {
-                                                        boolean resDel = f.delete();
-                                                        if (!resDel) {
+                                                    if(dmsFTP != null && !dmsFTP.isEmpty()) {
+                                                        ftp.setByURL(dmsFTP);
+                                                        String remote_file = file.replace(dmsFTPPublicURL+File.separator, "");
+                                                        if(!ftp.delete(remote_file)) {
                                                             if (delete_file_error.length() == 0) {
                                                                 delete_file_error += "{";
                                                             } else {
                                                                 delete_file_error += ",";
                                                             }
                                                             delete_file_error += "[\"Failed to delete " + file + "\"]";
+                                                        }
+                                                    } else {
+                                                        File f = new File(file);
+                                                        if (f.exists()) {
+                                                            boolean resDel = f.delete();
+                                                            if (!resDel) {
+                                                                if (delete_file_error.length() == 0) {
+                                                                    delete_file_error += "{";
+                                                                } else {
+                                                                    delete_file_error += ",";
+                                                                }
+                                                                delete_file_error += "[\"Failed to delete " + file + "\"]";
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -1434,7 +1447,7 @@ public class dms {
         String sQuery = null, sQuerySel = null;
         String sWhere = "";
         String dmsSchema = null, dmsTable = null;
-        String dmsFTP = null, dmsRootFolder = null;
+        String dmsFTP = null, dmsRootFolder = null, dmsFTPPublicURL = null;
         int nRecs = 0;
         String delete_file_error = "";
 
@@ -1461,6 +1474,11 @@ public class dms {
             if(fr != null) {
                 fr.setAccessible(true);
                 dmsRootFolder = (String) fr.get(null);
+            }
+            Field fFtpURL = cls.getDeclaredField("dmsFTPPublicURL");
+            if (fFtpURL != null) {
+                fFtpURL.setAccessible(true);
+                dmsFTPPublicURL = (String) fFtpURL.get(null);
             }
 
             JSONObject paramsJson = new JSONObject((String)params);
@@ -1538,7 +1556,8 @@ public class dms {
                                         if (file != null && !file.isEmpty()) {
                                             if(dmsFTP != null && !dmsFTP.isEmpty()) {
                                                 ftp.setByURL(dmsFTP);
-                                                if(!ftp.delete(file.substring(dmsRootFolder.length()))) {
+                                                String remote_file = file.replace(dmsFTPPublicURL+File.separator, "");
+                                                if(!ftp.delete(remote_file)) {
                                                     if (delete_file_error.length() == 0) {
                                                         delete_file_error += "{";
                                                     } else {

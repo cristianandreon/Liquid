@@ -222,7 +222,7 @@ MultiLineEditor.prototype.afterGuiAttached = function() {
             } else {
                 obj.eInput.value = obj.params.value;
                 if(Liquid.persist.SELECT_ALL_TEXT_ON_MULTILINE) {
-                    obj.eInputX.select();
+                    obj.eInput.select();
                 } else {
                     obj.eInput.selectionStart = obj.eInput.selectionEnd = -1;
                 }
@@ -563,8 +563,8 @@ function SunEditor() {}
 SunEditor.prototype.init = function(params) {
     this.eInput = document.createElement('textarea');
     this.eInput.id = "sunEditorPopup";
-    this.eInput.style.width = (params.options.width !== 'undefined' ? Liquid.getCSSDim(params.options.width) : '100%');
-    this.eInput.style.height = (params.options.height !== 'undefined' ? Liquid.getCSSDim(params.options.height) : '100%');
+    this.eInput.style.width = (isDef(params.options) && isDef(params.options.width) ? Liquid.getCSSDim(params.options.width) : '100%');
+    this.eInput.style.height = (isDef(params.options) && isDef(params.options.height) !== 'undefined' ? Liquid.getCSSDim(params.options.height) : '100%');
     this.rowIndex = params.rowIndex;
     this.iCol = params.iCol;
     this.column = params.column;
@@ -590,11 +590,23 @@ SunEditor.prototype.getGui = function() {
 };
 SunEditor.prototype.afterGuiAttached = function() {
     if(!this.liquid.popSuneditor) {
-        this.liquid.popSuneditor = window.SUNEDITOR.create((document.getElementById('sunEditorPopup')), {
-            minHeight: '200px'
-            ,minWidth: '300px'
-            ,lang: window.SUNEDITOR.SUNEDITOR_LANG['en']
-        });
+        this.liquid.popSuneditor =
+            window.SUNEDITOR.create((document.getElementById('sunEditorPopup')), {
+                showPathLabel: false, charCounter: true,
+                height: (typeof this.height !== 'undefined' ? this.height : '100%'),
+                width: (typeof this.width !== 'undefined' ? this.width : '100%'),
+                mode: "classic",
+                katex: "window.katex",
+                display: "block",
+                stickyToolbar: "-1",
+                backgroundColor: (typeof this.backgroundColor !== 'undefined' ? this.backgroundColor : 'transparent'),
+                buttonList: [
+                    ['undo', 'redo', 'font', 'fontSize', 'formatBlock'],
+                    ['bold', 'underline', 'italic', 'strike', 'subscript', 'superscript', 'removeFormat'],
+                    ['fontColor', 'hiliteColor', 'outdent', 'indent', 'align', 'horizontalRule', 'list', 'table'],
+                    ['link', 'image', 'video', 'fullScreen', 'showBlocks', 'codeView', 'preview', 'print', 'save']
+                ],
+            });
     }
     this.liquid.popSuneditor.setContents(this.eInput.value);
     // this.suneditor.insertHTML(this.eInput.value);
@@ -613,7 +625,6 @@ SunEditor.prototype.getValue = function() {
                     if(validateResult !== null) {
                         if(validateResult[0] >= 0) {
                             this.eInput.value = validateResult[1];
-                            // selNodes[node].data[this.targetField] = this.eInput.value;
                             selNodes[node].setDataValue(this.targetField, this.eInput.value);
                             Liquid.registerFieldChange(this.liquid, null, selNodes[node].data[ this.liquid.tableJson.primaryKeyField ? this.liquid.tableJson.primaryKeyField : null ], this.targetField, null, this.eInput.value);
                             Liquid.updateDependencies(this.liquid, this.liquid.tableJson.columns[this.iCol], null, null);
