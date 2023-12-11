@@ -109,6 +109,23 @@ const capitalizeOnlyFirstLetter = (s) => {
 
 
 
+function exitFromEdit(obj, setCellFocus, tabToNextCell, tabToPreviousCell) {
+    // obj.params.liquid.outDivObj.focus();
+    if(setCellFocus) {
+        let cell = obj.params.liquid.gridOptions.api.getFocusedCell();
+        if (cell) {
+            obj.params.liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
+        }
+    }
+    obj.params.liquid.gridOptions.api.stopEditing();
+    if(tabToNextCell) {
+        obj.params.liquid.gridOptions.api.tabToNextCell();
+    } else if(tabToPreviousCell) {
+        obj.params.liquid.gridOptions.api.tabToPreviousCell();
+    }
+}
+
+
 // Editors
 
 
@@ -168,24 +185,6 @@ DatalistEditor.prototype.create_datalist_from_column = function(liquid, colId) {
         }
     }
 }
-
-function exitFromEdit(obj, setCellFocus, tabToNextCell, tabToPreviousCell) {
-    // obj.params.liquid.outDivObj.focus();
-    if(setCellFocus) {
-        let cell = obj.params.liquid.gridOptions.api.getFocusedCell();
-        if (cell) {
-            obj.params.liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
-        }
-    }
-    obj.params.liquid.gridOptions.api.stopEditing();
-    if(tabToNextCell) {
-        obj.params.liquid.gridOptions.api.tabToNextCell();
-    } else if(tabToPreviousCell) {
-        obj.params.liquid.gridOptions.api.tabToPreviousCell();
-    }
-}
-
-
 
 function MultiLineEditor() {}
 

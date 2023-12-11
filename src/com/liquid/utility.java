@@ -2559,6 +2559,20 @@ public class utility {
         return arrayToString(parts, prefix, postfix, separator);
     }
 
+    public static String move_item(String str, String itemToMove, String prefix, String postfix, String separator, int position) {
+        ArrayList<String> parts = new ArrayList<> (Arrays.asList(str.split(separator)));
+        if(itemToMove != null)
+            parts.remove(itemToMove);
+        if(position == 0) {
+            parts.add(0, itemToMove);
+        } else if(position == -1 || position >= parts.size()) {
+            parts.add(parts.size()-1, itemToMove);
+        } else {
+            parts.add(position, itemToMove);
+        }
+        return arrayToString(parts, prefix, postfix, separator);
+    }
+
     public static boolean createSymbolicLink(String linkFileName, String targetFileName) throws IOException {
         Path target = new File(targetFileName).toPath();
         Path link = Paths.get(linkFileName);
@@ -2792,9 +2806,9 @@ public class utility {
         }
 
         if(resetButton) {
-            String reset = "<i class=\"close-icon\" " +
+            String reset = "<button class=\"close-icon\" " +
                     "onclick=\"if(document.getElementById('" + datalistId + "').value) { document.getElementById('" + datalistId + "').value=''; document.getElementById('" + datalistId + "').placeholder=''; document.getElementById('" + datalistId + "').onchange(); } else {}\">" +
-                    "</i>";
+                    "</button>";
             out += "\n" + reset;
         }
 

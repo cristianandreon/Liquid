@@ -314,8 +314,8 @@ span.deleteicon input { padding-right: 16px; box-sizing: border-box;}
 .liquid-close-large-icon-top:after {
     content: "x";
     display: block;
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
     position: absolute;
     background-color: #d3d3d3;
     z-index:1;

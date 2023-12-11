@@ -18652,49 +18652,90 @@ var Liquid = {
                             linkedRow1B = Number(linkedRow1B);
                             var col = liquid.tableJson.columns[Number(linkedField) - 1];
                             if (col) {
-                                if (isDef(col.editor)) {
-                                    if (col.editor == "suneditor") {
-                                        Liquid.startSunEditor(
-                                            liquid,
-                                            function (content) {
-                                                Liquid.saveAndCloseSunEditor(liquid, obj, content)
-                                            },
-                                            function (event) {
-                                                if (obj.innerHTML != liquid.suneditor.getContents()) {
-                                                    let msg = '';
-                                                    if (Liquid.lang.toLowerCase() == 'it') {
-                                                        msg += "Il contenuto &egrave; stato modificato, salvarlo ?"
-                                                    } else {
-                                                        msg += "Content was changed, save it ?"
-                                                    }
-                                                    Liquid.dialogBox3(null, Liquid.WARNING_STRING, msg,
-                                                        function () {
-                                                            Liquid.saveAndCloseSunEditor(liquid, obj, liquid.suneditor.getContents());
-                                                        }, function () {
-                                                            // stop here
-                                                        },
-                                                        function () {
-                                                            // discharge changes
-                                                            Liquid.closeSunEditor(liquid);
+                                let editor = null
+                                if (isDef(col.layoutEditor)) {
+                                    editor = col.layoutEditor;
+                                } else if (isDef(col.editor)) {
+                                    editor = col.editor;
+                                }
+                                if (editor) {
+                                    if (editor == "suneditor") {
+                                        if (!obj.readOnly && !obj.disabled) {
+                                            Liquid.startSunEditor(
+                                                liquid,
+                                                function (content) {
+                                                    Liquid.saveAndCloseSunEditor(liquid, obj, content)
+                                                },
+                                                function (event) {
+                                                    if (liquid.suneditor.obj.innerHTML != liquid.suneditor.getContents()) {
+                                                        let msg = '';
+                                                        if (Liquid.lang.toLowerCase() == 'it') {
+                                                            msg += "Il contenuto &egrave; stato modificato, salvarlo ?"
+                                                        } else {
+                                                            msg += "Content was changed, save it ?"
                                                         }
-                                                    );
-                                                } else {
-                                                    Liquid.closeSunEditor(liquid);
-                                                }
-                                            },
-                                            obj
-                                        );
-                                        if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
-                                            let content = nodes[baseIndex1B - 1 + linkedRow1B - 1].data[col.field];
-                                            if (isDef(col.b64)) {
-                                                if (col.b64) {
-                                                    try {
-                                                        content = atob(content);
-                                                    } catch (e) {
+                                                        Liquid.dialogBox3(null, Liquid.WARNING_STRING, msg,
+                                                            function () {
+                                                                Liquid.saveAndCloseSunEditor(liquid, liquid.suneditor.obj, liquid.suneditor.getContents());
+                                                            }, function () {
+                                                                // stop here
+                                                            },
+                                                            function () {
+                                                                // discharge changes
+                                                                Liquid.closeSunEditor(liquid);
+                                                            }
+                                                        );
+                                                    } else {
+                                                        Liquid.closeSunEditor(liquid);
+                                                    }
+                                                },
+                                                obj
+                                            );
+                                            if (cNode >= 0 && (cNode < liquid.nRows || isddingNode)) {
+                                                let content = nodes[baseIndex1B - 1 + linkedRow1B - 1].data[col.field];
+                                                if (isDef(col.b64)) {
+                                                    if (col.b64) {
+                                                        try {
+                                                            content = atob(content);
+                                                        } catch (e) {
+                                                        }
                                                     }
                                                 }
+                                                liquid.suneditor.setContents(content);
                                             }
-                                            liquid.suneditor.setContents(content);
+                                        }
+                                    } else if (editor == "multilineEditor") {
+                                        if (!obj.readOnly && !obj.disabled) {
+                                            Liquid.startMultilineEditor(
+                                                liquid,
+                                                function (content) {
+                                                    Liquid.saveAndCloseMultilineEditor(liquid, obj, content)
+                                                },
+                                                function (event) {
+                                                    if (liquid.multilineEditor.obj.innerHTML != liquid.multilineEditorTextArea.value) {
+                                                        let msg = '';
+                                                        if (Liquid.lang.toLowerCase() == 'it') {
+                                                            msg += "Il contenuto &egrave; stato modificato, salvarlo ?"
+                                                        } else {
+                                                            msg += "Content was changed, save it ?"
+                                                        }
+                                                        Liquid.dialogBox3(null, Liquid.WARNING_STRING, msg,
+                                                            function () {
+                                                                Liquid.saveAndCloseMultilineEditor(liquid, liquid.multilineEditor.obj, liquid.multilineEditorTextArea.value);
+                                                            }, function () {
+                                                                // stop here
+                                                            },
+                                                            function () {
+                                                                // discharge changes
+                                                                Liquid.closeMultilineEditor(liquid);
+                                                            }
+                                                        );
+                                                    } else {
+                                                        Liquid.closeMultilineEditor(liquid);
+                                                    }
+                                                },
+                                                obj
+                                            );
                                         }
                                     }
                                 }
@@ -19583,6 +19624,71 @@ var Liquid = {
             }
             jQ1124( liquid.suneditorDiv ).slideDown( "fast" );
             liquid.suneditor.show();
+        }
+    },
+    saveAndCloseMultilineEditor:function(liquid, obj, content) {
+        if(obj) {
+            Liquid.setHTMLElementValue(obj, content);
+            var event = new Event('change');
+            obj.dispatchEvent(event);
+            Liquid.closeMultilineEditor(liquid);
+        }
+    },
+    closeMultilineEditor:function(liquid) {
+        if (liquid) {
+            setTimeout(
+                function() {
+                    if (liquid.multilineEditorDiv)
+                        liquid.multilineEditorDiv.style.display = "none";
+                },
+                200
+            );
+        }
+    },
+    startMultilineEditor:function(liquid, saveCallback, closeCallback, obj) {
+        if(!liquid.multilineEditorTextArea) {
+            liquid.multilineEditorDiv = document.createElement('div');
+            liquid.multilineEditorDiv.id = liquid.controlId + ".multilineEditorGlobalContainer";
+            // liquid.multilineEditorDiv.onclick = closeCallback;
+            liquid.multilineEditorDiv.className = "liquidRichEditorContainer";
+            liquid.multilineEditorDiv.style.zIndex = 99100;
+
+            let closeSpan = document.createElement('span');
+            closeSpan.className="liquid-close-large-icon-top";
+            closeSpan.onclick = closeCallback;
+            liquid.multilineEditorDiv.appendChild(closeSpan);
+
+
+            liquid.multilineEditorCen = document.createElement('center');
+            liquid.multilineEditorDiv.appendChild(liquid.multilineEditorCen);
+
+            liquid.multilineEditorTextArea = document.createElement('textarea');
+            liquid.multilineEditorTextArea.id = "multilineEditorGlobal";
+            liquid.multilineEditorTextArea.className = "liquidRichEditor";
+            liquid.multilineEditorTextArea.style.backgroundColor = "white";
+            liquid.multilineEditorTextArea.addEventListener('keydown', function (e){
+                var t = e.which || e.keyCode;
+                if(t == Liquid.KEY_ESCAPE) {
+                    e.stopPropagation();
+                    closeCallback(e);
+                }
+            }, false);
+            liquid.multilineEditorCen.appendChild(liquid.multilineEditorTextArea);
+            document.body.appendChild(liquid.multilineEditorDiv);
+        }
+        if(liquid.multilineEditorTextArea) {
+            liquid.multilineEditor = {};
+            liquid.multilineEditor.obj = obj;
+            if(obj) {
+                liquid.multilineEditorTextArea.value = obj.innerHTML;
+            }
+            liquid.multilineEditorTextArea.focus();
+            if(Liquid.persist.SELECT_ALL_TEXT_ON_MULTILINE) {
+                liquid.multilineEditorTextArea.select();
+            } else {
+                liquid.multilineEditorTextArea.selectionStart = liquid.multilineEditorTextArea.selectionEnd = -1;
+            }
+            jQ1124( liquid.multilineEditorDiv ).slideDown( "fast" );
         }
     },
     onPickRichField: function (event, obj) {
