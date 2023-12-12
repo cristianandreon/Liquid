@@ -1098,10 +1098,7 @@ class LiquidCtrl {
                         return null;
                     }
                     ,getRowHeight:function(event) {
-                        // params => params.node.group ? 50 : 20,
                         try {
-                            // return 70;
-                            return onRowHeightArts(liquid, event.node);
                             var node = event.node;
                             var eventData = {
                                 rowData: Liquid.getFullRecordData(liquid, node),
@@ -1111,11 +1108,11 @@ class LiquidCtrl {
                             if (eventResult) {
                                 return eventResult.result;
                             } else {
-                                return null;
+                                return 50;
                             }
                         } catch (e) {
                         }
-                        return null;
+                        return 50;
                     }
                     ,onGridReady:function(event) {
                     }

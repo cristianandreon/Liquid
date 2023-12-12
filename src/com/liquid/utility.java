@@ -2686,6 +2686,16 @@ public class utility {
                                                  String where, String order,
                                                  String emptyRow,
                                                  String currentValue,
+                                                 boolean chacheIt
+    ) throws Throwable {
+        return get_datalist_from_table(inputId, databaseSchemaTable, codeColumn, descColumn, null, null, where, order, emptyRow, currentValue, null, chacheIt, false, false, true, null);
+    }
+
+    public static String get_datalist_from_table(String inputId, String databaseSchemaTable,
+                                                 String codeColumn, String descColumn, String tooltipColumn, String svgColumn,
+                                                 String where, String order,
+                                                 String emptyRow,
+                                                 String currentValue,
                                                  boolean chacheIt,
                                                  boolean includeInput
     ) throws Throwable {
