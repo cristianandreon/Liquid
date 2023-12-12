@@ -1098,6 +1098,7 @@ class LiquidCtrl {
                         return null;
                     }
                     ,getRowHeight:function(event) {
+                        let ht = 50;
                         try {
                             var node = event.node;
                             var eventData = {
@@ -1106,13 +1107,11 @@ class LiquidCtrl {
                             };
                             var eventResult = Liquid.onEventSync(liquid, "onRowHeight", eventData, null);
                             if (eventResult) {
-                                return eventResult.result;
-                            } else {
-                                return 50;
+                                ht = eventResult.result ? eventResult.result : 50;
                             }
                         } catch (e) {
                         }
-                        return 50;
+                        return ht ? ht : 50;
                     }
                     ,onGridReady:function(event) {
                     }
