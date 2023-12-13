@@ -2926,7 +2926,7 @@ var Liquid = {
                     document.body.style.MsUserSelect = 'none';
                     document.body.style.UserSelect = 'none';
                 } catch (e) {
-                    conaole.error(e);
+                    console.error(e);
                 }
             }
         } else {
@@ -6536,7 +6536,7 @@ var Liquid = {
                                     resultTableJson.columns.push(registeredTableJson.additionalColumns[iac]);
                                 }
                             } else {
-                                conaole.error("[LIQUID] Error: cannot add column to undefined on control "+liquid.controlId);
+                                console.error("[LIQUID] Error: cannot add column to undefined on control "+liquid.controlId);
                             }
                         }
                         // Adding additional foreignTables
