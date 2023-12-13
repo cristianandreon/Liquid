@@ -5484,6 +5484,17 @@ var Liquid = {
                         validateResult[1] = new_value;
                     }
                 }
+                if(isDef(col.upperCase) && col.upperCase === true) {
+                    let new_value = String(value).toUpperCase();
+                    if(new_value != null) {
+                        validateResult[1] = new_value;
+                    }
+                } else if(isDef(col.lowerCase) && col.lowerCase === true) {
+                    let new_value = String(value).toLowerCase();
+                    if(new_value != null) {
+                        validateResult[1] = new_value;
+                    }
+                }
             }
         }
         return validateResult;
@@ -5515,7 +5526,7 @@ var Liquid = {
                 }
                 if(Liquid.isDate(col.type)) {
                     let new_value = Liquid.validateDate(liquid, col, value);
-                    if(new_value) {
+                    if(new_value != null) {
                         validateResult[1] = new_value;
                     } else {
                         if(value) {
@@ -5523,6 +5534,17 @@ var Liquid = {
                             Liquid.showToast(Liquid.appTitle, msg, "warning");
                         }
                         validateResult[1] = "";
+                    }
+                }
+                if(isDef(col.upperCase) && col.upperCase === true) {
+                    let new_value = String(value).toUpperCase();
+                    if(new_value != null) {
+                        validateResult[1] = new_value;
+                    }
+                } else if(isDef(col.lowerCase) && col.lowerCase === true) {
+                    let new_value = String(value).toLowerCase();
+                    if(new_value != null) {
+                        validateResult[1] = new_value;
                     }
                 }
             }
@@ -18708,26 +18730,30 @@ var Liquid = {
                                                     Liquid.saveAndCloseMultilineEditor(liquid, obj, content)
                                                 },
                                                 function (event) {
-                                                    if (liquid.multilineEditor.obj.innerHTML != liquid.multilineEditorTextArea.value) {
-                                                        let msg = '';
-                                                        if (Liquid.lang.toLowerCase() == 'it') {
-                                                            msg += "Il contenuto &egrave; stato modificato, salvarlo ?"
-                                                        } else {
-                                                            msg += "Content was changed, save it ?"
-                                                        }
-                                                        Liquid.dialogBox3(null, Liquid.WARNING_STRING, msg,
-                                                            function () {
-                                                                Liquid.saveAndCloseMultilineEditor(liquid, liquid.multilineEditor.obj, liquid.multilineEditorTextArea.value);
-                                                            }, function () {
-                                                                // stop here
-                                                            },
-                                                            function () {
-                                                                // discharge changes
-                                                                Liquid.closeMultilineEditor(liquid);
-                                                            }
-                                                        );
+                                                    if(event.target.classList.contains('fa-check') || event.target.classList.contains('fa-check-circle')) {
+                                                        Liquid.saveAndCloseMultilineEditor(liquid, liquid.multilineEditor.obj, liquid.multilineEditorTextArea.value);
                                                     } else {
-                                                        Liquid.closeMultilineEditor(liquid);
+                                                        if (liquid.multilineEditor.obj.innerHTML != liquid.multilineEditorTextArea.value) {
+                                                            let msg = '';
+                                                            if (Liquid.lang.toLowerCase() == 'it') {
+                                                                msg += "Il contenuto &egrave; stato modificato, salvarlo ?"
+                                                            } else {
+                                                                msg += "Content was changed, save it ?"
+                                                            }
+                                                            Liquid.dialogBox3(null, Liquid.WARNING_STRING, msg,
+                                                                function () {
+                                                                    Liquid.saveAndCloseMultilineEditor(liquid, liquid.multilineEditor.obj, liquid.multilineEditorTextArea.value);
+                                                                }, function () {
+                                                                    // stop here
+                                                                },
+                                                                function () {
+                                                                    // discharge changes
+                                                                    Liquid.closeMultilineEditor(liquid);
+                                                                }
+                                                            );
+                                                        } else {
+                                                            Liquid.closeMultilineEditor(liquid);
+                                                        }
                                                     }
                                                 },
                                                 obj
@@ -19572,8 +19598,17 @@ var Liquid = {
 
             let closeSpan = document.createElement('span');
             closeSpan.className="liquid-close-large-icon-top";
+            closeSpan.style = "cursor:pointer";
+            closeSpan.title = (Liquid.lang === 'eng' ? "Close" : "Chiudi");
             closeSpan.onclick = closeCallback;
             liquid.suneditorDiv.appendChild(closeSpan);
+
+            let acceptSpan = document.createElement('i');
+            acceptSpan.className = "fa fa-check-circle";
+            acceptSpan.style = "color: darkgreen; font-size: 30px; position: absolute; top: 60px; right: 14px; cursor:pointer";
+            acceptSpan.title = (Liquid.lang === 'eng' ? "Apply and close" : "Applica e chiudi");
+            acceptSpan.onclick = closeCallback;
+            liquid.suneditorDiv.appendChild(acceptSpan);
 
 
             liquid.suneditorCen = document.createElement('center');
@@ -19651,8 +19686,18 @@ var Liquid = {
 
             let closeSpan = document.createElement('span');
             closeSpan.className="liquid-close-large-icon-top";
+            closeSpan.style = "cursor:pointer";
+            closeSpan.title = (Liquid.lang === 'eng' ? "Close" : "Chiudi");
             closeSpan.onclick = closeCallback;
             liquid.multilineEditorDiv.appendChild(closeSpan);
+
+            let acceptSpan = document.createElement('i');
+            acceptSpan.className = "fa fa-check-circle";
+            acceptSpan.style = "color:darkgreen; font-size:30px; position:absolute; top: 60px; right: 14px; cursor:pointer";
+            acceptSpan.title = (Liquid.lang === 'eng' ? "Apply and close" : "Applica e chiudi");
+            acceptSpan.onclick = closeCallback;
+            liquid.multilineEditorDiv.appendChild(acceptSpan);
+
 
 
             liquid.multilineEditorCen = document.createElement('center');
@@ -19662,9 +19707,9 @@ var Liquid = {
             liquid.multilineEditorTextArea.id = "multilineEditorGlobal";
             liquid.multilineEditorTextArea.className = "liquidRichEditor";
             liquid.multilineEditorTextArea.style.backgroundColor = "white";
-            liquid.multilineEditorTextArea.addEventListener('keydown', function (e){
+            liquid.multilineEditorTextArea.addEventListener('keydown', function (e) {
                 var t = e.which || e.keyCode;
-                if(t == Liquid.KEY_ESCAPE) {
+                if (t == Liquid.KEY_ESCAPE) {
                     e.stopPropagation();
                     closeCallback(e);
                 }
@@ -19672,10 +19717,10 @@ var Liquid = {
             liquid.multilineEditorCen.appendChild(liquid.multilineEditorTextArea);
             document.body.appendChild(liquid.multilineEditorDiv);
         }
-        if(liquid.multilineEditorTextArea) {
+        if (liquid.multilineEditorTextArea) {
             liquid.multilineEditor = {};
             liquid.multilineEditor.obj = obj;
-            if(obj) {
+            if (obj) {
                 liquid.multilineEditorTextArea.value = obj.innerHTML;
             }
             liquid.multilineEditorTextArea.focus();
@@ -20782,6 +20827,7 @@ var Liquid = {
             var bSyncronizeRow = false;
             var doResize = false;
             var bRestoreList = false;
+            var bSetCellFocus = false;
             Liquid.changeCurrentGridTab(liquid, obj);
             var tab_coords= Liquid.getGridCoords(liquid, liquid.lastGridTabObj.id);
             if (tab_coords) {
@@ -20828,6 +20874,7 @@ var Liquid = {
             } else {
                 // The list ...
                 liquid.currentTab = 0;
+                bSetCellFocus = true;
                 bRestoreList = true;
                 if (isDef(liquid.tableJson.maxHeight)) {
                     if (isDef(liquid.referenceHeightObj.style.minHeight && liquid.referenceHeightObj.style.height == '')) {
@@ -20851,6 +20898,19 @@ var Liquid = {
                     }, 150
                 );
             }
+            if(bSetCellFocus) {
+                setTimeout(
+                    function () {
+                        liquid.outDivObj.focus();
+                        let cell = liquid.gridOptions.api.getFocusedCell();
+                        if (cell) {
+                            liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
+                            liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
+                        }
+                    }, 150
+                );
+            }
+
         }
     }, resizeIfDocked: function (liquid, gridOrLayoutObject) {
         var bRestoreList = false;
