@@ -29,7 +29,7 @@
 
 
 //
-// Liquid ver.2.93
+// Liquid ver.2.94
 //
 //  First update 06-01-2020 - Last update 04-10-2023
 //
@@ -950,10 +950,7 @@ class LiquidCtrl {
                                                                     liquid,
                                                                     "update",
                                                                     function () {
-                                                                        let cell = liquid.gridOptions.api.getFocusedCell();
-                                                                        if (cell) {
-                                                                            liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
-                                                                        }
+                                                                        Liquid.setCellFocus(liquid);
                                                                     }, false, true);
                                                             } else {
                                                                 // reset cell
@@ -2804,7 +2801,7 @@ class LiquidMenuXCtrl {
 }
 
 var Liquid = {
-    version: 2.93,
+    version: 2.94,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -11317,6 +11314,9 @@ var Liquid = {
         Liquid.updateSlideshowBar(liquid);
 
 
+        Liquid.setCellFocus(liquid);
+
+
         if (isDef(command.postFunc)) {
             try {
                 command.postFunc(command);
@@ -12710,6 +12710,7 @@ var Liquid = {
 
                         command.step = Liquid.CMD_EXECUTE;
 
+
                     } else if (command.name === "return") {
                         // command as service invoked from the case user invcoke command by script
                         command.step = 0;
@@ -13198,6 +13199,10 @@ var Liquid = {
                         Liquid.onEvent(obj, "onRollback", liquid.addingRow);
 
                         Liquid.resetMofifications(liquid);
+
+                        // focus on grid
+                        Liquid.setCellFocus(liquid);
+
                         return true;
                     }
                 } else {
@@ -20902,11 +20907,7 @@ var Liquid = {
                 setTimeout(
                     function () {
                         liquid.outDivObj.focus();
-                        let cell = liquid.gridOptions.api.getFocusedCell();
-                        if (cell) {
-                            liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
-                            liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column);
-                        }
+                        Liquid.setCellFocus(liquid);
                     }, 150
                 );
             }
@@ -21576,6 +21577,25 @@ var Liquid = {
             }
         }
     },
+    setCellFocus:function(liquid) {
+        if(liquid) {
+            var selNodes = Liquid.getCurNodes(liquid);
+            let cell = liquid.gridOptions.api.getFocusedCell();
+            if (cell) {
+                var nodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                if (cell.rowIndex >= nodes.length) {
+                    cell.rowIndex = selNodes.length ? selNodes[0].rowIndex : 0;
+                }
+                liquid.gridOptions.api.setFocusedCell(cell.rowIndex, cell.column ? cell.column : liquid.gridOptions.columnApi.getAllDisplayedColumns()[0]);
+            } else {
+                if(selNodes) {
+                    if (selNodes.length) {
+                        liquid.gridOptions.api.setFocusedCell(selNodes[0].rowIndex, liquid.gridOptions.columnApi.getAllDisplayedColumns()[0]);
+                    }
+                }
+            }
+        }
+    },
     reloadAll:function(obj, reason, callback, callbackParam) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
@@ -21588,6 +21608,8 @@ var Liquid = {
     refreshAll:function(obj, event, reason) {
         var liquid = Liquid.getLiquid(obj);
         if (liquid) {
+            // fuoco su cella
+            Liquid.setCellFocus(liquid);
             Liquid.refreshGrids(liquid, event ? event.data : null, reason);
             Liquid.refreshLayouts(liquid, false);
             Liquid.refreshDocuments(liquid, false);
@@ -22873,6 +22895,9 @@ var Liquid = {
                         // liquid.nRows = nodes.length;
                         // recompute selection (incule/excluded)
                         Liquid.processNodeSelected(liquid, liquid.addingNode, true);
+
+                        liquid.gridOptions.api.ensureIndexVisible(liquid.addingNode.rowIndex, "top");
+                        liquid.gridOptions.api.setFocusedCell(liquid.addingNode.rowIndex, liquid.gridOptions.columnApi.getAllDisplayedColumns()[0], 'top');
 
                         // Disable all foreign tables children of
                         Liquid.setForeignTablesDisableCascade(liquid);
