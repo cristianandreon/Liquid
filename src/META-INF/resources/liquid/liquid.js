@@ -23338,6 +23338,7 @@ var Liquid = {
         return new Promise((resolve, reject) => {
             var buttons = [];
             if (onOk) buttons.push({
+                key: "Y",
                 text: (isDef(onOk.text) ? onOk.text : "Ok"),
                 click: function () {
                     try {
@@ -23345,11 +23346,13 @@ var Liquid = {
                     } catch (e) {
                         console.error("ERROR:" + e);
                     }
-                    jQ1124(this).dialog("close");
+                    if(!this.isClosing)
+                        jQ1124(this).dialog("close");
                     resolve(1)
                 }
             });
             if (onCancel) buttons.push({
+                key:"C",
                 text: (isDef(onCancel.text) ? onCancel.text : "Cancel"),
                 click: function () {
                     try {
@@ -23357,11 +23360,13 @@ var Liquid = {
                     } catch (e) {
                         console.error("ERROR:" + e);
                     }
-                    jQ1124(this).dialog("close");
+                    if(!this.isClosing)
+                        jQ1124(this).dialog("close");
                     resolve(-1);
                 }
             });
             if (onKO) buttons.push({
+                key: "N",
                 text: (isDef(onKO.text) ? onKO.text : "No"),
                 click: function () {
                     try {
@@ -23369,7 +23374,8 @@ var Liquid = {
                     } catch (e) {
                         console.error("ERROR:" + e);
                     }
-                    jQ1124(this).dialog("close");
+                    if(!this.isClosing)
+                        jQ1124(this).dialog("close");
                     resolve(0);
                 }
             });
@@ -23445,11 +23451,29 @@ var Liquid = {
         dialogConfirmText.innerHTML = message;
         try {
             Liquid.curMessageDlg = jQ1124( "#dialog-box" ).dialog({
-                resizable: false,
-                height: "auto",
-                width: "auto",
-                modal: true,
-                buttons: buttons,
+                resizable: false
+                ,height: "auto"
+                ,width: "auto"
+                ,modal: true
+                ,buttons: buttons
+                ,select: function(event) {
+                    console.info("select");
+                }
+                ,close: function(event) {
+                    for (let i = 0; i < buttons.length; i++) {
+                        if(buttons[i].text == "Cancel" && event.key=="Escape") {
+                            if(buttons[i].click) {
+                                buttons[i].isClosing = true;
+                                buttons[i].click();
+                            }
+                        } else if(buttons[i].text == "Ok" && event.key=="Enter") {
+                            if(buttons[i].click) {
+                                buttons[i].isClosing = true;
+                                buttons[i].click();
+                            }
+                        }
+                    }
+                }
             });
             jQ1124( "#dialog-box" ).on('dialogclose', function(event) {
                 Liquid.curMessageDlg = null;
