@@ -294,7 +294,11 @@ public class metadata {
                 }
 
                 metaDataTable.add(new MetaDataTable(table, schema, database, metaDataCols));
-                System.out.println("Read meatadata on table: " + schema + "." + table + " recCount:" + recCount + " Tempo lettura :" + (System.currentTimeMillis() - msTrace));
+
+                long dtime = (System.currentTimeMillis() - msTrace);
+                if(dtime > 100) {
+                    System.out.println("Read meatadata on table: " + schema + "." + table + " recCount:" + recCount + " Tempo lettura :" + dtime);
+                }
 
                 if (columnName != null) {
                     Object foundMcol = getTableMetadata(conn, null, schema, table, columnName, true);
