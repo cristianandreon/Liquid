@@ -18249,7 +18249,7 @@ var Liquid = {
             try {
                 if(liquid.currentTab != 0) {
                     var curNodes = Liquid.getCurNodes(liquid);
-                    if (curNodes) {
+                    if (curNodes && curNodes.length) {
                         let id = curNodes[0].data[liquid.tableJson.primaryKeyField ? liquid.tableJson.primaryKeyField : null];
                         let rowIndex = curNodes[0].rowIndex;
                         if (liquid.tableJson.layouts) {

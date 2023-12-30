@@ -92,6 +92,9 @@ public class login {
 
     public static boolean check_email_validated = true;
 
+    static public String register_user_email_subject = null;
+
+
     public static String cLang = "eng";
     
     // Filter on ip address
@@ -1572,7 +1575,7 @@ public class login {
                                         sPassword = utility.base64Decode(sPassword);
                                         if(sPassword.length() < minCharsPasswords) {
                                             if (cLang.equalsIgnoreCase("IT")) {
-                                                message = "Password tropppo breve; minimo "+minCharsPasswords+" caratteri";
+                                                message = "Password troppo breve; minimo "+minCharsPasswords+" caratteri";
                                             } else {
                                                 message = "Pasword too short; min "+minCharsPasswords+" chars";
                                             }
@@ -1606,11 +1609,21 @@ public class login {
                                                     emailerInstance.AppURL = (String)request.getSession().getAttribute("GLLiquidLoginEmailAppURL");
                                                     emailerInstance.AppImage = (String)request.getSession().getAttribute("GLLiquidLoginEmailAppImage");
                                                     emailerInstance.From = (String)request.getSession().getAttribute("GLLiquidLoginEmailFrom");
-                                                    
+
+                                                    String subject = null;
+                                                    if(register_user_email_subject != null && !register_user_email_subject.isEmpty()) {
+                                                        subject = register_user_email_subject;
+                                                    } else {
+                                                        if (cLang.equalsIgnoreCase("IT")) {
+                                                            subject = application_id + " - User sign in";
+                                                        } else {
+                                                            subject = application_id + " - Registrazione utente";
+                                                        }
+                                                    }
 
                                                     if(adminEmail != null && !adminEmail.isEmpty()) {
                                                         try {
-                                                            if (emailerInstance.send(adminEmail, null, application_id+" - User registration notify", emailerInstance.get_standard_message("RegisterUserNotify", params, request))) {
+                                                            if (emailerInstance.send(adminEmail, null, subject + " (admin notify)", emailerInstance.get_standard_message("RegisterUserNotify", params, request))) {
                                                             } else {
                                                                 message += "[Internal error:" + emailerInstance.LastError + "]";
                                                             }
@@ -1619,8 +1632,9 @@ public class login {
                                                         }
                                                     }
 
+
                                                     try {                        
-                                                        if (emailerInstance.send(sEMail, null, application_id+" - User registration", emailerInstance.get_standard_message("RegisterUser", params, request))) {
+                                                        if (emailerInstance.send(sEMail, null, subject, emailerInstance.get_standard_message("RegisterUser", params, request))) {
                                                             if (cLang.equalsIgnoreCase("IT")) {
                                                                 message = "Password inviata a <b>" + sEMail + "</b>";
                                                             } else {
@@ -1676,7 +1690,10 @@ public class login {
                                                         String sAdditionalPropertiesValue = "";
                                                         if(additionalProperties != null && additionalPropertiesValue != null) {
                                                             aSdditionalPropertiesField = utility.arrayToString(additionalProperties, "\"", "\"", ",");
-                                                            sAdditionalPropertiesValue = utility.arrayToString(additionalPropertiesValue, "'", "'", ",");
+                                                            // sAdditionalPropertiesValue = utility.arrayToString(additionalPropertiesValue, "'", "'", ",");
+                                                            for(int ip=0; ip<additionalPropertiesValue.length; ip++) {
+                                                                sAdditionalPropertiesValue += (ip==0?"":",") + "?";
+                                                            }
                                                         }
 
 
@@ -1723,6 +1740,13 @@ public class login {
                                                         }
 
                                                         psdoLogin = conn.prepareStatement(sqlSTMT, Statement.RETURN_GENERATED_KEYS);
+
+                                                        if(additionalProperties != null && additionalPropertiesValue != null) {
+                                                            for(int ip=0; ip<additionalPropertiesValue.length; ip++) {
+                                                                psdoLogin.setString(ip+1, additionalPropertiesValue[ip]);
+                                                            }
+                                                        }
+
                                                         int res = psdoLogin.executeUpdate();
 
                                                         String id = null;

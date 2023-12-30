@@ -33,13 +33,15 @@ public class emailer {
     public static String Protocol = "smtp";
     public static String SSLProtocol = null;
     public static String defaultFrom = "liquid.java.framework@gmail.com";
+    public static String debug = "false";
 
     public String AppName = "";
     public String AppURL = "";
     public String AppImage = "";
     public String From = null;
 
-    
+
+
     /**
      * send an email message (from liquid.jsp sevlet)
      * 
@@ -141,8 +143,9 @@ public class emailer {
             properties.put("mail.smtps.ssl.trust", "*");
 
             // Accept only TLS 1.1 and 1.2
-            if(SSLProtocol != null) {
+            if(SSLProtocol != null && !SSLProtocol.isEmpty()) {
                 properties.setProperty("mail.smtps.ssl.protocols", SSLProtocol);
+                properties.setProperty("mail.smtp.ssl.protocols", SSLProtocol);
             }
 
             MailSSLSocketFactory sf = new MailSSLSocketFactory();
@@ -152,7 +155,7 @@ public class emailer {
 
             // properties.put("mail.smtp.socketFactory.class",  "javax.net.ssl.SSLSocketFactory");
             properties.put("mail.smtp.socketFactory.class",  sf);
-            properties.put("mail.debug", "false");
+            properties.put("mail.debug", debug);
 
 
             javax.mail.Authenticator auth = new SMTPAuthenticator();
@@ -172,6 +175,8 @@ public class emailer {
 
         } catch (Exception e0) {
 
+            LastError = "[Sending mail Exception:" + e0 + "]";
+
             Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "send() Error:" + e0.getLocalizedMessage());
             
             try {
@@ -186,7 +191,7 @@ public class emailer {
 
             } catch (Exception e) {
                 Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "send() Error:" + e.getLocalizedMessage());
-                LastError = "[Sending mail Exception:" + e.getMessage() + "]";
+                LastError += "[Sending mail with no TLS Exception:" + e + "]";
                 bAutenticated = false;
             }
         }
@@ -207,7 +212,7 @@ public class emailer {
 
             } catch (Exception e) {
                 Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "get_standard_mnessage() Error:" + e.getLocalizedMessage());
-                LastError = "[Sending mail Exception:" + e.getMessage() + "]";
+                LastError += "[Sending mail Exception:" + e + "]";
                 return false;
             }
             return true;
@@ -506,6 +511,7 @@ public class emailer {
                     if(gileContent != null) {
                         // String[] params = { newPassword, sEMail, application_id, domain_id, sApplicationURL, sEmailToken, sRedirect, database, schema, table };
                         gileContent = gileContent.replace("${name}", params[0]);
+                        gileContent = gileContent.replace("${nick_name}", params[0]);
                         gileContent = gileContent.replace("${password}", params[1]);
                         gileContent = gileContent.replace("${email}", params[2]);
                         gileContent = gileContent.replace("${application_id}", params[3]);
