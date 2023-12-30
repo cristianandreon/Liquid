@@ -136,21 +136,21 @@ public class login {
             request.getSession().setAttribute("GLLiquidLoginDaysValidity", daysValidity);
     }
     
-    static public void  setEmailAppName(HttpServletRequest request, String emailAppName) {
+    static public void setEmailAppName(HttpServletRequest request, String emailAppName) {
         if(request != null)
             request.getSession().setAttribute("GLLiquidLoginEmailAppName", emailAppName);
     }
-    static public void  setEmailAppURL(HttpServletRequest request, String emailAppURL) {
+    static public void setEmailAppURL(HttpServletRequest request, String emailAppURL) {
         if(request != null)
             request.getSession().setAttribute("GLLiquidLoginEmailAppURL", emailAppURL);
     }
-    static public void  setEmailAppImage(HttpServletRequest request, String emailAppImage) {
+    static public void setEmailAppImage(HttpServletRequest request, String emailAppImage) {
         if(request != null) {
             ServletContext servletContext = request.getSession().getServletContext();
             request.getSession().setAttribute("GLLiquidLoginEmailAppImage", servletContext.getRealPath(emailAppImage));
         }
     }    
-    static public void  setEmailFrom(HttpServletRequest request, String emailFrom) {
+    static public void setEmailFrom(HttpServletRequest request, String emailFrom) {
         if(request != null)
             request.getSession().setAttribute("GLLiquidLoginEmailFrom", emailFrom);
     }
@@ -1604,6 +1604,7 @@ public class login {
                                                 }
                                                 
                                                 if(useEmailer) {
+
                                                     emailer emailerInstance = new emailer();
                                                     emailerInstance.AppName = (String)request.getSession().getAttribute("GLLiquidLoginEmailAppName");
                                                     emailerInstance.AppURL = (String)request.getSession().getAttribute("GLLiquidLoginEmailAppURL");
@@ -1615,9 +1616,9 @@ public class login {
                                                         subject = register_user_email_subject;
                                                     } else {
                                                         if (cLang.equalsIgnoreCase("IT")) {
-                                                            subject = application_id + " - User sign in";
-                                                        } else {
                                                             subject = application_id + " - Registrazione utente";
+                                                        } else {
+                                                            subject = application_id + " - User sign in";
                                                         }
                                                     }
 

@@ -2067,8 +2067,25 @@ public class workspace {
                                         String[] colParts = colName.split("\\.");
                                         colTable = (colParts.length > 1 ? colParts[0] : (colForeignTable != null ? colForeignTable : table));
                                         colName = (colParts.length > 1 ? colParts[1] : colName);
-                                        if (colName != null && !colName.isEmpty()) {
 
+
+                                        try {
+                                            if(col.has("foreignTable")) {
+                                                colTable = col.has("foreignTable") ? col.getString("foreignTable") : null;
+                                                if(col.has("foreignColumn")) {
+                                                    colName = col.getString("foreignColumn");
+                                                } else {
+                                                    if(col.has("foreignColumns")) {
+                                                        // TODO : lettura metadati
+                                                        colName = null;
+                                                        metadata.readTableMetadata(connToUse, database, schema, colTable, null, false, false);
+                                                    }
+                                                }
+                                            }
+                                        } catch (Exception ex) {
+                                        }
+
+                                        if (colName != null && !colName.isEmpty()) {
                                             if (!isSystem) {
                                                 boolean bReadDefault = true;
                                                 boolean bReadComments = false; // N.B.: Molto lenta
