@@ -14,8 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -93,6 +92,9 @@ public class login {
     public static boolean check_email_validated = true;
 
     static public String register_user_email_subject = null;
+
+
+    static HashMap<String, Object> UserPrfileProps = null;
 
 
     public static String cLang = "eng";
@@ -1127,6 +1129,7 @@ public class login {
         }
         return false;
     }
+
     static public String getLoggedID( HttpServletRequest request) {
         HttpSession session = request.getSession();
         try {
@@ -1141,6 +1144,22 @@ public class login {
         }            
         return null;
     }
+
+    static public boolean setLoggedID( HttpServletRequest request, int userId) {
+        HttpSession session = request.getSession();
+        try {
+            if (session != null) {
+                session.setAttribute("GLLiquidUserID", userId);
+                session.setAttribute("GLLiquidAdmin", false);
+                session.setAttribute("GLLiquidToken",getSaltString(32));
+                return true;
+            }
+        } catch (Throwable e) {
+            Logger.getLogger("// setLoggedID() error:" + e.getLocalizedMessage());
+        }
+        return false;
+    }
+
     static public int getLoggedIntID( HttpServletRequest request) {
         HttpSession session = request.getSession();
         try {
@@ -2621,6 +2640,83 @@ public class login {
     static public boolean isEmailValid( String sEMail ) throws Exception {
         EmailValidator validator = new EmailValidator();
         return validator.validate(sEMail);
+    }
+
+
+
+    static public HashMap<String,Object> getUserProfile(HttpServletRequest request) {
+        return (HashMap<String,Object>)request.getSession().getAttribute("GLUserProfile");
+    }
+
+    static public Object getUserProfile(HttpServletRequest request, String prop) {
+        return getUserProfile(request, prop, null);
+    }
+
+    static public Object getUserProfile(HttpServletRequest request, String prop, String defaultValue) {
+        HashMap<String, Object> userProfile = getUserProfile(request);
+        return userProfile != null ? userProfile.get(prop) : defaultValue;
+    }
+
+    /**
+     *
+     * @param request
+     * @param prop
+     * @param value
+     * @return
+     */
+    static public boolean updateUserProfile(HttpServletRequest request, String prop, Object value) {
+        if(prop != null && request != null) {
+            HashMap<String, Object> userProfile = getUserProfile(request);
+            userProfile.put(prop, value);
+            request.getSession().setAttribute("GLUserProfile", userProfile);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    static public boolean setUserProfileMap(HttpServletRequest request, HashMap<String, Object> props) throws Throwable {
+        UserPrfileProps = (HashMap<String, Object>) props.clone();
+        return true;
+    }
+
+    /**
+     * Carica il profilo dell'utente nella hash map
+     * @param request
+     * @param user_id
+     * @return
+     * @throws Throwable
+     */
+    static public HashMap<String, Object> loadUserProfile(HttpServletRequest request, int user_id) throws Throwable {
+        if(UserPrfileProps != null) {
+            HashMap<String, Object> userProfile = new HashMap<String, Object>();
+            Object oUser = com.liquid.bean.load_bean(schema+"."+table, "*", "WHERE id="+user_id);
+            for (String k : UserPrfileProps.keySet() ) {
+                Object prop = UserPrfileProps.get(k);
+                if(prop instanceof Integer) {
+                    userProfile.put(k, utility.getInt(oUser, k));
+                } else if(prop instanceof Long) {
+                    userProfile.put(k, utility.getLong(oUser, k));
+                } else if(prop instanceof String) {
+                    userProfile.put(k, utility.getString(oUser, k));
+                } else if(prop instanceof Boolean) {
+                    userProfile.put(k, utility.getBoolean(oUser, k));
+                } else if(prop instanceof Float) {
+                    userProfile.put(k, utility.getFloat(oUser, k));
+                } else if(prop instanceof Double) {
+                    userProfile.put(k, utility.getDouble(oUser, k));
+                }
+            }
+            return userProfile;
+        } else {
+            return null;
+        }
+    }
+
+    static public void reloadUserProfile(HttpServletRequest request) throws Throwable {
+        HashMap<String, Object> userProfile = loadUserProfile(request, (int)request.getSession().getAttribute("GLLiquidUserID"));
+        request.getSession().setAttribute("GLUserProfile", userProfile);
     }
 
 }

@@ -142,8 +142,8 @@ public class connection {
             throw th.getCause();
     	}
         if(method != null) {
-            method.setAccessible(true);    
-            Object result = method.invoke(null, database);  
+            method.setAccessible(true);
+            Object result = method.invoke(null, database);
             if(result instanceof Object []) {
                 return (Object [])result;
             } else {

@@ -94,7 +94,8 @@ public class PojoGenerator {
             
             pool.importPackage("java.util");
             pool.importPackage("java.math");
-            pool.importPackage("java.sql");
+            pool.importPackage("java.sql.*");
+            pool.importPackage("java.sql.Timestamp");
             pool.importPackage("com.liquid");
             pool.importPackage("java.lang.reflect");
             pool.importPackage("java.lang.reflect.Field");
@@ -380,14 +381,15 @@ public class PojoGenerator {
     private static CtClass resolveCtClass(Class clazz) throws NotFoundException {
         ClassPool pool = ClassPool.getDefault();
         try {
+            if(clazz.getName().equalsIgnoreCase("java.sql.Timestamp")) {
+                int lb = 1;
+            } else {
+            }
             return pool.get(clazz.getName());
         } catch (Exception e) {
             e.printStackTrace();
-            if(clazz.getName().equalsIgnoreCase("java.sql.Timestamp")) {
-            } else {
-            }
+            throw e;
         }
-        return null;
     }
 }
 

@@ -9,8 +9,27 @@ import java.security.Key;
 
 public class crypt {
 
-    private static final String ALGORITHM = "AES";
-    private static final byte[] keyValue = "GTHSDALO92762945".getBytes();
+    static String ALGORITHM = "AES";
+    static byte[] keyValue = "GTHSDALO92762945".getBytes();
+
+    public static boolean set_key(String key) {
+        if(key.length() >= 16) {
+            keyValue = key.substring(0, 16).getBytes();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean set_algo (String algo) {
+        if(algo != null && !algo.isEmpty()) {
+            ALGORITHM = algo;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
     // [-104, 57, 48, -62, 103, 112, -100, -74, 10, 120, -106, -34, 119, 21, -17, -41, 45, -75, 73, -44, 100, -73, 1, 71, -58, 7, 78, 52, -83, -113, 55, 98]
     public static void test() throws Exception {
@@ -26,6 +45,8 @@ public class crypt {
         decryptedValue = decrypt(utility.base64DecodeBytes(encriptValue));
         if(!decryptedValue.equals(urlPrintJson.getBytes())) {
             System.out.println("Test FAILED");
+        } else {
+            System.out.println("Test OK");
         }
     }
     // OK

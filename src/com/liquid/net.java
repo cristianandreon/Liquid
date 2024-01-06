@@ -9,7 +9,6 @@
  */
 package com.liquid;
 
-import com.sun.javafx.fxml.builder.URLBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

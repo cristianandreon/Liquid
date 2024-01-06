@@ -29,6 +29,8 @@ public class emailer {
     public static String Port = "587";
     public static String Username = "";
     public static String Password = "";
+
+    public static String StartTLS = "true";
     public static String Auth = "true";
     public static String Protocol = "smtp";
     public static String SSLProtocol = null;
@@ -132,7 +134,7 @@ public class emailer {
 
             // Setup mail server
             properties.put("mail.transport.protocol", Protocol);
-            properties.put("mail.smtp.starttls.enable", "true");
+            properties.put("mail.smtp.starttls.enable", StartTLS);
 
             properties.put("mail.smtp.host", Host);
             properties.put("mail.smtp.port", Port);
@@ -154,6 +156,7 @@ public class emailer {
             properties.put("mail.imap.ssl.socketFactory", sf);
 
             // properties.put("mail.smtp.socketFactory.class",  "javax.net.ssl.SSLSocketFactory");
+            properties.put("mail.smtp.socketFactory.port", "465");
             properties.put("mail.smtp.socketFactory.class",  sf);
             properties.put("mail.debug", debug);
 
@@ -169,7 +172,6 @@ public class emailer {
             if (session != null) {
                 transport = session.getTransport(Protocol);
                 transport.connect(Host, Username, Password);
-                transport.close();
                 bAutenticated = true;
             }
 
@@ -186,7 +188,6 @@ public class emailer {
             
                 transport = session.getTransport(Protocol);
                 transport.connect(Host, Username, Password);
-                transport.close();
                 bAutenticated = true;
 
             } catch (Exception e) {
@@ -203,17 +204,28 @@ public class emailer {
             try {
 
                 MimeMessage message = new MimeMessage(session);
-                message.setFrom(new InternetAddress(From != null ? From : defaultFrom));
-                message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+                InternetAddress addrFrom = new InternetAddress(From != null ? From : defaultFrom);
+                message.setFrom(addrFrom);
+                InternetAddress addTo = new InternetAddress(to);
+                message.addRecipient(Message.RecipientType.TO,addTo);
                 message.setSubject(subject);
                 message.setText(msg, "utf-8", "html");
-                Transport.send(message);
+                transport.sendMessage(message, new Address[] { addTo } );
+                // Transport.send(message);
                 LastError = "";
 
             } catch (Exception e) {
-                Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "get_standard_mnessage() Error:" + e.getLocalizedMessage());
+                Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "get_standard_mnessage() Error:" + e);
                 LastError += "[Sending mail Exception:" + e + "]";
                 return false;
+            } finally {
+                if(transport != null) {
+                    try {
+                        transport.close();
+                    } catch (MessagingException e) {
+                        Logger.getLogger(emailer.class.getName()).log(Level.SEVERE, "get_standard_mnessage() Error:" + e);
+                    }
+                }
             }
             return true;
 

@@ -4075,7 +4075,7 @@ public class utility {
     public static byte[] decrypt(byte[] encryptedValue) throws Exception {
         return crypt.decrypt(encryptedValue);
     }
-    private static byte[] encrypt(String valueToEnc) throws Exception {
+    public static byte[] encrypt(String valueToEnc) throws Exception {
         return crypt.encrypt(valueToEnc);
     }
 
