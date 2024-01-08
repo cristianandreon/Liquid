@@ -1812,13 +1812,21 @@ class LiquidCtrl {
                             ,ghost: true
                             ,resize: function( event, ui ) {
                                 thisLiquid.dockerTblLeft.style.width = ui.size.width + "px";
-                                // thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
                                 thisLiquid.dockerTblCenter.style.width = "calc(100% - "+(thisLiquid.dockerTblRight.offsetWidth + thisLiquid.dockerTblLeft.offsetWidth) + "px)";
                             }
                             ,stop: function( event, ui ) {
                                 if(thisLiquid.dockerTblLeft.offsetWidth <= 10) thisLiquid.dockerTblLeft.style.width = "2px";
-                                // thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
                                 thisLiquid.dockerTblCenter.style.width = "calc(100% - "+(thisLiquid.dockerTblRight.offsetWidth + thisLiquid.dockerTblLeft.offsetWidth) + "px)";
+                                let idParts = thisLiquid.tabList[thisLiquid.currentTab].id.split('.');
+                                if(idParts[1] == "layout_tab") {
+                                    let layout = Liquid.getLayoutByName(thisLiquid, thisLiquid.tabList[thisLiquid.currentTab].name);
+                                    if(layout) {
+                                        if(layout.dock) {
+                                            layout.dock.size = thisLiquid.dockerTblLeft.offsetWidth + "px";
+                                        }
+                                    }
+                                }
+                                Liquid.saveUIParams(thisLiquid);
                             }
                         } );
                     }
@@ -1829,14 +1837,22 @@ class LiquidCtrl {
                             ,ghost: true
                             ,resize: function( event, ui ) {
                                 thisLiquid.dockerTblRight.style.width = ui.size.width + "px";
-                                // thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - thisLiquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
                                 thisLiquid.dockerTblCenter.style.width = "calc(100% - "+(thisLiquid.dockerTblRight.offsetWidth + thisLiquid.dockerTblLeft.offsetWidth) + "px)";
                             }
                             ,stop: function( event, ui ) {
                                 if(thisLiquid.dockerTblRight.offsetWidth <= 10) thisLiquid.dockerTblRight.style.width = "2px";
                                 thisLiquid.dockerTblRight.style.left = '';
-                                // thisLiquid.dockerTblCenter.style.width = (thisLiquid.outDivObj.offsetWidth - liquid.dockerTblRight.offsetWidth - thisLiquid.dockerTblLeft.offsetWidth) + "px";
                                 thisLiquid.dockerTblCenter.style.width = "calc(100% - "+(thisLiquid.dockerTblRight.offsetWidth + thisLiquid.dockerTblLeft.offsetWidth) + "px)";
+                                let idParts = thisLiquid.tabList[thisLiquid.currentTab].id.split('.');
+                                if(idParts[1] == "layout_tab") {
+                                    let layout = Liquid.getLayoutByName(thisLiquid, thisLiquid.tabList[thisLiquid.currentTab].name);
+                                    if(layout) {
+                                        if(layout.dock) {
+                                            layout.dock.size = thisLiquid.dockerTblRight.offsetWidth + "px";
+                                        }
+                                    }
+                                }
+                                Liquid.saveUIParams(thisLiquid);
                             }
                         } );
                     }
@@ -8976,10 +8992,13 @@ var Liquid = {
                 var liquid = lookupLiquid;
                 var newValue = null;
                 var newValueId = null;
+                var newValueDesc = null;
                 var lookupFieldName = isDef(liquid.tableJson.lookupField) ? liquid.tableJson.lookupField : liquid.tableJson.primaryKeyField;
                 var lookupIdColumnName = isDef(liquid.tableJson.idColumnField) ? liquid.tableJson.idColumnField : null;
+                var lookupDescColumnName = isDef(liquid.tableJson.descField) ? liquid.tableJson.descField : null;
                 var lookupFieldCol = Liquid.getColumn(liquid, lookupFieldName);
                 var lookupIdCol = Liquid.getColumn(liquid, lookupIdColumnName);
+                var lookupDescCol = Liquid.getColumn(liquid, lookupDescColumnName);
 
                 if (isDef(lookupFieldName)) {
                     if (!isDef(lookupFieldCol)) {
@@ -8998,15 +9017,18 @@ var Liquid = {
                     var selNodes = Liquid.getSelectedNodes(liquid);
                     newValue = "";
                     newValueId = "";
+                    newValueDesc = "";
                     for (var node = 0; node < selNodes.length; node++) {
                         if (newValue.length > 0)
                             newValue += ",";
                         if (lookupFieldCol) newValue += selNodes[node].data[lookupFieldCol.field];
                         if (lookupIdCol) newValueId += selNodes[node].data[lookupIdCol.field];
+                        if (lookupDescCol) newValueDesc += selNodes[node].data[lookupDescCol.field];
                     }
                 } else {
                     newValue = event && lookupFieldCol ? event.data[lookupFieldCol.field] : null;
                     newValueId = event && lookupIdCol ? event.data[lookupIdCol.field] : null;
+                    newValueDesc = event && lookupDescCol ? event.data[lookupDescCol.field] : null;
                 }
                 if (newValue !== null) {
                     try {
@@ -9134,6 +9156,9 @@ var Liquid = {
                             }
                         }
                     }
+                }
+                if (newValueDesc !== null) {
+                    inputObj.value = newValueDesc;
                 }
             }
         }
@@ -16547,7 +16572,8 @@ var Liquid = {
                     }
 
                     for (var ir = 0; ir < nRowsToRender; ir++) {
-                        var templateRowSourceResult = Liquid.getTemplateRowSource(liquid, layout, layout.baseIndex1B - 1 + ir);
+                        // var templateRowSourceResult = Liquid.getTemplateRowSource(liquid, layout, layout.baseIndex1B - 1 + ir);
+                        var templateRowSourceResult = Liquid.getTemplateRowSource(liquid, layout, ir);
                         var templateRowRootObj = Liquid.getTemplateRowNode(liquid, layout, layout.baseIndex1B - 1 + ir);
                         var templateRowSource = templateRowSourceResult[0]
                         var isAdding = templateRowSourceResult[1] || isFormX;
@@ -21048,7 +21074,7 @@ var Liquid = {
                 */
                 liquid.aggridContainerLastHeight = liquid.aggridContainerObj.style.height;
                 // set at max height
-                liquid.aggridContainerObj.style.height = "100%";
+                liquid.aggridContainerObj.style.maxHeight = "100%";
                 liquid.aggridContainerDocked = true;
             } else {
                 if (liquid.currentDock) {
@@ -25463,6 +25489,27 @@ columns:[
                 if(liquid) {
                     controlId = liquid.controlId;
                     result.cols = liquid.gridOptions.columnApi.getColumnState();
+                    result.docks = [];
+                    if(liquid.tableJson.grids && liquid.tableJson.grids.length > 0) {
+                        for(let i=0; i<liquid.tableJson.grids.length; i++) {
+                            result.docks.push(Liquid.saveDockParam(liquid, liquid.tableJson.grids[i], "grid"));
+                        }
+                    }
+                    if(liquid.tableJson.layouts && liquid.tableJson.layouts.length > 0) {
+                        for(let i=0; i<liquid.tableJson.layouts.length; i++) {
+                            result.docks.push(Liquid.saveDockParam(liquid, liquid.tableJson.layouts[i], "layout"));
+                        }
+                    }
+                    if(liquid.tableJson.documents && liquid.tableJson.documents.length > 0) {
+                        for(let i=0; i<liquid.tableJson.documents.length; i++) {
+                            result.docks.push(Liquid.saveDockParam(liquid, liquid.tableJson.documents[i], "document"));
+                        }
+                    }
+                    if(liquid.tableJson.charts && liquid.tableJson.charts.length > 0) {
+                        for(let i=0; i<liquid.tableJson.charts.length; i++) {
+                            result.docks.push(Liquid.saveDockParam(liquid, liquid.tableJson.charts[i], "charts"));
+                        }
+                    }
                 } else {
                     console.error("error in saveUIParams: control '"+liquidOrControlId+"' not found");
                 }
@@ -25494,6 +25541,29 @@ columns:[
             }
         }
     },
+    saveDockParam:function(liquidOrControlId, tabObject, tabType) {
+        let out = {};
+        if (isDef(tabObject.dock)) {
+            out.name = tabObject.name
+            out.type = tabType;
+            if (isDef(tabObject.dock.minWidth)) {
+                out.minWidth = tabObject.dock.minWidth;
+            }
+            if (isDef(tabObject.dock.width)) {
+                out.width = tabObject.dock.width;
+            }
+            if (isDef(tabObject.dock.minHeight)) {
+                out.minHeight = tabObject.dock.minHeight;
+            }
+            if (isDef(tabObject.dock.height)) {
+                out.height = tabObject.dock.height;
+            }
+            if (isDef(tabObject.dock.size)) {
+                out.size = tabObject.dock.size;
+            }
+        }
+        return out;
+    },
     loadUIParams:function(liquidOrControlId, async) {
         let controlId = null;
         let liquid = null;
@@ -25521,6 +25591,47 @@ columns:[
                             } else {
                                 if (result.cols) {
                                     liquid.gridOptions.columnApi.setColumnState(result.cols);
+                                }
+                                if (result.docks) {
+                                    for(let i=0; i<result.docks.length; i++) {
+                                        if(result.docks[i].type == 'grids') {
+                                            let grid = Liquid.getGridByName (liquid, result.docks[i].name);
+                                            if(grid) {
+                                                if(isDef(result.docks[i].width)) grid.dock.width = result.docks[i].width;
+                                                if(isDef(result.docks[i].height)) grid.dock.height = result.docks[i].height;
+                                                if(isDef(result.docks[i].minWidth)) grid.dock.width = result.docks[i].minWidth;
+                                                if(isDef(result.docks[i].minHeight)) grid.dock.height = result.docks[i].minHeight;
+                                                if(isDef(result.docks[i].size)) grid.dock.size = result.docks[i].size;
+                                            }
+                                        } else if(result.docks[i].type == 'layout') {
+                                            let layout = Liquid.getLayoutByName (liquid, result.docks[i].name);
+                                            if(layout) {
+                                                if(isDef(result.docks[i].width)) layout.dock.width = result.docks[i].width;
+                                                if(isDef(result.docks[i].height)) layout.dock.height = result.docks[i].height;
+                                                if(isDef(result.docks[i].minWidth)) layout.dock.width = result.docks[i].minWidth;
+                                                if(isDef(result.docks[i].minHeight)) layout.dock.height = result.docks[i].minHeight;
+                                                if(isDef(result.docks[i].size)) layout.dock.size = result.docks[i].size;
+                                            }
+                                        } else if(result.docks[i].type == 'document') {
+                                            let doc = Liquid.getDocumentByName (liquid, result.docks[i].name);
+                                            if(doc) {
+                                                if(isDef(result.docks[i].width)) doc.dock.width = result.docks[i].width;
+                                                if(isDef(result.docks[i].height)) doc.dock.height = result.docks[i].height;
+                                                if(isDef(result.docks[i].minWidth)) doc.dock.width = result.docks[i].minWidth;
+                                                if(isDef(result.docks[i].minHeight)) doc.dock.height = result.docks[i].minHeight;
+                                                if(isDef(result.docks[i].size)) doc.dock.size = result.docks[i].size;
+                                            }
+                                        } else if(result.docks[i].type == 'chart') {
+                                            let chart = Liquid.getDocumentByName (liquid, result.docks[i].name);
+                                            if(chart) {
+                                                if(isDef(result.docks[i].width)) chart.dock.width = result.docks[i].width;
+                                                if(isDef(result.docks[i].height)) chart.dock.height = result.docks[i].height;
+                                                if(isDef(result.docks[i].minWidth)) chart.dock.width = result.docks[i].minWidth;
+                                                if(isDef(result.docks[i].minHeight)) chart.dock.height = result.docks[i].minHeight;
+                                                if(isDef(result.docks[i].size)) chart.dock.size = result.docks[i].size;
+                                            }
+                                        }
+                                    }
                                 }
                                 return result.cols;
                             }
