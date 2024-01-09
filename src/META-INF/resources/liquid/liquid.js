@@ -120,7 +120,12 @@ class LiquidCtrl {
             this.mode = mode;
         }
 
+        var isDialogX = Liquid.isDialogX(this);
+        var isFormX = Liquid.isFormX(this);
+        var isWinX = Liquid.isWinX(this);
+
         // Container
+        var setSize = false;
         this.outDivObjOrId = outDivObjOrId;
         if(outDivObjOrId && typeof outDivObjOrId === "object" && outDivObjOrId.nodeType === 1) {
             this.outDivObj = outDivObjOrId;
@@ -137,13 +142,45 @@ class LiquidCtrl {
                     bCreateNode = true;
                 }
                 if(bCreateNode) {
-                    this.outDivObj = document.createElement("div");
-                    this.outDivObj.style.position = 'absolute';
-                    this.outDivObj.id = this.outDivId;
-                    document.body.insertBefore(this.outDivObj, document.body.firstChild);
-                    this.outDivCreated = true;
+                    // Create div container
+                    if(isWinX || isFormX || isDialogX) {
+                        this.outDivObj = document.createElement("div");
+                        this.outDivObj.style.visibility = 'hidden';
+                        this.outDivObj.id = this.outDivId;
+                        this.outDivObj.style.display = 'block';
+                        if(isWinX) {
+                            this.outDivObj.style.position = 'relative';
+                            this.outDivObj.style.left = '10px';
+                            this.outDivObj.style.top = '10px';
+                        } else if(isFormX) {
+                            this.outDivObj.style.position = 'absolute';
+                            this.outDivObj.className += " liquidFormX";
+                        } else if(isDialogX) {
+                            this.outDivObj.style.position = 'fixed';
+                            this.outDivObj.className += " liquidDialogX";
+                        }
+
+                        this.backgroundObj = document.createElement("div");
+                        this.backgroundObj.style.position = 'absolute';
+                        this.backgroundObj.style.display = '';
+                        this.backgroundObj.style.height = this.backgroundObj.style.width = '100%';
+                        this.backgroundObj.style.top = this.backgroundObj.style.left = '0';
+                        this.backgroundObj.style.backgroundColor = Liquid.backgroundLayerColor ? Liquid.backgroundLayerColor : 'rgba(50,50,50,0.5)';
+                        this.backgroundObj.style.zIndex = 90000;
+                        document.body.insertBefore(this.backgroundObj, document.body.firstChild);
+                        this.backgroundObj.appendChild(this.outDivObj);
+                        this.outDivObjCreated = true;
+
+                    } else {
+                        this.outDivObj = document.createElement("div");
+                        this.outDivObj.style.position = 'absolute';
+                        this.outDivObj.id = this.outDivId;
+                        document.body.insertBefore(this.outDivObj, document.body.firstChild);
+                        this.outDivCreated = true;
+                    }
+                    setSize = true;
                 } else {
-                    // Div non trovato in produzione ...
+                    // Div non trovato
                     console.error("ERROR: missing control node:" + outDivObjOrId);
                     return null;
                 }
@@ -396,9 +433,6 @@ class LiquidCtrl {
 
 
 
-            var isDialogX = Liquid.isDialogX(this);
-            var isFormX = Liquid.isFormX(this);
-            var isWinX = Liquid.isWinX(this);
 
             this.bRegisterControl = true;
 
@@ -1155,7 +1189,6 @@ class LiquidCtrl {
                     this.gridOptions.rowHeight = this.tableJson.rowHeight;
                 }
 
-                var setSize = false;
                 if(this.mode === "popup") {
                     if(!this.outDivObj) {
                         this.outDivObj = document.createElement("div");
@@ -1165,33 +1198,6 @@ class LiquidCtrl {
                         document.body.insertBefore(this.outDivObj, document.body.firstChild);
                     }
                     setSize = true;
-                } else {
-                    if(isWinX || isFormX || isDialogX) {
-                        // Create div container
-                        if(!this.outDivObj) {
-                            this.outDivObj = document.createElement("div");
-                            this.outDivObj.style.visibility = 'hidden';
-                            this.outDivObj.id = this.outDivId;
-                            this.outDivObj.style.display = 'block';
-                            if(isWinX) {
-                                this.outDivObj.style.position = 'relative';
-                                this.outDivObj.style.left = '10px';
-                                this.outDivObj.style.top = '10px';
-                            } else if(isFormX) {
-                                this.outDivObj.style.position = 'absolute';
-                                this.outDivObj.className += " liquidFormX";
-                            } else if(isDialogX) {
-                                this.outDivObj.style.position = 'fixed';
-                                this.outDivObj.className += " liquidDialogX";
-                            }
-                            this.outDivObjCreated = true;
-                            document.body.insertBefore(this.outDivObj, document.body.firstChild);
-                            setSize = true;
-                        }
-                        if(isDef(this.tableJson.top) || isDef(this.tableJson.position) || isDef(this.tableJson.centered)) {
-                            setSize = true;
-                        }
-                    }
                 }
 
 
@@ -2912,6 +2918,8 @@ var Liquid = {
     showWarnings:false,
     showMessages:false,
     focusedZIndex:30000,
+    useLookupCommands:true,
+    backgroundLayerColor:'rgba(0,0,0,0.7)',
     KEY_BACKSPACE:8,KEY_TAB:9,KEY_NEW_LINE:10,KEY_ENTER:13,KEY_SHIFT:16,KEY_ESCAPE:27,KEY_SPACE:32,KEY_LEFT:37,KEY_UP:38,KEY_RIGHT:39,KEY_DOWN:40,KEY_DELETE:46,KEY_A:65,KEY_C:67,KEY_V:86,KEY_D:68,KEY_F2:113,KEY_PAGE_UP:33,KEY_PAGE_DOWN:34,KEY_PAGE_HOME:36,KEY_PAGE_END:35,
     persist: {
         SELECT_ALL_TEXT_ON_MULTILINE:false,
@@ -8178,11 +8186,13 @@ var Liquid = {
                         + "style=\"top:4px; right:7px; position:relative; cursor:pointer; filter: grayscale(0.85);\" width=\"16\" height=\"16\">"
                         + "</div>"
                     ) : (
+                        Liquid.useLookupCommands ? (
                           "<div id=\"" + instanceId + ".icon_container\" class=\"liquidLookupIconContainer\">"
                         + "<img id=\"" + instanceId + ".lookup.input.source\" src=\"" + Liquid.getImagePath("open.png") + "\" onclick=\"Liquid.onOpenSourceLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:-17px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
                         + "<img id=\"" + instanceId + ".lookup.input.reset\" src=\"" + Liquid.getImagePath("delete.png") + "\" onclick=\"Liquid.onResetLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:7px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
                         + "<img id=\"" + instanceId + ".lookup.input.reload\" src=\"" + Liquid.getImagePath("update2.png") + "\" onclick=\"Liquid.onReloadLookup('" + instanceId + ".lookup.input')\" style=\"padding-top:3px; right:7px;\" width=\"" + Liquid.lookupIconSize + "\" height=\"" + Liquid.lookupIconSize + "\">"
                         + "</div>"
+                            ) : ""
                     )
                 );
             liquid.lookupObj.onmouseover = Liquid.lookupMouseOver;
@@ -23643,7 +23653,12 @@ var Liquid = {
         if(liquid) {
             if(bSave) Liquid.onSaveTo(liquid, true, true);
             Liquid.onEvent(obj, "onClosing", null, Liquid.onClosingStart, {liquid: liquid, obj: obj, command: null});
-            liquid.outDivObj.classList.add('liquidHide');
+            if(liquid.outDivObj)
+                liquid.outDivObj.classList.add('liquidHide');
+            if(liquid.backgroundObj) {
+                document.body.removeChild(liquid.backgroundObj);
+                liquid.backgroundObj = null;
+            }
             setTimeout('Liquid.onClosed("' + liquid.controlId + '")', 500);
         }
     },
@@ -23658,7 +23673,6 @@ var Liquid = {
             }
             var closeParams = params;
             if (liquid) {
-                liquid.outDivObj.classList.add('liquidHide');
                 setTimeout(function() { Liquid.onClosed(closeParams); }, 500);
                 Liquid.onEvent(obj, "onClosed", null, null);
             }
@@ -23828,13 +23842,7 @@ var Liquid = {
      * @return {} n/d
      */
     startControl:function(controlId, jsonStringOrB64Enc) {
-        if(!document.body) {
-            glLiquidStartupTables.push( { controlId:controlId, json:jsonStringOrB64Enc } );
-            return;
-        }
-        var jsonString = null;
-        try { jsonString = atob(jsonStringOrB64Enc); } catch(e) { jsonString = jsonStringOrB64Enc; }
-        new LiquidCtrl(controlId, controlId, jsonString);
+        return Liquid.startPopup(controlId, jsonStringOrB64Enc, "");
     },
     /**
      * Start a control as DialogX (alais popup)

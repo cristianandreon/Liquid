@@ -8455,6 +8455,11 @@ public class db {
                                         currentValue = "";
                                     currentValue += cVarValue;
                                     nReplaced++;
+                                } else {
+                                    if (currentValue == null)
+                                        currentValue = "";
+                                    currentValue += "";
+                                    nReplaced++;
                                 }
                             }
                         }
