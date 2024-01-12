@@ -6987,7 +6987,7 @@ var Liquid = {
                     Liquid.refreshPendingLayouts(liquid, true);
                 }
 
-
+                // Autoinsert if no record
                 if (liquid.autoInsertIfMissing === true) {
                     if (liquid.nRows === 0) {
                         // no row
@@ -8269,6 +8269,9 @@ var Liquid = {
             var inputObj = document.getElementById(liquid.linkedInputId);
             if (inputObj) {
                 inputObj.setAttribute('comboId', lookupContainerComboId);
+                inputObj.onchange = function() {
+                    rootObj.onchange();
+                }
             } else {
                 console.error("ERROR: inputObj not found")
             }
@@ -8353,6 +8356,13 @@ var Liquid = {
                     }
                 }
             }
+        }
+    },
+    onChangeLookupForward: function (e) {
+        let linkedInputId = e.target.dataset.linkedInputId;
+        let linkedInputObj = document.getElementById(linkedInputId);
+        if(linkedInputObj) {
+            linkedInputObj.onchange();
         }
     },
     onChangeLookup: function (e) {
@@ -8584,6 +8594,8 @@ var Liquid = {
                     if (lookupObj.nodeType === 1) {
                     }
                 }
+                if(event)
+                    Liquid.onChangeLookupForward(event);
             }
         }
     },
@@ -12917,7 +12929,7 @@ var Liquid = {
                             if (command.hidden === true || command.visible === false) {
                             } else {
                                 if (liquid.tableJson.commandBarVisible === false) {
-                                    if(!command.batchMode) {
+                                    if(!command.batchMode && command.visible != false) {
                                         Liquid.setProperty(obj, "commandBarVisible", true);
                                         liquid.tableJson.commandBarTemporaryVisible = true;
                                     }
@@ -12950,7 +12962,7 @@ var Liquid = {
                             if (command.hidden === true || command.visible === false) {
                             } else {
                                 if (liquid.tableJson.commandBarVisible === false) {
-                                    if(!command.batchMode) {
+                                    if(!command.batchMode && command.visible != false) {
                                         Liquid.setProperty(obj, "commandBarVisible", true);
                                         liquid.tableJson.commandBarTemporaryVisible = true;
                                     }
@@ -12993,7 +13005,7 @@ var Liquid = {
                                     if (command.hidden === true || command.visible === false) {
                                     } else {
                                         if (liquid.tableJson.commandBarVisible === false) {
-                                            if(!command.batchMode) {
+                                            if(!command.batchMode && command.visible != false) {
                                                 Liquid.setProperty(obj, "commandBarVisible", true);
                                                 liquid.tableJson.commandBarTemporaryVisible = true;
                                             }

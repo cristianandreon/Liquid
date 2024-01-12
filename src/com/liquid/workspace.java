@@ -5076,7 +5076,12 @@ public class workspace {
         }
         JSONArray rowsJson = null;
         try {
-            rowsJson = paramsJson.getJSONArray("params").getJSONObject(0).getJSONArray("rows");
+            JSONArray prms = paramsJson.getJSONArray("params");
+            for(int i=0; i<prms.length(); i++) {
+                if (prms.getJSONObject(i).has("rows")) {
+                    rowsJson = prms.getJSONObject(i).getJSONArray("rows");
+                }
+            }
         } catch (Exception e) {
         }
         return rowsJson;
