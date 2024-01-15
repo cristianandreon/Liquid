@@ -8269,8 +8269,8 @@ var Liquid = {
             var inputObj = document.getElementById(liquid.linkedInputId);
             if (inputObj) {
                 inputObj.setAttribute('comboId', lookupContainerComboId);
-                inputObj.onchange = function() {
-                    rootObj.onchange();
+                inputObj.onchange = function(event) {
+                    rootObj.onchange(event);
                 }
             } else {
                 console.error("ERROR: inputObj not found")
@@ -8362,7 +8362,7 @@ var Liquid = {
         let linkedInputId = e.target.dataset.linkedInputId;
         let linkedInputObj = document.getElementById(linkedInputId);
         if(linkedInputObj) {
-            linkedInputObj.onchange();
+            linkedInputObj.onchange(e);
         }
     },
     onChangeLookup: function (e) {
@@ -17887,6 +17887,7 @@ var Liquid = {
                                     newObj.style.left = obj.style.left;
                                     newObj.style.top = obj.style.top;
                                     newObj.id = obj.id;
+                                    newObj.setAttribute("name", obj.name);
                                     newObj.innertHTML = obj.value;
                                     newObj.style.padding = "0px";
                                     newObj.onchange = obj.onchange;
