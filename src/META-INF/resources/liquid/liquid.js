@@ -5369,29 +5369,37 @@ var Liquid = {
      * @param value
      */
     validateDate:function(liquid, col, value) {
-        let stat = 0;
+        let stat = 0, ic = 0;
         let day = '', month = '', year = '';
         try {
             for (let i = 0; i < value.length; i++) {
-                if (Liquid.isDateSep(value.charAt(i))) {
+                if (Liquid.isDateSep(value.charAt(i)) && stat<=2) {
+                    // time sep
+                    if (stat == 2 && year.length && value.charAt(i) == ' ') year += value[i];
                     stat++;
                 } else {
                     if (stat == 0) {
                         day += value[i];
+                        ic++;
                     } else if (stat == 1) {
                         month += value[i];
+                        ic++;
                     } else if (stat == 2) {
                         year += value[i];
+                        ic++;
+                    } else if (stat >= 3) {
+                        year += value[i];
+                        ic++;
                     }
                     if(isNaN(Number(value.charAt(i+1))) && !Liquid.isDateSep(value.charAt(i + 1))) {
                         if (i <= 1 && stat == 0) {
                             stat = 1;
                         }
                     } else if(!isNaN(Number(value.charAt(i))) && !Liquid.isDateSep(value.charAt(i + 1))
-                        ) {
-                        if (i == 1 && stat == 0) {
+                    ) {
+                        if (ic == 2 && stat == 0) {
                             stat = 1;
-                        } else if (i == 3 && stat == 1) {
+                        } else if (ic == 4 && stat == 1) {
                             stat = 2;
                         }
                     } else if (isNaN(Number(value.charAt(i)))) {
