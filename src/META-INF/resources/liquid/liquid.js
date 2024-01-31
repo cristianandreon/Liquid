@@ -111,6 +111,7 @@ class LiquidCtrl {
         var retVal = this;
 
 
+        this.runtimeData = {};
 
         if(this.outDivObj) {
             Liquid.cleanNodes(this);
@@ -160,15 +161,15 @@ class LiquidCtrl {
                             this.outDivObj.className += " liquidDialogX";
                         }
 
-                        this.backgroundObj = document.createElement("div");
-                        this.backgroundObj.style.position = 'absolute';
-                        this.backgroundObj.style.display = '';
-                        this.backgroundObj.style.height = this.backgroundObj.style.width = '100%';
-                        this.backgroundObj.style.top = this.backgroundObj.style.left = '0';
-                        this.backgroundObj.style.backgroundColor = Liquid.backgroundLayerColor ? Liquid.backgroundLayerColor : 'rgba(50,50,50,0.5)';
-                        this.backgroundObj.style.zIndex = 90000;
-                        document.body.insertBefore(this.backgroundObj, document.body.firstChild);
-                        this.backgroundObj.appendChild(this.outDivObj);
+                        this.runtimeData.backgroundObj = document.createElement("div");
+                        this.runtimeData.backgroundObj.style.position = 'absolute';
+                        this.runtimeData.backgroundObj.style.display = '';
+                        this.runtimeData.backgroundObj.style.height = this.runtimeData.backgroundObj.style.width = '100%';
+                        this.runtimeData.backgroundObj.style.top = this.runtimeData.backgroundObj.style.left = '0';
+                        this.runtimeData.backgroundObj.style.backgroundColor = Liquid.backgroundLayerColor ? Liquid.backgroundLayerColor : 'rgba(50,50,50,0.5)';
+                        this.runtimeData.backgroundObj.style.zIndex = 90000;
+                        document.body.insertBefore(this.runtimeData.backgroundObj, document.body.firstChild);
+                        this.runtimeData.backgroundObj.appendChild(this.outDivObj);
                         this.outDivObjCreated = true;
 
                     } else {
@@ -6602,10 +6603,13 @@ var Liquid = {
                             if (liquid.tableJson.resize !== false)
                                 resultTableJson.resize = 'both';
                         }
-                        return new LiquidCtrl(liquid.controlId, liquid.outDivObjOrId, JSON.stringify(resultTableJson)
+                        let newLiquid = new LiquidCtrl(liquid.controlId, liquid.outDivObjOrId, JSON.stringify(resultTableJson)
                             , liquid.sourceData
                             , mode
                             , liquid.parentObjId);
+                        // recupero dei dati runtime controllo chiamante
+                        newLiquid.runtimeData = liquid ? liquid.runtimeData : newLiquid.runtimeData;
+                        return newLiquid;
                     }
                     if (registeredTableJson.warning)
                         console.warn(registeredTableJson.warning);
@@ -23676,9 +23680,9 @@ var Liquid = {
             Liquid.onEvent(obj, "onClosing", null, Liquid.onClosingStart, {liquid: liquid, obj: obj, command: null});
             if(liquid.outDivObj)
                 liquid.outDivObj.classList.add('liquidHide');
-            if(liquid.backgroundObj) {
-                document.body.removeChild(liquid.backgroundObj);
-                liquid.backgroundObj = null;
+            if(liquid.runtimeData.backgroundObj) {
+                document.body.removeChild(liquid.runtimeData.backgroundObj);
+                liquid.runtimeData.backgroundObj = null;
             }
             setTimeout('Liquid.onClosed("' + liquid.controlId + '")', 500);
         }

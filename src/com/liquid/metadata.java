@@ -584,30 +584,32 @@ public class metadata {
         try {
             for (int i = 0; i < metaDataTable.size(); i++) {
                 mdTable = metaDataTable.get(i);
-                if (mdTable.table != null && mdTable.table.equalsIgnoreCase(table)) {
-                    if ( (mdTable.schema != null && mdTable.schema.equalsIgnoreCase(schema)) || schema == null) {
-                        if ( (mdTable.database != null && mdTable.database.equalsIgnoreCase(database)) || database == null) {
-                            if (mdTable.metaDataCols != null) {
-                                if(columnName != null && !"*".equalsIgnoreCase(columnName) && !columnName.isEmpty()) {
-                                    for (int istep = 0; istep < 2; istep++) {
-                                        for (int j = 0; j < mdTable.metaDataCols.size(); j++) {
-                                            mdCol = mdTable.metaDataCols.get(j);
-                                            boolean condition = istep > 0 ? (mdCol.name.equalsIgnoreCase(columnName)) : (mdCol.name.equals(columnName));
-                                            if (condition) {
-                                                // Assegna il risultato
-                                                foundMdCol = mdCol;
-                                                condition = istep > 0 ? (mdTable.schema.equalsIgnoreCase(schema) || (schema == null && mdTable.schema.equalsIgnoreCase(metaDataTableSchema))) : (mdTable.schema.equals(schema) || (schema == null && mdTable.schema.equals(metaDataTableSchema)));
+                if(mdTable != null) {
+                    if (mdTable.table != null && mdTable.table.equalsIgnoreCase(table)) {
+                        if ((mdTable.schema != null && mdTable.schema.equalsIgnoreCase(schema)) || schema == null) {
+                            if ((mdTable.database != null && mdTable.database.equalsIgnoreCase(database)) || database == null) {
+                                if (mdTable.metaDataCols != null) {
+                                    if (columnName != null && !"*".equalsIgnoreCase(columnName) && !columnName.isEmpty()) {
+                                        for (int istep = 0; istep < 2; istep++) {
+                                            for (int j = 0; j < mdTable.metaDataCols.size(); j++) {
+                                                mdCol = mdTable.metaDataCols.get(j);
+                                                boolean condition = istep > 0 ? (mdCol.name.equalsIgnoreCase(columnName)) : (mdCol.name.equals(columnName));
                                                 if (condition) {
-                                                    // schema coincidente o schema tabella = schema utente DataSource (prioritario)
-                                                    return (Object) mdCol;
+                                                    // Assegna il risultato
+                                                    foundMdCol = mdCol;
+                                                    condition = istep > 0 ? (mdTable.schema.equalsIgnoreCase(schema) || (schema == null && mdTable.schema.equalsIgnoreCase(metaDataTableSchema))) : (mdTable.schema.equals(schema) || (schema == null && mdTable.schema.equals(metaDataTableSchema)));
+                                                    if (condition) {
+                                                        // schema coincidente o schema tabella = schema utente DataSource (prioritario)
+                                                        return (Object) mdCol;
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                } else {
-                                    // Metadata of the table
-                                    if(mdTable.metaDataCols.size() > 1) { // TODO: >= non columns of the table
-                                        return mdTable;
+                                    } else {
+                                        // Metadata of the table
+                                        if (mdTable.metaDataCols.size() > 1) { // TODO: >= non columns of the table
+                                            return mdTable;
+                                        }
                                     }
                                 }
                             }
@@ -1035,9 +1037,9 @@ public class metadata {
                         result += nRec > 0 ? "," : "";
                         result += "{";
                         result += "\"" + (bUserFieldIdentificator ? "1" : "TABLE") + "\":\"" + (rs.getString("TABLE_NAME") != null ? rs.getString("TABLE_NAME") : "") + "\"";
-                        result += ",\"" + (bUserFieldIdentificator ? "2" : "COLUMN") + "\":\"" + columnName + "\"";
-                        result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + remarks + "\"";
-                        result += ",\"" + (bUserFieldIdentificator ? "4" : "TYPE_NAME") + "\":\"" + (rs.getString("TYPE_NAME") != null ? rs.getString("TYPE_NAME") : "") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "2" : "COLUMN") + "\":\"" + columnName.replace("\"", "\\\"") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + remarks.replace("\"", "\\\"") + "\"";
+                        result += ",\"" + (bUserFieldIdentificator ? "4" : "TYPE_NAME") + "\":\"" + (rs.getString("TYPE_NAME") != null ? rs.getString("TYPE_NAME").replace("\"", "\\\"") : "") + "\"";
                         result += ",\"" + (bUserFieldIdentificator ? "5" : "COLUMN_SIZE") + "\":\"" + (rs.getString("COLUMN_SIZE") != null ? rs.getString("COLUMN_SIZE") : "") + "\"";
                         result += ",\"" + (bUserFieldIdentificator ? "6" : "DECIMAL_DIGITS") + "\":\"" + (decimalDigits != null ? decimalDigits : "") + "\"";
                         result += ",\"" + (bUserFieldIdentificator ? "7" : "NULLABLE") + "\":\"" + (rs.getString("NULLABLE") != null ? rs.getString("NULLABLE") : "") + "\"";
