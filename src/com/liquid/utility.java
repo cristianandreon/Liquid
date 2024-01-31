@@ -32,6 +32,12 @@ import javax.xml.bind.DatatypeConverter;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -3245,13 +3251,23 @@ public class utility {
     }
 
 
-    public static Object getArchiveXMLTag(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
+    /**
+     *
+     * @param warFile
+     * @param resourceFile
+     * @param attribute
+     * @return
+     * @throws IOException
+     * @throws SAXException
+     * @throws ParserConfigurationException
+     * @throws XPathExpressionException
+     */
+    public static Object getArchiveXMLVersionTag(String warFile, String resourceFile, String attribute) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
         java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
         java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
         if (r != null) {
             InputStream is = zipFile.getInputStream(r);
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            // dbf.setNamespaceAware(false);
             DocumentBuilder parser = dbf.newDocumentBuilder();
             MyErrorHandler myErrorHandler = new MyErrorHandler();
             parser.setErrorHandler(myErrorHandler);
@@ -3266,6 +3282,87 @@ public class utility {
         }
         return "";
     }
+
+    /**
+     *
+     * @param warFile
+     * @param resourceFile
+     * @param attribute
+     * @param tag
+     * @return
+     * @throws IOException
+     * @throws SAXException
+     * @throws ParserConfigurationException
+     * @throws XPathExpressionException
+     */
+    public static Object getArchiveXMLTag(String warFile, String resourceFile, String attribute, String tag) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException {
+        java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
+        java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
+        if (r != null) {
+            InputStream is = zipFile.getInputStream(r);
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder parser = dbf.newDocumentBuilder();
+            MyErrorHandler myErrorHandler = new MyErrorHandler();
+            parser.setErrorHandler(myErrorHandler);
+            Document doc = (Document) parser.parse(is);
+            XPathFactory xPathfactory = XPathFactory.newInstance();
+            XPath xpath = xPathfactory.newXPath();
+            Element userElement = (Element) xpath.evaluate(attribute, doc, XPathConstants.NODE);
+            if (userElement != null) {
+                return (Object) (userElement.getAttribute(tag));
+            }
+        }
+        return "";
+    }
+
+    /**
+     *
+     * @param warFile
+     * @param resourceFile
+     * @param attribute
+     * @param newValue
+     * @return
+     * @throws IOException
+     * @throws SAXException
+     * @throws ParserConfigurationException
+     * @throws XPathExpressionException
+     * @throws TransformerException
+     */
+    public static boolean setArchiveXMLTag(String warFile, String resourceFile, String attribute, String tag, String newValue) throws IOException, SAXException, ParserConfigurationException, XPathExpressionException, TransformerException {
+        java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(warFile);
+        java.util.zip.ZipEntry r = zipFile.getEntry(resourceFile);
+        if (r != null) {
+            InputStream is = zipFile.getInputStream(r);
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder parser = dbf.newDocumentBuilder();
+            MyErrorHandler myErrorHandler = new MyErrorHandler();
+            parser.setErrorHandler(myErrorHandler);
+            Document doc = (Document) parser.parse(is);
+            XPathFactory xPathfactory = XPathFactory.newInstance();
+            XPath xpath = xPathfactory.newXPath();
+            Element userElement = (Element) xpath.evaluate(attribute, doc, XPathConstants.NODE);
+            if (userElement != null) {
+                userElement.setAttribute("deployDate", newValue);
+                Transformer xformer = TransformerFactory.newInstance().newTransformer();
+                File newResourceFile = new File(utility.get_temp_file());
+                FileOutputStream outputStream = new FileOutputStream(newResourceFile);
+                xformer.transform(new DOMSource(doc), new StreamResult(outputStream));
+                zipFile.close();
+                Path zipFilePath = Paths.get(warFile);
+                try( FileSystem fs = FileSystems.newFileSystem(zipFilePath, null) ){
+                    Path fileInsideZipPath = fs.getPath(resourceFile);
+                    Path res = Files.copy(newResourceFile.toPath(), fileInsideZipPath, StandardCopyOption.REPLACE_EXISTING);
+                    if(res != null) {
+                        return true;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
+    }
+
 
     public static String getFileContent(String fileName) throws Exception {
         return workspace.get_file_content((HttpServletRequest) null, fileName, false, false);
