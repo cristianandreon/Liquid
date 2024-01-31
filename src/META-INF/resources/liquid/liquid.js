@@ -29,7 +29,7 @@
 
 
 //
-// Liquid ver.2.94
+// Liquid ver.2.95
 //
 //  First update 06-01-2020 - Last update 04-10-2023
 //
@@ -2824,7 +2824,7 @@ class LiquidMenuXCtrl {
 }
 
 var Liquid = {
-    version: 2.94,
+    version: 2.95,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
