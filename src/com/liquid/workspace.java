@@ -36,7 +36,7 @@ import static com.liquid.liquidize.liquidizeJSONContent;
  */
 public class workspace {
 
-    public static String version_string = "2.95";
+    public static String version_string = "2.96";
 
 
     // Converse la stringa vuota in NULL se la colonna in presenza di foreignKey (postgress11 supporta la string vuota)

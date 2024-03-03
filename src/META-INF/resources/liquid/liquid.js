@@ -29,7 +29,7 @@
 
 
 //
-// Liquid ver.2.95
+// Liquid ver.2.96
 //
 //  First update 06-01-2020 - Last update 04-10-2023
 //
@@ -2824,7 +2824,7 @@ class LiquidMenuXCtrl {
 }
 
 var Liquid = {
-    version: 2.95,
+    version: 2.96,
     appTitle: "LIQUID",
     controlId: "Liquid framework",
     undefinedCurrency: "--.--",
@@ -7593,10 +7593,10 @@ var Liquid = {
             }
         }
     },
-    createLayoutBodyAllScroll: function (liquid) {
+    refreshLayoutBodyAllScroll: function (liquid) {
         if(liquid.tableJson.layouts) {
             for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
-                liquid.createLayoutBodyScroll(liquid, liquid.tableJson.layouts[il]);
+                Liquid.refreshLayoutBodyScroll(liquid, liquid.tableJson.layouts[il]);
             }
         }
     },
@@ -7667,9 +7667,7 @@ var Liquid = {
                 layout.bodyRange.min = 0;
                 layout.bodyRange.max = nScroll;
                 layout.contentSizer.style.height = "calc(100% + "+(nScroll-1)*Liquid.persist.SCROLL_RATIO+"px)"
-                if (nScroll > 0) {
-                } else {
-                }
+                layout.bodyRange.scrollTop = liquid.cRow * Liquid.persist.SCROLL_RATIO;
             }
         }
     },
@@ -12128,7 +12126,7 @@ var Liquid = {
         }
         Liquid.updateStatusBar(liquid);
         Liquid.updateCommandBar(liquid);
-        Liquid.refreshLayoutAllBodyScroll(liquid);
+        Liquid.refreshLayoutBodyAllScroll(liquid);
     },
     /**
      * set node selected by a check box in the layout
