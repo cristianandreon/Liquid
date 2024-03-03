@@ -2931,6 +2931,8 @@ var Liquid = {
         DISABLE_PAGE_SELECTION:false,
         MASK_DATE_TIME_PICKER:false,
         SUNEDITOR_ON_MULTILINE:false,
+        SCROLL_RATIO:50,
+        LAYOUT_SCROLL_WIDTH:40
     },
     setProjectMode: function (mode) {
         if (isDef(mode)) {
@@ -7591,6 +7593,77 @@ var Liquid = {
             }
         }
     },
+    createLayoutBodyScroll: function (liquid, layout) {
+        let userRange = false;
+        if(layout.bodyContainerObj && !layout.bodyRange) {
+            if(userRange) {
+                layout.bodyRange = document.createElement("input");
+                layout.bodyRange.type = "range";
+                layout.bodyRange.style.width = Liquid.persist.LAYOUT_SCROLL_WIDTH + "px";
+                layout.bodyRange.style.appearance = "slider-vertical";
+                layout.bodyRange.style.webkitAppearance = "none";
+                layout.bodyRange.style.padding = "0 5px";
+            } else {
+                layout.bodyRange = document.createElement("div");
+                layout.bodyRange.style.overflowX = "none";
+                layout.bodyRange.style.overflowY = "auto";
+                layout.bodyRange.style.width = Liquid.persist.LAYOUT_SCROLL_WIDTH + "px";
+                layout.contentSizer = document.createElement("div");
+                layout.contentSizer.style.width = "1px";
+                layout.contentSizer.style.display = "block";
+                layout.contentSizer.style.position = "absolute";
+                layout.bodyRange.appendChild(layout.contentSizer);
+            }
+            layout.bodyRange.className = "liquidGridControl";
+            layout.bodyRange.id = liquid.controlId + "." + layout.name + ".bodyScroll";
+
+            if (layout.bodyRange.addEventListener) {
+                layout.bodyRange.addEventListener('scroll', Liquid.onLayoutBodyScroll);
+            } else {
+                layout.bodyRange.attachEvent('scroll', Liquid.onLayoutBodyScroll);
+            }
+            layout.bodyContainerObj.appendChild(layout.bodyRange);
+            layout.bodyRange.style.height = "calc(100% - " + layout.bodyRange.offsetTop + "px)";
+            layout.bodyRange.style.display = "block";
+            layout.bodyRange.style.position = "absolute";
+            layout.bodyRange.style.right = "0px";
+            layout.bodyRange.style.zIndex = "1";
+            Liquid.refreshLayoutBodyScroll(liquid, layout);
+        }
+    },
+    onLayoutBodyScroll: function (e) {
+        if (e.target) {
+            if (e.target.id) {
+                let liquid = Liquid.getLiquid(e.target.id);
+                if(liquid) {
+                    var selNodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                    let posY = (e.target.scrollTop / Liquid.persist.SCROLL_RATIO).toFixed(0);
+                    if(posY > selNodes.length)
+                        posY = selNodes.length -1;
+                    console.info("scroll to "+posY+" on "+liquid.controlId+" event type:"+e.type);
+                    if (isDef(selNodes) && selNodes.length > 0) {
+                        selNodes[posY].setSelected(true);
+                        liquid.gridOptions.api.ensureIndexVisible(selNodes[posY].rowIndex, "bottom");
+                    }
+                }
+            }
+        }
+    },
+    refreshLayoutBodyScroll: function (liquid, layout) {
+        if(layout.bodyRange) {
+            let viewAsTable = (isDef(layout.nRows) && layout.nRows > 0 && isDef(layout.nCols) && layout.nCols > 0);
+            if (isDef(layout.nRows) && layout.nRows > 0 && !viewAsTable) {
+                var selNodes = liquid.gridOptions.api.rowModel.rootNode.allLeafChildren;
+                let nScroll = selNodes.length / layout.nRows + (selNodes.length % layout.nRows ? 1 : 0);
+                layout.bodyRange.min = 0;
+                layout.bodyRange.max = nScroll;
+                layout.contentSizer.style.height = "calc(100% + "+(nScroll-1)*Liquid.persist.SCROLL_RATIO+"px)"
+                if (nScroll > 0) {
+                } else {
+                }
+            }
+        }
+    },
     onLayoutContainerScroll: function (e) {
         if (e.target) {
             var localLookupScrollLeft = e.target.getAttribute("scroll_left");
@@ -11112,6 +11185,8 @@ var Liquid = {
                                                 break;
                                             }
                                         }
+                                        if (command.response.data.details[id].tables) {
+                                        }
                                     }
                                 }
                             }
@@ -11542,7 +11617,7 @@ var Liquid = {
                                                     } else {
                                                         Liquid.loadData(
                                                             liquid
-                                                            ,null
+                                                            ,ids
                                                             ,"reloading all rows after insert (no ids returned)"
                                                             ,function() {}
                                                         );
@@ -15799,7 +15874,7 @@ var Liquid = {
                     itemIndex: (nameItems && nameItems.length >= 5 ? nameItems[4] - 1 : null),
                     layoutIndex: layoutIndex,
                     col: (nameItems && nameItems.length >= 5 ? nameItems[4] - 1 : null),
-                    row: (nameItems && nameItems.length >= 7 ? nameItems[6] - 1 : null)
+                    row: (nameItems && nameItems.length >= 7 ? liquid.tableJson.layouts[layoutIndex].baseIndex1B-1 + Number(nameItems[6])-1 : null)
                 };
             } else if (nameItems && nameItems.length == 2) {
                 let layout = null;
@@ -16268,6 +16343,7 @@ var Liquid = {
                     }
                     layout.firstNodeId = curNodes && curNodes.length ? curNodes[0].id : null;
                     Liquid.linkLayoutToFields(liquid, layout, layout.containerObj, bSetup);
+                    Liquid.refreshLayoutBodyScroll(liquid, layout);
                     var bRestoreList = false;
                     if (layout) {
                         bRestoreList = Liquid.resizeIfDocked(liquid, layout);
@@ -16483,6 +16559,9 @@ var Liquid = {
                                 layout.pendingRefresh = true;
                                 return;
                             }
+                        } else if(nRows >= 1) {
+                            // Creazione scroll personalizzata
+                            Liquid.createLayoutBodyScroll(liquid, layout);
                         }
 
                         if (nRows >= 1) {
@@ -17329,7 +17408,7 @@ var Liquid = {
                             if (layout.rowsContainer[ir].isUpdating)
                                 return layout.templateRows[2].templateRowRootObj;
 
-                if (liquid.nRows == 0 || layout.baseIndex1B - 1 + ir >= nodes.length) {
+                if (liquid.nRows == 0 || ir >= nodes.length) {
                     if(layout.templateRows[9]) {
                         return layout.templateRows[9].templateRowRootObj;
                     } else {
@@ -25619,7 +25698,8 @@ columns:[
                         let result = JSON.parse(xhr.responseText);
                         if(result) {
                             if(liquidOrControlId=='LIQUID.SYSTEM') {
-                                Liquid.persist = result.persist;
+                                // Liquid.persist = result.persist;
+                                Liquid.persist = {...Liquid.persist, ...result.persist};
                                 return Liquid.persist;
                             } else {
                                 if (result.cols) {
