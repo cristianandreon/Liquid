@@ -7593,42 +7593,51 @@ var Liquid = {
             }
         }
     },
+    createLayoutBodyAllScroll: function (liquid) {
+        if(liquid.tableJson.layouts) {
+            for (var il = 0; il < liquid.tableJson.layouts.length; il++) {
+                liquid.createLayoutBodyScroll(liquid, liquid.tableJson.layouts[il]);
+            }
+        }
+    },
     createLayoutBodyScroll: function (liquid, layout) {
-        let userRange = false;
-        if(layout.bodyContainerObj && !layout.bodyRange) {
-            if(userRange) {
-                layout.bodyRange = document.createElement("input");
-                layout.bodyRange.type = "range";
-                layout.bodyRange.style.width = Liquid.persist.LAYOUT_SCROLL_WIDTH + "px";
-                layout.bodyRange.style.appearance = "slider-vertical";
-                layout.bodyRange.style.webkitAppearance = "none";
-                layout.bodyRange.style.padding = "0 5px";
-            } else {
-                layout.bodyRange = document.createElement("div");
-                layout.bodyRange.style.overflowX = "none";
-                layout.bodyRange.style.overflowY = "auto";
-                layout.bodyRange.style.width = Liquid.persist.LAYOUT_SCROLL_WIDTH + "px";
-                layout.contentSizer = document.createElement("div");
-                layout.contentSizer.style.width = "1px";
-                layout.contentSizer.style.display = "block";
-                layout.contentSizer.style.position = "absolute";
-                layout.bodyRange.appendChild(layout.contentSizer);
-            }
-            layout.bodyRange.className = "liquidGridControl";
-            layout.bodyRange.id = liquid.controlId + "." + layout.name + ".bodyScroll";
+        if(liquid && layout) {
+            let userRange = false;
+            if (layout.bodyContainerObj && !layout.bodyRange) {
+                if (userRange) {
+                    layout.bodyRange = document.createElement("input");
+                    layout.bodyRange.type = "range";
+                    layout.bodyRange.style.width = Liquid.persist.LAYOUT_SCROLL_WIDTH + "px";
+                    layout.bodyRange.style.appearance = "slider-vertical";
+                    layout.bodyRange.style.webkitAppearance = "none";
+                    layout.bodyRange.style.padding = "0 5px";
+                } else {
+                    layout.bodyRange = document.createElement("div");
+                    layout.bodyRange.style.overflowX = "none";
+                    layout.bodyRange.style.overflowY = "auto";
+                    layout.bodyRange.style.width = Liquid.persist.LAYOUT_SCROLL_WIDTH + "px";
+                    layout.contentSizer = document.createElement("div");
+                    layout.contentSizer.style.width = "1px";
+                    layout.contentSizer.style.display = "block";
+                    layout.contentSizer.style.position = "absolute";
+                    layout.bodyRange.appendChild(layout.contentSizer);
+                }
+                layout.bodyRange.className = "liquidGridControl";
+                layout.bodyRange.id = liquid.controlId + "." + layout.name + ".bodyScroll";
 
-            if (layout.bodyRange.addEventListener) {
-                layout.bodyRange.addEventListener('scroll', Liquid.onLayoutBodyScroll);
-            } else {
-                layout.bodyRange.attachEvent('scroll', Liquid.onLayoutBodyScroll);
+                if (layout.bodyRange.addEventListener) {
+                    layout.bodyRange.addEventListener('scroll', Liquid.onLayoutBodyScroll);
+                } else {
+                    layout.bodyRange.attachEvent('scroll', Liquid.onLayoutBodyScroll);
+                }
+                layout.bodyContainerObj.appendChild(layout.bodyRange);
+                layout.bodyRange.style.height = "calc(100% - " + layout.bodyRange.offsetTop + "px)";
+                layout.bodyRange.style.display = "block";
+                layout.bodyRange.style.position = "absolute";
+                layout.bodyRange.style.right = "0px";
+                layout.bodyRange.style.zIndex = "1";
+                Liquid.refreshLayoutBodyScroll(liquid, layout);
             }
-            layout.bodyContainerObj.appendChild(layout.bodyRange);
-            layout.bodyRange.style.height = "calc(100% - " + layout.bodyRange.offsetTop + "px)";
-            layout.bodyRange.style.display = "block";
-            layout.bodyRange.style.position = "absolute";
-            layout.bodyRange.style.right = "0px";
-            layout.bodyRange.style.zIndex = "1";
-            Liquid.refreshLayoutBodyScroll(liquid, layout);
         }
     },
     onLayoutBodyScroll: function (e) {
@@ -12119,6 +12128,7 @@ var Liquid = {
         }
         Liquid.updateStatusBar(liquid);
         Liquid.updateCommandBar(liquid);
+        Liquid.refreshLayoutAllBodyScroll(liquid);
     },
     /**
      * set node selected by a check box in the layout
