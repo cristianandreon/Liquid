@@ -209,7 +209,7 @@ var LiquidEditing = {
                     sels.push(
                         {
                             COLUMN: liquid.tableJson.columns[i].name
-                            , REMARKS: liquid.tableJson.columns[i].ramarks
+                            , REMARKS: liquid.tableJson.columns[i].remarks
                         });
                 }
             }
@@ -228,11 +228,13 @@ var LiquidEditing = {
                     for (var i = 0; i < sels.length; i++) {
                         var target_col = Liquid.getColumn(liquid, sels[i].COLUMN);
                         if(target_col) {
-                            var label = sels[i].REMARKS  ? (sels[i].REMARKS) : (target_col.ramarks ? target_col.ramarks : target_col.name);
+                            // var label = sels[i].REMARKS  ? (sels[i].REMARKS) : (target_col.remarks ? target_col.remarks : target_col.name);
+                            var tooltip = sels[i]["REMARKS"];
                             var gridColumn = {
                                 name: sels[i]["COLUMN"]
-                                , tooltip: sels[i]["REMARKS"]
-                                , label: label.toDescriptionCase()
+                                , tooltip: tooltip
+                                // keep the default label
+                                // , label: label.toDescriptionCase()
                                 , row: Math.floor(i / nCols)
                                 , col: (i % nCols)
                             };

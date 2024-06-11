@@ -1762,24 +1762,26 @@ public class utility {
             for (int io = 0; io < names.length(); io++) {
                 String name = names.getString(io);
                 if (!contains(excludingProps, name)) {
-                    Object o1 = ((JSONObject) jo1).get(name);
-                    Object o2 = ((JSONObject) jo2).get(name);
-                    if (o1 instanceof JSONObject) {
-                        return compare_json((JSONObject) o1, (JSONObject) jo2, excludingProps);
-                    } else if (o1 instanceof JSONArray) {
-                        JSONArray oa1 = (JSONArray) o1;
-                        JSONArray oa2 = (JSONArray) o2;
-                        for (int j = 0; j < oa1.length(); j++) {
-                            o1 = oa1.get(j);
-                            o2 = oa2.get(j);
-                            if (o1 instanceof JSONObject) {
-                                if (!compare_json((JSONObject) o1, (JSONObject) o2, excludingProps)) {
-                                    return false;
+                    if ( ((JSONObject) jo1).has(name) && ((JSONObject) jo2).has(name)) {
+                        Object o1 = ((JSONObject) jo1).get(name);
+                        Object o2 = ((JSONObject) jo2).get(name);
+                        if (o1 instanceof JSONObject) {
+                            return compare_json((JSONObject) o1, (JSONObject) jo2, excludingProps);
+                        } else if (o1 instanceof JSONArray) {
+                            JSONArray oa1 = (JSONArray) o1;
+                            JSONArray oa2 = (JSONArray) o2;
+                            for (int j = 0; j < oa1.length(); j++) {
+                                o1 = oa1.get(j);
+                                o2 = oa2.get(j);
+                                if (o1 instanceof JSONObject) {
+                                    if (!compare_json((JSONObject) o1, (JSONObject) o2, excludingProps)) {
+                                        return false;
+                                    }
                                 }
                             }
+                        } else {
+                            return o1.equals(o2);
                         }
-                    } else {
-                        return o1.equals(o2);
                     }
                 }
             }

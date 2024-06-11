@@ -6893,7 +6893,6 @@ var Liquid = {
                                 console.debug("[SERVER] TOTAL-TIME:" + httpResultJson.totalTime);
                                 console.debug("[SERVER] NO.ROWS:" + httpResultJson.nRows);
                             } catch (e) {
-                                debugger;
                             }
                         }
                         if (httpResultJson.error) {
@@ -25217,7 +25216,11 @@ columns:[
                 } else if(glLiquidIDB) {
                     var transaction = glLiquidIDB.transaction(["CLIPBOARD"], "readwrite");
                     var objectStore = transaction.objectStore("CLIPBOARD");
-                    var data = { controlId:liquid.controlId, columns:JSON.stringify(liquid.tableJson.columns), rows:(Liquid.serializedRow(liquid, true)), date:date.toISOString() };
+                    var data = {
+                        controlId:liquid.controlId,
+                        columns:btoa(JSON.stringify(liquid.tableJson.columns)),
+                        rows:btoa(Liquid.serializedRow(liquid, true)),
+                        date:date.toISOString() };
                     var request = objectStore.add(data);
                     if(request.readyState === 'done') {
                         Liquid.copyToClipBoradDone(liquid);
