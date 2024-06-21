@@ -3188,11 +3188,6 @@ var LiquidEditing = {
             dlg.id = dlgId;
             dlg.className = "liquidContextDialog";
 
-            var panelId = capitalizeOnlyFirstLetter(liquid.tableJson.table.toCamelCase());
-            Liquid.panelId = panelId;
-
-            var panelTitle = panelId.camelCasetoDescriptionCase();
-            Liquid.panelTitle = panelTitle;
 
             if(zkParams) {
                 if(typeof zkParams === 'string') {
@@ -3205,6 +3200,11 @@ var LiquidEditing = {
                 }
             }
 
+            var panelId = capitalizeOnlyFirstLetter(liquid.tableJson.table.toCamelCase());
+            Liquid.panelId = panelId;
+
+            var panelTitle = panelId.camelCasetoDescriptionCase();
+            Liquid.panelTitle = panelTitle;
 
             if (!Liquid.customerName)
                 Liquid.customerName = zkParams ? (zkParams.customerName ? zkParams.customerName : "geisoft") : "geisoft";
@@ -3226,19 +3226,6 @@ var LiquidEditing = {
                 Liquid.appName = "";
 
 
-            // Wrap true to "S"
-            Liquid.showList = Liquid.showList === 'S' ? true : false;
-            Liquid.autoSelect = Liquid.autoSelect === 'S' ? true : false;
-            Liquid.autoFind = Liquid.autoFind === 'S' ? true : false;
-            Liquid.popupCommand = Liquid.popupCommand === 'S' ? true : false;
-            Liquid.use_asset = Liquid.use_asset === 'S' ? true : false;
-            Liquid.can_insert = Liquid.can_insert === 'S' ? true : false;
-            Liquid.can_update = Liquid.can_update === 'S' ? true : false;
-            Liquid.can_delete = Liquid.can_delete === 'S' ? true : false;
-            Liquid.process_foreign_tables = Liquid.process_foreign_tables === 'S' ? true : false;
-            Liquid.process_hibernate = Liquid.process_hibernate === 'S' ? true : false;
-            Liquid.process_events_callback = Liquid.process_events_callback === 'S' ? true : false;
-            Liquid.process_lookup_code = Liquid.process_lookup_code === 'S' ? true : false;
 
 
             if (!Liquid.fieldInTitleBar)
@@ -3286,6 +3273,19 @@ var LiquidEditing = {
                 Liquid.hibFolder = zkParams ? (zkParams.hibFolder ? zkParams.hibFolder : "src/com/"+Liquid.customerName+"/"+Liquid.appName+"/hibernate/bean") : "";
 
 
+            // Wrap true to "S"
+            Liquid.showList = LiquidEditing.isSTrue(Liquid.showList);
+            Liquid.autoSelect = LiquidEditing.isSTrue(Liquid.autoSelect);
+            Liquid.autoFind = LiquidEditing.isSTrue(Liquid.autoFind);
+            Liquid.popupCommand = LiquidEditing.isSTrue(Liquid.popupCommand);
+            Liquid.use_asset = LiquidEditing.isSTrue(Liquid.use_asset);
+            Liquid.can_insert = LiquidEditing.isSTrue(Liquid.can_insert);
+            Liquid.can_update = LiquidEditing.isSTrue(Liquid.can_update);
+            Liquid.can_delete = LiquidEditing.isSTrue(Liquid.can_delete);
+            Liquid.process_foreign_tables = LiquidEditing.isSTrue(Liquid.process_foreign_tables);
+            Liquid.process_hibernate = LiquidEditing.isSTrue(Liquid.process_hibernate);
+            Liquid.process_events_callback = LiquidEditing.isSTrue(Liquid.process_events_callback);
+            Liquid.process_lookup_code = LiquidEditing.isSTrue(Liquid.process_lookup_code);
 
 
             var onCancelCode = "LiquidEditing.onContextMenuClose();";
@@ -3377,6 +3377,9 @@ var LiquidEditing = {
 
         menu.appendChild(dlg);
         menu.style.display = "";
+    },
+    isSTrue:function(val) {
+        return val === 'Y' || val === 'y' || val === 'S' || val === 's' || val === true ? "S" : "N";
     },
     onSelectFolder:function(e) {
         var theFiles = e.target.files;

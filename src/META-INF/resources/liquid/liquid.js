@@ -77,8 +77,9 @@ var glFlashingTimerMsec = 100;
 var glLookupScrollTop = 0;
 var glLookupScrollLeft = 0;
 
-if(!isDef(glLiquidGenesisToken))
+if(typeof glLiquidGenesisToken === 'undefined') {
     var glLiquidGenesisToken = null;
+}
 
 //
 // start point of servlet ... the bridge to server
@@ -161,16 +162,20 @@ class LiquidCtrl {
                             this.outDivObj.className += " liquidDialogX";
                         }
 
-                        this.runtimeData.backgroundObj = document.createElement("div");
-                        this.runtimeData.backgroundObj.style.position = 'absolute';
-                        this.runtimeData.backgroundObj.style.display = '';
-                        this.runtimeData.backgroundObj.style.height = this.runtimeData.backgroundObj.style.width = '100%';
-                        this.runtimeData.backgroundObj.style.top = this.runtimeData.backgroundObj.style.left = '0';
-                        this.runtimeData.backgroundObj.style.backgroundColor = Liquid.backgroundLayerColor ? Liquid.backgroundLayerColor : 'rgba(50,50,50,0.5)';
-                        this.runtimeData.backgroundObj.style.zIndex = 90000;
-                        document.body.insertBefore(this.runtimeData.backgroundObj, document.body.firstChild);
-                        this.runtimeData.backgroundObj.appendChild(this.outDivObj);
-                        this.outDivObjCreated = true;
+                        if(isWinX) {
+                            document.body.insertBefore(this.outDivObj, document.body.firstChild);
+                        } else {
+                            this.runtimeData.backgroundObj = document.createElement("div");
+                            this.runtimeData.backgroundObj.style.position = 'absolute';
+                            this.runtimeData.backgroundObj.style.display = '';
+                            this.runtimeData.backgroundObj.style.height = this.runtimeData.backgroundObj.style.width = '100%';
+                            this.runtimeData.backgroundObj.style.top = this.runtimeData.backgroundObj.style.left = '0';
+                            this.runtimeData.backgroundObj.style.backgroundColor = Liquid.backgroundLayerColor ? Liquid.backgroundLayerColor : 'rgba(50,50,50,0.5)';
+                            this.runtimeData.backgroundObj.style.zIndex = 90000;
+                            document.body.insertBefore(this.runtimeData.backgroundObj, document.body.firstChild);
+                            this.runtimeData.backgroundObj.appendChild(this.outDivObj);
+                            this.outDivObjCreated = true;
+                        }
 
                     } else {
                         this.outDivObj = document.createElement("div");
@@ -2527,7 +2532,8 @@ class LiquidCtrl {
                                     function() {
                                         liquid.isResizing = false;
                                         Liquid.onResize(liquid);
-                                        liquid.outDivObj.style.filter = "grayscale(.0) opacity(1.0) blur(0px)";
+                                        if(liquid.outDivObj)
+                                            liquid.outDivObj.style.filter = "grayscale(.0) opacity(1.0) blur(0px)";
                                     }
                                 );
                             } catch (e) {
@@ -23770,7 +23776,6 @@ var Liquid = {
                 document.body.removeChild(liquid.runtimeData.backgroundObj);
                 liquid.runtimeData.backgroundObj = null;
             }
-            setTimeout('Liquid.onClosed("' + liquid.controlId + '")', 500);
         }
     },
     onClosingStart:function(params) {
@@ -27165,6 +27170,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
 });
 
 
-
-// set language
-Liquid.setLanguage( navigator.language || navigator.userLanguage );
+try {
+    // set language
+    Liquid.setLanguage(navigator.language || navigator.userLanguage);
+} catch (e) {
+    alert("Error loading Liquid framework (liquid.js)");
+}
