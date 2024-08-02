@@ -575,14 +575,16 @@ var LiquidEditing = {
                         var sels = selectorLiquid.tableJson.selections;
                         if(sels.length > 0) {
                             var table = sels[0]["TABLE"];
+                            var schema = sels[0]["SCHEMA"];
+                            var database = sels[0]["DATABASE"];
                             Liquid.startPopup('liquidSelectTableColumns', window.liquidSelectTableColumns);
                             var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
                             if(mode === 'formX')
                                 selectorLiquid.tableJson.caption = "New forX : <b>select columns</b>";
                             else
                                 selectorLiquid.tableJson.caption = "New Window : <b>select columns</b>";
-                            selectorLiquid.tableJson.database = Liquid.curDatabase;
-                            selectorLiquid.tableJson.schema = Liquid.curSchema;
+                            selectorLiquid.tableJson.database = database ? database : Liquid.curDatabase;
+                            selectorLiquid.tableJson.schema = schema ? schema : Liquid.curSchema;
                             selectorLiquid.tableJson.table = table;
                             Liquid.loadData(selectorLiquid, null, "newWindow");
                             selectorLiquid.onPostClosed = "LiquidEditing.onNewWindowProcess2('"+obj_id+"','"+mode+"','"+parentObjId+"','"+table+"')";
@@ -603,10 +605,26 @@ var LiquidEditing = {
                 if(selectorLiquid.tableJson.selections && selectorLiquid.tableJson.selections.length) {
                     var sels = selectorLiquid.tableJson.selections;
                     var table = sels[0]["TABLE"];
+                    var schema = null;
+                    var database = null;
+                    var selectorTableLiquid = Liquid.getLiquid("liquidSelectTables");
+                    if(selectorTableLiquid) {
+                        if (selectorTableLiquid.lastAction && selectorTableLiquid.lastAction.name === "ok") {
+                            if (selectorTableLiquid.tableJson.selections) {
+                                if (selectorTableLiquid.tableJson.selections.length) {
+                                    var sels = selectorTableLiquid.tableJson.selections;
+                                    if (sels.length > 0) {
+                                        schema = sels[0]["SCHEMA"];
+                                        database = sels[0]["DATABASE"];
+                                    }
+                                }
+                            }
+                        }
+                    }
                     Liquid.startPopup('liquidSelectForeignTablesAndLookups', window.liquidSelectForeignTablesAndLookups);
                     var selectorFTLiquid = Liquid.getLiquid("liquidSelectForeignTablesAndLookups");
-                    selectorFTLiquid.tableJson.database = Liquid.curDatabase;
-                    selectorFTLiquid.tableJson.schema = Liquid.curSchema;
+                    selectorFTLiquid.tableJson.database = database ? database : Liquid.curDatabase;
+                    selectorFTLiquid.tableJson.schema = schema ? schema : Liquid.curSchema;
                     selectorFTLiquid.tableJson.table = table;
                     selectorFTLiquid.tableJson.autoInsertIfMissing = true;
                     Liquid.loadData(selectorFTLiquid, null, "newWindow");
@@ -616,6 +634,24 @@ var LiquidEditing = {
         } else console.error("ERROR: selector module not found");
     },
     onNewWindowProcess3:function(obj_id, mode, parentObjId, table) {
+        var table = null;
+        var schema = null;
+        var database = null;
+        var selectorTableLiquid = Liquid.getLiquid("liquidSelectTables");
+        if(selectorTableLiquid) {
+            if (selectorTableLiquid.lastAction && selectorTableLiquid.lastAction.name === "ok") {
+                if (selectorTableLiquid.tableJson.selections) {
+                    if (selectorTableLiquid.tableJson.selections.length) {
+                        var sels = selectorTableLiquid.tableJson.selections;
+                        if (sels.length > 0) {
+                            table = sels[0]["TABLE"];
+                            schema = sels[0]["SCHEMA"];
+                            database = sels[0]["DATABASE"];
+                        }
+                    }
+                }
+            }
+        }
         var selectorLiquid = Liquid.getLiquid("liquidSelectTableColumns");
         if(selectorLiquid) {
             if(selectorLiquid.lastAction && selectorLiquid.lastAction.name==="ok") {
@@ -653,8 +689,8 @@ var LiquidEditing = {
                             cmds = [ { name:"create" },{ name:"update" },{ name:"delete" },{ name:"copy" },{ name:"paste" },{ name:"next" },{ name:"previous" } ];
                         
                         liquidJson = {
-                            database:Liquid.curDatabase
-                            ,schema:Liquid.curSchema
+                            database: database ? database : Liquid.curDatabase
+                            ,schema:schema ? schema : Liquid.curSchema
                             ,table:table
                             ,columns:cols
                             ,foreignTables:"" // N.B.: No foreign tables default, also define foreignTables:"*"

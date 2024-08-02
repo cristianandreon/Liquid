@@ -940,6 +940,7 @@ public class metadata {
                                 result += "\"" + (bUserFieldIdentificator ? "1" : "TABLE") + "\":\"" + table_name + "\"";
                                 result += ",\"" + (bUserFieldIdentificator ? "2" : "TYPE") + "\":\"" + (table_type != null ? table_type : "") + "\"";
                                 result += ",\"" + (bUserFieldIdentificator ? "3" : "REMARKS") + "\":\"" + (remarks != null ? remarks : "") + "\"";
+                                result += ",\"" + (bUserFieldIdentificator ? "4" : "SCHEMA") + "\":\"" + (resultShcema != null ? resultShcema : "") + "\"";
                                 result += "}";
                                 nRec++;
                             }

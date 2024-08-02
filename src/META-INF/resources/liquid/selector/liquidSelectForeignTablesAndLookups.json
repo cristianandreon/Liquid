@@ -46,7 +46,7 @@
 ,"top":"center"
 ,"resize":"both"
 ,"autoSizeColumns":true
-,"autoLoad":true
+,"autoLoad":false
 ,"autoInsertIfMissing":false
 ,"autoSelect":true
 ,"pageSize":0

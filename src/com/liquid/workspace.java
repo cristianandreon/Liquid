@@ -3022,6 +3022,10 @@ public class workspace {
                                     if ("com.liquid.event.onInserting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onInserting".equalsIgnoreCase(server))) {
                                         event.put("isSystem", true);
                                         bInsertEventFound = true;
+                                    } else if(sOwner == null && "onInserting".equalsIgnoreCase(server)) {
+                                        event.put("server", "com.liquid.event."+server);
+                                        event.put("isSystem", true);
+                                        bInsertEventFound = true;
                                     }
                                 }
                             }
@@ -3033,6 +3037,10 @@ public class workspace {
                                         server = null;
                                     }
                                     if ("com.liquid.event.onUpdating".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onUpdating".equalsIgnoreCase(server))) {
+                                        event.put("isSystem", true);
+                                        bUpdateEventFound = true;
+                                    } else if(sOwner == null && "onUpdating".equalsIgnoreCase(server)) {
+                                        event.put("server", "com.liquid.event."+server);
                                         event.put("isSystem", true);
                                         bUpdateEventFound = true;
                                     }
@@ -3048,6 +3056,10 @@ public class workspace {
                                     if ("com.liquid.event.onDeleting".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onDeleting".equalsIgnoreCase(server))) {
                                         event.put("isSystem", true);
                                         bDeleteEventFound = true;
+                                    } else if(sOwner == null && "onDeleting".equalsIgnoreCase(server)) {
+                                        event.put("server", "com.liquid.event."+server);
+                                        event.put("isSystem", true);
+                                        bDeleteEventFound = true;
                                     }
                                 }
                             }
@@ -3061,6 +3073,10 @@ public class workspace {
                                     if ("com.liquid.event.onPastedRow".equalsIgnoreCase(server) || ("com.liquid.event".equalsIgnoreCase(sOwner) && "onPastedRow".equalsIgnoreCase(server))) {
                                         event.put("isSystem", true);
                                         event.put("sync", true);
+                                        bPastedRowFound = true;
+                                    } else if(sOwner == null && "onPastedRow".equalsIgnoreCase(server)) {
+                                        event.put("server", "com.liquid.event."+server);
+                                        event.put("isSystem", true);
                                         bPastedRowFound = true;
                                     }
                                 }

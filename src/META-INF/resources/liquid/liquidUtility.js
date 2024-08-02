@@ -373,6 +373,7 @@ SelectEditor.prototype.init = function(params) {
     this.rowIndex = params.rowIndex;
     this.iCol = params.iCol;
     this.table = params.table;
+    this.table = params.schema;
     this.column = params.column;
     this.idColumn = params.idColumn;
     this.targetColumn = params.targetColumn;
@@ -382,6 +383,7 @@ SelectEditor.prototype.init = function(params) {
 
     Liquid.solveExpressionField(this, "table", this.liquid);
     Liquid.solveExpressionField(this, "column", this.liquid);
+    Liquid.solveExpressionField(this, "schema", this.liquid);
     Liquid.solveExpressionField(this, "idColumn", this.liquid);
     Liquid.solveExpressionField(this, "targetColumn", this.liquid);
 
@@ -421,6 +423,7 @@ SelectEditor.prototype.init = function(params) {
                 + '&controlId=' + controlId
                 + (srcForeignWrk != null ? '&tblWrk=' + srcForeignWrk : '')
                 + (this.table ? '&targetTable=' + this.table : "")
+                + (this.schema ? '&targetSchema=' + this.schema : "")
                 + '&targetColumn=' + this.column
                 + (this.idColumn ? '&idColumn=' + this.idColumn : '')
                 + '&targetMode=' + params.colDef.cellEditorParams.editor
