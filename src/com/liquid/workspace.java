@@ -408,15 +408,17 @@ public class workspace {
             if (sessions != null) {
                 if (threadSession.sessionId != null) {
                     for (ThreadSession session : sessions) {
-                        if (threadSession.sessionId.equals(session.sessionId)) {
-                            if (session.workspaceOwner != owner) {
-                                if ("*".equalsIgnoreCase(threadSession.sessionId)) {
-                                    Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID WARNING: controiId '" + this.controlId + "' owner was changed ... you should use a static class for owning all session");
+                        if(session != null) {
+                            if (threadSession.sessionId.equals(session.sessionId)) {
+                                if (session.workspaceOwner != owner) {
+                                    if ("*".equalsIgnoreCase(threadSession.sessionId)) {
+                                        Logger.getLogger(workspace.class.getName()).log(Level.SEVERE, "LIQUID WARNING: controiId '" + this.controlId + "' owner was changed ... you should use a static class for owning all session");
+                                    }
+                                    session.workspaceOwner = owner;
+                                    return true;
+                                } else {
+                                    return false;
                                 }
-                                session.workspaceOwner = owner;
-                                return true;
-                            } else {
-                                return false;
                             }
                         }
                     }
