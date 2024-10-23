@@ -478,7 +478,7 @@ public class workspace {
             if (threadSession != null) {
                 if(threadSession.sessionId != null) {
                     for (ThreadSession session : sessions) {
-                        if(session.sessionId != null) {
+                        if(session != null) {
                             if (threadSession.sessionId.compareTo(session.sessionId) == 0) {
                                 return session.workspaceOwner;
                             }
