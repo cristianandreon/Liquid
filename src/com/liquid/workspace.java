@@ -485,8 +485,10 @@ public class workspace {
                         }
                     }
                     for (ThreadSession session : sessions) {
-                        if ("*".equalsIgnoreCase(session.sessionId)) {
-                            return session.workspaceOwner;
+                        if(session != null) {
+                            if ("*".equalsIgnoreCase(session.sessionId)) {
+                                return session.workspaceOwner;
+                            }
                         }
                     }
                 }
