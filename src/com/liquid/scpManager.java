@@ -317,7 +317,8 @@ public class scpManager {
         channel.connect();
 
         if (checkAck(in) != 0) {
-            System.exit(0);
+            // System.exit(0);
+            throw new Exception("Connessione fallita: controllare la scadenza dell'account o della password");
         }
 
         File _lfile = new File(from);
@@ -330,7 +331,8 @@ public class scpManager {
             out.write(command.getBytes());
             out.flush();
             if (checkAck(in) != 0) {
-                System.exit(0);
+                // System.exit(0);
+                throw new Exception("Connessione fallita: controllare la scadenza dell'account o della password");
             }
         }
         
