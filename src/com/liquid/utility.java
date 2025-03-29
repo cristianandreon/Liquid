@@ -2741,12 +2741,17 @@ public class utility {
         String datalistId = inputId+".list";
         String descId = inputId+".desc";
         ArrayList<Object> beans = null;
-        DataListCache dataListCache = get_datalist_from_cahce(databaseSchemaTable, codeColumn, descColumn, where);
-        if (dataListCache != null) {
-            beans = dataListCache.beans;
-        } else {
-            beans = bean.load_beans(databaseSchemaTable, null, (where != null && !where.isEmpty() ? where : "*"), 0, order);
-        }
+        DataListCache dataListCache = null;
+
+        try {
+            dataListCache = get_datalist_from_cahce(databaseSchemaTable, codeColumn, descColumn, where);
+            if (dataListCache != null) {
+                beans = dataListCache.beans;
+            } else {
+                beans = bean.load_beans(databaseSchemaTable, null, (where != null && !where.isEmpty() ? where : "*"), 0, order);
+            }
+        } catch (Exception e) {}
+
         boolean codeHidden = false;
         String [] codeColumnParts = null;
         String idColumn = null;
@@ -4295,6 +4300,14 @@ public class utility {
         } else {
             return false;
         }
+    }
+    public static boolean isTrue(Object obj) {
+        if(obj instanceof Boolean) {
+        } else {
+            String val = String.valueOf(obj);
+            return ("on".equalsIgnoreCase(val) || "1".equalsIgnoreCase(val) || "true".equalsIgnoreCase(val) || "Si".equalsIgnoreCase(val) || "S".equalsIgnoreCase(val) || "T".equalsIgnoreCase(val) || "V".equalsIgnoreCase(val));
+        }
+        return false;
     }
 
 }

@@ -65,7 +65,7 @@ public class userPrefs {
                             + ",`data` TEXT"
                             + ")"
                     );
-                    sql.add("alter table iart.user_preferences add constraint user_preferences_pk unique (`userId`,`controlId`);");
+                    sql.add("alter table user_preferences add constraint user_preferences_pk unique (`userId`,`controlId`);");
                 } else if ("postgres".equalsIgnoreCase(login.driver)) {
                     String seqName = (schema != null && !schema.isEmpty() ? schema + "." : "") + table + "_id_seq";
                     sql.add("CREATE SEQUENCE IF NOT EXISTS " + seqName + "");
@@ -78,7 +78,7 @@ public class userPrefs {
                             + ",\"data\" TEXT"
                             + ")"
                     );
-                    sql.add("alter table iart.user_preferences add constraint user_preferences_pk unique (\"userId\", \"controlId\");");
+                    sql.add("alter table user_preferences add constraint user_preferences_pk unique (\"userId\", \"controlId\");");
                     sql.add("ALTER SEQUENCE " + seqName + " OWNED BY " + (schema != null && !schema.isEmpty() ? (tableIdString + schema + tableIdString + ".") : "") + (tableIdString + table + tableIdString) + ".\"id\"");
 
                 } else if ("oracle".equalsIgnoreCase(login.driver)) {

@@ -478,7 +478,7 @@ public class workspace {
             if (threadSession != null) {
                 if(threadSession.sessionId != null) {
                     for (ThreadSession session : sessions) {
-                        if(session != null) {
+                        if(session != null && session.sessionId != null) {
                             if (threadSession.sessionId.compareTo(session.sessionId) == 0) {
                                 return session.workspaceOwner;
                             }
@@ -1350,6 +1350,15 @@ public class workspace {
             }
 
 
+
+            // Risoluzione campi variabili
+            solve_object_var(tableJson, "database", database, request);
+            solve_object_var(tableJson, "schema", schema, request);
+            solve_object_var(tableJson, "table", table, request);
+
+            database = tableJson.has("database") ? tableJson.getString("database") : database;
+            schema = tableJson.has("schema") ? tableJson.getString("schema") : schema;
+            table = tableJson.has("table") ? tableJson.getString("table") : table;
 
             if(sourceData != null) {
 
@@ -3335,16 +3344,18 @@ public class workspace {
 
     static private int solve_object_var(JSONObject obj, String key, String expression, HttpServletRequest request) throws Exception {
         int solvedCount = 0;
-        if (expression.indexOf("${") >= 0 || expression.indexOf("%{") >= 0) {
-            solvedCount = solve_object_var_internal(obj, key, expression, request);
-            // Salvataggio espressione : visibile al client ..
-            obj.put(key+"_src", expression);
-        } else if (obj.has(key+"_src")) {
-            solvedCount = solve_object_var_internal(obj, key, obj.getString(key+"_src"), request);
-        } else if(expression != null && !expression.isEmpty()) {
-            if("default".equalsIgnoreCase(key)) {
-                // N.B.: Inviato al client
-                obj.put("default", expression);
+        if(expression!= null) {
+            if (expression.indexOf("${") >= 0 || expression.indexOf("%{") >= 0) {
+                solvedCount = solve_object_var_internal(obj, key, expression, request);
+                // Salvataggio espressione : visibile al client ..
+                obj.put(key + "_src", expression);
+            } else if (obj.has(key + "_src")) {
+                solvedCount = solve_object_var_internal(obj, key, obj.getString(key + "_src"), request);
+            } else if (expression != null && !expression.isEmpty()) {
+                if ("default".equalsIgnoreCase(key)) {
+                    // N.B.: Inviato al client
+                    obj.put("default", expression);
+                }
             }
         }
         return solvedCount;

@@ -1118,8 +1118,10 @@ public class login {
             HttpSession session = request.getSession();
             try {
                 if (session != null) {
-                    if(session.getAttribute("GLLiquidUserID") != null && session.getAttribute("GLLiquidToken") != null) {
-                        return true;
+                    if(login.schema != null && login.table != null) {
+                        if(session.getAttribute("GLLiquidUserID") != null && session.getAttribute("GLLiquidToken") != null) {
+                            return true;
+                        }
                     }
                 }                    
             } catch (Throwable e) {
@@ -1129,6 +1131,26 @@ public class login {
         }
         return false;
     }
+
+    static public boolean isAdmin( HttpServletRequest request) {
+        if(request != null) {
+            HttpSession session = request.getSession();
+            try {
+                if (session != null) {
+                    if(login.schema != null && login.table != null) {
+                        if(session.getAttribute("GLLiquidAdmin") != null && session.getAttribute("GLLiquidToken") != null) {
+                            return utility.isTrue(session.getAttribute("GLLiquidAdmin"));
+                        }
+                    }
+                }
+            } catch (Throwable e) {
+                Logger.getLogger("// isLogged() error:" + e.getLocalizedMessage());
+                return false;
+            }
+        }
+        return false;
+    }
+
 
     static public String getLoggedID( HttpServletRequest request) {
         HttpSession session = request.getSession();

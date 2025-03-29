@@ -76,8 +76,8 @@
 
             #bg { position:absolute; top:0; left:0; width:100%; height:100%; z-index:-1; }
 
-            a { color:#4E90D1; text-decoration:none; font-weight: bold; }
-            a:hover { color:#4EBFDD; text-decoration:none; font-weight: bold; }
+            a { color:#121212; text-decoration:none; font-weight: bold; }
+            a:hover { color:red; text-decoration:none; font-weight: bold; }
         </style>
         
     </head>

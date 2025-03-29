@@ -29,7 +29,7 @@
 
 
 //
-// Liquid ver.2.96
+// Liquid ver.2.97
 //
 //  First update 06-01-2020 - Last update 04-10-2023
 //
@@ -19935,7 +19935,7 @@ var Liquid = {
             if (curContent !== content) {
                 let msg;
                 if(Liquid.lang.toLowerCase() == 'it'){
-                    msg = "Il contenuto è stato modificato ... tralasciare le modifiche ?";
+                    msg = "Il contenuto &egrave stato modificato ... tralasciare le modifiche ?";
                 } else {
                     msg = "Content was changed ... discharge it ?";
                 }
