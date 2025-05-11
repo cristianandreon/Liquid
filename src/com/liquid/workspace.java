@@ -1531,6 +1531,9 @@ public class workspace {
                     }
                 } else {
                     if(query != null && !query.isEmpty()) {
+                        // OK
+                    } else if(sourceData != null) {
+                        // OK
                     } else {
                         String err = "On Control '"+ controlId + "' table not defined (" + database + "." + schema + "." + table + ")";
                         System.out.println(err);
