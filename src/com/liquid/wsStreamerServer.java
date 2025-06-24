@@ -47,8 +47,8 @@ public class wsStreamerServer {
     public static void stop() {
         try {
             Logger.getLogger(wsStreamerClient.class.getName()).log(Level.INFO, "[LIQUID] : Stopping WS Server ... ");
-            serverThread.run = false;
             if(serverThread != null) {
+                serverThread.run = false;
                 if (wsStreamerServer.serverThread.server != null) {
                     try {
                         wsStreamerServer.serverThread.server.close();

@@ -3112,16 +3112,16 @@ public class utility {
                 if (f.createNewFile()) {
                     System.out.println("File created: " + f.getName());
                 } else {
-                    System.out.println("set_file_content() connot create file: " + fileName);
+                    System.out.println("set_file_content() Cannot create file: " + fileName);
                     return false;
                 }
             }
             if (!f.canRead()) {
-                System.out.println("set_file_content() connot read file: " + fileName);
+                System.out.println("set_file_content() Cannot read file: " + fileName);
                 return false;
             }
             if (!f.canWrite()) {
-                System.out.println("set_file_content() connot write file: " + fileName);
+                System.out.println("set_file_content() Cannot write file: " + fileName);
                 return false;
             }
 
@@ -3160,16 +3160,16 @@ public class utility {
                 if (f.createNewFile()) {
                     System.out.println("File created: " + f.getName());
                 } else {
-                    System.out.println("set_file_content() connot create file: " + fileName);
+                    System.out.println("set_file_content() Cannot create file: " + fileName);
                     return false;
                 }
             }
             if (!f.canRead()) {
-                System.out.println("set_file_content() connot read file: " + fileName);
+                System.out.println("set_file_content() Cannot read file: " + fileName);
                 return false;
             }
             if (!f.canWrite()) {
-                System.out.println("set_file_content() connot write file: " + fileName);
+                System.out.println("set_file_content() Cannot write file: " + fileName);
                 return false;
             }
 

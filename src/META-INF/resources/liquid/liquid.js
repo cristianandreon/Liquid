@@ -4055,7 +4055,7 @@ var Liquid = {
                         count++;
                     } else {
                         if (Liquid.lang.toLowerCase() == 'it') {
-                            msg += "File '" + files[x].name + "' connot be added\n"
+                            msg += "File '" + files[x].name + "' Cannot be added\n"
                         } else {
                             msg += "il file '" + files[x].name + "' con può esse aggiunto\n"
                         }

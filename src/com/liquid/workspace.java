@@ -3588,6 +3588,9 @@ public class workspace {
             if ((parentControlId != null && !parentControlId.isEmpty()) || (sourceToken != null && !sourceToken.isEmpty())) {
                 String registeringControlId = (parentControlId != null && !parentControlId.isEmpty() ? parentControlId :  "") + "." + controlId;
                 workspace source_tbl_wrk = workspace.get_tbl_manager_workspace(registeringControlId);
+                if (source_tbl_wrk == null) {
+                    source_tbl_wrk = workspace.get_tbl_manager_workspace(parentControlId);
+                }
                 if (source_tbl_wrk != null || sourceSpecialToken.equals(sourceToken)) {
                     if (sourceSpecialToken.equals(parentControlId)) {
                         parentControlId = null;
@@ -3703,12 +3706,12 @@ public class workspace {
                         return result;
                     }
                 } else {
-                    String error = " get_default_json() [" + controlId + "] Connot read table without source exist";
+                    String error = " get_default_json() [" + controlId + "] Cannot read table without source exist";
                     System.err.println(error);
                     return "{\"error\":\"" + error + "\"}";
                 }
             } else {
-                String error = " get_default_json() [" + controlId + "] Connot read table without source verification";
+                String error = " get_default_json() [" + controlId + "] Cannot read table without source verification";
                 System.err.println(error);
                 return "{\"error\":\"" + error + "\"}";
             }
